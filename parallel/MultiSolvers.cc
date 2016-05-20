@@ -49,7 +49,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <pthread.h>
 #include "parallel/MultiSolvers.h"
-#include "mtl/Sort.h"
 #include "utils/System.h"
 #include "simp/SimpSolver.h"
 #include <errno.h>
@@ -191,7 +190,7 @@ bool MultiSolvers::addClause_(vec<Lit>&ps) {
   // Check if clause is satisfied and remove false/duplicate literals:
   if (!okay())  return false;
 
-  sort(ps);
+  std::sort(ps.begin(), ps.end());
   Lit p; int i, j;
   for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     if (solvers[0]->value(ps[i]) == l_True || ps[i] == ~p)

@@ -48,7 +48,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "parallel/ParallelSolver.h"
-#include "mtl/Sort.h"
 
 using namespace Glucose;
 
@@ -145,7 +144,7 @@ void ParallelSolver::reduceDB() {
 
     int i, j;
     nbReduceDB++;
-    sort(learnts, reduceDB_lt(ca));
+    std::sort(learnts.begin(), learnts.end(), reduceDB_lt(ca));
 
     int limit;
 
@@ -194,7 +193,7 @@ void ParallelSolver::reduceDB() {
     panicModeLastRemovedShared = 0;
     if ((unaryWatchedClauses.size() > 100) && (limit > 0)) {
 
-        sort(unaryWatchedClauses, reduceDB_oneWatched_lt(ca));
+        std::sort(unaryWatchedClauses.begin(), unaryWatchedClauses.end(), reduceDB_oneWatched_lt(ca));
 
         for (i = j = 0; i < unaryWatchedClauses.size(); i++) {
             Clause& c = ca[unaryWatchedClauses[i]];

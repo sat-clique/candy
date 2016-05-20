@@ -60,6 +60,9 @@ public:
     // Pointer to first element:
     operator T*       (void)           { return data; }
 
+    T* begin() { return data; }
+    T* end() { return data + sz; }
+
     // Size operations:
     int      size     (void) const     { return sz; }
     void     shrink   (int nelems)     { assert(nelems <= sz); for (int i = 0; i < nelems; i++) sz--, data[sz].~T(); }

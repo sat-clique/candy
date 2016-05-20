@@ -17,9 +17,10 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **************************************************************************************************/
 
-#include "mtl/Sort.h"
 #include "utils/Options.h"
 #include "utils/ParseUtils.h"
+
+#include <algorithm>
 
 using namespace Glucose;
 
@@ -62,7 +63,7 @@ void Glucose::printUsageAndExit (int argc, char** argv, bool verbose)
     if (usage != NULL)
         fprintf(stderr, usage, argv[0]);
 
-        sort(Option::getOptionList(), Option::OptionLt());
+        std::sort(Option::getOptionList().begin(), Option::getOptionList().end(), Option::OptionLt());
 
     const char* prev_cat  = NULL;
     const char* prev_type = NULL;

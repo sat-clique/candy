@@ -50,7 +50,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <math.h>
 
 #include "utils/System.h"
-#include "mtl/Sort.h"
 #include "core/Solver.h"
 #include "core/Constants.h"
 
@@ -337,7 +336,7 @@ bool Solver::addClause_(vec<Lit>& ps) {
     if (!ok) return false;
 
     // Check if clause is satisfied and remove false/duplicate literals:
-    sort(ps);
+    std::sort(ps.begin(), ps.end());
 
     vec<Lit> oc;
     oc.clear();
@@ -1150,7 +1149,7 @@ void Solver::reduceDB()
  
   int     i, j;
   nbReduceDB++;
-  sort(learnts, reduceDB_lt(ca));
+  std::sort(learnts.begin(), learnts.end(), reduceDB_lt(ca));
 
   // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
   if(ca[learnts[learnts.size() / RATIOREMOVECLAUSES]].lbd()<=3) nbclausesbeforereduce +=specialIncReduceDB; 
