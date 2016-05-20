@@ -931,7 +931,6 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 CRef Solver::propagate() {
     CRef confl = CRef_Undef;
     int num_props = 0;
-    int previousqhead = qhead;
     watches.cleanAll();
     watchesBin.cleanAll();
     unaryWatches.cleanAll();
