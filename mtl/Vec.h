@@ -25,8 +25,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <new>
 
 #include "mtl/IntTypes.h"
-#include "mtl/XAlloc.h"
-#include<string.h>
+#include "mtl/Alloc.h"
+#include <string.h>
 
 namespace Glucose {
 

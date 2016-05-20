@@ -21,10 +21,29 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Glucose_Alloc_h
 #define Glucose_Alloc_h
 
-#include "mtl/XAlloc.h"
+#include <errno.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#include <cstring>
+
 #include "mtl/Vec.h"
 
 namespace Glucose {
+
+//=================================================================================================
+// Simple layer on top of malloc/realloc to catch out-of-memory situtaions and provide some typing:
+
+class OutOfMemoryException{};
+static inline void* xrealloc(void *ptr, size_t size)
+{
+    void* mem = realloc(ptr, size);
+    if (mem == NULL && errno == ENOMEM){
+        throw OutOfMemoryException();
+    }else {
+        return mem;
+    }
+}
 
 //=================================================================================================
 // Simple Region-based memory allocator:
