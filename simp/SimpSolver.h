@@ -50,8 +50,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Glucose_SimpSolver_h
 #define Glucose_SimpSolver_h
 
-#include "mtl/Queue.h"
 #include "core/Solver.h"
+#include <deque>
+
+using namespace std;
 
 namespace Glucose {
 
@@ -170,7 +172,7 @@ class SimpSolver : public Solver {
                         occurs;
     vec<int>            n_occ;
     Heap<ElimLt>        elim_heap;
-    Queue<CRef>         subsumption_queue;
+    deque<CRef>         subsumption_queue;
     vec<char>           frozen;
     vec<char>           eliminated;
     int                 bwdsub_assigns;
