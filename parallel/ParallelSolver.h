@@ -87,7 +87,7 @@ public:
     /**
      * Clone function
      */
-    virtual Clone* clone() const {
+    virtual ParallelSolver* clone() const {
         return  new ParallelSolver(*this);
     }   
 

@@ -52,7 +52,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "mtl/Queue.h"
 #include "core/Solver.h"
-#include "mtl/Clone.h"
 
 namespace Glucose {
 
@@ -72,7 +71,7 @@ class SimpSolver : public Solver {
     /**
      * Clone function
     */
-    virtual Clone* clone() const {
+    SimpSolver* clone() const {
         return  new SimpSolver(*this);
     }   
 
