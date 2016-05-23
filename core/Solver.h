@@ -56,7 +56,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/SolverTypes.h"
 #include "core/BoundedQueue.h"
 #include "core/Constants.h"
-#include "mtl/Clone.h"
 
 
 namespace Glucose {
@@ -64,7 +63,7 @@ namespace Glucose {
 //=================================================================================================
 // Solver -- the main class:
 
-class Solver : public Clone {
+class Solver {
 
     friend class SolverConfiguration;
 
@@ -80,7 +79,7 @@ public:
     /**
      * Clone function
      */
-    virtual Clone* clone() const {
+    Solver* clone() const {
         return  new Solver(*this);
     }   
 
