@@ -118,6 +118,7 @@ SimpSolver::SimpSolver(const SimpSolver &s) : Solver(s)
   , use_simplification (s.use_simplification)
   , occurs             (ClauseDeleted(ca))
   , elim_heap          (ElimLt(n_occ))
+  , subsumption_queue  (s.subsumption_queue)
   , bwdsub_assigns     (s.bwdsub_assigns)
   , n_touched          (s.n_touched)
 {
@@ -128,13 +129,11 @@ SimpSolver::SimpSolver(const SimpSolver &s) : Solver(s)
     remove_satisfied      = false;
     //End TODO  
     
-    
     s.elimclauses.memCopyTo(elimclauses);
     s.touched.memCopyTo(touched);
     s.occurs.copyTo(occurs);
     s.n_occ.memCopyTo(n_occ);
     s.elim_heap.copyTo(elim_heap);
-    s.subsumption_queue.copyTo(subsumption_queue);
     s.frozen.memCopyTo(frozen);
     s.eliminated.memCopyTo(eliminated);
 
@@ -234,7 +233,7 @@ bool SimpSolver::addClause_(vec<Lit>& ps)
         // be checked twice unnecessarily. This is an unfortunate
         // consequence of how backward subsumption is used to mimic
         // forward subsumption.
-        subsumption_queue.insert(cr);
+        subsumption_queue.push_back(cr);
         for (int i = 0; i < c.size(); i++){
             occurs[var(c[i])].push(cr);
             n_occ[toInt(c[i])]++;
@@ -273,7 +272,7 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
 
     // FIX: this is too inefficient but would be nice to have (properly implemented)
     // if (!find(subsumption_queue, &c))
-    subsumption_queue.insert(cr);
+    subsumption_queue.push_back(cr);
 
     if (certifiedUNSAT) {
       for (int i = 0; i < c.size(); i++)
@@ -369,17 +368,17 @@ void SimpSolver::gatherTouchedClauses()
 {
     if (n_touched == 0) return;
 
-    int i,j;
+    unsigned int i,j;
     for (i = j = 0; i < subsumption_queue.size(); i++)
         if (ca[subsumption_queue[i]].mark() == 0)
             ca[subsumption_queue[i]].mark(2);
 
-    for (i = 0; i < touched.size(); i++)
+    for (int i = 0; i < touched.size(); i++)
         if (touched[i]){
             const vec<CRef>& cs = occurs.lookup(i);
-            for (j = 0; j < cs.size(); j++)
+            for (int j = 0; j < cs.size(); j++)
                 if (ca[cs[j]].mark() == 0){
-                    subsumption_queue.insert(cs[j]);
+                    subsumption_queue.push_back(cs[j]);
                     ca[cs[j]].mark(2);
                 }
             touched[i] = 0;
@@ -434,15 +433,15 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose)
             Lit l = trail[bwdsub_assigns++];
             ca[bwdsub_tmpunit][0] = l;
             ca[bwdsub_tmpunit].calcAbstraction();
-            subsumption_queue.insert(bwdsub_tmpunit); }
+            subsumption_queue.push_back(bwdsub_tmpunit); }
 
-        CRef    cr = subsumption_queue.peek(); subsumption_queue.pop();
+        CRef    cr = subsumption_queue.front(); subsumption_queue.pop_front();
         Clause& c  = ca[cr];
 
         if (c.mark()) continue;
 
         if (verbose && verbosity >= 2 && cnt++ % 1000 == 0)
-            printf("subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", subsumption_queue.size(), subsumed, deleted_literals);
+            printf("subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", (int)subsumption_queue.size(), subsumed, deleted_literals);
 
         assert(c.size() > 1 || value(c[0]) == l_True);    // Unit-clauses should have been propagated before this point.
 
@@ -744,7 +743,7 @@ bool SimpSolver::eliminate(bool turn_off_elim)
         occurs   .clear(true);
         n_occ    .clear(true);
         elim_heap.clear(true);
-        subsumption_queue.clear(true);
+        subsumption_queue.clear();
 
         use_simplification    = false;
         remove_satisfied      = true;
@@ -799,7 +798,7 @@ void SimpSolver::relocAll(ClauseAllocator& to)
 
     // Subsumption queue:
     //
-    for (int i = 0; i < subsumption_queue.size(); i++)
+    for (unsigned int i = 0; i < subsumption_queue.size(); i++)
         ca.reloc(subsumption_queue[i], to);
 
     // Temporary clause:
