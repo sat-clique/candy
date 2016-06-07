@@ -27,7 +27,7 @@ TEST (SolverTest, outputwithbudget) {
   S.setConfBudget(150000);
   S.verbosity++;
   S.verbEveryConflicts = 10000;
-  vec<Lit> dummy;
+  vector<Lit> dummy;
   testing::internal::CaptureStdout();
   S.solveLimited(dummy);
   std::string output = testing::internal::GetCapturedStdout();

@@ -57,6 +57,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/BoundedQueue.h"
 #include "core/Constants.h"
 
+#include <vector>
+
+using namespace std;
 
 namespace Glucose {
 
@@ -72,7 +75,7 @@ public:
     // Constructor/Destructor:
     //
     Solver();
-    Solver(const  Solver &s);
+    Solver(const Solver &s);
     
     virtual ~Solver();
     
@@ -97,8 +100,8 @@ public:
     // Solving:
     //
     bool    simplify     ();                        // Removes already satisfied clauses.
-    bool    solve        (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions.
-    lbool   solveLimited (const vec<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
+    bool    solve        (const vector<Lit>& assumps); // Search for a model that respects a given set of assumptions.
+    lbool   solveLimited (const vector<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
     bool    solve        ();                        // Search without assumptions.
     bool    solve        (Lit p);                   // Search for a model that respects a single assumption.
     bool    solve        (Lit p, Lit q);            // Search for a model that respects two assumptions.
@@ -236,8 +239,8 @@ protected:
     long curRestart;
     // Helper structures:
     //
-    struct VarData { CRef reason; int level; };
-    static inline VarData mkVarData(CRef cr, int l){ VarData d = {cr, l}; return d; }
+    struct VarData { CRef reason; unsigned int level; };
+    static inline VarData mkVarData(CRef cr, unsigned int l){ VarData d = {cr, l}; return d; }
 
     struct Watcher {
         CRef cref;
@@ -261,9 +264,9 @@ protected:
     };
 
     struct VarOrderLt {
-        const vec<double>&  activity;
+        const vector<double>&  activity;
         bool operator () (Var x, Var y) const { return activity[x] > activity[y]; }
-        VarOrderLt(const vec<double>&  act) : activity(act) { }
+        VarOrderLt(const vector<double>&  act) : activity(act) { }
     };
 
 
@@ -272,7 +275,7 @@ protected:
     int                lastIndexRed;
     bool                ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
     double              cla_inc;          // Amount to bump next clause with.
-    vec<double>         activity;         // A heuristic measurement of the activity of a variable.
+    vector<double>      activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.
     OccLists<Lit, vec<Watcher>, WatcherDeleted>
                         watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
@@ -280,26 +283,26 @@ protected:
                         watchesBin;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, vec<Watcher>, WatcherDeleted>
                         unaryWatches;       //  Unary watch scheme (clauses are seen when they become empty
-    vec<CRef>           clauses;          // List of problem clauses.
-    vec<CRef>           learnts;          // List of learnt clauses.
-    vec<CRef>           unaryWatchedClauses;  // List of imported clauses (after the purgatory) // TODO put inside ParallelSolver
+    vector<CRef>           clauses;          // List of problem clauses.
+    vector<CRef>           learnts;          // List of learnt clauses.
+    vector<CRef>           unaryWatchedClauses;  // List of imported clauses (after the purgatory) // TODO put inside ParallelSolver
 
-    vec<lbool>          assigns;          // The current assignments.
-    vec<char>           polarity;         // The preferred polarity of each variable.
-    vec<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
-    vec<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
-    vec<int>            nbpos;
-    vec<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
-    vec<VarData>        vardata;          // Stores reason and level for each variable.
-    int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+    vector<lbool>          assigns;          // The current assignments.
+    vector<char>           polarity;         // The preferred polarity of each variable.
+    vector<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
+    vector<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
+    vector<int>            nbpos;
+    vector<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
+    vector<VarData>        vardata;          // Stores reason and level for each variable.
+    unsigned int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
     int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
-    vec<Lit>            assumptions;      // Current set of assumptions provided to solve by the user.
+    vector<Lit>         assumptions;      // Current set of assumptions provided to solve by the user.
     Heap<VarOrderLt>    order_heap;       // A priority queue of variables ordered with respect to the variable activity.
     double              progress_estimate;// Set by 'search()'.
     bool                remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool reduceOnSize;
-    int  reduceOnSizeSize;                // See XMinisat paper
+    int reduceOnSizeSize;                // See XMinisat paper
     vec<unsigned int>   permDiff;           // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     
 
@@ -361,7 +364,7 @@ protected:
     lbool    search           (int nof_conflicts);                                     // Search for a given number of conflicts.
     virtual lbool    solve_           (bool do_simp = true, bool turn_off_simp = false);                                                      // Main solve method (assumptions given in 'assumptions').
     virtual void     reduceDB         ();                                                      // Reduce the set of learnt clauses.
-    void     removeSatisfied  (vec<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
+    void     removeSatisfied  (vector<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
     void     rebuildOrderHeap ();
 
     // Maintaining Variable/Clause activity:
@@ -440,7 +443,7 @@ inline void Solver::claDecayActivity() { cla_inc *= (1 / clause_decay); }
 inline void Solver::claBumpActivity (Clause& c) {
         if ( (c.activity() += cla_inc) > 1e20 ) {
             // Rescale:
-            for (int i = 0; i < learnts.size(); i++)
+            for (unsigned int i = 0; i < learnts.size(); i++)
                 ca[learnts[i]].activity() *= 1e-20;
             cla_inc *= 1e-20; } }
 
@@ -464,7 +467,7 @@ inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(
      || 
      (value(c[1]) == l_True && reason(var(c[1])) != CRef_Undef && ca.lea(reason(var(c[1]))) == &c);
  }
-inline void     Solver::newDecisionLevel()                      { trail_lim.push(trail.size()); }
+inline void     Solver::newDecisionLevel()                      { trail_lim.push_back(trail.size()); }
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
 inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
@@ -500,11 +503,18 @@ inline bool     Solver::withinBudget() const {
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
 inline bool     Solver::solve         ()                    { budgetOff(); assumptions.clear(); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_() == l_True; }
-inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_() == l_True; }
-inline bool     Solver::solve         (const vec<Lit>& assumps){ budgetOff(); assumps.copyTo(assumptions); return solve_() == l_True; }
-inline lbool    Solver::solveLimited  (const vec<Lit>& assumps){ assumps.copyTo(assumptions); return solve_(); }
+inline bool     Solver::solve         (Lit p)               { budgetOff(); assumptions.clear(); assumptions.push_back(p); return solve_() == l_True; }
+inline bool     Solver::solve         (Lit p, Lit q)        { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); return solve_() == l_True; }
+inline bool     Solver::solve         (Lit p, Lit q, Lit r) { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); assumptions.push_back(r); return solve_() == l_True; }
+inline bool     Solver::solve         (const vector<Lit>& assumps){
+  budgetOff();
+  assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+  return solve_() == l_True;
+}
+inline lbool    Solver::solveLimited  (const vector<Lit>& assumps){
+  assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+  return solve_();
+}
 inline bool     Solver::okay          ()      const   { return ok; }
 
 inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }

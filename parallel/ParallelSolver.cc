@@ -152,7 +152,7 @@ void ParallelSolver::reduceDB() {
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
         if (ca[learnts[learnts.size() / RATIOREMOVECLAUSES]].lbd() <= 3) nbclausesbeforereduce += specialIncReduceDB;
         // Useless :-)
-        if (ca[learnts.last()].lbd() <= 5) nbclausesbeforereduce += specialIncReduceDB;
+        if (ca[learnts.back()].lbd() <= 5) nbclausesbeforereduce += specialIncReduceDB;
 
         // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
         // Keep clauses which seem to be usefull (their lbd was reduce during this sequence)
@@ -165,7 +165,6 @@ void ParallelSolver::reduceDB() {
 
     uint64_t sumsize = 0;
     for (i = j = 0; i < learnts.size(); i++) {
-
         Clause& c = ca[learnts[i]];
         if (i == learnts.size() / 2)
             goodlimitlbd = c.lbd();
@@ -180,7 +179,7 @@ void ParallelSolver::reduceDB() {
             learnts[j++] = learnts[i];
         }
     }
-    learnts.shrink(i - j);
+    learnts.resize(j);
 
     if (learnts.size() > 0)
         goodlimitsize = 1 + (double) sumsize / (double) learnts.size();
@@ -207,7 +206,7 @@ void ParallelSolver::reduceDB() {
                 unaryWatchedClauses[j++] = unaryWatchedClauses[i];
             }
         }
-        unaryWatchedClauses.shrink(i - j);
+        unaryWatchedClauses.resize(j);
     }
 
     checkGarbage();
@@ -342,7 +341,7 @@ bool ParallelSolver::parallelImportClauses() {
             ca[cr].setExported(1); // next time we see it in analyze, we share it (follow route / broadcast depending on the global strategy, part of an ongoing experimental stuff: a clause in one Watched will be set to exported 2 when promotted.
         }
         ca[cr].setImportedFrom(importedFromThread);
-        unaryWatchedClauses.push(cr);
+        unaryWatchedClauses.push_back(cr);
         if (plingeling || ca[cr].size() <= 2) {//|| importedRoute == 0) { // importedRoute == 0 means a glue clause in another thread (or any very good clause)
             ca[cr].setOneWatched(false); // Warning: those clauses will never be promoted by a conflict clause (or rarely: they are propagated!)
             attachClause(cr);
@@ -418,7 +417,7 @@ lbool ParallelSolver::solve_(bool do_simp, bool turn_off_simp) {
     do_simp &= use_simplification;
     if (do_simp){
         // Assumptions must be temporarily frozen to run variable elimination:
-        for (int i = 0; i < assumptions.size(); i++){
+        for (unsigned int i = 0; i < assumptions.size(); i++){
             Var v = var(assumptions[i]);
 
             // If an assumption has been eliminated, remember it.
