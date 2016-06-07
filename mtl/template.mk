@@ -27,8 +27,8 @@ COPTIMIZE ?= -O3
 CFLAGS    += -I$(MROOT) -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS
 LFLAGS    += -lz -flto
 
-CFLAGS    += -I$(MROOT)/../googletest/googletest/include/
-LFLAGS    += -L$(MROOT)/../googletest/build/googlemock/gtest/ -lgtest
+CFLAGS    += -I$(MROOT)/test/googletest/googletest/include/
+LFLAGS    += -L$(MROOT)/test/googletest/googlemock/gtest/ -lgtest
 
 
 .PHONY : s p d r rs clean 
