@@ -233,7 +233,7 @@ Solver::Solver(const Solver &s) :
 , remove_satisfied(s.remove_satisfied)
 , reduceOnSize(s.reduceOnSize) // 
 , reduceOnSizeSize(s.reduceOnSizeSize) // Constant to use on size reductions
-,lastLearntClause(CRef_Undef)
+, lastLearntClause(CRef_Undef)
 // Resource constraints:
 //
 , conflict_budget(s.conflict_budget)
@@ -261,17 +261,17 @@ Solver::Solver(const Solver &s) :
     s.watches.copyTo(watches);
     s.watchesBin.copyTo(watchesBin);
     s.unaryWatches.copyTo(unaryWatches);
-    s.assigns.memCopyTo(assigns);
-    s.vardata.memCopyTo(vardata);
-    s.activity.memCopyTo(activity);
+    assigns.insert(assigns.end(), s.assigns.begin(), s.assigns.end());
+    vardata.insert(vardata.end(), s.vardata.begin(), s.vardata.end());
+    activity.insert(activity.end(), s.activity.begin(), s.activity.end());
     s.seen.memCopyTo(seen);
     s.permDiff.memCopyTo(permDiff);
-    s.polarity.memCopyTo(polarity);
-    s.decision.memCopyTo(decision);
-    s.trail.memCopyTo(trail);
+    polarity.insert(polarity.end(), s.polarity.begin(), s.polarity.end());
+    decision.insert(decision.end(), s.decision.begin(), s.decision.end());
+    trail.insert(trail.end(), s.trail.begin(), s.trail.end());
     s.order_heap.copyTo(order_heap);
-    s.clauses.memCopyTo(clauses);
-    s.learnts.memCopyTo(learnts);
+    clauses.insert(clauses.end(), s.clauses.begin(), s.clauses.end());
+    learnts.insert(learnts.end(), s.learnts.begin(), s.learnts.end());
 
     s.lbdQueue.copyTo(lbdQueue);
     s.trailQueue.copyTo(trailQueue);
@@ -318,14 +318,14 @@ Var Solver::newVar(bool sign, bool dvar) {
     watchesBin .init(mkLit(v, true));
     unaryWatches .init(mkLit(v, false));
     unaryWatches .init(mkLit(v, true));
-    assigns .push(l_Undef);
-    vardata .push(mkVarData(CRef_Undef, 0));
-    activity .push(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+    assigns.push_back(l_Undef);
+    vardata.push_back(mkVarData(CRef_Undef, 0));
+    activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen .push(0);
-    permDiff .push(0);
-    polarity .push(sign);
-    decision .push();
-    trail .capacity(v + 1);
+    permDiff.push(0);
+    polarity.push_back(sign);
+    decision.push_back(0);
+    trail.reserve(v + 1);
     setDecisionVar(v, dvar);
     return v;
 }
@@ -377,7 +377,7 @@ bool Solver::addClause_(vec<Lit>& ps) {
         return ok = (propagate() == CRef_Undef);
     } else {
         CRef cr = ca.alloc(ps, false);
-        clauses.push(cr);
+        clauses.push_back(cr);
         attachClause(cr);
     }
 
@@ -600,15 +600,15 @@ void Solver::cancelUntil(int level) {
     if (decisionLevel() > level) {
         for (int c = trail.size() - 1; c >= trail_lim[level]; c--) {
             Var x = var(trail[c]);
-            assigns [x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.last())) {
+            assigns[x] = l_Undef;
+            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.back())) {
                 polarity[x] = sign(trail[c]);
             }
             insertVarOrder(x);
         }
         qhead = trail_lim[level];
-        trail.shrink(trail.size() - trail_lim[level]);
-        trail_lim.shrink(trail_lim.size() - level);
+        trail.resize(trail_lim[level]);
+        trail_lim.resize(level);
     }
 }
 
@@ -913,7 +913,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
     assert(value(p) == l_Undef);
     assigns[var(p)] = lbool(!sign(p));
     vardata[var(p)] = mkVarData(from, decisionLevel());
-    trail.push_(p);
+    trail.push_back(p);
 }
 
 /*_________________________________________________________________________________________________
@@ -988,7 +988,7 @@ CRef Solver::propagate() {
 	      for (int k = 2; k < c.size(); k++) {
 		
 		if (value(c[k]) != l_False){
-		  if(decisionLevel()>assumptions.size()) {
+		  if(decisionLevel()>(int)assumptions.size()) {
 		    choosenPos = k;
 		    break;
 		  } else {
@@ -1147,24 +1147,24 @@ NextClauseUnary:
 void Solver::reduceDB()
 {
  
-  int     i, j;
+  unsigned int i, j;
   nbReduceDB++;
   std::sort(learnts.begin(), learnts.end(), reduceDB_lt(ca));
 
   // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
   if(ca[learnts[learnts.size() / RATIOREMOVECLAUSES]].lbd()<=3) nbclausesbeforereduce +=specialIncReduceDB; 
   // Useless :-)
-  if(ca[learnts.last()].lbd()<=5)  nbclausesbeforereduce +=specialIncReduceDB; 
+  if(ca[learnts.back()].lbd()<=5)  nbclausesbeforereduce +=specialIncReduceDB;
   
   
   // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
   // Keep clauses which seem to be usefull (their lbd was reduce during this sequence)
 
-  int limit = learnts.size() / 2;
+  unsigned int limit = learnts.size() / 2;
 
   for (i = j = 0; i < learnts.size(); i++){
     Clause& c = ca[learnts[i]];
-    if (c.lbd()>2 && c.size() > 2 && c.canBeDel() &&  !locked(c) && (i < limit)) {
+    if (c.lbd()>2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
       removeClause(learnts[i]);
       nbRemovedClauses++;
     }
@@ -1174,18 +1174,15 @@ void Solver::reduceDB()
       learnts[j++] = learnts[i];
     }
   }
-  learnts.shrink(i - j);
+  learnts.resize(j);
   checkGarbage();
 }
 
 
-void Solver::removeSatisfied(vec<CRef>& cs) {
-
-    int i, j;
+void Solver::removeSatisfied(vector<CRef>& cs) {
+  unsigned int i, j;
     for (i = j = 0; i < cs.size(); i++) {
         Clause& c = ca[cs[i]];
-
-
         if (satisfied(c))
             if (c.getOneWatched())
                 removeClause(cs[i], true);
@@ -1194,7 +1191,7 @@ void Solver::removeSatisfied(vec<CRef>& cs) {
         else
             cs[j++] = cs[i];
     }
-    cs.shrink(i - j);
+    cs.resize(j);
 }
 
 void Solver::rebuildOrderHeap() {
@@ -1291,7 +1288,7 @@ lbool Solver::search(int nof_conflicts) {
             if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
                 printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n",
                         (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
-                        (int) dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int) clauses_literals,
+                        (int) dec_vars - (int)(trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int) clauses_literals,
                         (int) nbReduceDB, nLearnts(), (int) nbDL2, (int) nbRemovedClauses, progressEstimate()*100);
             }
             if (decisionLevel() == 0) {
@@ -1340,7 +1337,7 @@ lbool Solver::search(int nof_conflicts) {
 		ca[cr].setSizeWithoutSelectors(szWithoutSelectors);
                 if (nblevels <= 2) nbDL2++; // stats
                 if (ca[cr].size() == 2) nbBin++; // stats
-                learnts.push(cr);
+                learnts.push_back(cr);
                 attachClause(cr);
                 lastLearntClause = cr; // Use in multithread (to hard to put inside ParallelSolver)
                 parallelExportClauseDuringSearch(ca[cr]);
@@ -1360,7 +1357,7 @@ lbool Solver::search(int nof_conflicts) {
                 progress_estimate = progressEstimate();
                 int bt = 0;
                 if(incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
-                    bt = (decisionLevel()<assumptions.size()) ? decisionLevel() : assumptions.size();
+                    bt = (decisionLevel()<(int)assumptions.size()) ? decisionLevel() : (int)assumptions.size();
                 cancelUntil(bt);
                 return l_Undef;
             }
@@ -1383,7 +1380,7 @@ lbool Solver::search(int nof_conflicts) {
 
             lastLearntClause = CRef_Undef;
             Lit next = lit_Undef;
-            while (decisionLevel() < assumptions.size()) {
+            while (decisionLevel() < (int)assumptions.size()) {
                 // Perform user provided assumption:
                 Lit p = assumptions[decisionLevel()];
                 if (value(p) == l_True) {
@@ -1420,9 +1417,9 @@ double Solver::progressEstimate() const {
     double progress = 0;
     double F = 1.0 / nVars();
 
-    for (int i = 0; i <= decisionLevel(); i++) {
+    for (int i = 0; i <= (int)decisionLevel(); i++) {
         int beg = i == 0 ? 0 : trail_lim[i - 1];
-        int end = i == decisionLevel() ? trail.size() : trail_lim[i];
+        int end = i == decisionLevel() ? (int)trail.size() : trail_lim[i];
         progress += pow(F, i) * (end - beg);
     }
 
@@ -1582,11 +1579,11 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
     // Cannot use removeClauses here because it is not safe
     // to deallocate them at this point. Could be improved.
     int cnt = 0;
-    for (int i = 0; i < clauses.size(); i++)
+    for (unsigned int i = 0; i < clauses.size(); i++)
         if (!satisfied(ca[clauses[i]]))
             cnt++;
 
-    for (int i = 0; i < clauses.size(); i++)
+    for (unsigned int i = 0; i < clauses.size(); i++)
         if (!satisfied(ca[clauses[i]])) {
             Clause& c = ca[clauses[i]];
             for (int j = 0; j < c.size(); j++)
@@ -1599,12 +1596,12 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
 
     fprintf(f, "p cnf %d %d\n", max, cnt);
 
-    for (int i = 0; i < assumptions.size(); i++) {
+    for (unsigned int i = 0; i < assumptions.size(); i++) {
         assert(value(assumptions[i]) != l_False);
         fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
     }
 
-    for (int i = 0; i < clauses.size(); i++)
+    for (unsigned int i = 0; i < clauses.size(); i++)
         toDimacs(f, ca[clauses[i]], map, max);
 
     if (verbosity > 0)
@@ -1639,7 +1636,7 @@ void Solver::relocAll(ClauseAllocator& to) {
 
     // All reasons:
     //
-    for (int i = 0; i < trail.size(); i++) {
+    for (unsigned int i = 0; i < trail.size(); i++) {
         Var v = var(trail[i]);
 
         if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
@@ -1648,15 +1645,15 @@ void Solver::relocAll(ClauseAllocator& to) {
 
     // All learnt:
     //
-    for (int i = 0; i < learnts.size(); i++)
+    for (unsigned int i = 0; i < learnts.size(); i++)
         ca.reloc(learnts[i], to);
 
     // All original:
     //
-    for (int i = 0; i < clauses.size(); i++)
+    for (unsigned int i = 0; i < clauses.size(); i++)
         ca.reloc(clauses[i], to);
 
-    for (int i = 0; i < unaryWatchedClauses.size(); i++)
+    for (unsigned int i = 0; i < unaryWatchedClauses.size(); i++)
         ca.reloc(unaryWatchedClauses[i], to);
 }
 

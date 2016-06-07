@@ -169,7 +169,7 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp)
 
     if (do_simp){
         // Assumptions must be temporarily frozen to run variable elimination:
-        for (int i = 0; i < assumptions.size(); i++){
+        for (unsigned int i = 0; i < assumptions.size(); i++){
             Var v = var(assumptions[i]);
 
             // If an assumption has been eliminated, remember it.
@@ -209,7 +209,7 @@ bool SimpSolver::addClause_(vec<Lit>& ps)
     for (int i = 0; i < ps.size(); i++)
         assert(!isEliminated(var(ps[i])));
 #endif
-    int nclauses = clauses.size();
+    unsigned int nclauses = clauses.size();
 
     if (use_rcheck && implied(ps))
         return true;
@@ -224,7 +224,7 @@ bool SimpSolver::addClause_(vec<Lit>& ps)
     }
 
     if (use_simplification && clauses.size() == nclauses + 1){
-        CRef          cr = clauses.last();
+        CRef          cr = clauses.back();
         const Clause& c  = ca[cr];
 
         // NOTE: the clause is added to the queue immediately and then
@@ -396,7 +396,7 @@ bool SimpSolver::implied(const vec<Lit>& c)
 {
     assert(decisionLevel() == 0);
 
-    trail_lim.push(trail.size());
+    trail_lim.push_back(trail.size());
     for (int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True){
             cancelUntil(0);
@@ -487,7 +487,7 @@ bool SimpSolver::asymm(Var v, CRef cr)
 
     if (c.mark() || satisfied(c)) return true;
 
-    trail_lim.push(trail.size());
+    trail_lim.push_back(trail.size());
     Lit l = lit_Undef;
     for (int i = 0; i < c.size(); i++)
         if (var(c[i]) != v && value(c[i]) != l_False)
@@ -772,11 +772,12 @@ bool SimpSolver::eliminate(bool turn_off_elim)
 void SimpSolver::cleanUpClauses()
 {
     occurs.cleanAll();
-    int i,j;
+    //clauses.erase(remove(clauses.begin(), clauses.end(), [this](CRef cl) { return this->ca[cl].mark(); }), clauses.end());
+    unsigned int i,j;
     for (i = j = 0; i < clauses.size(); i++)
         if (ca[clauses[i]].mark() == 0)
             clauses[j++] = clauses[i];
-    clauses.shrink(i - j);
+    clauses.resize(j);
 }
 
 

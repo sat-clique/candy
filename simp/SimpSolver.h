@@ -96,8 +96,8 @@ class SimpSolver : public Solver {
 
     // Solving:
     //
-    bool    solve       (const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    lbool   solveLimited(const vec<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+    bool    solve       (const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+    lbool   solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
     bool    solve       (                     bool do_simp = true, bool turn_off_simp = false);
     bool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);       
     bool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);
@@ -175,7 +175,7 @@ class SimpSolver : public Solver {
     deque<CRef>         subsumption_queue;
     vec<char>           frozen;
     vec<char>           eliminated;
-    int                 bwdsub_assigns;
+    unsigned int        bwdsub_assigns;
     int                 n_touched;
 
     // Temporaries:
@@ -223,14 +223,19 @@ inline bool SimpSolver::addClause    (Lit p, Lit q, Lit r)   { add_tmp.clear(); 
 inline void SimpSolver::setFrozen    (Var v, bool b) { frozen[v] = (char)b; if (use_simplification && !b) { updateElimHeap(v); } }
 
 inline bool SimpSolver::solve        (                     bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (Lit p       ,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push(p); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push(p); assumptions.push(q); assumptions.push(r); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){ 
-    budgetOff(); assumps.copyTo(assumptions); return solve_(do_simp, turn_off_simp) == l_True; }
+inline bool SimpSolver::solve        (Lit p       ,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); return solve_(do_simp, turn_off_simp) == l_True; }
+inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); return solve_(do_simp, turn_off_simp) == l_True; }
+inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); assumptions.push_back(r); return solve_(do_simp, turn_off_simp) == l_True; }
+inline bool SimpSolver::solve(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
+    budgetOff();
+    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+    return solve_(do_simp, turn_off_simp) == l_True;
+}
 
-inline lbool SimpSolver::solveLimited (const vec<Lit>& assumps, bool do_simp, bool turn_off_simp){ 
-    assumps.copyTo(assumptions); return solve_(do_simp, turn_off_simp); }
+inline lbool SimpSolver::solveLimited(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
+    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+    return solve_(do_simp, turn_off_simp);
+}
 
 //=================================================================================================
 }

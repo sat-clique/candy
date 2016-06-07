@@ -247,7 +247,7 @@ int main(int argc, char** argv)
             exit(0);
         }
 
-        vec<Lit> dummy;
+        vector<Lit> dummy;
         lbool ret = S.solveLimited(dummy);
         
         if (S.verbosity > 0){
