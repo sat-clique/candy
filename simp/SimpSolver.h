@@ -81,12 +81,12 @@ class SimpSolver : public Solver {
     // Problem specification:
     //
     virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    bool    addClause (const vec<Lit>& ps);
+    bool    addClause (const vector<Lit>& ps);
     bool    addEmptyClause();                // Add the empty clause to the solver.
     bool    addClause (Lit p);               // Add a unit clause to the solver.
     bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
     bool    addClause (Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-    virtual bool    addClause_(      vec<Lit>& ps);
+    virtual bool    addClause_(vector<Lit>& ps);
     bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
     // Variable mode:
@@ -189,7 +189,7 @@ class SimpSolver : public Solver {
     bool          asymmVar                 (Var v);
     void          updateElimHeap           (Var v);
     void          gatherTouchedClauses     ();
-    bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, vec<Lit>& out_clause);
+    bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
     bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, int& size);
     bool          backwardSubsumptionCheck (bool verbose = false);
     bool          eliminateVar             (Var v);
@@ -198,7 +198,7 @@ class SimpSolver : public Solver {
     void          removeClause             (CRef cr,bool inPurgatory=false);
     bool          strengthenClause         (CRef cr, Lit l);
     void          cleanUpClauses           ();
-    bool          implied                  (const vec<Lit>& c);
+    bool          implied                  (const vector<Lit>& c);
     virtual void          relocAll                 (ClauseAllocator& to);
 };
 
@@ -215,11 +215,11 @@ inline void SimpSolver::updateElimHeap(Var v) {
         elim_heap.update(v); }
 
 
-inline bool SimpSolver::addClause    (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
+inline bool SimpSolver::addClause    (const vector<Lit>& ps)    { add_tmp.clear(); add_tmp.insert(add_tmp.end(), ps.begin(), ps.end()); return addClause_(add_tmp); }
 inline bool SimpSolver::addEmptyClause()                     { add_tmp.clear(); return addClause_(add_tmp); }
-inline bool SimpSolver::addClause    (Lit p)                 { add_tmp.clear(); add_tmp.push(p); return addClause_(add_tmp); }
-inline bool SimpSolver::addClause    (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); return addClause_(add_tmp); }
-inline bool SimpSolver::addClause    (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push(p); add_tmp.push(q); add_tmp.push(r); return addClause_(add_tmp); }
+inline bool SimpSolver::addClause    (Lit p)                 { add_tmp.clear(); add_tmp.push_back(p); return addClause_(add_tmp); }
+inline bool SimpSolver::addClause    (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push_back(p); add_tmp.push_back(q); return addClause_(add_tmp); }
+inline bool SimpSolver::addClause    (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push_back(p); add_tmp.push_back(q); add_tmp.push_back(r); return addClause_(add_tmp); }
 inline void SimpSolver::setFrozen    (Var v, bool b) { frozen[v] = (char)b; if (use_simplification && !b) { updateElimHeap(v); } }
 
 inline bool SimpSolver::solve        (                     bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); return solve_(do_simp, turn_off_simp) == l_True; }
