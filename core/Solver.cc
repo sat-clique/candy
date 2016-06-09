@@ -96,9 +96,9 @@ static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted me
 
 Solver::Solver() :
 
-// Parameters (user settable):
-//
-verbosity(0)
+    // Parameters (user settable):
+    //
+    verbosity(0)
 , showModel(0)
 , K(opt_K)
 , R(opt_R)
@@ -163,13 +163,13 @@ verbosity(0)
 , nbSatCalls(0)
 , nbUnsatCalls(0)
 {
-    MYFLAG = 0;
-    // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
-    // Kept here for simplicity
-    lbdQueue.initSize(sizeLBDQueue);
-    trailQueue.initSize(sizeTrailQueue);
-    sumLBD = 0;
-    nbclausesbeforereduce = firstReduceDB;
+  MYFLAG = 0;
+  // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
+  // Kept here for simplicity
+  lbdQueue.initSize(sizeLBDQueue);
+  trailQueue.initSize(sizeTrailQueue);
+  sumLBD = 0;
+  nbclausesbeforereduce = firstReduceDB;
 }
 
 //-------------------------------------------------------
@@ -177,7 +177,7 @@ verbosity(0)
 //-------------------------------------------------------
 
 Solver::Solver(const Solver &s) :
-  verbosity(s.verbosity)
+      verbosity(s.verbosity)
 , showModel(s.showModel)
 , K(s.K)
 , R(s.R)
@@ -246,35 +246,35 @@ Solver::Solver(const Solver &s) :
 , nbSatCalls(s.nbSatCalls)
 , nbUnsatCalls(s.nbUnsatCalls)
 {
-    // Copy clauses.
-    s.ca.copyTo(ca);
-    ca.extra_clause_field = s.ca.extra_clause_field;
+  // Copy clauses.
+  s.ca.copyTo(ca);
+  ca.extra_clause_field = s.ca.extra_clause_field;
 
-    // Initialize  other variables
-     MYFLAG = 0;
-    // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
-    // Kept here for simplicity
-    sumLBD = s.sumLBD;
-    nbclausesbeforereduce = s.nbclausesbeforereduce;
-   
-    // Copy all search vectors
-    s.watches.copyTo(watches);
-    s.watchesBin.copyTo(watchesBin);
-    s.unaryWatches.copyTo(unaryWatches);
-    assigns.insert(assigns.end(), s.assigns.begin(), s.assigns.end());
-    vardata.insert(vardata.end(), s.vardata.begin(), s.vardata.end());
-    activity.insert(activity.end(), s.activity.begin(), s.activity.end());
-    s.seen.memCopyTo(seen);
-    s.permDiff.memCopyTo(permDiff);
-    polarity.insert(polarity.end(), s.polarity.begin(), s.polarity.end());
-    decision.insert(decision.end(), s.decision.begin(), s.decision.end());
-    trail.insert(trail.end(), s.trail.begin(), s.trail.end());
-    s.order_heap.copyTo(order_heap);
-    clauses.insert(clauses.end(), s.clauses.begin(), s.clauses.end());
-    learnts.insert(learnts.end(), s.learnts.begin(), s.learnts.end());
+  // Initialize  other variables
+  MYFLAG = 0;
+  // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
+  // Kept here for simplicity
+  sumLBD = s.sumLBD;
+  nbclausesbeforereduce = s.nbclausesbeforereduce;
 
-    s.lbdQueue.copyTo(lbdQueue);
-    s.trailQueue.copyTo(trailQueue);
+  // Copy all search vectors
+  s.watches.copyTo(watches);
+  s.watchesBin.copyTo(watchesBin);
+  s.unaryWatches.copyTo(unaryWatches);
+  assigns.insert(assigns.end(), s.assigns.begin(), s.assigns.end());
+  vardata.insert(vardata.end(), s.vardata.begin(), s.vardata.end());
+  activity.insert(activity.end(), s.activity.begin(), s.activity.end());
+  seen.insert(seen.end(), s.seen.begin(), s.seen.end());
+  permDiff.insert(permDiff.end(), s.permDiff.begin(), s.permDiff.end());
+  polarity.insert(polarity.end(), s.polarity.begin(), s.polarity.end());
+  decision.insert(decision.end(), s.decision.begin(), s.decision.end());
+  trail.insert(trail.end(), s.trail.begin(), s.trail.end());
+  s.order_heap.copyTo(order_heap);
+  clauses.insert(clauses.end(), s.clauses.begin(), s.clauses.end());
+  learnts.insert(learnts.end(), s.learnts.begin(), s.learnts.end());
+
+  s.lbdQueue.copyTo(lbdQueue);
+  s.trailQueue.copyTo(trailQueue);
 
 }
 
@@ -283,7 +283,7 @@ Solver::~Solver() {
 
 /****************************************************************
  Set the incremental mode
-****************************************************************/
+ ****************************************************************/
 
 // This function set the incremental mode to true.
 // You can add special code for this mode here.
@@ -311,172 +311,172 @@ bool Solver::isIncremental() {
 //
 
 Var Solver::newVar(bool sign, bool dvar) {
-    int v = nVars();
-    watches .init(mkLit(v, false));
-    watches .init(mkLit(v, true));
-    watchesBin .init(mkLit(v, false));
-    watchesBin .init(mkLit(v, true));
-    unaryWatches .init(mkLit(v, false));
-    unaryWatches .init(mkLit(v, true));
-    assigns.push_back(l_Undef);
-    vardata.push_back(mkVarData(CRef_Undef, 0));
-    activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
-    seen .push(0);
-    permDiff.push(0);
-    polarity.push_back(sign);
-    decision.push_back(0);
-    trail.reserve(v + 1);
-    setDecisionVar(v, dvar);
-    return v;
+  int v = nVars();
+  watches .init(mkLit(v, false));
+  watches .init(mkLit(v, true));
+  watchesBin .init(mkLit(v, false));
+  watchesBin .init(mkLit(v, true));
+  unaryWatches .init(mkLit(v, false));
+  unaryWatches .init(mkLit(v, true));
+  assigns.push_back(l_Undef);
+  vardata.push_back(mkVarData(CRef_Undef, 0));
+  activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+  seen.push_back(0);
+  permDiff.push_back(0);
+  polarity.push_back(sign);
+  decision.push_back(0);
+  trail.reserve(v + 1);
+  setDecisionVar(v, dvar);
+  return v;
 }
 
-bool Solver::addClause_(vec<Lit>& ps) {
+bool Solver::addClause_(vector<Lit>& ps) {
 
-    assert(decisionLevel() == 0);
-    if (!ok) return false;
+  assert(decisionLevel() == 0);
+  if (!ok) return false;
 
-    // Check if clause is satisfied and remove false/duplicate literals:
-    std::sort(ps.begin(), ps.end());
+  // Check if clause is satisfied and remove false/duplicate literals:
+  std::sort(ps.begin(), ps.end());
 
-    vec<Lit> oc;
-    oc.clear();
+  vector<Lit> oc;
+  oc.clear();
 
-    Lit p;
-    int i, j, flag = 0;
-    if (certifiedUNSAT) {
-        for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
-            oc.push(ps[i]);
-            if (value(ps[i]) == l_True || ps[i] == ~p || value(ps[i]) == l_False)
-                flag = 1;
-        }
+  Lit p;
+  unsigned int i, j, flag = 0;
+  if (certifiedUNSAT) {
+    for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
+      oc.push_back(ps[i]);
+      if (value(ps[i]) == l_True || ps[i] == ~p || value(ps[i]) == l_False)
+        flag = 1;
     }
+  }
 
+  for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
+    if (value(ps[i]) == l_True || ps[i] == ~p)
+      return true;
+    else if (value(ps[i]) != l_False && ps[i] != p)
+      ps[j++] = p = ps[i];
+  ps.resize(j);
+
+  if (flag && (certifiedUNSAT)) {
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
-        if (value(ps[i]) == l_True || ps[i] == ~p)
-            return true;
-        else if (value(ps[i]) != l_False && ps[i] != p)
-            ps[j++] = p = ps[i];
-    ps.shrink(i - j);
+      fprintf(certifiedOutput, "%i ", (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1));
+    fprintf(certifiedOutput, "0\n");
 
-    if (flag && (certifiedUNSAT)) {
-        for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
-            fprintf(certifiedOutput, "%i ", (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1));
-        fprintf(certifiedOutput, "0\n");
-
-        fprintf(certifiedOutput, "d ");
-        for (i = j = 0, p = lit_Undef; i < oc.size(); i++)
-            fprintf(certifiedOutput, "%i ", (var(oc[i]) + 1) * (-2 * sign(oc[i]) + 1));
-        fprintf(certifiedOutput, "0\n");
-    }
+    fprintf(certifiedOutput, "d ");
+    for (i = j = 0, p = lit_Undef; i < oc.size(); i++)
+      fprintf(certifiedOutput, "%i ", (var(oc[i]) + 1) * (-2 * sign(oc[i]) + 1));
+    fprintf(certifiedOutput, "0\n");
+  }
 
 
-    if (ps.size() == 0)
-        return ok = false;
-    else if (ps.size() == 1) {
-        uncheckedEnqueue(ps[0]);
-        return ok = (propagate() == CRef_Undef);
-    } else {
-        CRef cr = ca.alloc(ps, false);
-        clauses.push_back(cr);
-        attachClause(cr);
-    }
+  if (ps.size() == 0)
+    return ok = false;
+  else if (ps.size() == 1) {
+    uncheckedEnqueue(ps[0]);
+    return ok = (propagate() == CRef_Undef);
+  } else {
+    CRef cr = ca.alloc(ps, false);
+    clauses.push_back(cr);
+    attachClause(cr);
+  }
 
-    return true;
+  return true;
 }
 
 void Solver::attachClause(CRef cr) {
-    const Clause& c = ca[cr];
+  const Clause& c = ca[cr];
 
-    assert(c.size() > 1);
-    if (c.size() == 2) {
-        watchesBin[~c[0]].push(Watcher(cr, c[1]));
-        watchesBin[~c[1]].push(Watcher(cr, c[0]));
-    } else {
-        watches[~c[0]].push(Watcher(cr, c[1]));
-        watches[~c[1]].push(Watcher(cr, c[0]));
-    }
-    if (c.learnt()) learnts_literals += c.size();
-    else clauses_literals += c.size();
+  assert(c.size() > 1);
+  if (c.size() == 2) {
+    watchesBin[~c[0]].push(Watcher(cr, c[1]));
+    watchesBin[~c[1]].push(Watcher(cr, c[0]));
+  } else {
+    watches[~c[0]].push(Watcher(cr, c[1]));
+    watches[~c[1]].push(Watcher(cr, c[0]));
+  }
+  if (c.learnt()) learnts_literals += c.size();
+  else clauses_literals += c.size();
 }
 
 void Solver::attachClausePurgatory(CRef cr) {
-    const Clause& c = ca[cr];
+  const Clause& c = ca[cr];
 
-    assert(c.size() > 1);
-    unaryWatches[~c[0]].push(Watcher(cr, c[1]));
+  assert(c.size() > 1);
+  unaryWatches[~c[0]].push(Watcher(cr, c[1]));
 
 }
 
 void Solver::detachClause(CRef cr, bool strict) {
-    const Clause& c = ca[cr];
+  const Clause& c = ca[cr];
 
-    assert(c.size() > 1);
-    if (c.size() == 2) {
-        if (strict) {
-            remove(watchesBin[~c[0]], Watcher(cr, c[1]));
-            remove(watchesBin[~c[1]], Watcher(cr, c[0]));
-        } else {
-            // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
-            watchesBin.smudge(~c[0]);
-            watchesBin.smudge(~c[1]);
-        }
+  assert(c.size() > 1);
+  if (c.size() == 2) {
+    if (strict) {
+      remove(watchesBin[~c[0]], Watcher(cr, c[1]));
+      remove(watchesBin[~c[1]], Watcher(cr, c[0]));
     } else {
-        if (strict) {
-            remove(watches[~c[0]], Watcher(cr, c[1]));
-            remove(watches[~c[1]], Watcher(cr, c[0]));
-        } else {
-            // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
-            watches.smudge(~c[0]);
-            watches.smudge(~c[1]);
-        }
+      // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
+      watchesBin.smudge(~c[0]);
+      watchesBin.smudge(~c[1]);
     }
-    if (c.learnt()) learnts_literals -= c.size();
-    else clauses_literals -= c.size();
+  } else {
+    if (strict) {
+      remove(watches[~c[0]], Watcher(cr, c[1]));
+      remove(watches[~c[1]], Watcher(cr, c[0]));
+    } else {
+      // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
+      watches.smudge(~c[0]);
+      watches.smudge(~c[1]);
+    }
+  }
+  if (c.learnt()) learnts_literals -= c.size();
+  else clauses_literals -= c.size();
 }
 
 
 // The purgatory is the 1-Watched scheme for imported clauses
 
 void Solver::detachClausePurgatory(CRef cr, bool strict) {
-    const Clause& c = ca[cr];
+  const Clause& c = ca[cr];
 
-    assert(c.size() > 1);
-    if (strict)
-        remove(unaryWatches[~c[0]], Watcher(cr, c[1]));
-    else
-        unaryWatches.smudge(~c[0]);
+  assert(c.size() > 1);
+  if (strict)
+    remove(unaryWatches[~c[0]], Watcher(cr, c[1]));
+  else
+    unaryWatches.smudge(~c[0]);
 }
 
 void Solver::removeClause(CRef cr, bool inPurgatory) {
 
-    Clause& c = ca[cr];
+  Clause& c = ca[cr];
 
-    if (certifiedUNSAT) {
-        fprintf(certifiedOutput, "d ");
-        for (int i = 0; i < c.size(); i++)
-            fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
-        fprintf(certifiedOutput, "0\n");
-    }
+  if (certifiedUNSAT) {
+    fprintf(certifiedOutput, "d ");
+    for (int i = 0; i < c.size(); i++)
+      fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
+    fprintf(certifiedOutput, "0\n");
+  }
 
-    if (inPurgatory)
-        detachClausePurgatory(cr);
-    else
-        detachClause(cr);
-    // Don't leave pointers to free'd memory!
-    if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
-    c.mark(1);
-    ca.free(cr);
+  if (inPurgatory)
+    detachClausePurgatory(cr);
+  else
+    detachClause(cr);
+  // Don't leave pointers to free'd memory!
+  if (locked(c)) vardata[var(c[0])].reason = CRef_Undef;
+  c.mark(1);
+  ca.free(cr);
 }
 
 bool Solver::satisfied(const Clause& c) const {
-    if(incremental)     
-        return (value(c[0]) == l_True) || (value(c[1]) == l_True);
-    
-    // Default mode
-    for (int i = 0; i < c.size(); i++)
-        if (value(c[i]) == l_True)
-            return true;
-    return false;
+  if(incremental)
+    return (value(c[0]) == l_True) || (value(c[1]) == l_True);
+
+  // Default mode
+  for (int i = 0; i < c.size(); i++)
+    if (value(c[i]) == l_True)
+      return true;
+  return false;
 }
 
 /************************************************************
@@ -496,16 +496,16 @@ inline unsigned int Solver::computeLBD(const vec<Lit> & lits,int end) {
       nbDone++;
       int l = level(var(lits[i]));
       if (permDiff[l] != MYFLAG) {
-	permDiff[l] = MYFLAG;
-	nblevels++;
+        permDiff[l] = MYFLAG;
+        nblevels++;
       }
     }
   } else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
     for(int i=0;i<lits.size();i++) {
       int l = level(var(lits[i]));
       if (permDiff[l] != MYFLAG) {
-	permDiff[l] = MYFLAG;
-	nblevels++;
+        permDiff[l] = MYFLAG;
+        nblevels++;
       }
     }
   }
@@ -513,7 +513,7 @@ inline unsigned int Solver::computeLBD(const vec<Lit> & lits,int end) {
   if (!reduceOnSize)
     return nblevels;
   if (lits.size() < reduceOnSizeSize) return lits.size(); // See the XMinisat paper
-    return lits.size() + nblevels;
+  return lits.size() + nblevels;
 }
 
 inline unsigned int Solver::computeLBD(const Clause &c) {
@@ -521,31 +521,31 @@ inline unsigned int Solver::computeLBD(const Clause &c) {
   MYFLAG++;
 
   if(incremental) { // ----------------- INCREMENTAL MODE
-     unsigned int nbDone = 0;
+    unsigned int nbDone = 0;
     for(int i=0;i<c.size();i++) {
       if(nbDone>=c.sizeWithoutSelectors()) break;
       if(isSelector(var(c[i]))) continue;
       nbDone++;
       int l = level(var(c[i]));
       if (permDiff[l] != MYFLAG) {
-	permDiff[l] = MYFLAG;
-	nblevels++;
+        permDiff[l] = MYFLAG;
+        nblevels++;
       }
     }
   } else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
     for(int i=0;i<c.size();i++) {
       int l = level(var(c[i]));
       if (permDiff[l] != MYFLAG) {
-	permDiff[l] = MYFLAG;
-	nblevels++;
+        permDiff[l] = MYFLAG;
+        nblevels++;
       }
     }
   }
-  
+
   if (!reduceOnSize)
     return nblevels;
   if (c.size() < reduceOnSizeSize) return c.size(); // See the XMinisat paper
-    return c.size() + nblevels;
+  return c.size() + nblevels;
 
 }
 
@@ -554,62 +554,62 @@ inline unsigned int Solver::computeLBD(const Clause &c) {
  ******************************************************************/
 void Solver::minimisationWithBinaryResolution(vec<Lit> &out_learnt) {
 
-    // Find the LBD measure                                                                                                         
-    unsigned int lbd = computeLBD(out_learnt);
-    Lit p = ~out_learnt[0];
+  // Find the LBD measure
+  unsigned int lbd = computeLBD(out_learnt);
+  Lit p = ~out_learnt[0];
 
-    if (lbd <= lbLBDMinimizingClause) {
-        MYFLAG++;
+  if (lbd <= lbLBDMinimizingClause) {
+    MYFLAG++;
 
-        for (int i = 1; i < out_learnt.size(); i++) {
-            permDiff[var(out_learnt[i])] = MYFLAG;
-        }
-
-        vec<Watcher>& wbin = watchesBin[p];
-        int nb = 0;
-        for (int k = 0; k < wbin.size(); k++) {
-            Lit imp = wbin[k].blocker;
-            if (permDiff[var(imp)] == MYFLAG && value(imp) == l_True) {
-                nb++;
-                permDiff[var(imp)] = MYFLAG - 1;
-            }
-        }
-        int l = out_learnt.size() - 1;
-        if (nb > 0) {
-            nbReducedClauses++;
-            for (int i = 1; i < out_learnt.size() - nb; i++) {
-                if (permDiff[var(out_learnt[i])] != MYFLAG) {
-                    Lit p = out_learnt[l];
-                    out_learnt[l] = out_learnt[i];
-                    out_learnt[i] = p;
-                    l--;
-                    i--;
-                }
-            }
-
-            out_learnt.shrink(nb);
-
-        }
+    for (int i = 1; i < out_learnt.size(); i++) {
+      permDiff[var(out_learnt[i])] = MYFLAG;
     }
+
+    vec<Watcher>& wbin = watchesBin[p];
+    int nb = 0;
+    for (int k = 0; k < wbin.size(); k++) {
+      Lit imp = wbin[k].blocker;
+      if (permDiff[var(imp)] == MYFLAG && value(imp) == l_True) {
+        nb++;
+        permDiff[var(imp)] = MYFLAG - 1;
+      }
+    }
+    int l = out_learnt.size() - 1;
+    if (nb > 0) {
+      nbReducedClauses++;
+      for (int i = 1; i < out_learnt.size() - nb; i++) {
+        if (permDiff[var(out_learnt[i])] != MYFLAG) {
+          Lit p = out_learnt[l];
+          out_learnt[l] = out_learnt[i];
+          out_learnt[i] = p;
+          l--;
+          i--;
+        }
+      }
+
+      out_learnt.shrink(nb);
+
+    }
+  }
 }
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
 
 void Solver::cancelUntil(int level) {
-    if (decisionLevel() > level) {
-        for (int c = trail.size() - 1; c >= trail_lim[level]; c--) {
-            Var x = var(trail[c]);
-            assigns[x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.back())) {
-                polarity[x] = sign(trail[c]);
-            }
-            insertVarOrder(x);
-        }
-        qhead = trail_lim[level];
-        trail.resize(trail_lim[level]);
-        trail_lim.resize(level);
+  if (decisionLevel() > level) {
+    for (int c = trail.size() - 1; c >= trail_lim[level]; c--) {
+      Var x = var(trail[c]);
+      assigns[x] = l_Undef;
+      if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.back())) {
+        polarity[x] = sign(trail[c]);
+      }
+      insertVarOrder(x);
     }
+    qhead = trail_lim[level];
+    trail.resize(trail_lim[level]);
+    trail_lim.resize(level);
+  }
 }
 
 
@@ -617,25 +617,25 @@ void Solver::cancelUntil(int level) {
 // Major methods:
 
 Lit Solver::pickBranchLit() {
-    Var next = var_Undef;
+  Var next = var_Undef;
 
-    // Random decision:
-    if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
-        next = order_heap[irand(random_seed, order_heap.size())];
-        if (value(next) == l_Undef && decision[next])
-            rnd_decisions++;
+  // Random decision:
+  if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
+    next = order_heap[irand(random_seed, order_heap.size())];
+    if (value(next) == l_Undef && decision[next])
+      rnd_decisions++;
+  }
+
+  // Activity based decision:
+  while (next == var_Undef || value(next) != l_Undef || !decision[next])
+    if (order_heap.empty()) {
+      next = var_Undef;
+      break;
+    } else {
+      next = order_heap.removeMin();
     }
 
-    // Activity based decision:
-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
-        if (order_heap.empty()) {
-            next = var_Undef;
-            break;
-        } else {
-            next = order_heap.removeMin();
-        }
-
-    return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
+  return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
 }
 
 /*_________________________________________________________________________________________________
@@ -656,175 +656,176 @@ Lit Solver::pickBranchLit() {
 |  
 |________________________________________________________________________________________________@*/
 void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& out_btlevel,unsigned int &lbd,unsigned int &szWithoutSelectors) {
-    int pathC = 0;
-    Lit p = lit_Undef;
+  int pathC = 0;
+  Lit p = lit_Undef;
 
 
-    // Generate conflict clause:
-    //
-    out_learnt.push(); // (leave room for the asserting literal)
-    int index = trail.size() - 1;
-    do {
-        assert(confl != CRef_Undef); // (otherwise should be UIP)
-        Clause& c = ca[confl];
-        // Special case for binary clauses
-        // The first one has to be SAT
-        if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
+  // Generate conflict clause:
+  //
+  out_learnt.push(); // (leave room for the asserting literal)
+  int index = trail.size() - 1;
+  do {
+    assert(confl != CRef_Undef); // (otherwise should be UIP)
+    Clause& c = ca[confl];
+    // Special case for binary clauses
+    // The first one has to be SAT
+    if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
 
-            assert(value(c[1]) == l_True);
-            Lit tmp = c[0];
-            c[0] = c[1], c[1] = tmp;
+      assert(value(c[1]) == l_True);
+      Lit tmp = c[0];
+      c[0] = c[1], c[1] = tmp;
+    }
+
+    if (c.learnt()) {
+      parallelImportClauseDuringConflictAnalysis(c,confl);
+      claBumpActivity(c);
+    } else { // original clause
+      if (!c.getSeen()) {
+        originalClausesSeen++;
+        c.setSeen(true);
+      }
+    }
+
+    // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
+    if (c.learnt() && c.lbd() > 2) {
+      unsigned int nblevels = computeLBD(c);
+      if (nblevels + 1 < c.lbd()) { // improve the LBD
+        if (c.lbd() <= lbLBDFrozenClause) {
+          c.setCanBeDel(false);
         }
+        // seems to be interesting : keep it for the next round
+        c.setLBD(nblevels); // Update it
+      }
+    }
 
-        if (c.learnt()) {
-            parallelImportClauseDuringConflictAnalysis(c,confl);
-            claBumpActivity(c);
-         } else { // original clause
-            if (!c.getSeen()) {
-                originalClausesSeen++;
-                c.setSeen(true);
-            }
+
+    for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+      Lit q = c[j];
+
+      if (!seen[var(q)]) {
+        if (level(var(q)) == 0) {
+        } else { // Here, the old case
+          if(!isSelector(var(q)))
+            varBumpActivity(var(q));
+          seen[var(q)] = 1;
+          if (level(var(q)) >= decisionLevel()) {
+            pathC++;
+            // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+            if (!isSelector(var(q)) &&  (reason(var(q)) != CRef_Undef) && ca[reason(var(q))].learnt())
+              lastDecisionLevel.push_back(q);
+          } else {
+            if(isSelector(var(q))) {
+              assert(value(q) == l_False);
+              selectors.push(q);
+            } else
+              out_learnt.push(q);
+          }
         }
+      }
+    }
 
-        // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.learnt() && c.lbd() > 2) {
-            unsigned int nblevels = computeLBD(c);
-            if (nblevels + 1 < c.lbd()) { // improve the LBD
-                if (c.lbd() <= lbLBDFrozenClause) {
-                    c.setCanBeDel(false);
-                }
-                // seems to be interesting : keep it for the next round
-                c.setLBD(nblevels); // Update it
-            }
-        }
+    // Select next clause to look at:
+    while (!seen[var(trail[index--])]);
+    p = trail[index + 1];
+    confl = reason(var(p));
+    seen[var(p)] = 0;
+    pathC--;
 
+  } while (pathC > 0);
+  out_learnt[0] = ~p;
 
-        for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
-            Lit q = c[j];
+  // Simplify conflict clause:
+  //
+  int i, j;
 
-            if (!seen[var(q)]) {
-                if (level(var(q)) == 0) {
-                } else { // Here, the old case 
-                    if(!isSelector(var(q)))
-                        varBumpActivity(var(q));
-                    seen[var(q)] = 1;
-                    if (level(var(q)) >= decisionLevel()) {
-                        pathC++;
-                        // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                        if (!isSelector(var(q)) &&  (reason(var(q)) != CRef_Undef) && ca[reason(var(q))].learnt())
-                            lastDecisionLevel.push(q);
-                    } else {
-                        if(isSelector(var(q))) {
-                            assert(value(q) == l_False);
-                            selectors.push(q);
-                        } else 
-                            out_learnt.push(q);
-                   }
-                }
-            }
-        }
+  for (int i = 0; i < selectors.size(); i++)
+    out_learnt.push(selectors[i]);
 
-        // Select next clause to look at:
-        while (!seen[var(trail[index--])]);
-        p = trail[index + 1];
-        confl = reason(var(p));
-        seen[var(p)] = 0;
-        pathC--;
+  analyze_toclear.clear();
+  analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
+  if (ccmin_mode == 2) {
+    uint32_t abstract_level = 0;
+    for (i = 1; i < out_learnt.size(); i++)
+      abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
 
-    } while (pathC > 0);
-    out_learnt[0] = ~p;
+    for (i = j = 1; i < out_learnt.size(); i++)
+      if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
+        out_learnt[j++] = out_learnt[i];
 
-    // Simplify conflict clause:
-    //
-    int i, j;
+  } else if (ccmin_mode == 1) {
+    for (i = j = 1; i < out_learnt.size(); i++) {
+      Var x = var(out_learnt[i]);
 
-    for (int i = 0; i < selectors.size(); i++)
-        out_learnt.push(selectors[i]);
+      if (reason(x) == CRef_Undef)
+        out_learnt[j++] = out_learnt[i];
+      else {
+        Clause& c = ca[reason(var(out_learnt[i]))];
+        // Thanks to Siert Wieringa for this bug fix!
+        for (int k = ((c.size() == 2) ? 0 : 1); k < c.size(); k++)
+          if (!seen[var(c[k])] && level(var(c[k])) > 0) {
+            out_learnt[j++] = out_learnt[i];
+            break;
+          }
+      }
+    }
+  } else
+    i = j = out_learnt.size();
 
-    out_learnt.copyTo(analyze_toclear);
-    if (ccmin_mode == 2) {
-        uint32_t abstract_level = 0;
-        for (i = 1; i < out_learnt.size(); i++)
-            abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
-
-        for (i = j = 1; i < out_learnt.size(); i++)
-            if (reason(var(out_learnt[i])) == CRef_Undef || !litRedundant(out_learnt[i], abstract_level))
-                out_learnt[j++] = out_learnt[i];
-
-    } else if (ccmin_mode == 1) {
-        for (i = j = 1; i < out_learnt.size(); i++) {
-            Var x = var(out_learnt[i]);
-
-            if (reason(x) == CRef_Undef)
-                out_learnt[j++] = out_learnt[i];
-            else {
-                Clause& c = ca[reason(var(out_learnt[i]))];
-                // Thanks to Siert Wieringa for this bug fix!
-                for (int k = ((c.size() == 2) ? 0 : 1); k < c.size(); k++)
-                    if (!seen[var(c[k])] && level(var(c[k])) > 0) {
-                        out_learnt[j++] = out_learnt[i];
-                        break;
-                    }
-            }
-        }
-    } else
-        i = j = out_learnt.size();
-
-    max_literals += out_learnt.size();
-    out_learnt.shrink(i - j);
-    tot_literals += out_learnt.size();
+  max_literals += out_learnt.size();
+  out_learnt.shrink(i - j);
+  tot_literals += out_learnt.size();
 
 
-    /* ***************************************
+  /* ***************************************
       Minimisation with binary clauses of the asserting clause
       First of all : we look for small clauses
       Then, we reduce clauses with small LBD.
       Otherwise, this can be useless
-     */
-    if (!incremental && out_learnt.size() <= lbSizeMinimizingClause) {
-        minimisationWithBinaryResolution(out_learnt);
+   */
+  if (!incremental && out_learnt.size() <= lbSizeMinimizingClause) {
+    minimisationWithBinaryResolution(out_learnt);
+  }
+  // Find correct backtrack level:
+  //
+  if (out_learnt.size() == 1)
+    out_btlevel = 0;
+  else {
+    int max_i = 1;
+    // Find the first literal assigned at the next-highest level:
+    for (int i = 2; i < out_learnt.size(); i++)
+      if (level(var(out_learnt[i])) > level(var(out_learnt[max_i])))
+        max_i = i;
+    // Swap-in this literal at index 1:
+    Lit p = out_learnt[max_i];
+    out_learnt[max_i] = out_learnt[1];
+    out_learnt[1] = p;
+    out_btlevel = level(var(p));
+  }
+  if(incremental) {
+    szWithoutSelectors = 0;
+    for(int i=0;i<out_learnt.size();i++) {
+      if(!isSelector(var((out_learnt[i])))) szWithoutSelectors++;
+      else if(i>0) break;
     }
-    // Find correct backtrack level:
-    //
-    if (out_learnt.size() == 1)
-        out_btlevel = 0;
-    else {
-        int max_i = 1;
-        // Find the first literal assigned at the next-highest level:
-        for (int i = 2; i < out_learnt.size(); i++)
-            if (level(var(out_learnt[i])) > level(var(out_learnt[max_i])))
-                max_i = i;
-        // Swap-in this literal at index 1:
-        Lit p = out_learnt[max_i];
-        out_learnt[max_i] = out_learnt[1];
-        out_learnt[1] = p;
-        out_btlevel = level(var(p));
+  } else
+    szWithoutSelectors = out_learnt.size();
+
+  // Compute LBD
+  lbd = computeLBD(out_learnt,out_learnt.size()-selectors.size());
+
+  // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+  if (lastDecisionLevel.size() > 0) {
+    for (unsigned int i = 0; i < lastDecisionLevel.size(); i++) {
+      if (ca[reason(var(lastDecisionLevel[i]))].lbd() < lbd)
+        varBumpActivity(var(lastDecisionLevel[i]));
     }
-   if(incremental) {
-      szWithoutSelectors = 0;
-      for(int i=0;i<out_learnt.size();i++) {
-	if(!isSelector(var((out_learnt[i])))) szWithoutSelectors++; 
-	else if(i>0) break;
-      }
-    } else 
-      szWithoutSelectors = out_learnt.size();
-    
-    // Compute LBD
-    lbd = computeLBD(out_learnt,out_learnt.size()-selectors.size());
-     
-    // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-    if (lastDecisionLevel.size() > 0) {
-        for (int i = 0; i < lastDecisionLevel.size(); i++) {
-            if (ca[reason(var(lastDecisionLevel[i]))].lbd() < lbd)
-                varBumpActivity(var(lastDecisionLevel[i]));
-        }
-        lastDecisionLevel.clear();
-    }
+    lastDecisionLevel.clear();
+  }
 
 
 
-    for (int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0; // ('seen[]' is now cleared)
-    for (int j = 0; j < selectors.size(); j++) seen[var(selectors[j])] = 0;
+  for (unsigned int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0; // ('seen[]' is now cleared)
+  for (int j = 0; j < selectors.size(); j++) seen[var(selectors[j])] = 0;
 }
 
 
@@ -832,39 +833,39 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
 // visiting literals at levels that cannot be removed later.
 
 bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
-    analyze_stack.clear();
-    analyze_stack.push(p);
-    int top = analyze_toclear.size();
-    while (analyze_stack.size() > 0) {
-        assert(reason(var(analyze_stack.last())) != CRef_Undef);
-        Clause& c = ca[reason(var(analyze_stack.last()))];
-        analyze_stack.pop(); // 
-        if (c.size() == 2 && value(c[0]) == l_False) {
-            assert(value(c[1]) == l_True);
-            Lit tmp = c[0];
-            c[0] = c[1], c[1] = tmp;
-        }
-
-        for (int i = 1; i < c.size(); i++) {
-            Lit p = c[i];
-            if (!seen[var(p)]) {
-                if (level(var(p)) > 0) {
-                    if (reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0) {
-                        seen[var(p)] = 1;
-                        analyze_stack.push(p);
-                        analyze_toclear.push(p);
-                    } else {
-                        for (int j = top; j < analyze_toclear.size(); j++)
-                            seen[var(analyze_toclear[j])] = 0;
-                        analyze_toclear.shrink(analyze_toclear.size() - top);
-                        return false;
-                    }
-                }
-            }
-        }
+  analyze_stack.clear();
+  analyze_stack.push_back(p);
+  int top = analyze_toclear.size();
+  while (analyze_stack.size() > 0) {
+    assert(reason(var(analyze_stack.back())) != CRef_Undef);
+    Clause& c = ca[reason(var(analyze_stack.back()))];
+    analyze_stack.pop_back(); //
+    if (c.size() == 2 && value(c[0]) == l_False) {
+      assert(value(c[1]) == l_True);
+      Lit tmp = c[0];
+      c[0] = c[1], c[1] = tmp;
     }
 
-    return true;
+    for (int i = 1; i < c.size(); i++) {
+      Lit p = c[i];
+      if (!seen[var(p)]) {
+        if (level(var(p)) > 0) {
+          if (reason(var(p)) != CRef_Undef && (abstractLevel(var(p)) & abstract_levels) != 0) {
+            seen[var(p)] = 1;
+            analyze_stack.push_back(p);
+            analyze_toclear.push_back(p);
+          } else {
+            for (unsigned int j = top; j < analyze_toclear.size(); j++)
+              seen[var(analyze_toclear[j])] = 0;
+            analyze_toclear.resize(top);
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  return true;
 }
 
 
@@ -878,42 +879,42 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
 |    stores the result in 'out_conflict'.
 |________________________________________________________________________________________________@*/
 void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
-    out_conflict.clear();
-    out_conflict.push(p);
+  out_conflict.clear();
+  out_conflict.push(p);
 
-    if (decisionLevel() == 0)
-        return;
+  if (decisionLevel() == 0)
+    return;
 
-    seen[var(p)] = 1;
+  seen[var(p)] = 1;
 
-    for (int i = trail.size() - 1; i >= trail_lim[0]; i--) {
-        Var x = var(trail[i]);
-        if (seen[x]) {
-            if (reason(x) == CRef_Undef) {
-                assert(level(x) > 0);
-                out_conflict.push(~trail[i]);
-            } else {
-                Clause& c = ca[reason(x)];
-                //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop 
-                // Bug in case of assumptions due to special data structures for Binary.
-                // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
-                for (int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
-                    if (level(var(c[j])) > 0)
-                        seen[var(c[j])] = 1;
-            }
+  for (int i = trail.size() - 1; i >= trail_lim[0]; i--) {
+    Var x = var(trail[i]);
+    if (seen[x]) {
+      if (reason(x) == CRef_Undef) {
+        assert(level(x) > 0);
+        out_conflict.push(~trail[i]);
+      } else {
+        Clause& c = ca[reason(x)];
+        //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
+        // Bug in case of assumptions due to special data structures for Binary.
+        // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
+        for (int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
+          if (level(var(c[j])) > 0)
+            seen[var(c[j])] = 1;
+      }
 
-            seen[x] = 0;
-        }
+      seen[x] = 0;
     }
+  }
 
-    seen[var(p)] = 0;
+  seen[var(p)] = 0;
 }
 
 void Solver::uncheckedEnqueue(Lit p, CRef from) {
-    assert(value(p) == l_Undef);
-    assigns[var(p)] = lbool(!sign(p));
-    vardata[var(p)] = mkVarData(from, decisionLevel());
-    trail.push_back(p);
+  assert(value(p) == l_Undef);
+  assigns[var(p)] = lbool(!sign(p));
+  vardata[var(p)] = mkVarData(from, decisionLevel());
+  trail.push_back(p);
 }
 
 /*_________________________________________________________________________________________________
@@ -928,125 +929,125 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 |      * the propagation queue is empty, even if there was a conflict.
 |________________________________________________________________________________________________@*/
 CRef Solver::propagate() {
-    CRef confl = CRef_Undef;
-    int num_props = 0;
-    watches.cleanAll();
-    watchesBin.cleanAll();
-    unaryWatches.cleanAll();
-    while (qhead < trail.size()) {
-        Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
-        vec<Watcher>& ws = watches[p];
-        Watcher *i, *j, *end;
-        num_props++;
+  CRef confl = CRef_Undef;
+  int num_props = 0;
+  watches.cleanAll();
+  watchesBin.cleanAll();
+  unaryWatches.cleanAll();
+  while (qhead < trail.size()) {
+    Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
+    vec<Watcher>& ws = watches[p];
+    Watcher *i, *j, *end;
+    num_props++;
 
 
-        // First, Propagate binary clauses 
-        vec<Watcher>& wbin = watchesBin[p];
+    // First, Propagate binary clauses
+    vec<Watcher>& wbin = watchesBin[p];
 
-        for (int k = 0; k < wbin.size(); k++) {
+    for (int k = 0; k < wbin.size(); k++) {
 
-            Lit imp = wbin[k].blocker;
+      Lit imp = wbin[k].blocker;
 
-            if (value(imp) == l_False) {
-                return wbin[k].cref;
-            }
+      if (value(imp) == l_False) {
+        return wbin[k].cref;
+      }
 
-            if (value(imp) == l_Undef) {
-                uncheckedEnqueue(imp, wbin[k].cref);
-            }
-        }
-
-        // Now propagate other 2-watched clauses
-        for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
-            // Try to avoid inspecting the clause:
-            Lit blocker = i->blocker;
-            if (value(blocker) == l_True) {
-                *j++ = *i++;
-                continue;
-            }
-
-            // Make sure the false literal is data[1]:
-            CRef cr = i->cref;
-            Clause& c = ca[cr];
-            assert(!c.getOneWatched());
-            Lit false_lit = ~p;
-            if (c[0] == false_lit)
-                c[0] = c[1], c[1] = false_lit;
-            assert(c[1] == false_lit);
-            i++;
-
-            // If 0th watch is true, then clause is already satisfied.
-            Lit first = c[0];
-            Watcher w = Watcher(cr, first);
-            if (first != blocker && value(first) == l_True) {
-
-                *j++ = w;
-                continue;
-            }
-	    if(incremental) { // ----------------- INCREMENTAL MODE
-	      int choosenPos = -1;
-	      for (int k = 2; k < c.size(); k++) {
-		
-		if (value(c[k]) != l_False){
-		  if(decisionLevel()>(int)assumptions.size()) {
-		    choosenPos = k;
-		    break;
-		  } else {
-		    choosenPos = k;
-		    
-		    if(value(c[k])==l_True || !isSelector(var(c[k]))) {
-		      break;
-		    }
-		  }
-
-		}
-	      }
-	      if(choosenPos!=-1) {
-		c[1] = c[choosenPos]; c[choosenPos] = false_lit;
-		watches[~c[1]].push(w);
-		goto NextClause; }
-	    } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
-	      for (int k = 2; k < c.size(); k++) {
-		
-		if (value(c[k]) != l_False){
-		  c[1] = c[k]; c[k] = false_lit;
-		  watches[~c[1]].push(w);
-		  goto NextClause; }
-	      }
-	    }
-            
-            // Did not find watch -- clause is unit under assignment:
-            *j++ = w;
-            if (value(first) == l_False) {
-                confl = cr;
-                qhead = trail.size();
-                // Copy the remaining watches:
-                while (i < end)
-                    *j++ = *i++;
-            } else {
-                uncheckedEnqueue(first, cr);
-
-
-            }
-NextClause:
-            ;
-        }
-        ws.shrink(i - j);
-
-       // unaryWatches "propagation"
-        if (useUnaryWatched &&  confl == CRef_Undef) {
-            confl = propagateUnaryWatches(p);
-
-        }
- 
+      if (value(imp) == l_Undef) {
+        uncheckedEnqueue(imp, wbin[k].cref);
+      }
     }
 
-        
+    // Now propagate other 2-watched clauses
+    for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
+      // Try to avoid inspecting the clause:
+      Lit blocker = i->blocker;
+      if (value(blocker) == l_True) {
+        *j++ = *i++;
+        continue;
+      }
 
-    propagations += num_props;
-    simpDB_props -= num_props;
+      // Make sure the false literal is data[1]:
+      CRef cr = i->cref;
+      Clause& c = ca[cr];
+      assert(!c.getOneWatched());
+      Lit false_lit = ~p;
+      if (c[0] == false_lit)
+        c[0] = c[1], c[1] = false_lit;
+      assert(c[1] == false_lit);
+      i++;
 
-    return confl;
+      // If 0th watch is true, then clause is already satisfied.
+      Lit first = c[0];
+      Watcher w = Watcher(cr, first);
+      if (first != blocker && value(first) == l_True) {
+
+        *j++ = w;
+        continue;
+      }
+      if(incremental) { // ----------------- INCREMENTAL MODE
+        int choosenPos = -1;
+        for (int k = 2; k < c.size(); k++) {
+
+          if (value(c[k]) != l_False){
+            if(decisionLevel()>(int)assumptions.size()) {
+              choosenPos = k;
+              break;
+            } else {
+              choosenPos = k;
+
+              if(value(c[k])==l_True || !isSelector(var(c[k]))) {
+                break;
+              }
+            }
+
+          }
+        }
+        if(choosenPos!=-1) {
+          c[1] = c[choosenPos]; c[choosenPos] = false_lit;
+          watches[~c[1]].push(w);
+          goto NextClause; }
+      } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
+        for (int k = 2; k < c.size(); k++) {
+
+          if (value(c[k]) != l_False){
+            c[1] = c[k]; c[k] = false_lit;
+            watches[~c[1]].push(w);
+            goto NextClause; }
+        }
+      }
+
+      // Did not find watch -- clause is unit under assignment:
+      *j++ = w;
+      if (value(first) == l_False) {
+        confl = cr;
+        qhead = trail.size();
+        // Copy the remaining watches:
+        while (i < end)
+          *j++ = *i++;
+      } else {
+        uncheckedEnqueue(first, cr);
+
+
+      }
+      NextClause:
+      ;
+    }
+    ws.shrink(i - j);
+
+    // unaryWatches "propagation"
+    if (useUnaryWatched &&  confl == CRef_Undef) {
+      confl = propagateUnaryWatches(p);
+
+    }
+
+  }
+
+
+
+  propagations += num_props;
+  simpDB_props -= num_props;
+
+  return confl;
 }
 
 /*_________________________________________________________________________________________________
@@ -1060,78 +1061,78 @@ NextClause:
 |________________________________________________________________________________________________@*/
 
 CRef Solver::propagateUnaryWatches(Lit p) {
-    CRef confl= CRef_Undef;
-    Watcher *i, *j, *end;
-    vec<Watcher>& ws = unaryWatches[p];
-    for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
-        // Try to avoid inspecting the clause:
-        Lit blocker = i->blocker;
-        if (value(blocker) == l_True) {
-            *j++ = *i++;
-            continue;
-        }
-
-        // Make sure the false literal is data[1]:
-        CRef cr = i->cref;
-        Clause& c = ca[cr];
-        assert(c.getOneWatched());
-        Lit false_lit = ~p;
-        assert(c[0] == false_lit); // this is unary watch... No other choice if "propagated"
-        //if (c[0] == false_lit)
-        //c[0] = c[1], c[1] = false_lit;
-        //assert(c[1] == false_lit);
-        i++;
-        Watcher w = Watcher(cr, c[0]);
-        for (int k = 1; k < c.size(); k++) {
-            if (value(c[k]) != l_False) {
-                c[0] = c[k];
-                c[k] = false_lit;
-                unaryWatches[~c[0]].push(w);
-                goto NextClauseUnary;
-            }
-        }
-
-        // Did not find watch -- clause is empty under assignment:
-        *j++ = w;
-
-        confl = cr;
-        qhead = trail.size();
-        // Copy the remaining watches:
-        while (i < end)
-            *j++ = *i++;
-
-        // We can add it now to the set of clauses when backtracking
-        //printf("*");
-        if (promoteOneWatchedClause) {
-            nbPromoted++;
-            // Let's find the two biggest decision levels in the clause s.t. it will correctly be propagated when we'll backtrack
-            int maxlevel = -1;
-            int index = -1;
-            for (int k = 1; k < c.size(); k++) {
-                assert(value(c[k]) == l_False);
-                assert(level(var(c[k])) <= level(var(c[0])));
-                if (level(var(c[k])) > maxlevel) {
-                    index = k;
-                    maxlevel = level(var(c[k]));
-                }
-            }
-            detachClausePurgatory(cr, true); // TODO: check that the cleanAll is ok (use ",true" otherwise)
-            assert(index != -1);
-            Lit tmp = c[1];
-            c[1] = c[index], c[index] = tmp;
-            attachClause(cr);
-            // TODO used in function ParallelSolver::reportProgressArrayImports 
-            //Override :-(
-            //goodImportsFromThreads[ca[cr].importedFrom()]++;
-            ca[cr].setOneWatched(false);
-            ca[cr].setExported(2);  
-        }
-NextClauseUnary:
-        ;
+  CRef confl= CRef_Undef;
+  Watcher *i, *j, *end;
+  vec<Watcher>& ws = unaryWatches[p];
+  for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
+    // Try to avoid inspecting the clause:
+    Lit blocker = i->blocker;
+    if (value(blocker) == l_True) {
+      *j++ = *i++;
+      continue;
     }
-    ws.shrink(i - j);
 
-    return confl;
+    // Make sure the false literal is data[1]:
+    CRef cr = i->cref;
+    Clause& c = ca[cr];
+    assert(c.getOneWatched());
+    Lit false_lit = ~p;
+    assert(c[0] == false_lit); // this is unary watch... No other choice if "propagated"
+    //if (c[0] == false_lit)
+    //c[0] = c[1], c[1] = false_lit;
+    //assert(c[1] == false_lit);
+    i++;
+    Watcher w = Watcher(cr, c[0]);
+    for (int k = 1; k < c.size(); k++) {
+      if (value(c[k]) != l_False) {
+        c[0] = c[k];
+        c[k] = false_lit;
+        unaryWatches[~c[0]].push(w);
+        goto NextClauseUnary;
+      }
+    }
+
+    // Did not find watch -- clause is empty under assignment:
+    *j++ = w;
+
+    confl = cr;
+    qhead = trail.size();
+    // Copy the remaining watches:
+    while (i < end)
+      *j++ = *i++;
+
+    // We can add it now to the set of clauses when backtracking
+    //printf("*");
+    if (promoteOneWatchedClause) {
+      nbPromoted++;
+      // Let's find the two biggest decision levels in the clause s.t. it will correctly be propagated when we'll backtrack
+      int maxlevel = -1;
+      int index = -1;
+      for (int k = 1; k < c.size(); k++) {
+        assert(value(c[k]) == l_False);
+        assert(level(var(c[k])) <= level(var(c[0])));
+        if (level(var(c[k])) > maxlevel) {
+          index = k;
+          maxlevel = level(var(c[k]));
+        }
+      }
+      detachClausePurgatory(cr, true); // TODO: check that the cleanAll is ok (use ",true" otherwise)
+      assert(index != -1);
+      Lit tmp = c[1];
+      c[1] = c[index], c[index] = tmp;
+      attachClause(cr);
+      // TODO used in function ParallelSolver::reportProgressArrayImports
+      //Override :-(
+      //goodImportsFromThreads[ca[cr].importedFrom()]++;
+      ca[cr].setOneWatched(false);
+      ca[cr].setExported(2);
+    }
+    NextClauseUnary:
+    ;
+  }
+  ws.shrink(i - j);
+
+  return confl;
 }
 
 /*_________________________________________________________________________________________________
@@ -1146,7 +1147,7 @@ NextClauseUnary:
 
 void Solver::reduceDB()
 {
- 
+
   unsigned int i, j;
   nbReduceDB++;
   std::sort(learnts.begin(), learnts.end(), reduceDB_lt(ca));
@@ -1155,8 +1156,8 @@ void Solver::reduceDB()
   if(ca[learnts[learnts.size() / RATIOREMOVECLAUSES]].lbd()<=3) nbclausesbeforereduce +=specialIncReduceDB; 
   // Useless :-)
   if(ca[learnts.back()].lbd()<=5)  nbclausesbeforereduce +=specialIncReduceDB;
-  
-  
+
+
   // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
   // Keep clauses which seem to be usefull (their lbd was reduce during this sequence)
 
@@ -1181,25 +1182,25 @@ void Solver::reduceDB()
 
 void Solver::removeSatisfied(vector<CRef>& cs) {
   unsigned int i, j;
-    for (i = j = 0; i < cs.size(); i++) {
-        Clause& c = ca[cs[i]];
-        if (satisfied(c))
-            if (c.getOneWatched())
-                removeClause(cs[i], true);
-            else
-                removeClause(cs[i]);
-        else
-            cs[j++] = cs[i];
-    }
-    cs.resize(j);
+  for (i = j = 0; i < cs.size(); i++) {
+    Clause& c = ca[cs[i]];
+    if (satisfied(c))
+      if (c.getOneWatched())
+        removeClause(cs[i], true);
+      else
+        removeClause(cs[i]);
+    else
+      cs[j++] = cs[i];
+  }
+  cs.resize(j);
 }
 
 void Solver::rebuildOrderHeap() {
-    vec<Var> vs;
-    for (Var v = 0; v < nVars(); v++)
-        if (decision[v] && value(v) == l_Undef)
-            vs.push(v);
-    order_heap.build(vs);
+  vec<Var> vs;
+  for (Var v = 0; v < nVars(); v++)
+    if (decision[v] && value(v) == l_Undef)
+      vs.push(v);
+  order_heap.build(vs);
 
 }
 
@@ -1212,32 +1213,32 @@ void Solver::rebuildOrderHeap() {
 |    thing done here is the removal of satisfied clauses, but more things can be put here.
 |________________________________________________________________________________________________@*/
 bool Solver::simplify() {
-    assert(decisionLevel() == 0);
+  assert(decisionLevel() == 0);
 
-    if (!ok) return ok = false;
-    else {
-        CRef cr = propagate();
-        if (cr != CRef_Undef) {
-            return ok = false;
-        }
+  if (!ok) return ok = false;
+  else {
+    CRef cr = propagate();
+    if (cr != CRef_Undef) {
+      return ok = false;
     }
+  }
 
 
-    if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
-        return true;
-
-    // Remove satisfied clauses:
-    removeSatisfied(learnts);
-    removeSatisfied(unaryWatchedClauses);
-    if (remove_satisfied) // Can be turned off.
-        removeSatisfied(clauses);
-    checkGarbage();
-    rebuildOrderHeap();
-
-    simpDB_assigns = nAssigns();
-    simpDB_props = clauses_literals + learnts_literals; // (shouldn't depend on stats really, but it will do for now)
-
+  if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
     return true;
+
+  // Remove satisfied clauses:
+  removeSatisfied(learnts);
+  removeSatisfied(unaryWatchedClauses);
+  if (remove_satisfied) // Can be turned off.
+    removeSatisfied(clauses);
+  checkGarbage();
+  rebuildOrderHeap();
+
+  simpDB_assigns = nAssigns();
+  simpDB_props = clauses_literals + learnts_literals; // (shouldn't depend on stats really, but it will do for now)
+
+  return true;
 }
 
 
@@ -1255,195 +1256,195 @@ bool Solver::simplify() {
 |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
 |________________________________________________________________________________________________@*/
 lbool Solver::search(int nof_conflicts) {
-    assert(ok);
-    int backtrack_level;
-    int conflictC = 0;
-    vec<Lit> learnt_clause, selectors;
-    unsigned int nblevels,szWithoutSelectors = 0;
-    bool blocked = false;
-    starts++;
-    for (;;) {
-        if (decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
-            parallelImportUnaryClauses();
-            
-            if (parallelImportClauses())
-                return l_False;
+  assert(ok);
+  int backtrack_level;
+  int conflictC = 0;
+  vec<Lit> learnt_clause, selectors;
+  unsigned int nblevels,szWithoutSelectors = 0;
+  bool blocked = false;
+  starts++;
+  for (;;) {
+    if (decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
+      parallelImportUnaryClauses();
 
-        }
-        CRef confl = propagate();
+      if (parallelImportClauses())
+        return l_False;
 
-        if (confl != CRef_Undef) {
-            if(parallelJobIsFinished())
-                return l_Undef;
-            
-            
-            sumDecisionLevels += decisionLevel();
-            // CONFLICT
-            conflicts++;
-            conflictC++;
-            conflictsRestarts++;
-           if (conflicts % 5000 == 0 && var_decay < max_var_decay)
-                var_decay += 0.01;
-
-            if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
-                printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n",
-                        (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
-                        (int) dec_vars - (int)(trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int) clauses_literals,
-                        (int) nbReduceDB, nLearnts(), (int) nbDL2, (int) nbRemovedClauses, progressEstimate()*100);
-            }
-            if (decisionLevel() == 0) {
-                return l_False;
-
-            }
-
-            trailQueue.push(trail.size());
-            // BLOCK RESTART (CP 2012 paper)
-            if (conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
-                lbdQueue.fastclear();
-                nbstopsrestarts++;
-                if (!blocked) {
-                    lastblockatrestart = starts;
-                    nbstopsrestartssame++;
-                    blocked = true;
-                }
-            }
-
-            learnt_clause.clear();
-            selectors.clear();
-
-            analyze(confl, learnt_clause, selectors, backtrack_level, nblevels,szWithoutSelectors);
-
-            lbdQueue.push(nblevels);
-            sumLBD += nblevels;
-
-            cancelUntil(backtrack_level);
-
-            if (certifiedUNSAT) {
-                for (int i = 0; i < learnt_clause.size(); i++)
-                    fprintf(certifiedOutput, "%i ", (var(learnt_clause[i]) + 1) *
-                        (-2 * sign(learnt_clause[i]) + 1));
-                fprintf(certifiedOutput, "0\n");
-            }
-
-
-            if (learnt_clause.size() == 1) {
-                uncheckedEnqueue(learnt_clause[0]);
-                nbUn++;
-                parallelExportUnaryClause(learnt_clause[0]);
-            } else {
-                CRef cr = ca.alloc(learnt_clause, true);
-                ca[cr].setLBD(nblevels);
-                ca[cr].setOneWatched(false);
-		ca[cr].setSizeWithoutSelectors(szWithoutSelectors);
-                if (nblevels <= 2) nbDL2++; // stats
-                if (ca[cr].size() == 2) nbBin++; // stats
-                learnts.push_back(cr);
-                attachClause(cr);
-                lastLearntClause = cr; // Use in multithread (to hard to put inside ParallelSolver)
-                parallelExportClauseDuringSearch(ca[cr]);
-                claBumpActivity(ca[cr]);
-                uncheckedEnqueue(learnt_clause[0], cr);
-
-            }
-            varDecayActivity();
-            claDecayActivity();
-
-
-        } else {
-            // Our dynamic restart, see the SAT09 competition compagnion paper 
-            if (
-                    (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
-                lbdQueue.fastclear();
-                progress_estimate = progressEstimate();
-                int bt = 0;
-                if(incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
-                    bt = (decisionLevel()<(int)assumptions.size()) ? decisionLevel() : (int)assumptions.size();
-                cancelUntil(bt);
-                return l_Undef;
-            }
-
-
-            // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify()) {
-                return l_False;
-            }
-            // Perform clause database reduction !
-            if (conflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
-
-                if (learnts.size() > 0) {
-                    curRestart = (conflicts / nbclausesbeforereduce) + 1;
-                    reduceDB();
-                    if (!panicModeIsEnabled())
-                        nbclausesbeforereduce += incReduceDB;
-                }
-            }
-
-            lastLearntClause = CRef_Undef;
-            Lit next = lit_Undef;
-            while (decisionLevel() < (int)assumptions.size()) {
-                // Perform user provided assumption:
-                Lit p = assumptions[decisionLevel()];
-                if (value(p) == l_True) {
-                    // Dummy decision level:
-                    newDecisionLevel();
-                } else if (value(p) == l_False) {
-                    analyzeFinal(~p, conflict);
-                    return l_False;
-                } else {
-                    next = p;
-                    break;
-                }
-            }
-
-            if (next == lit_Undef) {
-                // New variable decision:
-                decisions++;
-                next = pickBranchLit();
-                if (next == lit_Undef) {
-                    printf("c last restart ## conflicts  :  %d %d \n", conflictC, decisionLevel());
-                    // Model found:
-                    return l_True;
-                }
-            }
-
-            // Increase decision level and enqueue 'next'
-            newDecisionLevel();
-            uncheckedEnqueue(next);
-        }
     }
+    CRef confl = propagate();
+
+    if (confl != CRef_Undef) {
+      if(parallelJobIsFinished())
+        return l_Undef;
+
+
+      sumDecisionLevels += decisionLevel();
+      // CONFLICT
+      conflicts++;
+      conflictC++;
+      conflictsRestarts++;
+      if (conflicts % 5000 == 0 && var_decay < max_var_decay)
+        var_decay += 0.01;
+
+      if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
+        printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n",
+            (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
+            (int) dec_vars - (int)(trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int) clauses_literals,
+            (int) nbReduceDB, nLearnts(), (int) nbDL2, (int) nbRemovedClauses, progressEstimate()*100);
+      }
+      if (decisionLevel() == 0) {
+        return l_False;
+
+      }
+
+      trailQueue.push(trail.size());
+      // BLOCK RESTART (CP 2012 paper)
+      if (conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
+        lbdQueue.fastclear();
+        nbstopsrestarts++;
+        if (!blocked) {
+          lastblockatrestart = starts;
+          nbstopsrestartssame++;
+          blocked = true;
+        }
+      }
+
+      learnt_clause.clear();
+      selectors.clear();
+
+      analyze(confl, learnt_clause, selectors, backtrack_level, nblevels,szWithoutSelectors);
+
+      lbdQueue.push(nblevels);
+      sumLBD += nblevels;
+
+      cancelUntil(backtrack_level);
+
+      if (certifiedUNSAT) {
+        for (int i = 0; i < learnt_clause.size(); i++)
+          fprintf(certifiedOutput, "%i ", (var(learnt_clause[i]) + 1) *
+              (-2 * sign(learnt_clause[i]) + 1));
+        fprintf(certifiedOutput, "0\n");
+      }
+
+
+      if (learnt_clause.size() == 1) {
+        uncheckedEnqueue(learnt_clause[0]);
+        nbUn++;
+        parallelExportUnaryClause(learnt_clause[0]);
+      } else {
+        CRef cr = ca.alloc(learnt_clause, true);
+        ca[cr].setLBD(nblevels);
+        ca[cr].setOneWatched(false);
+        ca[cr].setSizeWithoutSelectors(szWithoutSelectors);
+        if (nblevels <= 2) nbDL2++; // stats
+        if (ca[cr].size() == 2) nbBin++; // stats
+        learnts.push_back(cr);
+        attachClause(cr);
+        lastLearntClause = cr; // Use in multithread (to hard to put inside ParallelSolver)
+        parallelExportClauseDuringSearch(ca[cr]);
+        claBumpActivity(ca[cr]);
+        uncheckedEnqueue(learnt_clause[0], cr);
+
+      }
+      varDecayActivity();
+      claDecayActivity();
+
+
+    } else {
+      // Our dynamic restart, see the SAT09 competition compagnion paper
+      if (
+          (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
+        lbdQueue.fastclear();
+        progress_estimate = progressEstimate();
+        int bt = 0;
+        if(incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
+          bt = (decisionLevel()<(int)assumptions.size()) ? decisionLevel() : (int)assumptions.size();
+        cancelUntil(bt);
+        return l_Undef;
+      }
+
+
+      // Simplify the set of problem clauses:
+      if (decisionLevel() == 0 && !simplify()) {
+        return l_False;
+      }
+      // Perform clause database reduction !
+      if (conflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
+
+        if (learnts.size() > 0) {
+          curRestart = (conflicts / nbclausesbeforereduce) + 1;
+          reduceDB();
+          if (!panicModeIsEnabled())
+            nbclausesbeforereduce += incReduceDB;
+        }
+      }
+
+      lastLearntClause = CRef_Undef;
+      Lit next = lit_Undef;
+      while (decisionLevel() < (int)assumptions.size()) {
+        // Perform user provided assumption:
+        Lit p = assumptions[decisionLevel()];
+        if (value(p) == l_True) {
+          // Dummy decision level:
+          newDecisionLevel();
+        } else if (value(p) == l_False) {
+          analyzeFinal(~p, conflict);
+          return l_False;
+        } else {
+          next = p;
+          break;
+        }
+      }
+
+      if (next == lit_Undef) {
+        // New variable decision:
+        decisions++;
+        next = pickBranchLit();
+        if (next == lit_Undef) {
+          printf("c last restart ## conflicts  :  %d %d \n", conflictC, decisionLevel());
+          // Model found:
+          return l_True;
+        }
+      }
+
+      // Increase decision level and enqueue 'next'
+      newDecisionLevel();
+      uncheckedEnqueue(next);
+    }
+  }
 }
 
 double Solver::progressEstimate() const {
-    double progress = 0;
-    double F = 1.0 / nVars();
+  double progress = 0;
+  double F = 1.0 / nVars();
 
-    for (int i = 0; i <= (int)decisionLevel(); i++) {
-        int beg = i == 0 ? 0 : trail_lim[i - 1];
-        int end = i == decisionLevel() ? (int)trail.size() : trail_lim[i];
-        progress += pow(F, i) * (end - beg);
-    }
+  for (int i = 0; i <= (int)decisionLevel(); i++) {
+    int beg = i == 0 ? 0 : trail_lim[i - 1];
+    int end = i == decisionLevel() ? (int)trail.size() : trail_lim[i];
+    progress += pow(F, i) * (end - beg);
+  }
 
-    return progress / nVars();
+  return progress / nVars();
 }
 
 void Solver::printIncrementalStats() {
 
-    printf("c---------- Glucose Stats -------------------------\n");
-    printf("c restarts              : %" PRIu64"\n", starts);
-    printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
-    printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
-    printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
-    printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
-    printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
+  printf("c---------- Glucose Stats -------------------------\n");
+  printf("c restarts              : %" PRIu64"\n", starts);
+  printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
+  printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
+  printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
+  printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
+  printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
 
-    printf("c conflicts             : %" PRIu64"\n", conflicts);
-    printf("c decisions             : %" PRIu64"\n", decisions);
-    printf("c propagations          : %" PRIu64"\n", propagations);
+  printf("c conflicts             : %" PRIu64"\n", conflicts);
+  printf("c decisions             : %" PRIu64"\n", decisions);
+  printf("c propagations          : %" PRIu64"\n", propagations);
 
   printf("\nc SAT Calls             : %d in %g seconds\n",nbSatCalls,totalTime4Sat);
   printf("c UNSAT Calls           : %d in %g seconds\n",nbUnsatCalls,totalTime4Unsat);
 
-    printf("c--------------------------------------------------\n");
+  printf("c--------------------------------------------------\n");
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
@@ -1451,84 +1452,84 @@ void Solver::printIncrementalStats() {
 lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless in core but useful for SimpSolver....
 {
 
-    if(incremental && certifiedUNSAT) {
+  if(incremental && certifiedUNSAT) {
     printf("Can not use incremental and certified unsat in the same time\n");
     exit(-1);
   }
- 
-    model.clear();
-    conflict.clear();
-    if (!ok) return l_False;
-    double curTime = cpuTime();
 
-    solves++;
-            
-   
-    
-    lbool   status        = l_Undef;
-    if(!incremental && verbosity>=1) {
-      printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
-      printf("c | Constants are supposed to work well together :-)                                                      |\n");
-      printf("c | however, if you find better choices, please let us known...                                           |\n");
-      printf("c |-------------------------------------------------------------------------------------------------------|\n");
-      printf("c |                                |                                |                                     |\n"); 
-      printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:               |\n");
-      printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d                     |\n",lbdQueue.maxSize(),nbclausesbeforereduce,lbSizeMinimizingClause);
-      printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d                     |\n",trailQueue.maxSize(),incReduceDB,lbLBDMinimizingClause);
-      printf("c |   * K            : %6.2f      |   * Special   : %6d         |                                     |\n",K,specialIncReduceDB);
-      printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                                     |\n",R,lbLBDFrozenClause);
-      printf("c |                                |                                |                                     |\n"); 
-      printf("c ==================================[ Search Statistics (every %6d conflicts) ]=========================\n",verbEveryConflicts);
-      printf("c |                                                                                                       |\n"); 
+  model.clear();
+  conflict.clear();
+  if (!ok) return l_False;
+  double curTime = cpuTime();
 
-      printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              | Progress |\n");
-      printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |          |\n");
-      printf("c =========================================================================================================\n");
-    }
-
-    // Search:
-    int curr_restarts = 0;
-    while (status == l_Undef){
-      status = search(0); // the parameter is useless in glucose, kept to allow modifications
-
-        if (!withinBudget()) break;
-        curr_restarts++;
-    }
-
-    if (!incremental && verbosity >= 1)
-      printf("c =========================================================================================================\n");
-
-    if (certifiedUNSAT){ // Want certified output
-      if (status == l_False)
-	fprintf(certifiedOutput, "0\n");
-      fclose(certifiedOutput);
-    }
-
-
-    if (status == l_True){
-        // Extend & copy model:
-        model.growTo(nVars());
-        for (int i = 0; i < nVars(); i++) model[i] = value(i);
-    }else if (status == l_False && conflict.size() == 0)
-        ok = false;
+  solves++;
 
 
 
-    cancelUntil(0);
+  lbool   status        = l_Undef;
+  if(!incremental && verbosity>=1) {
+    printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
+    printf("c | Constants are supposed to work well together :-)                                                      |\n");
+    printf("c | however, if you find better choices, please let us known...                                           |\n");
+    printf("c |-------------------------------------------------------------------------------------------------------|\n");
+    printf("c |                                |                                |                                     |\n");
+    printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:               |\n");
+    printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d                     |\n",lbdQueue.maxSize(),nbclausesbeforereduce,lbSizeMinimizingClause);
+    printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d                     |\n",trailQueue.maxSize(),incReduceDB,lbLBDMinimizingClause);
+    printf("c |   * K            : %6.2f      |   * Special   : %6d         |                                     |\n",K,specialIncReduceDB);
+    printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                                     |\n",R,lbLBDFrozenClause);
+    printf("c |                                |                                |                                     |\n");
+    printf("c ==================================[ Search Statistics (every %6d conflicts) ]=========================\n",verbEveryConflicts);
+    printf("c |                                                                                                       |\n");
+
+    printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              | Progress |\n");
+    printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |          |\n");
+    printf("c =========================================================================================================\n");
+  }
+
+  // Search:
+  int curr_restarts = 0;
+  while (status == l_Undef){
+    status = search(0); // the parameter is useless in glucose, kept to allow modifications
+
+    if (!withinBudget()) break;
+    curr_restarts++;
+  }
+
+  if (!incremental && verbosity >= 1)
+    printf("c =========================================================================================================\n");
+
+  if (certifiedUNSAT){ // Want certified output
+    if (status == l_False)
+      fprintf(certifiedOutput, "0\n");
+    fclose(certifiedOutput);
+  }
 
 
-    double finalTime = cpuTime();
-    if(status==l_True) {
-        nbSatCalls++; 
-        totalTime4Sat +=(finalTime-curTime);
-    }
-    if(status==l_False) {
-        nbUnsatCalls++; 
-        totalTime4Unsat +=(finalTime-curTime);
-    }
-    
+  if (status == l_True){
+    // Extend & copy model:
+    model.growTo(nVars());
+    for (int i = 0; i < nVars(); i++) model[i] = value(i);
+  }else if (status == l_False && conflict.size() == 0)
+    ok = false;
 
-    return status;
+
+
+  cancelUntil(0);
+
+
+  double finalTime = cpuTime();
+  if(status==l_True) {
+    nbSatCalls++;
+    totalTime4Sat +=(finalTime-curTime);
+  }
+  if(status==l_False) {
+    nbUnsatCalls++;
+    totalTime4Unsat +=(finalTime-curTime);
+  }
+
+
+  return status;
 
 }
 
@@ -1542,70 +1543,70 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
 // FIXME: this needs to be rewritten completely.
 
 static Var mapVar(Var x, vec<Var>& map, Var& max) {
-    if (map.size() <= x || map[x] == -1) {
-        map.growTo(x + 1, -1);
-        map[x] = max++;
-    }
-    return map[x];
+  if (map.size() <= x || map[x] == -1) {
+    map.growTo(x + 1, -1);
+    map[x] = max++;
+  }
+  return map[x];
 }
 
 void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max) {
-    if (satisfied(c)) return;
+  if (satisfied(c)) return;
 
-    for (int i = 0; i < c.size(); i++)
-        if (value(c[i]) != l_False)
-            fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
-    fprintf(f, "0\n");
+  for (int i = 0; i < c.size(); i++)
+    if (value(c[i]) != l_False)
+      fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
+  fprintf(f, "0\n");
 }
 
 void Solver::toDimacs(const char *file, const vec<Lit>& assumps) {
-    FILE* f = fopen(file, "wr");
-    if (f == NULL)
-        fprintf(stderr, "could not open file %s\n", file), exit(1);
-    toDimacs(f, assumps);
-    fclose(f);
+  FILE* f = fopen(file, "wr");
+  if (f == NULL)
+    fprintf(stderr, "could not open file %s\n", file), exit(1);
+  toDimacs(f, assumps);
+  fclose(f);
 }
 
 void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
-    // Handle case when solver is in contradictory state:
-    if (!ok) {
-        fprintf(f, "p cnf 1 2\n1 0\n-1 0\n");
-        return;
+  // Handle case when solver is in contradictory state:
+  if (!ok) {
+    fprintf(f, "p cnf 1 2\n1 0\n-1 0\n");
+    return;
+  }
+
+  vec<Var> map;
+  Var max = 0;
+
+  // Cannot use removeClauses here because it is not safe
+  // to deallocate them at this point. Could be improved.
+  int cnt = 0;
+  for (unsigned int i = 0; i < clauses.size(); i++)
+    if (!satisfied(ca[clauses[i]]))
+      cnt++;
+
+  for (unsigned int i = 0; i < clauses.size(); i++)
+    if (!satisfied(ca[clauses[i]])) {
+      Clause& c = ca[clauses[i]];
+      for (int j = 0; j < c.size(); j++)
+        if (value(c[j]) != l_False)
+          mapVar(var(c[j]), map, max);
     }
 
-    vec<Var> map;
-    Var max = 0;
+  // Assumptions are added as unit clauses:
+  cnt += assumptions.size();
 
-    // Cannot use removeClauses here because it is not safe
-    // to deallocate them at this point. Could be improved.
-    int cnt = 0;
-    for (unsigned int i = 0; i < clauses.size(); i++)
-        if (!satisfied(ca[clauses[i]]))
-            cnt++;
+  fprintf(f, "p cnf %d %d\n", max, cnt);
 
-    for (unsigned int i = 0; i < clauses.size(); i++)
-        if (!satisfied(ca[clauses[i]])) {
-            Clause& c = ca[clauses[i]];
-            for (int j = 0; j < c.size(); j++)
-                if (value(c[j]) != l_False)
-                    mapVar(var(c[j]), map, max);
-        }
+  for (unsigned int i = 0; i < assumptions.size(); i++) {
+    assert(value(assumptions[i]) != l_False);
+    fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
+  }
 
-    // Assumptions are added as unit clauses:
-    cnt += assumptions.size();
+  for (unsigned int i = 0; i < clauses.size(); i++)
+    toDimacs(f, ca[clauses[i]], map, max);
 
-    fprintf(f, "p cnf %d %d\n", max, cnt);
-
-    for (unsigned int i = 0; i < assumptions.size(); i++) {
-        assert(value(assumptions[i]) != l_False);
-        fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
-    }
-
-    for (unsigned int i = 0; i < clauses.size(); i++)
-        toDimacs(f, ca[clauses[i]], map, max);
-
-    if (verbosity > 0)
-        printf("Wrote %d clauses with %d variables.\n", cnt, max);
+  if (verbosity > 0)
+    printf("Wrote %d clauses with %d variables.\n", cnt, max);
 }
 
 
@@ -1613,62 +1614,62 @@ void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
 // Garbage Collection methods:
 
 void Solver::relocAll(ClauseAllocator& to) {
-    // All watchers:
-    //
-    // for (int i = 0; i < watches.size(); i++)
-    watches.cleanAll();
-    watchesBin.cleanAll();
-    unaryWatches.cleanAll();
-    for (int v = 0; v < nVars(); v++)
-        for (int s = 0; s < 2; s++) {
-            Lit p = mkLit(v, s);
-            // printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
-            vec<Watcher>& ws = watches[p];
-            for (int j = 0; j < ws.size(); j++)
-                ca.reloc(ws[j].cref, to);
-            vec<Watcher>& ws2 = watchesBin[p];
-            for (int j = 0; j < ws2.size(); j++)
-                ca.reloc(ws2[j].cref, to);
-            vec<Watcher>& ws3 = unaryWatches[p];
-            for (int j = 0; j < ws3.size(); j++)
-                ca.reloc(ws3[j].cref, to);
-        }
-
-    // All reasons:
-    //
-    for (unsigned int i = 0; i < trail.size(); i++) {
-        Var v = var(trail[i]);
-
-        if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
-            ca.reloc(vardata[v].reason, to);
+  // All watchers:
+  //
+  // for (int i = 0; i < watches.size(); i++)
+  watches.cleanAll();
+  watchesBin.cleanAll();
+  unaryWatches.cleanAll();
+  for (int v = 0; v < nVars(); v++)
+    for (int s = 0; s < 2; s++) {
+      Lit p = mkLit(v, s);
+      // printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
+      vec<Watcher>& ws = watches[p];
+      for (int j = 0; j < ws.size(); j++)
+        ca.reloc(ws[j].cref, to);
+      vec<Watcher>& ws2 = watchesBin[p];
+      for (int j = 0; j < ws2.size(); j++)
+        ca.reloc(ws2[j].cref, to);
+      vec<Watcher>& ws3 = unaryWatches[p];
+      for (int j = 0; j < ws3.size(); j++)
+        ca.reloc(ws3[j].cref, to);
     }
 
-    // All learnt:
-    //
-    for (unsigned int i = 0; i < learnts.size(); i++)
-        ca.reloc(learnts[i], to);
+  // All reasons:
+  //
+  for (unsigned int i = 0; i < trail.size(); i++) {
+    Var v = var(trail[i]);
 
-    // All original:
-    //
-    for (unsigned int i = 0; i < clauses.size(); i++)
-        ca.reloc(clauses[i], to);
+    if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
+      ca.reloc(vardata[v].reason, to);
+  }
 
-    for (unsigned int i = 0; i < unaryWatchedClauses.size(); i++)
-        ca.reloc(unaryWatchedClauses[i], to);
+  // All learnt:
+  //
+  for (unsigned int i = 0; i < learnts.size(); i++)
+    ca.reloc(learnts[i], to);
+
+  // All original:
+  //
+  for (unsigned int i = 0; i < clauses.size(); i++)
+    ca.reloc(clauses[i], to);
+
+  for (unsigned int i = 0; i < unaryWatchedClauses.size(); i++)
+    ca.reloc(unaryWatchedClauses[i], to);
 }
 
 
 
 void Solver::garbageCollect() {
-    // Initialize the next region to a size corresponding to the estimated utilization degree. This
-    // is not precise but should avoid some unnecessary reallocations for the new region:
-    ClauseAllocator to(ca.size() - ca.wasted());
+  // Initialize the next region to a size corresponding to the estimated utilization degree. This
+  // is not precise but should avoid some unnecessary reallocations for the new region:
+  ClauseAllocator to(ca.size() - ca.wasted());
 
-    relocAll(to);
-    if (verbosity >= 2)
-        printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",
-            ca.size() * ClauseAllocator::Unit_Size, to.size() * ClauseAllocator::Unit_Size);
-    to.moveTo(ca);
+  relocAll(to);
+  if (verbosity >= 2)
+    printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n",
+        ca.size() * ClauseAllocator::Unit_Size, to.size() * ClauseAllocator::Unit_Size);
+  to.moveTo(ca);
 }
 
 //--------------------------------------------------------------
@@ -1678,14 +1679,14 @@ void Solver::garbageCollect() {
 //--------------------------------------------------------------
 
 bool Solver::panicModeIsEnabled() {
-    return false;
+  return false;
 }
 
 void Solver::parallelImportUnaryClauses() {
 }
 
 bool Solver::parallelImportClauses() {
-    return false;
+  return false;
 }
 
 
@@ -1695,8 +1696,8 @@ void Solver::parallelExportClauseDuringSearch(Clause &c) {
 }
 
 bool Solver::parallelJobIsFinished() { 
-    // Parallel: another job has finished let's quit
-    return false;
+  // Parallel: another job has finished let's quit
+  return false;
 }
 
 void Solver::parallelImportClauseDuringConflictAnalysis(Clause &c,CRef confl) {

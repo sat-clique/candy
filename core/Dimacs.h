@@ -26,13 +26,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 
+#include <vector>
+using namespace std;
+
 namespace Glucose {
 
 //=================================================================================================
 // DIMACS Parser:
 
 template<class B, class Solver>
-static void readClause(B& in, Solver& S, vec<Lit>& lits) {
+static void readClause(B& in, Solver& S, vector<Lit>& lits) {
     int     parsed_lit, var;
     lits.clear();
     for (;;){
@@ -40,13 +43,13 @@ static void readClause(B& in, Solver& S, vec<Lit>& lits) {
         if (parsed_lit == 0) break;
         var = abs(parsed_lit)-1;
         while (var >= S.nVars()) S.newVar();
-        lits.push( (parsed_lit > 0) ? mkLit(var) : ~mkLit(var) );
+        lits.push_back( (parsed_lit > 0) ? mkLit(var) : ~mkLit(var) );
     }
 }
 
 template<class B, class Solver>
 static void parse_DIMACS_main(B& in, Solver& S) {
-    vec<Lit> lits;
+    vector<Lit> lits;
     int vars    = 0;
     int clauses = 0;
     int cnt     = 0;

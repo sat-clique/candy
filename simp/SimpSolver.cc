@@ -203,10 +203,10 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp)
 
 
 
-bool SimpSolver::addClause_(vec<Lit>& ps)
+bool SimpSolver::addClause_(vector<Lit>& ps)
 {
 #ifndef NDEBUG
-    for (int i = 0; i < ps.size(); i++)
+    for (unsigned int i = 0; i < ps.size(); i++)
         assert(!isEliminated(var(ps[i])));
 #endif
     unsigned int nclauses = clauses.size();
@@ -218,7 +218,7 @@ bool SimpSolver::addClause_(vec<Lit>& ps)
         return false;
 
     if(!parsing && certifiedUNSAT) {
-      for (int i = 0; i < ps.size(); i++)
+      for (unsigned int i = 0; i < ps.size(); i++)
         fprintf(certifiedOutput, "%i " , (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1) );
       fprintf(certifiedOutput, "0\n");
     }
@@ -304,7 +304,7 @@ bool SimpSolver::strengthenClause(CRef cr, Lit l)
 
 
 // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
-bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vec<Lit>& out_clause)
+bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause)
 {
     merges++;
     out_clause.clear();
@@ -321,14 +321,14 @@ bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vec<Lit>& ou
                         return false;
                     else
                         goto next;
-            out_clause.push(qs[i]);
+            out_clause.push_back(qs[i]);
         }
         next:;
     }
 
     for (int i = 0; i < ps.size(); i++)
         if (var(ps[i]) != v)
-            out_clause.push(ps[i]);
+            out_clause.push_back(ps[i]);
 
     return true;
 }
@@ -392,16 +392,16 @@ void SimpSolver::gatherTouchedClauses()
 }
 
 
-bool SimpSolver::implied(const vec<Lit>& c)
+bool SimpSolver::implied(const vector<Lit>& c)
 {
     assert(decisionLevel() == 0);
 
     trail_lim.push_back(trail.size());
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True){
             cancelUntil(0);
             return false;
-        }else if (value(c[i]) != l_False){
+        } else if (value(c[i]) != l_False){
             assert(value(c[i]) == l_Undef);
             uncheckedEnqueue(~c[i]);
         }
@@ -599,7 +599,7 @@ bool SimpSolver::eliminateVar(Var v)
 
 
     // Produce clauses in cross product:
-    vec<Lit>& resolvent = add_tmp;
+    vector<Lit>& resolvent = add_tmp;
     for (int i = 0; i < pos.size(); i++)
         for (int j = 0; j < neg.size(); j++)
             if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addClause_(resolvent))
@@ -631,14 +631,14 @@ bool SimpSolver::substitute(Var v, Lit x)
     setDecisionVar(v, false);
     const vec<CRef>& cls = occurs.lookup(v);
     
-    vec<Lit>& subst_clause = add_tmp;
+    vector<Lit>& subst_clause = add_tmp;
     for (int i = 0; i < cls.size(); i++){
         Clause& c = ca[cls[i]];
 
         subst_clause.clear();
         for (int j = 0; j < c.size(); j++){
             Lit p = c[j];
-            subst_clause.push(var(p) == v ? x ^ sign(p) : p);
+            subst_clause.push_back(var(p) == v ? x ^ sign(p) : p);
         }
 
  
