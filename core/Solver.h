@@ -162,8 +162,8 @@ public:
 
     // Extra results: (read-only member variable)
     //
-    vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
-    vec<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
+    vector<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
+    vector<Lit>   conflict;          // If problem is unsatisfiable (possibly under assumptions),
                                   // this vector represent the final conflict clause expressed in the assumptions.
 
     // Mode of operation:
@@ -245,6 +245,7 @@ protected:
     struct Watcher {
         CRef cref;
         Lit  blocker;
+        Watcher() {}
         Watcher(CRef cr, Lit p) : cref(cr), blocker(p) {}
         bool operator==(const Watcher& w) const { return cref == w.cref; }
         bool operator!=(const Watcher& w) const { return cref != w.cref; }
@@ -277,11 +278,11 @@ protected:
     double              cla_inc;          // Amount to bump next clause with.
     vector<double>      activity;         // A heuristic measurement of the activity of a variable.
     double              var_inc;          // Amount to bump next variable with.
-    OccLists<Lit, vec<Watcher>, WatcherDeleted>
+    OccLists<Lit, Watcher, WatcherDeleted>
                         watches;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    OccLists<Lit, vec<Watcher>, WatcherDeleted>
+    OccLists<Lit, Watcher, WatcherDeleted>
                         watchesBin;          // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    OccLists<Lit, vec<Watcher>, WatcherDeleted>
+    OccLists<Lit, Watcher, WatcherDeleted>
                         unaryWatches;       //  Unary watch scheme (clauses are seen when they become empty
     vector<CRef>           clauses;          // List of problem clauses.
     vector<CRef>           learnts;          // List of learnt clauses.
@@ -345,7 +346,7 @@ protected:
     int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
     double totalTime4Sat,totalTime4Unsat;
     int nbSatCalls,nbUnsatCalls;
-    vec<int> assumptionPositions,initialPositions;
+    //vector<int> assumptionPositions, initialPositions;
 
 
     // Main internal methods:
@@ -359,7 +360,7 @@ protected:
     CRef     propagateUnaryWatches(Lit p);                                                  // Perform propagation on unary watches of p, can find only conflicts
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
     void     analyze          (CRef confl, vec<Lit>& out_learnt, vec<Lit> & selectors, int& out_btlevel,unsigned int &nblevels,unsigned int &szWithoutSelectors);    // (bt = backtrack)
-    void     analyzeFinal     (Lit p, vec<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+    void     analyzeFinal     (Lit p, vector<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts);                                     // Search for a given number of conflicts.
     virtual lbool    solve_           (bool do_simp = true, bool turn_off_simp = false);                                                      // Main solve method (assumptions given in 'assumptions').

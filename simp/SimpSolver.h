@@ -168,7 +168,7 @@ class SimpSolver : public Solver {
     bool                use_simplification;
     vec<uint32_t>       elimclauses;
     vec<char>           touched;
-    OccLists<Var, vec<CRef>, ClauseDeleted>
+    OccLists<Var, CRef, ClauseDeleted>
                         occurs;
     vec<int>            n_occ;
     Heap<ElimLt>        elim_heap;

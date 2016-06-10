@@ -235,7 +235,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps)
         // forward subsumption.
         subsumption_queue.push_back(cr);
         for (int i = 0; i < c.size(); i++){
-            occurs[var(c[i])].push(cr);
+            occurs[var(c[i])].push_back(cr);
             n_occ[toInt(c[i])]++;
             touched[var(c[i])] = 1;
             n_touched++;
@@ -375,8 +375,8 @@ void SimpSolver::gatherTouchedClauses()
 
     for (int i = 0; i < touched.size(); i++)
         if (touched[i]){
-            const vec<CRef>& cs = occurs.lookup(i);
-            for (int j = 0; j < cs.size(); j++)
+            const vector<CRef>& cs = occurs.lookup(i);
+            for (unsigned int j = 0; j < cs.size(); j++)
                 if (ca[cs[j]].mark() == 0){
                     subsumption_queue.push_back(cs[j]);
                     ca[cs[j]].mark(2);
@@ -452,10 +452,8 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose)
                 best = var(c[i]);
 
         // Search all candidates:
-        vec<CRef>& _cs = occurs.lookup(best);
-        CRef*       cs = (CRef*)_cs;
-
-        for (int j = 0; j < _cs.size(); j++)
+        vector<CRef>& cs = occurs.lookup(best);
+        for (unsigned int j = 0; j < cs.size(); j++)
             if (c.mark())
                 break;
             else if (!ca[cs[j]].mark() &&  cs[j] != cr && (subsumption_lim == -1 || ca[cs[j]].size() < subsumption_lim)){
@@ -511,12 +509,12 @@ bool SimpSolver::asymmVar(Var v)
 {
     assert(use_simplification);
 
-    const vec<CRef>& cls = occurs.lookup(v);
+    const vector<CRef>& cls = occurs.lookup(v);
 
     if (value(v) != l_Undef || cls.size() == 0)
         return true;
 
-    for (int i = 0; i < cls.size(); i++)
+    for (unsigned int i = 0; i < cls.size(); i++)
         if (!asymm(v, cls[i]))
             return false;
 
@@ -565,10 +563,10 @@ bool SimpSolver::eliminateVar(Var v)
 
     // Split the occurrences into positive and negative:
     //
-    const vec<CRef>& cls = occurs.lookup(v);
-    vec<CRef>        pos, neg;
-    for (int i = 0; i < cls.size(); i++)
-        (find(ca[cls[i]], mkLit(v)) ? pos : neg).push(cls[i]);
+    const vector<CRef>& cls = occurs.lookup(v);
+    vector<CRef>        pos, neg;
+    for (unsigned int i = 0; i < cls.size(); i++)
+        (find(ca[cls[i]], mkLit(v)) ? pos : neg).push_back(cls[i]);
 
     // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
     // clause must exceed the limit on the maximal clause size (if it is set):
@@ -576,10 +574,10 @@ bool SimpSolver::eliminateVar(Var v)
     int cnt         = 0;
     int clause_size = 0;
 
-    for (int i = 0; i < pos.size(); i++)
-        for (int j = 0; j < neg.size(); j++)
+    for (unsigned int i = 0; i < pos.size(); i++)
+        for (unsigned int j = 0; j < neg.size(); j++)
             if (merge(ca[pos[i]], ca[neg[j]], v, clause_size) && 
-                (++cnt > cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim)))
+                (++cnt > (int)cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim)))
                 return true;
 
     // Delete and store old clauses:
@@ -588,11 +586,11 @@ bool SimpSolver::eliminateVar(Var v)
     eliminated_vars++;
 
     if (pos.size() > neg.size()){
-        for (int i = 0; i < neg.size(); i++)
+        for (unsigned int i = 0; i < neg.size(); i++)
             mkElimClause(elimclauses, v, ca[neg[i]]);
         mkElimClause(elimclauses, mkLit(v));
     }else{
-        for (int i = 0; i < pos.size(); i++)
+        for (unsigned int i = 0; i < pos.size(); i++)
             mkElimClause(elimclauses, v, ca[pos[i]]);
         mkElimClause(elimclauses, ~mkLit(v));
     }
@@ -600,20 +598,20 @@ bool SimpSolver::eliminateVar(Var v)
 
     // Produce clauses in cross product:
     vector<Lit>& resolvent = add_tmp;
-    for (int i = 0; i < pos.size(); i++)
-        for (int j = 0; j < neg.size(); j++)
+    for (unsigned int i = 0; i < pos.size(); i++)
+        for (unsigned int j = 0; j < neg.size(); j++)
             if (merge(ca[pos[i]], ca[neg[j]], v, resolvent) && !addClause_(resolvent))
                 return false;
 
-    for (int i = 0; i < cls.size(); i++)
+    for (unsigned int i = 0; i < cls.size(); i++)
         removeClause(cls[i]);
 
     // Free occurs list for this variable:
-    occurs[v].clear(true);
+    occurs[v].clear();
 
     // Free watchers lists for this variable, if possible:
-    if (watches[ mkLit(v)].size() == 0) watches[ mkLit(v)].clear(true);
-    if (watches[~mkLit(v)].size() == 0) watches[~mkLit(v)].clear(true);
+    if (watches[ mkLit(v)].size() == 0) watches[ mkLit(v)].clear();
+    if (watches[~mkLit(v)].size() == 0) watches[~mkLit(v)].clear();
 
     return backwardSubsumptionCheck();
 }
@@ -629,10 +627,10 @@ bool SimpSolver::substitute(Var v, Lit x)
 
     eliminated[v] = true;
     setDecisionVar(v, false);
-    const vec<CRef>& cls = occurs.lookup(v);
+    const vector<CRef>& cls = occurs.lookup(v);
     
     vector<Lit>& subst_clause = add_tmp;
-    for (int i = 0; i < cls.size(); i++){
+    for (unsigned int i = 0; i < cls.size(); i++){
         Clause& c = ca[cls[i]];
 
         subst_clause.clear();
@@ -646,8 +644,7 @@ bool SimpSolver::substitute(Var v, Lit x)
             return ok = false;
 
        removeClause(cls[i]);
- 
-   }
+    }
 
     return true;
 }
@@ -658,7 +655,7 @@ void SimpSolver::extendModel()
     int i, j;
     Lit x;
 
-    if(model.size()==0) model.growTo(nVars());
+    if(model.size()==0) model.resize(nVars());
     
     for (i = elimclauses.size()-1; i > 0; i -= j){
         for (j = elimclauses[i--]; j > 1; j--, i--)
@@ -792,8 +789,8 @@ void SimpSolver::relocAll(ClauseAllocator& to)
     // All occurs lists:
     //
     for (int i = 0; i < nVars(); i++){
-        vec<CRef>& cs = occurs[i];
-        for (int j = 0; j < cs.size(); j++)
+        vector<CRef>& cs = occurs[i];
+        for (unsigned int j = 0; j < cs.size(); j++)
             ca.reloc(cs[j], to);
     }
 

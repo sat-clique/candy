@@ -389,11 +389,11 @@ void Solver::attachClause(CRef cr) {
 
   assert(c.size() > 1);
   if (c.size() == 2) {
-    watchesBin[~c[0]].push(Watcher(cr, c[1]));
-    watchesBin[~c[1]].push(Watcher(cr, c[0]));
+    watchesBin[~c[0]].push_back(Watcher(cr, c[1]));
+    watchesBin[~c[1]].push_back(Watcher(cr, c[0]));
   } else {
-    watches[~c[0]].push(Watcher(cr, c[1]));
-    watches[~c[1]].push(Watcher(cr, c[0]));
+    watches[~c[0]].push_back(Watcher(cr, c[1]));
+    watches[~c[1]].push_back(Watcher(cr, c[0]));
   }
   if (c.learnt()) learnts_literals += c.size();
   else clauses_literals += c.size();
@@ -403,7 +403,7 @@ void Solver::attachClausePurgatory(CRef cr) {
   const Clause& c = ca[cr];
 
   assert(c.size() > 1);
-  unaryWatches[~c[0]].push(Watcher(cr, c[1]));
+  unaryWatches[~c[0]].push_back(Watcher(cr, c[1]));
 
 }
 
@@ -565,9 +565,9 @@ void Solver::minimisationWithBinaryResolution(vec<Lit> &out_learnt) {
       permDiff[var(out_learnt[i])] = MYFLAG;
     }
 
-    vec<Watcher>& wbin = watchesBin[p];
+    vector<Watcher>& wbin = watchesBin[p];
     int nb = 0;
-    for (int k = 0; k < wbin.size(); k++) {
+    for (unsigned int k = 0; k < wbin.size(); k++) {
       Lit imp = wbin[k].blocker;
       if (permDiff[var(imp)] == MYFLAG && value(imp) == l_True) {
         nb++;
@@ -878,9 +878,9 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
 |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
 |    stores the result in 'out_conflict'.
 |________________________________________________________________________________________________@*/
-void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
+void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
   out_conflict.clear();
-  out_conflict.push(p);
+  out_conflict.push_back(p);
 
   if (decisionLevel() == 0)
     return;
@@ -892,7 +892,7 @@ void Solver::analyzeFinal(Lit p, vec<Lit>& out_conflict) {
     if (seen[x]) {
       if (reason(x) == CRef_Undef) {
         assert(level(x) > 0);
-        out_conflict.push(~trail[i]);
+        out_conflict.push_back(~trail[i]);
       } else {
         Clause& c = ca[reason(x)];
         //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
@@ -931,21 +931,20 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
 CRef Solver::propagate() {
   CRef confl = CRef_Undef;
   int num_props = 0;
+
   watches.cleanAll();
   watchesBin.cleanAll();
   unaryWatches.cleanAll();
+
   while (qhead < trail.size()) {
     Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
-    vec<Watcher>& ws = watches[p];
-    Watcher *i, *j, *end;
+    vector<Watcher>& ws = watches[p];
     num_props++;
 
-
     // First, Propagate binary clauses
-    vec<Watcher>& wbin = watchesBin[p];
+    vector<Watcher>& wbin = watchesBin[p];
 
-    for (int k = 0; k < wbin.size(); k++) {
-
+    for (unsigned int k = 0; k < wbin.size(); k++) {
       Lit imp = wbin[k].blocker;
 
       if (value(imp) == l_False) {
@@ -958,7 +957,8 @@ CRef Solver::propagate() {
     }
 
     // Now propagate other 2-watched clauses
-    for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
+    vector<Watcher>::iterator i, j;
+    for (i = ws.begin(), j = ws.begin(); i != ws.end();) {
       // Try to avoid inspecting the clause:
       Lit blocker = i->blocker;
       if (value(blocker) == l_True) {
@@ -980,7 +980,6 @@ CRef Solver::propagate() {
       Lit first = c[0];
       Watcher w = Watcher(cr, first);
       if (first != blocker && value(first) == l_True) {
-
         *j++ = w;
         continue;
       }
@@ -1004,14 +1003,13 @@ CRef Solver::propagate() {
         }
         if(choosenPos!=-1) {
           c[1] = c[choosenPos]; c[choosenPos] = false_lit;
-          watches[~c[1]].push(w);
+          watches[~c[1]].push_back(w);
           goto NextClause; }
       } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
         for (int k = 2; k < c.size(); k++) {
-
           if (value(c[k]) != l_False){
             c[1] = c[k]; c[k] = false_lit;
-            watches[~c[1]].push(w);
+            watches[~c[1]].push_back(w);
             goto NextClause; }
         }
       }
@@ -1022,17 +1020,15 @@ CRef Solver::propagate() {
         confl = cr;
         qhead = trail.size();
         // Copy the remaining watches:
-        while (i < end)
+        while (i != ws.end())
           *j++ = *i++;
       } else {
         uncheckedEnqueue(first, cr);
-
-
       }
       NextClause:
       ;
     }
-    ws.shrink(i - j);
+    ws.resize(ws.size() - (i-j));
 
     // unaryWatches "propagation"
     if (useUnaryWatched &&  confl == CRef_Undef) {
@@ -1041,8 +1037,6 @@ CRef Solver::propagate() {
     }
 
   }
-
-
 
   propagations += num_props;
   simpDB_props -= num_props;
@@ -1062,9 +1056,9 @@ CRef Solver::propagate() {
 
 CRef Solver::propagateUnaryWatches(Lit p) {
   CRef confl= CRef_Undef;
-  Watcher *i, *j, *end;
-  vec<Watcher>& ws = unaryWatches[p];
-  for (i = j = (Watcher*) ws, end = i + ws.size(); i != end;) {
+  vector<Watcher>& ws = unaryWatches[p];
+  vector<Watcher>::iterator i, j;
+  for (i = ws.begin(), j = ws.begin(); i != ws.end();) {
     // Try to avoid inspecting the clause:
     Lit blocker = i->blocker;
     if (value(blocker) == l_True) {
@@ -1087,7 +1081,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
       if (value(c[k]) != l_False) {
         c[0] = c[k];
         c[k] = false_lit;
-        unaryWatches[~c[0]].push(w);
+        unaryWatches[~c[0]].push_back(w);
         goto NextClauseUnary;
       }
     }
@@ -1098,7 +1092,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
     confl = cr;
     qhead = trail.size();
     // Copy the remaining watches:
-    while (i < end)
+    while (i != ws.end())
       *j++ = *i++;
 
     // We can add it now to the set of clauses when backtracking
@@ -1130,7 +1124,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
     NextClauseUnary:
     ;
   }
-  ws.shrink(i - j);
+  ws.resize(ws.size() - (i-j));
 
   return confl;
 }
@@ -1508,7 +1502,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
 
   if (status == l_True){
     // Extend & copy model:
-    model.growTo(nVars());
+    model.resize(nVars());
     for (int i = 0; i < nVars(); i++) model[i] = value(i);
   }else if (status == l_False && conflict.size() == 0)
     ok = false;
@@ -1624,14 +1618,14 @@ void Solver::relocAll(ClauseAllocator& to) {
     for (int s = 0; s < 2; s++) {
       Lit p = mkLit(v, s);
       // printf(" >>> RELOCING: %s%d\n", sign(p)?"-":"", var(p)+1);
-      vec<Watcher>& ws = watches[p];
-      for (int j = 0; j < ws.size(); j++)
+      vector<Watcher>& ws = watches[p];
+      for (unsigned int j = 0; j < ws.size(); j++)
         ca.reloc(ws[j].cref, to);
-      vec<Watcher>& ws2 = watchesBin[p];
-      for (int j = 0; j < ws2.size(); j++)
+      vector<Watcher>& ws2 = watchesBin[p];
+      for (unsigned int j = 0; j < ws2.size(); j++)
         ca.reloc(ws2[j].cref, to);
-      vec<Watcher>& ws3 = unaryWatches[p];
-      for (int j = 0; j < ws3.size(); j++)
+      vector<Watcher>& ws3 = unaryWatches[p];
+      for (unsigned int j = 0; j < ws3.size(); j++)
         ca.reloc(ws3[j].cref, to);
     }
 

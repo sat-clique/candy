@@ -55,6 +55,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <stdint.h>
 #include <pthread.h>
 
+#include <vector>
 #include <algorithm>
 
 #include "mtl/IntTypes.h"
@@ -62,6 +63,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Vec.h"
 #include "mtl/Alloc.h"
 
+
+using namespace std;
 
 namespace Glucose {
 
@@ -221,7 +224,7 @@ public:
       }
     }
     header.size -= i; }
-  void         pop         ()              { shrink(1); }
+  void         pop_back         ()              { shrink(1); }
   bool         learnt      ()      const   { return header.learnt; }
   bool         has_extra   ()      const   { return header.extra_size > 0; }
   uint32_t     mark        ()      const   { return header.mark; }
@@ -343,49 +346,51 @@ public:
 //=================================================================================================
 // OccLists -- a class for maintaining occurence lists with lazy deletion:
 
-template<class Idx, class Vec, class Deleted>
+template<class Idx, class Elem, class Deleted>
 class OccLists
 {
-  vec<Vec>  occs;
-  vec<char> dirty;
-  vec<Idx>  dirties;
+  vector<vector<Elem>>  occs;
+  vector<char> dirty;
+  vector<Idx>  dirties;
   Deleted   deleted;
 
 public:
-  OccLists(const Deleted& d) : deleted(d) {}
+  OccLists() {}
+  OccLists(const Deleted& d) : deleted(d) { }
 
-  void  init      (const Idx& idx){ occs.growTo(toInt(idx)+1); dirty.growTo(toInt(idx)+1, 0); }
+  void init(const Idx& idx){ occs.resize(toInt(idx)+1); dirty.resize(toInt(idx)+1, 0); }
   // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
-  Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
-  Vec&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
+  vector<Elem>&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
+  vector<Elem>&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
 
-  void  cleanAll  ();
+  void cleanAll();
   void copyTo(OccLists &copy) const {
-    copy.occs.growTo(occs.size());
-    for(int i = 0;i<occs.size();i++)
-      occs[i].memCopyTo(copy.occs[i]);
-    dirty.memCopyTo(copy.dirty);
-    dirties.memCopyTo(copy.dirties);
+    copy.occs.resize(occs.size());
+    for(int i = 0; i<occs.size();i++)
+      copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());
+    copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
+    copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
   }
 
-  void  clean     (const Idx& idx);
-  void  smudge    (const Idx& idx){
-    if (dirty[toInt(idx)] == 0){
+  void clean(const Idx& idx);
+  void smudge(const Idx& idx) {
+    if (dirty[toInt(idx)] == 0) {
       dirty[toInt(idx)] = 1;
-      dirties.push(idx);
+      dirties.push_back(idx);
     }
   }
 
-  void  clear(bool free = true){
-    occs   .clear(free);
-    dirty  .clear(free);
-    dirties.clear(free);
+  void clear(bool free = true) {
+    for (vector<Elem>& v : occs) v.clear();
+    occs.clear();
+    dirty.clear();
+    dirties.clear();
   }
 };
 
 
-template<class Idx, class Vec, class Deleted>
-void OccLists<Idx,Vec,Deleted>::cleanAll()
+template<class Idx, class Elem, class Deleted>
+void OccLists<Idx,Elem,Deleted>::cleanAll()
 {
   for (int i = 0; i < dirties.size(); i++)
     // Dirties may contain duplicates so check here if a variable is already cleaned:
@@ -395,15 +400,15 @@ void OccLists<Idx,Vec,Deleted>::cleanAll()
 }
 
 
-template<class Idx, class Vec, class Deleted>
-void OccLists<Idx,Vec,Deleted>::clean(const Idx& idx)
+template<class Idx, class Elem, class Deleted>
+void OccLists<Idx,Elem,Deleted>::clean(const Idx& idx)
 {
-  Vec& vec = occs[toInt(idx)];
-  int  i, j;
+  vector<Elem>& vec = occs[toInt(idx)];
+  int i, j;
   for (i = j = 0; i < vec.size(); i++)
     if (!deleted(vec[i]))
       vec[j++] = vec[i];
-  vec.shrink(i - j);
+  vec.resize(j);
   dirty[toInt(idx)] = 0;
 }
 
