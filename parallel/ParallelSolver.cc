@@ -142,7 +142,7 @@ struct reduceDB_oneWatched_lt {
 // @overide
 void ParallelSolver::reduceDB() {
 
-    int i, j;
+    unsigned int i, j;
     nbReduceDB++;
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt(ca));
 
@@ -169,7 +169,7 @@ void ParallelSolver::reduceDB() {
         if (i == learnts.size() / 2)
             goodlimitlbd = c.lbd();
         sumsize += c.size();
-        if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
+        if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && ((int)i < limit)) {
             removeClause(learnts[i]);
             nbRemovedClauses++;
             panicModeLastRemoved++;
@@ -196,7 +196,7 @@ void ParallelSolver::reduceDB() {
 
         for (i = j = 0; i < unaryWatchedClauses.size(); i++) {
             Clause& c = ca[unaryWatchedClauses[i]];
-            if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
+            if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && ((int)i < limit)) {
                 removeClause(unaryWatchedClauses[i], c.getOneWatched()); // remove from the purgatory (or not)
                 nbRemovedUnaryWatchedClauses++;
                 panicModeLastRemovedShared++;
@@ -472,7 +472,7 @@ lbool ParallelSolver::solve_(bool do_simp, bool turn_off_simp) {
 
 
         // Extend & copy model:
-        model.growTo(nVars());
+        model.resize(nVars());
         for (int i = 0; i < nVars(); i++) model[i] = value(i);
     } else if (status == l_False && conflict.size() == 0)
         ok = false;

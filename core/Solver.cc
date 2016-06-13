@@ -1057,17 +1057,17 @@ CRef Solver::propagate() {
 CRef Solver::propagateUnaryWatches(Lit p) {
   CRef confl= CRef_Undef;
   vector<Watcher>& ws = unaryWatches[p];
-  vector<Watcher>::iterator i, j;
-  for (i = ws.begin(), j = ws.begin(); i != ws.end();) {
+  vector<Watcher>::iterator it, j;
+  for (it = ws.begin(), j = ws.begin(); it != ws.end();) {
     // Try to avoid inspecting the clause:
-    Lit blocker = i->blocker;
+    Lit blocker = it->blocker;
     if (value(blocker) == l_True) {
-      *j++ = *i++;
+      *j++ = *it++;
       continue;
     }
 
     // Make sure the false literal is data[1]:
-    CRef cr = i->cref;
+    CRef cr = (*it).cref;
     Clause& c = ca[cr];
     assert(c.getOneWatched());
     Lit false_lit = ~p;
@@ -1075,7 +1075,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
     //if (c[0] == false_lit)
     //c[0] = c[1], c[1] = false_lit;
     //assert(c[1] == false_lit);
-    i++;
+    it++;
     Watcher w = Watcher(cr, c[0]);
     for (int k = 1; k < c.size(); k++) {
       if (value(c[k]) != l_False) {
@@ -1092,8 +1092,8 @@ CRef Solver::propagateUnaryWatches(Lit p) {
     confl = cr;
     qhead = trail.size();
     // Copy the remaining watches:
-    while (i != ws.end())
-      *j++ = *i++;
+    while (it != ws.end())
+      *j++ = *it++;
 
     // We can add it now to the set of clauses when backtracking
     //printf("*");
@@ -1124,7 +1124,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
     NextClauseUnary:
     ;
   }
-  ws.resize(ws.size() - (i-j));
+  ws.resize(ws.size() - (it-j));
 
   return confl;
 }
