@@ -79,7 +79,7 @@ public:
 	void addLearnt(ParallelSolver *s,Lit unary);   // Add a unary clause to share
 	bool addLearnt(ParallelSolver *s, Clause & c); // Add a clause to the shared companion, as a database manager
 
-	bool getNewClause(ParallelSolver *s, int &th, vec<Lit> & nc); // gets a new interesting clause for solver s 
+	bool getNewClause(ParallelSolver *s, int &th, vector<Lit>& nc); // gets a new interesting clause for solver s
 	Lit getUnary(ParallelSolver *s);                              // Gets a new unary literal
 	inline ParallelSolver* winner(){return jobFinishedBy;}        // Gets the first solver that called IFinished()
 

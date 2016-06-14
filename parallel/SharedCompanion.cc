@@ -132,14 +132,14 @@ bool SharedCompanion::addLearnt(ParallelSolver *s, Clause & c) {
 }
 
 
-bool SharedCompanion::getNewClause(ParallelSolver *s, int & threadOrigin, vec<Lit>& newclause) { // gets a new interesting clause for solver s 
+bool SharedCompanion::getNewClause(ParallelSolver *s, int & threadOrigin, vector<Lit>& newclause) { // gets a new interesting clause for solver s
   int sn = s->thn;
-  
-    // First, let's get the clauses on the big blackboard
-    pthread_mutex_lock(&mutexSharedClauseCompanion);
-    bool b = clausesBuffer.getClause(sn, threadOrigin, newclause);
-    pthread_mutex_unlock(&mutexSharedClauseCompanion);
- 
+
+  // First, let's get the clauses on the big blackboard
+  pthread_mutex_lock(&mutexSharedClauseCompanion);
+  bool b = clausesBuffer.getClause(sn, threadOrigin, newclause);
+  pthread_mutex_unlock(&mutexSharedClauseCompanion);
+
   return b;
 }
 

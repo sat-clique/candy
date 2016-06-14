@@ -167,9 +167,9 @@ bool ClausesBuffer::pushClause(int threadId, Clause & c) {
     if (!whenFullRemoveOlder && (queuesize + c.size() + headerSize >= maxsize))
 	return false; // We need to remove some old clauses
     while (queuesize + c.size() + headerSize >= maxsize) { // We need to remove some old clauses
-	forcedRemovedClauses ++;
-	removeLastClause();
-	assert(queuesize > 0);
+      forcedRemovedClauses++;
+      removeLastClause();
+      assert(queuesize > 0);
     }
     noCheckPush(c.size());
     noCheckPush(nbThreads>1?nbThreads-1:1);
@@ -181,7 +181,7 @@ bool ClausesBuffer::pushClause(int threadId, Clause & c) {
     //  printf(" -> (%d, %d)\n", first, last);
 }
 
-bool ClausesBuffer::getClause(int threadId, int & threadOrigin, vec<Lit> & resultClause,  bool firstFound) {
+bool ClausesBuffer::getClause(int threadId, int & threadOrigin, vector<Lit>& resultClause, bool firstFound) {
     assert(lastOfThread.size() > threadId);
     unsigned int thislast = lastOfThread[threadId];
     assert(!firstFound || thislast == last); // FIXME: Gilles has this assertion on his cluster
@@ -220,11 +220,11 @@ bool ClausesBuffer::getClause(int threadId, int & threadOrigin, vec<Lit> & resul
     assert(threadOrigin != threadId);
     resultClause.clear();
     for(int i=0;i<csize;i++) {
-	resultClause.push(toLit(noCheckPop(thislast)));
+      resultClause.push_back(toLit(noCheckPop(thislast)));
     }
     if (last == previouslast && removeAfter) {
-	removeLastClause();
-	thislast = last;
+      removeLastClause();
+      thislast = last;
     }
     lastOfThread[threadId] = thislast;
     return true;

@@ -99,7 +99,7 @@ public:
     virtual void reduceDB();
     virtual lbool         solve_                   (bool do_simp = true, bool turn_off_simp = false);
 
-    vec<Lit>    importedClause; // Temporary clause used to copy each imported clause
+    vector<Lit>    importedClause; // Temporary clause used to copy each imported clause
     uint64_t    nbexported;
     uint64_t    nbimported; 
     uint64_t    nbexportedunit, nbimportedunit , nbimportedInPurgatory, nbImportedGoodClauses;
