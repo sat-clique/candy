@@ -141,12 +141,11 @@ struct reduceDB_oneWatched_lt {
 
 // @overide
 void ParallelSolver::reduceDB() {
-
-    int i, j;
+    unsigned int i, j;
     nbReduceDB++;
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt(ca));
 
-    int limit;
+    unsigned int limit;
 
     if (!panicModeIsEnabled()) {
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
@@ -412,7 +411,7 @@ bool ParallelSolver::parallelJobIsFinished() {
 
 // @overide
 lbool ParallelSolver::solve_(bool do_simp, bool turn_off_simp) {
-       vec<Var> extra_frozen;
+    vector<Var> extra_frozen;
     lbool    result = l_True;
     do_simp &= use_simplification;
     if (do_simp){
@@ -426,7 +425,7 @@ lbool ParallelSolver::solve_(bool do_simp, bool turn_off_simp) {
             if (!frozen[v]){
                 // Freeze and store.
                 setFrozen(v, true);
-                extra_frozen.push(v);
+                extra_frozen.push_back(v);
             } }
 
         result = lbool(eliminate(turn_off_simp));
@@ -469,10 +468,8 @@ lbool ParallelSolver::solve_(bool do_simp, bool turn_off_simp) {
     
     if (firstToFinish && status == l_True) {
         extendModel();
-
-
         // Extend & copy model:
-        model.growTo(nVars());
+        model.resize(nVars());
         for (int i = 0; i < nVars(); i++) model[i] = value(i);
     } else if (status == l_False && conflict.size() == 0)
         ok = false;

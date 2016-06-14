@@ -376,7 +376,8 @@ bool Solver::addClause_(vector<Lit>& ps) {
     uncheckedEnqueue(ps[0]);
     return ok = (propagate() == CRef_Undef);
   } else {
-    CRef cr = ca.alloc(ps, false);
+    CRef cr = ca.alloc(p
+        s, false);
     clauses.push_back(cr);
     attachClause(cr);
   }
@@ -1033,7 +1034,6 @@ CRef Solver::propagate() {
     // unaryWatches "propagation"
     if (useUnaryWatched &&  confl == CRef_Undef) {
       confl = propagateUnaryWatches(p);
-
     }
 
   }
@@ -1346,8 +1346,7 @@ lbool Solver::search(int nof_conflicts) {
 
     } else {
       // Our dynamic restart, see the SAT09 competition compagnion paper
-      if (
-          (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
+      if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
         lbdQueue.fastclear();
         progress_estimate = progressEstimate();
         int bt = 0;

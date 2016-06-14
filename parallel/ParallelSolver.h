@@ -54,6 +54,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Solver.h"
 #include "simp/SimpSolver.h"
 #include "parallel/SharedCompanion.h"
+
 namespace Glucose {
 //=================================================================================================
     //class MultiSolvers;
@@ -69,7 +70,7 @@ class ParallelSolver : public SimpSolver {
 
 protected : 
           // Multithread :
-    int		thn; // internal thread number
+    int thn; // internal thread number
     //MultiSolvers* belongsto; // Not working (due to incomplete types)
     SharedCompanion *sharedcomp;
     bool coreFUIP; // true if one core is specialized for branching on all FUIP
