@@ -113,7 +113,7 @@ MultiSolvers::MultiSolvers(ParallelSolver *s):
     // Generate only solver 0.
     // It loads the formula
     // All others solvers are clone of this one
-    solvers.push(s);
+    solvers.push_back(s);
     s->verbosity = 0; // No reportf in solvers... All is done in MultiSolver
     s->setThreadNumber(0);
     //s->belongsto = this;
@@ -146,7 +146,7 @@ void MultiSolvers::generateAllSolvers() {
 
     for(int i=1;i<nbsolvers;i++) {
 	ParallelSolver *s  = (ParallelSolver*)solvers[0]->clone();
-	solvers.push(s);
+	solvers.push_back(s);
 	s->verbosity = 0; // No reportf in solvers... All is done in MultiSolver
 	s->setThreadNumber(i);
 	s->sharedcomp =   this->sharedcomp;
@@ -185,7 +185,7 @@ Var MultiSolvers::newVar(bool sign, bool dvar)
   return numvar;
 }
 
-bool MultiSolvers::addClause_(vector<Lit>&ps) {
+bool MultiSolvers::addClause_(vector<Lit>& ps) {
   assert(solvers[0] != NULL); // There is at least one solver.
   // Check if clause is satisfied and remove false/duplicate literals:
   if (!okay())  return false;
@@ -276,13 +276,13 @@ void MultiSolvers::printStats() {
         printf("c |-------------------------------------------------------------------------------------------------------|\n");
 
 	//printf("%.0fs | ",cpu_time);
-	for(int i=0;i<solvers.size();i++) {
+	for(unsigned int i=0;i<solvers.size();i++) {
 	    solvers[i]->reportProgress();
     //printf(" %2d: %12ld confl. |", i,  (long int) solvers[i]->conflicts);
     }
 	long long int totalconf = 0;
 	long long int totalprop = 0;
-	for(int i=0;i<solvers.size();i++) {
+	for(unsigned int i=0;i<solvers.size();i++) {
 		totalconf+=  (long int) solvers[i]->conflicts;
 		totalprop+= solvers[i]->propagations;
     }
@@ -304,18 +304,18 @@ void MultiSolvers::printFinalStats() {
     printf("c\n");
     
     printf("c |---------------");
-    for(int i = 0;i<solvers.size();i++) 
+    for(unsigned int i = 0;i<solvers.size();i++)
         printf("|------------");
     printf("|-----------------|\n");    
 
     printf("c | Threads       ");
-    for(int i = 0;i < solvers.size();i++) {
+    for(unsigned int i = 0;i < solvers.size();i++) {
         printf("| %10d ",i);
     }
     printf("|      Total      |\n");
 
     printf("c |---------------");
-    for(int i = 0;i<solvers.size();i++) 
+    for(unsigned int i = 0;i<solvers.size();i++)
         printf("|------------");
     printf("|-----------------|\n");    
 
@@ -323,7 +323,7 @@ void MultiSolvers::printFinalStats() {
     printf("c | Conflicts     ");
 
     long long int totalconf = 0;
-    for(int i=0;i<solvers.size();i++)  {
+    for(unsigned int i=0;i<solvers.size();i++)  {
 	printf("| %10" PRIu64" ", solvers[i]->conflicts);
 	totalconf +=  solvers[i]->conflicts;
     }
@@ -331,7 +331,7 @@ void MultiSolvers::printFinalStats() {
    
     printf("c | Exported      ");
     uint64_t exported = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbexported);
         exported += solvers[i]->nbexported;
     }
@@ -339,7 +339,7 @@ void MultiSolvers::printFinalStats() {
 
     printf("c | Imported      ");
     uint64_t imported = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbimported);
         imported += solvers[i]->nbimported;
     }
@@ -347,7 +347,7 @@ void MultiSolvers::printFinalStats() {
 
     printf("c | Good          ");
     uint64_t importedGood = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbImportedGoodClauses);
         importedGood += solvers[i]->nbImportedGoodClauses;
     }
@@ -355,7 +355,7 @@ void MultiSolvers::printFinalStats() {
 
     printf("c | Purge         ");
     uint64_t importedPurg = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbimportedInPurgatory);
         importedPurg += solvers[i]->nbimportedInPurgatory;
     }
@@ -363,7 +363,7 @@ void MultiSolvers::printFinalStats() {
 
     printf("c | Promoted      ");
     uint64_t promoted = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbPromoted);
         promoted += solvers[i]->nbPromoted;
     }
@@ -371,7 +371,7 @@ void MultiSolvers::printFinalStats() {
 
     printf("c | Remove imp    ");
     uint64_t removedimported = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbRemovedUnaryWatchedClauses);
         removedimported += solvers[i]->nbRemovedUnaryWatchedClauses;
     }
@@ -379,7 +379,7 @@ void MultiSolvers::printFinalStats() {
 
     printf("c | Blocked Reuse ");
     uint64_t blockedreused = 0;
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbNotExportedBecauseDirectlyReused);
         blockedreused += solvers[i]->nbNotExportedBecauseDirectlyReused;
     }
@@ -387,33 +387,33 @@ void MultiSolvers::printFinalStats() {
 
 
     printf("c | Orig seen     ");
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->originalClausesSeen);
     }
     printf("|                 |\n"); 
 
     printf("c | Unaries       ");
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbUn);
     }
     printf("|                 |\n"); 
 
     printf("c | Binaries      ");
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbBin);
     }
     printf("|                 |\n"); 
 
     
      printf("c | Glues         ");
-    for(int i=0;i<solvers.size();i++) {
+    for(unsigned int i=0;i<solvers.size();i++) {
 	printf("| %10" PRIu64" ", solvers[i]->nbDL2);
     }
     printf("|                 |\n"); 
 
 
     int winner = -1;
-   for(int i=0;i<solvers.size();i++) {
+   for(unsigned int i=0;i<solvers.size();i++) {
      if(sharedcomp->winner()==solvers[i])
        winner = i;
      }
@@ -421,8 +421,8 @@ void MultiSolvers::printFinalStats() {
    if(winner!=-1) {
 int sum = 0;
    printf("c | Hamming       ");
-   for(int i = 0;i<solvers.size();i++) {
-     if(i==winner) {
+   for(unsigned int i = 0;i<solvers.size();i++) {
+     if((int)i==winner) {
        printf("|      X     ");
        continue;
      }
@@ -434,11 +434,11 @@ int sum = 0;
      sum+=nb;
 
    }
-   printf("| %15d |\n",sum/(solvers.size()>1?solvers.size()-1:1));
+   printf("| %15d |\n",sum/(solvers.size()>1?(int)solvers.size()-1:1));
    }
  
    printf("c |---------------");
-   for(int i = 0;i<solvers.size();i++) 
+   for(unsigned int i = 0;i<solvers.size();i++)
      printf("|------------");
    printf("|-----------------|\n");    
 
@@ -494,7 +494,7 @@ lbool MultiSolvers::solve() {
   // Launching all solvers
   for (i = 0; i < nbsolvers; i++) {
     pthread_t * pt = (pthread_t*)malloc(sizeof(pthread_t));
-    threads.push(pt);
+    threads.push_back(pt);
     solvers[i]->pmfinished = &mfinished;
     solvers[i]->pcfinished = &cfinished;
     pthread_create(threads[i], &thAttr, &localLaunch, (void*)solvers[i]); 
