@@ -185,13 +185,16 @@ Var MultiSolvers::newVar(bool sign, bool dvar)
   return numvar;
 }
 
-bool MultiSolvers::addClause_(vector<Lit>& ps) {
+bool MultiSolvers::addClause_(vector<Lit>&ps) {
   assert(solvers[0] != NULL); // There is at least one solver.
   // Check if clause is satisfied and remove false/duplicate literals:
   if (!okay())  return false;
 
   std::sort(ps.begin(), ps.end());
-  Lit p; unsigned int i, j;
+
+  Lit p;
+  unsigned int i, j;
+
   for (i = j = 0, p = lit_Undef; i < ps.size(); i++)
     if (solvers[0]->value(ps[i]) == l_True || ps[i] == ~p)
       return true;

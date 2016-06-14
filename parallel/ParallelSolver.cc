@@ -168,7 +168,7 @@ void ParallelSolver::reduceDB() {
         if (i == learnts.size() / 2)
             goodlimitlbd = c.lbd();
         sumsize += c.size();
-        if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
+        if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && ((int)i < limit)) {
             removeClause(learnts[i]);
             nbRemovedClauses++;
             panicModeLastRemoved++;
@@ -195,7 +195,7 @@ void ParallelSolver::reduceDB() {
 
         for (i = j = 0; i < unaryWatchedClauses.size(); i++) {
             Clause& c = ca[unaryWatchedClauses[i]];
-            if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && (i < limit)) {
+            if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(c) && ((int)i < limit)) {
                 removeClause(unaryWatchedClauses[i], c.getOneWatched()); // remove from the purgatory (or not)
                 nbRemovedUnaryWatchedClauses++;
                 panicModeLastRemovedShared++;
