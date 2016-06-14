@@ -59,7 +59,7 @@ namespace Glucose {
 
 template <class T>
 class bqueue {
-    vec<T>  elems;
+    vector<T>  elems;
     int     first;
 	int		last;
 	unsigned long long sumofqueue;
@@ -101,7 +101,7 @@ public:
 	int isvalid() const {return (queuesize==maxsize);}
 	
 	void growTo(int size) {
-		elems.growTo(size); 
+		elems.resize(size);
 		first=0; maxsize=size; queuesize = 0;last = 0;
 		for(int i=0;i<size;i++) elems[i]=0; 
 	}
@@ -128,7 +128,7 @@ public:
 	
     int  size(void)    { return queuesize; }
 
-    void clear(bool dealloc = false)   { elems.clear(dealloc); first = 0; maxsize=0; queuesize=0;sumofqueue=0;}
+    void clear()   { elems.clear(); first = 0; maxsize=0; queuesize=0;sumofqueue=0;}
 
     void copyTo(bqueue &dest) const {
         dest.last = last;
@@ -138,8 +138,9 @@ public:
         dest.expComputed = expComputed;
         dest.exp = exp;
         dest.value = value;
-        dest.first = first;        
-        elems.copyTo(dest.elems);
+        dest.first = first;
+        dest.elems.clear();
+        dest.elems.insert(dest.elems.end(), elems.begin(), elems.end());
     }
 };
 }

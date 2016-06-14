@@ -47,7 +47,6 @@ static inline void* xrealloc(void *ptr, size_t size)
 
 //=================================================================================================
 // Simple Region-based memory allocator:
-
 template<class T>
 class RegionAllocator
 {
@@ -65,12 +64,10 @@ class RegionAllocator
     enum { Unit_Size = sizeof(uint32_t) };
 
     explicit RegionAllocator(uint32_t start_cap = 1024*1024) : memory(NULL), sz(0), cap(0), wasted_(0){ capacity(start_cap); }
-    ~RegionAllocator()
-    {
+    ~RegionAllocator() {
         if (memory != NULL)
             ::free(memory);
     }
-
 
     uint32_t size      () const      { return sz; }
     uint32_t getCap    () const      { return cap;}
@@ -85,8 +82,10 @@ class RegionAllocator
 
     T*       lea       (Ref r)       { assert(r >= 0 && r < sz); return &memory[r]; }
     const T* lea       (Ref r) const { assert(r >= 0 && r < sz); return &memory[r]; }
-    Ref      ael       (const T* t)  { assert((void*)t >= (void*)&memory[0] && (void*)t < (void*)&memory[sz-1]);
-        return  (Ref)(t - &memory[0]); }
+    Ref      ael       (const T* t)  {
+      assert((void*)t >= (void*)&memory[0] && (void*)t < (void*)&memory[sz-1]);
+      return (Ref)(t - &memory[0]);
+    }
 
     void moveTo(RegionAllocator& to) {
         if (to.memory != NULL) ::free(to.memory);
@@ -107,8 +106,6 @@ class RegionAllocator
         to.cap = cap;
         to.wasted_ = wasted_;
     }
-
-
 
 };
 

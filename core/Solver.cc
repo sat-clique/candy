@@ -63,9 +63,6 @@ static const char* _cr = "CORE -- RESTART";
 static const char* _cred = "CORE -- REDUCE";
 static const char* _cm = "CORE -- MINIMIZE";
 
-
-
-
 static DoubleOption opt_K(_cr, "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_R(_cr, "R", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
 static IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT32_MAX));
@@ -78,7 +75,6 @@ static IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect 
 
 static IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT32_MAX));
 static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The min LBD required to minimize clause", 6, IntRange(3, INT32_MAX));
-
 
 static DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
@@ -94,11 +90,7 @@ static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted me
 //=================================================================================================
 // Constructor/Destructor:
 
-Solver::Solver() :
-
-    // Parameters (user settable):
-    //
-    verbosity(0)
+Solver::Solver() : verbosity(0)
 , showModel(0)
 , K(opt_K)
 , R(opt_R)
@@ -176,8 +168,7 @@ Solver::Solver() :
 // Special constructor used for cloning solvers
 //-------------------------------------------------------
 
-Solver::Solver(const Solver &s) :
-      verbosity(s.verbosity)
+Solver::Solver(const Solver &s) : verbosity(s.verbosity)
 , showModel(s.showModel)
 , K(s.K)
 , R(s.R)
@@ -218,7 +209,6 @@ Solver::Solver(const Solver &s) :
 , dec_vars(s.dec_vars), clauses_literals(s.clauses_literals)
 , learnts_literals(s.learnts_literals), max_literals(s.max_literals), tot_literals(s.tot_literals)
 , curRestart(s.curRestart)
-
 , ok(true)
 , cla_inc(s.cla_inc)
 , var_inc(s.var_inc)
@@ -272,7 +262,6 @@ Solver::Solver(const Solver &s) :
   s.order_heap.copyTo(order_heap);
   clauses.insert(clauses.end(), s.clauses.begin(), s.clauses.end());
   learnts.insert(learnts.end(), s.learnts.begin(), s.learnts.end());
-
   s.lbdQueue.copyTo(lbdQueue);
   s.trailQueue.copyTo(trailQueue);
 
@@ -309,15 +298,14 @@ bool Solver::isIncremental() {
 // Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
 // used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
 //
-
 Var Solver::newVar(bool sign, bool dvar) {
   int v = nVars();
-  watches .init(mkLit(v, false));
-  watches .init(mkLit(v, true));
-  watchesBin .init(mkLit(v, false));
-  watchesBin .init(mkLit(v, true));
-  unaryWatches .init(mkLit(v, false));
-  unaryWatches .init(mkLit(v, true));
+  watches.init(mkLit(v, false));
+  watches.init(mkLit(v, true));
+  watchesBin.init(mkLit(v, false));
+  watchesBin.init(mkLit(v, true));
+  unaryWatches.init(mkLit(v, false));
+  unaryWatches.init(mkLit(v, true));
   assigns.push_back(l_Undef);
   vardata.push_back(mkVarData(CRef_Undef, 0));
   activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
@@ -331,7 +319,6 @@ Var Solver::newVar(bool sign, bool dvar) {
 }
 
 bool Solver::addClause_(vector<Lit>& ps) {
-
   assert(decisionLevel() == 0);
   if (!ok) return false;
 
@@ -482,15 +469,14 @@ bool Solver::satisfied(const Clause& c) const {
 /************************************************************
  * Compute LBD functions
  *************************************************************/
-
-inline unsigned int Solver::computeLBD(const vec<Lit> & lits,int end) {
+inline unsigned int Solver::computeLBD(const vector<Lit>& lits, int end) {
   int nblevels = 0;
   MYFLAG++;
 
   if(incremental) { // ----------------- INCREMENTAL MODE
     if(end==-1) end = lits.size();
     int nbDone = 0;
-    for(int i=0;i<lits.size();i++) {
+    for(unsigned int i=0;i<lits.size();i++) {
       if(nbDone>=end) break;
       if(isSelector(var(lits[i]))) continue;
       nbDone++;
@@ -500,8 +486,9 @@ inline unsigned int Solver::computeLBD(const vec<Lit> & lits,int end) {
         nblevels++;
       }
     }
-  } else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
-    for(int i=0;i<lits.size();i++) {
+  }
+  else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
+    for(unsigned int i=0;i<lits.size();i++) {
       int l = level(var(lits[i]));
       if (permDiff[l] != MYFLAG) {
         permDiff[l] = MYFLAG;
@@ -512,7 +499,7 @@ inline unsigned int Solver::computeLBD(const vec<Lit> & lits,int end) {
 
   if (!reduceOnSize)
     return nblevels;
-  if (lits.size() < reduceOnSizeSize) return lits.size(); // See the XMinisat paper
+  if ((int)lits.size() < reduceOnSizeSize) return lits.size(); // See the XMinisat paper
   return lits.size() + nblevels;
 }
 
@@ -552,8 +539,7 @@ inline unsigned int Solver::computeLBD(const Clause &c) {
 /******************************************************************
  * Minimisation with binary reolution
  ******************************************************************/
-void Solver::minimisationWithBinaryResolution(vec<Lit> &out_learnt) {
-
+void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
   // Find the LBD measure
   unsigned int lbd = computeLBD(out_learnt);
   Lit p = ~out_learnt[0];
@@ -561,7 +547,7 @@ void Solver::minimisationWithBinaryResolution(vec<Lit> &out_learnt) {
   if (lbd <= lbLBDMinimizingClause) {
     MYFLAG++;
 
-    for (int i = 1; i < out_learnt.size(); i++) {
+    for (unsigned int i = 1; i < out_learnt.size(); i++) {
       permDiff[var(out_learnt[i])] = MYFLAG;
     }
 
@@ -574,10 +560,10 @@ void Solver::minimisationWithBinaryResolution(vec<Lit> &out_learnt) {
         permDiff[var(imp)] = MYFLAG - 1;
       }
     }
-    int l = out_learnt.size() - 1;
+    unsigned int l = out_learnt.size() - 1;
     if (nb > 0) {
       nbReducedClauses++;
-      for (int i = 1; i < out_learnt.size() - nb; i++) {
+      for (unsigned int i = 1; i < out_learnt.size() - nb; i++) {
         if (permDiff[var(out_learnt[i])] != MYFLAG) {
           Lit p = out_learnt[l];
           out_learnt[l] = out_learnt[i];
@@ -586,9 +572,7 @@ void Solver::minimisationWithBinaryResolution(vec<Lit> &out_learnt) {
           i--;
         }
       }
-
-      out_learnt.shrink(nb);
-
+      out_learnt.resize(out_learnt.size() - nb);
     }
   }
 }
@@ -640,7 +624,7 @@ Lit Solver::pickBranchLit() {
 
 /*_________________________________________________________________________________________________
 |
-|  analyze : (confl : Clause*) (out_learnt : vec<Lit>&) (out_btlevel : int&)  ->  [void]
+|  analyze : (confl : Clause*) (out_learnt : vector<Lit>&) (out_btlevel : int&)  ->  [void]
 |  
 |  Description:
 |    Analyze conflict and produce a reason clause.
@@ -655,14 +639,13 @@ Lit Solver::pickBranchLit() {
 |        rest of literals. There may be others from the same level though.
 |  
 |________________________________________________________________________________________________@*/
-void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& out_btlevel,unsigned int &lbd,unsigned int &szWithoutSelectors) {
+void Solver::analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel,unsigned int &lbd,unsigned int &szWithoutSelectors) {
   int pathC = 0;
   Lit p = lit_Undef;
 
-
   // Generate conflict clause:
   //
-  out_learnt.push(); // (leave room for the asserting literal)
+  out_learnt.push_back(mkLit(0)); // (leave room for the asserting literal)
   int index = trail.size() - 1;
   do {
     assert(confl != CRef_Undef); // (otherwise should be UIP)
@@ -716,9 +699,9 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
           } else {
             if(isSelector(var(q))) {
               assert(value(q) == l_False);
-              selectors.push(q);
+              selectors.push_back(q);
             } else
-              out_learnt.push(q);
+              out_learnt.push_back(q);
           }
         }
       }
@@ -736,10 +719,10 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
 
   // Simplify conflict clause:
   //
-  int i, j;
+  unsigned int i, j;
 
-  for (int i = 0; i < selectors.size(); i++)
-    out_learnt.push(selectors[i]);
+  for (unsigned int i = 0; i < selectors.size(); i++)
+    out_learnt.push_back(selectors[i]);
 
   analyze_toclear.clear();
   analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
@@ -772,7 +755,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
     i = j = out_learnt.size();
 
   max_literals += out_learnt.size();
-  out_learnt.shrink(i - j);
+  out_learnt.resize(j);
   tot_literals += out_learnt.size();
 
 
@@ -782,7 +765,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
       Then, we reduce clauses with small LBD.
       Otherwise, this can be useless
    */
-  if (!incremental && out_learnt.size() <= lbSizeMinimizingClause) {
+  if (!incremental && (int)out_learnt.size() <= lbSizeMinimizingClause) {
     minimisationWithBinaryResolution(out_learnt);
   }
   // Find correct backtrack level:
@@ -792,7 +775,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
   else {
     int max_i = 1;
     // Find the first literal assigned at the next-highest level:
-    for (int i = 2; i < out_learnt.size(); i++)
+    for (unsigned int i = 2; i < out_learnt.size(); i++)
       if (level(var(out_learnt[i])) > level(var(out_learnt[max_i])))
         max_i = i;
     // Swap-in this literal at index 1:
@@ -803,7 +786,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
   }
   if(incremental) {
     szWithoutSelectors = 0;
-    for(int i=0;i<out_learnt.size();i++) {
+    for(unsigned int i=0;i<out_learnt.size();i++) {
       if(!isSelector(var((out_learnt[i])))) szWithoutSelectors++;
       else if(i>0) break;
     }
@@ -811,7 +794,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
     szWithoutSelectors = out_learnt.size();
 
   // Compute LBD
-  lbd = computeLBD(out_learnt,out_learnt.size()-selectors.size());
+  lbd = computeLBD(out_learnt, out_learnt.size()-selectors.size());
 
   // UPDATEVARACTIVITY trick (see competition'09 companion paper)
   if (lastDecisionLevel.size() > 0) {
@@ -825,7 +808,7 @@ void Solver::analyze(CRef confl, vec<Lit>& out_learnt,vec<Lit>&selectors, int& o
 
 
   for (unsigned int j = 0; j < analyze_toclear.size(); j++) seen[var(analyze_toclear[j])] = 0; // ('seen[]' is now cleared)
-  for (int j = 0; j < selectors.size(); j++) seen[var(selectors[j])] = 0;
+  for (unsigned int j = 0; j < selectors.size(); j++) seen[var(selectors[j])] = 0;
 }
 
 
@@ -1194,7 +1177,6 @@ void Solver::rebuildOrderHeap() {
     if (decision[v] && value(v) == l_Undef)
       vs.push(v);
   order_heap.build(vs);
-
 }
 
 /*_________________________________________________________________________________________________
@@ -1252,7 +1234,7 @@ lbool Solver::search(int nof_conflicts) {
   assert(ok);
   int backtrack_level;
   int conflictC = 0;
-  vec<Lit> learnt_clause, selectors;
+  vector<Lit> learnt_clause, selectors;
   unsigned int nblevels,szWithoutSelectors = 0;
   bool blocked = false;
   starts++;
@@ -1269,7 +1251,6 @@ lbool Solver::search(int nof_conflicts) {
     if (confl != CRef_Undef) {
       if(parallelJobIsFinished())
         return l_Undef;
-
 
       sumDecisionLevels += decisionLevel();
       // CONFLICT
@@ -1313,7 +1294,7 @@ lbool Solver::search(int nof_conflicts) {
       cancelUntil(backtrack_level);
 
       if (certifiedUNSAT) {
-        for (int i = 0; i < learnt_clause.size(); i++)
+        for (unsigned int i = 0; i < learnt_clause.size(); i++)
           fprintf(certifiedOutput, "%i ", (var(learnt_clause[i]) + 1) *
               (-2 * sign(learnt_clause[i]) + 1));
         fprintf(certifiedOutput, "0\n");
@@ -1533,73 +1514,73 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
 // Writing CNF to DIMACS:
 // 
 // FIXME: this needs to be rewritten completely.
-
-static Var mapVar(Var x, vec<Var>& map, Var& max) {
-  if (map.size() <= x || map[x] == -1) {
-    map.growTo(x + 1, -1);
-    map[x] = max++;
-  }
-  return map[x];
-}
-
-void Solver::toDimacs(FILE* f, Clause& c, vec<Var>& map, Var& max) {
-  if (satisfied(c)) return;
-
-  for (int i = 0; i < c.size(); i++)
-    if (value(c[i]) != l_False)
-      fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
-  fprintf(f, "0\n");
-}
-
-void Solver::toDimacs(const char *file, const vec<Lit>& assumps) {
-  FILE* f = fopen(file, "wr");
-  if (f == NULL)
-    fprintf(stderr, "could not open file %s\n", file), exit(1);
-  toDimacs(f, assumps);
-  fclose(f);
-}
-
-void Solver::toDimacs(FILE* f, const vec<Lit>& assumps) {
-  // Handle case when solver is in contradictory state:
-  if (!ok) {
-    fprintf(f, "p cnf 1 2\n1 0\n-1 0\n");
-    return;
-  }
-
-  vec<Var> map;
-  Var max = 0;
-
-  // Cannot use removeClauses here because it is not safe
-  // to deallocate them at this point. Could be improved.
-  int cnt = 0;
-  for (unsigned int i = 0; i < clauses.size(); i++)
-    if (!satisfied(ca[clauses[i]]))
-      cnt++;
-
-  for (unsigned int i = 0; i < clauses.size(); i++)
-    if (!satisfied(ca[clauses[i]])) {
-      Clause& c = ca[clauses[i]];
-      for (int j = 0; j < c.size(); j++)
-        if (value(c[j]) != l_False)
-          mapVar(var(c[j]), map, max);
-    }
-
-  // Assumptions are added as unit clauses:
-  cnt += assumptions.size();
-
-  fprintf(f, "p cnf %d %d\n", max, cnt);
-
-  for (unsigned int i = 0; i < assumptions.size(); i++) {
-    assert(value(assumptions[i]) != l_False);
-    fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
-  }
-
-  for (unsigned int i = 0; i < clauses.size(); i++)
-    toDimacs(f, ca[clauses[i]], map, max);
-
-  if (verbosity > 0)
-    printf("Wrote %d clauses with %d variables.\n", cnt, max);
-}
+//
+//static Var mapVar(Var x, vector<Var>& map, Var& max) {
+//  if (map.size() <= x || map[x] == -1) {
+//    map.growTo(x + 1, -1);
+//    map[x] = max++;
+//  }
+//  return map[x];
+//}
+//
+//void Solver::toDimacs(FILE* f, Clause& c, vector<Var>& map, Var& max) {
+//  if (satisfied(c)) return;
+//
+//  for (int i = 0; i < c.size(); i++)
+//    if (value(c[i]) != l_False)
+//      fprintf(f, "%s%d ", sign(c[i]) ? "-" : "", mapVar(var(c[i]), map, max) + 1);
+//  fprintf(f, "0\n");
+//}
+//
+//void Solver::toDimacs(const char *file, const vector<Lit>& assumps) {
+//  FILE* f = fopen(file, "wr");
+//  if (f == NULL)
+//    fprintf(stderr, "could not open file %s\n", file), exit(1);
+//  toDimacs(f, assumps);
+//  fclose(f);
+//}
+//
+//void Solver::toDimacs(FILE* f, const vector<Lit>& assumps) {
+//  // Handle case when solver is in contradictory state:
+//  if (!ok) {
+//    fprintf(f, "p cnf 1 2\n1 0\n-1 0\n");
+//    return;
+//  }
+//
+//  vector<Var> map;
+//  Var max = 0;
+//
+//  // Cannot use removeClauses here because it is not safe
+//  // to deallocate them at this point. Could be improved.
+//  int cnt = 0;
+//  for (unsigned int i = 0; i < clauses.size(); i++)
+//    if (!satisfied(ca[clauses[i]]))
+//      cnt++;
+//
+//  for (unsigned int i = 0; i < clauses.size(); i++)
+//    if (!satisfied(ca[clauses[i]])) {
+//      Clause& c = ca[clauses[i]];
+//      for (int j = 0; j < c.size(); j++)
+//        if (value(c[j]) != l_False)
+//          mapVar(var(c[j]), map, max);
+//    }
+//
+//  // Assumptions are added as unit clauses:
+//  cnt += assumptions.size();
+//
+//  fprintf(f, "p cnf %d %d\n", max, cnt);
+//
+//  for (unsigned int i = 0; i < assumptions.size(); i++) {
+//    assert(value(assumptions[i]) != l_False);
+//    fprintf(f, "%s%d 0\n", sign(assumptions[i]) ? "-" : "", mapVar(var(assumptions[i]), map, max) + 1);
+//  }
+//
+//  for (unsigned int i = 0; i < clauses.size(); i++)
+//    toDimacs(f, ca[clauses[i]], map, max);
+//
+//  if (verbosity > 0)
+//    printf("Wrote %d clauses with %d variables.\n", cnt, max);
+//}
 
 
 //=================================================================================================
