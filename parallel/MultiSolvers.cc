@@ -529,17 +529,11 @@ lbool MultiSolvers::solve() {
   result = sharedcomp->jobStatus;
   if (result == l_True) {
       int n = sharedcomp->jobFinishedBy->nVars();
-	model.growTo(n);
+	model.resize(n);
 	for(int i = 0; i < n; i++)
 	    model[i] = sharedcomp->jobFinishedBy->model[i];
   }
-
 	
   return result;
-  /*
-  for(int i=0;i<NBTHREADS;i++)
-    pthread_join(*threads[i],&status);
-  */
-
 }
 

@@ -86,9 +86,9 @@ ClausesBuffer::ClausesBuffer(int _nbThreads, unsigned int _maxsize) : first(0), 
     removedClauses(0),
     forcedRemovedClauses(0), nbThreads(_nbThreads), 
     whenFullRemoveOlder(opt_whenFullRemoveOlder), fifoSizeByCore(opt_fifoSizeByCore) {
-	lastOfThread.growTo(_nbThreads);
+	lastOfThread.resize(_nbThreads);
 	for(int i=0;i<nbThreads;i++) lastOfThread[i] = _maxsize-1;
-	elems.growTo(maxsize);
+	elems.resize(maxsize);
 } 
 
 ClausesBuffer::ClausesBuffer() : first(0), last(0), maxsize(0), queuesize(0), removedClauses(0), forcedRemovedClauses(0), nbThreads(0),
@@ -99,9 +99,9 @@ void ClausesBuffer::setNbThreads(int _nbThreads) {
     last = _maxsize -1;
     maxsize = _maxsize;
     nbThreads = _nbThreads;
-    lastOfThread.growTo(_nbThreads);
+    lastOfThread.resize(_nbThreads);
     for(int i=0;i<nbThreads;i++) lastOfThread[i] = _maxsize-1;
-    elems.growTo(maxsize);
+    elems.resize(maxsize);
 }
 
 uint32_t ClausesBuffer::getCap() {
@@ -182,7 +182,7 @@ bool ClausesBuffer::pushClause(int threadId, Clause & c) {
 }
 
 bool ClausesBuffer::getClause(int threadId, int & threadOrigin, vector<Lit>& resultClause, bool firstFound) {
-    assert(lastOfThread.size() > threadId);
+    assert((int)lastOfThread.size() > threadId);
     unsigned int thislast = lastOfThread[threadId];
     assert(!firstFound || thislast == last); // FIXME: Gilles has this assertion on his cluster
 

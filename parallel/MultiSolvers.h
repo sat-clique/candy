@@ -91,7 +91,7 @@ public:
   void adjustParameters();
   void adjustNumberOfCores();
   void interrupt() {}
-  vec<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
+  vector<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
   inline bool okay() {
     if(!ok) return ok;
     for(int i = 0;i<solvers.size();i++) {

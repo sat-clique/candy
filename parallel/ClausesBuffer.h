@@ -62,7 +62,7 @@ namespace Glucose {
     // index + 2 : threadId
     // index + 3 : .. index + 3 + size : Lit of clause
     class ClausesBuffer {
-	vec<uint32_t>  elems;
+	vector<uint32_t>  elems;
 	unsigned int     first;
 	unsigned int	 last;
 	unsigned int     maxsize;
@@ -73,7 +73,7 @@ namespace Glucose {
 	int       nbThreads;
 	bool      whenFullRemoveOlder;
 	unsigned int fifoSizeByCore;
-	vec<unsigned int> lastOfThread; // Last value for a thread 
+	vector<unsigned int> lastOfThread; // Last value for a thread
 
 	public:
 	ClausesBuffer(int _nbThreads, unsigned int _maxsize);
@@ -95,7 +95,7 @@ namespace Glucose {
         uint32_t getCap();
 	void growTo(int size) {
 	    assert(0); // Not implemented (essentially for efficiency reasons)
-	    elems.growTo(size); 
+	    elems.resize(size);
 	    first=0; maxsize=size; queuesize = 0;last = 0;
 	    for(int i=0;i<size;i++) elems[i]=0; 
 	}
@@ -104,7 +104,7 @@ namespace Glucose {
 
 	int  size(void)    { return queuesize; }
 
-	void clear(bool dealloc = false)   { elems.clear(dealloc); first = 0; maxsize=0; queuesize=0;}
+	void clear(bool dealloc = false)   { elems.clear(); first = 0; maxsize=0; queuesize=0;}
 	inline  int  toInt     (Lit p)              { return p.x; } 
 
     };

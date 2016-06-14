@@ -200,10 +200,7 @@ int main(int argc, char** argv)
             exit(20);
         }
 
-      //  vec<Lit> dummy;
         lbool ret = msolver.solve();
-	
-	
         printf("c\n");
     	printf("c real time : %g s\n", realTime() - realTimeStart);
 	printf("c cpu time  : %g s\n", cpuTime());
@@ -233,13 +230,11 @@ int main(int argc, char** argv)
 	  
 	  if(msolver.getShowModel() && ret==l_True) {
 	    printf("v ");
-	    for (int i = 0; i < msolver.model.size() ; i++)
+	    for (unsigned int i = 0; i < msolver.model.size() ; i++)
 	      if (msolver.model[i] != l_Undef)
 		printf("%s%s%d", (i==0)?"":" ", (msolver.model[i]==l_True)?"":"-", i+1);
 	    printf(" 0\n");
 	  }
-
-     
     
 #ifdef NDEBUG
         exit(ret == l_True ? 10 : ret == l_False ? 20 : 0);     // (faster than "return", which will invoke the destructor for 'Solver')
