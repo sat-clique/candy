@@ -167,11 +167,7 @@ struct Stats {
     vec<int> threadIndexOfSolverCompanion; // threadIndexOfSolverCompanion[solvercompanions[i]] is the index in threads[] of the solvercompanion i
 };
 
-<<<<<<< HEAD
 inline bool MultiSolvers::addClause(const vector<Lit>& ps) {
-=======
-inline bool MultiSolvers::addClause(const vector<Lit>& ps)    {
->>>>>>> 90782666ee20f55e81d7e1bdab124395f4e971f3
   add_tmp.clear();
   add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
   return addClause_(add_tmp);
