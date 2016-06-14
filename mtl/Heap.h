@@ -139,7 +139,7 @@ class Heap {
     { 
         for (int i = 0; i < heap.size(); i++)
             indices[heap[i]] = -1;
-        heap.clear(dealloc); 
+        heap.clear(dealloc);
     }
 };
 

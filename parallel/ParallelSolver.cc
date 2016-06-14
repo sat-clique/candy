@@ -409,7 +409,7 @@ bool ParallelSolver::parallelJobIsFinished() {
     return (sharedcomp->jobFinished());
 }
 
-// @overide
+// @Override
 lbool ParallelSolver::solve_(bool do_simp, bool turn_off_simp) {
     vector<Var> extra_frozen;
     lbool    result = l_True;

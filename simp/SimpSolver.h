@@ -112,7 +112,7 @@ class SimpSolver : public Solver {
     // Generate a (possibly simplified) DIMACS file:
     //
 #if 0
-    void    toDimacs  (const char* file, const vec<Lit>& assumps);
+    void    toDimacs  (const char* file, const vector<Lit>& assumps);
     void    toDimacs  (const char* file);
     void    toDimacs  (const char* file, Lit p);
     void    toDimacs  (const char* file, Lit p, Lit q);
@@ -142,8 +142,8 @@ class SimpSolver : public Solver {
     // Helper structures:
     //
     struct ElimLt {
-        const vec<int>& n_occ;
-        explicit ElimLt(const vec<int>& no) : n_occ(no) {}
+        const vector<int>& n_occ;
+        explicit ElimLt(const vector<int>& no) : n_occ(no) {}
 
         // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
         // 32-bit implementation instead then, but this will have to do for now.
@@ -166,15 +166,14 @@ class SimpSolver : public Solver {
     //
     int                 elimorder;
     bool                use_simplification;
-    vec<uint32_t>       elimclauses;
-    vec<char>           touched;
-    OccLists<Var, CRef, ClauseDeleted>
-                        occurs;
-    vec<int>            n_occ;
+    vector<uint32_t>       elimclauses;
+    vector<char>           touched;
+    OccLists<Var, CRef, ClauseDeleted> occurs;
+    vector<int>            n_occ;
     Heap<ElimLt>        elim_heap;
     deque<CRef>         subsumption_queue;
-    vec<char>           frozen;
-    vec<char>           eliminated;
+    vector<char>           frozen;
+    vector<char>           eliminated;
     unsigned int        bwdsub_assigns;
     int                 n_touched;
 

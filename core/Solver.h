@@ -109,9 +109,9 @@ public:
     bool    okay         () const;                  // FALSE means solver is in a conflicting state
 
        // Convenience versions of 'toDimacs()':
-    void    toDimacs     (FILE* f, const vec<Lit>& assumps);            // Write CNF to file in DIMACS-format.
-    void    toDimacs     (const char *file, const vec<Lit>& assumps);
-    void    toDimacs     (FILE* f, Clause& c, vec<Var>& map, Var& max);
+    void    toDimacs     (FILE* f, const vector<Lit>& assumps);            // Write CNF to file in DIMACS-format.
+    void    toDimacs     (const char *file, const vector<Lit>& assumps);
+    void    toDimacs     (FILE* f, Clause& c, vector<Var>& map, Var& max);
     void    toDimacs     (const char* file);
     void    toDimacs     (const char* file, Lit p);
     void    toDimacs     (const char* file, Lit p, Lit q);
@@ -359,7 +359,7 @@ protected:
     CRef     propagate        ();                                                      // Perform unit propagation. Returns possibly conflicting clause.
     CRef     propagateUnaryWatches(Lit p);                                                  // Perform propagation on unary watches of p, can find only conflicts
     void     cancelUntil      (int level);                                             // Backtrack until a certain level.
-    void     analyze          (CRef confl, vec<Lit>& out_learnt, vec<Lit> & selectors, int& out_btlevel,unsigned int &nblevels,unsigned int &szWithoutSelectors);    // (bt = backtrack)
+    void     analyze          (CRef confl, vector<Lit>& out_learnt, vector<Lit> & selectors, int& out_btlevel,unsigned int &nblevels,unsigned int &szWithoutSelectors);    // (bt = backtrack)
     void     analyzeFinal     (Lit p, vector<Lit>& out_conflict);                         // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool     litRedundant     (Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
     lbool    search           (int nof_conflicts);                                     // Search for a given number of conflicts.
@@ -386,9 +386,9 @@ protected:
     bool     locked           (const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
     bool     satisfied        (const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
-    unsigned int computeLBD(const vec<Lit> & lits,int end=-1);
+    unsigned int computeLBD(const vector<Lit>& lits, int end=-1);
     unsigned int computeLBD(const Clause &c);
-    void minimisationWithBinaryResolution(vec<Lit> &out_learnt);
+    void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
     virtual void     relocAll         (ClauseAllocator& to);
 
@@ -518,10 +518,10 @@ inline lbool    Solver::solveLimited  (const vector<Lit>& assumps){
 }
 inline bool     Solver::okay          ()      const   { return ok; }
 
-inline void     Solver::toDimacs     (const char* file){ vec<Lit> as; toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p){ vec<Lit> as; as.push(p); toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vec<Lit> as; as.push(p); as.push(q); toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vec<Lit> as; as.push(p); as.push(q); as.push(r); toDimacs(file, as); }
+inline void     Solver::toDimacs     (const char* file){ vector<Lit> as; toDimacs(file, as); }
+inline void     Solver::toDimacs     (const char* file, Lit p){ vector<Lit> as; as.push_back(p); toDimacs(file, as); }
+inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vector<Lit> as; as.push_back(p); as.push_back(q); toDimacs(file, as); }
+inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vector<Lit> as; as.push_back(p); as.push_back(q); as.push_back(r); toDimacs(file, as); }
 
 
 

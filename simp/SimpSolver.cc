@@ -129,13 +129,13 @@ SimpSolver::SimpSolver(const SimpSolver &s) : Solver(s)
     remove_satisfied      = false;
     //End TODO  
     
-    s.elimclauses.memCopyTo(elimclauses);
-    s.touched.memCopyTo(touched);
+    elimclauses.insert(elimclauses.end(), s.elimclauses.begin(), s.elimclauses.end());
+    touched.insert(touched.end(), s.touched.begin(), s.touched.end());
     s.occurs.copyTo(occurs);
-    s.n_occ.memCopyTo(n_occ);
+    n_occ.insert(n_occ.end(), s.n_occ.begin(), s.n_occ.end());
     s.elim_heap.copyTo(elim_heap);
-    s.frozen.memCopyTo(frozen);
-    s.eliminated.memCopyTo(eliminated);
+    frozen.insert(frozen.end(), s.frozen.begin(), s.frozen.end());
+    eliminated.insert(eliminated.end(), s.eliminated.begin(), s.eliminated.end());
 
     use_simplification = s.use_simplification;
     bwdsub_assigns = s.bwdsub_assigns;
@@ -149,21 +149,21 @@ SimpSolver::SimpSolver(const SimpSolver &s) : Solver(s)
 
 Var SimpSolver::newVar(bool sign, bool dvar) {
     Var v = Solver::newVar(sign, dvar);
-    frozen    .push((char)false);
-    eliminated.push((char)false);
+    frozen.push_back((char)false);
+    eliminated.push_back((char)false);
 
     if (use_simplification){
-        n_occ     .push(0);
-        n_occ     .push(0);
-        occurs    .init(v);
-        touched   .push(0);
-        elim_heap .insert(v);
+        n_occ.push_back(0);
+        n_occ.push_back(0);
+        occurs.init(v);
+        touched.push_back(0);
+        elim_heap.insert(v);
     }
     return v; }
 
 lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp)
 {
-    vec<Var> extra_frozen;
+    vector<Var> extra_frozen;
     lbool    result = l_True;
     do_simp &= use_simplification;
 
@@ -178,7 +178,7 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp)
             if (!frozen[v]){
                 // Freeze and store.
                 setFrozen(v, true);
-                extra_frozen.push(v);
+                extra_frozen.push_back(v);
             } }
 
         result = lbool(eliminate(turn_off_simp));
@@ -194,8 +194,8 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp)
 
     if (do_simp)
         // Unfreeze the assumptions that were frozen:
-        for (int i = 0; i < extra_frozen.size(); i++)
-            setFrozen(extra_frozen[i], false);
+        for (Var v : extra_frozen)
+            setFrozen(v, false);
 
 
     return result;
@@ -373,7 +373,7 @@ void SimpSolver::gatherTouchedClauses()
         if (ca[subsumption_queue[i]].mark() == 0)
             ca[subsumption_queue[i]].mark(2);
 
-    for (int i = 0; i < touched.size(); i++)
+    for (unsigned int i = 0; i < touched.size(); i++)
         if (touched[i]){
             const vector<CRef>& cs = occurs.lookup(i);
             for (unsigned int j = 0; j < cs.size(); j++)
@@ -522,14 +522,14 @@ bool SimpSolver::asymmVar(Var v)
 }
 
 
-static void mkElimClause(vec<uint32_t>& elimclauses, Lit x)
+static void mkElimClause(vector<uint32_t>& elimclauses, Lit x)
 {
-    elimclauses.push(toInt(x));
-    elimclauses.push(1);
+    elimclauses.push_back(toInt(x));
+    elimclauses.push_back(1);
 }
 
 
-static void mkElimClause(vec<uint32_t>& elimclauses, Var v, Clause& c)
+static void mkElimClause(vector<uint32_t>& elimclauses, Var v, Clause& c)
 {
     int first = elimclauses.size();
     int v_pos = -1;
@@ -537,7 +537,7 @@ static void mkElimClause(vec<uint32_t>& elimclauses, Var v, Clause& c)
     // Copy clause to elimclauses-vector. Remember position where the
     // variable 'v' occurs:
     for (int i = 0; i < c.size(); i++){
-        elimclauses.push(toInt(c[i]));
+        elimclauses.push_back(toInt(c[i]));
         if (var(c[i]) == v)
             v_pos = i + first;
     }
@@ -550,7 +550,7 @@ static void mkElimClause(vec<uint32_t>& elimclauses, Var v, Clause& c)
     elimclauses[first] = tmp;
 
     // Store the length of the clause last:
-    elimclauses.push(c.size());
+    elimclauses.push_back(c.size());
 }
 
 
@@ -564,9 +564,9 @@ bool SimpSolver::eliminateVar(Var v)
     // Split the occurrences into positive and negative:
     //
     const vector<CRef>& cls = occurs.lookup(v);
-    vector<CRef>        pos, neg;
-    for (unsigned int i = 0; i < cls.size(); i++)
-        (find(ca[cls[i]], mkLit(v)) ? pos : neg).push_back(cls[i]);
+    vector<CRef> pos, neg;
+    for (const CRef& cl : cls)
+        (find(ca[cl], mkLit(v)) ? pos : neg).push_back(cl);
 
     // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
     // clause must exceed the limit on the maximal clause size (if it is set):
@@ -638,7 +638,6 @@ bool SimpSolver::substitute(Var v, Lit x)
             Lit p = c[j];
             subst_clause.push_back(var(p) == v ? x ^ sign(p) : p);
         }
-
  
         if (!addClause_(subst_clause))
             return ok = false;
@@ -736,10 +735,10 @@ bool SimpSolver::eliminate(bool turn_off_elim)
 
     // If no more simplification is needed, free all simplification-related data structures:
     if (turn_off_elim){
-        touched  .clear(true);
-        occurs   .clear(true);
-        n_occ    .clear(true);
-        elim_heap.clear(true);
+        touched.clear();
+        occurs.clear(true);
+        n_occ.clear();
+        elim_heap.clear();
         subsumption_queue.clear();
 
         use_simplification    = false;
