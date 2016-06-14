@@ -88,7 +88,7 @@ class RegionAllocator
     Ref      ael       (const T* t)  { assert((void*)t >= (void*)&memory[0] && (void*)t < (void*)&memory[sz-1]);
         return  (Ref)(t - &memory[0]); }
 
-    void     moveTo(RegionAllocator& to) {
+    void moveTo(RegionAllocator& to) {
         if (to.memory != NULL) ::free(to.memory);
         to.memory = memory;
         to.sz = sz;
