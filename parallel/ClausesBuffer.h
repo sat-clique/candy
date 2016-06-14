@@ -88,8 +88,8 @@ namespace Glucose {
 	uint32_t noCheckPop(unsigned int & index);
 
 	// Return true if the clause was succesfully added
-        bool pushClause(int threadId, Clause & c);
-        bool getClause(int threadId, int & threadOrigin, vec<Lit> & resultClause, bool firstFound = false); 
+    bool pushClause(int threadId, Clause& c);
+    bool getClause(int threadId, int & threadOrigin, vector<Lit>& resultClause, bool firstFound = false);
 	
 	int maxSize() const {return maxsize;}
         uint32_t getCap();
