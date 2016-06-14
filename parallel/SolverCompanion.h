@@ -55,7 +55,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #ifndef SolverCompanion_h
 #define SolverCompanion_h
-#include "mtl/Vec.h"
+#include <vector>
+using namespace std;
 namespace Glucose {
     
     class ParallelSolver;
@@ -72,7 +73,7 @@ class SolverCompanion {
 	protected:
 	int runOnceCompanion(ParallelSolver*s); // run it only on this watched solver
 	friend class ParallelSolver;
-	vec<ParallelSolver*> watchedSolvers; 
+	vector<ParallelSolver*> watchedSolvers;
 };
 }
 #endif

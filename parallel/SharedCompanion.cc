@@ -53,6 +53,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "parallel/ClausesBuffer.h"
 #include "parallel/SharedCompanion.h"
 
+#include <vector>
+
+using namespace std;
 
 using namespace Glucose;
 
@@ -85,22 +88,22 @@ void SharedCompanion::printStats() {
 
 // No multithread safe
 bool SharedCompanion::addSolver(ParallelSolver* s) {
-	watchedSolvers.push(s);
+	watchedSolvers.push_back(s);
 	pthread_mutex_t* mu = (pthread_mutex_t*)malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(mu,NULL);
-	assert(s->thn == watchedSolvers.size()-1); // all solvers must have been registered in the good order
-	nextUnit.push(0);
+	assert(s->thn == (int)watchedSolvers.size()-1); // all solvers must have been registered in the good order
+	nextUnit.push_back(0);
 
 	return true;
 }
 void SharedCompanion::newVar(bool sign) {
-   isUnary .push(l_Undef);
+   isUnary.push_back(l_Undef);
 }
 
 void SharedCompanion::addLearnt(ParallelSolver *s,Lit unary) {
   pthread_mutex_lock(&mutexSharedUnitCompanion);
   if (isUnary[var(unary)]==l_Undef) {
-      unitLit.push(unary);
+      unitLit.push_back(unary);
       isUnary[var(unary)] = sign(unary)?l_False:l_True;
   } 
   pthread_mutex_unlock(&mutexSharedUnitCompanion);
@@ -111,7 +114,7 @@ Lit SharedCompanion::getUnary(ParallelSolver *s) {
   Lit ret = lit_Undef;
 
   pthread_mutex_lock(&mutexSharedUnitCompanion);
-  if (nextUnit[sn] < unitLit.size())
+  if (nextUnit[sn] < (int)unitLit.size())
       ret = unitLit[nextUnit[sn]++];
   pthread_mutex_unlock(&mutexSharedUnitCompanion);
  return ret;
@@ -123,7 +126,7 @@ Lit SharedCompanion::getUnary(ParallelSolver *s) {
 bool SharedCompanion::addLearnt(ParallelSolver *s, Clause & c) { 
   int sn = s->thn; // thread number of the solver
   bool ret = false;
-  assert(watchedSolvers.size()>sn);
+  assert((int)watchedSolvers.size()>sn);
 
   pthread_mutex_lock(&mutexSharedClauseCompanion);
   ret = clausesBuffer.pushClause(sn, c);
