@@ -94,7 +94,7 @@ public:
   vector<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
   inline bool okay() {
     if(!ok) return ok;
-    for(int i = 0;i<solvers.size();i++) {
+    for(unsigned int i = 0;i<solvers.size();i++) {
 	if(!((SimpSolver*)solvers[i])->okay()) {
 	    ok = false;
 	    return false;
@@ -124,7 +124,7 @@ struct Stats {
 	int nbcompbysolver; // Number of companions by solvers
 	bool immediateSharingGlue ;
 	int allClonesAreBuilt;
-        bool showModel; // show model on/off
+    bool showModel; // show model on/off
 
 	int winner;
 
@@ -160,11 +160,11 @@ struct Stats {
     pthread_mutex_t mfinished; // mutex on which main process may wait for... As soon as one process finishes it release the mutex
     pthread_cond_t cfinished; // condition variable that says that a thread has finished
 	
-    vec<ParallelSolver*> solvers; // set of plain solvers
-    vec<SolverCompanion*> solvercompanions; // set of companion solvers
-    vec<pthread_t*> threads; // all threads of this process
-    vec<int> threadIndexOfSolver; // threadIndexOfSolver[solvers[i]] is the index in threads[] of the solver i
-    vec<int> threadIndexOfSolverCompanion; // threadIndexOfSolverCompanion[solvercompanions[i]] is the index in threads[] of the solvercompanion i
+    vector<ParallelSolver*> solvers; // set of plain solvers
+    vector<SolverCompanion*> solvercompanions; // set of companion solvers
+    vector<pthread_t*> threads; // all threads of this process
+    vector<int> threadIndexOfSolver; // threadIndexOfSolver[solvers[i]] is the index in threads[] of the solver i
+    vector<int> threadIndexOfSolverCompanion; // threadIndexOfSolverCompanion[solvercompanions[i]] is the index in threads[] of the solvercompanion i
 };
 
 inline bool MultiSolvers::addClause(const vector<Lit>& ps) {

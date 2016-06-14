@@ -104,8 +104,8 @@ ParallelSolver::ParallelSolver(const ParallelSolver &s) : SimpSolver(s)
 , dontExportDirectReusedClauses(s.dontExportDirectReusedClauses)
 , nbNotExportedBecauseDirectlyReused(s.nbNotExportedBecauseDirectlyReused) 
 {
-    s.goodImportsFromThreads.memCopyTo(goodImportsFromThreads);   
-    useUnaryWatched = s.useUnaryWatched;
+  goodImportsFromThreads.insert(goodImportsFromThreads.end(), s.goodImportsFromThreads.begin(), s.goodImportsFromThreads.end());
+  useUnaryWatched = s.useUnaryWatched;
 }
 
 
@@ -247,7 +247,7 @@ void ParallelSolver::reportProgress() {
     //printf("c thread=%d confl=%lld starts=%llu reduceDB=%llu learnts=%d broadcast=%llu  blockedReuse=%lld imported=%llu promoted=%llu limitlbd=%llu limitsize=%llu\n", thn, conflicts, starts, nbReduceDB, learnts.size(), nbexported, nbNotExportedBecauseDirectlyReused, nbimported, nbPromoted, goodlimitlbd, goodlimitsize);
 }
 
-void ParallelSolver::reportProgressArrayImports(vec<unsigned int> &totalColumns) {
+void ParallelSolver::reportProgressArrayImports(vector<unsigned int> &totalColumns) {
     return ; // TODO : does not currently work
     unsigned int totalImports = 0;
     printf("c %3d | ", thn);

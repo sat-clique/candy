@@ -95,7 +95,7 @@ public:
     int  threadNumber  ()      const;
     void setThreadNumber (int i);
     void reportProgress();
-    void reportProgressArrayImports(vec<unsigned int> &totalColumns);
+    void reportProgressArrayImports(vector<unsigned int> &totalColumns);
     virtual void reduceDB();
     virtual lbool         solve_                   (bool do_simp = true, bool turn_off_simp = false);
 
@@ -121,7 +121,7 @@ public:
     uint64_t nbNotExportedBecauseDirectlyReused;
     
     
-    vec<uint32_t> goodImportsFromThreads; // Stats of good importations from other threads
+    vector<uint32_t> goodImportsFromThreads; // Stats of good importations from other threads
 
     virtual void parallelImportClauseDuringConflictAnalysis(Clause &c,CRef confl);
     virtual bool parallelImportClauses(); // true if the empty clause was received
