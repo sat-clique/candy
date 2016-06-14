@@ -92,7 +92,7 @@ public:
 	pthread_mutex_t mutexSharedCompanion; // mutex for any high level sync between all threads (like reportf)
 	pthread_mutex_t mutexSharedClauseCompanion; // mutex for reading/writing clauses on the blackboard
 	pthread_mutex_t mutexSharedUnitCompanion; // mutex for reading/writing unit clauses on the blackboard 
-        pthread_mutex_t mutexJobFinished;
+   pthread_mutex_t mutexJobFinished;
 
 	bool bjobFinished;
 	ParallelSolver *jobFinishedBy;
@@ -101,10 +101,10 @@ public:
 
         // Shared clauses are a queue of lits...
 	//	friend class wholearnt;
-	vec<int> nextUnit; // indice of next unit clause to retrieve for solver number i 
-	vec<Lit> unitLit;  // Set of unit literals found so far
-        vec<lbool> isUnary; // sign of the unary var (if proved, or l_Undef if not)	
-	double    random_seed;
+	vector<int> nextUnit; // indice of next unit clause to retrieve for solver number i
+	vector<Lit> unitLit;  // Set of unit literals found so far
+    vector<lbool> isUnary; // sign of the unary var (if proved, or l_Undef if not)
+	double random_seed;
 
 	// Returns a random float 0 <= x < 1. Seed must never be 0.
 	static inline double drand(double& seed) {

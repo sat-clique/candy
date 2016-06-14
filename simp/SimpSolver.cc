@@ -90,7 +90,7 @@ SimpSolver::SimpSolver() :
   , bwdsub_assigns     (0)
   , n_touched          (0)
 {
-    vec<Lit> dummy(1,lit_Undef);
+    vector<Lit> dummy(1,lit_Undef);
     ca.extra_clause_field = true; // NOTE: must happen before allocating the dummy clause below.
     bwdsub_tmpunit        = ca.alloc(dummy);
     remove_satisfied      = false;
@@ -123,7 +123,7 @@ SimpSolver::SimpSolver(const SimpSolver &s) : Solver(s)
   , n_touched          (s.n_touched)
 {
     // TODO: Copy dummy... what is it???
-    vec<Lit> dummy(1,lit_Undef);
+    vector<Lit> dummy(1,lit_Undef);
     ca.extra_clause_field = true; // NOTE: must happen before allocating the dummy clause below.
     bwdsub_tmpunit        = ca.alloc(dummy);
     remove_satisfied      = false;
