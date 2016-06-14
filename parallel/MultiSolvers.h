@@ -72,9 +72,9 @@ public:
   int getShowModel() {return showModel;}
   // Problem specification:
   //
-  Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-  bool    addClause (const vec<Lit>& ps);                           // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
-  bool    addClause_(      vec<Lit>& ps);       
+  Var     newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+  bool    addClause(const vector<Lit>& ps); // Add a clause to the solver. NOTE! 'ps' may be shrunk by this method!
+  bool    addClause_(vector<Lit>& ps);
   
   bool    simplify     ();                        // Removes already satisfied clauses.
   
@@ -128,7 +128,7 @@ struct Stats {
 
 	int winner;
 
-    vec<Lit>            add_tmp;
+    vector<Lit> add_tmp;
  	
     double    var_decay;          // Inverse of the variable activity decay factor.                                            (default 1 / 0.95)
     double    clause_decay;       // Inverse of the clause activity decay factor.                                              (1 / 0.999)
@@ -167,12 +167,16 @@ struct Stats {
     vec<int> threadIndexOfSolverCompanion; // threadIndexOfSolverCompanion[solvercompanions[i]] is the index in threads[] of the solvercompanion i
 };
 
-inline bool     MultiSolvers::addClause       (const vec<Lit>& ps)    { ps.copyTo(add_tmp); return addClause_(add_tmp); }
+inline bool MultiSolvers::addClause(const vector<Lit>& ps) {
+  add_tmp.clear();
+  add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
+  return addClause_(add_tmp);
+}
 
 inline void MultiSolvers::setVerbosity(int i) {verb = i;}
 inline void MultiSolvers::setVerbEveryConflicts(int i) {verbEveryConflicts=i;}
-inline int      MultiSolvers::nVars         ()      const   { return numvar; }
-inline int      MultiSolvers::nClauses      ()      const   { return numclauses; }
+inline int MultiSolvers::nVars         ()      const   { return numvar; }
+inline int MultiSolvers::nClauses      ()      const   { return numclauses; }
 inline int MultiSolvers::verbosity()  {return verb;}
 inline ParallelSolver* MultiSolvers::getPrimarySolver() {return solvers[0];}
 

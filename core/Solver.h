@@ -455,7 +455,7 @@ inline void Solver::checkGarbage(double gf){
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
 inline bool     Solver::enqueue         (Lit p, CRef from)      { return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true); }
-inline bool     Solver::addClause       (const vector<Lit>& ps)    { add_tmp.insert(add_tmp.end(), ps.begin(), ps.end()); return addClause_(add_tmp); }
+inline bool     Solver::addClause       (const vector<Lit>& ps)    { add_tmp.clear(); add_tmp.insert(add_tmp.end(), ps.begin(), ps.end()); return addClause_(add_tmp); }
 inline bool     Solver::addEmptyClause  ()                      { add_tmp.clear(); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p)                 { add_tmp.clear(); add_tmp.push_back(p); return addClause_(add_tmp); }
 inline bool     Solver::addClause       (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push_back(p); add_tmp.push_back(q); return addClause_(add_tmp); }
