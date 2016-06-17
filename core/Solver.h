@@ -518,10 +518,10 @@ inline lbool    Solver::solveLimited  (const vector<Lit>& assumps){
 }
 inline bool     Solver::okay          ()      const   { return ok; }
 
-inline void     Solver::toDimacs     (const char* file){ vector<Lit> as; toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p){ vector<Lit> as; as.push_back(p); toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vector<Lit> as; as.push_back(p); as.push_back(q); toDimacs(file, as); }
-inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vector<Lit> as; as.push_back(p); as.push_back(q); as.push_back(r); toDimacs(file, as); }
+//inline void     Solver::toDimacs     (const char* file){ vector<Lit> as; toDimacs(file, as); }
+//inline void     Solver::toDimacs     (const char* file, Lit p){ vector<Lit> as; as.push_back(p); toDimacs(file, as); }
+//inline void     Solver::toDimacs     (const char* file, Lit p, Lit q){ vector<Lit> as; as.push_back(p); as.push_back(q); toDimacs(file, as); }
+//inline void     Solver::toDimacs     (const char* file, Lit p, Lit q, Lit r){ vector<Lit> as; as.push_back(p); as.push_back(q); as.push_back(r); toDimacs(file, as); }
 
 
 

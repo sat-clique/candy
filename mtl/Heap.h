@@ -21,7 +21,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Glucose_Heap_h
 #define Glucose_Heap_h
 
-#include "mtl/Vec.h"
+#include <vector>
+#include <cassert>
+
+using namespace std;
 
 namespace Glucose {
 
@@ -32,18 +35,15 @@ namespace Glucose {
 template<class Comp>
 class Heap {
     Comp     lt;       // The heap is a minimum-heap with respect to this comparator
-    vec<int> heap;     // Heap of integers
-    vec<int> indices;  // Each integers position (index) in the Heap
+    vector<int> heap;     // Heap of integers
+    vector<int> indices;  // Each integers position (index) in the Heap
 
     // Index "traversal" functions
     static inline int left  (int i) { return i*2+1; }
     static inline int right (int i) { return (i+1)*2; }
     static inline int parent(int i) { return (i-1) >> 1; }
 
-
-
-    void percolateUp(int i)
-    {
+    void percolateUp(int i) {
         int x  = heap[i];
         int p  = parent(i);
         
@@ -57,9 +57,7 @@ class Heap {
         indices[x] = i;
     }
 
-
-    void percolateDown(int i)
-    {
+    void percolateDown(int i) {
         int x = heap[i];
         while (left(i) < heap.size()){
             int child = right(i) < heap.size() && lt(heap[right(i)], heap[left(i)]) ? right(i) : left(i);
@@ -71,7 +69,6 @@ class Heap {
         heap   [i] = x;
         indices[x] = i;
     }
-
 
   public:
     Heap(const Comp& c) : lt(c) { }
@@ -85,11 +82,15 @@ class Heap {
     void decrease  (int n) { assert(inHeap(n)); percolateUp  (indices[n]); }
     void increase  (int n) { assert(inHeap(n)); percolateDown(indices[n]); }
 
-    void copyTo(Heap& copy) const {heap.copyTo(copy.heap);indices.copyTo(copy.indices);}
+    void copyTo(Heap& copy) const {
+      copy.heap.clear();
+      copy.heap.insert(copy.heap.end(), heap.begin(), heap.end());
+      copy.indices.clear();
+      copy.indices.insert(copy.indices.end(), indices.begin(), indices.end());
+    }
 
     // Safe variant of insert/decrease/increase:
-    void update(int n)
-    {
+    void update(int n) {
         if (!inHeap(n))
             insert(n);
         else {
@@ -98,49 +99,48 @@ class Heap {
     }
 
 
-    void insert(int n)
-    {
-        indices.growTo(n+1, -1);
+    void insert(int n) {
+        if (n+1 > indices.size()) indices.resize(n+1, -1);
         assert(!inHeap(n));
-
         indices[n] = heap.size();
-        heap.push(n);
+        heap.push_back(n);
         percolateUp(indices[n]); 
     }
 
 
-    int  removeMin()
-    {
+    int  removeMin() {
         int x            = heap[0];
-        heap[0]          = heap.last();
+        heap[0]          = heap.back();
         indices[heap[0]] = 0;
         indices[x]       = -1;
-        heap.pop();
+        heap.pop_back();
         if (heap.size() > 1) percolateDown(0);
         return x; 
     }
 
 
     // Rebuild the heap from scratch, using the elements in 'ns':
-    void build(vec<int>& ns) {
-        for (int i = 0; i < heap.size(); i++)
+    void build(vector<int>& ns) {
+        for (int i = 0; i < heap.size(); i++) {
             indices[heap[i]] = -1;
+        }
         heap.clear();
 
         for (int i = 0; i < ns.size(); i++){
             indices[ns[i]] = i;
-            heap.push(ns[i]); }
+            heap.push_back(ns[i]); }
 
         for (int i = heap.size() / 2 - 1; i >= 0; i--)
             percolateDown(i);
     }
 
-    void clear(bool dealloc = false) 
-    { 
-        for (int i = 0; i < heap.size(); i++)
+    void clear() {
+        for (int i = 0; i < heap.size(); i++) {
             indices[heap[i]] = -1;
-        heap.clear(dealloc);
+        }
+        heap.clear();
     }
+
 };
 
 
