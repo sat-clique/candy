@@ -358,13 +358,19 @@ public:
   OccLists() {}
   OccLists(const Deleted& d) : deleted(d) { }
 
-  void init(const Idx& idx){ occs.resize(toInt(idx)+1); dirty.resize(toInt(idx)+1, 0); }
+  void init(const Idx& idx) {
+    if (occs.size() < toInt(idx)+1) occs.resize(toInt(idx)+1);
+    if (dirty.size() < toInt(idx)+1) dirty.resize(toInt(idx)+1, 0);
+  }
   // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
   vector<Elem>&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
   vector<Elem>&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
 
   void cleanAll();
   void copyTo(OccLists &copy) const {
+    copy.occs.clear();
+    copy.dirty.clear();
+    copy.dirties.clear();
     copy.occs.resize(occs.size());
     for(int i = 0; i<occs.size();i++)
       copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());

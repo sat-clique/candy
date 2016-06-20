@@ -101,9 +101,11 @@ public:
 	int isvalid() const {return (queuesize==maxsize);}
 	
 	void growTo(int size) {
-		elems.resize(size);
-		first=0; maxsize=size; queuesize = 0;last = 0;
-		for(int i=0;i<size;i++) elems[i]=0; 
+	  if (elems.size() < size) {
+	    elems.resize(size);
+	    first=0; maxsize=size; queuesize = 0;last = 0;
+	    for(int i=0;i<size;i++) elems[i]=0;
+	  }
 	}
 	
 	double getAvgExp() {

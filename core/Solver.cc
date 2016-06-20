@@ -1481,7 +1481,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
 
   if (status == l_True){
     // Extend & copy model:
-    model.resize(nVars());
+    if ((int)model.size() < nVars()) model.resize(nVars());
     for (int i = 0; i < nVars(); i++) model[i] = value(i);
   }else if (status == l_False && conflict.size() == 0)
     ok = false;
