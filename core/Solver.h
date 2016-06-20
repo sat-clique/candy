@@ -86,6 +86,17 @@ public:
         return  new Solver(*this);
     }   
 
+
+    void reserveVars(int n) {
+      assigns.reserve(n);
+      vardata.reserve(n);
+      activity.reserve(n);
+      seen.reserve(n);
+      permDiff.reserve(n);
+      polarity.reserve(n);
+      decision.reserve(n);
+      trail.reserve(n);
+    }
     // Problem specification:
     //
     virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.

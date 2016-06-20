@@ -529,7 +529,7 @@ lbool MultiSolvers::solve() {
   result = sharedcomp->jobStatus;
   if (result == l_True) {
       int n = sharedcomp->jobFinishedBy->nVars();
-	model.resize(n);
+	if (model.size() < n) model.resize(n);
 	for(int i = 0; i < n; i++)
 	    model[i] = sharedcomp->jobFinishedBy->model[i];
   }

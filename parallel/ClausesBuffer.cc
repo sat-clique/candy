@@ -86,9 +86,9 @@ ClausesBuffer::ClausesBuffer(int _nbThreads, unsigned int _maxsize) : first(0), 
     removedClauses(0),
     forcedRemovedClauses(0), nbThreads(_nbThreads), 
     whenFullRemoveOlder(opt_whenFullRemoveOlder), fifoSizeByCore(opt_fifoSizeByCore) {
-	lastOfThread.resize(_nbThreads);
+	if (lastOfThread.size() < _nbThreads) lastOfThread.resize(_nbThreads);
 	for(int i=0;i<nbThreads;i++) lastOfThread[i] = _maxsize-1;
-	elems.resize(maxsize);
+	if (elems.size() < maxsize) elems.resize(maxsize);
 } 
 
 ClausesBuffer::ClausesBuffer() : first(0), last(0), maxsize(0), queuesize(0), removedClauses(0), forcedRemovedClauses(0), nbThreads(0),
@@ -99,9 +99,9 @@ void ClausesBuffer::setNbThreads(int _nbThreads) {
     last = _maxsize -1;
     maxsize = _maxsize;
     nbThreads = _nbThreads;
-    lastOfThread.resize(_nbThreads);
+    if (lastOfThread.size() < _nbThreads) lastOfThread.resize(_nbThreads);
     for(int i=0;i<nbThreads;i++) lastOfThread[i] = _maxsize-1;
-    elems.resize(maxsize);
+    if (elems.size() < maxsize) elems.resize(maxsize);
 }
 
 uint32_t ClausesBuffer::getCap() {
