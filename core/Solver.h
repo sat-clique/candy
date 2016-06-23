@@ -245,6 +245,8 @@ public:
     uint64_t nbRemovedClauses,nbRemovedUnaryWatchedClauses, nbReducedClauses,nbDL2,nbBin,nbUn,nbReduceDB,solves, starts, decisions, rnd_decisions, propagations, conflicts,conflictsRestarts,nbstopsrestarts,nbstopsrestartssame,lastblockatrestart;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
+    int countCalls = 0;
+
 protected:
 
     long curRestart;

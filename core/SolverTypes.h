@@ -347,12 +347,11 @@ public:
 // OccLists -- a class for maintaining occurence lists with lazy deletion:
 
 template<class Idx, class Elem, class Deleted>
-class OccLists
-{
-  vector<vector<Elem>>  occs;
+class OccLists {
+  vector<vector<Elem>> occs;
   vector<char> dirty;
-  vector<Idx>  dirties;
-  Deleted   deleted;
+  vector<Idx> dirties;
+  Deleted deleted;
 
 public:
   OccLists() {}
@@ -362,61 +361,88 @@ public:
     if (occs.size() < toInt(idx)+1) occs.resize(toInt(idx)+1);
     if (dirty.size() < toInt(idx)+1) dirty.resize(toInt(idx)+1, 0);
   }
-  // Vec&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
-  vector<Elem>&  operator[](const Idx& idx){ return occs[toInt(idx)]; }
-  vector<Elem>&  lookup    (const Idx& idx){ if (dirty[toInt(idx)]) clean(idx); return occs[toInt(idx)]; }
 
-  void cleanAll();
-  void copyTo(OccLists &copy) const {
-    copy.occs.clear();
-    copy.dirty.clear();
-    copy.dirties.clear();
-    copy.occs.resize(occs.size());
-    for(int i = 0; i<occs.size();i++)
-      copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());
-    copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
-    copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
+  vector<Elem>& operator[](const Idx& idx) {
+//    checkDuplicateSimp(toInt(idx));
+    return occs[toInt(idx)];
+  }
+  vector<Elem>& lookup(const Idx& idx){
+    if (dirty[toInt(idx)]) clean(idx);
+    return occs[toInt(idx)];
   }
 
-  void clean(const Idx& idx);
   void smudge(const Idx& idx) {
+//    checkDuplicates();
     if (dirty[toInt(idx)] == 0) {
       dirty[toInt(idx)] = 1;
       dirties.push_back(idx);
     }
+//    checkDuplicates();
+  }
+
+  void cleanAll() {
+//    checkDuplicates();
+    for (int i = 0; i < dirties.size(); i++)
+      // Dirties may contain duplicates so check here if a variable is already cleaned:
+      if (dirty[toInt(dirties[i])])
+        clean(dirties[i]);
+    dirties.clear();
+//    checkDuplicates();
+  }
+
+  void clean(const Idx& idx){
+//    checkDuplicates();
+    vector<Elem>& vec = occs[toInt(idx)];
+    int i, j;
+    for (i = j = 0; i < vec.size(); i++)
+      if (!deleted(vec[i]))
+        vec[j++] = vec[i];
+    vec.resize(j);
+    dirty[toInt(idx)] = 0;
+//    checkDuplicates();
+  }
+
+  void copyTo(OccLists &copy) const {
+//    checkDuplicates();
+    copy.clear();
+    copy.occs.resize(occs.size());
+    for(int i = 0; i < occs.size(); i++)
+      copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());
+    copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
+    copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
+//    checkDuplicates();
   }
 
   void clear(bool free = true) {
+//    checkDuplicates();
     for (vector<Elem>& v : occs) v.clear();
     occs.clear();
     dirty.clear();
     dirties.clear();
+//    checkDuplicates();
+  }
+
+  void checkDuplicates() const {
+    for (int i = 0; i < occs.size(); i++) {
+      checkDuplicate(i);
+    }
+  }
+
+  void checkDuplicate(int intdx) const {
+    for (int i = 0; i < occs[intdx].size(); i++) {
+      for (int j = i + 1; j < occs[intdx].size(); j++) {
+        assert(!(occs[intdx][i] == occs[intdx][j]));
+      }
+    }
+  }
+
+  void checkDuplicateSimp(int intdx) const {
+    for (int j = 1; j < occs[intdx].size(); j++) {
+      assert(!(occs[intdx][0] == occs[intdx][j]));
+    }
   }
 };
 
-
-template<class Idx, class Elem, class Deleted>
-void OccLists<Idx,Elem,Deleted>::cleanAll()
-{
-  for (int i = 0; i < dirties.size(); i++)
-    // Dirties may contain duplicates so check here if a variable is already cleaned:
-    if (dirty[toInt(dirties[i])])
-      clean(dirties[i]);
-  dirties.clear();
-}
-
-
-template<class Idx, class Elem, class Deleted>
-void OccLists<Idx,Elem,Deleted>::clean(const Idx& idx)
-{
-  vector<Elem>& vec = occs[toInt(idx)];
-  int i, j;
-  for (i = j = 0; i < vec.size(); i++)
-    if (!deleted(vec[i]))
-      vec[j++] = vec[i];
-  vec.resize(j);
-  dirty[toInt(idx)] = 0;
-}
 
 /*_________________________________________________________________________________________________
 |
