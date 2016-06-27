@@ -58,6 +58,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Constants.h"
 
 #include <vector>
+#include "mtl/short_alloc.h"
 
 using namespace std;
 
@@ -95,7 +96,7 @@ public:
       permDiff.reserve(n);
       polarity.reserve(n);
       decision.reserve(n);
-      trail.reserve(n);
+      trail.resize(n);
     }
     // Problem specification:
     //
@@ -253,7 +254,10 @@ protected:
     // Helper structures:
     //
     struct VarData { CRef reason; unsigned int level; };
-    static inline VarData mkVarData(CRef cr, unsigned int l){ VarData d = {cr, l}; return d; }
+    static inline VarData mkVarData(CRef cr, unsigned int l){
+      VarData d = {cr, l};
+      return d;
+    }
 
     struct Watcher {
         CRef cref;
@@ -305,10 +309,11 @@ protected:
     vector<char>           polarity;         // The preferred polarity of each variable.
     vector<char>           decision;         // Declares if a variable is eligible for selection in the decision heuristic.
     vector<Lit>            trail;            // Assignment stack; stores all assigments made in the order they were made.
+    int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
     vector<int>            nbpos;
     vector<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
     vector<VarData>        vardata;          // Stores reason and level for each variable.
-    unsigned int                 qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+    unsigned int           qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
     int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
     vector<Lit>         assumptions;      // Current set of assumptions provided to solve by the user.
@@ -481,7 +486,7 @@ inline bool     Solver::addClause       (Lit p, Lit q, Lit r)   { add_tmp.clear(
      || 
      (value(c[1]) == l_True && reason(var(c[1])) != CRef_Undef && ca.lea(reason(var(c[1]))) == &c);
  }
-inline void     Solver::newDecisionLevel()                      { trail_lim.push_back(trail.size()); }
+inline void     Solver::newDecisionLevel()                      { trail_lim.push_back(trail_size); }
 
 inline int      Solver::decisionLevel ()      const   { return trail_lim.size(); }
 inline uint32_t Solver::abstractLevel (Var x) const   { return 1 << (level(x) & 31); }
@@ -489,11 +494,11 @@ inline lbool    Solver::value         (Var x) const   { return assigns[x]; }
 inline lbool    Solver::value         (Lit p) const   { return assigns[var(p)] ^ sign(p); }
 inline lbool    Solver::modelValue    (Var x) const   { return model[x]; }
 inline lbool    Solver::modelValue    (Lit p) const   { return model[var(p)] ^ sign(p); }
-inline int      Solver::nAssigns      ()      const   { return trail.size(); }
+inline int      Solver::nAssigns      ()      const   { return trail_size; }
 inline int      Solver::nClauses      ()      const   { return clauses.size(); }
 inline int      Solver::nLearnts      ()      const   { return learnts.size(); }
 inline int      Solver::nVars         ()      const   { return vardata.size(); }
-inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail.size() : trail_lim[0]); }
+inline int      Solver::nFreeVars     ()      const   { return (int)dec_vars - (trail_lim.size() == 0 ? trail_size : trail_lim[0]); }
 inline void     Solver::setPolarity   (Var v, bool b) { polarity[v] = b; }
 inline void     Solver::setDecisionVar(Var v, bool b) 
 { 

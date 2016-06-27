@@ -135,6 +135,7 @@ Solver::Solver() : verbosity(0)
 , watchesBin(WatcherDeleted(ca))
 , unaryWatches(WatcherDeleted(ca))
 , qhead(0)
+, trail_size(0)
 , simpDB_assigns(-1)
 , simpDB_props(0)
 , order_heap(VarOrderLt(activity))
@@ -259,6 +260,7 @@ Solver::Solver(const Solver &s) : verbosity(s.verbosity)
   polarity.insert(polarity.end(), s.polarity.begin(), s.polarity.end());
   decision.insert(decision.end(), s.decision.begin(), s.decision.end());
   trail.insert(trail.end(), s.trail.begin(), s.trail.end());
+  trail_size = s.trail_size;
   s.order_heap.copyTo(order_heap);
   clauses.insert(clauses.end(), s.clauses.begin(), s.clauses.end());
   learnts.insert(learnts.end(), s.learnts.begin(), s.learnts.end());
@@ -313,7 +315,7 @@ Var Solver::newVar(bool sign, bool dvar) {
   permDiff.push_back(0);
   polarity.push_back(sign);
   decision.push_back(0);
-  trail.reserve(v + 1);
+  trail.resize(v + 1);
   setDecisionVar(v, dvar);
   return v;
 }
@@ -582,7 +584,7 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
 
 void Solver::cancelUntil(int level) {
   if (decisionLevel() > level) {
-    for (int c = trail.size() - 1; c >= trail_lim[level]; c--) {
+    for (int c = trail_size - 1; c >= trail_lim[level]; c--) {
       Var x = var(trail[c]);
       assigns[x] = l_Undef;
       if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.back())) {
@@ -591,7 +593,7 @@ void Solver::cancelUntil(int level) {
       insertVarOrder(x);
     }
     qhead = trail_lim[level];
-    trail.resize(trail_lim[level]);
+    trail_size = trail_lim[level];
     trail_lim.resize(level);
   }
 }
@@ -646,7 +648,7 @@ void Solver::analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit>&selectors,
   // Generate conflict clause:
   //
   out_learnt.push_back(mkLit(0)); // (leave room for the asserting literal)
-  int index = trail.size() - 1;
+  int index = trail_size - 1;
   do {
     assert(confl != CRef_Undef); // (otherwise should be UIP)
     Clause& c = ca[confl];
@@ -870,7 +872,7 @@ void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
 
   seen[var(p)] = 1;
 
-  for (int i = trail.size() - 1; i >= trail_lim[0]; i--) {
+  for (int i = trail_size - 1; i >= trail_lim[0]; i--) {
     Var x = var(trail[i]);
     if (seen[x]) {
       if (reason(x) == CRef_Undef) {
@@ -897,7 +899,7 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
   assert(value(p) == l_Undef);
   assigns[var(p)] = lbool(!sign(p));
   vardata[var(p)] = mkVarData(from, decisionLevel());
-  trail.push_back(p);
+  trail[trail_size++] = p;
 }
 
 /*_________________________________________________________________________________________________
@@ -919,7 +921,7 @@ CRef Solver::propagate() {
   watchesBin.cleanAll();
   unaryWatches.cleanAll();
 
-  while (qhead < trail.size()) {
+  while (qhead < trail_size) {
     Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
     vector<Watcher>& ws = watches[p];
     num_props++;
@@ -985,15 +987,18 @@ CRef Solver::propagate() {
           }
         }
         if(choosenPos!=-1) {
-          c[1] = c[choosenPos]; c[choosenPos] = false_lit;
+          c[1] = c[choosenPos];
+          c[choosenPos] = false_lit;
           watches[~c[1]].push_back(w);
-          goto NextClause; }
+          goto NextClause;
+        }
       } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
         for (int k = 2; k < c.size(); k++) {
-          if (value(c[k]) != l_False){
+          if (value(c[k]) != l_False) {
             c[1] = c[k]; c[k] = false_lit;
             watches[~c[1]].push_back(w);
-            goto NextClause; }
+            goto NextClause;
+          }
         }
       }
 
@@ -1001,7 +1006,7 @@ CRef Solver::propagate() {
       *j++ = w;
       if (value(first) == l_False) {
         confl = cr;
-        qhead = trail.size();
+        qhead = trail_size;
         // Copy the remaining watches:
         while (i != ws.end())
           *j++ = *i++;
@@ -1072,7 +1077,7 @@ CRef Solver::propagateUnaryWatches(Lit p) {
     *j++ = w;
 
     confl = cr;
-    qhead = trail.size();
+    qhead = trail_size;
     // Copy the remaining watches:
     while (it != ws.end())
       *j++ = *it++;
@@ -1263,7 +1268,7 @@ lbool Solver::search(int nof_conflicts) {
       if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
         printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n",
             (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
-            (int) dec_vars - (int)(trail_lim.size() == 0 ? trail.size() : trail_lim[0]), nClauses(), (int) clauses_literals,
+            (int) dec_vars - (int)(trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), (int) clauses_literals,
             (int) nbReduceDB, nLearnts(), (int) nbDL2, (int) nbRemovedClauses, progressEstimate()*100);
       }
       if (decisionLevel() == 0) {
@@ -1271,9 +1276,9 @@ lbool Solver::search(int nof_conflicts) {
 
       }
 
-      trailQueue.push(trail.size());
+      trailQueue.push(trail_size);
       // BLOCK RESTART (CP 2012 paper)
-      if (conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
+      if (conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
         lbdQueue.fastclear();
         nbstopsrestarts++;
         if (!blocked) {
@@ -1393,7 +1398,7 @@ double Solver::progressEstimate() const {
 
   for (int i = 0; i <= (int)decisionLevel(); i++) {
     int beg = i == 0 ? 0 : trail_lim[i - 1];
-    int end = i == decisionLevel() ? (int)trail.size() : trail_lim[i];
+    int end = i == decisionLevel() ? trail_size : trail_lim[i];
     progress += pow(F, i) * (end - beg);
   }
 
@@ -1610,7 +1615,7 @@ void Solver::relocAll(ClauseAllocator& to) {
 
   // All reasons:
   //
-  for (unsigned int i = 0; i < trail.size(); i++) {
+  for (int i = 0; i < trail_size; i++) {
     Var v = var(trail[i]);
 
     if (reason(v) != CRef_Undef && (ca[reason(v)].reloced() || locked(ca[reason(v)])))
