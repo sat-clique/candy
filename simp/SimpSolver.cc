@@ -396,7 +396,7 @@ bool SimpSolver::implied(const vector<Lit>& c)
 {
     assert(decisionLevel() == 0);
 
-    trail_lim.push_back(trail.size());
+    trail_lim.push_back(trail_size);
     for (unsigned int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True){
             cancelUntil(0);
@@ -420,16 +420,16 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose)
     int deleted_literals = 0;
     assert(decisionLevel() == 0);
 
-    while (subsumption_queue.size() > 0 || bwdsub_assigns < trail.size()){
+    while (subsumption_queue.size() > 0 || bwdsub_assigns < trail_size){
 
         // Empty subsumption queue and return immediately on user-interrupt:
         if (asynch_interrupt){
             subsumption_queue.clear();
-            bwdsub_assigns = trail.size();
+            bwdsub_assigns = trail_size;
             break; }
 
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
-        if (subsumption_queue.size() == 0 && bwdsub_assigns < trail.size()){
+        if (subsumption_queue.size() == 0 && bwdsub_assigns < trail_size){
             Lit l = trail[bwdsub_assigns++];
             ca[bwdsub_tmpunit][0] = l;
             ca[bwdsub_tmpunit].calcAbstraction();
@@ -485,7 +485,7 @@ bool SimpSolver::asymm(Var v, CRef cr)
 
     if (c.mark() || satisfied(c)) return true;
 
-    trail_lim.push_back(trail.size());
+    trail_lim.push_back(trail_size);
     Lit l = lit_Undef;
     for (int i = 0; i < c.size(); i++)
         if (var(c[i]) != v && value(c[i]) != l_False)
@@ -686,17 +686,16 @@ bool SimpSolver::eliminate(bool turn_off_elim)
       printf("c Too many clauses... No preprocessing\n");
     }
 
-    while (toPerform && (n_touched > 0 || bwdsub_assigns < trail.size() || elim_heap.size() > 0)){
-
+    while (toPerform && (n_touched > 0 || bwdsub_assigns < trail_size || elim_heap.size() > 0)) {
         gatherTouchedClauses();
         // printf("  ## (time = %6.2f s) BWD-SUB: queue = %d, trail = %d\n", cpuTime(), subsumption_queue.size(), trail.size() - bwdsub_assigns);
-        if ((subsumption_queue.size() > 0 || bwdsub_assigns < trail.size()) && 
+        if ((subsumption_queue.size() > 0 || bwdsub_assigns < trail_size) &&
             !backwardSubsumptionCheck(true)){
             ok = false; goto cleanup; }
 
         // Empty elim_heap and return immediately on user-interrupt:
         if (asynch_interrupt){
-            assert(bwdsub_assigns == trail.size());
+            assert(bwdsub_assigns == trail_size);
             assert(subsumption_queue.size() == 0);
             assert(n_touched == 0);
             elim_heap.clear();
