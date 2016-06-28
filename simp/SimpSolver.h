@@ -174,7 +174,7 @@ class SimpSolver : public Solver {
     deque<CRef>         subsumption_queue;
     vector<char>           frozen;
     vector<char>           eliminated;
-    unsigned int        bwdsub_assigns;
+    int        bwdsub_assigns;
     int                 n_touched;
 
     // Temporaries:

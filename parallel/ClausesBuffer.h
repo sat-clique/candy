@@ -95,7 +95,7 @@ namespace Glucose {
         uint32_t getCap();
 	void growTo(int size) {
 	    assert(0); // Not implemented (essentially for efficiency reasons)
-	    if (elems.size() < size) {
+	    if ((int)elems.size() < size) {
 	      elems.resize(size);
 	      first=0; maxsize=size; queuesize = 0; last = 0;
 	    }

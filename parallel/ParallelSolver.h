@@ -133,8 +133,6 @@ public:
  
     bool shareClause(Clause & c); // true if the clause was succesfully sent
 
-    
-
 };
 
 

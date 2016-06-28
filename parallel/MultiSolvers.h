@@ -104,6 +104,12 @@ public:
  
   }
 
+  void reserveVars(int n) {
+    for (ParallelSolver* s : solvers) {
+      s->reserveVars(n);
+    }
+  }
+
  protected:
 	friend class ParallelSolver;
 	friend class SolverCompanion;

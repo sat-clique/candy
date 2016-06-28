@@ -134,8 +134,8 @@ Solver::Solver() : verbosity(0)
 , watches(WatcherDeleted(ca))
 , watchesBin(WatcherDeleted(ca))
 , unaryWatches(WatcherDeleted(ca))
-, qhead(0)
 , trail_size(0)
+, qhead(0)
 , simpDB_assigns(-1)
 , simpDB_props(0)
 , order_heap(VarOrderLt(activity))
@@ -216,6 +216,7 @@ Solver::Solver(const Solver &s) : verbosity(s.verbosity)
 , watches(WatcherDeleted(ca))
 , watchesBin(WatcherDeleted(ca))
 , unaryWatches(WatcherDeleted(ca))
+, trail_size(s.trail_size)
 , qhead(s.qhead)
 , simpDB_assigns(s.simpDB_assigns)
 , simpDB_props(s.simpDB_props)
@@ -260,7 +261,6 @@ Solver::Solver(const Solver &s) : verbosity(s.verbosity)
   polarity.insert(polarity.end(), s.polarity.begin(), s.polarity.end());
   decision.insert(decision.end(), s.decision.begin(), s.decision.end());
   trail.insert(trail.end(), s.trail.begin(), s.trail.end());
-  trail_size = s.trail_size;
   s.order_heap.copyTo(order_heap);
   clauses.insert(clauses.end(), s.clauses.begin(), s.clauses.end());
   learnts.insert(learnts.end(), s.learnts.begin(), s.learnts.end());
