@@ -58,8 +58,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "core/Constants.h"
 
 #include <vector>
-#include "mtl/short_alloc.h"
-
 using namespace std;
 
 namespace Glucose {
@@ -85,8 +83,7 @@ public:
      */
     Solver* clone() const {
         return  new Solver(*this);
-    }   
-
+    }
 
     void reserveVars(int n) {
       assigns.reserve(n);
@@ -98,6 +95,7 @@ public:
       decision.reserve(n);
       trail.resize(n);
     }
+
     // Problem specification:
     //
     virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
@@ -313,7 +311,7 @@ protected:
     vector<int>            nbpos;
     vector<int>            trail_lim;        // Separator indices for different decision levels in 'trail'.
     vector<VarData>        vardata;          // Stores reason and level for each variable.
-    unsigned int           qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+    int           qhead;            // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     int                 simpDB_assigns;   // Number of top-level assignments since last execution of 'simplify()'.
     int64_t             simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
     vector<Lit>         assumptions;      // Current set of assumptions provided to solve by the user.
