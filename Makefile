@@ -1,3 +1,7 @@
+EXEC = candy
+DEPDIR = mtl utils core simp
+MROOT = $(PWD)
+
 ##
 ##  Template makefile for Standard, Profile, Debug, Release, and Release-static versions
 ##
@@ -107,5 +111,5 @@ depend.mk: $(CSRCS) $(CHDRS)
 	      fi; \
 	  done
 
--include $(MROOT)/mtl/config.mk
 -include depend.mk
+
