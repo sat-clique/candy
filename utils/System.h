@@ -25,7 +25,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <fpu_control.h>
 #endif
 
-#include "mtl/IntTypes.h"
+#include <stdint.h>
+#include <inttypes.h>
+#include <limits.h>
+
+#ifndef PRIu64
+#define PRIu64 "lu"
+#define PRIi64 "ld"
+#endif
 
 //-------------------------------------------------------------------------------------------------
 

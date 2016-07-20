@@ -20,8 +20,10 @@ TEST (SolverTest, outputwithbudget) {
   SimpSolver S;
   //gzFile in = gzopen("/home/markus/cnf/sc14-app/vmpc_33.cnf", "rb");
   gzFile in = gzopen("vmpc_32.renamed-as.sat05-1919.cnf", "rb");
-  parse_DIMACS(in, S);
+  Dimacs dimacs(in);
   gzclose(in);
+
+  S.insertClauses(dimacs);
 
   // create test output:
   S.setConfBudget(150000);
