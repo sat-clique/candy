@@ -25,9 +25,19 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <math.h>
 #include <string.h>
 
-#include "mtl/IntTypes.h"
-#include "mtl/Vec.h"
 #include "utils/ParseUtils.h"
+
+#include <stdint.h>
+#include <inttypes.h>
+#include <limits.h>
+
+#ifndef PRIu64
+#define PRIu64 "lu"
+#define PRIi64 "ld"
+#endif
+
+#include <vector>
+using namespace std;
 
 namespace Glucose {
 
@@ -53,7 +63,7 @@ class Option
     const char* category;
     const char* type_name;
 
-    static vec<Option*>& getOptionList () { static vec<Option*> options; return options; }
+    static vector<Option*>& getOptionList () { static vector<Option*> options; return options; }
     static const char*&  getUsageString() { static const char* usage_str; return usage_str; }
     static const char*&  getHelpPrefixString() { static const char* help_prefix_str = ""; return help_prefix_str; }
 
@@ -73,7 +83,7 @@ class Option
     , category   (cate_)
     , type_name  (type_)
     { 
-        getOptionList().push(this); 
+        getOptionList().push_back(this);
     }
 
  public:

@@ -67,17 +67,6 @@ class SimpSolver : public Solver {
     SimpSolver();
     ~SimpSolver();
     
-    SimpSolver(const  SimpSolver &s);
-    
-
-    /**
-     * Clone function
-    */
-    SimpSolver* clone() const {
-        return  new SimpSolver(*this);
-    }   
-
-    
     // Problem specification:
     //
     virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
@@ -107,17 +96,6 @@ class SimpSolver : public Solver {
     // Memory managment:
     //
     virtual void garbageCollect();
-
-
-    // Generate a (possibly simplified) DIMACS file:
-    //
-#if 0
-    void    toDimacs  (const char* file, const vector<Lit>& assumps);
-    void    toDimacs  (const char* file);
-    void    toDimacs  (const char* file, Lit p);
-    void    toDimacs  (const char* file, Lit p, Lit q);
-    void    toDimacs  (const char* file, Lit p, Lit q, Lit r);
-#endif
 
     // Mode of operation:
     //
