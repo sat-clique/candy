@@ -131,6 +131,7 @@ int main(int argc, char** argv) {
     //
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
     BoolOption mod("MAIN", "model", "show model.", false);
+    BoolOption count_gates("MAIN", "count-gates", "count gates.", false);
     IntOption vv("MAIN", "vv", "Verbosity every vv conflicts", 10000, IntRange(1, INT32_MAX));
     BoolOption pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
@@ -205,6 +206,16 @@ int main(int argc, char** argv) {
     FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
     Dimacs dimacs(in);
     gzclose(in);
+
+    if (count_gates) {
+      GateAnalyzer gates;
+      vector<vector<Lit>*>* inputs = gates.analyze(dimacs.getProblem(), dimacs.getNVars());
+      int g = 0;
+      for (int v = 0; v < dimacs.getNVars(); v++) {
+        if ((*inputs)[v] && (*inputs)[v]->size()) g++;
+      }
+      printf("c |  Number of gates:      %12d                                                                   |\n", g);
+    }
 
     S.insertClauses(dimacs);
 

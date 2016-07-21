@@ -1,5 +1,5 @@
 EXEC = candy
-DEPDIR = mtl utils core simp test
+DEPDIR = mtl utils core simp test gates
 MROOT = $(PWD)
 
 ##

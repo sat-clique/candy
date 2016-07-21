@@ -33,8 +33,8 @@ namespace Glucose {
 
 class Dimacs {
 
-  vector<vector<Lit>> problem;
-  int maxVar = 0;
+  vector<vector<Lit>*> problem;
+  int nVars = 0;
 
   int headerVars = 0;
   int headerClauses = 0;
@@ -45,7 +45,7 @@ public:
 
     parse_DIMACS(input_stream);
 
-    if (headerVars != maxVar) {
+    if (headerVars != nVars) {
       fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
     }
 
@@ -54,21 +54,21 @@ public:
     }
   }
 
-  vector<vector<Lit>>& getProblem() {
+  vector<vector<Lit>*>& getProblem() {
     return problem;
   }
 
-  int getMaxVar() {
-    return maxVar;
+  int getNVars() {
+    return nVars;
   }
 
 private:
 
-  void readClause(StreamBuffer& in, vector<Lit>& lits) {
+  void readClause(StreamBuffer& in, vector<Lit>* lits) {
     for (int plit = parseInt(in); plit != 0; plit = parseInt(in)) {
       int var = abs(plit);
-      if (var > maxVar) maxVar = var;
-      lits.push_back(mkLit(var-1, plit < 0));
+      if (var > nVars) nVars = var;
+      lits->push_back(mkLit(var-1, plit < 0));
     }
   }
 
@@ -90,7 +90,7 @@ private:
         skipLine(in);
       }
       else {
-        vector<Lit> lits;
+        vector<Lit>* lits = new vector<Lit>();
         readClause(in, lits);
         problem.push_back(lits);
       }

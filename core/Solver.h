@@ -89,13 +89,13 @@ public:
   }
 
   void insertClauses(Dimacs dimacs) {
-    vector<vector<Lit>> problem = dimacs.getProblem();
-    reserveVars(dimacs.getMaxVar());
-    for (int i = 0; i < dimacs.getMaxVar(); i++) {
+    vector<vector<Lit>*>& problem = dimacs.getProblem();
+    reserveVars(dimacs.getNVars());
+    for (int i = 0; i < dimacs.getNVars(); i++) {
       newVar();
     }
-    for (vector<Lit>& clause : problem) {
-      addClause_(clause);
+    for (vector<Lit>* clause : problem) {
+      addClause_(*clause);
     }
   }
 
