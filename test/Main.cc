@@ -9,6 +9,7 @@
 
 #include "core/Dimacs.h"
 #include "simp/SimpSolver.h"
+#include "gates/GateAnalyzer.h"
 
 using namespace Glucose;
 
@@ -18,7 +19,6 @@ TEST (TestTest, zeqz) {
 
 TEST (SolverTest, outputwithbudget) {
   SimpSolver S;
-  //gzFile in = gzopen("/home/markus/cnf/sc14-app/vmpc_33.cnf", "rb");
   gzFile in = gzopen("vmpc_32.renamed-as.sat05-1919.cnf", "rb");
   Dimacs dimacs(in);
   gzclose(in);
@@ -42,6 +42,34 @@ TEST (SolverTest, outputwithbudget) {
 
   // compare reference and test output:
   std::ifstream t("reference.txt");
+  std::string reference((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+  ASSERT_EQ (output, reference);
+}
+
+TEST (GateAnalyzerTest, countgates) {
+  SimpSolver S;
+  gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
+  Dimacs dimacs(in);
+  gzclose(in);
+
+  S.insertClauses(dimacs);
+
+  // create test out
+  GateAnalyzer gates(13);
+  gates.analyze(dimacs.getProblem(), dimacs.getNVars());
+  int g = gates.getNGates();
+  testing::internal::CaptureStdout();
+  printf("c |  Number of gates:      %12d                                                                   |\n", g);
+  std::string output = testing::internal::GetCapturedStdout();
+
+  // create reference output (comment out once generated):
+//  FILE* f = fopen("/home/markus/git/candy-kingdom/test/countgates.txt", "wb");
+//  fprintf(f, "%s", output.c_str());
+//  fflush(f);
+//  fclose(f);
+
+  // compare reference and test output:
+  std::ifstream t("countgates.txt");
   std::string reference((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
   ASSERT_EQ (output, reference);
 }
