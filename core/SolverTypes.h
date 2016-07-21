@@ -80,6 +80,8 @@ typedef int Var;
 struct Lit {
   int     x;
 
+  operator int() const { return x; }
+
   // Use this as a constructor:
   friend Lit mkLit(Var var, bool sign);
 
