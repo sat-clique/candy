@@ -33,7 +33,7 @@ namespace Glucose {
 
 class Dimacs {
 
-  vector<vector<Lit>*> problem;
+  Candy::For problem;
   int nVars = 0;
 
   int headerVars = 0;
@@ -54,7 +54,7 @@ public:
     }
   }
 
-  vector<vector<Lit>*>& getProblem() {
+  Candy::For& getProblem() {
     return problem;
   }
 

@@ -64,6 +64,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 using namespace std;
 
+namespace Candy {
+
+typedef Glucose::Lit Lit;
+typedef vector<Lit> Cl;
+typedef vector<Cl*> For;
+
+}
+
 namespace Glucose {
 
 //=================================================================================================

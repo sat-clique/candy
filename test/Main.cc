@@ -55,8 +55,8 @@ TEST (GateAnalyzerTest, countgates) {
   S.insertClauses(dimacs);
 
   // create test out
-  GateAnalyzer gates(13);
-  gates.analyze(dimacs.getProblem(), dimacs.getNVars());
+  GateAnalyzer gates(dimacs, 0);
+  gates.analyze();
   int g = gates.getNGates();
   testing::internal::CaptureStdout();
   printf("c |  Number of gates:      %12d                                                                   |\n", g);
