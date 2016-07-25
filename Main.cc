@@ -116,7 +116,7 @@ static void SIGINT_exit(int signum) {
 
 int main(int argc, char** argv) {
   try {
-    printf("c\nc This is glucose 4.0 --  based on MiniSAT (Many thanks to MiniSAT team)\nc\n");
+    printf("c\nc This is candy 0.1 --  based on Glucose (Many thanks to the Glucose and MiniSAT teams)\nc\n");
 
     setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
 
@@ -136,7 +136,6 @@ int main(int argc, char** argv) {
     BoolOption pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
-    //       BoolOption opt_incremental ("MAIN","incremental", "Use incremental SAT solving",false);
     BoolOption opt_certified(_certified, "certified", "Certified UNSAT using DRUP format", false);
     StringOption opt_certified_file(_certified, "certified-output", "Certified UNSAT output file", "NULL");
 
@@ -146,8 +145,6 @@ int main(int argc, char** argv) {
     double initial_time = cpuTime();
 
     S.parsing = 1;
-    //if (!pre) S.eliminate(true);
-
     S.verbosity = verb;
     S.verbEveryConflicts = vv;
     S.showModel = mod;
@@ -163,8 +160,8 @@ int main(int argc, char** argv) {
     }
 
     solver = &S;
-    // Use signal handlers that forcibly quit until the solver will be able to respond to
-    // interrupts:
+
+    // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
     signal(SIGINT, SIGINT_exit);
     signal(SIGXCPU, SIGINT_exit);
 
@@ -208,8 +205,8 @@ int main(int argc, char** argv) {
     gzclose(in);
 
     if (count_gates) {
-      GateAnalyzer gates;
-      vector<vector<Lit>*>* inputs = gates.analyze(dimacs.getProblem(), dimacs.getNVars());
+      GateAnalyzer gates(dimacs);
+      vector<vector<Lit>*>* inputs = gates.analyze();
       int g = 0;
       for (int v = 0; v < dimacs.getNVars(); v++) {
         if ((*inputs)[v] && (*inputs)[v]->size()) g++;
