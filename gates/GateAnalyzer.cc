@@ -10,13 +10,14 @@
 using namespace std;
 using namespace Glucose;
 
-GateAnalyzer::GateAnalyzer(Dimacs& dimacs, int maxTries) {
-  this->formula = dimacs.getProblem();
-  this->nVars = dimacs.getNVars();
-  this->maxTries = maxTries;
-  this->gates = new For(nVars);
-  this->inputs.resize(2 * nVars, false);
-  this->index.resize(2 * nVars);
+GateAnalyzer::GateAnalyzer(Dimacs& dimacs, int maxTries) :
+	formula (dimacs.getProblem()),
+	nVars (dimacs.getNVars()),
+	maxTries (maxTries) {
+  gates = new For(nVars);
+  inputs.resize(2 * nVars, false);
+  index.resize(2 * nVars);
+  roots.reserve(10);
 }
 
 // heuristically select clauses

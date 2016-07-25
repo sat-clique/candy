@@ -33,7 +33,7 @@ namespace Glucose {
 
 class Dimacs {
 
-  Candy::For problem;
+  For problem;
   int nVars = 0;
 
   int headerVars = 0;
@@ -54,7 +54,7 @@ public:
     }
   }
 
-  Candy::For& getProblem() {
+  For& getProblem() {
     return problem;
   }
 

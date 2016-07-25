@@ -59,8 +59,8 @@ class Heap {
 
     void percolateDown(int i) {
         int x = heap[i];
-        while (left(i) < heap.size()){
-            int child = right(i) < heap.size() && lt(heap[right(i)], heap[left(i)]) ? right(i) : left(i);
+        while (left(i) < (int)heap.size()){
+            int child = right(i) < (int)heap.size() && lt(heap[right(i)], heap[left(i)]) ? right(i) : left(i);
             if (!lt(heap[child], x)) break;
             heap[i]          = heap[child];
             indices[heap[i]] = i;
@@ -75,8 +75,8 @@ class Heap {
 
     int  size      ()          const { return heap.size(); }
     bool empty     ()          const { return heap.size() == 0; }
-    bool inHeap    (int n)     const { return n < indices.size() && indices[n] >= 0; }
-    int  operator[](int index) const { assert(index < heap.size()); return heap[index]; }
+    bool inHeap    (int n)     const { return n < (int)indices.size() && indices[n] >= 0; }
+    int  operator[](int index) const { assert(index < (int)heap.size()); return heap[index]; }
 
 
     void decrease  (int n) { assert(inHeap(n)); percolateUp  (indices[n]); }
@@ -100,9 +100,9 @@ class Heap {
 
 
     void insert(int n) {
-        if (n+1 > indices.size()) indices.resize(n+1, -1);
+        if (n+1 > (int)indices.size()) indices.resize(n+1, -1);
         assert(!inHeap(n));
-        indices[n] = heap.size();
+        indices[n] = (int)heap.size();
         heap.push_back(n);
         percolateUp(indices[n]); 
     }
@@ -121,12 +121,12 @@ class Heap {
 
     // Rebuild the heap from scratch, using the elements in 'ns':
     void build(vector<int>& ns) {
-        for (int i = 0; i < heap.size(); i++) {
+        for (int i = 0; i < (int)heap.size(); i++) {
             indices[heap[i]] = -1;
         }
         heap.clear();
 
-        for (int i = 0; i < ns.size(); i++){
+        for (int i = 0; i < (int)ns.size(); i++){
             indices[ns[i]] = i;
             heap.push_back(ns[i]); }
 
@@ -135,7 +135,7 @@ class Heap {
     }
 
     void clear() {
-        for (int i = 0; i < heap.size(); i++) {
+        for (int i = 0; i < (int)heap.size(); i++) {
             indices[heap[i]] = -1;
         }
         heap.clear();

@@ -16,8 +16,6 @@ using namespace std;
 
 #include "core/SolverTypes.h"
 
-using namespace Candy;
-
 class GateAnalyzer {
 
 public:
@@ -32,7 +30,7 @@ public:
 
 private:
   // problem to analyze:
-  For& formula;
+  For const& formula;
   int nVars;
 
   // control structures:
