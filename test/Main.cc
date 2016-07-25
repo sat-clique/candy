@@ -55,7 +55,7 @@ TEST (GateAnalyzerTest, countgates) {
   S.insertClauses(dimacs);
 
   // create test out
-  GateAnalyzer gates(dimacs, 0);
+  GateAnalyzer gates(dimacs, 10);
   gates.analyze();
   int g = gates.getNGates();
   testing::internal::CaptureStdout();

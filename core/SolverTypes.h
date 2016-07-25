@@ -64,14 +64,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 using namespace std;
 
-namespace Candy {
-
-typedef Glucose::Lit Lit;
-typedef vector<Lit> Cl;
-typedef vector<Cl*> For;
-
-}
-
 namespace Glucose {
 
 //=================================================================================================
@@ -115,6 +107,12 @@ inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
+
+
+
+
+typedef vector<Lit> Cl;
+typedef vector<Cl*> For;
 
 
 //=================================================================================================
@@ -200,7 +198,7 @@ class Clause {
     header.exported = 0;
     header.oneWatched = 0;
     header.seen = 0;
-    for (int i = 0; i < ps.size(); i++)
+    for (int i = 0; i < (int)ps.size(); i++)
       data[i].lit = ps[i];
 
     if (header.extra_size > 0){
@@ -366,8 +364,8 @@ public:
   OccLists(const Deleted& d) : deleted(d) { }
 
   void init(const Idx& idx) {
-    if (occs.size() < toInt(idx)+1) occs.resize(toInt(idx)+1);
-    if (dirty.size() < toInt(idx)+1) dirty.resize(toInt(idx)+1, 0);
+    if ((int)occs.size() < toInt(idx)+1) occs.resize(toInt(idx)+1);
+    if ((int)dirty.size() < toInt(idx)+1) dirty.resize(toInt(idx)+1, 0);
   }
 
   vector<Elem>& operator[](const Idx& idx) {
@@ -390,7 +388,7 @@ public:
 
   void cleanAll() {
 //    checkDuplicates();
-    for (int i = 0; i < dirties.size(); i++)
+    for (int i = 0; i < (int)dirties.size(); i++)
       // Dirties may contain duplicates so check here if a variable is already cleaned:
       if (dirty[toInt(dirties[i])])
         clean(dirties[i]);
@@ -402,7 +400,7 @@ public:
 //    checkDuplicates();
     vector<Elem>& vec = occs[toInt(idx)];
     int i, j;
-    for (i = j = 0; i < vec.size(); i++)
+    for (i = j = 0; i < (int)vec.size(); i++)
       if (!deleted(vec[i]))
         vec[j++] = vec[i];
     vec.resize(j);
@@ -414,7 +412,7 @@ public:
 //    checkDuplicates();
     copy.clear();
     copy.occs.resize(occs.size());
-    for(int i = 0; i < occs.size(); i++)
+    for(int i = 0; i < (int)occs.size(); i++)
       copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());
     copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
     copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
@@ -431,7 +429,7 @@ public:
   }
 
   void checkDuplicates() const {
-    for (int i = 0; i < occs.size(); i++) {
+    for (int i = 0; i < (int)occs.size(); i++) {
       checkDuplicate(i);
     }
   }
