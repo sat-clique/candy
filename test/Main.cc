@@ -47,15 +47,12 @@ TEST (SolverTest, outputwithbudget) {
 }
 
 TEST (GateAnalyzerTest, countgates) {
-  SimpSolver S;
   gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
   Dimacs dimacs(in);
   gzclose(in);
 
-  S.insertClauses(dimacs);
-
   // create test out
-  GateAnalyzer gates(dimacs, 10);
+  GateAnalyzer gates(dimacs, 0);
   gates.analyze();
   int g = gates.getNGates();
   testing::internal::CaptureStdout();
@@ -70,6 +67,39 @@ TEST (GateAnalyzerTest, countgates) {
 
   // compare reference and test output:
   std::ifstream t("countgates.txt");
+  std::string reference((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+  ASSERT_EQ (output, reference);
+}
+
+TEST (GateAnalyzerTest2, printgates) {
+  gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
+  Dimacs dimacs(in);
+  gzclose(in);
+
+  // create test out
+  GateAnalyzer gates(dimacs, 0);
+  gates.analyze();
+  For* g = gates.getGates();
+  testing::internal::CaptureStdout();
+  int i = 0;
+  for (Cl* c : *g) {
+	  i++;
+	  if (i > 86810) break;
+	  if (c == nullptr) continue;
+	  if (c->size() > 0) printf("%i: ", i);
+	  for (Lit l : *c) printf("%s%i ", sign(l)?"-":"", var(l)+1);
+	  if (c->size() > 0) printf("\n");
+  }
+  std::string output = testing::internal::GetCapturedStdout();
+
+//   create reference output (comment out once generated):
+//  FILE* f = fopen("/home/markus/git/candy-kingdom/test/printgates.txt", "wb");
+//  fprintf(f, "%s", output.c_str());
+//  fflush(f);
+//  fclose(f);
+
+  // compare reference and test output:
+  std::ifstream t("printgates.txt");
   std::string reference((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
   ASSERT_EQ (output, reference);
 }

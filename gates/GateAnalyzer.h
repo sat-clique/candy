@@ -27,6 +27,7 @@ public:
 
   // public getters:
   int getNGates() { return nGates; }
+  For* getGates() { return gates; }
 
 private:
   // problem to analyze:
