@@ -84,7 +84,7 @@ TEST (GateAnalyzerTest2, printgates) {
   int i = 0;
   for (Cl* c : *g) {
 	  i++;
-	  if (i > 86810) break;
+//	  if (i > 86810) break;
 	  if (c == nullptr) continue;
 	  if (c->size() > 0) printf("%i: ", i);
 	  for (Lit l : *c) printf("%s%i ", sign(l)?"-":"", var(l)+1);
@@ -93,10 +93,10 @@ TEST (GateAnalyzerTest2, printgates) {
   std::string output = testing::internal::GetCapturedStdout();
 
 //   create reference output (comment out once generated):
-//  FILE* f = fopen("/home/markus/git/candy-kingdom/test/printgates.txt", "wb");
-//  fprintf(f, "%s", output.c_str());
-//  fflush(f);
-//  fclose(f);
+  FILE* f = fopen("/home/markus/git/candy-kingdom/test/printgates.txt", "wb");
+  fprintf(f, "%s", output.c_str());
+  fflush(f);
+  fclose(f);
 
   // compare reference and test output:
   std::ifstream t("printgates.txt");
