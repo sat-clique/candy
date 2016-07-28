@@ -17,7 +17,6 @@ GateAnalyzer::GateAnalyzer(Dimacs& dimacs, int maxTries) :
   gates = new For(nVars);
   inputs.resize(2 * nVars, false);
   index.resize(2 * nVars);
-  roots.reserve(10);
 }
 
 // heuristically select clauses
@@ -72,11 +71,9 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
       bool mono = !inputs[o] || !inputs[~o];
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
-      if (!mono)  for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
-      bool gate = mono || (s == t
-                  && (f.size() == 1 && fixedClauseSize(g, 2)
-                  || g.size() == 1 && fixedClauseSize(f, 2)
-                  || s.size() == 4 && s.find(~(*s.begin())) != s.end() && fixedClauseSize(f, 3)) );
+      if (!mono) for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
+      bool gate = mono || (s == t && (f.size() == 1 && fixedClauseSize(g, 2) || g.size() == 1 && fixedClauseSize(f, 2)
+                                      || s.size() == 4 && s.find(~(*s.begin())) != s.end() && fixedClauseSize(f, 3)) );
       if (gate) {
         nGates++;
         (*gates)[var(o)] = new Cl(s.begin(), s.end());

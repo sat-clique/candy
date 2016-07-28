@@ -93,10 +93,10 @@ TEST (GateAnalyzerTest2, printgates) {
   std::string output = testing::internal::GetCapturedStdout();
 
 //   create reference output (comment out once generated):
-  FILE* f = fopen("/home/markus/git/candy-kingdom/test/printgates.txt", "wb");
-  fprintf(f, "%s", output.c_str());
-  fflush(f);
-  fclose(f);
+//  FILE* f = fopen("/home/markus/git/candy-kingdom/test/printgates.txt", "wb");
+//  fprintf(f, "%s", output.c_str());
+//  fflush(f);
+//  fclose(f);
 
   // compare reference and test output:
   std::ifstream t("printgates.txt");
