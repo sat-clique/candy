@@ -58,7 +58,9 @@ void GateAnalyzer::analyze() {
 
 // clause patterns of full encoding
 bool GateAnalyzer::completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs) {
-  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity) and fwd blocks bwd on the output literal
+  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity)
+  // and fwd blocks bwd on the output literal
+  // given a total of 2^n blocked clauses means that we have no redundancy
   set<Var> vars;
   for (Lit l : inputs) vars.insert(var(l));
   return fwd.size() == bwd.size() && 2*fwd.size() == pow(2, vars.size()) && 2*vars.size() == inputs.size();
@@ -66,7 +68,8 @@ bool GateAnalyzer::completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>&
 
 // clause patterns of full encoding
 bool GateAnalyzer::fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs) {
-  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity) and fwd blocks bwd on the output literal
+  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity)
+  // and fwd blocks bwd on the output literal
   set<Var> vars;
   for (Lit l : inputs) vars.insert(var(l));
   bool fullOr = fwd.size() == 1 && fixedClauseSize(bwd, 2);
