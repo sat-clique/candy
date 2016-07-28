@@ -49,6 +49,10 @@ private:
   // clause selection heuristic
   vector<Cl*>& selectClauses();
 
+  // clause patterns of full encoding
+  bool fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
+  bool completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
+
   // some helpers:
   bool isBlocked(Lit o, Cl& a, Cl& b) {
     for (Lit c : a) for (Lit d : b) if (c != ~o && c == ~d) return true;
