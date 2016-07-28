@@ -59,6 +59,8 @@
 #include "core/Dimacs.h"
 #include "simp/SimpSolver.h"
 
+#include "gates/GateAnalyzer.h"
+
 using namespace Glucose;
 
 //=================================================================================================
@@ -205,13 +207,17 @@ int main(int argc, char** argv) {
     gzclose(in);
 
     if (count_gates) {
-      GateAnalyzer gates(dimacs);
-      vector<vector<Lit>*>* inputs = gates.analyze();
+      GateAnalyzer gates(dimacs, 0);
+      gates.analyze();
+      For* inputs = gates.getGates();
       int g = 0;
       for (int v = 0; v < dimacs.getNVars(); v++) {
         if ((*inputs)[v] && (*inputs)[v]->size()) g++;
       }
       printf("c |  Number of gates:      %12d                                                                   |\n", g);
+      printf("c |                                                                                                       |\n");
+      printf("c =========================================================================================================\n");
+      return 0;
     }
 
     S.insertClauses(dimacs);

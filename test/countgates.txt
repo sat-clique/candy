@@ -1,1 +1,1 @@
-c |  Number of gates:             28235                                                                   |
+c |  Number of gates:             14446                                                                   |

@@ -56,6 +56,25 @@ void GateAnalyzer::analyze() {
   }
 }
 
+// clause patterns of full encoding
+bool GateAnalyzer::completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs) {
+  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity) and fwd blocks bwd on the output literal
+  set<Var> vars;
+  for (Lit l : inputs) vars.insert(var(l));
+  return fwd.size() == bwd.size() && 2*fwd.size() == pow(2, vars.size()) && 2*vars.size() == inputs.size();
+}
+
+// clause patterns of full encoding
+bool GateAnalyzer::fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs) {
+  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity) and fwd blocks bwd on the output literal
+  set<Var> vars;
+  for (Lit l : inputs) vars.insert(var(l));
+  bool fullOr = fwd.size() == 1 && fixedClauseSize(bwd, 2);
+  bool fullAnd = bwd.size() == 1 && fixedClauseSize(fwd, 2);
+//  bool fullBXor = inputs.size() == 4 && vars.size() == 2 && fixedClauseSize(fwd, 3);
+  return fullOr || fullAnd || completePattern(fwd, bwd, inputs);
+}
+
 // main analysis routine
 void GateAnalyzer::analyze(set<Lit>& roots) {
   vector<Lit> literals(roots.begin(), roots.end());
@@ -72,8 +91,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
       if (!mono) for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
-      bool gate = mono || (s == t && (f.size() == 1 && fixedClauseSize(g, 2) || g.size() == 1 && fixedClauseSize(f, 2)
-                                      || s.size() == 4 && s.find(~(*s.begin())) != s.end() && fixedClauseSize(f, 3)) );
+      bool gate = mono || (s == t && fullPattern(f, g, s));
       if (gate) {
         nGates++;
         (*gates)[var(o)] = new Cl(s.begin(), s.end());
