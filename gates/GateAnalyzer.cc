@@ -6,6 +6,7 @@
  */
 
 #include "gates/GateAnalyzer.h"
+#include "core/Solver.h"
 
 using namespace std;
 using namespace Glucose;
@@ -56,11 +57,27 @@ void GateAnalyzer::analyze() {
   }
 }
 
+bool GateAnalyzer::semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o) {
+  Solver solver;
+  Cl clause;
+  for (const std::vector<std::vector<Glucose::Lit>*>& f : { fwd, bwd })
+  for (Cl* cl : f) {
+    for (Lit l : *cl) {
+      if (var(l) != o) {
+        clause.push_back(l);
+      }
+    }
+    solver.addClause(clause);
+    clause.clear();
+  }
+  return solver.solve();
+}
+
 // clause patterns of full encoding
 bool GateAnalyzer::completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs) {
   // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity)
   // and fwd blocks bwd on the output literal
-  // given a total of 2^n blocked clauses means that we have no redundancy
+  // given a total of 2^n blocked clauses implies that we have no redundancy in the n inputs
   set<Var> vars;
   for (Lit l : inputs) vars.insert(var(l));
   return fwd.size() == bwd.size() && 2*fwd.size() == pow(2, vars.size()) && 2*vars.size() == inputs.size();
@@ -76,6 +93,10 @@ bool GateAnalyzer::fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inp
   bool fullAnd = bwd.size() == 1 && fixedClauseSize(fwd, 2);
 //  bool fullBXor = inputs.size() == 4 && vars.size() == 2 && fixedClauseSize(fwd, 3);
   return fullOr || fullAnd || completePattern(fwd, bwd, inputs);
+}
+
+bool GateAnalyzer::isFullGate(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs, Lit output) {
+  return fullPattern(fwd, bwd, inputs);// || semanticCheck(fwd, bwd, var(output));
 }
 
 // main analysis routine
@@ -94,7 +115,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
       if (!mono) for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
-      bool gate = mono || (s == t && fullPattern(f, g, s));
+      bool gate = mono || (s == t && isFullGate(f, g, s, o));
       if (gate) {
         nGates++;
         (*gates)[var(o)] = new Cl(s.begin(), s.end());

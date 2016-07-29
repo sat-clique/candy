@@ -52,6 +52,8 @@ private:
   // clause patterns of full encoding
   bool fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
   bool completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
+  bool semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o);
+  bool isFullGate(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs, Lit output);
 
   // some helpers:
   bool isBlocked(Lit o, Cl& a, Cl& b) {
