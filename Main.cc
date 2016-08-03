@@ -207,6 +207,7 @@ int main(int argc, char** argv) {
     gzclose(in);
 
     if (count_gates) {
+      double recognition_time = cpuTime();
       GateAnalyzer gates(dimacs);
       gates.analyze();
       For* inputs = gates.getGates();
@@ -214,9 +215,11 @@ int main(int argc, char** argv) {
       for (int v = 0; v < dimacs.nVars(); v++) {
         if ((*inputs)[v] && (*inputs)[v]->size()) g++;
       }
-      printf("c |  Number of gates:      %12d                                                                   |\n", g);
-      printf("c |  Number of variables:  %12d                                                                   |\n", dimacs.nVars());
-      printf("c |  Number of clauses:    %12d                                                                   |\n", dimacs.nClauses());
+      recognition_time = cpuTime() - recognition_time;
+      printf("c |  Number of gates:        %12d                                                                 |\n", g);
+      printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
+      printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
+      printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
       printf("c |                                                                                                       |\n");
       printf("c =========================================================================================================\n");
       return 0;
