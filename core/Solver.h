@@ -56,9 +56,9 @@
 #include "core/SolverTypes.h"
 #include "core/BoundedQueue.h"
 #include "core/Constants.h"
-#include "core/Dimacs.h"
-
 #include <vector>
+
+#include "CNFProblem.h"
 using namespace std;
 
 namespace Glucose {
@@ -88,11 +88,13 @@ public:
     trail.resize(n);
   }
 
-  void insertClauses(Dimacs dimacs) {
+  void insertClauses(CNFProblem dimacs) {
     vector<vector<Lit>*>& problem = dimacs.getProblem();
-    reserveVars(dimacs.getNVars());
-    for (int i = 0; i < dimacs.getNVars(); i++) {
-      newVar();
+    if (dimacs.nVars() > nVars()) {
+      reserveVars(dimacs.nVars());
+      for (int i = 0; i < dimacs.nVars(); i++) {
+        newVar();
+      }
     }
     for (vector<Lit>* clause : problem) {
       addClause_(*clause);

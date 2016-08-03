@@ -11,20 +11,28 @@
 using namespace std;
 using namespace Glucose;
 
-GateAnalyzer::GateAnalyzer(Dimacs& dimacs, int maxTries) :
-	formula (dimacs.getProblem()),
-	nVars (dimacs.getNVars()),
-	maxTries (maxTries) {
-  gates = new For(nVars);
-  inputs.resize(2 * nVars, false);
-  index.resize(2 * nVars);
+static const char* _cat = "GATE RECOGNITION";
+static IntOption opt_gate_tries(_cat, "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
+static BoolOption opt_patterns(_cat, "gate-patterns", "Enable Pattern-based Gate Detection", false);
+static BoolOption opt_semantic(_cat, "gate-semantic", "Enable Semantic Gate Detection", false);
+
+GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
+	problem (dimacs),
+	solver (),
+	maxTries (opt_gate_tries),
+	usePatterns (opt_patterns),
+	useSemantic (opt_semantic) {
+  gates = new For(problem.nVars());
+  inputs.resize(2 * problem.nVars(), false);
+  index.resize(2 * problem.nVars());
+  //solver.insertClauses(problem);
 }
 
 // heuristically select clauses
 vector<Cl*>& GateAnalyzer::selectClauses() {
   unsigned int min = INT_MAX;
   int minLit = -1;
-  for (int l = 0; l < 2*nVars; l++) {
+  for (int l = 0; l < 2*problem.nVars(); l++) {
     if (index[l].size() > 0 && index[l].size() < min) {
       min = index[l].size();
       minLit = l;
@@ -36,7 +44,7 @@ vector<Cl*>& GateAnalyzer::selectClauses() {
 
 void GateAnalyzer::analyze() {
   // populate index (except for unit-clauses, they go to roots immediately)
-  for (Cl* c : formula)
+  for (Cl* c : problem.getProblem())
     if (c->size() == 1) roots.push_back(c);
     else for (Lit l : *c) index[l].push_back(c);
 
@@ -58,19 +66,24 @@ void GateAnalyzer::analyze() {
 }
 
 bool GateAnalyzer::semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o) {
-  Solver solver;
+  CNFProblem constraint;
+  Lit alit = mkLit(problem.nVars(), false);
   Cl clause;
-  for (const std::vector<std::vector<Glucose::Lit>*>& f : { fwd, bwd })
+  for (const For& f : { fwd, bwd })
   for (Cl* cl : f) {
+    clause.push_back(alit);
     for (Lit l : *cl) {
       if (var(l) != o) {
         clause.push_back(l);
       }
     }
-    solver.addClause(clause);
+    constraint.readClause(clause);
     clause.clear();
   }
-  return solver.solve();
+  solver.insertClauses(constraint);
+  bool isRightUnique = !solver.solve(~alit);
+  solver.addClause(alit);
+  return isRightUnique;
 }
 
 // clause patterns of full encoding
@@ -91,12 +104,7 @@ bool GateAnalyzer::fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inp
   for (Lit l : inputs) vars.insert(var(l));
   bool fullOr = fwd.size() == 1 && fixedClauseSize(bwd, 2);
   bool fullAnd = bwd.size() == 1 && fixedClauseSize(fwd, 2);
-//  bool fullBXor = inputs.size() == 4 && vars.size() == 2 && fixedClauseSize(fwd, 3);
   return fullOr || fullAnd || completePattern(fwd, bwd, inputs);
-}
-
-bool GateAnalyzer::isFullGate(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs, Lit output) {
-  return fullPattern(fwd, bwd, inputs);// || semanticCheck(fwd, bwd, var(output));
 }
 
 // main analysis routine
@@ -115,7 +123,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
       if (!mono) for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
-      bool gate = mono || (s == t && isFullGate(f, g, s, o));
+      bool gate = mono || (usePatterns && s == t && fullPattern(f, g, s)) || (useSemantic && semanticCheck(f, g, var(o)));
       if (gate) {
         nGates++;
         (*gates)[var(o)] = new Cl(s.begin(), s.end());
