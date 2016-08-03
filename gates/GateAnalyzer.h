@@ -9,17 +9,18 @@
 
 #include <climits>
 
-#include "core/Dimacs.h"
+#include "../core/CNFProblem.h"
 using namespace Glucose;
 
 using namespace std;
 
 #include "core/SolverTypes.h"
+#include "core/Solver.h"
 
 class GateAnalyzer {
 
 public:
-  GateAnalyzer(Dimacs& dimacs, int maxTries = 0);
+  GateAnalyzer(CNFProblem& dimacs);
 
   // main analysis routines:
   void analyze();
@@ -31,8 +32,8 @@ public:
 
 private:
   // problem to analyze:
-  For const& formula;
-  int nVars;
+  CNFProblem problem;
+  Solver solver;
 
   // control structures:
   vector<Cl*> roots;
@@ -40,7 +41,9 @@ private:
   vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
 
   // heuristic configuration:
-  int maxTries = 1;
+  int maxTries = 0;
+  bool usePatterns = false;
+  bool useSemantic = false;
 
   // statistics:
   int nGates = 0;

@@ -53,10 +53,10 @@
 #include <zlib.h>
 #include <sys/resource.h>
 
+#include "core/CNFProblem.h"
 #include "utils/System.h"
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
-#include "core/Dimacs.h"
 #include "simp/SimpSolver.h"
 
 #include "gates/GateAnalyzer.h"
@@ -203,18 +203,20 @@ int main(int argc, char** argv) {
     }
 
     FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
-    Dimacs dimacs(in);
+    CNFProblem dimacs(in);
     gzclose(in);
 
     if (count_gates) {
-      GateAnalyzer gates(dimacs, 0);
+      GateAnalyzer gates(dimacs);
       gates.analyze();
       For* inputs = gates.getGates();
       int g = 0;
-      for (int v = 0; v < dimacs.getNVars(); v++) {
+      for (int v = 0; v < dimacs.nVars(); v++) {
         if ((*inputs)[v] && (*inputs)[v]->size()) g++;
       }
       printf("c |  Number of gates:      %12d                                                                   |\n", g);
+      printf("c |  Number of variables:  %12d                                                                   |\n", dimacs.nVars());
+      printf("c |  Number of clauses:    %12d                                                                   |\n", dimacs.nClauses());
       printf("c |                                                                                                       |\n");
       printf("c =========================================================================================================\n");
       return 0;

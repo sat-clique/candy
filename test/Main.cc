@@ -7,7 +7,7 @@
 
 #include "gtest/gtest.h"
 
-#include "core/Dimacs.h"
+#include "../core/CNFProblem.h"
 #include "simp/SimpSolver.h"
 #include "gates/GateAnalyzer.h"
 
@@ -20,7 +20,7 @@ TEST (TestTest, zeqz) {
 TEST (SolverTest, outputwithbudget) {
   SimpSolver S;
   gzFile in = gzopen("vmpc_32.renamed-as.sat05-1919.cnf", "rb");
-  Dimacs dimacs(in);
+  CNFProblem dimacs(in);
   gzclose(in);
 
   S.insertClauses(dimacs);
@@ -48,11 +48,11 @@ TEST (SolverTest, outputwithbudget) {
 
 TEST (GateAnalyzerTest, countgates) {
   gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
-  Dimacs dimacs(in);
+  CNFProblem dimacs(in);
   gzclose(in);
 
   // create test out
-  GateAnalyzer gates(dimacs, 0);
+  GateAnalyzer gates(dimacs);
   gates.analyze();
   int g = gates.getNGates();
   testing::internal::CaptureStdout();
@@ -73,11 +73,11 @@ TEST (GateAnalyzerTest, countgates) {
 
 TEST (GateAnalyzerTest2, printgates) {
   gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
-  Dimacs dimacs(in);
+  CNFProblem dimacs(in);
   gzclose(in);
 
   // create test out
-  GateAnalyzer gates(dimacs, 0);
+  GateAnalyzer gates(dimacs);
   gates.analyze();
   For* g = gates.getGates();
   testing::internal::CaptureStdout();

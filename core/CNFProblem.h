@@ -31,21 +31,22 @@ using namespace std;
 
 namespace Glucose {
 
-class Dimacs {
+class CNFProblem {
 
   For problem;
-  int nVars = 0;
+  int maxVars = 0;
 
   int headerVars = 0;
   int headerClauses = 0;
 
 public:
 
-  Dimacs(gzFile input_stream) {
+  CNFProblem() { }
 
+  CNFProblem(gzFile input_stream) {
     parse_DIMACS(input_stream);
 
-    if (headerVars != nVars) {
+    if (headerVars != maxVars) {
       fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
     }
 
@@ -58,18 +59,50 @@ public:
     return problem;
   }
 
-  int getNVars() {
-    return nVars;
+  int nVars() {
+    return maxVars;
   }
+
+  int nClauses() {
+    return (int)problem.size();
+  }
+
+  void readClause(Lit plit) {
+    vector<Lit>* lits = new vector<Lit>();
+    if (var(plit)+1 > maxVars) maxVars = var(plit)+1;
+    lits->push_back(plit);
+    problem.push_back(lits);
+  }
+
+  void readClause(Lit plit1, Lit plit2) {
+    vector<Lit>* lits = new vector<Lit>();
+    if (var(plit1)+1 > maxVars) maxVars = var(plit1)+1;
+    lits->push_back(plit1);
+    if (var(plit2)+1 > maxVars) maxVars = var(plit2)+1;
+    lits->push_back(plit2);
+    problem.push_back(lits);
+  }
+
+  void readClause(vector<Lit>& in) {
+    vector<Lit>* lits = new vector<Lit>();
+    for (Lit plit : in) {
+      if (var(plit)+1 > maxVars) maxVars = var(plit)+1;
+      lits->push_back(plit);
+    }
+    problem.push_back(lits);
+  }
+
 
 private:
 
-  void readClause(StreamBuffer& in, vector<Lit>* lits) {
+  void readClause(StreamBuffer& in) {
+    vector<Lit>* lits = new vector<Lit>();
     for (int plit = parseInt(in); plit != 0; plit = parseInt(in)) {
       int var = abs(plit);
-      if (var > nVars) nVars = var;
+      if (var > maxVars) maxVars = var;
       lits->push_back(mkLit(var-1, plit < 0));
     }
+    problem.push_back(lits);
   }
 
   void parse_DIMACS(gzFile input_stream) {
@@ -90,9 +123,7 @@ private:
         skipLine(in);
       }
       else {
-        vector<Lit>* lits = new vector<Lit>();
-        readClause(in, lits);
-        problem.push_back(lits);
+        readClause(in);
       }
       skipWhitespace(in);
     }
