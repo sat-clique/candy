@@ -15,17 +15,19 @@ static const char* _cat = "GATE RECOGNITION";
 static IntOption opt_gate_tries(_cat, "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
 static BoolOption opt_patterns(_cat, "gate-patterns", "Enable Pattern-based Gate Detection", false);
 static BoolOption opt_semantic(_cat, "gate-semantic", "Enable Semantic Gate Detection", false);
+static BoolOption opt_holistic(_cat, "gate-holistic", "Enable Holistic Gate Detection", false);
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 	problem (dimacs),
 	solver (),
 	maxTries (opt_gate_tries),
 	usePatterns (opt_patterns),
-	useSemantic (opt_semantic) {
+	useSemantic (opt_semantic),
+    useHolistic (opt_holistic) {
   gates = new For(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
   index.resize(2 * problem.nVars());
-  //solver.insertClauses(problem);
+  if (useHolistic) solver.insertClauses(problem);
 }
 
 // heuristically select clauses

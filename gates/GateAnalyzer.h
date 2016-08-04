@@ -44,6 +44,7 @@ private:
   int maxTries = 0;
   bool usePatterns = false;
   bool useSemantic = false;
+  bool useHolistic = false;
 
   // statistics:
   int nGates = 0;
