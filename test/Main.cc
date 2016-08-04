@@ -13,15 +13,11 @@
 
 using namespace Glucose;
 
-TEST (TestTest, zeqz) {
-  ASSERT_EQ (0.0, 0.0);
-}
-
 TEST (SolverTest, outputwithbudget) {
   SimpSolver S;
-  gzFile in = gzopen("vmpc_32.renamed-as.sat05-1919.cnf", "rb");
-  CNFProblem dimacs(in);
-  gzclose(in);
+
+  CNFProblem dimacs;
+  dimacs.readDimacsFromFile("vmpc_32.renamed-as.sat05-1919.cnf");
 
   S.insertClauses(dimacs);
 
@@ -47,16 +43,14 @@ TEST (SolverTest, outputwithbudget) {
 }
 
 TEST (GateAnalyzerTest, countgates) {
-  gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
-  CNFProblem dimacs(in);
-  gzclose(in);
+  CNFProblem dimacs;
+  dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");
 
   // create test out
   GateAnalyzer gates(dimacs);
   gates.analyze();
-  int g = gates.getNGates();
   testing::internal::CaptureStdout();
-  printf("c |  Number of gates:      %12d                                                                   |\n", g);
+  printf("Number of gates: %7d", gates.getNGates());
   std::string output = testing::internal::GetCapturedStdout();
 
   // create reference output (comment out once generated):
@@ -67,39 +61,6 @@ TEST (GateAnalyzerTest, countgates) {
 
   // compare reference and test output:
   std::ifstream t("countgates.txt");
-  std::string reference((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-  ASSERT_EQ (output, reference);
-}
-
-TEST (GateAnalyzerTest2, printgates) {
-  gzFile in = gzopen("velev-vliw-uns-2.0-uq5.cnf", "rb");
-  CNFProblem dimacs(in);
-  gzclose(in);
-
-  // create test out
-  GateAnalyzer gates(dimacs);
-  gates.analyze();
-  For* g = gates.getGates();
-  testing::internal::CaptureStdout();
-  int i = 0;
-  for (Cl* c : *g) {
-	  i++;
-//	  if (i > 86810) break;
-	  if (c == nullptr) continue;
-	  if (c->size() > 0) printf("%i: ", i);
-	  for (Lit l : *c) printf("%s%i ", sign(l)?"-":"", var(l)+1);
-	  if (c->size() > 0) printf("\n");
-  }
-  std::string output = testing::internal::GetCapturedStdout();
-
-//   create reference output (comment out once generated):
-//  FILE* f = fopen("/home/markus/git/candy-kingdom/test/printgates.txt", "wb");
-//  fprintf(f, "%s", output.c_str());
-//  fflush(f);
-//  fclose(f);
-
-  // compare reference and test output:
-  std::ifstream t("printgates.txt");
   std::string reference((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
   ASSERT_EQ (output, reference);
 }

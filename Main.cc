@@ -190,21 +190,16 @@ int main(int argc, char** argv) {
       }
     }
 
-    if (argc == 1)
+    CNFProblem dimacs;
+    if (argc == 1) {
       printf("c Reading from standard input... Use '--help' for help.\n");
-
-    gzFile in = (argc == 1) ? gzdopen(0, "rb") : gzopen(argv[1], "rb");
-    if (in == NULL)
-      printf("ERROR! Could not open file: %s\n", argc == 1 ? "<stdin>" : argv[1]), exit(1);
-
-    if (S.verbosity > 0) {
-      printf("c ========================================[ Problem Statistics ]===========================================\n");
-      printf("c |                                                                                                       |\n");
+      if (!dimacs.readDimacsFromStdout()) return 1;
+    }
+    else {
+      if (!dimacs.readDimacsFromFile(argv[1])) return 1;
     }
 
     FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
-    CNFProblem dimacs(in);
-    gzclose(in);
 
     if (count_gates) {
       double recognition_time = cpuTime();
@@ -216,6 +211,8 @@ int main(int argc, char** argv) {
         if ((*inputs)[v] && (*inputs)[v]->size()) g++;
       }
       recognition_time = cpuTime() - recognition_time;
+      printf("c ========================================[ Problem Statistics ]===========================================\n");
+      printf("c |                                                                                                       |\n");
       printf("c |  Number of gates:        %12d                                                                 |\n", g);
       printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
       printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
@@ -230,6 +227,8 @@ int main(int argc, char** argv) {
     dimacs.getProblem().clear();
 
     if (S.verbosity > 0) {
+      printf("c ========================================[ Problem Statistics ]===========================================\n");
+      printf("c |                                                                                                       |\n");
       printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
       printf("c |  Number of clauses:    %12d                                                                   |\n", S.nClauses());
     }

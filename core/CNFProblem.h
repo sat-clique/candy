@@ -43,18 +43,6 @@ public:
 
   CNFProblem() { }
 
-  CNFProblem(gzFile input_stream) {
-    parse_DIMACS(input_stream);
-
-    if (headerVars != maxVars) {
-      fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
-    }
-
-    if (headerClauses != (int)problem.size()) {
-      fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
-    }
-  }
-
   For& getProblem() {
     return problem;
   }
@@ -65,6 +53,27 @@ public:
 
   int nClauses() {
     return (int)problem.size();
+  }
+
+  bool readDimacsFromStdout() {
+    gzFile in = gzdopen(0, "rb");
+    if (in == NULL) {
+      printf("ERROR! Could not open file: <stdin>");
+      return false;
+    }
+    parse_DIMACS(in);
+    gzclose(in);
+  }
+
+  bool readDimacsFromFile(char* filename) {
+    gzFile in = gzopen(filename, "rb");
+    if (in == NULL) {
+      printf("ERROR! Could not open file: %s\n", filename);
+      return false;
+    }
+    parse_DIMACS(in);
+    gzclose(in);
+    return true;
   }
 
   void readClause(Lit plit) {
@@ -126,6 +135,12 @@ private:
         readClause(in);
       }
       skipWhitespace(in);
+    }
+    if (headerVars != maxVars) {
+      fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
+    }
+    if (headerClauses != (int)problem.size()) {
+      fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
     }
   }
 
