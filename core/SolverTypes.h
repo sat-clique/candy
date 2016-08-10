@@ -109,8 +109,6 @@ const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
 
 
-
-
 typedef vector<Lit> Cl;
 typedef vector<Cl*> For;
 

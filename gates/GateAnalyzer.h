@@ -68,10 +68,14 @@ private:
   bool usePatterns = false;
   bool useSemantic = false;
   bool useHolistic = false;
+  bool useDecomposition = false;
 
   // statistics:
   int nGates = 0;
   For* gates;
+
+  // debugging
+  bool verbose = false;
 
   // clause selection heuristic
   vector<Cl*>& selectClauses();
@@ -89,6 +93,22 @@ private:
   }
 
   bool isBlocked(Lit o, For& f, For& g) {
+    for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
+    return true;
+  }
+
+  bool isBlocked(Lit o, Cl& c, For& f) {
+    for (Cl* a : f) if (!isBlocked(o, c, *a)) return false;
+    return true;
+  }
+
+  bool isBlockedGreedyDecompose(Lit o, For& f, For& g) {
+    vector<vector<Cl*>> left, right;
+    // row 0:
+    // - add clause to left[0] (from fwd)
+    // - feed right[0] (from bwd)
+    // - feed left[0] (from fwd)
+    // continue with next row
     for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
     return true;
   }
