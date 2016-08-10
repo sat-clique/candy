@@ -7,6 +7,7 @@
 
 #include "gates/GateAnalyzer.h"
 #include "core/Solver.h"
+#include "core/Utilities.h"
 
 using namespace std;
 using namespace Glucose;
@@ -16,6 +17,10 @@ static IntOption opt_gate_tries(_cat, "gate-tries", "Number of heuristic clause 
 static BoolOption opt_patterns(_cat, "gate-patterns", "Enable Pattern-based Gate Detection", false);
 static BoolOption opt_semantic(_cat, "gate-semantic", "Enable Semantic Gate Detection", false);
 static BoolOption opt_holistic(_cat, "gate-holistic", "Enable Holistic Gate Detection", false);
+static BoolOption opt_decompose(_cat, "gate-decompose", "Enable Local Blocked Decomposition", false);
+
+static const char* _debug = "DEBUGGING";
+static BoolOption opt_verbose(_debug, "gate-debug", "Enable Debugging of Gate Analyzer", false);
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 	problem (dimacs),
@@ -23,7 +28,9 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 	maxTries (opt_gate_tries),
 	usePatterns (opt_patterns),
 	useSemantic (opt_semantic),
-    useHolistic (opt_holistic) {
+    useHolistic (opt_holistic),
+    useDecomposition (opt_decompose),
+    verbose (opt_verbose) {
   gates = new For(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
   index.resize(2 * problem.nVars());
@@ -68,6 +75,14 @@ void GateAnalyzer::analyze() {
 }
 
 bool GateAnalyzer::semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o) {
+  if (verbose) {
+    printf("semantic check for output %i \n", o+1);
+    printf("forward clauses: \n");
+    printClauses(fwd);
+    printf("backward clauses: \n");
+    printClauses(bwd);
+  }
+
   CNFProblem constraint;
   Lit alit = mkLit(problem.nVars(), false);
   Cl clause;
@@ -120,7 +135,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
     literals.pop_back();
 
     For& f = index[~o], g = index[o];
-    if (f.size() > 0 && isBlocked(o, f, g)) {
+    if (f.size() > 0 && (isBlocked(o, f, g) || useDecomposition && isBlockedGreedyDecompose(o, f, g))) {
       bool mono = !inputs[o] || !inputs[~o];
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
