@@ -7,7 +7,6 @@
 
 #include "gates/GateAnalyzer.h"
 #include "core/Solver.h"
-#include "core/Utilities.h"
 
 using namespace std;
 using namespace Glucose;
