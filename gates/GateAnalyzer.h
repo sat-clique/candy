@@ -15,6 +15,7 @@ using namespace Glucose;
 using namespace std;
 
 #include "core/SolverTypes.h"
+#include "core/Utilities.h"
 #include "core/Solver.h"
 
 class GateAnalyzer {
@@ -102,15 +103,40 @@ private:
     return true;
   }
 
-  bool isBlockedGreedyDecompose(Lit o, For& f, For& g) {
-    vector<vector<Cl*>> left, right;
-    // row 0:
-    // - add clause to left[0] (from fwd)
-    // - feed right[0] (from bwd)
-    // - feed left[0] (from fwd)
-    // continue with next row
-    for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
-    return true;
+  void saturate(For& source, For& target, For& blocked, Lit o) {
+    for (unsigned int i = 0; i < source.size(); i++) {
+      int n = source.size();
+      if (isBlocked(o, *source[i], blocked)) {
+        target.push_back(source[i]);
+        std::swap(source[i], source[n-1]);
+        source.pop_back();
+      }
+    }
+  }
+
+  bool isBlockedGreedyDecompose(Lit o, For f, For g) {
+    vector<For> left, right;
+    if (verbose) {
+      printf("Decomposition with Output-literal %s%i\n", sign(o)?"-":"", var(o)+1);
+    }
+    while (!f.empty()) {
+      left.push_back(For()); right.push_back(For());
+      Cl* next = f.back(); f.pop_back();
+      left.back().push_back(next);
+      saturate(g, right.back(), left.back(), o);
+      saturate(f, left.back(), right.back(), o);
+    }
+    if (verbose) {
+      printf("Decomposition into:");
+      for (int i = 0; i < left.size(); i++) {
+        printf("Block %i\n", i);
+        printClauses(left[i]);
+        printf("----------\n");
+        printClauses(right[i]);
+        printf("----------\n----------\n");
+      }
+    }
+    return g.empty();
   }
 
   bool fixedClauseSize(For& f, unsigned int n) {
