@@ -79,7 +79,7 @@ private:
   bool verbose = false;
 
   // clause selection heuristic
-  vector<Cl*>& selectClauses();
+  vector<Cl*>& getClausesWithRarestLiteral(vector<For>& index);
 
   // clause patterns of full encoding
   bool fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
@@ -119,13 +119,22 @@ private:
     if (verbose) {
       printf("Decomposition with Output-literal %s%i\n", sign(o)?"-":"", var(o)+1);
     }
+    // order the clauses by literal rarity
+    vector<For> index = buildIndexFromClauses(f);
+    printf("%i\n", index.size());
+    printf("*******************************\n");
+    fflush(stdout);
+
     while (!f.empty()) {
-      left.push_back(For()); right.push_back(For());
-      Cl* next = f.back(); f.pop_back();
-      left.back().push_back(next);
+      left.push_back(For());
+      right.push_back(For());
+      For next = getClausesWithRarestLiteral(index);
+      removeFromIndex(index, next);
+      left.back().insert(left.back().end(), next.begin(), next.end());
       saturate(g, right.back(), left.back(), o);
       saturate(f, left.back(), right.back(), o);
     }
+
     if (verbose) {
       printf("Decomposition into:");
       for (int i = 0; i < left.size(); i++) {
@@ -136,6 +145,7 @@ private:
         printf("----------\n----------\n");
       }
     }
+
     return g.empty();
   }
 
@@ -144,11 +154,23 @@ private:
     return true;
   }
 
-  void removeFromIndex(vector<Cl*> clauses) {
-    for (Cl* c : clauses) for (Lit l : *c) {
+  void removeFromIndex(vector<For>& index, Cl* clause) {
+    for (Lit l : *clause) {
       For& h = index[l];
-      h.erase(remove(h.begin(), h.end(), c), h.end());
+      h.erase(remove(h.begin(), h.end(), clause), h.end());
     }
+  }
+
+  void removeFromIndex(vector<For>& index, vector<Cl*> clauses) {
+    for (Cl* c : clauses) removeFromIndex(index, c);
+  }
+
+  vector<For> buildIndexFromClauses(For& f) {
+    vector<For> index(2 * problem.nVars());
+    for (Cl* c : f) for (Lit l : *c) {
+      index[l].push_back(c);
+    }
+    return index;
   }
 
 };
