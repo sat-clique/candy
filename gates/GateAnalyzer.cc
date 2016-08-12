@@ -32,12 +32,12 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
     verbose (opt_verbose) {
   gates = new For(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
-  index.resize(2 * problem.nVars());
+  index = buildIndexFromClauses(problem.getProblem());
   if (useHolistic) solver.insertClauses(problem);
 }
 
 // heuristically select clauses
-vector<Cl*>& GateAnalyzer::selectClauses() {
+vector<Cl*>& GateAnalyzer::getClausesWithRarestLiteral(vector<For>& index) {
   unsigned int min = INT_MAX;
   int minLit = -1;
   for (int l = 0; l < 2*problem.nVars(); l++) {
@@ -52,9 +52,10 @@ vector<Cl*>& GateAnalyzer::selectClauses() {
 
 void GateAnalyzer::analyze() {
   // populate index (except for unit-clauses, they go to roots immediately)
-  for (Cl* c : problem.getProblem())
-    if (c->size() == 1) roots.push_back(c);
-    else for (Lit l : *c) index[l].push_back(c);
+  for (Cl* c : problem.getProblem()) if (c->size() == 1) {
+    roots.push_back(c);
+    removeFromIndex(index, c);
+  }
 
   // start with unit clauses
   set<Lit> next;
@@ -64,11 +65,11 @@ void GateAnalyzer::analyze() {
   // clause selection loop
   for (int k = 0; k < maxTries; k++) {
     next.clear();
-    vector<Cl*>& clauses = selectClauses();
+    vector<Cl*>& clauses = getClausesWithRarestLiteral(index);
     for (Cl* c : clauses) {
       next.insert(c->begin(), c->end());
     }
-    removeFromIndex(clauses);
+    removeFromIndex(index, clauses);
     analyze(next);
   }
 }
@@ -148,8 +149,8 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
           inputs[l]++;
           if (!mono) inputs[~l]++;
         }
-        removeFromIndex(f);
-        removeFromIndex(g);
+        removeFromIndex(index, f);
+        removeFromIndex(index, g);
       }
     }
   }
