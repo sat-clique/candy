@@ -129,10 +129,23 @@ private:
       left.push_back(For());
       right.push_back(For());
       For next = getClausesWithRarestLiteral(index);
+      assert(next.size() > 0);
       removeFromIndex(index, next);
+      printClauses(next);
+      int size = f.size();
+      for (Cl* c : next) {
+    	  f.erase(std::remove(f.begin(), f.end(), c), f.end());
+    	  for (Lit l : *c) {
+    		  assert(find(index[l].begin(), index[l].end(), c) == index[l].end());
+    	  }
+      }
+      assert(size > f.size());
       left.back().insert(left.back().end(), next.begin(), next.end());
       saturate(g, right.back(), left.back(), o);
       saturate(f, left.back(), right.back(), o);
+      printf("%i\n", f.size());
+      printf("*******************************\n");
+      fflush(stdout);
     }
 
     if (verbose) {
