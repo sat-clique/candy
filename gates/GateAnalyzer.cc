@@ -38,17 +38,17 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 }
 
 // heuristically select clauses
-vector<Cl*>& GateAnalyzer::getClausesWithRarestLiteral(vector<For>& index) {
+Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
   unsigned int min = INT_MAX;
-  int minLit = -1;
-  for (int l = 0; l < 2*problem.nVars(); l++) {
-    if (index[l].size() > 0 && index[l].size() < min) {
-      min = index[l].size();
-      minLit = l;
+  for (int l = 0; l < index.size(); l++) {
+    if (index[l].size() > 0 && (min == INT_MAX || index[l].size() < index[min].size())) {
+      min = l;
     }
   }
-  if (minLit == -1) vector<Cl*>();
-  return index[minLit];
+  assert(min < INT_MAX);
+  Lit minLit;
+  minLit.x = min;
+  return minLit;
 }
 
 void GateAnalyzer::analyze() {
@@ -66,7 +66,8 @@ void GateAnalyzer::analyze() {
   // clause selection loop
   for (int k = 0; k < maxTries; k++) {
     next.clear();
-    vector<Cl*>& clauses = getClausesWithRarestLiteral(index);
+    Lit lit = getRarestLiteral(index);
+    vector<Cl*>& clauses = index[lit];
     for (Cl* c : clauses) {
       next.insert(c->begin(), c->end());
     }

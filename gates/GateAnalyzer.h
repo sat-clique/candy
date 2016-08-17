@@ -79,7 +79,7 @@ private:
   bool verbose = false;
 
   // clause selection heuristic
-  vector<Cl*>& getClausesWithRarestLiteral(vector<For>& index);
+  Lit getRarestLiteral(vector<For>& index);
 
   // clause patterns of full encoding
   bool fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
@@ -89,24 +89,28 @@ private:
 
   // some helpers:
   bool isBlocked(Lit o, Cl& a, Cl& b) {
+    // assert ~o \in a and o \in b
     for (Lit c : a) for (Lit d : b) if (c != ~o && c == ~d) return true;
     return false;
   }
 
   bool isBlocked(Lit o, For& f, For& g) {
+    // assert ~o \in f[i] and o \in g[j]
     for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
     return true;
   }
 
-  bool isBlocked(Lit o, Cl& c, For& f) {
-    for (Cl* a : f) if (!isBlocked(o, c, *a)) return false;
+  bool isBlocked(Lit o, Cl* c, For& f) {
+    // assert ~o \in c and o \in f[i]
+    for (Cl* a : f) if (!isBlocked(o, *c, *a)) return false;
     return true;
   }
 
   void saturate(For& source, For& target, For& blocked, Lit o) {
+    // assert ~o \in source[i] and o \in blocked
     for (unsigned int i = 0; i < source.size(); i++) {
       int n = source.size();
-      if (isBlocked(o, *source[i], blocked)) {
+      if (isBlocked(o, source[i], blocked)) {
         target.push_back(source[i]);
         std::swap(source[i], source[n-1]);
         source.pop_back();
@@ -116,36 +120,41 @@ private:
 
   bool isBlockedGreedyDecompose(Lit o, For f, For g) {
     vector<For> left, right;
+
     if (verbose) {
       printf("Decomposition with Output-literal %s%i\n", sign(o)?"-":"", var(o)+1);
     }
     // order the clauses by literal rarity
     vector<For> index = buildIndexFromClauses(f);
-    printf("%i\n", index.size());
-    printf("*******************************\n");
-    fflush(stdout);
 
-    while (!f.empty()) {
+    while (!f.empty() && !g.empty()) {
       left.push_back(For());
       right.push_back(For());
-      For next = getClausesWithRarestLiteral(index);
+
+      Lit lit = getRarestLiteral(index);
+      For next = index[lit];
+
       assert(next.size() > 0);
+
       removeFromIndex(index, next);
-      printClauses(next);
+
+      assert(index[lit].empty());
+
       int size = f.size();
       for (Cl* c : next) {
     	  f.erase(std::remove(f.begin(), f.end(), c), f.end());
-    	  for (Lit l : *c) {
-    		  assert(find(index[l].begin(), index[l].end(), c) == index[l].end());
-    	  }
+          assert(find(f.begin(), f.end(), c) == f.end());
       }
       assert(size > f.size());
+
       left.back().insert(left.back().end(), next.begin(), next.end());
-      saturate(g, right.back(), left.back(), o);
+      saturate(g, right.back(), left.back(), ~o);
+
+      int n = left.back().size();
       saturate(f, left.back(), right.back(), o);
-      printf("%i\n", f.size());
-      printf("*******************************\n");
-      fflush(stdout);
+      for (int i = n; i < left.back().size(); i++) {
+        removeFromIndex(index, left.back()[i]);
+      }
     }
 
     if (verbose) {
@@ -156,6 +165,7 @@ private:
         printf("----------\n");
         printClauses(right[i]);
         printf("----------\n----------\n");
+        assert(isBlocked(o, left[i], right[i]));
       }
     }
 
@@ -174,8 +184,17 @@ private:
     }
   }
 
+  void assertNotInIndex(vector<For>& index, Cl* clause) {
+    for (Lit l : *clause) {
+      assert(find(index[l].begin(), index[l].end(), clause) == index[l].end());
+    }
+  }
+
   void removeFromIndex(vector<For>& index, vector<Cl*> clauses) {
-    for (Cl* c : clauses) removeFromIndex(index, c);
+    for (Cl* c : clauses) {
+      removeFromIndex(index, c);
+      assertNotInIndex(index, c);
+    }
   }
 
   vector<For> buildIndexFromClauses(For& f) {
