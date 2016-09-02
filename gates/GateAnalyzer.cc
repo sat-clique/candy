@@ -17,6 +17,7 @@ static BoolOption opt_patterns(_cat, "gate-patterns", "Enable Pattern-based Gate
 static BoolOption opt_semantic(_cat, "gate-semantic", "Enable Semantic Gate Detection", false);
 static BoolOption opt_holistic(_cat, "gate-holistic", "Enable Holistic Gate Detection", false);
 static BoolOption opt_decompose(_cat, "gate-decompose", "Enable Local Blocked Decomposition", false);
+static BoolOption opt_decompose_max_blocks(_cat, "gate-decompose-max-blocks", "Set Maximum Number of Blocks in Blocked Decomposition", 2);
 static BoolOption opt_complete(_cat, "gate-complete", "Enable All The Options", false);
 
 static const char* _debug = "DEBUGGING";
@@ -30,6 +31,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 	useSemantic (opt_semantic || opt_complete),
     useHolistic (opt_holistic || opt_complete),
     useDecomposition (opt_decompose || opt_complete),
+    decompMaxBlocks (opt_decompose_max_blocks),
     verbose (opt_verbose) {
   gates = new For(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);

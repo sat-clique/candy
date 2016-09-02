@@ -70,6 +70,7 @@ private:
   bool useSemantic = false;
   bool useHolistic = false;
   bool useDecomposition = false;
+  int decompMaxBlocks = 2;
 
   // statistics:
   int nGates = 0;
@@ -127,7 +128,7 @@ private:
     // order the clauses by literal rarity
     vector<For> index = buildIndexFromClauses(f);
 
-    while (!f.empty() && !g.empty()) {
+    while (!f.empty() && !g.empty() && left.size() <= decompMaxBlocks) {
       left.push_back(For());
       right.push_back(For());
 
@@ -157,7 +158,7 @@ private:
       }
     }
 
-    if (verbose) {
+    if (verbose && g.empty()) {
       printf("Decomposition into:");
       for (int i = 0; i < left.size(); i++) {
         printf("Block %i\n", i);
