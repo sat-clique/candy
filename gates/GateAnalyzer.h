@@ -173,6 +173,10 @@ private:
     return g.empty();
   }
 
+  bool isBlockedAfterVE(Lit o, For f, For g) {
+
+  }
+
   bool fixedClauseSize(For& f, unsigned int n) {
     for (Cl* c : f) if (c->size() != n) return false;
     return true;
