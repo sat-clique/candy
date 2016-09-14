@@ -174,6 +174,37 @@ private:
   }
 
   bool isBlockedAfterVE(Lit o, For f, For g) {
+    For combs;
+    // assert ~o \in f[i] and o \in g[j]
+    for (Cl* a : f) for (Cl* b : g) {
+      Cl* comb = new Cl();
+      if (!isBlocked(o, *a, *b)) {
+        comb->insert(comb->end(), a->begin(), a->end());
+        comb->insert(comb->end(), b->begin(), b->end());
+        comb->erase(std::remove_if(comb->begin(), comb->end(), [o](Lit l) { return var(l) == var(o); }), comb->end());
+        combs.push_back(comb);
+      }
+    }
+
+    set<Lit> uni;
+    for (Cl* comb : combs) uni.insert(comb->begin(), comb->end());
+
+    vector<Var> candidates;
+    for (Lit l : *(combs[0])) candidates.push_back(var(l));
+    vector<Var> next_candidates;
+    for (int i = 1; i < combs.size() && !candidates.empty(); ++i) {
+      vector<Var> next_combo;
+      for (Lit l : *(combs[i])) next_combo.push_back(var(l));
+      std::set_intersection(candidates.begin(), candidates.end(), next_combo.begin(), next_combo.end(), std::back_inserter(next_candidates));
+      std::swap(candidates, next_candidates);
+      next_candidates.clear();
+    }
+
+    if (candidates.empty()) return false;
+
+    for (Var v : candidates) {
+
+    }
 
   }
 
