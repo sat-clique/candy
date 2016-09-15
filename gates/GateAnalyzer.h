@@ -195,7 +195,8 @@ private:
     for (int i = 1; i < combs.size() && !candidates.empty(); ++i) {
       vector<Var> next_combo;
       for (Lit l : *(combs[i])) next_combo.push_back(var(l));
-      std::set_intersection(candidates.begin(), candidates.end(), next_combo.begin(), next_combo.end(), std::back_inserter(next_candidates));
+      std::set_intersection(candidates.begin(), candidates.end(),
+          next_combo.begin(), next_combo.end(), std::back_inserter(next_candidates));
       std::swap(candidates, next_candidates);
       next_candidates.clear();
     }
@@ -203,7 +204,9 @@ private:
     if (candidates.empty()) return false;
 
     for (Var v : candidates) {
+      for (For& comb : combs) {
 
+      }
     }
 
   }
