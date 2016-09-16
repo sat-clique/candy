@@ -128,7 +128,7 @@ private:
     // order the clauses by literal rarity
     vector<For> index = buildIndexFromClauses(f);
 
-    while (!f.empty() && !g.empty() && left.size() <= decompMaxBlocks) {
+    while (!f.empty() && !g.empty() && left.size() <= (size_t)decompMaxBlocks) {
       left.push_back(For());
       right.push_back(For());
 
@@ -141,7 +141,7 @@ private:
 
       assert(index[lit].empty());
 
-      int size = f.size();
+      size_t size = f.size();
       for (Cl* c : next) {
     	  f.erase(std::remove(f.begin(), f.end(), c), f.end());
           assert(find(f.begin(), f.end(), c) == f.end());
@@ -153,15 +153,15 @@ private:
 
       int n = left.back().size();
       saturate(f, left.back(), right.back(), o);
-      for (int i = n; i < left.back().size(); i++) {
+      for (size_t i = n; i < left.back().size(); i++) {
         removeFromIndex(index, left.back()[i]);
       }
     }
 
     if (verbose && g.empty()) {
       printf("Decomposition into:");
-      for (int i = 0; i < left.size(); i++) {
-        printf("Block %i\n", i);
+      for (size_t i = 0; i < left.size(); i++) {
+        printf("Block %zu\n", i);
         printClauses(left[i]);
         printf("----------\n");
         printClauses(right[i]);
