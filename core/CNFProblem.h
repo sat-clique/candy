@@ -63,6 +63,7 @@ public:
     }
     parse_DIMACS(in);
     gzclose(in);
+    return true;
   }
 
   bool readDimacsFromFile(char* filename) {

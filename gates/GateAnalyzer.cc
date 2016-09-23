@@ -42,7 +42,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 // heuristically select clauses
 Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
   unsigned int min = INT_MAX;
-  for (int l = 0; l < index.size(); l++) {
+  for (size_t l = 0; l < index.size(); l++) {
     if (index[l].size() > 0 && (min == INT_MAX || index[l].size() < index[min].size())) {
       min = l;
     }
