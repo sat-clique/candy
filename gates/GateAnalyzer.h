@@ -119,67 +119,9 @@ private:
     }
   }
 
-  bool isBlockedGreedyDecompose(Lit o, For f, For g) {
-    vector<For> left, right;
-
-    if (verbose) {
-      printf("Decomposition with Output-literal %s%i\n", sign(o)?"-":"", var(o)+1);
-    }
-    // order the clauses by literal rarity
-    vector<For> index = buildIndexFromClauses(f);
-
-    while (!f.empty() && !g.empty() && left.size() <= (size_t)decompMaxBlocks) {
-      left.push_back(For());
-      right.push_back(For());
-
-      Lit lit = getRarestLiteral(index);
-      For next = index[lit];
-
-      assert(next.size() > 0);
-
-      removeFromIndex(index, next);
-
-      assert(index[lit].empty());
-
-      size_t size = f.size();
-      for (Cl* c : next) {
-    	  f.erase(std::remove(f.begin(), f.end(), c), f.end());
-          assert(find(f.begin(), f.end(), c) == f.end());
-      }
-      assert(size > f.size());
-
-      left.back().insert(left.back().end(), next.begin(), next.end());
-      saturate(g, right.back(), left.back(), ~o);
-
-      int n = left.back().size();
-      saturate(f, left.back(), right.back(), o);
-      for (size_t i = n; i < left.back().size(); i++) {
-        removeFromIndex(index, left.back()[i]);
-      }
-    }
-
-    if (verbose && g.empty()) {
-      printf("Decomposition into:");
-      for (size_t i = 0; i < left.size(); i++) {
-        printf("Block %zu\n", i);
-        printClauses(left[i]);
-        printf("----------\n");
-        printClauses(right[i]);
-        printf("----------\n----------\n");
-        assert(isBlocked(o, left[i], right[i]));
-      }
-    }
-
-    return g.empty();
-  }
-
 
   // precondition: ~o \in f[i] and o \in g[j]
   bool isBlockedAfterVE(Lit o, For f, For g) {
-    // generate set of input variables of candidate gate G = f and g
-    vector<Var> inputs;
-    for (Lit l : f) if (var(l) != var(o)) inputs.push_back(var(l));
-
     // generate set of non-tautological resolvents
     For resolvents;
     for (Cl* a : f) for (Cl* b : g) {
@@ -195,7 +137,11 @@ private:
     // no non-tautological resolvents
     if (resolvents.empty()) return true;
 
-    // generate candidate outputs (use intersection of all non-tautological resolvents)
+    // generate set of input variables of candidate gate G = f and g
+    vector<Var> inputs;
+    for (Lit l : f) if (var(l) != var(o)) inputs.push_back(var(l));
+
+    // generate candidate outputs (use intersection of all inputs in all non-tautological resolvents)
     vector<Var> candidates;
     for (Lit l : *(resolvents[0])) candidates.push_back(var(l));
     vector<Var> next_candidates;
@@ -211,20 +157,62 @@ private:
     // no candidate output
     if (candidates.empty()) return false;
 
-    // generate candidate definition
-    For fwd, bwd;
     for (Var inp : inputs) {
-      for (Cl* c : index[mkLit(inp, true)]) {
-//        if (c subseteq inputs) fwd.push_back(c);
+      Lit output = mkLit(inp, false);
+
+      // generate candidate definition for output
+      For fwd, bwd;
+
+      for (Cl* c : index[~output]) {
+        bool is_subset = true;
+        for (Lit l : *c) {
+          if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
+            is_subset = false;
+          }
+        }
+		    if (is_subset) fwd.push_back(c);
       }
-      for (Cl* c : index[mkLit(inp, false)]) {
-//        if (c subseteq inputs) bwd.push_back(c);
+
+      for (Cl* c : index[output]) {
+        bool is_subset = true;
+        for (Lit l : *c) {
+          if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
+            is_subset = false;
+          }
+        }
+        if (is_subset) bwd.push_back(c);
+      }
+
+      if (fwd.empty() && bwd.empty()) continue;
+
+      if (fwd.empty()) {
+        swap(fwd, bwd);
+        output = ~output;
+      }
+
+      // if candidate definition is functional
+      // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
+      bool functional = false;
+      if (isBlocked(output, fwd, bwd)) {
+        bool monotonic = true;
+        if (find(f.begin(), f.end(), output) == f.end() && find(f.begin(), f.end(), ~output) == f.end()) {
+          monotonic = false;
+        }
+        if (monotonic) {
+          functional = true;
+        } else {
+          functional = semanticCheck(fwd, bwd, var(output));
+        }
+      }
+
+      // then local resolution is enough and then check resolve and check for gate-property again
+      if (functional) {
+
+      }
+      else {
+        return false;
       }
     }
-
-    // if candidate definition is functional (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
-    // then local resolution is enough and then check resolve and check for gate-property again
-
   }
 
   bool fixedClauseSize(For& f, unsigned int n) {
