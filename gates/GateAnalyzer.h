@@ -173,41 +173,57 @@ private:
     return g.empty();
   }
 
+
+  // precondition: ~o \in f[i] and o \in g[j]
   bool isBlockedAfterVE(Lit o, For f, For g) {
-    For combs;
-    // assert ~o \in f[i] and o \in g[j]
+    // generate set of input variables of candidate gate G = f and g
+    vector<Var> inputs;
+    for (Lit l : f) if (var(l) != var(o)) inputs.push_back(var(l));
+
+    // generate set of non-tautological resolvents
+    For resolvents;
     for (Cl* a : f) for (Cl* b : g) {
-      Cl* comb = new Cl();
+      Cl* res = new Cl();
       if (!isBlocked(o, *a, *b)) {
-        comb->insert(comb->end(), a->begin(), a->end());
-        comb->insert(comb->end(), b->begin(), b->end());
-        comb->erase(std::remove_if(comb->begin(), comb->end(), [o](Lit l) { return var(l) == var(o); }), comb->end());
-        combs.push_back(comb);
+        res->insert(res->end(), a->begin(), a->end());
+        res->insert(res->end(), b->begin(), b->end());
+        res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
+        resolvents.push_back(res);
       }
     }
 
-    set<Lit> uni;
-    for (Cl* comb : combs) uni.insert(comb->begin(), comb->end());
+    // no non-tautological resolvents
+    if (resolvents.empty()) return true;
 
+    // generate candidate outputs (use intersection of all non-tautological resolvents)
     vector<Var> candidates;
-    for (Lit l : *(combs[0])) candidates.push_back(var(l));
+    for (Lit l : *(resolvents[0])) candidates.push_back(var(l));
     vector<Var> next_candidates;
-    for (int i = 1; i < combs.size() && !candidates.empty(); ++i) {
+    for (int i = 1; i < resolvents.size() && !candidates.empty(); ++i) {
       vector<Var> next_combo;
-      for (Lit l : *(combs[i])) next_combo.push_back(var(l));
+      for (Lit l : *(resolvents[i])) next_combo.push_back(var(l));
       std::set_intersection(candidates.begin(), candidates.end(),
           next_combo.begin(), next_combo.end(), std::back_inserter(next_candidates));
       std::swap(candidates, next_candidates);
       next_candidates.clear();
     }
 
+    // no candidate output
     if (candidates.empty()) return false;
 
-    for (Var v : candidates) {
-      for (For& comb : combs) {
-
+    // generate candidate definition
+    For fwd, bwd;
+    for (Var inp : inputs) {
+      for (Cl* c : index[mkLit(inp, true)]) {
+//        if (c subseteq inputs) fwd.push_back(c);
+      }
+      for (Cl* c : index[mkLit(inp, false)]) {
+//        if (c subseteq inputs) bwd.push_back(c);
       }
     }
+
+    // if candidate definition is functional (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
+    // then local resolution is enough and then check resolve and check for gate-property again
 
   }
 
