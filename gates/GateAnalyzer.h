@@ -229,7 +229,7 @@ private:
     }
   }
 
-  void removeFromIndex(vector<For>& index, vector<Cl*> clauses) {
+  void removeFromIndex(vector<For>& index, vector<Cl*>& clauses) {
     for (Cl* c : clauses) {
       removeFromIndex(index, c);
       assertNotInIndex(index, c);
