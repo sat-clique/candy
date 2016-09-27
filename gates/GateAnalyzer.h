@@ -138,27 +138,37 @@ private:
     if (resolvents.empty()) return true;
 
     // generate set of input variables of candidate gate G = f and g
-    vector<Var> inputs;
-    for (Lit l : f) if (var(l) != var(o)) inputs.push_back(var(l));
+    set<Var> inputs;
+    for (Lit l : f) if (var(l) != var(o)) inputs.insert(var(l));
+    for (Lit l : g) if (var(l) != var(o)) inputs.insert(var(l));
 
     // generate candidate outputs (use intersection of all inputs in all non-tautological resolvents)
-    vector<Var> candidates;
-    for (Lit l : *(resolvents[0])) candidates.push_back(var(l));
-    vector<Var> next_candidates;
-    for (int i = 1; i < resolvents.size() && !candidates.empty(); ++i) {
-      vector<Var> next_combo;
-      for (Lit l : *(resolvents[i])) next_combo.push_back(var(l));
-      std::set_intersection(candidates.begin(), candidates.end(),
-          next_combo.begin(), next_combo.end(), std::back_inserter(next_candidates));
-      std::swap(candidates, next_candidates);
+    set<Var> candidate_vars;
+    for (Lit l : *(resolvents[0])) candidate_vars.insert(var(l));
+    set<Var> next_candidates;
+    for (int i = 1; i < resolvents.size() && !candidate_vars.empty(); ++i) {
+      vector<Var> vars;
+      for (Lit l : *(resolvents[i])) vars.push_back(var(l));
+      std::set_intersection(candidate_vars.begin(), candidate_vars.end(),
+          vars.begin(), vars.end(), std::back_inserter(next_candidates));
+      std::swap(candidate_vars, next_candidates);
       next_candidates.clear();
     }
 
     // no candidate output
-    if (candidates.empty()) return false;
+    if (candidate_vars.empty()) return false;
 
-    for (Var inp : inputs) {
-      Lit output = mkLit(inp, false);
+    set<Lit> candidate_lits;
+    for (Cl* resolvent : resolvents) {
+      for (Lit l : *resolvent) {
+        if (find(candidate_vars.begin(), candidate_vars.end(), var(l)) == candidate_vars.end()) {
+          candidate_lits.insert(l);
+        }
+      }
+    }
+
+    for (Var cand : candidate_vars) {
+      Lit output = mkLit(cand, false);
 
       // generate candidate definition for output
       For fwd, bwd;
@@ -185,10 +195,12 @@ private:
 
       if (fwd.empty() && bwd.empty()) continue;
 
-      if (fwd.empty()) {
+      if (fwd.empty() || find(candidate_lits.begin(), candidate_lits.end(), ~output) == candidate_lits.end()) {
         swap(fwd, bwd);
         output = ~output;
       }
+
+      if (fwd.empty) continue;
 
       // if candidate definition is functional
       // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
@@ -207,12 +219,21 @@ private:
 
       // then local resolution is enough and then check resolve and check for gate-property again
       if (functional) {
-
+        // split resolvents
+        For res_fwd, res_bwd;
+        for (Cl* res : resolvents) {
+          if (find(res->begin(), res->end(), ~output) == res->end()) {
+            res_fwd.push_back(res);
+          } else {
+            res_bwd.push_back(res);
+          }
+        }
+        if (isBlocked(~output, res_fwd, bwd) && isBlocked(~output, fwd, res_bwd)) return true;
       }
-      else {
-        return false;
-      }
+      else; // next candidate
     }
+
+    return false;
   }
 
   bool fixedClauseSize(For& f, unsigned int n) {
