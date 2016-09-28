@@ -139,14 +139,15 @@ private:
 
     // generate set of input variables of candidate gate G = f and g
     set<Var> inputs;
-    for (Lit l : f) if (var(l) != var(o)) inputs.insert(var(l));
-    for (Lit l : g) if (var(l) != var(o)) inputs.insert(var(l));
+    for (Cl* c : f) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
+    for (Cl* c : g) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
 
     // generate candidate outputs (use intersection of all inputs in all non-tautological resolvents)
-    set<Var> candidate_vars;
-    for (Lit l : *(resolvents[0])) candidate_vars.insert(var(l));
-    set<Var> next_candidates;
-    for (int i = 1; i < resolvents.size() && !candidate_vars.empty(); ++i) {
+    // TODO: make sets from vectors
+    vector<Var> candidate_vars;
+    for (Lit l : *(resolvents[0])) candidate_vars.push_back(var(l));
+    vector<Var> next_candidates;
+    for (size_t i = 1; i < resolvents.size() && !candidate_vars.empty(); ++i) {
       vector<Var> vars;
       for (Lit l : *(resolvents[i])) vars.push_back(var(l));
       std::set_intersection(candidate_vars.begin(), candidate_vars.end(),
@@ -180,7 +181,7 @@ private:
             is_subset = false;
           }
         }
-		    if (is_subset) fwd.push_back(c);
+		if (is_subset) fwd.push_back(c);
       }
 
       for (Cl* c : index[output]) {
@@ -193,23 +194,23 @@ private:
         if (is_subset) bwd.push_back(c);
       }
 
+      bool pos_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), output) != candidate_lits.end();
+      bool neg_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), ~output) != candidate_lits.end();
+
       if (fwd.empty() && bwd.empty()) continue;
 
-      if (fwd.empty() || find(candidate_lits.begin(), candidate_lits.end(), ~output) == candidate_lits.end()) {
+      if (fwd.empty() || !neg_is_candidate) {
         swap(fwd, bwd);
         output = ~output;
       }
 
-      if (fwd.empty) continue;
+      if (fwd.empty()) continue;
 
       // if candidate definition is functional
       // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
       bool functional = false;
       if (isBlocked(output, fwd, bwd)) {
-        bool monotonic = true;
-        if (find(f.begin(), f.end(), output) == f.end() && find(f.begin(), f.end(), ~output) == f.end()) {
-          monotonic = false;
-        }
+        bool monotonic = !pos_is_candidate || !neg_is_candidate;
         if (monotonic) {
           functional = true;
         } else {
