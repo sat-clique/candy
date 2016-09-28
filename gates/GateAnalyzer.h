@@ -220,7 +220,7 @@ private:
         // 1. it is pure in the candidate gate-definition
         // 2. it is pure in the current partial gate-structure
         // 3. it is pure in the remaining formula
-        bool monotonic = !neg_is_candidate && !inputs[output] && bwd.size() == index[output].size();
+        bool monotonic = !neg_is_candidate && !this->inputs[toInt(output)] && bwd.size() == index[output].size();
         if (monotonic) {
           functional = true;
         } else {
