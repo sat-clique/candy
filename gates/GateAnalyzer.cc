@@ -139,7 +139,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
     literals.pop_back();
 
     For& f = index[~o], g = index[o];
-    if (f.size() > 0 && (isBlocked(o, f, g) || useDecomposition && isBlockedGreedyDecompose(o, f, g))) {
+    if (f.size() > 0 && (isBlocked(o, f, g) || useDecomposition && isBlockedAfterVE(o, f, g))) {
       bool mono = !inputs[o] || !inputs[~o];
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
