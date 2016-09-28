@@ -171,46 +171,56 @@ private:
     for (Var cand : candidate_vars) {
       Lit output = mkLit(cand, false);
 
+      bool pos_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), output) != candidate_lits.end();
+      bool neg_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), ~output) != candidate_lits.end();
+      // make sure fwd-clauses are usable in monotonic case
+      if (!pos_is_candidate) output = ~output;
+
       // generate candidate definition for output
       For fwd, bwd;
 
       for (Cl* c : index[~output]) {
+        // clauses of candidate gate are still part of index (filter them out)
+        if (find(f.begin(), f.end(), c) == f.end()) continue;
+        if (find(g.begin(), g.end(), c) == g.end()) continue;
+        // use clauses that constrain the inputs of our candidate gate only
         bool is_subset = true;
         for (Lit l : *c) {
           if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
             is_subset = false;
+            break;
           }
         }
 		if (is_subset) fwd.push_back(c);
       }
 
       for (Cl* c : index[output]) {
+        // clauses of candidate gate are still part of index (filter them out)
+        if (find(f.begin(), f.end(), c) == f.end()) continue;
+        if (find(g.begin(), g.end(), c) == g.end()) continue;
+        // use clauses that constrain the inputs of our candidate gate only
         bool is_subset = true;
         for (Lit l : *c) {
           if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
             is_subset = false;
+            break;
           }
         }
         if (is_subset) bwd.push_back(c);
       }
 
-      bool pos_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), output) != candidate_lits.end();
-      bool neg_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), ~output) != candidate_lits.end();
-
-      if (fwd.empty() && bwd.empty()) continue;
-
-      if (fwd.empty() || !neg_is_candidate) {
-        swap(fwd, bwd);
-        output = ~output;
-      }
-
-      if (fwd.empty()) continue;
+      if (pos_is_candidate && fwd.empty()) continue;
+      if (neg_is_candidate && bwd.empty()) continue;
 
       // if candidate definition is functional
       // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
       bool functional = false;
       if (isBlocked(output, fwd, bwd)) {
-        bool monotonic = !pos_is_candidate || !neg_is_candidate;
+        // output is used monotonic, iff
+        // 1. it is pure in the candidate gate-definition
+        // 2. it is pure in the current partial gate-structure
+        // 3. it is pure in the remaining formula
+        bool monotonic = !neg_is_candidate && !inputs[output] && bwd.size() == index[output].size();
         if (monotonic) {
           functional = true;
         } else {
