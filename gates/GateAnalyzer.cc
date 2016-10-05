@@ -16,8 +16,7 @@ static IntOption opt_gate_tries(_cat, "gate-tries", "Number of heuristic clause 
 static BoolOption opt_patterns(_cat, "gate-patterns", "Enable Pattern-based Gate Detection", false);
 static BoolOption opt_semantic(_cat, "gate-semantic", "Enable Semantic Gate Detection", false);
 static BoolOption opt_holistic(_cat, "gate-holistic", "Enable Holistic Gate Detection", false);
-static BoolOption opt_decompose(_cat, "gate-decompose", "Enable Local Blocked Decomposition", false);
-static BoolOption opt_decompose_max_blocks(_cat, "gate-decompose-max-blocks", "Set Maximum Number of Blocks in Blocked Decomposition", 2);
+static BoolOption opt_lookahead(_cat, "gate-lookahead", "Enable Lookahead for additional encoding vars", false);
 static BoolOption opt_complete(_cat, "gate-complete", "Enable All The Options", false);
 
 static const char* _debug = "DEBUGGING";
@@ -30,13 +29,17 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 	usePatterns (opt_patterns || opt_complete),
 	useSemantic (opt_semantic || opt_complete),
     useHolistic (opt_holistic || opt_complete),
-    useDecomposition (opt_decompose || opt_complete),
-    decompMaxBlocks (opt_decompose_max_blocks),
+    useLookahead (opt_lookahead || opt_complete),
     verbose (opt_verbose) {
   gates = new For(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
-  index = buildIndexFromClauses(problem.getProblem());
+  index.resize(2 * problem.nVars());
+  for (Cl* c : problem.getProblem()) for (Lit l : *c) {
+    index[l].push_back(c);
+  }
+  assert(checkIndexConsistency());
   if (useHolistic) solver.insertClauses(problem);
+  assert(checkIndexConsistency());
 }
 
 // heuristically select clauses
@@ -51,31 +54,6 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
   Lit minLit;
   minLit.x = min;
   return minLit;
-}
-
-void GateAnalyzer::analyze() {
-  // populate index (except for unit-clauses, they go to roots immediately)
-  for (Cl* c : problem.getProblem()) if (c->size() == 1) {
-    roots.push_back(c);
-    removeFromIndex(index, c);
-  }
-
-  // start with unit clauses
-  set<Lit> next;
-  for (Cl* c : roots) for (Lit l : *c) next.insert(l);
-  analyze(next);
-
-  // clause selection loop
-  for (int k = 0; k < maxTries; k++) {
-    next.clear();
-    Lit lit = getRarestLiteral(index);
-    vector<Cl*>& clauses = index[lit];
-    for (Cl* c : clauses) {
-      next.insert(c->begin(), c->end());
-    }
-    removeFromIndex(index, clauses);
-    analyze(next);
-  }
 }
 
 bool GateAnalyzer::semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o) {
@@ -138,8 +116,12 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
     Lit o = literals.back();
     literals.pop_back();
 
-    For& f = index[~o], g = index[o];
-    if (f.size() > 0 && (isBlocked(o, f, g) || useDecomposition && isBlockedAfterVE(o, f, g))) {
+    if (verbose) {
+      printf("Candidate Output is %s%i \n", sign(o)?"-":"", o+1);
+    }
+
+    For& f = index[(~o).x], g = index[o.x];
+    if (f.size() > 0 && (isBlocked(o, f, g) || useLookahead && isBlockedAfterVE(o, f, g))) {
       bool mono = !inputs[o] || !inputs[~o];
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
@@ -157,5 +139,39 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
         removeFromIndex(index, g);
       }
     }
+  }
+}
+
+void GateAnalyzer::analyze() {
+  assert(checkIndexConsistency());
+
+  // populate index (except for unit-clauses, they go to roots immediately)
+  for (Cl* c : problem.getProblem()) if (c->size() == 1) {
+    roots.push_back(c);
+    removeFromIndex(index, c);
+  }
+
+  assert(checkIndexConsistency());
+
+  if (verbose) {
+    printf("Got roots: \n");
+    printClauses(roots);
+  }
+
+  // start with unit clauses
+  set<Lit> next;
+  for (Cl* c : roots) for (Lit l : *c) next.insert(l);
+  analyze(next);
+
+  // clause selection loop
+  for (int k = 0; k < maxTries; k++) {
+    next.clear();
+    Lit lit = getRarestLiteral(index);
+    vector<Cl*>& clauses = index[lit];
+    for (Cl* c : clauses) {
+      next.insert(c->begin(), c->end());
+    }
+    removeFromIndex(index, clauses);
+    analyze(next);
   }
 }

@@ -97,7 +97,7 @@ public:
       }
     }
     for (vector<Lit>* clause : problem) {
-      addClause_(*clause);
+      addClause(*clause);
     }
   }
 

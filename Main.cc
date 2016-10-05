@@ -133,14 +133,14 @@ int main(int argc, char** argv) {
     //
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
     BoolOption mod("MAIN", "model", "show model.", false);
-    BoolOption enumerate_blocked_pairs("MAIN", "enumerate-blocked-pairs", "enumerate blocked pairs.", false);
-    BoolOption count_gates("MAIN", "count-gates", "count gates.", false);
     IntOption vv("MAIN", "vv", "Verbosity every vv conflicts", 10000, IntRange(1, INT32_MAX));
     BoolOption pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
     BoolOption opt_certified(_certified, "certified", "Certified UNSAT using DRUP format", false);
     StringOption opt_certified_file(_certified, "certified-output", "Certified UNSAT output file", "NULL");
+
+    BoolOption count_gates("MAIN", "count-gates", "count gates.", false);
 
     parseOptions(argc, argv, true);
 
@@ -201,21 +201,6 @@ int main(int argc, char** argv) {
     }
 
     FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
-
-    if (enumerate_blocked_pairs) {
-      double enumeration_time = cpuTime();
-      GateAnalyzer gates(dimacs);
-      gates.enumerateBlockedPairs();
-      enumeration_time = cpuTime() - enumeration_time;
-      printf("c ========================================[ Problem Statistics ]===========================================\n");
-      printf("c |                                                                                                       |\n");
-      printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
-      printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
-      printf("c |  Enumeration time (sec): %12.2f                                                                 |\n", enumeration_time);
-      printf("c |                                                                                                       |\n");
-      printf("c =========================================================================================================\n");
-      return 0;
-    }
 
     if (count_gates) {
       double recognition_time = cpuTime();
