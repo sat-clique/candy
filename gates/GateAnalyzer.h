@@ -31,29 +31,6 @@ public:
   int getNGates() { return nGates; }
   For* getGates() { return gates; }
 
-
-  void enumerateBlockedPairs() {
-    for (Cl* c : problem.getProblem())
-      if (c->size() == 1) roots.push_back(c);
-      else for (Lit l : *c) index[l].push_back(c);
-    int n = problem.nClauses() * 100;
-    bool* blocks = (bool*)calloc(n, sizeof(bool));
-    for (int v = 0; v < problem.nVars(); v++) {
-      Lit l = mkLit(v, false);
-      for (Cl* c1 : index[l]) {
-        for (Cl* c2 : index[~l]) {
-          int addr = ((long)c1 + (long)c2) % n;
-          blocks[addr] = blocks[addr] || isBlocked(l, *c1, *c2);
-        }
-      }
-    }
-    int c = 0;
-    for (int i = 0; i < n; i++) {
-      if (blocks[i]) c++;
-    }
-    printf("%i of %i bits are set (%i * %i pairs)", c, n, problem.nClauses(), problem.nClauses());
-  }
-
 private:
   // problem to analyze:
   CNFProblem problem;
@@ -69,8 +46,7 @@ private:
   bool usePatterns = false;
   bool useSemantic = false;
   bool useHolistic = false;
-  bool useDecomposition = false;
-  int decompMaxBlocks = 2;
+  bool useLookahead = false;
 
   // statistics:
   int nGates = 0;
@@ -78,6 +54,7 @@ private:
 
   // debugging
   bool verbose = false;
+  int debug_counter = 0;
 
   // clause selection heuristic
   Lit getRarestLiteral(vector<For>& index);
@@ -119,9 +96,31 @@ private:
     }
   }
 
+  bool checkIndexConsistency() {
+    for (Var v = 0; v < problem.nVars(); v++) {
+      Lit lit = mkLit(v, false);
+      for (Cl* clause : index[lit]) {
+        if (find(clause->begin(), clause->end(), lit) == clause->end()) {
+//          printf("Detected inconsistency for literal %s%i", sign(lit)?"-":"", var(lit)+1);
+          return false;
+        }
+      }
+      for (Cl* clause : index[~lit]) {
+//        printf("Detected inconsistency for literal %s%i", sign(~lit)?"-":"", var(~lit)+1);
+        if (find(clause->begin(), clause->end(), ~lit) == clause->end()) return false;
+      }
+    }
+    return true;
+  }
 
   // precondition: ~o \in f[i] and o \in g[j]
-  bool isBlockedAfterVE(Lit o, For f, For g) {
+  bool isBlockedAfterVE(Lit o, For& f, For& g) {
+//    printf("Entering VE \n");
+    assert(checkIndexConsistency());
+
+    if (debug_counter > 10) return false;
+    else debug_counter++;
+
     // generate set of non-tautological resolvents
     For resolvents;
     for (Cl* a : f) for (Cl* b : g) {
@@ -131,16 +130,35 @@ private:
         res->insert(res->end(), b->begin(), b->end());
         res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
         resolvents.push_back(res);
+        printf("A: ");
+        printClause(*a);
+        printf("B: ");
+        printClause(*b);
+        printf("A ° B: ");
+        printClause(*res);
       }
     }
 
     // no non-tautological resolvents
     if (resolvents.empty()) return true;
 
+    /***/
+    printf("Found non-tautological resolvents while analyzing lit %s%i: \n", sign(o)?"-":"", var(o)+1);
+    for (Cl* r : resolvents) {
+//      printClause(*r);
+    }
+    /***/
+
     // generate set of input variables of candidate gate G = f and g
     set<Var> inputs;
     for (Cl* c : f) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
     for (Cl* c : g) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
+
+    printf("Inputs: ");
+    for (Var v : inputs) {
+      printf("%i ", v+1);
+    }
+    printf("\n");
 
     // generate candidate outputs (use intersection of all inputs in all non-tautological resolvents)
     // TODO: make sets from vectors
@@ -191,7 +209,7 @@ private:
             break;
           }
         }
-		if (is_subset) fwd.push_back(c);
+        if (is_subset) fwd.push_back(c);
       }
 
       for (Cl* c : index[output]) {
@@ -271,15 +289,6 @@ private:
       assertNotInIndex(index, c);
     }
   }
-
-  vector<For> buildIndexFromClauses(For& f) {
-    vector<For> index(2 * problem.nVars());
-    for (Cl* c : f) for (Lit l : *c) {
-      index[l].push_back(c);
-    }
-    return index;
-  }
-
 };
 
 #endif
