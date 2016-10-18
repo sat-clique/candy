@@ -102,6 +102,12 @@ public:
     problem.push_back(lits);
   }
 
+  void readClauses(For& f) {
+    for (Cl* c : f) {
+      readClause(*c);
+    }
+  }
+
 
 private:
 
