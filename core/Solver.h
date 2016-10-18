@@ -128,6 +128,26 @@ public:
   void printClause(CRef c);
   void printInitialClause(CRef c);
 
+
+  void printLit2(Lit l) {
+    printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
+  }
+
+  void printClause2(CRef cr) {
+    Clause &c = ca[cr];
+    for (int i = 0; i < c.size(); i++) {
+      printLit2(c[i]);
+      printf(" ");
+    }
+  }
+
+  void printProblem() {
+    for (int i = 0; i < clauses.size(); i++) {
+      printClause2(clauses[i]);
+      printf("\n");
+    }
+  }
+
   // Variable mode:
   //
   void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
