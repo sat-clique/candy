@@ -28,7 +28,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 	solver (),
 	maxTries (opt_gate_tries),
 	usePatterns (opt_patterns || opt_complete),
-	useSemantic (opt_semantic || opt_complete),
+	useSemantic (opt_semantic || opt_holistic || opt_complete),
     useHolistic (opt_holistic || opt_complete),
     useDecomposition (opt_decompose || opt_complete),
     decompMaxBlocks (opt_decompose_max_blocks),
@@ -137,7 +137,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
       set<Lit> s, t;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
       if (!mono) for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
-      bool gate = mono || (usePatterns && s == t && fullPattern(f, g, s)) || ((useSemantic || useHolistic) && semanticCheck(f, g, var(o)));
+      bool gate = mono || (usePatterns && s == t && fullPattern(f, g, s)) || (useSemantic && semanticCheck(f, g, var(o)));
       if (gate) {
         nGates++;
         (*gates)[var(o)] = new Cl(s.begin(), s.end());
