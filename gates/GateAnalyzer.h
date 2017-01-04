@@ -133,54 +133,39 @@ private:
         resolvents.push_back(res);
       }
     }
+    if (resolvents.empty()) return true; // the set is trivially blocked
 
-    // no non-tautological resolvents
-    if (resolvents.empty()) return true;
+    // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
+    set<Lit> candidates(resolvents[0]->begin(), resolvents[0]->end());
+    for (Cl* resolvent : resolvents) {
+      if (candidates.empty()) break;
+      set<Lit> next_candidates;
+      for (Lit lit1 : *resolvent) {
+        for (Lit lit2 : candidates) {
+          if (var(lit1) == var(lit2)) {
+            next_candidates.insert(lit1);
+            next_candidates.insert(lit2);
+            break;
+          }
+        }
+      }
+      std::swap(candidates, next_candidates);
+      next_candidates.clear();
+    }
+    if (candidates.empty()) return false; // no candidate output
 
-    // generate set of input variables of candidate gate G = f and g
+    // generate set of input variables of candidate gate (o, f, g)
     set<Var> inputs;
     for (Cl* c : f) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
     for (Cl* c : g) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
 
-    // generate candidate outputs (use intersection of all inputs in all non-tautological resolvents)
-    // TODO: make sets from vectors
-    vector<Var> candidate_vars;
-    for (Lit l : *(resolvents[0])) candidate_vars.push_back(var(l));
-    vector<Var> next_candidates;
-    for (size_t i = 1; i < resolvents.size() && !candidate_vars.empty(); ++i) {
-      vector<Var> vars;
-      for (Lit l : *(resolvents[i])) vars.push_back(var(l));
-      std::set_intersection(candidate_vars.begin(), candidate_vars.end(),
-          vars.begin(), vars.end(), std::back_inserter(next_candidates));
-      std::swap(candidate_vars, next_candidates);
-      next_candidates.clear();
-    }
-
-    // no candidate output
-    if (candidate_vars.empty()) return false;
-
-    set<Lit> candidate_lits;
-    for (Cl* resolvent : resolvents) {
-      for (Lit l : *resolvent) {
-        if (find(candidate_vars.begin(), candidate_vars.end(), var(l)) == candidate_vars.end()) {
-          candidate_lits.insert(l);
-        }
-      }
-    }
-
-    for (Var cand : candidate_vars) {
-      Lit output = mkLit(cand, false);
-
-      bool pos_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), output) != candidate_lits.end();
-      bool neg_is_candidate = find(candidate_lits.begin(), candidate_lits.end(), ~output) != candidate_lits.end();
-      // make sure fwd-clauses are usable in monotonic case
-      if (!pos_is_candidate) output = ~output;
-
+    for (Lit candLit : candidates) {
       // generate candidate definition for output
       For fwd, bwd;
 
-      for (Cl* c : index[~output]) {
-        // clauses of candidate gate are still part of index (filter them out)
+      for (Lit lit : { candLit, ~candLit })
+      for (Cl* c : index[lit]) {
+        // clauses of candidate gate (o, f, g) are still part of index (skip them)
         if (find(f.begin(), f.end(), c) == f.end()) continue;
         if (find(g.begin(), g.end(), c) == g.end()) continue;
         // use clauses that constrain the inputs of our candidate gate only
@@ -191,57 +176,44 @@ private:
             break;
           }
         }
-		if (is_subset) fwd.push_back(c);
+		if (is_subset) {
+		  if (lit == ~candLit) fwd.push_back(c);
+		  else bwd.push_back(c);
+		}
       }
-
-      for (Cl* c : index[output]) {
-        // clauses of candidate gate are still part of index (filter them out)
-        if (find(f.begin(), f.end(), c) == f.end()) continue;
-        if (find(g.begin(), g.end(), c) == g.end()) continue;
-        // use clauses that constrain the inputs of our candidate gate only
-        bool is_subset = true;
-        for (Lit l : *c) {
-          if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
-            is_subset = false;
-            break;
-          }
-        }
-        if (is_subset) bwd.push_back(c);
-      }
-
-      if (pos_is_candidate && fwd.empty()) continue;
-      if (neg_is_candidate && bwd.empty()) continue;
 
       // if candidate definition is functional
       // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
+      bool monotonic = false;
       bool functional = false;
-      if (isBlocked(output, fwd, bwd)) {
+      if (isBlocked(candLit, fwd, bwd)) {
         // output is used monotonic, iff
-        // 1. it is pure in the candidate gate-definition
-        // 2. it is pure in the current partial gate-structure
-        // 3. it is pure in the remaining formula
-        bool monotonic = !neg_is_candidate && !this->inputs[toInt(output)] && bwd.size() == index[output].size();
-        if (monotonic) {
-          functional = true;
-        } else {
-          functional = semanticCheck(fwd, bwd, var(output));
+        // 1. it is pure in the already decoded partial gate-structure (use input array)
+        bool pure1 = !this->inputs[candLit];
+        // 2. it is pure in f of the candidate gate-definition (o, f, g)
+        bool pure2 = false;
+        // 3. it is pure in the remaining formula (look at literals in index, bwd entails entire index)
+        bool pure3 = false;
+        monotonic =  pure1 && pure2 && pure3;
+        if (!monotonic) {
+          functional = semanticCheck(fwd, bwd, var(candLit));
         }
-      }
 
-      // then local resolution is enough and then check resolve and check for gate-property again
-      if (functional) {
-        // split resolvents
-        For res_fwd, res_bwd;
-        for (Cl* res : resolvents) {
-          if (find(res->begin(), res->end(), ~output) == res->end()) {
-            res_fwd.push_back(res);
-          } else {
-            res_bwd.push_back(res);
+        // then local resolution is enough and then check resolve and check for gate-property again
+        if (monotonic || functional) {
+          // split resolvents
+          For res_fwd, res_bwd;
+          for (Cl* res : resolvents) {
+            if (find(res->begin(), res->end(), ~candLit) == res->end()) {
+              res_fwd.push_back(res);
+            } else {
+              res_bwd.push_back(res);
+            }
           }
+          if (isBlocked(~candLit, res_fwd, bwd) && isBlocked(~candLit, fwd, res_bwd)) return true;
         }
-        if (isBlocked(~output, res_fwd, bwd) && isBlocked(~output, fwd, res_bwd)) return true;
+        else; // next candidate
       }
-      else; // next candidate
     }
 
     return false;
