@@ -41,28 +41,28 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs) :
 
 // heuristically select clauses
 Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
-  unsigned int min = INT_MAX;
+  Lit min; min.x = INT_MAX;
   for (size_t l = 0; l < index.size(); l++) {
-    if (index[l].size() > 0 && (min == INT_MAX || index[l].size() < index[min].size())) {
-      min = l;
+    if (index[l].size() > 0 && (min.x == INT_MAX || index[l].size() < index[min.x].size())) {
+      min.x = l;
     }
   }
-  assert(min < INT_MAX);
-  Lit minLit;
-  minLit.x = min;
-  return minLit;
+  assert(min.x < INT_MAX);
+  return min;
 }
 
 void GateAnalyzer::analyze() {
-  // populate index (except for unit-clauses, they go to roots immediately)
-  for (Cl* c : problem.getProblem()) if (c->size() == 1) {
-    roots.push_back(c);
-    removeFromIndex(index, c);
+  set<Lit> next;
+
+  // start recognition with unit literals
+  for (Cl* c : problem.getProblem()) {
+    if (c->size() == 1) {
+      roots.push_back(c);
+      removeFromIndex(index, c);
+      next.insert((*c)[0]);
+    }
   }
 
-  // start with unit clauses
-  set<Lit> next;
-  for (Cl* c : roots) for (Lit l : *c) next.insert(l);
   analyze(next);
 
   // clause selection loop
@@ -73,20 +73,13 @@ void GateAnalyzer::analyze() {
     for (Cl* c : clauses) {
       next.insert(c->begin(), c->end());
     }
+    roots.insert(roots.end(), clauses.begin(), clauses.end());
     removeFromIndex(index, clauses);
     analyze(next);
   }
 }
 
 bool GateAnalyzer::semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o) {
-  if (verbose) {
-    printf("semantic check for output %i \n", o+1);
-    printf("forward clauses: \n");
-    printClauses(fwd);
-    printf("backward clauses: \n");
-    printClauses(bwd);
-  }
-
   CNFProblem constraint;
   Lit alit = mkLit(problem.nVars(), false);
   Cl clause;
