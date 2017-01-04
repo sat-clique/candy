@@ -31,29 +31,6 @@ public:
   int getNGates() { return nGates; }
   For* getGates() { return gates; }
 
-
-  void enumerateBlockedPairs() {
-    for (Cl* c : problem.getProblem())
-      if (c->size() == 1) roots.push_back(c);
-      else for (Lit l : *c) index[l].push_back(c);
-    int n = problem.nClauses() * 100;
-    bool* blocks = (bool*)calloc(n, sizeof(bool));
-    for (int v = 0; v < problem.nVars(); v++) {
-      Lit l = mkLit(v, false);
-      for (Cl* c1 : index[l]) {
-        for (Cl* c2 : index[~l]) {
-          int addr = ((long)c1 + (long)c2) % n;
-          blocks[addr] = blocks[addr] || isBlocked(l, *c1, *c2);
-        }
-      }
-    }
-    int c = 0;
-    for (int i = 0; i < n; i++) {
-      if (blocks[i]) c++;
-    }
-    printf("%i of %i bits are set (%i * %i pairs)", c, n, problem.nClauses(), problem.nClauses());
-  }
-
 private:
   // problem to analyze:
   CNFProblem problem;
