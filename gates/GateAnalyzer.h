@@ -18,6 +18,24 @@ using namespace std;
 #include "core/Utilities.h"
 #include "core/Solver.h"
 
+typedef struct Gate {
+  Lit out = Glucose::mkLit(-1, true);
+  For* fwd = nullptr;
+  For* bwd = nullptr;
+  bool notMono = false;
+  vector<Lit>* inp = nullptr;
+
+  // Compatibility functions
+  inline Lit getOutput() { return out; }
+  inline For* getForwardClauses() { return fwd; }
+  inline For* getBackwardClauses() { return bwd; }
+
+  inline vector<Lit>* getInputs() { return inp; }
+
+  inline bool hasNonMonotonousParent() { return notMono; }
+  // End of compatibility functions
+} Gt;
+
 class GateAnalyzer {
 
 public:
@@ -49,9 +67,10 @@ private:
   bool useDecomposition = false;
   int decompMaxBlocks = 2;
 
-  // statistics:
+  // analyzer output:
   int nGates = 0;
-  For* gates;
+  vector<Cl*>* gates;
+  vector<Gate>* gatesComplete;
 
   // debugging
   bool verbose = false;
@@ -64,6 +83,9 @@ private:
   bool completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
   bool semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o);
   bool isFullGate(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs, Lit output);
+
+  // work in progress:
+  bool isBlockedAfterVE(Lit o, For f, For g);
 
   // some helpers:
   bool isBlocked(Lit o, Cl& a, Cl& b) {
@@ -94,106 +116,6 @@ private:
         source.pop_back();
       }
     }
-  }
-
-
-  // precondition: ~o \in f[i] and o \in g[j]
-  bool isBlockedAfterVE(Lit o, For f, For g) {
-    // generate set of non-tautological resolvents
-    For resolvents;
-    for (Cl* a : f) for (Cl* b : g) {
-      Cl* res = new Cl();
-      if (!isBlocked(o, *a, *b)) {
-        res->insert(res->end(), a->begin(), a->end());
-        res->insert(res->end(), b->begin(), b->end());
-        res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
-        resolvents.push_back(res);
-      }
-    }
-    if (resolvents.empty()) return true; // the set is trivially blocked
-
-    // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
-    set<Lit> candidates(resolvents[0]->begin(), resolvents[0]->end());
-    for (Cl* resolvent : resolvents) {
-      if (candidates.empty()) break;
-      set<Lit> next_candidates;
-      for (Lit lit1 : *resolvent) {
-        for (Lit lit2 : candidates) {
-          if (var(lit1) == var(lit2)) {
-            next_candidates.insert(lit1);
-            next_candidates.insert(lit2);
-            break;
-          }
-        }
-      }
-      std::swap(candidates, next_candidates);
-      next_candidates.clear();
-    }
-    if (candidates.empty()) return false; // no candidate output
-
-    // generate set of input variables of candidate gate (o, f, g)
-    set<Var> inputs;
-    for (Cl* c : f) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
-    for (Cl* c : g) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
-
-    for (Lit candLit : candidates) {
-      // generate candidate definition for output
-      For fwd, bwd;
-
-      for (Lit lit : { candLit, ~candLit })
-      for (Cl* c : index[lit]) {
-        // clauses of candidate gate (o, f, g) are still part of index (skip them)
-        if (find(f.begin(), f.end(), c) == f.end()) continue;
-        if (find(g.begin(), g.end(), c) == g.end()) continue;
-        // use clauses that constrain the inputs of our candidate gate only
-        bool is_subset = true;
-        for (Lit l : *c) {
-          if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
-            is_subset = false;
-            break;
-          }
-        }
-		if (is_subset) {
-		  if (lit == ~candLit) fwd.push_back(c);
-		  else bwd.push_back(c);
-		}
-      }
-
-      // if candidate definition is functional
-      // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
-      bool monotonic = false;
-      bool functional = false;
-      if (isBlocked(candLit, fwd, bwd)) {
-        // output is used monotonic, iff
-        // 1. it is pure in the already decoded partial gate-structure (use input array)
-        bool pure1 = !this->inputs[candLit];
-        // 2. it is pure in f of the candidate gate-definition (o, f, g)
-        bool pure2 = false;
-        // 3. it is pure in the remaining formula (look at literals in index, bwd entails entire index)
-        bool pure3 = false;
-        monotonic =  pure1 && pure2 && pure3;
-        if (!monotonic) {
-          functional = semanticCheck(fwd, bwd, var(candLit));
-        }
-
-        // then local resolution is enough and then check resolve and check for gate-property again
-        if (monotonic || functional) {
-          // split resolvents
-          For res_fwd, res_bwd;
-          for (Cl* res : resolvents) {
-            if (find(res->begin(), res->end(), ~candLit) == res->end()) {
-              res_fwd.push_back(res);
-            } else {
-              res_bwd.push_back(res);
-            }
-          }
-          if (isBlocked(~candLit, res_fwd, bwd) && isBlocked(~candLit, fwd, res_bwd)) return true;
-        }
-        else; // next candidate
-      }
-    }
-
-    return false;
   }
 
   bool fixedClauseSize(For& f, unsigned int n) {
