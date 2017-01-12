@@ -50,7 +50,7 @@ TEST (GateAnalyzerTest, countgates) {
   GateAnalyzer gates(dimacs);
   gates.analyze();
   testing::internal::CaptureStdout();
-  printf("Number of gates: %7d", gates.getNGates());
+  printf("Number of gates: %7d", gates.getGateCount());
   std::string output = testing::internal::GetCapturedStdout();
 
   // create reference output (comment out once generated):

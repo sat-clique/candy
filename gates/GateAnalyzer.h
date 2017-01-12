@@ -35,19 +35,20 @@ typedef struct Gate {
   // End of compatibility functions
 } Gate;
 
+
 class GateAnalyzer {
 
 public:
-  GateAnalyzer(CNFProblem& dimacs);
+  GateAnalyzer(CNFProblem& dimacs, int tries = 0,
+      bool patterns = true, bool semantic = true, bool holistic = true, bool decompose = false);
 
   // main analysis routines:
   void analyze();
   void analyze(set<Lit>& roots);
 
   // public getters:
-  int getNGates() { return nGates; }
-  vector<Cl*>* getGates() { return gates; }
-  Gate& getGate(Lit output) { return (*gatesComplete)[output]; }
+  int getGateCount() { return nGates; }
+  Gate& getGate(Lit output) { return (*gates)[output]; }
 
 private:
   // problem to analyze:
@@ -55,7 +56,6 @@ private:
   Solver solver;
 
   // control structures:
-  vector<Cl*> roots;
   vector<For> index; // occurrence lists
   vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
 
@@ -65,57 +65,38 @@ private:
   bool useSemantic = false;
   bool useHolistic = false;
   bool useDecomposition = false;
-  int decompMaxBlocks = 2;
 
   // analyzer output:
+  vector<Cl*> roots; // top-level clauses
+  vector<Gate>* gates; // stores gate-struct for every output
   int nGates = 0;
-  vector<Cl*>* gates; // stores inputs for every output
-  vector<Gate>* gatesComplete; // stores gate-struct for every output
-
-  // debugging
-  bool verbose = false;
 
   // clause selection heuristic
   Lit getRarestLiteral(vector<For>& index);
 
   // clause patterns of full encoding
-  bool fullPattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
-  bool completePattern(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs);
-  bool semanticCheck(vector<Cl*>& fwd, vector<Cl*>& bwd, Var o);
-  bool isFullGate(vector<Cl*>& fwd, vector<Cl*>& bwd, set<Lit>& inputs, Lit output);
+  bool fullPattern(For& fwd, For& bwd, set<Lit>& inputs);
+  bool completePattern(For& fwd, For& bwd, set<Lit>& inputs);
+  bool semanticCheck(For& fwd, For& bwd, Var o);
+  bool isFullGate(For& fwd, For& bwd, set<Lit>& inputs, Lit output);
 
   // work in progress:
-  bool isBlockedAfterVE(Lit o, For f, For g);
+  bool isBlockedAfterVE(Lit o, For& f, For& g);
 
   // some helpers:
-  bool isBlocked(Lit o, Cl& a, Cl& b) {
-    // assert ~o \in a and o \in b
+  bool isBlocked(Lit o, Cl& a, Cl& b) { // assert ~o \in a and o \in b
     for (Lit c : a) for (Lit d : b) if (c != ~o && c == ~d) return true;
     return false;
   }
 
-  bool isBlocked(Lit o, For& f, For& g) {
-    // assert ~o \in f[i] and o \in g[j]
+  bool isBlocked(Lit o, For& f, For& g) { // assert ~o \in f[i] and o \in g[j]
     for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
     return true;
   }
 
-  bool isBlocked(Lit o, Cl* c, For& f) {
-    // assert ~o \in c and o \in f[i]
+  bool isBlocked(Lit o, Cl* c, For& f) { // assert ~o \in c and o \in f[i]
     for (Cl* a : f) if (!isBlocked(o, *c, *a)) return false;
     return true;
-  }
-
-  void saturate(For& source, For& target, For& blocked, Lit o) {
-    // assert ~o \in source[i] and o \in blocked
-    for (unsigned int i = 0; i < source.size(); i++) {
-      int n = source.size();
-      if (isBlocked(o, source[i], blocked)) {
-        target.push_back(source[i]);
-        std::swap(source[i], source[n-1]);
-        source.pop_back();
-      }
-    }
   }
 
   bool fixedClauseSize(For& f, unsigned int n) {
@@ -130,16 +111,10 @@ private:
     }
   }
 
-  void assertNotInIndex(vector<For>& index, Cl* clause) {
-    for (Lit l : *clause) {
-      assert(find(index[l].begin(), index[l].end(), clause) == index[l].end());
-    }
-  }
-
-  void removeFromIndex(vector<For>& index, vector<Cl*>& clauses) {
-    for (Cl* c : clauses) {
+  void removeFromIndex(vector<For>& index, For& clauses) {
+    For copy(clauses.begin(), clauses.end());
+    for (Cl* c : copy) {
       removeFromIndex(index, c);
-      assertNotInIndex(index, c);
     }
   }
 

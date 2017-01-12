@@ -142,6 +142,12 @@ int main(int argc, char** argv) {
 
     BoolOption count_gates("MAIN", "count-gates", "count gates.", false);
 
+    IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
+    BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
+    BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
+    BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
+    BoolOption opt_gr_decompose("GATE RECOGNITION", "gate-decompose", "Enable Local Blocked Decomposition", false);
+
     parseOptions(argc, argv, true);
 
     SimpSolver S;
@@ -204,17 +210,12 @@ int main(int argc, char** argv) {
 
     if (count_gates) {
       double recognition_time = cpuTime();
-      GateAnalyzer gates(dimacs);
+      GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_decompose);
       gates.analyze();
-      For* inputs = gates.getGates();
-      int g = 0;
-      for (int v = 0; v < dimacs.nVars(); v++) {
-        if ((*inputs)[v] && (*inputs)[v]->size()) g++;
-      }
       recognition_time = cpuTime() - recognition_time;
       printf("c ========================================[ Problem Statistics ]===========================================\n");
       printf("c |                                                                                                       |\n");
-      printf("c |  Number of gates:        %12d                                                                 |\n", g);
+      printf("c |  Number of gates:        %12d                                                                 |\n", gates.getGateCount());
       printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
       printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
       printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
@@ -227,15 +228,13 @@ int main(int argc, char** argv) {
 
     dimacs.getProblem().clear();
 
+    double parsed_time = cpuTime();
+
     if (S.verbosity > 0) {
       printf("c ========================================[ Problem Statistics ]===========================================\n");
       printf("c |                                                                                                       |\n");
       printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
       printf("c |  Number of clauses:    %12d                                                                   |\n", S.nClauses());
-    }
-
-    double parsed_time = cpuTime();
-    if (S.verbosity > 0) {
       printf("c |  Parse time:           %12.2f s                                                                 |\n", parsed_time - initial_time);
       printf("c |                                                                                                       |\n");
     }
