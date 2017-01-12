@@ -157,6 +157,8 @@ void printClause(Cl* c) {
   printf("\n");
 }
 
+#define GADebug
+
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   // generate set of non-tautological resolvents
@@ -173,7 +175,9 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   }
   if (resolvents.empty()) return true; // the set is trivially blocked
 
+#ifdef GADebug
   printf("Found %zu non-tautologic resolvents\n", resolvents.size());
+#endif
 
   // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
   set<Lit> candidates(resolvents[0]->begin(), resolvents[0]->end());
@@ -194,20 +198,36 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   }
   if (candidates.empty()) return false; // no candidate output
 
+#ifdef GADebug
   printf("Found %zu candidate literals for functional elimination: ", candidates.size());
   for (Lit lit : candidates) printf("%s%i ", sign(lit)?"-":"", var(lit)+1);
   printf("\n");
+#endif
 
   // generate set of input variables of candidate gate (o, f, g)
   set<Var> inputs;
   for (Cl* c : f) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
   for (Cl* c : g) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
 
+  vector<int> occCount(problem.nVars()*2);
   for (Lit cand : candidates) {
+    for (For formula : { f, g }) for (Cl* clause : formula) {
+      if (find(clause->begin(), clause->end(), cand) != clause->end()) {
+        occCount[cand]++;
+      }
+    }
+  }
+
+  vector<Lit> sCand(candidates.begin(), candidates.end());
+  sort(sCand.begin(), sCand.end(), [occCount](Lit a, Lit b) { return occCount[a] < occCount[b]; });
+
+  for (Lit cand : sCand) {
     // generate candidate definition for output
     For fwd, bwd;
 
+#ifdef GADebug
     printf("candidate literal: %s%i\n", sign(cand)?"-":"", var(cand)+1);
+#endif
 
     for (Lit lit : { cand, ~cand })
     for (Cl* c : index[lit]) {
@@ -215,11 +235,16 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
       if (find(f.begin(), f.end(), c) != f.end()) continue;
       if (find(g.begin(), g.end(), c) != g.end()) continue;
       // use clauses that constrain the inputs of our candidate gate only
+#ifdef GADebug
       printClause(c);
+#endif
+
       bool is_subset = true;
       for (Lit l : *c) {
         if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
+#ifdef GADebug
           printf("clause is not subset of original inputs\n");
+#endif
           is_subset = false;
           break;
         }
@@ -232,7 +257,9 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 
     if (fwd.empty()) continue;
 
-    printf("Found %zu gates for candidate literal %s%i\n", fwd.size(), sign(cand)?"-":"", var(cand)+1);
+#ifdef GADebug
+    printf("Found %zu clauses for candidate literal %s%i\n", fwd.size() + bwd.size(), sign(cand)?"-":"", var(cand)+1);
+#endif
 
     // if candidate definition is functional
     // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
@@ -246,7 +273,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
       bool pure2 = false;
       // 3. it is pure in the remaining formula (look at literals in index, bwd entails entire index)
       bool pure3 = false;
-      monotonic =  pure1 && pure2 && pure3;
+      monotonic = pure1 && pure2 && pure3;
       if (!monotonic) {
         functional = semanticCheck(fwd, bwd, var(cand));
       }
@@ -262,7 +289,12 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
             res_bwd.push_back(res);
           }
         }
-        if (isBlocked(~cand, res_fwd, bwd) && isBlocked(~cand, fwd, res_bwd)) return true;
+        if (isBlocked(~cand, res_fwd, bwd) && isBlocked(~cand, fwd, res_bwd)) {
+#ifdef GADebug
+          printf("Blocked elimination found for candidate literal %s%i\n", sign(cand)?"-":"", var(cand)+1);
+#endif
+          return true;
+        }
       }
       else; // next candidate
     }
