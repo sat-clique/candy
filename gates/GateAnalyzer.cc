@@ -122,12 +122,9 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
         //###
         (*gatesComplete)[var(o)].out = o;
         (*gatesComplete)[var(o)].notMono = !mono;
-        (*gatesComplete)[var(o)].fwd = new For();
-        (*gatesComplete)[var(o)].fwd->insert((*gatesComplete)[var(o)].fwd->end(), f.begin(), f.end());
-        (*gatesComplete)[var(o)].bwd = new For();
-        (*gatesComplete)[var(o)].bwd->insert((*gatesComplete)[var(o)].bwd->end(), g.begin(), g.end());
-        (*gatesComplete)[var(o)].inp = new vector<Lit>();
-        (*gatesComplete)[var(o)].inp->insert((*gatesComplete)[var(o)].inp->end(), s.begin(), s.end());
+        (*gatesComplete)[var(o)].fwd.insert((*gatesComplete)[var(o)].fwd.end(), f.begin(), f.end());
+        (*gatesComplete)[var(o)].bwd.insert((*gatesComplete)[var(o)].bwd.end(), g.begin(), g.end());
+        (*gatesComplete)[var(o)].inp.insert((*gatesComplete)[var(o)].inp.end(), s.begin(), s.end());
         //###
         removeFromIndex(index, f);
         removeFromIndex(index, g);

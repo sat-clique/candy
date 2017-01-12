@@ -19,22 +19,21 @@ using namespace std;
 #include "core/Solver.h"
 
 typedef struct Gate {
-  Lit out = Glucose::mkLit(-1, true);
-  For* fwd = nullptr;
-  For* bwd = nullptr;
+  Lit out = lit_Undef;
+  For fwd, bwd;
   bool notMono = false;
-  vector<Lit>* inp = nullptr;
+  vector<Lit> inp;
+
+  inline bool isDefined() { return out != lit_Undef; }
 
   // Compatibility functions
   inline Lit getOutput() { return out; }
-  inline For* getForwardClauses() { return fwd; }
-  inline For* getBackwardClauses() { return bwd; }
-
-  inline vector<Lit>* getInputs() { return inp; }
-
+  inline For* getForwardClauses() { return &fwd; }
+  inline For* getBackwardClauses() { return &bwd; }
+  inline vector<Lit>* getInputs() { return &inp; }
   inline bool hasNonMonotonousParent() { return notMono; }
   // End of compatibility functions
-} Gt;
+} Gate;
 
 class GateAnalyzer {
 
@@ -47,7 +46,8 @@ public:
 
   // public getters:
   int getNGates() { return nGates; }
-  For* getGates() { return gates; }
+  vector<Cl*>* getGates() { return gates; }
+  Gate& getGate(Lit output) { return (*gatesComplete)[output]; }
 
 private:
   // problem to analyze:
@@ -69,8 +69,8 @@ private:
 
   // analyzer output:
   int nGates = 0;
-  vector<Cl*>* gates;
-  vector<Gate>* gatesComplete;
+  vector<Cl*>* gates; // stores inputs for every output
+  vector<Gate>* gatesComplete; // stores gate-struct for every output
 
   // debugging
   bool verbose = false;
