@@ -221,6 +221,9 @@ int main(int argc, char** argv) {
       printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
       printf("c |                                                                                                       |\n");
       printf("c =========================================================================================================\n");
+#ifdef GADebug
+      gates.printGates();
+#endif
       return 0;
     }
 

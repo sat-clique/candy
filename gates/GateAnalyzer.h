@@ -28,9 +28,9 @@ typedef struct Gate {
 
   // Compatibility functions
   inline Lit getOutput() { return out; }
-  inline For* getForwardClauses() { return &fwd; }
-  inline For* getBackwardClauses() { return &bwd; }
-  inline vector<Lit>* getInputs() { return &inp; }
+  inline For& getForwardClauses() { return fwd; }
+  inline For& getBackwardClauses() { return bwd; }
+  inline vector<Lit>& getInputs() { return inp; }
   inline bool hasNonMonotonousParent() { return notMono; }
   // End of compatibility functions
 } Gate;
@@ -44,11 +44,23 @@ public:
 
   // main analysis routines:
   void analyze();
-  void analyze(set<Lit>& roots);
+  void analyze(set<Lit>& roots, bool pat, bool sem, bool dec);
 
   // public getters:
   int getGateCount() { return nGates; }
   Gate& getGate(Lit output) { return (*gates)[output]; }
+
+  void printGates() {
+    for (Gate& gate : *gates) {
+      if (gate.isDefined()) {
+        printf("Gate with output ");
+        printLit(gate.getOutput());
+        printf("Is defined by clauses ");
+        printFormula(gate.getForwardClauses(), true);
+        printFormula(gate.getBackwardClauses(), true);
+      }
+    }
+  }
 
 private:
   // problem to analyze:
@@ -64,20 +76,33 @@ private:
   bool usePatterns = false;
   bool useSemantic = false;
   bool useHolistic = false;
-  bool useDecomposition = false;
+  bool useLookahead = false;
 
   // analyzer output:
   vector<Cl*> roots; // top-level clauses
   vector<Gate>* gates; // stores gate-struct for every output
   int nGates = 0;
 
+  void printLit(Lit l) {
+    printf("%s%i ", sign(l)?"-":"", var(l)+1);
+  }
+  void printClause(Cl* c, bool nl = false) {
+    for (Lit l : *c) printLit(l);
+    printf("; ");
+    if (nl) printf("\n");
+  }
+  void printFormula(For& f, bool nl = false) {
+    for (Cl* c : f) printClause(c, false);
+    if (nl) printf("\n");
+  }
+
   // clause selection heuristic
   Lit getRarestLiteral(vector<For>& index);
 
   // clause patterns of full encoding
-  bool fullPattern(For& fwd, For& bwd, set<Lit>& inputs);
+  bool fullPattern(Lit o, For& fwd, For& bwd, set<Lit>& inputs);
   bool completePattern(For& fwd, For& bwd, set<Lit>& inputs);
-  bool semanticCheck(For& fwd, For& bwd, Var o);
+  bool semanticCheck(Var o, For& fwd, For& bwd);
   bool isFullGate(For& fwd, For& bwd, set<Lit>& inputs, Lit output);
 
   // work in progress:
