@@ -34,6 +34,7 @@ LFLAGS    += -lz -flto
 CFLAGS    += -I$(MROOT)/test/googletest/googletest/include/
 LFLAGS    += -L$(MROOT)/test/googletest/googlemock/gtest/ -lgtest
 
+CFLAGS    += $(CF)
 
 .PHONY : s p d r rs clean 
 

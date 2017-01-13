@@ -15,7 +15,7 @@ using namespace Glucose;
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool decompose) :
     problem (dimacs), solver (),
     maxTries (tries), usePatterns (patterns), useSemantic (semantic),
-    useHolistic (holistic), useDecomposition (decompose)
+    useHolistic (holistic), useLookahead (decompose)
 {
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
@@ -35,7 +35,7 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
   return min;
 }
 
-bool GateAnalyzer::semanticCheck(For& fwd, For& bwd, Var o) {
+bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   CNFProblem constraint;
   Lit alit = mkLit(problem.nVars(), false);
   Cl clause;
@@ -60,25 +60,31 @@ bool GateAnalyzer::semanticCheck(For& fwd, For& bwd, Var o) {
 bool GateAnalyzer::completePattern(For& fwd, For& bwd, set<Lit>& inputs) {
   // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity)
   // and fwd blocks bwd on the output literal
-  // given a total of 2^n blocked clauses implies that we have no redundancy in the n inputs
+
+  if (fwd.size() != bwd.size()) return false;
+
   set<Var> vars;
   for (Lit l : inputs) vars.insert(var(l));
-  return fwd.size() == bwd.size() && 2*fwd.size() == pow(2, vars.size()) && 2*vars.size() == inputs.size();
+  // given a total of 2^n blocked clauses implies that we have no redundancy in the n inputs
+  return 2*fwd.size() == pow(2, vars.size()) && 2*vars.size() == inputs.size();
 }
 
 // clause patterns of full encoding
-bool GateAnalyzer::fullPattern(For& fwd, For& bwd, set<Lit>& inputs) {
-  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity)
-  // and fwd blocks bwd on the output literal
-  set<Var> vars;
-  for (Lit l : inputs) vars.insert(var(l));
+bool GateAnalyzer::fullPattern(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
+  // precondition: fwd blocks bwd on the o
+
+  // check if fwd and bwd constrain exactly the same inputs (in opposite polarity)
+  set<Lit> t;
+  for (Cl* c : bwd) for (Lit l : *c) if (l != o) t.insert(~l);
+  if (inp != t) return false;
+
   bool fullOr = fwd.size() == 1 && fixedClauseSize(bwd, 2);
   bool fullAnd = bwd.size() == 1 && fixedClauseSize(fwd, 2);
-  return fullOr || fullAnd || completePattern(fwd, bwd, inputs);
+  return fullOr || fullAnd || completePattern(fwd, bwd, inp);
 }
 
 // main analysis routine
-void GateAnalyzer::analyze(set<Lit>& roots) {
+void GateAnalyzer::analyze(set<Lit>& roots, bool pat, bool sem, bool lah) {
   vector<Lit> literals(roots.begin(), roots.end());
 
   for (Lit l : roots) inputs[l]++;
@@ -88,16 +94,15 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
     literals.pop_back();
 
     For& f = index[~o], g = index[o];
-    if (f.size() > 0 && (isBlocked(o, f, g) || useDecomposition && isBlockedAfterVE(o, f, g))) {
+    if (f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
       bool mono = !inputs[o] || !inputs[~o];
-      set<Lit> s, t;
-      for (Cl* c : f) for (Lit l : *c) if (l != ~o) s.insert(l);
-      if (!mono) for (Cl* c : g) for (Lit l : *c) if (l != o) t.insert(~l);
-      bool gate = mono || (usePatterns && s == t && fullPattern(f, g, s)) || (useSemantic && semanticCheck(f, g, var(o)));
+      set<Lit> inp;
+      for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
+      bool gate = mono || (pat && fullPattern(o, f, g, inp)) || (sem && semanticCheck(var(o), f, g));
       if (gate) {
         nGates++;
-        literals.insert(literals.end(), s.begin(), s.end());
-        for (Lit l : s) {
+        literals.insert(literals.end(), inp.begin(), inp.end());
+        for (Lit l : inp) {
           inputs[l]++;
           if (!mono) inputs[~l]++;
         }
@@ -106,7 +111,7 @@ void GateAnalyzer::analyze(set<Lit>& roots) {
         (*gates)[var(o)].notMono = !mono;
         (*gates)[var(o)].fwd.insert((*gates)[var(o)].fwd.end(), f.begin(), f.end());
         (*gates)[var(o)].bwd.insert((*gates)[var(o)].bwd.end(), g.begin(), g.end());
-        (*gates)[var(o)].inp.insert((*gates)[var(o)].inp.end(), s.begin(), s.end());
+        (*gates)[var(o)].inp.insert((*gates)[var(o)].inp.end(), inp.begin(), inp.end());
         //###
         removeFromIndex(index, f);
         removeFromIndex(index, g);
@@ -127,7 +132,7 @@ void GateAnalyzer::analyze() {
     }
   }
 
-  analyze(next);
+  analyze(next, usePatterns, useSemantic, useLookahead);
 
   // clause selection loop
   for (int k = 0; k < maxTries; k++) {
@@ -140,7 +145,7 @@ void GateAnalyzer::analyze() {
     }
     roots.insert(roots.end(), clauses.begin(), clauses.end());
     removeFromIndex(index, clauses);
-    analyze(next);
+    analyze(next, usePatterns, useSemantic, useLookahead);
   }
 }
 
@@ -148,16 +153,6 @@ void GateAnalyzer::analyze() {
 
 //######################
 // work in progress:
-
-void printLit(Lit l) {
-  printf("%s%i ", sign(l)?"-":"", var(l)+1);
-}
-void printClause(Cl* c) {
-  for (Lit l : *c) printLit(l);
-  printf("\n");
-}
-
-#define GADebug
 
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
@@ -275,7 +270,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
       bool pure3 = false;
       monotonic = pure1 && pure2 && pure3;
       if (!monotonic) {
-        functional = semanticCheck(fwd, bwd, var(cand));
+        functional = semanticCheck(var(cand), fwd, bwd);
       }
 
       // then local resolution is enough and then check resolve and check for gate-property again
