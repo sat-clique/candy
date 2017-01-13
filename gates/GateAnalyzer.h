@@ -44,7 +44,7 @@ public:
 
   // main analysis routines:
   void analyze();
-  void analyze(set<Lit>& roots, bool pat, bool sem, bool dec);
+  void analyze(vector<Lit>& roots, bool pat, bool sem, bool dec);
 
   // public getters:
   int getGateCount() { return nGates; }
