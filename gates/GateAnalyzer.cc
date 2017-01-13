@@ -84,15 +84,10 @@ bool GateAnalyzer::fullPattern(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
 }
 
 // main analysis routine
-void GateAnalyzer::analyze(set<Lit>& roots, bool pat, bool sem, bool lah) {
-  vector<Lit> literals(roots.begin(), roots.end());
+void GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool lah) {
+  vector<Lit> next;
 
-  for (Lit l : roots) inputs[l]++;
-
-  while (literals.size()) {
-    Lit o = literals.back();
-    literals.pop_back();
-
+  for (Lit o : roots) {
     For& f = index[~o], g = index[o];
     if (f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
       bool mono = !inputs[o] || !inputs[~o];
@@ -101,7 +96,7 @@ void GateAnalyzer::analyze(set<Lit>& roots, bool pat, bool sem, bool lah) {
       bool gate = mono || (pat && fullPattern(o, f, g, inp)) || (sem && semanticCheck(var(o), f, g));
       if (gate) {
         nGates++;
-        literals.insert(literals.end(), inp.begin(), inp.end());
+        next.insert(next.end(), inp.begin(), inp.end());
         for (Lit l : inp) {
           inputs[l]++;
           if (!mono) inputs[~l]++;
@@ -118,21 +113,27 @@ void GateAnalyzer::analyze(set<Lit>& roots, bool pat, bool sem, bool lah) {
       }
     }
   }
+
+  roots.clear();
+  roots.insert(roots.end(), next.begin(), next.end());
 }
 
 void GateAnalyzer::analyze() {
-  set<Lit> next;
+  vector<Lit> next;
 
   // start recognition with unit literals
   for (Cl* c : problem.getProblem()) {
     if (c->size() == 1) {
       roots.push_back(c);
       removeFromIndex(index, c);
-      next.insert((*c)[0]);
+      next.insert(next.end(), (*c)[0]);
+      inputs[(*c)[0]]++;
     }
   }
 
-  analyze(next, usePatterns, useSemantic, useLookahead);
+  while (next.size()) {
+    analyze(next, usePatterns, useSemantic, useLookahead);
+  }
 
   // clause selection loop
   for (int k = 0; k < maxTries; k++) {
@@ -141,11 +142,14 @@ void GateAnalyzer::analyze() {
     if (lit.x == INT_MAX) break; // index is empty
     vector<Cl*>& clauses = index[lit];
     for (Cl* c : clauses) {
-      next.insert(c->begin(), c->end());
+      next.insert(next.end(), c->begin(), c->end());
+      for (Lit l : *c) inputs[l]++;
     }
     roots.insert(roots.end(), clauses.begin(), clauses.end());
     removeFromIndex(index, clauses);
-    analyze(next, usePatterns, useSemantic, useLookahead);
+    while (next.size()) {
+      analyze(next, usePatterns, useSemantic, useLookahead);
+    }
   }
 }
 
@@ -229,17 +233,11 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
       // clauses of candidate gate (o, f, g) are still part of index (skip them)
       if (find(f.begin(), f.end(), c) != f.end()) continue;
       if (find(g.begin(), g.end(), c) != g.end()) continue;
-      // use clauses that constrain the inputs of our candidate gate only
-#ifdef GADebug
-      printClause(c);
-#endif
 
+      // use clauses that constrain the inputs of our candidate gate only
       bool is_subset = true;
       for (Lit l : *c) {
         if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
-#ifdef GADebug
-          printf("clause is not subset of original inputs\n");
-#endif
           is_subset = false;
           break;
         }
