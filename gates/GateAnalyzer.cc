@@ -12,10 +12,10 @@ using namespace std;
 using namespace Glucose;
 
 
-GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool decompose) :
+GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead) :
     problem (dimacs), solver (),
     maxTries (tries), usePatterns (patterns), useSemantic (semantic),
-    useHolistic (holistic), useLookahead (decompose)
+    useHolistic (holistic), useLookahead (lookahead)
 {
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
@@ -56,21 +56,9 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   return isRightUnique;
 }
 
-// clause patterns of full encoding
-bool GateAnalyzer::completePattern(For& fwd, For& bwd, set<Lit>& inputs) {
-  // precondition: fwd and bwd constrain exactly the same inputs (in opposite polarity)
-  // and fwd blocks bwd on the output literal
-
-  if (fwd.size() != bwd.size()) return false;
-
-  set<Var> vars;
-  for (Lit l : inputs) vars.insert(var(l));
-  // given a total of 2^n blocked clauses implies that we have no redundancy in the n inputs
-  return 2*fwd.size() == pow(2, vars.size()) && 2*vars.size() == inputs.size();
-}
 
 // clause patterns of full encoding
-bool GateAnalyzer::fullPattern(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
+bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
   // precondition: fwd blocks bwd on the o
 
   // check if fwd and bwd constrain exactly the same inputs (in opposite polarity)
@@ -80,12 +68,21 @@ bool GateAnalyzer::fullPattern(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
 
   bool fullOr = fwd.size() == 1 && fixedClauseSize(bwd, 2);
   bool fullAnd = bwd.size() == 1 && fixedClauseSize(fwd, 2);
-  return fullOr || fullAnd || completePattern(fwd, bwd, inp);
+  if (fullOr || fullAnd) return true;
+
+  // given a total of 2^n blocked clauses if size n+1 with n times the same variable should imply that we have no redundancy in the n inputs
+  if (fwd.size() == bwd.size() && 2*fwd.size() == pow(2, inp.size()/2)) {
+    set<Var> vars;
+    for (Lit l : inp) vars.insert(var(l));
+    return 2*vars.size() == inp.size();
+  }
+
+  return false;
 }
 
 // main analysis routine
-void GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool lah) {
-  vector<Lit> next;
+vector<Lit> GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool lah) {
+  vector<Lit> frontier, remainder;
 
   for (Lit o : roots) {
     For& f = index[~o], g = index[o];
@@ -93,10 +90,10 @@ void GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool lah) {
       bool mono = !inputs[o] || !inputs[~o];
       set<Lit> inp;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
-      bool gate = mono || (pat && fullPattern(o, f, g, inp)) || (sem && semanticCheck(var(o), f, g));
+      bool gate = mono || (pat && patternCheck(o, f, g, inp)) || (sem && semanticCheck(var(o), f, g));
       if (gate) {
         nGates++;
-        next.insert(next.end(), inp.begin(), inp.end());
+        frontier.insert(frontier.end(), inp.begin(), inp.end());
         for (Lit l : inp) {
           inputs[l]++;
           if (!mono) inputs[~l]++;
@@ -111,11 +108,15 @@ void GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool lah) {
         removeFromIndex(index, f);
         removeFromIndex(index, g);
       }
+      else {
+        remainder.push_back(o);
+      }
     }
   }
 
-  roots.clear();
-  roots.insert(roots.end(), next.begin(), next.end());
+  roots.swap(remainder);
+
+  return frontier;
 }
 
 void GateAnalyzer::analyze() {
@@ -132,7 +133,26 @@ void GateAnalyzer::analyze() {
   }
 
   while (next.size()) {
-    analyze(next, usePatterns, useSemantic, useLookahead);
+    vector<Lit> frontier, frontier2;
+
+    for (bool lookahead : { false, true }) {
+      if (!useLookahead && lookahead) break;
+      // pattern recognition
+      if (usePatterns && next.size()) {
+        frontier2 = analyze(next, true, false, lookahead);
+        frontier.insert(frontier.end(), frontier2.begin(), frontier2.end());
+      }
+      // semantic recognition
+      if (useSemantic && next.size()) {
+        frontier2 = analyze(next, false, true, lookahead);
+        frontier.insert(frontier.end(), frontier2.begin(), frontier2.end());
+      }
+    }
+
+    //frontier = analyze(next, usePatterns, useSemantic, useLookahead);
+
+    next.swap(frontier);
+    frontier.clear();
   }
 
   // clause selection loop
@@ -148,7 +168,8 @@ void GateAnalyzer::analyze() {
     roots.insert(roots.end(), clauses.begin(), clauses.end());
     removeFromIndex(index, clauses);
     while (next.size()) {
-      analyze(next, usePatterns, useSemantic, useLookahead);
+      vector<Lit> frontier = analyze(next, usePatterns, useSemantic, useLookahead);
+      next.swap(frontier);
     }
   }
 }

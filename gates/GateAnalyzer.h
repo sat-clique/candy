@@ -44,7 +44,7 @@ public:
 
   // main analysis routines:
   void analyze();
-  void analyze(vector<Lit>& roots, bool pat, bool sem, bool dec);
+  vector<Lit> analyze(vector<Lit>& roots, bool pat, bool sem, bool dec);
 
   // public getters:
   int getGateCount() { return nGates; }
@@ -100,10 +100,8 @@ private:
   Lit getRarestLiteral(vector<For>& index);
 
   // clause patterns of full encoding
-  bool fullPattern(Lit o, For& fwd, For& bwd, set<Lit>& inputs);
-  bool completePattern(For& fwd, For& bwd, set<Lit>& inputs);
+  bool patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inputs);
   bool semanticCheck(Var o, For& fwd, For& bwd);
-  bool isFullGate(For& fwd, For& bwd, set<Lit>& inputs, Lit output);
 
   // work in progress:
   bool isBlockedAfterVE(Lit o, For& f, For& g);
