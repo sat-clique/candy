@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
-    BoolOption opt_gr_decompose("GATE RECOGNITION", "gate-decompose", "Enable Local Blocked Decomposition", false);
+    BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
 
     parseOptions(argc, argv, true);
 
@@ -210,7 +210,7 @@ int main(int argc, char** argv) {
 
     if (count_gates) {
       double recognition_time = cpuTime();
-      GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_decompose);
+      GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead);
       gates.analyze();
       recognition_time = cpuTime() - recognition_time;
       printf("c ========================================[ Problem Statistics ]===========================================\n");
