@@ -3,18 +3,21 @@
 
 #include <memory>
 
+#include "Conjectures.h"
+
 class GateAnalyzer;
 
 namespace randsim {
     class ClauseOrder;
     class Partition;
     class Randomization;
+    class Propagation;
     
     class RandomSimulator {
     public:
         RandomSimulator();
         
-        virtual void run(unsigned int nSteps) = 0;
+        virtual Conjectures run(unsigned int nSteps) = 0;
         virtual ~RandomSimulator();
         
         RandomSimulator(const RandomSimulator &other) = delete;
@@ -26,6 +29,11 @@ namespace randsim {
         virtual RandomSimulatorBuilder& withClauseOrderStrategy(std::unique_ptr<ClauseOrder> clauseOrderStrat) = 0;
         virtual RandomSimulatorBuilder& withPartitionStrategy(std::unique_ptr<Partition> partitionStrat) = 0;
         virtual RandomSimulatorBuilder& withRandomizationStrategy(std::unique_ptr<Randomization> randomizationStrat) = 0;
+        
+        
+        virtual RandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation>
+                                                                propagationStrat) = 0;
+        
         virtual RandomSimulatorBuilder& withGateAnalyzer(GateAnalyzer& gateAnalyzer) = 0;
         virtual std::unique_ptr<RandomSimulator> build() = 0;
         

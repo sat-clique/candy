@@ -8,6 +8,9 @@ add_library(randomsimulation
     Partition.cc
     Partition.h
     ClauseOrder.cc
-    ClauseOrder.h)
+    ClauseOrder.h
+    Propagation.cc
+    Propagation.h
+    Conjectures.h)
 
 target_compile_options(randomsimulation PRIVATE -Wextra -Weffc++)
