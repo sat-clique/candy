@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.7)
 
 ### Compiler flags
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
 # todo: -flto linker flag
 
 ### Find libraries
@@ -26,11 +26,11 @@ add_subdirectory(utils)
 add_subdirectory(core)
 add_subdirectory(simp)
 add_subdirectory(gates)
-
+add_subdirectory(randomsimulation)
 
 ### Define and link target executables
 
-set(CANDY_LIBS utils core simp gates ${ZLIB_LIBRARIES})
+set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES})
 
 add_executable(candy Main.cc)
 target_link_libraries(candy ${CANDY_LIBS})
