@@ -4,19 +4,20 @@
 #include <vector>
 #include <memory>
 
+#include <core/SolverTypes.h>
+
 class GateAnalyzer;
 
 namespace randsim {
-    typedef size_t Var;
     class Clause;
     
     class ClauseOrder {
     public:
         
         virtual void readGates(GateAnalyzer& analyzer) = 0;
-        virtual std::vector<Var> &getInputVariables() = 0;
-        virtual std::vector<Var> &getGateOutputsOrdered() = 0;
-        virtual std::vector<Clause> &getClauses(Var variable) = 0;
+        virtual std::vector<Glucose::Var> &getInputVariables() = 0;
+        virtual std::vector<Glucose::Lit> &getGateOutputsOrdered() = 0;
+        virtual std::vector<Glucose::Cl> &getClauses(Glucose::Var variable) = 0;
         virtual unsigned int getAmountOfVars() = 0;
         
         ClauseOrder();

@@ -5,11 +5,17 @@
 #include <cassert>
 #include <memory>
 
+#include <core/SolverTypes.h>
+
 // Compiler option RANDSIM_VARSIMVECSIZE - the simulation vector siz in multiples
 // of 64 single-variable assignments. By default, RANDSIM_VARSIMVECSIZE
 // is set to 32 (i.e., 2048 single-variable assignments).
 #ifndef RANDSIM_VARSIMVECSIZE
 #define RANDSIM_VARSIMVECSIZE 32
+#endif
+
+#ifndef RANDSIM_ALIGNMENT
+#define RANDSIM_ALIGNMENT 64
 #endif
 
 namespace randsim {
@@ -83,9 +89,11 @@ namespace randsim {
         ~SimulationVector();
     };
     
+    typedef SimulationVector AlignedSimVector __attribute__((__aligned__(RANDSIM_ALIGNMENT)));
+    
     class SimulationVectors {
     public:
-        typedef size_t index_t;
+        typedef Glucose::Var index_t;
         
         SimulationVectors();
         ~SimulationVectors();
@@ -99,7 +107,7 @@ namespace randsim {
         }
         
     private:
-        SimulationVector *m_simulationVectors;
+        AlignedSimVector *__restrict__ m_simulationVectors;
         unsigned int m_size;
         std::unique_ptr<char> m_rawMemory;
         bool m_isInitialized;

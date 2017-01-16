@@ -8,10 +8,6 @@
 #include "SimulationVector.h"
 #include "Propagation.h"
 
-#include "gates/GateAnalyzer.h"
-
-
-
 namespace randsim {
     
     /* "interface" destructors */
@@ -93,10 +89,14 @@ namespace randsim {
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
         
-        for (size_t step = 0; step < realSteps; ++step) {
+        for (unsigned int step = 0; step < realSteps; ++step) {
             m_randomizationStrat->randomize(m_simulationVectors, inputVars);
             m_propagationStrat->propagate(m_simulationVectors, *m_clauseOrderStrat);
             m_partitionStrat->update(m_simulationVectors);
+            
+            if (!m_partitionStrat->isContinuationWorthwile()) {
+                break;
+            }
         }
         
         return m_partitionStrat->getConjectures();
@@ -175,16 +175,14 @@ namespace randsim {
             m_clauseOrderStrat = createDefaultClauseOrder();
         }
         if (m_randomizationStrat.get() == nullptr) {
-            m_randomizationStrat = std::make_unique<Randomization>();
+            m_randomizationStrat = createSimpleRandomization();
         }
         if (m_partitionStrat.get() == nullptr) {
-            m_partitionStrat = std::make_unique<Partition>();
+            m_partitionStrat = createDefaultPartition();
         }
         if (m_propagationStrat.get() == nullptr) {
-            m_propagationStrat = std::make_unique<Propagation>();
+            m_propagationStrat = createInputToOutputPropagation();
         }
-        
-        // TODO: read and order clauses
         
         return std::make_unique<BitparallelRandomSimulator>(std::move(m_clauseOrderStrat),
                                                             std::move(m_partitionStrat),
