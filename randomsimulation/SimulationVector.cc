@@ -25,7 +25,7 @@ namespace randsim {
         assert (reinterpret_cast<std::uintptr_t>(alignedMem) - reinterpret_cast<std::uintptr_t>(rawMem) < alignment);
     }
     
-    const size_t ALIGNMENT = 64; // ...bytes. Using 512-bit alignment for AVX2
+    
     
     SimulationVectors::SimulationVectors()
     : m_simulationVectors(nullptr), m_size(0), m_rawMemory(nullptr), m_isInitialized(false)  {
@@ -39,13 +39,13 @@ namespace randsim {
         m_size = amount;
         
         char *rawMem = nullptr, *alignedMem = nullptr;
-        allocateAligned(rawMem, alignedMem, ALIGNMENT, m_size);
+        allocateAligned(rawMem, alignedMem, RANDSIM_ALIGNMENT, m_size);
         
         assert (rawMem != nullptr);
         m_rawMemory = std::unique_ptr<char>(rawMem);
-        m_simulationVectors = reinterpret_cast<SimulationVector*>(alignedMem);
+        m_simulationVectors = reinterpret_cast<AlignedSimVector*>(alignedMem);
         
-        SimulationVector *toBeInitialized = m_simulationVectors;
+        AlignedSimVector *toBeInitialized = m_simulationVectors;
         for (size_t i = 0; i < m_size; i++) {
             new(toBeInitialized) SimulationVector;
             toBeInitialized->initialize(0ull);

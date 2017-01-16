@@ -1,4 +1,5 @@
 add_library(gates
-    GateAnalyzer.cc)
+    GateAnalyzer.cc
+    GateAnalyzer.h)
 
 
