@@ -9,16 +9,14 @@
 class GateAnalyzer;
 
 namespace randsim {
-    class Clause;
     
     class ClauseOrder {
     public:
-        
         virtual void readGates(GateAnalyzer& analyzer) = 0;
-        virtual std::vector<Glucose::Var> &getInputVariables() = 0;
-        virtual std::vector<Glucose::Lit> &getGateOutputsOrdered() = 0;
-        virtual std::vector<Glucose::Cl> &getClauses(Glucose::Var variable) = 0;
-        virtual unsigned int getAmountOfVars() = 0;
+        virtual const std::vector<Glucose::Var> &getInputVariables() const = 0;
+        virtual const std::vector<Glucose::Lit> &getGateOutputsOrdered() const = 0;
+        virtual const std::vector<const Glucose::Cl*> &getClauses(Glucose::Var variable) const = 0;
+        virtual unsigned int getAmountOfVars() const = 0;
         
         ClauseOrder();
         virtual ~ClauseOrder();
