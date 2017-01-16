@@ -1,6 +1,8 @@
 #include "SimulationVector.h"
 
 #include <cstdint>
+#include <iostream>
+#include <bitset>
 
 namespace randsim {
     SimulationVector::~SimulationVector() {
@@ -10,6 +12,13 @@ namespace randsim {
         for (int i = 0; i < VARSIMVECSIZE; i++) {
             vars[i] = pattern;
         }
+    }
+
+    std::ostream& operator<< (std::ostream& out, SimulationVector &vec) {
+        std::bitset<8 * sizeof(AlignedSimVector::varsimvec_field_t)> o(vec.vars[0]);
+        out << o;
+        out.flush();
+        return out;
     }
     
     const uint8_t SimulationVector::VARSIMVECSIZE;

@@ -18,6 +18,13 @@
 #define RANDSIM_ALIGNMENT 64
 #endif
 
+// Since these data structures are used in the hot loops of the random simulator,
+// it is advisable to tune them to your memory controller and cpu capabilities
+// (e.g., by aligning and sizing the structures appropriately, you can make the
+// compiler use SIMD instruction sets such as AVX2, and get the most out of your
+// memory bandwith).
+
+
 namespace randsim {
     
     class SimulationVector {
@@ -85,6 +92,8 @@ namespace randsim {
         }
         
         void initialize(varsimvec_field_t pattern);
+        
+        friend std::ostream& operator<<(const std::ostream& ostr, const SimulationVector& vec);
         
         ~SimulationVector();
     };

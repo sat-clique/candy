@@ -1,9 +1,18 @@
 project(Candy)
 cmake_minimum_required(VERSION 3.7)
 
+option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
+
 ### Compiler flags
 
+
+
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
+
+if(ENABLE_LLVM_COVERAGE)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
+endif()
+
 # todo: -flto linker flag
 
 ### Find libraries
