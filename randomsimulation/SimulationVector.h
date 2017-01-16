@@ -106,10 +106,16 @@ namespace randsim {
             return m_simulationVectors[index];
         }
         
+        inline const SimulationVector& getConst(unsigned int index) const {
+            assert(m_isInitialized);
+            assert(index < m_size);
+            return m_simulationVectors[index];
+        }
+        
     private:
         AlignedSimVector *__restrict__ m_simulationVectors;
         unsigned int m_size;
-        std::unique_ptr<char> m_rawMemory;
+        char* m_rawMemory;
         bool m_isInitialized;
     };
 }

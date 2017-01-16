@@ -11,6 +11,7 @@ add_library(randomsimulation
     ClauseOrder.h
     Propagation.cc
     Propagation.h
+    Conjectures.cc
     Conjectures.h)
 
 target_compile_options(randomsimulation PRIVATE -Wextra -Weffc++)
