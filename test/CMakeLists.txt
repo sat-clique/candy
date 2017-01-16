@@ -9,6 +9,17 @@ target_include_directories(tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/g
 target_link_libraries(tests ${CANDY_LIBS} gtest)
 
 
+
+add_executable(randomsimulation_tests
+    randomsimulation/Main.cc
+    randomsimulation/PartitionTests.cc)
+
+target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/include
+                                                         ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/include)
+
+target_link_libraries(randomsimulation_tests ${CANDY_LIBS} gtest)
+
+
 # Make sure that the test CNF problems are copied to the build directory
 file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.cnf")
 message("Test CNF files: ${TEST_CNF_PROBLEMS}")

@@ -15,14 +15,14 @@ namespace randsim {
     const uint8_t SimulationVector::VARSIMVECSIZE;
     const unsigned int SimulationVector::VARSIMVECVARS;
     
-    void allocateAligned(char* rawMem, char* alignedMem, size_t alignment, size_t size) {
+    void allocateAligned(char** rawMem, char** alignedMem, size_t alignment, size_t size) {
         size_t minSize = (size * sizeof(SimulationVector) + alignment);
-        rawMem = new char[minSize];
+        *rawMem = new char[minSize]; // todo: need to call delete[] :(
         
-        std::uintptr_t offset = alignment - (reinterpret_cast<std::uintptr_t>(rawMem) % alignment);
-        alignedMem = rawMem + offset;
+        std::uintptr_t offset = alignment - (reinterpret_cast<std::uintptr_t>(*rawMem) % alignment);
+        *alignedMem = *rawMem + offset;
         
-        assert (reinterpret_cast<std::uintptr_t>(alignedMem) - reinterpret_cast<std::uintptr_t>(rawMem) < alignment);
+        assert ((reinterpret_cast<std::uintptr_t>(*alignedMem) - reinterpret_cast<std::uintptr_t>(*rawMem)) <= alignment);
     }
     
     
@@ -38,11 +38,10 @@ namespace randsim {
         
         m_size = amount;
         
-        char *rawMem = nullptr, *alignedMem = nullptr;
-        allocateAligned(rawMem, alignedMem, RANDSIM_ALIGNMENT, m_size);
+        char *alignedMem = nullptr;
+        allocateAligned(&m_rawMemory, &alignedMem, RANDSIM_ALIGNMENT, m_size);
         
-        assert (rawMem != nullptr);
-        m_rawMemory = std::unique_ptr<char>(rawMem);
+        assert (m_rawMemory != nullptr);
         m_simulationVectors = reinterpret_cast<AlignedSimVector*>(alignedMem);
         
         AlignedSimVector *toBeInitialized = m_simulationVectors;
@@ -55,6 +54,8 @@ namespace randsim {
     }
     
     SimulationVectors::~SimulationVectors() {
-        
+        if (m_rawMemory) {
+            delete[] m_rawMemory;
+        }
     }
 }
