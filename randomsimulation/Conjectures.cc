@@ -25,11 +25,11 @@ namespace randsim {
         m_backbones.push_back(conj);
     }
     
-    const std::vector<EquivalenceConjecture> Conjectures::getEquivalences() const {
+    const std::vector<EquivalenceConjecture> &Conjectures::getEquivalences() const {
         return m_equivalences;
     }
     
-    const std::vector<BackboneConjecture> Conjectures::getBackbones() const {
+    const std::vector<BackboneConjecture> &Conjectures::getBackbones() const {
         return m_backbones;
     }
 }

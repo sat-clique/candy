@@ -187,7 +187,7 @@ namespace randsim {
         unsigned int m_correlationCount;
         
         float m_reductionRate = 1.0f;
-        constexpr const static float m_abortThreshold = 0.001f;
+        constexpr const static float m_abortThreshold = 0.001f; // todo: make this configurable
     };
     
     DefaultPartition::DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched)

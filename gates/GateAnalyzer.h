@@ -62,6 +62,10 @@ public:
     }
   }
 
+  const vector<Cl*> getRoots() const {
+    return roots;
+  }
+
 private:
   // problem to analyze:
   CNFProblem problem;

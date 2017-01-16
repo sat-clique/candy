@@ -24,8 +24,8 @@ namespace randsim {
     
     class Conjectures {
     public:
-        const std::vector<EquivalenceConjecture> getEquivalences() const;
-        const std::vector<BackboneConjecture> getBackbones() const;
+        const std::vector<EquivalenceConjecture> &getEquivalences() const;
+        const std::vector<BackboneConjecture> &getBackbones() const;
         
         void addEquivalence(EquivalenceConjecture &conj);
         void addBackbone(BackboneConjecture &conj);

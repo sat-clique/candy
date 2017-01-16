@@ -12,7 +12,10 @@ target_link_libraries(tests ${CANDY_LIBS} gtest)
 
 add_executable(randomsimulation_tests
     randomsimulation/Main.cc
-    randomsimulation/PartitionTests.cc)
+    randomsimulation/PartitionTests.cc
+    randomsimulation/PropagationTests.cc
+    randomsimulation/ClauseOrderTests.cc
+    randomsimulation/SimulationVectorTests.cc)
 
 target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/include
                                                          ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/include)
