@@ -40,7 +40,7 @@ class GateAnalyzer {
 
 public:
   GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-      bool patterns = true, bool semantic = true, bool holistic = true, bool decompose = false);
+      bool patterns = true, bool semantic = true, bool holistic = true, bool lookahead = false, bool intensify = true);
 
   // main analysis routines:
   void analyze();
@@ -48,16 +48,25 @@ public:
 
   // public getters:
   int getGateCount() { return nGates; }
-  Gate& getGate(Lit output) { return (*gates)[output]; }
+  Gate& getGate(Lit output) { return (*gates)[var(output)]; }
 
   void printGates() {
-    for (Gate& gate : *gates) {
-      if (gate.isDefined()) {
+    vector<Lit> outputs;
+    vector<bool> done(problem.nVars());
+    for (Cl* root : roots) {
+      outputs.insert(outputs.end(), root->begin(), root->end());
+    }
+    for (size_t i = 0; i < outputs.size(); i++) {
+      Gate& gate = getGate(outputs[i]);
+
+      if (gate.isDefined() && !done[var(outputs[i])]) {
+        done[var(outputs[i])] = true;
         printf("Gate with output ");
         printLit(gate.getOutput());
         printf("Is defined by clauses ");
-        printFormula(gate.getForwardClauses(), true);
+        printFormula(gate.getForwardClauses(), false);
         printFormula(gate.getBackwardClauses(), true);
+        outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
       }
     }
   }
@@ -77,6 +86,7 @@ private:
   bool useSemantic = false;
   bool useHolistic = false;
   bool useLookahead = false;
+  bool useIntensification = false;
 
   // analyzer output:
   vector<Cl*> roots; // top-level clauses

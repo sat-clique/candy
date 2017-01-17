@@ -12,10 +12,10 @@ using namespace std;
 using namespace Glucose;
 
 
-GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead) :
+GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify) :
     problem (dimacs), solver (),
     maxTries (tries), usePatterns (patterns), useSemantic (semantic),
-    useHolistic (holistic), useLookahead (lookahead)
+    useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify)
 {
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
@@ -120,7 +120,7 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool l
 }
 
 void GateAnalyzer::analyze() {
-  vector<Lit> next;
+  vector<Lit> next, frontier;
 
   // start recognition with unit literals
   for (Cl* c : problem.getProblem()) {
@@ -132,27 +132,38 @@ void GateAnalyzer::analyze() {
     }
   }
 
-  while (next.size()) {
-    vector<Lit> frontier, frontier2;
-
-    for (bool lookahead : { false, true }) {
-      if (!useLookahead && lookahead) break;
-      // pattern recognition
-      if (usePatterns && next.size()) {
-        frontier2 = analyze(next, true, false, lookahead);
-        frontier.insert(frontier.end(), frontier2.begin(), frontier2.end());
+  if (useIntensification) {
+    vector<Lit> remainder;
+    bool patterns, semantic, lookahead, success = false;
+    for (int il = 0; il < 4; (success && il > 0) ? il-- : il++) {
+      success = false;
+      printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), il);
+      switch (il) {
+      case 0: patterns = true; semantic = false; lookahead = false; break;
+      case 1: patterns = false; semantic = true; lookahead = false; break;
+      case 2: patterns = true; semantic = false; lookahead = true; break;
+      case 3: patterns = false; semantic = true; lookahead = true; break;
+      default: assert(il >= 0 && il < 4); break;
       }
-      // semantic recognition
-      if (useSemantic && next.size()) {
-        frontier2 = analyze(next, false, true, lookahead);
-        frontier.insert(frontier.end(), frontier2.begin(), frontier2.end());
+
+      if (!usePatterns && patterns) continue;
+      if (!useSemantic && semantic) continue;
+      if (!useLookahead && lookahead) continue;
+
+      next.insert(next.end(), remainder.begin(), remainder.end());
+      while (next.size()) {
+        frontier = analyze(next, patterns, semantic, lookahead);
+        if (frontier.size()) success = true;
+        remainder.insert(remainder.end(), next.begin(), next.end());
+        next.swap(frontier);
       }
     }
-
-    //frontier = analyze(next, usePatterns, useSemantic, useLookahead);
-
-    next.swap(frontier);
-    frontier.clear();
+  }
+  else {
+    while (next.size()) {
+      frontier = analyze(next, usePatterns, useSemantic, useLookahead);
+      next.swap(frontier);
+    }
   }
 
   // clause selection loop
