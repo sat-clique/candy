@@ -15,7 +15,7 @@ namespace randsim {
         virtual void setVariables(const std::vector<Glucose::Var> &variables) = 0;
         virtual void update(const SimulationVectors &assignment) = 0;
         virtual Conjectures getConjectures() = 0;
-        virtual bool isContinuationWorthwile() = 0;
+        virtual float getPartitionReductionRate() = 0;
         
         Partition();
         virtual ~Partition();

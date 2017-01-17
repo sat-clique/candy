@@ -133,7 +133,7 @@ namespace randsim {
         void setVariables(const std::vector<Glucose::Var> &variables) override;
         void update(const SimulationVectors &assignment) override;
         Conjectures getConjectures() override;
-        bool isContinuationWorthwile() override;
+        float getPartitionReductionRate() override;
         
         virtual ~DefaultPartition();
         DefaultPartition(const DefaultPartition& other) = delete;
@@ -187,7 +187,6 @@ namespace randsim {
         unsigned int m_correlationCount;
         
         float m_reductionRate = 1.0f;
-        constexpr const static float m_abortThreshold = 0.001f; // todo: make this configurable
     };
     
     DefaultPartition::DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched)
@@ -482,8 +481,8 @@ namespace randsim {
         return result;
     }
     
-    bool DefaultPartition::isContinuationWorthwile() {
-        return m_reductionRate < m_abortThreshold;
+    float DefaultPartition::getPartitionReductionRate() {
+        return m_reductionRate;
     }
     
     std::unique_ptr<Partition> createDefaultPartition() {
