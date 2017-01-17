@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>candy-kingdom</name>
+	<name>candy</name>
 	<comment></comment>
 	<projects>
 		<project>candy-kingdom</project>
@@ -33,7 +33,7 @@
 	</natures>
 	<filteredResources>
 		<filter>
-			<id>1484239379747</id>
+			<id>0</id>
 			<name></name>
 			<type>22</type>
 			<matcher>
