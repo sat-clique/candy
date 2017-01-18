@@ -156,7 +156,7 @@ void GateAnalyzer::analyze() {
       remainder.clear();
       while (next.size()) {
         frontier = analyze(next, patterns, semantic, lookahead);
-        success = frontier.size() > 0;
+        if (frontier.size() > 0) success = true;
         remainder.insert(remainder.end(), next.begin(), next.end());
         next.swap(frontier);
       }
