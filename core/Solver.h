@@ -59,9 +59,10 @@
 #include <vector>
 
 #include "CNFProblem.h"
-using namespace std;
 
 namespace Glucose {
+
+using namespace std;
 
 //=================================================================================================
 // Solver -- the main class:
@@ -88,7 +89,7 @@ public:
     trail.resize(n);
   }
 
-  void insertClauses(CNFProblem dimacs) {
+  void insertClauses(Candy::CNFProblem dimacs) {
     vector<vector<Lit>*>& problem = dimacs.getProblem();
     if (dimacs.nVars() > nVars()) {
       reserveVars(dimacs.nVars());

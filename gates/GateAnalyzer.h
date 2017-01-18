@@ -10,21 +10,20 @@
 #include <climits>
 
 #include "../core/CNFProblem.h"
-using namespace Glucose;
-
-using namespace std;
 
 #include "core/SolverTypes.h"
 #include "core/Utilities.h"
 #include "core/Solver.h"
 
+namespace Candy {
+
 typedef struct Gate {
-  Lit out = lit_Undef;
+  Lit out = Glucose::lit_Undef;
   For fwd, bwd;
   bool notMono = false;
   vector<Lit> inp;
 
-  inline bool isDefined() { return out != lit_Undef; }
+  inline bool isDefined() { return out != Glucose::lit_Undef; }
 
   // Compatibility functions
   inline Lit getOutput() { return out; }
@@ -74,7 +73,7 @@ public:
 private:
   // problem to analyze:
   CNFProblem problem;
-  Solver solver;
+  Glucose::Solver solver;
 
   // control structures:
   vector<For> index; // occurrence lists
@@ -161,4 +160,5 @@ private:
 
 };
 
+}
 #endif

@@ -11,7 +11,7 @@
 #include "simp/SimpSolver.h"
 #include "gates/GateAnalyzer.h"
 
-using namespace Glucose;
+using namespace Candy;
 
 TEST (GateAnalyzerTestPatterns, countgates) {
   CNFProblem dimacs;

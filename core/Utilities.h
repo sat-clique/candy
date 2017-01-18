@@ -10,10 +10,8 @@
 
 #include "core/SolverTypes.h"
 
-using namespace Glucose;
-
-void printLiteral(Lit lit);
-void printClause(Cl& clause);
-void printClauses(For& formula);
+void printLiteral(Candy::Lit lit);
+void printClause(Candy::Cl& clause);
+void printClauses(Candy::For& formula);
 
 #endif /* CORE_UTILITIES_H_ */
