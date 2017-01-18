@@ -199,7 +199,7 @@ int main(int argc, char** argv) {
       }
     }
 
-    CNFProblem dimacs;
+    Candy::CNFProblem dimacs;
     if (argc == 1) {
       printf("c Reading from standard input... Use '--help' for help.\n");
       if (!dimacs.readDimacsFromStdout()) return 1;
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
 
     if (count_gates) {
       double recognition_time = cpuTime();
-      GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify);
+      Candy::GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify);
       gates.analyze();
       recognition_time = cpuTime() - recognition_time;
       printf("c ========================================[ Problem Statistics ]===========================================\n");

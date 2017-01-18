@@ -8,9 +8,7 @@
 #include "gates/GateAnalyzer.h"
 #include "core/Solver.h"
 
-using namespace std;
-using namespace Glucose;
-
+namespace Candy {
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify) :
     problem (dimacs), solver (),
@@ -37,7 +35,7 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   CNFProblem constraint;
-  Lit alit = mkLit(problem.nVars(), false);
+  Lit alit = Glucose::mkLit(problem.nVars(), false);
   Cl clause;
   for (const For& f : { fwd, bwd })
   for (Cl* cl : f) {
@@ -112,6 +110,9 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool l
         remainder.push_back(o);
       }
     }
+    else {
+      remainder.push_back(o);
+    }
   }
 
   roots.swap(remainder);
@@ -136,7 +137,6 @@ void GateAnalyzer::analyze() {
     vector<Lit> remainder;
     bool patterns, semantic, lookahead, success = false;
     for (int il = 0; il < 4; (success && il > 0) ? il-- : il++) {
-      success = false;
       printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), il);
       switch (il) {
       case 0: patterns = true; semantic = false; lookahead = false; break;
@@ -150,10 +150,13 @@ void GateAnalyzer::analyze() {
       if (!useSemantic && semantic) continue;
       if (!useLookahead && lookahead) continue;
 
+      success = false;
+
       next.insert(next.end(), remainder.begin(), remainder.end());
+      remainder.clear();
       while (next.size()) {
         frontier = analyze(next, patterns, semantic, lookahead);
-        if (frontier.size()) success = true;
+        success = frontier.size() > 0;
         remainder.insert(remainder.end(), next.begin(), next.end());
         next.swap(frontier);
       }
@@ -195,8 +198,8 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   // generate set of non-tautological resolvents
   For resolvents;
   for (Cl* a : f) for (Cl* b : g) {
-    Cl* res = new Cl();
     if (!isBlocked(o, *a, *b)) {
+      Cl* res = new Cl();
       res->insert(res->end(), a->begin(), a->end());
       res->insert(res->end(), b->begin(), b->end());
       res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
@@ -326,4 +329,6 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   }
 
   return false;
+}
+
 }
