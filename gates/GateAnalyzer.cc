@@ -10,10 +10,10 @@
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify) :
+GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify, int lookahead_threshold) :
     problem (dimacs), solver (),
     maxTries (tries), usePatterns (patterns), useSemantic (semantic),
-    useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify)
+    useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify), lookaheadThreshold(lookahead_threshold)
 {
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
@@ -79,10 +79,10 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
 }
 
 // main analysis routine
-vector<Lit> GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool lah) {
+vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, bool lah) {
   vector<Lit> frontier, remainder;
 
-  for (Lit o : roots) {
+  for (Lit o : candidates) {
     For& f = index[~o], g = index[o];
     if (f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
       bool mono = !inputs[o] || !inputs[~o];
@@ -115,24 +115,13 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool l
     }
   }
 
-  roots.swap(remainder);
+  candidates.swap(remainder);
 
   return frontier;
 }
 
-void GateAnalyzer::analyze() {
-  vector<Lit> next;
 
-  // start recognition with unit literals
-  for (Cl* c : problem.getProblem()) {
-    if (c->size() == 1) {
-      roots.push_back(c);
-      removeFromIndex(index, c);
-      next.insert(next.end(), (*c)[0]);
-      inputs[(*c)[0]]++;
-    }
-  }
-
+void GateAnalyzer::analyze(vector<Lit>& candidates) {
   if (useIntensification) {
     vector<Lit> remainder;
     bool patterns, semantic, lookahead, restart = false;
@@ -152,14 +141,14 @@ void GateAnalyzer::analyze() {
       if (!useSemantic && semantic) continue;
       if (!useLookahead && lookahead) continue;
 
-      next.insert(next.end(), remainder.begin(), remainder.end());
+      candidates.insert(candidates.end(), remainder.begin(), remainder.end());
       remainder.clear();
 
-      while (next.size()) {
-        vector<Lit> frontier = analyze(next, patterns, semantic, lookahead);
+      while (candidates.size()) {
+        vector<Lit> frontier = analyze(candidates, patterns, semantic, lookahead);
         if (level > 0 && frontier.size() > 0) restart = true;
-        remainder.insert(remainder.end(), next.begin(), next.end());
-        next.swap(frontier);
+        remainder.insert(remainder.end(), candidates.begin(), candidates.end());
+        candidates.swap(frontier);
       }
 
       sort(remainder.begin(), remainder.end());
@@ -168,11 +157,27 @@ void GateAnalyzer::analyze() {
     }
   }
   else {
-    while (next.size()) {
-      vector<Lit> frontier = analyze(next, usePatterns, useSemantic, useLookahead);
-      next.swap(frontier);
+    while (candidates.size()) {
+      vector<Lit> frontier = analyze(candidates, usePatterns, useSemantic, useLookahead);
+      candidates.swap(frontier);
     }
   }
+}
+
+void GateAnalyzer::analyze() {
+  vector<Lit> next;
+
+  // start recognition with unit literals
+  for (Cl* c : problem.getProblem()) {
+    if (c->size() == 1) {
+      roots.push_back(c);
+      removeFromIndex(index, c);
+      next.insert(next.end(), (*c)[0]);
+      inputs[(*c)[0]]++;
+    }
+  }
+
+  analyze(next);
 
   // clause selection loop
   for (int k = 0; k < maxTries; k++) {
@@ -186,17 +191,9 @@ void GateAnalyzer::analyze() {
     }
     roots.insert(roots.end(), clauses.begin(), clauses.end());
     removeFromIndex(index, clauses);
-    while (next.size()) {
-      vector<Lit> frontier = analyze(next, usePatterns, useSemantic, useLookahead);
-      next.swap(frontier);
-    }
+    analyze(next);
   }
 }
-
-
-
-//######################
-// work in progress:
 
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
@@ -210,7 +207,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
       res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
       resolvents.push_back(res);
     }
-    if (resolvents.size() > 10) return false;
+    if ((int)resolvents.size() > lookaheadThreshold) return false;
   }
   if (resolvents.empty()) return true; // the set is trivially blocked
 
@@ -219,17 +216,15 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 #endif
 
   // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
-  set<Lit> candidates(resolvents[0]->begin(), resolvents[0]->end());
-  for (Cl* resolvent : resolvents) {
+  vector<Var> candidates;
+  for (Lit l : *resolvents[0]) candidates.push_back(var(l));
+  for (size_t i = 1; i < resolvents.size(); i++) {
+    Cl* resolvent = resolvents[i];
     if (candidates.empty()) break;
-    set<Lit> next_candidates;
-    for (Lit lit1 : *resolvent) {
-      for (Lit lit2 : candidates) {
-        if (var(lit1) == var(lit2)) {
-          next_candidates.insert(lit1);
-          next_candidates.insert(lit2);
-          break;
-        }
+    vector<Var> next_candidates;
+    for (Lit lit : *resolvent) {
+      if (find(candidates.begin(), candidates.end(), var(lit)) != candidates.end()) {
+        next_candidates.push_back(var(lit));
       }
     }
     std::swap(candidates, next_candidates);
@@ -238,96 +233,72 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   if (candidates.empty()) return false; // no candidate output
 
 #ifdef GADebug
-  printf("Found %zu candidate literals for functional elimination: ", candidates.size());
-  for (Lit lit : candidates) printf("%s%i ", sign(lit)?"-":"", var(lit)+1);
+  printf("Found %zu candidate variables for functional elimination: ", candidates.size());
+  for (Var v : candidates) printf("%i ", v+1);
   printf("\n");
 #endif
 
   // generate set of input variables of candidate gate (o, f, g)
   set<Var> inputs;
-  for (Cl* c : f) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
-  for (Cl* c : g) for (Lit l : *c) if (var(l) != var(o)) inputs.insert(var(l));
-
-  vector<int> occCount(problem.nVars()*2);
-  for (Lit cand : candidates) {
-    for (For formula : { f, g }) for (Cl* clause : formula) {
-      if (find(clause->begin(), clause->end(), cand) != clause->end()) {
-        occCount[cand]++;
-      }
+  vector<int> occCount(problem.nVars()+1);
+  for (For formula : { f, g })  for (Cl* c : formula)  for (Lit l : *c) {
+    if (var(l) != var(o)) {
+      inputs.insert(var(l));
+      occCount[var(l)]++;
     }
   }
 
-  vector<Lit> sCand(candidates.begin(), candidates.end());
-  sort(sCand.begin(), sCand.end(), [occCount](Lit a, Lit b) { return occCount[a] < occCount[b]; });
+  sort(candidates.begin(), candidates.end(), [occCount](Var a, Var b) { return occCount[a] < occCount[b]; });
 
-  for (Lit cand : sCand) {
+  for (Var cand : candidates) {
     // generate candidate definition for output
     For fwd, bwd;
+    Lit out = Glucose::mkLit(cand, false);
 
 #ifdef GADebug
-    printf("candidate literal: %s%i\n", sign(cand)?"-":"", var(cand)+1);
+    printf("candidate variable: %i\n", cand+1);
 #endif
 
-    for (Lit lit : { cand, ~cand })
+    for (Lit lit : { out, ~out })
     for (Cl* c : index[lit]) {
       // clauses of candidate gate (o, f, g) are still part of index (skip them)
-      if (find(f.begin(), f.end(), c) != f.end()) continue;
-      if (find(g.begin(), g.end(), c) != g.end()) continue;
-
-      // use clauses that constrain the inputs of our candidate gate only
-      bool is_subset = true;
-      for (Lit l : *c) {
-        if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
-          is_subset = false;
-          break;
+      if (find(f.begin(), f.end(), c) == f.end() && find(g.begin(), g.end(), c) == g.end()) {
+        // use clauses that constrain the inputs of our candidate gate only
+        bool is_subset = true;
+        for (Lit l : *c) {
+          if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
+            is_subset = false;
+            break;
+          }
         }
-      }
-      if (is_subset) {
-        if (lit == ~cand) fwd.push_back(c);
-        else bwd.push_back(c);
+        if (is_subset) {
+          if (lit == ~out) fwd.push_back(c);
+          else bwd.push_back(c);
+        }
       }
     }
 
-    if (fwd.empty()) continue;
-
 #ifdef GADebug
-    printf("Found %zu clauses for candidate literal %s%i\n", fwd.size() + bwd.size(), sign(cand)?"-":"", var(cand)+1);
+    printf("Found %zu clauses for candidate variable %i\n", fwd.size() + bwd.size(), cand+1);
 #endif
 
     // if candidate definition is functional
-    // (check blocked state, in non-monotonic case also right-uniqueness <- use semantic holistic approach)
-    bool monotonic = false;
-    bool functional = false;
-    if (isBlocked(cand, fwd, bwd)) {
-      // output is used monotonic, iff
-      // 1. it is pure in the already decoded partial gate-structure (use input array)
-      bool pure1 = !this->inputs[cand];
-      // 2. it is pure in f of the candidate gate-definition (o, f, g)
-      bool pure2 = false;
-      // 3. it is pure in the remaining formula (look at literals in index, bwd entails entire index)
-      bool pure3 = false;
-      monotonic = pure1 && pure2 && pure3;
-      if (!monotonic) {
-        functional = semanticCheck(var(cand), fwd, bwd);
+    if (isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
+      // split resolvents
+      For res_fwd, res_bwd;
+      for (Cl* res : resolvents) {
+        if (find(res->begin(), res->end(), ~out) != res->end()) {
+          res_fwd.push_back(res);
+        } else {
+          res_bwd.push_back(res);
+        }
       }
-
-      // then local resolution is enough and then check resolve and check for gate-property again
-      if (monotonic || functional) {
-        // split resolvents
-        For res_fwd, res_bwd;
-        for (Cl* res : resolvents) {
-          if (find(res->begin(), res->end(), ~cand) == res->end()) {
-            res_fwd.push_back(res);
-          } else {
-            res_bwd.push_back(res);
-          }
-        }
-        if (isBlocked(~cand, res_fwd, bwd) && isBlocked(~cand, fwd, res_bwd)) {
+      if ((res_fwd.size() == 0 || bwd.size() > 0) && (res_bwd.size() == 0 || fwd.size() > 0))
+      if (isBlocked(out, res_fwd, bwd) && isBlocked(~out, res_bwd, fwd)) {
 #ifdef GADebug
-          printf("Blocked elimination found for candidate literal %s%i\n", sign(cand)?"-":"", var(cand)+1);
+        printf("Blocked elimination found for candidate variable %i\n", cand+1);
 #endif
-          return true;
-        }
+        return true;
       }
       else; // next candidate
     }

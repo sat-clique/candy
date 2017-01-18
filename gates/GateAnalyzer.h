@@ -39,13 +39,12 @@ class GateAnalyzer {
 
 public:
   GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-      bool patterns = true, bool semantic = true, bool holistic = true, bool lookahead = false, bool intensify = true);
+      bool patterns = true, bool semantic = true, bool holistic = true, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10);
 
-  // main analysis routines:
+  // main analysis routine
   void analyze();
-  vector<Lit> analyze(vector<Lit>& roots, bool pat, bool sem, bool dec);
 
-  // public getters:
+  // public getters
   int getGateCount() { return nGates; }
   Gate& getGate(Lit output) { return (*gates)[var(output)]; }
 
@@ -86,6 +85,7 @@ private:
   bool useHolistic = false;
   bool useLookahead = false;
   bool useIntensification = false;
+  int lookaheadThreshold = 10;
 
   // analyzer output:
   vector<Cl*> roots; // top-level clauses
@@ -105,6 +105,10 @@ private:
     if (nl) printf("\n");
   }
 
+  // main analysis routines
+  void analyze(vector<Lit>& candidates);
+  vector<Lit> analyze(vector<Lit>& candidates, bool pat, bool sem, bool dec);
+
   // clause selection heuristic
   Lit getRarestLiteral(vector<For>& index);
 
@@ -114,6 +118,7 @@ private:
 
   // work in progress:
   bool isBlockedAfterVE(Lit o, For& f, For& g);
+  bool isBlockedAfterVE2(Lit o, For& f, For& g);
 
   // some helpers:
   bool isBlocked(Lit o, Cl& a, Cl& b) { // assert ~o \in a and o \in b
