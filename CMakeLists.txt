@@ -7,7 +7,8 @@ option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
 
 
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
+# TODO: check if we need to build gtest with -fno-rtti, too
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -march=native -flto -fno-rtti")
 
 if(ENABLE_LLVM_COVERAGE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")

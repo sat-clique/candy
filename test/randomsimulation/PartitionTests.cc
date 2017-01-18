@@ -1,4 +1,4 @@
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
 #include <limits>
 #include <algorithm>
@@ -265,5 +265,45 @@ namespace randsim {
     
     TEST (RSPartitionTest, multiUpdateAllRelevant_logCompress) {
         test_multiUpdateAllRelevant(createDefaultPartition(createLogCompressionScheduleStrategy()));
+    }
+    
+    
+    void test_multipleBackboneVars(std::unique_ptr<Partition> underTest) {
+        std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4};
+        
+        SimulationVectors assignment;
+        assignment.initialize(5);
+        
+        setAssignmentPattern(assignment, 0, numeric_limits<SimulationVector::varsimvec_field_t>::max());
+        setAssignmentPattern(assignment, 1, 0xABABABull);
+        setAssignmentPattern(assignment, 2, ~(0xABABABull));
+        setAssignmentPattern(assignment, 3, numeric_limits<SimulationVector::varsimvec_field_t>::max());
+        setAssignmentPattern(assignment, 4, 0ull);
+        
+        underTest->setVariables(relevantVars);
+        underTest->update(assignment);
+        
+        auto conjectures = underTest->getConjectures();
+        EXPECT_EQ(conjectures.getBackbones().size(), 3ull);
+        ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
+        
+        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(3, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(4, 0)));
+        
+        std::vector<Glucose::Lit> eqConj1 = {Glucose::mkLit(1, 0), Glucose::mkLit(2, 1)};
+        EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
+    }
+    
+    TEST (RSPartitionTest, multipleBackboneVars_noCompress) {
+        test_multipleBackboneVars(createDefaultPartition(createNullCompressionScheduleStrategy()));
+    }
+    
+    TEST (RSPartitionTest, multipleBackboneVars_linCompress) {
+        test_multipleBackboneVars(createDefaultPartition(createLinearCompressionScheduleStrategy(1)));
+    }
+    
+    TEST (RSPartitionTest, multipleBackboneVars_logCompress) {
+        test_multipleBackboneVars(createDefaultPartition(createLogCompressionScheduleStrategy()));
     }
 }
