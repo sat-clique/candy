@@ -17,7 +17,10 @@ add_executable(randomsimulation_tests
     randomsimulation/ClauseOrderTests.cc
     randomsimulation/TestGateStructure.h
     randomsimulation/TestGateStructure.cc
-    randomsimulation/SimulationVectorTests.cc)
+    randomsimulation/SimulationVectorTests.cc
+    randomsimulation/TestUtils.cc
+    randomsimulation/TestUtils.h
+    randomsimulation/TestGateStructureTests.cc)
 
 target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/include
                                                          ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/include)
