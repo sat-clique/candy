@@ -24,14 +24,35 @@
  
  */
 
-#include <gtest/gtest.h>
+#ifndef _3EC37B3C_8FFE_4765_8E74_F1177D8BF870_TESTUTILS_H
+#define _3EC37B3C_8FFE_4765_8E74_F1177D8BF870_TESTUTILS_H
 
-#include <gates/GateAnalyzer.h>
-#include <randomsimulation/ClauseOrder.h>
+#include <core/SolverTypes.h>
+#include <unordered_set>
+#include <vector>
 
-#include "TestGateStructure.h"
-#include "TestUtils.h"
+
+namespace Glucose {
+    class CNFProblem;
+}
+
 
 namespace randsim {
+    class Conjectures;
+    class EquivalenceConjecture;
     
+    void deleteClauses(Glucose::CNFProblem* formula);
+    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
+    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
+    Glucose::Cl negatedLits(const Glucose::Cl& clause);
+    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
+    
+    
+    bool hasBackboneConj(Conjectures &c, Glucose::Lit lit);
+    bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits);
+    bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits);
+    
+    bool containsClause(const Glucose::For& formula, const Glucose::Cl& clause);
 }
+
+#endif

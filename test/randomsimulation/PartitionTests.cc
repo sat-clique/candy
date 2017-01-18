@@ -29,11 +29,12 @@
 #include <limits>
 #include <algorithm>
 
+#include "TestUtils.h"
+
 #include <randomsimulation/Partition.h>
 #include <randomsimulation/Conjectures.h>
 #include <randomsimulation/SimulationVector.h>
 #include <core/SolverTypes.h>
-
 
 
 namespace randsim {
@@ -44,50 +45,6 @@ namespace randsim {
         for (size_t i = 0; i < SimulationVector::VARSIMVECSIZE; ++i) {
             assignment.get(index).vars[i] = pattern;
         }
-    }
-    
-    bool hasBackboneConj(Conjectures &c, Glucose::Lit lit) {
-        bool found = false;
-        for (auto bb : c.getBackbones()) {
-            found |= (bb.getLit() == lit);
-        }
-        return found;
-    }
-    
-    std::vector<Glucose::Lit> invertAll(std::vector<Glucose::Lit> &lits) {
-        std::vector<Glucose::Lit> result;
-        for (auto lit : lits) {
-            result.push_back(~lit);
-        }
-        return result;
-    }
-    
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits) {
-        if (conj.getLits().size() != lits.size()) {
-            return false;
-        }
-        else {
-            for (auto lit : lits) {
-                auto begin = conj.getLits().begin();
-                auto end = conj.getLits().end();
-                if (std::find(begin, end, lit) == end) {
-                    return false;
-                }
-            }
-        }
-        
-        return true;
-    }
-    
-    bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits) {
-        auto invertedLits = invertAll(lits);
-        for (auto eqconj : c.getEquivalences()) {
-            if (isEquivalenceConjEq(eqconj, lits) || isEquivalenceConjEq(eqconj, invertedLits)) {
-                return true;
-            }
-        }
-        
-        return false;
     }
     
     void test_singleUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
@@ -166,9 +123,6 @@ namespace randsim {
     TEST (RSPartitionTest, multiUpdateAllRelevantAllInConjs_logCompress) {
         test_multiUpdateAllRelevantAllInConjs(createDefaultPartition(createLogCompressionScheduleStrategy()));
     }
-
-    
-    
     
     void test_singleUpdateAllRelevant(std::unique_ptr<Partition> underTest) {
         std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
