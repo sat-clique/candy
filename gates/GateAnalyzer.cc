@@ -172,7 +172,7 @@ void GateAnalyzer::analyze() {
     if (c->size() == 1) {
       roots.push_back(c);
       removeFromIndex(index, c);
-      next.insert(next.end(), (*c)[0]);
+      next.push_back((*c)[0]);
       inputs[(*c)[0]]++;
     }
   }
@@ -185,12 +185,12 @@ void GateAnalyzer::analyze() {
     Lit lit = getRarestLiteral(index);
     if (lit.x == INT_MAX) break; // index is empty
     vector<Cl*>& clauses = index[lit];
+    roots.insert(roots.end(), clauses.begin(), clauses.end());
+    removeFromIndex(index, clauses);
     for (Cl* c : clauses) {
       next.insert(next.end(), c->begin(), c->end());
       for (Lit l : *c) inputs[l]++;
     }
-    roots.insert(roots.end(), clauses.begin(), clauses.end());
-    removeFromIndex(index, clauses);
     analyze(next);
   }
 }
@@ -219,10 +219,9 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   vector<Var> candidates;
   for (Lit l : *resolvents[0]) candidates.push_back(var(l));
   for (size_t i = 1; i < resolvents.size(); i++) {
-    Cl* resolvent = resolvents[i];
     if (candidates.empty()) break;
     vector<Var> next_candidates;
-    for (Lit lit : *resolvent) {
+    for (Lit lit : *resolvents[i]) {
       if (find(candidates.begin(), candidates.end(), var(lit)) != candidates.end()) {
         next_candidates.push_back(var(lit));
       }
@@ -239,14 +238,17 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 #endif
 
   // generate set of input variables of candidate gate (o, f, g)
-  set<Var> inputs;
+  vector<Var> inputs;
   vector<int> occCount(problem.nVars()+1);
   for (For formula : { f, g })  for (Cl* c : formula)  for (Lit l : *c) {
     if (var(l) != var(o)) {
-      inputs.insert(var(l));
+      inputs.push_back(var(l));
       occCount[var(l)]++;
     }
   }
+
+  sort(inputs.begin(), inputs.end());
+  inputs.erase(unique(inputs.begin(), inputs.end()), inputs.end());
 
   sort(candidates.begin(), candidates.end(), [occCount](Var a, Var b) { return occCount[a] < occCount[b]; });
 
@@ -284,7 +286,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 
     // if candidate definition is functional
     if (isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
-      // split resolvents
+      // split resolvents by output literal 'out' of the function defined by 'fwd' and 'bwd'
       For res_fwd, res_bwd;
       for (Cl* res : resolvents) {
         if (find(res->begin(), res->end(), ~out) != res->end()) {
@@ -300,7 +302,6 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 #endif
         return true;
       }
-      else; // next candidate
     }
   }
 
