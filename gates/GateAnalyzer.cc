@@ -121,7 +121,7 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& roots, bool pat, bool sem, bool l
 }
 
 void GateAnalyzer::analyze() {
-  vector<Lit> next, frontier;
+  vector<Lit> next;
 
   // start recognition with unit literals
   for (Cl* c : problem.getProblem()) {
@@ -135,36 +135,41 @@ void GateAnalyzer::analyze() {
 
   if (useIntensification) {
     vector<Lit> remainder;
-    bool patterns, semantic, lookahead, success = false;
-    for (int il = 0; il < 4; (success && il > 0) ? il-- : il++) {
-      printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), il);
-      switch (il) {
+    bool patterns, semantic, lookahead, restart = false;
+    for (int level = 0; level < 3; restart ? level = 0 : level++) {
+      printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
+
+      restart = false;
+
+      switch (level) {
       case 0: patterns = true; semantic = false; lookahead = false; break;
       case 1: patterns = false; semantic = true; lookahead = false; break;
-      case 2: patterns = true; semantic = false; lookahead = true; break;
-      case 3: patterns = false; semantic = true; lookahead = true; break;
-      default: assert(il >= 0 && il < 4); break;
+      case 2: patterns = false; semantic = true; lookahead = true; break;
+      default: assert(level >= 0 && level < 3); break;
       }
 
       if (!usePatterns && patterns) continue;
       if (!useSemantic && semantic) continue;
       if (!useLookahead && lookahead) continue;
 
-      success = false;
-
       next.insert(next.end(), remainder.begin(), remainder.end());
       remainder.clear();
+
       while (next.size()) {
-        frontier = analyze(next, patterns, semantic, lookahead);
-        if (frontier.size() > 0) success = true;
+        vector<Lit> frontier = analyze(next, patterns, semantic, lookahead);
+        if (level > 0 && frontier.size() > 0) restart = true;
         remainder.insert(remainder.end(), next.begin(), next.end());
         next.swap(frontier);
       }
+
+      sort(remainder.begin(), remainder.end());
+      remainder.erase(unique(remainder.begin(), remainder.end()), remainder.end());
+      reverse(remainder.begin(), remainder.end());
     }
   }
   else {
     while (next.size()) {
-      frontier = analyze(next, usePatterns, useSemantic, useLookahead);
+      vector<Lit> frontier = analyze(next, usePatterns, useSemantic, useLookahead);
       next.swap(frontier);
     }
   }
