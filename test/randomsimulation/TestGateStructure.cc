@@ -25,6 +25,7 @@
  */
 
 #include "TestGateStructure.h"
+#include "TestUtils.h"
 
 #include <unordered_set>
 #include <cassert>
@@ -32,11 +33,6 @@
 #include <gtest/gtest.h>
 
 namespace randsim {
-    void deleteClauses(Glucose::CNFProblem* formula);
-    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
-    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
-    Glucose::Cl negatedLits(const Glucose::Cl& clause);
-    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
     
     GateStructureBuilder::GateStructureBuilder() {
         
@@ -131,40 +127,5 @@ namespace randsim {
         return std::make_unique<GateStructureBuilderImpl>();
     }
     
-    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
-        assert(variables.find(forbidden) != variables.end()); // TODO refactor
-    }
-    
-    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
-        assert(variables.find(forbidden) == variables.end()); // TODO refactor
-    }
-    
-    void deleteClauses(Glucose::CNFProblem* formula) {
-        
-        // TODO: This is a weird workaround. CNFProblem ought to own the formula and take care of its destruction.
-        
-        if (formula == nullptr) {
-            return;
-        }
-        
-        for (auto clause : formula->getProblem()) {
-            delete clause;
-        }
-        formula->getProblem().clear();
-    }
-    
-    Glucose::Cl negatedLits(const Glucose::Cl& clause) {
-        Glucose::Cl result;
-        for (auto lit : clause) {
-            result.push_back(~lit);
-        }
-        return result;
-    }
-    
-    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target) {
-        for (auto lit : lits) {
-            target.insert(Glucose::var(lit));
-        }
-    }
     
 }
