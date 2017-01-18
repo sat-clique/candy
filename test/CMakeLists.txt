@@ -15,6 +15,8 @@ add_executable(randomsimulation_tests
     randomsimulation/PartitionTests.cc
     randomsimulation/PropagationTests.cc
     randomsimulation/ClauseOrderTests.cc
+    randomsimulation/TestGateStructure.h
+    randomsimulation/TestGateStructure.cc
     randomsimulation/SimulationVectorTests.cc)
 
 target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/include
