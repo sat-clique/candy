@@ -12,7 +12,7 @@ namespace Candy {
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify, int lookahead_threshold) :
     problem (dimacs), solver (),
-    maxTries (tries), usePatterns (patterns), useSemantic (semantic),
+    maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
     useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify), lookaheadThreshold(lookahead_threshold)
 {
   gates = new vector<Gate>(problem.nVars());
@@ -285,7 +285,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 #endif
 
     // if candidate definition is functional
-    if (isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
+    if ((fwd.size() > 0 || bwd.size() > 0) && isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
       // split resolvents by output literal 'out' of the function defined by 'fwd' and 'bwd'
       For res_fwd, res_bwd;
       for (Cl* res : resolvents) {
