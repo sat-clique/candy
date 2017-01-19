@@ -1097,7 +1097,6 @@ lbool Solver::search(int nof_conflicts) {
 
       if (parallelImportClauses())
         return l_False;
-
     }
     CRef confl = propagate();
 
@@ -1120,7 +1119,6 @@ lbool Solver::search(int nof_conflicts) {
       }
       if (decisionLevel() == 0) {
         return l_False;
-
       }
 
       trailQueue.push(trail_size);
@@ -1170,11 +1168,9 @@ lbool Solver::search(int nof_conflicts) {
         parallelExportClauseDuringSearch(ca[cr]);
         claBumpActivity(ca[cr]);
         uncheckedEnqueue(learnt_clause[0], cr);
-
       }
       varDecayActivity();
       claDecayActivity();
-
     } else {
       // Our dynamic restart, see the SAT09 competition compagnion paper
       if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
@@ -1193,7 +1189,6 @@ lbool Solver::search(int nof_conflicts) {
       }
       // Perform clause database reduction !
       if (conflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
-
         if (learnts.size() > 0) {
           curRestart = (conflicts / nbclausesbeforereduce) + 1;
           reduceDB();
