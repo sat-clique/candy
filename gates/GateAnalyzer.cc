@@ -19,6 +19,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
   inputs.resize(2 * problem.nVars(), false);
   index = buildIndexFromClauses(problem.getProblem());
   if (useHolistic) solver.insertClauses(problem);
+  solver.setIncrementalMode();
 }
 
 // heuristically select clauses
@@ -35,7 +36,7 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   CNFProblem constraint;
-  Lit alit = Glucose::mkLit(problem.nVars(), false);
+  Lit alit = Glucose::mkLit(problem.newVar(), false);
   Cl clause;
   for (const For& f : { fwd, bwd })
   for (Cl* cl : f) {
@@ -46,6 +47,9 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
       }
     }
     constraint.readClause(clause);
+#ifdef GADebug
+    printClause(&clause, true);
+#endif
     clause.clear();
   }
   solver.insertClauses(constraint);
@@ -85,11 +89,18 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
   for (Lit o : candidates) {
     For& f = index[~o], g = index[o];
     if (f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
-      bool mono = !inputs[o] || !inputs[~o];
+      bool mono = false, pattern = false, semantic = false;
       set<Lit> inp;
       for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
-      bool gate = mono || (pat && patternCheck(o, f, g, inp)) || (sem && semanticCheck(var(o), f, g));
-      if (gate) {
+      mono = inputs[o] == 0 || inputs[~o] == 0;
+      if (!mono) pattern = pat && patternCheck(o, f, g, inp);
+      if (!mono && !pattern) semantic = sem && semanticCheck(var(o), f, g);
+#ifdef GADebug
+      if (mono) printf("Candidate output %s%i is nested monotonically\n", sign(o)?"-":"", var(o)+1);
+      if (pattern) printf("Candidate output %s%i matches pattern\n", sign(o)?"-":"", var(o)+1);
+      if (semantic) printf("Candidate output %s%i passed semantic test\n", sign(o)?"-":"", var(o)+1);
+#endif
+      if (mono || pattern || semantic) {
         nGates++;
         frontier.insert(frontier.end(), inp.begin(), inp.end());
         for (Lit l : inp) {

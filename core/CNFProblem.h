@@ -54,6 +54,11 @@ public:
     return (int)problem.size();
   }
 
+  int newVar() {
+    maxVars++;
+    return maxVars-1;
+  }
+
   bool readDimacsFromStdout() {
     gzFile in = gzdopen(0, "rb");
     if (in == NULL) {
