@@ -118,7 +118,6 @@ private:
 
   // work in progress:
   bool isBlockedAfterVE(Lit o, For& f, For& g);
-  bool isBlockedAfterVE2(Lit o, For& f, For& g);
 
   // some helpers:
   bool isBlocked(Lit o, Cl& a, Cl& b) { // assert ~o \in a and o \in b
