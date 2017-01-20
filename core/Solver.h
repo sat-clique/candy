@@ -445,7 +445,7 @@ protected:
   double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
   bool withinBudget() const;
   inline bool isSelector(Var v) {
-    return (incremental && v > nbVarsInitialFormula);
+    return (incremental && v >= nbVarsInitialFormula);
   }
 
   // Static helpers:
