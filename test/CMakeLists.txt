@@ -20,7 +20,8 @@ add_executable(randomsimulation_tests
     randomsimulation/SimulationVectorTests.cc
     randomsimulation/TestUtils.cc
     randomsimulation/TestUtils.h
-    randomsimulation/TestGateStructureTests.cc)
+    randomsimulation/TestGateStructureTests.cc
+    randomsimulation/RandomSimulatorTests.cc)
 
 target_compile_options(randomsimulation_tests PRIVATE -Wextra -Weffc++)
 

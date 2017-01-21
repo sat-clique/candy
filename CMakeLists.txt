@@ -7,8 +7,8 @@ option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
 ### Compiler flags
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS  -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DNDEBUG -fno-exceptions -fno-rtti -fno-inline -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -fno-exceptions -flto -fno-rtti -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-rtti -fno-inline -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -fno-rtti -O3")
 
 
 if(ENABLE_LLVM_COVERAGE)

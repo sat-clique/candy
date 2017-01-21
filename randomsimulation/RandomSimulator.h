@@ -71,7 +71,7 @@ namespace randsim {
         RandomSimulatorBuilder& operator=(const RandomSimulatorBuilder &other) = delete;
     };
     
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator();
+    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer);
     std::unique_ptr<RandomSimulatorBuilder> createDefaultRandomSimulatorBuilder();
 }
 #endif

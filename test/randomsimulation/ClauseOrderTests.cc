@@ -44,66 +44,15 @@ namespace randsim {
     
     // TODO: test ClauseOrder with gate filter
 
-    static bool equals(std::vector<Glucose::Cl*>& a, const std::vector<const Glucose::Cl*>& b) {
-        if (a.size() != b.size()) {
-            return false;
-        }
-        
-        std::unordered_set<const Glucose::Cl*> set_a;
-        std::unordered_set<const Glucose::Cl*> set_b;
-        
-        set_a.insert(a.begin(), a.end());
-        set_b.insert(b.begin(), b.end());
-        
-        return set_a == set_b;
-    }
+
+    // utility functions
     
-    template<typename T>
-    static bool equals(const std::vector<T>& a, const std::vector<T>& b) {
-        if (a.size() != b.size()) {
-            return false;
-        }
-        
-        std::unordered_set<T> set_a;
-        std::unordered_set<T> set_b;
-        
-        set_a.insert(a.begin(), a.end());
-        set_b.insert(b.begin(), b.end());
-        
-        return set_a == set_b;
-    }
-    
-    template<typename X, typename Y>
-    static bool contains(X* iterable, Y thing) {
-        return std::find(iterable->begin(), iterable->end(), thing) != iterable->end();
-    }
-    
-    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Glucose::Cl*>& clauses) {
-        auto &gate = analyzer.getGate(outputLiteral);
-        return gate.isDefined() && (equals(gate.getForwardClauses(), clauses) || equals(gate.getBackwardClauses(), clauses));
-    }
-    
-    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Glucose::Cl*>& clauses) {
-        for (auto clause : clauses) {
-            if (!contains(clause, literal)) {
-                return false;
-            }
-        }
-        return true;
-    }
-    
-    static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals) {
-        bool foundFirstLit = false;
-        bool foundSecondLit = false;
-        for (auto lit : literals) {
-            foundFirstLit |= Glucose::var(lit) == firstVar;
-            foundSecondLit |= Glucose::var(lit) == secondVar;
-            if (foundSecondLit && !foundFirstLit) {
-                return false;
-            }
-        }
-        return foundFirstLit && foundSecondLit;
-    }
+    static bool equals(std::vector<Glucose::Cl*>& a, const std::vector<const Glucose::Cl*>& b);
+    template<typename T> static bool equals(const std::vector<T>& a, const std::vector<T>& b);
+    template<typename X, typename Y> static bool contains(X* iterable, Y thing);
+    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Glucose::Cl*>& clauses);
+    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Glucose::Cl*>& clauses);
+    static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals);
     
     
     
@@ -251,4 +200,69 @@ namespace randsim {
         test_manyGates(*underTest);
     }
 
+    
+    
+    
+    
+    
+    static bool equals(std::vector<Glucose::Cl*>& a, const std::vector<const Glucose::Cl*>& b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        
+        std::unordered_set<const Glucose::Cl*> set_a;
+        std::unordered_set<const Glucose::Cl*> set_b;
+        
+        set_a.insert(a.begin(), a.end());
+        set_b.insert(b.begin(), b.end());
+        
+        return set_a == set_b;
+    }
+    
+    template<typename T>
+    static bool equals(const std::vector<T>& a, const std::vector<T>& b) {
+        if (a.size() != b.size()) {
+            return false;
+        }
+        
+        std::unordered_set<T> set_a;
+        std::unordered_set<T> set_b;
+        
+        set_a.insert(a.begin(), a.end());
+        set_b.insert(b.begin(), b.end());
+        
+        return set_a == set_b;
+    }
+    
+    template<typename X, typename Y>
+    static bool contains(X* iterable, Y thing) {
+        return std::find(iterable->begin(), iterable->end(), thing) != iterable->end();
+    }
+    
+    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Glucose::Cl*>& clauses) {
+        auto &gate = analyzer.getGate(outputLiteral);
+        return gate.isDefined() && (equals(gate.getForwardClauses(), clauses) || equals(gate.getBackwardClauses(), clauses));
+    }
+    
+    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Glucose::Cl*>& clauses) {
+        for (auto clause : clauses) {
+            if (!contains(clause, literal)) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals) {
+        bool foundFirstLit = false;
+        bool foundSecondLit = false;
+        for (auto lit : literals) {
+            foundFirstLit |= Glucose::var(lit) == firstVar;
+            foundSecondLit |= Glucose::var(lit) == secondVar;
+            if (foundSecondLit && !foundFirstLit) {
+                return false;
+            }
+        }
+        return foundFirstLit && foundSecondLit;
+    }
 }

@@ -108,12 +108,22 @@ namespace randsim {
     {
     }
     
+    static std::vector<Glucose::Var> variables(const std::vector<Glucose::Lit> literals) {
+        std::vector<Glucose::Var> result;
+        for (auto lit : literals) {
+            result.push_back(Glucose::var(lit));
+        }
+        return result;
+    }
+    
     void BitparallelRandomSimulator::ensureInitialized() {
         if (m_isInitialized) {
             return;
         }
         m_clauseOrderStrat->readGates(m_gateAnalyzer);
+              
         m_simulationVectors.initialize(m_clauseOrderStrat->getAmountOfVars());
+        m_partitionStrat->setVariables(variables(m_clauseOrderStrat->getGateOutputsOrdered()));
         m_isInitialized = true;
     }
     
@@ -123,11 +133,12 @@ namespace randsim {
     }
     
     Conjectures BitparallelRandomSimulator::run() {
-        return runImpl(true, 0);
+        assert (m_abortThreshold >= 0.0f);
+        return runImpl(false, 0);
     }
     
     Conjectures BitparallelRandomSimulator::run(unsigned int nSteps) {
-        return runImpl(false, nSteps);
+        return runImpl(true, nSteps);
     }
     
     Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps) {
@@ -266,8 +277,9 @@ namespace randsim {
         return std::make_unique<BitparallelRandomSimulatorBuilder>();
     }
     
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator() {
+    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer) {
         auto defaultBuilder = createDefaultRandomSimulatorBuilder();
+        defaultBuilder->withGateAnalyzer(gateAnalyzer);
         return defaultBuilder->build();
     }
 }

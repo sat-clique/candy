@@ -110,7 +110,7 @@ namespace randsim {
         return *this;
     }
     
-    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) {
+    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>&, Glucose::Lit) {
         // TODO: implement this
         assert(false);
         return *this;

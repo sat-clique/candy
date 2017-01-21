@@ -57,7 +57,7 @@ namespace randsim {
     public:
         static const uint8_t VARSIMVECSIZE = RANDSIM_VARSIMVECSIZE;
         typedef std::uint64_t varsimvec_field_t;
-        static const unsigned int VARSIMVECVARS = RANDSIM_VARSIMVECSIZE * sizeof(varsimvec_field_t);
+        static const unsigned int VARSIMVECVARS = RANDSIM_VARSIMVECSIZE * (sizeof(varsimvec_field_t) * 8);
         
         varsimvec_field_t vars[VARSIMVECSIZE];
         
