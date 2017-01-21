@@ -2,6 +2,7 @@ add_subdirectory(googletest/googletest)
 
 add_executable(tests
     Main.cc)
+candy_executable_customizations(tests)
 
 target_include_directories(tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/include
                                         ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/include)
@@ -30,10 +31,7 @@ target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_CURRENT_SOURCE_
                                                          ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/include)
 
 target_link_libraries(randomsimulation_tests ${CANDY_LIBS} gtest)
-
-if (ENSURE_DSYM)
-  add_custom_command(TARGET randomsimulation_tests POST_BUILD COMMAND dsymutil Debug/randomsimulation_tests)
-endif()
+candy_executable_customizations(randomsimulation_tests)
 
 
 
