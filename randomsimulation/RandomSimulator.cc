@@ -155,7 +155,7 @@ namespace randsim {
     }
     
     
-    
+    /* TODO make the random simulator type a template argument */
     class BitparallelRandomSimulatorBuilder : public RandomSimulatorBuilder {
     public:
         BitparallelRandomSimulatorBuilder();
@@ -166,6 +166,7 @@ namespace randsim {
         BitparallelRandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation> propagationStrat) override;
         BitparallelRandomSimulatorBuilder& withGateAnalyzer(GateAnalyzer& gateAnalyzer) override;
         BitparallelRandomSimulatorBuilder& withReductionRateAbortThreshold(float threshold) override;
+        BitparallelRandomSimulatorBuilder& withGateFilter(std::unique_ptr<GateFilter> filter) override;
         std::unique_ptr<RandomSimulator> build() override;
 
 
@@ -179,15 +180,21 @@ namespace randsim {
         std::unique_ptr<Partition> m_partitionStrat;
         std::unique_ptr<Randomization> m_randomizationStrat;
         std::unique_ptr<Propagation> m_propagationStrat;
+        std::vector<std::unique_ptr<GateFilter>> m_gateFilters;
         GateAnalyzer *m_gateAnalyzer;
         float m_reductionRateAbortThreshold;
     };
     
     BitparallelRandomSimulatorBuilder::BitparallelRandomSimulatorBuilder()
-    : RandomSimulatorBuilder(), m_clauseOrderStrat(nullptr) , m_partitionStrat(nullptr), m_randomizationStrat(nullptr), m_propagationStrat(nullptr), m_gateAnalyzer(nullptr), m_reductionRateAbortThreshold(-1.0f) {
+    : RandomSimulatorBuilder(), m_clauseOrderStrat(nullptr) , m_partitionStrat(nullptr), m_randomizationStrat(nullptr), m_propagationStrat(nullptr), m_gateFilters(), m_gateAnalyzer(nullptr), m_reductionRateAbortThreshold(-1.0f) {
     }
     
     BitparallelRandomSimulatorBuilder::~BitparallelRandomSimulatorBuilder() {
+    }
+    
+    BitparallelRandomSimulatorBuilder& BitparallelRandomSimulatorBuilder::withGateFilter(std::unique_ptr<GateFilter> filter) {
+        m_gateFilters.push_back(std::move(filter));
+        return *this;
     }
     
     BitparallelRandomSimulatorBuilder& BitparallelRandomSimulatorBuilder::withClauseOrderStrategy(std::unique_ptr<ClauseOrder> clauseOrderStrat) {
@@ -229,7 +236,7 @@ namespace randsim {
         }
         
         if (m_clauseOrderStrat.get() == nullptr) {
-            m_clauseOrderStrat = createDefaultClauseOrder();
+            m_clauseOrderStrat = createRecursiveClauseOrder();
         }
         if (m_randomizationStrat.get() == nullptr) {
             m_randomizationStrat = createSimpleRandomization();
@@ -239,6 +246,10 @@ namespace randsim {
         }
         if (m_propagationStrat.get() == nullptr) {
             m_propagationStrat = createInputToOutputPropagation();
+        }
+        
+        for (auto& gateFilter : m_gateFilters) {
+            m_clauseOrderStrat->setGateFilter(std::move(gateFilter));
         }
         
         return std::make_unique<BitparallelRandomSimulator>(std::move(m_clauseOrderStrat),

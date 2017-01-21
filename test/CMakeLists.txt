@@ -22,10 +22,19 @@ add_executable(randomsimulation_tests
     randomsimulation/TestUtils.h
     randomsimulation/TestGateStructureTests.cc)
 
+target_compile_options(randomsimulation_tests PRIVATE -Wextra -Weffc++)
+
+
 target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googletest/include
                                                          ${CMAKE_CURRENT_SOURCE_DIR}/googletest/googlemock/include)
 
 target_link_libraries(randomsimulation_tests ${CANDY_LIBS} gtest)
+
+if (ENSURE_DSYM)
+  add_custom_command(TARGET randomsimulation_tests POST_BUILD COMMAND dsymutil Debug/randomsimulation_tests)
+endif()
+
+
 
 
 # Make sure that the test CNF problems are copied to the build directory

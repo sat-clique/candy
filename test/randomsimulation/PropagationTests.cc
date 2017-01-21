@@ -43,6 +43,7 @@ namespace randsim {
         const std::vector<Glucose::Var> &getInputVariables() const override;
         const std::vector<Glucose::Lit> &getGateOutputsOrdered() const override;
         const std::vector<const Glucose::Cl*> &getClauses(Glucose::Var variable) const override;
+        void setGateFilter(std::unique_ptr<GateFilter> gateFilter) override;
         unsigned int getAmountOfVars() const override;
         
         void addAnd(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit o, bool pos = true);
@@ -79,6 +80,10 @@ namespace randsim {
     }
     
     void MockClauseOrder::readGates(GateAnalyzer &) {
+    }
+    
+    void MockClauseOrder::setGateFilter(std::unique_ptr<GateFilter>) {
+        // no implementation
     }
     
     const std::vector<Glucose::Var> &MockClauseOrder::getInputVariables() const {
@@ -120,8 +125,6 @@ namespace randsim {
         m_maxVar = std::max(m_maxVar, Glucose::var(o));
     }
     
-    
-    // TODO: optimization
     
     void MockClauseOrder::addAnd(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit o, bool pos) {
         addGateWithInput(i1);

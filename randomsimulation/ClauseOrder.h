@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <memory>
+#include <unordered_set>
 
 #include <core/SolverTypes.h>
 
@@ -36,12 +37,23 @@ class GateAnalyzer;
 
 namespace randsim {
     
+    class GateFilter {
+    public:
+        virtual std::unordered_set<Glucose::Var> getEnabledOutputVars() = 0;
+        
+        virtual ~GateFilter();
+        GateFilter(const GateFilter& other) = delete;
+        GateFilter& operator=(const GateFilter& other) = delete;
+    };
+    
     class ClauseOrder {
     public:
         virtual void readGates(GateAnalyzer& analyzer) = 0;
         virtual const std::vector<Glucose::Var> &getInputVariables() const = 0;
         virtual const std::vector<Glucose::Lit> &getGateOutputsOrdered() const = 0;
         virtual const std::vector<const Glucose::Cl*> &getClauses(Glucose::Var variable) const = 0;
+        virtual void setGateFilter(std::unique_ptr<GateFilter> gateFilter) = 0;
+
         virtual unsigned int getAmountOfVars() const = 0;
         
         ClauseOrder();
@@ -50,7 +62,7 @@ namespace randsim {
         ClauseOrder& operator=(const ClauseOrder& other) = delete;
     };
     
-    std::unique_ptr<ClauseOrder> createDefaultClauseOrder();
+    std::unique_ptr<ClauseOrder> createRecursiveClauseOrder();
 }
 
 #endif
