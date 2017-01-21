@@ -39,7 +39,7 @@
 
 namespace randsim {
     
-    void setAssignmentPattern(SimulationVectors &assignment,
+    static void setAssignmentPattern(SimulationVectors &assignment,
                               SimulationVectors::index_t index,
                               SimulationVector::varsimvec_field_t pattern) {
         for (size_t i = 0; i < SimulationVector::VARSIMVECSIZE; ++i) {
@@ -47,7 +47,7 @@ namespace randsim {
         }
     }
     
-    void test_singleUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
+    static void test_singleUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
         std::vector<Glucose::Var> relevantVars = {0, 1, 2};
         
         SimulationVectors assignment;
@@ -83,7 +83,7 @@ namespace randsim {
     }
     
     
-    void test_multiUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
+    static void test_multiUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
         std::vector<Glucose::Var> relevantVars = {0, 1, 2};
         
         SimulationVectors assignment;
@@ -124,7 +124,7 @@ namespace randsim {
         test_multiUpdateAllRelevantAllInConjs(createDefaultPartition(createLogCompressionScheduleStrategy()));
     }
     
-    void test_singleUpdateAllRelevant(std::unique_ptr<Partition> underTest) {
+    static void test_singleUpdateAllRelevant(std::unique_ptr<Partition> underTest) {
         std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
         SimulationVectors assignment;
@@ -248,7 +248,7 @@ namespace randsim {
     }
     
     
-    void test_multipleBackboneVars(std::unique_ptr<Partition> underTest) {
+    static void test_multipleBackboneVars(std::unique_ptr<Partition> underTest) {
         std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4};
         
         SimulationVectors assignment;

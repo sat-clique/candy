@@ -38,6 +38,7 @@ namespace randsim {
     class Partition;
     class Randomization;
     class Propagation;
+    class GateFilter;
     
     class RandomSimulator {
     public:
@@ -58,6 +59,7 @@ namespace randsim {
         virtual RandomSimulatorBuilder& withRandomizationStrategy(std::unique_ptr<Randomization> randomizationStrat) = 0;
         virtual RandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation> propagationStrat) = 0;
         virtual RandomSimulatorBuilder& withReductionRateAbortThreshold(float threshold) = 0;
+        virtual RandomSimulatorBuilder& withGateFilter(std::unique_ptr<GateFilter> filter) = 0;
 
         virtual RandomSimulatorBuilder& withGateAnalyzer(GateAnalyzer& gateAnalyzer) = 0;
 
