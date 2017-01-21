@@ -36,15 +36,14 @@ endfunction()
 ### Set up include directories
 
 include_directories(${PROJECT_SOURCE_DIR})
+# for refactoring purposes
+include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 
 ### Add subdirectories
 # In each subdirectory X, we define a library named X (e.g. the "core" library.)
 
-add_subdirectory(utils)
-add_subdirectory(core)
-add_subdirectory(simp)
-add_subdirectory(gates)
-add_subdirectory(randomsimulation)
+add_subdirectory(src)
+
 
 ### Define and link target executables
 
