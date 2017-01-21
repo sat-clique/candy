@@ -24,6 +24,8 @@
  
  */
 
+// TODO: documentation
+
 #include "Propagation.h"
 
 #include "ClauseOrder.h"

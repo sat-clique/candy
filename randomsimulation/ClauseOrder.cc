@@ -24,6 +24,8 @@
  
  */
 
+// TODO: documentation
+
 #include "ClauseOrder.h"
 
 #include <memory>

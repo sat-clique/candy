@@ -34,6 +34,8 @@
 #include "SimulationVector.h"
 #include "Propagation.h"
 
+// TODO: documentation
+
 namespace randsim {
     
     /* "interface" destructors */
@@ -133,7 +135,7 @@ namespace randsim {
     }
     
     Conjectures BitparallelRandomSimulator::run() {
-        assert (m_abortThreshold >= 0.0f);
+        assert (m_abortThreshold >= 0.0f); // TODO: this violates Liskov substitution
         return runImpl(false, 0);
     }
     
@@ -144,7 +146,7 @@ namespace randsim {
     Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps) {
         ensureInitialized();
         
-        assert (nSteps % SimulationVector::VARSIMVECVARS == 0);
+        assert (nSteps % SimulationVector::VARSIMVECVARS == 0);  // TODO: this violates Liskov substitution
         unsigned int realSteps = nSteps / (SimulationVector::VARSIMVECVARS);
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
