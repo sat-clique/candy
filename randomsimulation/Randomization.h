@@ -35,8 +35,26 @@
 namespace randsim {
     class SimulationVectors;
     
+    /**
+     * \class Randomization
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief The randomization interface.
+     *
+     * Randomization objects are responsible for simulation vector (i.e. variable
+     * assignment) randomization.
+     *
+     * Usage example: build a RandomSimulation object with this strategy.
+     */
     class Randomization {
     public:
+        /**
+         * Randomizes the simulation vectors with the given indices.
+         *
+         * \param simVectors The simulation vectors.
+         * \param indices The indices of the simulation vectors to be randomized.
+         */
         virtual void randomize(SimulationVectors &simVectors,
                                std::vector<SimulationVectors::index_t> indices) = 0;
         
@@ -46,6 +64,10 @@ namespace randsim {
         Randomization& operator=(const Randomization& other) = delete;
     };
     
+    /**
+     * Creates a "simple" Randomization object, with a 50% chance of assigning variables
+     * to "true".
+     */
     std::unique_ptr<Randomization> createSimpleRandomization();
 }
 

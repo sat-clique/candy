@@ -47,11 +47,23 @@ namespace randsim {
 
     // utility functions
     
+    /// Returns true iff the given sets of clause pointers are equal modulo item order.
     static bool equals(std::vector<Glucose::Cl*>& a, const std::vector<const Glucose::Cl*>& b);
+    
+    /// Returns true iff the given sets of T are equal modulo item order.
     template<typename T> static bool equals(const std::vector<T>& a, const std::vector<T>& b);
+    
+    /// Returns true iff the given iterable object contains the given thing.
     template<typename X, typename Y> static bool contains(X* iterable, Y thing);
+    
+    /// Returns true iff the given gate analyzer contains exactly the given clauses containing the
+    /// given output literal, for the rsp. gate with the given output literal.
     static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Glucose::Cl*>& clauses);
+    
+    /// Returns true iff all given clauses contain the given literal.
     static bool allClausesContain(Glucose::Lit literal, const std::vector<const Glucose::Cl*>& clauses);
+    
+    /// Returns true iff literals contains firstVar and secondVar, and firstVar appears before secondVar in literals.
     static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals);
     
     

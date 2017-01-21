@@ -53,6 +53,17 @@
 
 namespace randsim {
     
+    /**
+     * \class SimulationVector
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A sequence of assignments for a boolean variable.
+     *
+     * A SimulationVector represents SimulationVector::VARSIMVECVARS assignments of
+     * a single variable, with the assignments stored as a sequence of bits in 
+     * the vars[] array.
+     */
     class SimulationVector {
     public:
         static const uint8_t VARSIMVECSIZE = RANDSIM_VARSIMVECSIZE;
@@ -117,6 +128,9 @@ namespace randsim {
             return result;
         }
         
+        /**
+         * Initializes the simulation vector with the given bit pattern (copied to each element of var).
+         */
         void initialize(varsimvec_field_t pattern);
         
         friend std::ostream& operator<<(const std::ostream& ostr, const SimulationVector& vec);
@@ -124,8 +138,25 @@ namespace randsim {
         ~SimulationVector();
     };
     
+    /**
+     * \class AlignedSimVector
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A SimulationVector aligned to RANDSIM_ALIGNMENT bytes.
+     *
+     */
     typedef SimulationVector AlignedSimVector __attribute__((__aligned__(RANDSIM_ALIGNMENT)));
     
+    
+    /**
+     * \class SimulationVectors
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A collection of aligned SimulationVector objects.
+     *
+     */
     class SimulationVectors {
     public:
         typedef Glucose::Var index_t;
@@ -133,18 +164,31 @@ namespace randsim {
         SimulationVectors();
         ~SimulationVectors();
         
+        /**
+         * Initializes the simulation vector collection for the given amount of variables.
+         *
+         * \param size  The amount of variables of which assignments need to be represented.
+         */
         void initialize(unsigned int size);
         
-        inline SimulationVector& get(unsigned int index) {
+        /**
+         * Retrieves a simulation vector for a given variable.
+         *
+         * \param index The variable's index.
+         */
+        inline SimulationVector& get(unsigned int index) const {
             assert(m_isInitialized);
             assert(index < m_size);
             return m_simulationVectors[index];
         }
         
+        /**
+         * Retrieves a simulation vector for a given variable (const implementation).
+         *
+         * \param index The variable's index.
+         */
         inline const SimulationVector& getConst(unsigned int index) const {
-            assert(m_isInitialized);
-            assert(index < m_size);
-            return m_simulationVectors[index];
+            return get(index);
         }
         
     private:

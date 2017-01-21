@@ -30,30 +30,77 @@
 #include <core/SolverTypes.h>
 
 namespace randsim {
+    /**
+     * \class EquivalenceConjecture
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A set of literals conjected to be equivalent.
+     */
     class EquivalenceConjecture {
     public:
+        /**
+         * Adds a literal to the conjecture.
+         */
         void addLit(Glucose::Lit lit);
+        
+        /**
+         * Retrieves the literals conjected to be equivalent.
+         */
         const std::vector<Glucose::Lit> getLits() const;
         
     private:
         std::vector<Glucose::Lit> m_lits {};
     };
     
+    /**
+     * \class BackboneConjecture
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A literal conjected to be a backbone literal, i.e.
+     *   always being evaluated to true.
+     */
     class BackboneConjecture {
     public:
         BackboneConjecture(Glucose::Lit lit);
+        
+        /**
+         * Retrieves the literal conjected to belong to the backbone.
+         */
         Glucose::Lit getLit();
         
     private:
         Glucose::Lit m_lit;
     };
     
+    /**
+     * \class Conjectures
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A collection of simple conjectures about literals.
+     */
     class Conjectures {
     public:
+        /**
+         * Retrieves the equivalence conjectures.
+         */
         const std::vector<EquivalenceConjecture> &getEquivalences() const;
+        
+        /**
+         * Retrieves the backbone conjectures.
+         */
         const std::vector<BackboneConjecture> &getBackbones() const;
         
+        /**
+         * Adds an equivalence conjecture (by copying).
+         */
         void addEquivalence(EquivalenceConjecture &conj);
+        
+        /**
+         * Adds a backbone conjecture (by copying).
+         */
         void addBackbone(BackboneConjecture &conj);
         
     private:

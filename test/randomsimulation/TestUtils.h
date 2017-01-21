@@ -36,20 +36,32 @@ namespace Glucose {
     class CNFProblem;
 }
 
-
 namespace randsim {
     class Conjectures;
     class EquivalenceConjecture;
     
+    /// Deletes the clauses in the given formula.
     void deleteClauses(Glucose::CNFProblem* formula);
+    
+    /// Asserts that variables does not contain the variable forbidden.
     void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
-    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
+    
+    /// Asserts that variables contains the variable required.
+    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var required);
+    
+    /// Returns a clause containing the negated lits of the given clause.
     Glucose::Cl negatedLits(const Glucose::Cl& clause);
+    
+    /// Inserts the variables contained in the literals of lits in to the target set.
     void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
     
-    
+    /// Returns true iff c contains the backbone conjecture for the literal lit.
     bool hasBackboneConj(Conjectures &c, Glucose::Lit lit);
+    
+    /// Returns true iff the given equivalence conjectures are equivalent.
     bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits);
+
+    /// Returns true iff c contains the given equivalence conjecture.
     bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits);
     
     bool containsClause(const Glucose::For& formula, const Glucose::Cl& clause);

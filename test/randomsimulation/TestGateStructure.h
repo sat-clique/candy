@@ -33,11 +33,35 @@
 #include <core/CNFProblem.h>
 
 namespace randsim {
+    
+    
+    /**
+     * \class GateStructureBuilder
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A builder for gate structure encodings.
+     */
     class GateStructureBuilder {
     public:
+        /**
+         * Adds an AND gate to the gate structure.
+         */
         virtual GateStructureBuilder& withAnd(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) = 0;
+        
+        /**
+         * Adds an OR gate to the gate structure.
+         */
         virtual GateStructureBuilder& withOr(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) = 0;
+        
+        /**
+         * Adds an XOR gate to the gate structure.
+         */
         virtual GateStructureBuilder& withXor(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) = 0;
+        
+        /**
+         * Builds the gate structure's encoding.
+         */
         virtual std::unique_ptr<Glucose::CNFProblem, void(*)(Glucose::CNFProblem*)> build() = 0;
         
         GateStructureBuilder();
@@ -46,6 +70,9 @@ namespace randsim {
         GateStructureBuilder& operator=(const GateStructureBuilder& other) = delete;
     };
     
+    /**
+     * Creates a gate-structure builder without Plaisted-Greenbaum encoding.
+     */
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder();
 }
 

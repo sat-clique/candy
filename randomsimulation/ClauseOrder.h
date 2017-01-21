@@ -37,8 +37,24 @@ class GateAnalyzer;
 
 namespace randsim {
     
+    /**
+     * \class GateFilter
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A restriction of gates.
+     *
+     * GateFilter objects are responsible for determining sets of enabled gates,
+     * identified by their output variable.
+     *
+     * Usage example: build a RandomSimulation object with this strategy.
+     */
     class GateFilter {
     public:
+        /**
+         * Retrieves the set of gates marked enabled by the filter, represented
+         * as a collection of their output variables.
+         */
         virtual std::unordered_set<Glucose::Var> getEnabledOutputVars() = 0;
         
         virtual ~GateFilter();
@@ -46,14 +62,60 @@ namespace randsim {
         GateFilter& operator=(const GateFilter& other) = delete;
     };
     
+    /**
+     * \class ClauseOrder
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A topologically sorted representation of a gate structure.
+     *
+     * ClauseOrder objects are responsible for representing a gate structure in a
+     * topologically ordered way - with variables considered as nodes, and a->b being
+     * an edge iff b is the output variable of a gate having a as an input variable.
+     *
+     * Usage example: build a RandomSimulation object with this strategy.
+     */
     class ClauseOrder {
     public:
+        /**
+         * Establishes the order using the gate structure contained in the given gate analyzer.
+         */
         virtual void readGates(GateAnalyzer& analyzer) = 0;
+        
+        /**
+         * Retrieves a collection of the variables which are not gate-output variables.
+         */
         virtual const std::vector<Glucose::Var> &getInputVariables() const = 0;
+        
+        /**
+         * Retrieves a topologically-ordered sequence of gate-output literals.
+         * If a gate filter is used, the following output literals are omitted:
+         *   - literals O whose variable is not marked enabled by the gate filter
+         *   - literals O' which are outputs of a gate whose value (transitively)
+         *     depends on a variable not marked enabled by the gate filter.
+         */
         virtual const std::vector<Glucose::Lit> &getGateOutputsOrdered() const = 0;
+        
+        /**
+         * For a variable V occuring in getGateOutputsOrdered() as the literal L,
+         * get all clauses containing L encoding the rsp. gate. Note: the result is
+         * not empty, and contains either the forward or the backward clauses
+         * of the gate. If the gate is nested monotonically, these clauses are the
+         * gate's forward clauses.
+         */
         virtual const std::vector<const Glucose::Cl*> &getClauses(Glucose::Var variable) const = 0;
+        
+        /**
+         * Sets a gate filter defining the output variables to be regarded
+         * (see getGateOutputsOrdered()). If no such filter is set, all variables
+         * are considered to be enabled.
+         */
         virtual void setGateFilter(std::unique_ptr<GateFilter> gateFilter) = 0;
 
+        /**
+         * Retrieves the max. variable index found in the gate structure, plus one.
+         * TODO: rename, improve documentation
+         */
         virtual unsigned int getAmountOfVars() const = 0;
         
         ClauseOrder();
@@ -62,6 +124,9 @@ namespace randsim {
         ClauseOrder& operator=(const ClauseOrder& other) = delete;
     };
     
+    /**
+     * Creates an object of the simple (recursive) implementation of ClauseOrder.
+     */
     std::unique_ptr<ClauseOrder> createRecursiveClauseOrder();
 }
 

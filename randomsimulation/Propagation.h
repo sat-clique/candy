@@ -33,8 +33,28 @@ namespace randsim {
     class SimulationVectors;
     class ClauseOrder;
     
+    /**
+     * \class Propagation
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief The value-propagation interface.
+     *
+     * Propagation objects are responsible for propagating assignments within a gate structure.
+     *
+     * Usage example: build a RandomSimulation object with this strategy.
+     */
     class Propagation {
     public:
+        /**
+         * Propagates input assignments.
+         *
+         * \param assignment    A variable assignment represented by simulation vectors (with the
+         *  Nth simulation vector representing assignments of variable N). The assignments of
+         *  output variables are updated in-place.
+         * \param clauseOrder   A ClauseOrder object defining which variables are input variables,
+         *  which variables are output variables and in which order the variables need to be propagated.
+         */
         virtual void propagate(SimulationVectors& assignment, ClauseOrder& clauseOrder) = 0;
         
         Propagation();
@@ -43,6 +63,9 @@ namespace randsim {
         Propagation& operator=(const Propagation& other) = delete;
     };
     
+    /**
+     * Creates an object of Propagation's default implementation.
+     */
     std::unique_ptr<Propagation> createInputToOutputPropagation();
 }
 

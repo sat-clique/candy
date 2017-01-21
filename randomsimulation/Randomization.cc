@@ -24,6 +24,8 @@
  
  */
 
+// TODO: documentation
+
 #include "Randomization.h"
 
 #include <utils/FastRand.h>
