@@ -43,6 +43,7 @@ include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 # In each subdirectory X, we define a library named X (e.g. the "core" library.)
 
 add_subdirectory(src)
+add_subdirectory(lib)
 
 
 ### Define and link target executables
