@@ -59,9 +59,10 @@
 #include <vector>
 
 #include "CNFProblem.h"
-using namespace std;
 
 namespace Glucose {
+
+using namespace std;
 
 //=================================================================================================
 // Solver -- the main class:
@@ -88,11 +89,11 @@ public:
     trail.resize(n);
   }
 
-  void insertClauses(CNFProblem dimacs) {
+  void insertClauses(Candy::CNFProblem dimacs) {
     vector<vector<Lit>*>& problem = dimacs.getProblem();
     if (dimacs.nVars() > nVars()) {
       reserveVars(dimacs.nVars());
-      for (int i = 0; i < dimacs.nVars(); i++) {
+      for (int i = nVars(); i < dimacs.nVars(); i++) {
         newVar();
       }
     }
@@ -127,7 +128,6 @@ public:
   void printLit(Lit l);
   void printClause(CRef c);
   void printInitialClause(CRef c);
-
 
   void printLit2(Lit l) {
     printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
@@ -444,7 +444,7 @@ protected:
   double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
   bool withinBudget() const;
   inline bool isSelector(Var v) {
-    return (incremental && v > nbVarsInitialFormula);
+    return (incremental && v >= nbVarsInitialFormula);
   }
 
   // Static helpers:

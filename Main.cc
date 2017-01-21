@@ -118,7 +118,7 @@ static void SIGINT_exit(int signum) {
 
 int main(int argc, char** argv) {
   try {
-    printf("c\nc This is candy 0.1 --  based on Glucose (Many thanks to the Glucose and MiniSAT teams)\nc\n");
+    printf("c\nc This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)\nc\n");
 
     setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
 
@@ -141,12 +141,15 @@ int main(int argc, char** argv) {
     StringOption opt_certified_file(_certified, "certified-output", "Certified UNSAT output file", "NULL");
 
     BoolOption count_gates("MAIN", "count-gates", "count gates.", false);
+    BoolOption print_gates("MAIN", "print-gates", "print gates.", false);
 
     IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
+    IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
+    BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", false);
 
     parseOptions(argc, argv, true);
 
@@ -197,7 +200,7 @@ int main(int argc, char** argv) {
       }
     }
 
-    CNFProblem dimacs;
+    Candy::CNFProblem dimacs;
     if (argc == 1) {
       printf("c Reading from standard input... Use '--help' for help.\n");
       if (!dimacs.readDimacsFromStdout()) return 1;
@@ -210,7 +213,7 @@ int main(int argc, char** argv) {
 
     if (count_gates) {
       double recognition_time = cpuTime();
-      GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead);
+      Candy::GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold);
       gates.analyze();
       recognition_time = cpuTime() - recognition_time;
       printf("c ========================================[ Problem Statistics ]===========================================\n");
@@ -221,9 +224,9 @@ int main(int argc, char** argv) {
       printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
       printf("c |                                                                                                       |\n");
       printf("c =========================================================================================================\n");
-#ifdef GADebug
-      gates.printGates();
-#endif
+      if (print_gates) {
+        gates.printGates();
+      }
       return 0;
     }
 
