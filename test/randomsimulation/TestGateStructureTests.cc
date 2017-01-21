@@ -39,7 +39,7 @@ namespace randsim {
         auto cnf = gateBuilder->build();
         auto& formula = cnf->getProblem();
         
-        EXPECT_TRUE(formula.size() == 1);
+        EXPECT_EQ(formula.size(), 1ul);
         EXPECT_TRUE(containsClause(formula, Glucose::Cl({Glucose::mkLit(0, 1)})));
     }
     
@@ -49,7 +49,7 @@ namespace randsim {
         auto cnf = gateBuilder->build();
         auto& formula = cnf->getProblem();
         
-        EXPECT_TRUE(formula.size() == 4);
+        EXPECT_EQ(formula.size(), 4ul);
         
         EXPECT_TRUE(containsClause(formula, Glucose::Cl({Glucose::mkLit(1, 0), Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
         EXPECT_TRUE(containsClause(formula, Glucose::Cl({Glucose::mkLit(1, 1), Glucose::mkLit(0, 0)})));
@@ -63,7 +63,7 @@ namespace randsim {
         auto cnf = gateBuilder->build();
         auto& formula = cnf->getProblem();
         
-        EXPECT_TRUE(formula.size() == 4);
+        EXPECT_EQ(formula.size(), 4ul);
         
         EXPECT_TRUE(containsClause(formula, Glucose::Cl({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
         EXPECT_TRUE(containsClause(formula, Glucose::Cl({Glucose::mkLit(1, 0), Glucose::mkLit(0, 1)})));

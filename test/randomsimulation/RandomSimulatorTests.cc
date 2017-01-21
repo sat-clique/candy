@@ -45,8 +45,8 @@ namespace randsim {
         auto underTest = createDefaultRandomSimulator(ga);
         auto result = underTest->run(2048);
         
-        EXPECT_EQ(result.getBackbones().size(), 0);
-        EXPECT_EQ(result.getEquivalences().size(), 0);
+        EXPECT_EQ(result.getBackbones().size(), 0ul);
+        EXPECT_EQ(result.getEquivalences().size(), 0ul);
     }
     
     TEST(RSRandomSimulatorTests, defaultImpl_detectsSingleBackboneAndSingleEq) {
@@ -66,8 +66,8 @@ namespace randsim {
         
         auto result = underTest->run(4096);
         
-        EXPECT_EQ(result.getBackbones().size(), 1);
-        EXPECT_EQ(result.getEquivalences().size(), 1);
+        EXPECT_EQ(result.getBackbones().size(), 1ul);
+        EXPECT_EQ(result.getEquivalences().size(), 1ul);
         EXPECT_TRUE(hasBackboneConj(result, Glucose::mkLit(0,1)));
         EXPECT_TRUE(hasEquivalenceConj(result, {Glucose::mkLit(1,1), Glucose::mkLit(2,0)}));
     }
@@ -104,8 +104,8 @@ namespace randsim {
             result = underTest->run(4096);   
         }
         
-        EXPECT_EQ(result.getBackbones().size(), 2);
-        EXPECT_EQ(result.getEquivalences().size(), 2);
+        EXPECT_EQ(result.getBackbones().size(), 2ul);
+        EXPECT_EQ(result.getEquivalences().size(), 2ul);
         EXPECT_TRUE(hasBackboneConj(result, Glucose::mkLit(0,1)));
         EXPECT_TRUE(hasBackboneConj(result, Glucose::mkLit(5,0)));
         EXPECT_TRUE(hasEquivalenceConj(result, {Glucose::mkLit(1,1), Glucose::mkLit(2,0)}));

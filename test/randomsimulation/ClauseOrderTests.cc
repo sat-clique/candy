@@ -77,9 +77,9 @@ namespace randsim {
         ASSERT_EQ(ga.getGateCount(), 0);
         
         underTest.readGates(ga);
-        EXPECT_EQ(underTest.getAmountOfVars(), 0);
-        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 0);
-        EXPECT_EQ(underTest.getInputVariables().size(), 0);
+        EXPECT_EQ(underTest.getAmountOfVars(), 0ul);
+        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 0ul);
+        EXPECT_EQ(underTest.getInputVariables().size(), 0ul);
     }
     
     TEST(RSClauseOrderTest, noGates_recursiveImpl) {
@@ -101,9 +101,9 @@ namespace randsim {
         
         underTest.readGates(ga);
         
-        EXPECT_EQ(underTest.getAmountOfVars(), 3);
-        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 1);
-        EXPECT_EQ(underTest.getInputVariables().size(), 2);
+        EXPECT_EQ(underTest.getAmountOfVars(), 3ul);
+        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 1ul);
+        EXPECT_EQ(underTest.getInputVariables().size(), 2ul);
         
         EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Glucose::Var>({1,2})));
         
@@ -135,9 +135,9 @@ namespace randsim {
         
         underTest.readGates(ga);
         
-        EXPECT_EQ(underTest.getAmountOfVars(), 6);
-        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 3);
-        EXPECT_EQ(underTest.getInputVariables().size(), 3);
+        EXPECT_EQ(underTest.getAmountOfVars(), 6ul);
+        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 3ul);
+        EXPECT_EQ(underTest.getInputVariables().size(), 3ul);
         
         EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Glucose::Var>({2,5,4})));
 
@@ -180,14 +180,14 @@ namespace randsim {
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 7);
-        ASSERT_EQ(ga.getRoots().size(), 1);
-        ASSERT_EQ(ga.getRoots()[0]->size(), 1);
+        ASSERT_EQ(ga.getRoots().size(), 1ul);
+        ASSERT_EQ(ga.getRoots()[0]->size(), 1ul);
         
         underTest.readGates(ga);
         
-        EXPECT_EQ(underTest.getAmountOfVars(), 14);
-        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 7);
-        EXPECT_EQ(underTest.getInputVariables().size(), 7);
+        EXPECT_EQ(underTest.getAmountOfVars(), 14ul);
+        EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 7ul);
+        EXPECT_EQ(underTest.getInputVariables().size(), 7ul);
         
         EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Glucose::Var>({2,6,9,10,11,12,13})));
         

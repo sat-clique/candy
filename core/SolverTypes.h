@@ -418,6 +418,7 @@ public:
   }
 
   void clear(bool free = true) {
+      (void)free;
 //    checkDuplicates();
     for (vector<Elem>& v : occs) v.clear();
     occs.clear();
