@@ -2,19 +2,18 @@ project(Candy)
 cmake_minimum_required(VERSION 3.7)
 
 option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
+option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
 
 ### Compiler flags
 
+set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS  -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DNDEBUG -fno-exceptions -fno-rtti -fno-inline -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -fno-exceptions -flto -fno-rtti -O3")
 
-
-# TODO: check if we need to build gtest with -fno-rtti, too
-set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS -march=native -flto -fno-rtti")
 
 if(ENABLE_LLVM_COVERAGE)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage -O0")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
 endif()
-
-# todo: -flto linker flag
 
 ### Find libraries
 
@@ -44,6 +43,13 @@ set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES})
 
 add_executable(candy Main.cc)
 target_link_libraries(candy ${CANDY_LIBS})
+
+if (ENSURE_DSYM)
+  add_custom_command(TARGET candy POST_BUILD COMMAND dsymutil candy)
+endif()
+
+
+
 
 # The tests executable target is defined in test/
 add_subdirectory(test)
