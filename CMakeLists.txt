@@ -55,12 +55,5 @@ candy_executable_customizations(candy)
 
 target_link_libraries(candy ${CANDY_LIBS})
 
-
-
-
-
-
-# The tests executable target is defined in test/
-add_subdirectory(test)
-
-
+# adding testsrc late because it needs ${CANDY_LIBS} to be defined
+add_subdirectory(testsrc)
