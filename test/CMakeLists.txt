@@ -1,4 +1,3 @@
-add_subdirectory(googletest/googletest)
 
 add_executable(tests
     Main.cc)
