@@ -8,8 +8,9 @@
 # 3. Run make
 #
 # The candy binary will be generated in X/, while the test binaries are placed in
-# X/testsrc/$TESTMODULENAME (e.g. testsrc/gates/gates_tests).
-#
+# X/testsrc/$TESTMODULENAME (e.g. testsrc/gates/gates_tests). For running the tests,
+# a file runTests.bash is placed in the build directory, using which all test binaries
+# can be executed.
 #
 #
 # II. Invoking cmake
@@ -105,3 +106,5 @@ add_executable(candy src/candy/Main.cc)
 candy_executable_customizations(candy)
 target_link_libraries(candy ${CANDY_LIBS})
 
+### Copy the test runner script
+configure_file(testsrc/runTests.bash.in runTests.bash COPYONLY)

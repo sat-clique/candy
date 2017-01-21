@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# This script gets copied to the build directory as runTests.bash
+# and runs all test executables.
+
+testsrc/candy/randomsimulation/randomsimulation_tests\
+&& pushd testsrc/candy/gates && ./gates_tests && popd
+
+
