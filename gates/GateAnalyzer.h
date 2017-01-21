@@ -48,7 +48,10 @@ public:
 
   // public getters:
   int getGateCount() { return nGates; }
-  Gate& getGate(Lit output) { return (*gates)[output]; }
+  Gate& getGate(Lit output) {
+      assert(static_cast<size_t>(Glucose::var(output)) < gates->size());
+      return (*gates)[Glucose::var(output)];
+  }
 
   void printGates() {
     for (Gate& gate : *gates) {
