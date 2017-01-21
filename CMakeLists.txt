@@ -45,6 +45,8 @@ include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 add_subdirectory(src)
 add_subdirectory(lib)
 
+set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
+
 
 ### Define and link target executables
 
