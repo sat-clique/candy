@@ -48,6 +48,7 @@ public:
   int getGateCount() { return nGates; }
   Gate& getGate(Lit output) { return (*gates)[var(output)]; }
 
+
   void printGates() {
     vector<Lit> outputs;
     vector<bool> done(problem.nVars());
@@ -67,6 +68,10 @@ public:
         outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
       }
     }
+  }
+
+  const vector<Cl*> getRoots() const {
+    return roots;
   }
 
 private:
