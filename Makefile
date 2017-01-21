@@ -1,5 +1,5 @@
 EXEC = candy
-DEPDIR = mtl utils core simp test gates
+DEPDIR = mtl utils core simp test gates randomsimulation
 MROOT = $(PWD)
 
 ##
@@ -23,7 +23,7 @@ RCOBJS     = $(addsuffix r,  $(COBJS))
 
 #CXX        ?= /usr/gcc-/bin/g++-4.7.0
 CXX       ?= g++
-CFLAGS    ?= -Wall -Wno-parentheses -std=c++11
+CFLAGS    ?= -Wall -Wno-parentheses -std=c++14
 LFLAGS    ?= -Wall #-lpthread -static
 
 COPTIMIZE ?= -O3
