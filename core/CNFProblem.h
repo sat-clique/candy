@@ -21,15 +21,14 @@
 #ifndef Glucose_Dimacs_h
 #define Glucose_Dimacs_h
 
-#include <stdio.h>
+//#include <cstdio>
 
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 
 #include <vector>
-using namespace std;
 
-namespace Glucose {
+namespace Candy {
 
 class CNFProblem {
 
@@ -55,6 +54,11 @@ public:
     return (int)problem.size();
   }
 
+  int newVar() {
+    maxVars++;
+    return maxVars-1;
+  }
+
   bool readDimacsFromStdout() {
     gzFile in = gzdopen(0, "rb");
     if (in == NULL) {
@@ -78,14 +82,14 @@ public:
   }
 
   void readClause(Lit plit) {
-    vector<Lit>* lits = new vector<Lit>();
+    Cl* lits = new Cl();
     if (var(plit)+1 > maxVars) maxVars = var(plit)+1;
     lits->push_back(plit);
     problem.push_back(lits);
   }
 
   void readClause(Lit plit1, Lit plit2) {
-    vector<Lit>* lits = new vector<Lit>();
+    Cl* lits = new Cl();
     if (var(plit1)+1 > maxVars) maxVars = var(plit1)+1;
     lits->push_back(plit1);
     if (var(plit2)+1 > maxVars) maxVars = var(plit2)+1;
@@ -93,8 +97,8 @@ public:
     problem.push_back(lits);
   }
 
-  void readClause(vector<Lit>& in) {
-    vector<Lit>* lits = new vector<Lit>();
+  void readClause(Cl& in) {
+    Cl* lits = new Cl();
     for (Lit plit : in) {
       if (var(plit)+1 > maxVars) maxVars = var(plit)+1;
       lits->push_back(plit);
@@ -111,18 +115,18 @@ public:
 
 private:
 
-  void readClause(StreamBuffer& in) {
-    vector<Lit>* lits = new vector<Lit>();
+  void readClause(Glucose::StreamBuffer& in) {
+    Cl* lits = new Cl();
     for (int plit = parseInt(in); plit != 0; plit = parseInt(in)) {
       int var = abs(plit);
       if (var > maxVars) maxVars = var;
-      lits->push_back(mkLit(var-1, plit < 0));
+      lits->push_back(Glucose::mkLit(var-1, plit < 0));
     }
     problem.push_back(lits);
   }
 
   void parse_DIMACS(gzFile input_stream) {
-    StreamBuffer in(input_stream);
+    Glucose::StreamBuffer in(input_stream);
     skipWhitespace(in);
     while (*in != EOF) {
       if (*in == 'p') {

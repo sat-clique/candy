@@ -10,21 +10,20 @@
 #include <climits>
 
 #include "../core/CNFProblem.h"
-using namespace Glucose;
-
-using namespace std;
 
 #include "core/SolverTypes.h"
 #include "core/Utilities.h"
 #include "core/Solver.h"
 
+namespace Candy {
+
 typedef struct Gate {
-  Lit out = lit_Undef;
+  Lit out = Glucose::lit_Undef;
   For fwd, bwd;
   bool notMono = false;
   vector<Lit> inp;
 
-  inline bool isDefined() { return out != lit_Undef; }
+  inline bool isDefined() { return out != Glucose::lit_Undef; }
 
   // Compatibility functions
   inline Lit getOutput() { return out; }
@@ -40,24 +39,32 @@ class GateAnalyzer {
 
 public:
   GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-      bool patterns = true, bool semantic = true, bool holistic = true, bool decompose = false);
+      bool patterns = true, bool semantic = true, bool holistic = true, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10);
 
-  // main analysis routines:
+  // main analysis routine
   void analyze();
-  vector<Lit> analyze(vector<Lit>& roots, bool pat, bool sem, bool dec);
 
-  // public getters:
+  // public getters
   int getGateCount() { return nGates; }
-  Gate& getGate(Lit output) { return (*gates)[output]; }
+  Gate& getGate(Lit output) { return (*gates)[var(output)]; }
 
   void printGates() {
-    for (Gate& gate : *gates) {
-      if (gate.isDefined()) {
+    vector<Lit> outputs;
+    vector<bool> done(problem.nVars());
+    for (Cl* root : roots) {
+      outputs.insert(outputs.end(), root->begin(), root->end());
+    }
+    for (size_t i = 0; i < outputs.size(); i++) {
+      Gate& gate = getGate(outputs[i]);
+
+      if (gate.isDefined() && !done[var(outputs[i])]) {
+        done[var(outputs[i])] = true;
         printf("Gate with output ");
         printLit(gate.getOutput());
         printf("Is defined by clauses ");
-        printFormula(gate.getForwardClauses(), true);
+        printFormula(gate.getForwardClauses(), false);
         printFormula(gate.getBackwardClauses(), true);
+        outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
       }
     }
   }
@@ -65,7 +72,7 @@ public:
 private:
   // problem to analyze:
   CNFProblem problem;
-  Solver solver;
+  Glucose::Solver solver;
 
   // control structures:
   vector<For> index; // occurrence lists
@@ -77,6 +84,8 @@ private:
   bool useSemantic = false;
   bool useHolistic = false;
   bool useLookahead = false;
+  bool useIntensification = false;
+  int lookaheadThreshold = 10;
 
   // analyzer output:
   vector<Cl*> roots; // top-level clauses
@@ -95,6 +104,10 @@ private:
     for (Cl* c : f) printClause(c, false);
     if (nl) printf("\n");
   }
+
+  // main analysis routines
+  void analyze(vector<Lit>& candidates);
+  vector<Lit> analyze(vector<Lit>& candidates, bool pat, bool sem, bool dec);
 
   // clause selection heuristic
   Lit getRarestLiteral(vector<For>& index);
@@ -151,4 +164,5 @@ private:
 
 };
 
+}
 #endif

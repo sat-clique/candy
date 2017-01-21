@@ -61,11 +61,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "mtl/Alg.h"
 #include "mtl/Alloc.h"
 
-
-using namespace std;
-
 namespace Glucose {
-
 //=================================================================================================
 // Variables, literals, lifted booleans, clauses:
 
@@ -76,9 +72,8 @@ namespace Glucose {
 typedef int Var;
 #define var_Undef (-1)
 
-
 struct Lit {
-  int     x;
+  int x;
 
   operator int() const { return x; }
 
@@ -89,7 +84,6 @@ struct Lit {
   bool operator != (Lit p) const { return x != p.x; }
   bool operator <  (Lit p) const { return x < p.x;  } // '<' makes p, ~p adjacent in the ordering.
 };
-
 
 inline  Lit  mkLit     (Var var, bool sign = false) { Lit p; p.x = var + var + (int)sign; return p; }
 inline  Lit  operator ~(Lit p)              { Lit q; q.x = p.x ^ 1; return q; }
@@ -107,10 +101,6 @@ inline  Lit  toLit     (int i)              { Lit p; p.x = i; return p; }
 
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
-
-
-typedef vector<Lit> Cl;
-typedef vector<Cl*> For;
 
 
 //=================================================================================================
@@ -352,9 +342,9 @@ public:
 
 template<class Idx, class Elem, class Deleted>
 class OccLists {
-  vector<vector<Elem>> occs;
-  vector<char> dirty;
-  vector<Idx> dirties;
+  std::vector<std::vector<Elem>> occs;
+  std::vector<char> dirty;
+  std::vector<Idx> dirties;
   Deleted deleted;
 
 public:
@@ -366,11 +356,11 @@ public:
     if ((int)dirty.size() < toInt(idx)+1) dirty.resize(toInt(idx)+1, 0);
   }
 
-  vector<Elem>& operator[](const Idx& idx) {
+  std::vector<Elem>& operator[](const Idx& idx) {
 //    checkDuplicateSimp(toInt(idx));
     return occs[toInt(idx)];
   }
-  vector<Elem>& lookup(const Idx& idx){
+  std::vector<Elem>& lookup(const Idx& idx){
     if (dirty[toInt(idx)]) clean(idx);
     return occs[toInt(idx)];
   }
@@ -396,7 +386,7 @@ public:
 
   void clean(const Idx& idx){
 //    checkDuplicates();
-    vector<Elem>& vec = occs[toInt(idx)];
+    std::vector<Elem>& vec = occs[toInt(idx)];
     int i, j;
     for (i = j = 0; i < (int)vec.size(); i++)
       if (!deleted(vec[i]))
@@ -419,7 +409,7 @@ public:
 
   void clear(bool free = true) {
 //    checkDuplicates();
-    for (vector<Elem>& v : occs) v.clear();
+    for (std::vector<Elem>& v : occs) v.clear();
     occs.clear();
     dirty.clear();
     dirties.clear();
@@ -499,6 +489,14 @@ inline void Clause::strengthen(Lit p)
 }
 
 //=================================================================================================
+}
+
+
+namespace Candy {
+  using Var = Glucose::Var;
+  using Lit = Glucose::Lit;
+  typedef std::vector<Lit> Cl;
+  typedef std::vector<Cl*> For;
 }
 
 
