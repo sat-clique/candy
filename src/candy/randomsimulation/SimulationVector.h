@@ -191,6 +191,10 @@ namespace randsim {
             return get(index);
         }
         
+        
+        SimulationVectors(const SimulationVectors& other) = delete;
+        SimulationVectors& operator=(SimulationVectors& other) = delete;
+        
     private:
         AlignedSimVector *__restrict__ m_simulationVectors;
         unsigned int m_size;
