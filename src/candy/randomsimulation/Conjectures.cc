@@ -33,7 +33,7 @@ namespace randsim {
         m_lits.push_back(lit);
     }
     
-    const std::vector<Glucose::Lit> EquivalenceConjecture::getLits() const {
+    const std::vector<Glucose::Lit> &EquivalenceConjecture::getLits() const {
         return m_lits;
     }
     
