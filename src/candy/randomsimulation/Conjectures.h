@@ -47,7 +47,7 @@ namespace randsim {
         /**
          * Retrieves the literals conjected to be equivalent.
          */
-        const std::vector<Glucose::Lit> getLits() const;
+        const std::vector<Glucose::Lit> &getLits() const;
         
     private:
         std::vector<Glucose::Lit> m_lits {};
