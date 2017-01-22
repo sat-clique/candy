@@ -14,4 +14,4 @@ add_library(randomsimulation
     Conjectures.cc
     Conjectures.h)
 
-target_compile_options(randomsimulation PRIVATE -Wextra -Weffc++)
+target_compile_options(randomsimulation PRIVATE -Wextra)
