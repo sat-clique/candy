@@ -9,8 +9,8 @@
 #
 # The candy binary will be generated in X/, while the test binaries are placed in
 # X/testsrc/$TESTMODULENAME (e.g. testsrc/gates/gates_tests). For running the tests,
-# a file runTests.bash is placed in the build directory, using which all test binaries
-# can be executed.
+# simply run ctest (if you wish to see stdout, run ctest --output-on-error (showing
+# the test output only when it fails) or ctest --verbose
 #
 #
 # II. Invoking cmake
@@ -54,6 +54,12 @@ option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
 # Enable dSYM hack (only relevant for macOS builds)
 option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
+
+
+### Using ctest as a test
+
+enable_testing()
+
 
 ### Compiler flags
 
@@ -106,5 +112,4 @@ add_executable(candy src/candy/Main.cc)
 candy_executable_customizations(candy)
 target_link_libraries(candy ${CANDY_LIBS})
 
-### Copy the test runner script
-configure_file(testsrc/runTests.bash.in runTests.bash COPYONLY)
+
