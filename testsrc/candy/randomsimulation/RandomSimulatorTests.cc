@@ -32,13 +32,13 @@
 #include "TestGateStructure.h"
 #include "TestUtils.h"
 
-namespace randsim {
+namespace Candy {
     
     TEST(RSRandomSimulatorTests, defaultImpl_noGates) {
         auto gateBuilder = createGateStructureBuilder();
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 0);
         
@@ -58,7 +58,7 @@ namespace randsim {
         
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
         
@@ -87,7 +87,7 @@ namespace randsim {
         
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 6);
         

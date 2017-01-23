@@ -29,7 +29,7 @@
 
 #include <memory>
 
-namespace randsim {
+namespace Candy {
     class SimulationVectors;
     class ClauseOrder;
     

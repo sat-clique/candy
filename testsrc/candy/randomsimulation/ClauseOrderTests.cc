@@ -38,7 +38,7 @@
 
 #include <unordered_set>
 
-namespace randsim {
+namespace Candy {
     
     // TODO: these tests do not cover Plaistedt-Greenbaum-optimized gate encodings yet.
     
@@ -48,7 +48,7 @@ namespace randsim {
     // utility functions
     
     /// Returns true iff the given sets of clause pointers are equal modulo item order.
-    static bool equals(std::vector<Candy::Cl*>& a, const std::vector<const Candy::Cl*>& b);
+    static bool equals(std::vector<Cl*>& a, const std::vector<const Cl*>& b);
     
     /// Returns true iff the given sets of T are equal modulo item order.
     template<typename T> static bool equals(const std::vector<T>& a, const std::vector<T>& b);
@@ -58,10 +58,10 @@ namespace randsim {
     
     /// Returns true iff the given gate analyzer contains exactly the given clauses containing the
     /// given output literal, for the rsp. gate with the given output literal.
-    static bool containsClauses(Candy::GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Candy::Cl*>& clauses);
+    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Cl*>& clauses);
     
     /// Returns true iff all given clauses contain the given literal.
-    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Candy::Cl*>& clauses);
+    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Cl*>& clauses);
     
     /// Returns true iff literals contains firstVar and secondVar, and firstVar appears before secondVar in literals.
     static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals);
@@ -72,7 +72,7 @@ namespace randsim {
         auto gateBuilder = createGateStructureBuilder();
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 0);
         
@@ -94,7 +94,7 @@ namespace randsim {
         gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 1);
@@ -128,7 +128,7 @@ namespace randsim {
         
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 3);
@@ -176,7 +176,7 @@ namespace randsim {
         
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula, 0, true, false, false, false);
+        GateAnalyzer ga(*formula, 0, true, false, false, false);
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 7);
@@ -217,13 +217,13 @@ namespace randsim {
     
     
     
-    static bool equals(std::vector<Candy::Cl*>& a, const std::vector<const Candy::Cl*>& b) {
+    static bool equals(std::vector<Cl*>& a, const std::vector<const Cl*>& b) {
         if (a.size() != b.size()) {
             return false;
         }
         
-        std::unordered_set<const Candy::Cl*> set_a;
-        std::unordered_set<const Candy::Cl*> set_b;
+        std::unordered_set<const Cl*> set_a;
+        std::unordered_set<const Cl*> set_b;
         
         set_a.insert(a.begin(), a.end());
         set_b.insert(b.begin(), b.end());
@@ -251,12 +251,12 @@ namespace randsim {
         return std::find(iterable->begin(), iterable->end(), thing) != iterable->end();
     }
     
-    static bool containsClauses(Candy::GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Candy::Cl*>& clauses) {
+    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Cl*>& clauses) {
         auto &gate = analyzer.getGate(outputLiteral);
         return gate.isDefined() && (equals(gate.getForwardClauses(), clauses) || equals(gate.getBackwardClauses(), clauses));
     }
     
-    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Candy::Cl*>& clauses) {
+    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Cl*>& clauses) {
         for (auto clause : clauses) {
             if (!contains(clause, literal)) {
                 return false;

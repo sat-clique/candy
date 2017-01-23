@@ -33,7 +33,7 @@
 
 #include <limits>
 
-namespace randsim {
+namespace Candy {
     Propagation::~Propagation() {
         
     }

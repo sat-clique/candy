@@ -36,12 +36,12 @@ namespace Candy {
     class CNFProblem;
 }
 
-namespace randsim {
+namespace Candy {
     class Conjectures;
     class EquivalenceConjecture;
     
     /// Deletes the clauses in the given formula.
-    void deleteClauses(Candy::CNFProblem* formula);
+    void deleteClauses(CNFProblem* formula);
     
     /// Asserts that variables does not contain the variable forbidden.
     void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
@@ -50,7 +50,7 @@ namespace randsim {
     void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var required);
     
     /// Returns a clause containing the negated lits of the given clause.
-    Candy::Cl negatedLits(const Candy::Cl& clause);
+    Cl negatedLits(const Cl& clause);
     
     /// Inserts the variables contained in the literals of lits in to the target set.
     void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
@@ -64,7 +64,7 @@ namespace randsim {
     /// Returns true iff c contains the given equivalence conjecture.
     bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits);
     
-    bool containsClause(const Candy::For& formula, const Candy::Cl& clause);
+    bool containsClause(const For& formula, const Cl& clause);
 }
 
 #endif

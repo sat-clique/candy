@@ -32,7 +32,7 @@
 #include "TestGateStructure.h"
 #include "TestUtils.h"
 
-namespace randsim {
+namespace Candy {
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_mostSimple) {
         auto gateBuilder = createGateStructureBuilder();
@@ -40,7 +40,7 @@ namespace randsim {
         auto& formula = cnf->getProblem();
         
         EXPECT_EQ(formula.size(), 1ul);
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_andGate) {
@@ -51,10 +51,10 @@ namespace randsim {
         
         EXPECT_EQ(formula.size(), 4ul);
         
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(1, 0), Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(1, 1), Glucose::mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 0), Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 1), Glucose::mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_orGate) {
@@ -65,10 +65,10 @@ namespace randsim {
         
         EXPECT_EQ(formula.size(), 4ul);
         
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(1, 0), Glucose::mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Candy::Cl({Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 0), Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_simple) {
@@ -76,7 +76,7 @@ namespace randsim {
         gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         EXPECT_EQ(ga.getGateCount(), 1);
     }
@@ -88,7 +88,7 @@ namespace randsim {
         gateBuilder->withAnd({Glucose::mkLit(6, 1), Glucose::mkLit(7, 1)}, Glucose::mkLit(2,1));
         auto formula = gateBuilder->build();
         
-        Candy::GateAnalyzer ga(*formula);
+        GateAnalyzer ga(*formula);
         ga.analyze();
         EXPECT_EQ(ga.getGateCount(), 3);
     }

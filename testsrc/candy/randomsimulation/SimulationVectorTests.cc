@@ -29,7 +29,7 @@
 #include <randomsimulation/SimulationVector.h>
 
 
-namespace randsim {
+namespace Candy {
     TEST(RSSimulationVectorTest, memAlignment) {
         SimulationVectors underTest;
         size_t amount = 10;

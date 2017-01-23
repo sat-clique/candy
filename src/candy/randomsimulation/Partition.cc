@@ -40,7 +40,7 @@
 #define FASTVARIABLEPARTITIONING_GID_SIZE_BITS sizeof(SimulationVector::varsimvec_field_t)*8
 #define FASTVARIABLEPARTITIONING_VARID_SIZE_BITS 28
 
-namespace randsim {
+namespace Candy {
     Partition::Partition() {
         
     }

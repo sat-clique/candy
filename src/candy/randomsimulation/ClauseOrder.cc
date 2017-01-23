@@ -39,7 +39,7 @@
 
 #include <iostream>
 
-namespace randsim {
+namespace Candy {
     ClauseOrder::ClauseOrder() {
         
     }
@@ -54,10 +54,10 @@ namespace randsim {
     
     class RecursiveClauseOrder : public ClauseOrder {
     public:
-        void readGates(Candy::GateAnalyzer& analyzer) override;
+        void readGates(GateAnalyzer& analyzer) override;
         const std::vector<Glucose::Var> &getInputVariables() const override;
         const std::vector<Glucose::Lit> &getGateOutputsOrdered() const override;
-        const std::vector<const Candy::Cl*> &getClauses(Glucose::Var variable) const override;
+        const std::vector<const Cl*> &getClauses(Glucose::Var variable) const override;
         void setGateFilter(std::unique_ptr<GateFilter> gateFilter) override;
         unsigned int getAmountOfVars() const override;
         
@@ -67,16 +67,16 @@ namespace randsim {
         RecursiveClauseOrder& operator=(const RecursiveClauseOrder& other) = delete;
         
     private:
-        void readGatesRecursive(Candy::GateAnalyzer &analyzer, Glucose::Lit output,
+        void readGatesRecursive(GateAnalyzer &analyzer, Glucose::Lit output,
                                 std::unordered_set<Glucose::Var>& seenInputs,
                                 std::unordered_set<Glucose::Var>& seenOutputs);
-        void backtrack(Candy::Gate &gate);
+        void backtrack(Gate &gate);
         
         void initializeFiltering();
         
         std::vector<Glucose::Var> m_inputVariables;
         std::vector<Glucose::Lit> m_outputLitsOrdered;
-        std::unordered_map<Glucose::Var, std::vector<const Candy::Cl*>> m_clausesByOutput;
+        std::unordered_map<Glucose::Var, std::vector<const Cl*>> m_clausesByOutput;
         Glucose::Var m_maxVar;
         
         std::unique_ptr<GateFilter> m_gateFilter;
@@ -105,7 +105,7 @@ namespace randsim {
         return m_outputLitsOrdered;
     }
     
-    const std::vector<const Candy::Cl*>& RecursiveClauseOrder::getClauses(Glucose::Var variable) const {
+    const std::vector<const Cl*>& RecursiveClauseOrder::getClauses(Glucose::Var variable) const {
         auto resultIter = m_clausesByOutput.find(variable);
         assert(resultIter != m_clausesByOutput.end());
         return resultIter->second;
@@ -115,7 +115,7 @@ namespace randsim {
         return m_maxVar + 1;
     }
     
-    void RecursiveClauseOrder::readGates(Candy::GateAnalyzer& analyzer) {
+    void RecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
         m_inputVariables.clear();
         m_maxVar = -1;
         m_clausesByOutput.clear();
@@ -140,7 +140,7 @@ namespace randsim {
         }
     }
     
-    void RecursiveClauseOrder::readGatesRecursive(Candy::GateAnalyzer &analyzer, Glucose::Lit output,
+    void RecursiveClauseOrder::readGatesRecursive(GateAnalyzer &analyzer, Glucose::Lit output,
                                                   std::unordered_set<Glucose::Var>& seenInputs,
                                                   std::unordered_set<Glucose::Var>& seenOutputs) {
         seenOutputs.insert(Glucose::var(output));
@@ -185,9 +185,9 @@ namespace randsim {
         backtrack(gate);
     }
     
-    void RecursiveClauseOrder::backtrack(Candy::Gate &gate) {
+    void RecursiveClauseOrder::backtrack(Gate &gate) {
         Glucose::Lit usedOutput;
-        Candy::For *usedGateClauses;
+        For *usedGateClauses;
         
         if (gate.hasNonMonotonousParent()
             || gate.getForwardClauses().size() <= gate.getBackwardClauses().size()) {

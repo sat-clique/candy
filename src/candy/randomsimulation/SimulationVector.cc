@@ -32,7 +32,7 @@
 #include <iostream>
 #include <bitset>
 
-namespace randsim {
+namespace Candy {
     SimulationVector::~SimulationVector() {
     }
     

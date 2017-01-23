@@ -37,7 +37,7 @@
 #include <core/SolverTypes.h>
 
 
-namespace randsim {
+namespace Candy {
     
     static void setAssignmentPattern(SimulationVectors &assignment,
                               SimulationVectors::index_t index,

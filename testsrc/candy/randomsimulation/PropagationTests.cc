@@ -36,13 +36,13 @@
 #include <randomsimulation/SimulationVector.h>
 #include <core/SolverTypes.h>
 
-namespace randsim {
+namespace Candy {
     class MockClauseOrder : public ClauseOrder {
     public:
-        void readGates(Candy::GateAnalyzer& analyzer) override;
+        void readGates(GateAnalyzer& analyzer) override;
         const std::vector<Glucose::Var> &getInputVariables() const override;
         const std::vector<Glucose::Lit> &getGateOutputsOrdered() const override;
-        const std::vector<const Candy::Cl*> &getClauses(Glucose::Var variable) const override;
+        const std::vector<const Cl*> &getClauses(Glucose::Var variable) const override;
         void setGateFilter(std::unique_ptr<GateFilter> gateFilter) override;
         unsigned int getAmountOfVars() const override;
         
@@ -65,7 +65,7 @@ namespace randsim {
         std::set<Glucose::Var> m_outputVariables {};
         std::set<Glucose::Var> m_inputVariables {};
         std::vector<Glucose::Lit> m_outputs {};
-        std::unordered_map<Glucose::Var, std::vector<const Candy::Cl*>> m_gateClauses {};
+        std::unordered_map<Glucose::Var, std::vector<const Cl*>> m_gateClauses {};
     };
     
     MockClauseOrder::MockClauseOrder() {
@@ -79,7 +79,7 @@ namespace randsim {
         }
     }
     
-    void MockClauseOrder::readGates(Candy::GateAnalyzer &) {
+    void MockClauseOrder::readGates(GateAnalyzer &) {
     }
     
     void MockClauseOrder::setGateFilter(std::unique_ptr<GateFilter>) {
@@ -94,7 +94,7 @@ namespace randsim {
         return m_outputs;
     }
     
-    const std::vector<const Candy::Cl*> &MockClauseOrder::getClauses(Glucose::Var variable) const {
+    const std::vector<const Cl*> &MockClauseOrder::getClauses(Glucose::Var variable) const {
         auto resultIter = m_gateClauses.find(variable);
         assert (resultIter != m_gateClauses.end());
         return resultIter->second;
@@ -132,7 +132,7 @@ namespace randsim {
         
         if (pos) {
             addGateWithOutput(o);
-            Candy::Cl* cl1 = new Candy::Cl();
+            Cl* cl1 = new Cl();
             cl1->push_back(~i1);
             cl1->push_back(~i2);
             cl1->push_back(o);
@@ -140,11 +140,11 @@ namespace randsim {
         }
         else {
             addGateWithOutput(~o);
-            Candy::Cl* cl2 = new Candy::Cl();
+            Cl* cl2 = new Cl();
             cl2->push_back(i1);
             cl2->push_back(~o);
             
-            Candy::Cl* cl3 = new Candy::Cl();
+            Cl* cl3 = new Cl();
             cl3->push_back(i2);
             cl3->push_back(~o);
             
@@ -160,7 +160,7 @@ namespace randsim {
         
         if (pos) {
             addGateWithOutput(o);
-            Candy::Cl* cl1 = new Candy::Cl();
+            Cl* cl1 = new Cl();
             cl1->push_back(~i1);
             cl1->push_back(~i2);
             cl1->push_back(~i3);
@@ -169,15 +169,15 @@ namespace randsim {
         }
         else {
             addGateWithOutput(~o);
-            Candy::Cl* cl2 = new Candy::Cl();
+            Cl* cl2 = new Cl();
             cl2->push_back(i1);
             cl2->push_back(~o);
             
-            Candy::Cl* cl3 = new Candy::Cl();
+            Cl* cl3 = new Cl();
             cl3->push_back(i2);
             cl3->push_back(~o);
             
-            Candy::Cl* cl4 = new Candy::Cl();
+            Cl* cl4 = new Cl();
             cl4->push_back(i3);
             cl4->push_back(~o);
             m_gateClauses[Glucose::var(o)].push_back(cl2);
@@ -192,7 +192,7 @@ namespace randsim {
         
         if (!pos) {
             addGateWithOutput(~o);
-            Candy::Cl* cl1 = new Candy::Cl();
+            Cl* cl1 = new Cl();
             cl1->push_back(i1);
             cl1->push_back(i2);
             cl1->push_back(~o);
@@ -200,11 +200,11 @@ namespace randsim {
         }
         else {
             addGateWithOutput(o);
-            Candy::Cl* cl2 = new Candy::Cl();
+            Cl* cl2 = new Cl();
             cl2->push_back(~i1);
             cl2->push_back(o);
             
-            Candy::Cl* cl3 = new Candy::Cl();
+            Cl* cl3 = new Cl();
             cl3->push_back(~i2);
             cl3->push_back(o);
             
@@ -221,7 +221,7 @@ namespace randsim {
         
         if (!pos) {
             addGateWithOutput(~o);
-            Candy::Cl* cl1 = new Candy::Cl();
+            Cl* cl1 = new Cl();
             cl1->push_back(i1);
             cl1->push_back(i2);
             cl1->push_back(i3);
@@ -230,15 +230,15 @@ namespace randsim {
         }
         else {
             addGateWithOutput(o);
-            Candy::Cl* cl2 = new Candy::Cl();
+            Cl* cl2 = new Cl();
             cl2->push_back(~i1);
             cl2->push_back(o);
             
-            Candy::Cl* cl3 = new Candy::Cl();
+            Cl* cl3 = new Cl();
             cl3->push_back(~i2);
             cl3->push_back(o);
             
-            Candy::Cl* cl4 = new Candy::Cl();
+            Cl* cl4 = new Cl();
             cl4->push_back(~i3);
             cl4->push_back(o);
             

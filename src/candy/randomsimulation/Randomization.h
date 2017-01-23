@@ -32,7 +32,7 @@
 
 #include "SimulationVector.h"
 
-namespace randsim {
+namespace Candy {
     class SimulationVectors;
     
     /**

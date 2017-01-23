@@ -32,7 +32,7 @@
 
 #include <gtest/gtest.h>
 
-namespace randsim {
+namespace Candy {
     
     GateStructureBuilder::GateStructureBuilder() {
         
@@ -47,7 +47,7 @@ namespace randsim {
         GateStructureBuilderImpl& withAnd(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) override;
         GateStructureBuilderImpl& withOr(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) override;
         GateStructureBuilderImpl& withXor(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) override;
-        std::unique_ptr<Candy::CNFProblem, void(*)(Candy::CNFProblem*)> build() override;
+        std::unique_ptr<CNFProblem, void(*)(CNFProblem*)> build() override;
         
         GateStructureBuilderImpl();
         virtual ~GateStructureBuilderImpl();
@@ -55,18 +55,18 @@ namespace randsim {
         GateStructureBuilderImpl& operator=(const GateStructureBuilderImpl& other) = delete;
         
     private:
-        std::unique_ptr<Candy::CNFProblem> m_builtClauses;
+        std::unique_ptr<CNFProblem> m_builtClauses;
         std::unordered_set<Glucose::Var> m_usedOutputs;
         std::unordered_set<Glucose::Var> m_gateVars;
         
-        void addClause(Candy::Cl it);
+        void addClause(Cl it);
     };
     
-    void GateStructureBuilderImpl::addClause(Candy::Cl it) {
+    void GateStructureBuilderImpl::addClause(Cl it) {
         m_builtClauses->readClause(it);
     }
     
-    GateStructureBuilderImpl::GateStructureBuilderImpl() : GateStructureBuilder(), m_builtClauses(new Candy::CNFProblem()),
+    GateStructureBuilderImpl::GateStructureBuilderImpl() : GateStructureBuilder(), m_builtClauses(new CNFProblem()),
     m_usedOutputs({}), m_gateVars({}) {
         addClause({Glucose::mkLit(0,1)});
         m_gateVars.insert(0);
@@ -80,7 +80,7 @@ namespace randsim {
         assertContainsVariable(m_gateVars, Glucose::var(output));
         assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
         
-        Candy::Cl fwd = negatedLits(inputs);
+        Cl fwd = negatedLits(inputs);
         fwd.push_back(output);
         addClause(fwd);
         
@@ -97,7 +97,7 @@ namespace randsim {
         assertContainsVariable(m_gateVars, Glucose::var(output));
         assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
         
-        Candy::Cl bwd(inputs);
+        Cl bwd(inputs);
         bwd.push_back(~output);
         addClause(bwd);
         
@@ -116,11 +116,11 @@ namespace randsim {
         return *this;
     }
     
-    std::unique_ptr<Candy::CNFProblem, void(*)(Candy::CNFProblem*)> GateStructureBuilderImpl::build() {
+    std::unique_ptr<CNFProblem, void(*)(CNFProblem*)> GateStructureBuilderImpl::build() {
         m_usedOutputs.clear();
         m_gateVars.clear();
         m_usedOutputs.clear();
-        return std::unique_ptr<Candy::CNFProblem, void(*)(Candy::CNFProblem*)>(m_builtClauses.release(), deleteClauses);
+        return std::unique_ptr<CNFProblem, void(*)(CNFProblem*)>(m_builtClauses.release(), deleteClauses);
     }
     
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder() {

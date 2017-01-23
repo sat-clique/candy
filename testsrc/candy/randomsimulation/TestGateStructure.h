@@ -32,7 +32,7 @@
 #include <core/SolverTypes.h>
 #include <core/CNFProblem.h>
 
-namespace randsim {
+namespace Candy {
     
     
     /**
@@ -62,7 +62,7 @@ namespace randsim {
         /**
          * Builds the gate structure's encoding.
          */
-        virtual std::unique_ptr<Candy::CNFProblem, void(*)(Candy::CNFProblem*)> build() = 0;
+        virtual std::unique_ptr<CNFProblem, void(*)(CNFProblem*)> build() = 0;
         
         GateStructureBuilder();
         virtual ~GateStructureBuilder();
