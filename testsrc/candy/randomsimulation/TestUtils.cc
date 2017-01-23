@@ -28,7 +28,7 @@
 #include <core/CNFProblem.h>
 #include <randomsimulation/Conjectures.h>
 
-namespace randsim {
+namespace Candy {
     void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
         assert(variables.find(forbidden) != variables.end()); // TODO refactor
     }
@@ -37,7 +37,7 @@ namespace randsim {
         assert(variables.find(forbidden) == variables.end()); // TODO refactor
     }
     
-    void deleteClauses(Candy::CNFProblem* formula) {
+    void deleteClauses(CNFProblem* formula) {
         
         // TODO: This is a weird workaround. CNFProblem ought to own the formula and take care of its destruction.
         
@@ -51,8 +51,8 @@ namespace randsim {
         formula->getProblem().clear();
     }
     
-    Candy::Cl negatedLits(const Candy::Cl& clause) {
-        Candy::Cl result;
+    Cl negatedLits(const Cl& clause) {
+        Cl result;
         for (auto lit : clause) {
             result.push_back(~lit);
         }
@@ -101,7 +101,7 @@ namespace randsim {
         return false;
     }
 
-    bool containsClause(const Candy::For& formula, const Candy::Cl& clause) {
+    bool containsClause(const For& formula, const Cl& clause) {
         bool found = false;
         for (auto fcl : formula) {
             found |= (*fcl == clause); // TODO: make this independent of literal positions

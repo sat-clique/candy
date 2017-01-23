@@ -32,7 +32,7 @@
 
 #include <core/SolverTypes.h>
 
-namespace randsim {
+namespace Candy {
     class SimulationVectors;
     class Conjectures;
     

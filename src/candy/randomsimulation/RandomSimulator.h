@@ -35,7 +35,7 @@ namespace Candy {
     class GateAnalyzer;
 }
 
-namespace randsim {
+namespace Candy {
     class ClauseOrder;
     class Partition;
     class Randomization;
@@ -145,7 +145,7 @@ namespace randsim {
          * the gate analyzer; this has to be performed by the user before starting random simulation
          * by invoking the random simulator's run() method.
          */
-        virtual RandomSimulatorBuilder& withGateAnalyzer(Candy::GateAnalyzer& gateAnalyzer) = 0;
+        virtual RandomSimulatorBuilder& withGateAnalyzer(GateAnalyzer& gateAnalyzer) = 0;
 
         /**
          * Builds the random simulator.
@@ -167,7 +167,7 @@ namespace randsim {
      *   the gate analyzer; this has to be performed by the user before starting random simulation
      *   by invoking the random simulator's run() method.
      */
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(Candy::GateAnalyzer& gateAnalyzer);
+    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer);
     
     /**
      * Creates a RandomSimulationBuilder for the default RandomSimulator implementation.

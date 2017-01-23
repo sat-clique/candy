@@ -30,7 +30,7 @@
 
 #include <utils/FastRand.h>
 
-namespace randsim {
+namespace Candy {
     Randomization::~Randomization() {
         
     }

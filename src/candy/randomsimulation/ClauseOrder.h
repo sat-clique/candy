@@ -37,7 +37,7 @@ namespace Candy {
   class GateAnalyzer;
 }
 
-namespace randsim {
+namespace Candy {
     
     /**
      * \class GateFilter
@@ -82,7 +82,7 @@ namespace randsim {
         /**
          * Establishes the order using the gate structure contained in the given gate analyzer.
          */
-        virtual void readGates(Candy::GateAnalyzer& analyzer) = 0;
+        virtual void readGates(GateAnalyzer& analyzer) = 0;
         
         /**
          * Retrieves a collection of the variables which are not gate-output variables.
@@ -105,7 +105,7 @@ namespace randsim {
          * of the gate. If the gate is nested monotonically, these clauses are the
          * gate's forward clauses.
          */
-        virtual const std::vector<const Candy::Cl*> &getClauses(Glucose::Var variable) const = 0;
+        virtual const std::vector<const Cl*> &getClauses(Glucose::Var variable) const = 0;
         
         /**
          * Sets a gate filter defining the output variables to be regarded

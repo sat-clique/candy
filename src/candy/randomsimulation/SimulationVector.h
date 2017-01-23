@@ -51,7 +51,7 @@
 // memory bandwith).
 
 
-namespace randsim {
+namespace Candy {
     
     /**
      * \class SimulationVector

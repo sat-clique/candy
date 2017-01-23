@@ -28,7 +28,7 @@
 
 #include "Conjectures.h"
 
-namespace randsim {
+namespace Candy {
     void EquivalenceConjecture::addLit(Glucose::Lit lit) {
         m_lits.push_back(lit);
     }
@@ -45,11 +45,11 @@ namespace randsim {
         return m_lit;
     }
     
-    void Conjectures::addEquivalence(randsim::EquivalenceConjecture &conj) {
+    void Conjectures::addEquivalence(EquivalenceConjecture &conj) {
         m_equivalences.push_back(conj);
     }
     
-    void Conjectures::addBackbone(randsim::BackboneConjecture &conj) {
+    void Conjectures::addBackbone(BackboneConjecture &conj) {
         m_backbones.push_back(conj);
     }
     
