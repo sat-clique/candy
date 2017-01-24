@@ -139,15 +139,15 @@ namespace Candy {
     
     
     std::unique_ptr<CompressionScheduleStrategy> createLinearCompressionScheduleStrategy(unsigned int freq) {
-        return std::make_unique<LinearCompressionScheduleStrategy>(freq);
+        return std::unique_ptr<CompressionScheduleStrategy>(new LinearCompressionScheduleStrategy(freq));
     }
     
     std::unique_ptr<CompressionScheduleStrategy> createLogCompressionScheduleStrategy() {
-        return std::make_unique<LogCompressionScheduleStrategy>();
+        return std::unique_ptr<CompressionScheduleStrategy>(new LogCompressionScheduleStrategy());
     }
     
     std::unique_ptr<CompressionScheduleStrategy> createNullCompressionScheduleStrategy() {
-        return std::make_unique<NullCompressionScheduleStrategy>();
+        return std::unique_ptr<CompressionScheduleStrategy>(new NullCompressionScheduleStrategy());
     }
     
     
@@ -514,10 +514,10 @@ namespace Candy {
     }
     
     std::unique_ptr<Partition> createDefaultPartition() {
-        return createDefaultPartition(std::make_unique<LogCompressionScheduleStrategy>());
+        return createDefaultPartition(std::unique_ptr<CompressionScheduleStrategy>(new LogCompressionScheduleStrategy()));
     }
     
     std::unique_ptr<Partition> createDefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionScheduleStrategy) {
-        return std::make_unique<DefaultPartition>(std::move(compressionScheduleStrategy));
+        return std::unique_ptr<Partition>(new DefaultPartition(std::move(compressionScheduleStrategy)));
     }
 }
