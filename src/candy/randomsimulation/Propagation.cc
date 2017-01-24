@@ -114,6 +114,6 @@ namespace Candy {
     
     
     std::unique_ptr<Propagation> createInputToOutputPropagation() {
-        return std::make_unique<InputToOutputPropagation>();
+        return std::unique_ptr<Propagation>(new InputToOutputPropagation());
     }
 }

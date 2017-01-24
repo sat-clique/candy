@@ -265,18 +265,18 @@ namespace Candy {
             m_clauseOrderStrat->setGateFilter(std::move(gateFilter));
         }
         
-        return std::make_unique<BitparallelRandomSimulator>(std::move(m_clauseOrderStrat),
+        return std::unique_ptr<RandomSimulator>(new BitparallelRandomSimulator(std::move(m_clauseOrderStrat),
                                                             std::move(m_partitionStrat),
                                                             std::move(m_randomizationStrat),
                                                             std::move(m_propagationStrat),
                                                             *m_gateAnalyzer,
-                                                            m_reductionRateAbortThreshold);
+                                                            m_reductionRateAbortThreshold));
     }
     
 
     
     std::unique_ptr<RandomSimulatorBuilder> createDefaultRandomSimulatorBuilder() {
-        return std::make_unique<BitparallelRandomSimulatorBuilder>();
+        return std::unique_ptr<RandomSimulatorBuilder>(new BitparallelRandomSimulatorBuilder());
     }
     
     std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer) {

@@ -124,7 +124,7 @@ namespace Candy {
     }
     
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder() {
-        return std::make_unique<GateStructureBuilderImpl>();
+        return std::unique_ptr<GateStructureBuilder>(new GateStructureBuilderImpl());
     }
     
     

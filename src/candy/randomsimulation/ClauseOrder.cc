@@ -206,6 +206,6 @@ namespace Candy {
     }
     
     std::unique_ptr<ClauseOrder> createRecursiveClauseOrder() {
-        return std::make_unique<RecursiveClauseOrder>();
+        return std::unique_ptr<ClauseOrder>(new RecursiveClauseOrder());
     }
 }

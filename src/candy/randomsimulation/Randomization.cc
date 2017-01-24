@@ -80,6 +80,6 @@ namespace Candy {
     }
     
     std::unique_ptr<Randomization> createSimpleRandomization() {
-        return std::make_unique<SimpleRandomization>();
+        return std::unique_ptr<Randomization>(new SimpleRandomization());
     }
 }
