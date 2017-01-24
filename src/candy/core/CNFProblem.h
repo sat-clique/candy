@@ -21,8 +21,6 @@
 #ifndef Glucose_Dimacs_h
 #define Glucose_Dimacs_h
 
-//#include <cstdio>
-
 #include "utils/ParseUtils.h"
 #include "core/SolverTypes.h"
 
