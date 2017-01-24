@@ -7,7 +7,7 @@
 
 #include "gtest/gtest.h"
 
-#include "../core/CNFProblem.h"
+#include "core/CNFProblem.h"
 #include "simp/SimpSolver.h"
 #include "gates/GateAnalyzer.h"
 
