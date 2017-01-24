@@ -18,7 +18,7 @@ TEST (GateAnalyzerTestPatterns, countgates) {
   dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");
 
   // create test out
-  GateAnalyzer gates(dimacs, 0, true, false, false, false, false);
+  GateAnalyzer gates(dimacs, 0, true, false);
   gates.analyze();
   testing::internal::CaptureStdout();
   printf("%d", gates.getGateCount());
@@ -27,21 +27,7 @@ TEST (GateAnalyzerTestPatterns, countgates) {
   ASSERT_EQ (output, "14446");
 }
 
-TEST (GateAnalyzerTestSemantic, countgates) {
-  CNFProblem dimacs;
-  dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");
-
-  // create test out
-  GateAnalyzer gates(dimacs, 0, false, true, false, false, false);
-  gates.analyze();
-  testing::internal::CaptureStdout();
-  printf("%d", gates.getGateCount());
-  std::string output = testing::internal::GetCapturedStdout();
-
-  ASSERT_EQ (output, "72786");
-}
-
-TEST (GateAnalyzerTestPatternSemantic, countgates) {
+TEST (GateAnalyzerTestPatternSemanticIncremental, countgates) {
   CNFProblem dimacs;
   dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");
 
@@ -52,7 +38,7 @@ TEST (GateAnalyzerTestPatternSemantic, countgates) {
   printf("%d", gates.getGateCount());
   std::string output = testing::internal::GetCapturedStdout();
 
-  ASSERT_EQ (output, "72786");
+  ASSERT_EQ (output, "70229");
 }
 
 int main(int argc, char **argv) {
