@@ -41,7 +41,7 @@ namespace Candy {
         
     }
     
-    Glucose::Lit BackboneConjecture::getLit() {
+    Glucose::Lit BackboneConjecture::getLit() const {
         return m_lit;
     }
     
