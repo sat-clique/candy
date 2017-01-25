@@ -68,7 +68,7 @@ namespace Candy {
         /**
          * Retrieves the literal conjected to belong to the backbone.
          */
-        Glucose::Lit getLit();
+        Glucose::Lit getLit() const;
         
     private:
         Glucose::Lit m_lit;
