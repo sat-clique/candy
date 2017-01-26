@@ -49,8 +49,9 @@ namespace Candy {
          */
         const std::vector<Glucose::Lit> &getLits() const;
         
+        EquivalenceConjecture();
     private:
-        std::vector<Glucose::Lit> m_lits {};
+        std::vector<Glucose::Lit> m_lits;
     };
     
     /**

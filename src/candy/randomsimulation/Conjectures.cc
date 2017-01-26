@@ -29,6 +29,10 @@
 #include "Conjectures.h"
 
 namespace Candy {
+    EquivalenceConjecture::EquivalenceConjecture() : m_lits() {
+        
+    }
+    
     void EquivalenceConjecture::addLit(Glucose::Lit lit) {
         m_lits.push_back(lit);
     }
