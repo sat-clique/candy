@@ -24,9 +24,39 @@
  
  */
 
-#include <gmock/gmock.h>
+#ifndef X_70571638_C307_4548_8A51_938865519EE0_HEURISTICSMOCK_H
+#define X_70571638_C307_4548_8A51_938865519EE0_HEURISTICSMOCK_H
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+#include <gmock/gmock.h>
+#include <core/SolverTypes.h>
+#include <rsar/Heuristics.h>
+
+#include <map>
+
+namespace Candy {
+    class MockHeuristic : public RefinementHeuristic {
+    public:
+        MOCK_METHOD0(beginRefinementStep, void ());
+        MOCK_METHOD1(markRemovals, void(EquivalenceImplications&));
+        MOCK_METHOD1(markRemovals, void(Backbones& backbones));
+    };
+    
+    class FakeHeuristic : public RefinementHeuristic {
+    public:
+        void beginRefinementStep() override;
+        void markRemovals(EquivalenceImplications&) override;
+        void markRemovals(Backbones& backbones) override;
+        
+        void inStepNRemove(int step, const std::vector<Var>& variables);
+        
+        FakeHeuristic();
+        virtual ~FakeHeuristic();
+        
+        
+    private:
+        std::map<int, std::vector<Var>> m_removals;
+        int m_step;
+    };
 }
+
+#endif

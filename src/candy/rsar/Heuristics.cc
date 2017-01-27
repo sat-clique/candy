@@ -24,9 +24,14 @@
  
  */
 
-#include <gmock/gmock.h>
+#include "Heuristics.h"
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+namespace Candy {
+    RefinementHeuristic::RefinementHeuristic() {
+        
+    }
+    
+    RefinementHeuristic::~RefinementHeuristic() {
+        
+    }
 }

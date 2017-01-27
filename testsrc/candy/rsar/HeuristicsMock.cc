@@ -24,9 +24,38 @@
  
  */
 
-#include <gmock/gmock.h>
+#include "HeuristicsMock.h"
+#include <core/SolverTypes.h>
+#include <rsar/ApproximationState.h>
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+#include <gtest/gtest.h>
+
+namespace Candy {
+    void FakeHeuristic::beginRefinementStep() {
+        m_step++;
+    }
+    
+    void FakeHeuristic::markRemovals(EquivalenceImplications& equivalences) {
+        ASSERT_TRUE(m_step >= 0);
+        for (auto var : m_removals[m_step]) {
+            equivalences.addVariableRemovalToWorkQueue(var);
+        }
+    }
+    
+    void FakeHeuristic::markRemovals(Backbones& backbones) {
+        ASSERT_TRUE(m_step >= 0);
+        for (auto var : m_removals[m_step]) {
+            backbones.addVariableRemovalToWorkQueue(var);
+        }
+    }
+    
+    void FakeHeuristic::inStepNRemove(int step, const std::vector<Var>& variables) {
+        m_removals[step] = std::vector<Var>{variables};
+    }
+    
+    FakeHeuristic::FakeHeuristic() : m_removals(), m_step(-1) {
+    }
+    
+    FakeHeuristic::~FakeHeuristic() {
+    }
 }

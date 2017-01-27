@@ -24,9 +24,37 @@
  
  */
 
-#include <gmock/gmock.h>
+#ifndef X_3D4F7FAE_8852_4861_A031_1808523E1215_TESTUTILS_H
+#define X_3D4F7FAE_8852_4861_A031_1808523E1215_TESTUTILS_H
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+#include <core/SolverTypes.h>
+#include <simp/SimpSolver.h>
+
+#include <vector>
+#include <memory>
+
+
+namespace Candy {
+    class EquivalencyChecker {
+    public:
+        EquivalencyChecker();
+        void addClauses(const std::vector<Cl>& clauses);
+        Var createVariable();
+        
+        void createVariables(Var max);
+        
+        void finishedAddingRegularVariables();
+        
+        bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b);
+        bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits);
+        bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits);
+        
+    private:
+        bool solve(const std::vector<Lit>& assumptions);
+        
+        std::unique_ptr<Glucose::SimpSolver> m_solver;
+        Var m_maxVar;
+    };
 }
+
+#endif

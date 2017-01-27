@@ -24,9 +24,24 @@
  
  */
 
-#include <gmock/gmock.h>
+#ifndef X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
+#define X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleMock(&argc, argv);
-    return RUN_ALL_TESTS();
+namespace Candy {
+    class EquivalenceImplications;
+    class Backbones;
+    
+    class RefinementHeuristic {
+    public:
+        virtual void beginRefinementStep() = 0;
+        virtual void markRemovals(EquivalenceImplications& equivalence) = 0;
+        virtual void markRemovals(Backbones& backbones) = 0;
+        
+        RefinementHeuristic();
+        virtual ~RefinementHeuristic();
+        RefinementHeuristic(const RefinementHeuristic &other) = delete;
+        RefinementHeuristic& operator= (const RefinementHeuristic& other) = delete;
+    };
 }
+
+#endif
