@@ -205,11 +205,13 @@ inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool tu
 inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); assumptions.push_back(r); return solve_(do_simp, turn_off_simp) == l_True; }
 inline bool SimpSolver::solve(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
     budgetOff();
+    assumptions.clear();
     assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
     return solve_(do_simp, turn_off_simp) == l_True;
 }
 
 inline lbool SimpSolver::solveLimited(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
+    assumptions.clear();
     assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
     return solve_(do_simp, turn_off_simp);
 }
