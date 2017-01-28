@@ -4,7 +4,7 @@ add_executable(rsar_tests Main.cc
 			  HeuristicsMock.h
 			  HeuristicsMock.cc
 			  RefinementTests.cc
-			  RefinementStateTests.cc)
+			  ApproximationStateTests.cc)
 
 
 candy_executable_customizations(rsar_tests)
