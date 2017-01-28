@@ -52,8 +52,23 @@ cmake_minimum_required(VERSION 3.5)
 # Enable LLVM coverage
 option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
+# Enable LLVM address and leak sanitizer
+option(ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
+
 # Enable dSYM hack (only relevant for macOS builds)
 option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
+
+# Disable RTTI and defines CANDY_HAS_NO_RTTI.
+# WARNING: Enable this only AFTER having thoroughly tested the code. In some places
+# RTTI is needed for testing (and only in places where it is also safe to use a
+# reinterpret_cast - testing interfaces which document the single allowed dynamic type
+# of the pointer getting casted).
+# This changes the code to use reinterpret_cast instead of dynamic_cast via
+# preprocessor directives.
+#
+# TODO: Remove this option as soon as a dynamic_cast cannot safely be replaced
+# by a reinterpret_cast.
+option(CANDY_DISABLE_RTTI OFF "Disable RTTI and defines CANDY_HAS_NO_RTTI. Use with caution.")
 
 
 ### Using ctest as a test
@@ -64,8 +79,17 @@ enable_testing()
 ### Compiler flags
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS  -march=native")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-rtti -fno-inline -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -fno-rtti -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+
+if(ENABLE_LLVM_SANITIZER)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+endif()
+
+if(CANDY_DISABLE_RTTI)
+  message("WARNING: Use CANDY_DISABLE_RTTI only for the most optimized builds, since the test system relies on it")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -DCANDY_HAS_NO_RTTI")
+endif()
 
 ### Find libraries
 
@@ -101,7 +125,7 @@ set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include"
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
 
 add_subdirectory(src)
-set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES})
+set(CANDY_LIBS utils core simp gates randomsimulation rsar ${ZLIB_LIBRARIES})
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
