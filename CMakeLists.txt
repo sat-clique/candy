@@ -50,10 +50,16 @@ cmake_minimum_required(VERSION 3.5)
 ### Options
 
 # Enable LLVM coverage
-option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
+option(CANDY_ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
 # Enable dSYM hack (only relevant for macOS builds)
-option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
+option(CANDY_ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
+
+# Enable LLVM address and leak sanitizer
+option(CANDY_ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
+
+# Enable -march=native - if set to OFF, at least SSE 4.1 will still be enabled.
+option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
 
 
 ### Using ctest as a test
@@ -63,9 +69,21 @@ enable_testing()
 
 ### Compiler flags
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS  -march=native")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-rtti -fno-inline -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -fno-rtti -O3")
+
+if (CANDY_ENABLE_NATIVEARCH)
+  message("Compiling for the processor architecture of this machine.")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+else ()
+  message("Compiling for processors supporting at least SSE 4.1.")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+endif ()
+
+if(CANDY_ENABLE_LLVM_SANITIZER)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+endif()
 
 ### Find libraries
 
