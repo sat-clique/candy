@@ -62,14 +62,14 @@ namespace Candy {
          * Requests the removal of backbone literals having the given variable. Note
          * that this change is committed lazily.
          */
-        virtual void addVariableRemovalToWorkQueue(Var it) = 0;
+        virtual void addVariableRemovalToWorkQueue(Var it) noexcept = 0;
         
         /**
          * Returns the set of represented backbone literals.
          */
-        virtual const std::vector<Lit>& getBackboneLiterals() = 0;
+        virtual const std::vector<Lit>& getBackboneLiterals() const noexcept = 0;
         
-        Backbones();
+        Backbones() noexcept;
         virtual ~Backbones();
         Backbones(const Backbones& other) = delete;
         Backbones& operator=(const Backbones& other) = delete;
@@ -101,15 +101,15 @@ namespace Candy {
          * Requests the removal of literals (having the given variable) from the represented
          * set of equivalent literals. Note that this change is committed lazily.
          */
-        virtual void addVariableRemovalToWorkQueue(Var it) = 0;
+        virtual void addVariableRemovalToWorkQueue(Var it) noexcept = 0;
         
         /**
          * Returns a reference to the collection of implications encoding the represented
          * equivalences.
          */
-        virtual const std::vector<Implication>& getImplications() const = 0;
+        virtual const std::vector<Implication>& getImplications() const noexcept  = 0;
         
-        EquivalenceImplications();
+        EquivalenceImplications() noexcept;
         virtual ~EquivalenceImplications();
         EquivalenceImplications(const EquivalenceImplications& other) = delete;
         EquivalenceImplications& operator=(const EquivalenceImplications& other) = delete;
@@ -135,49 +135,49 @@ namespace Candy {
         /**
          * Returns a begin iterator for the removed implications.
          */
-        virtual const_implication_iterator beginRemovedImplications() const = 0;
+        virtual const_implication_iterator beginRemovedImplications() const noexcept = 0;
         
         /**
          * Returns an end iterator for the removed implications.
          */
-        virtual const_implication_iterator endRemovedImplications() const = 0;
+        virtual const_implication_iterator endRemovedImplications() const noexcept = 0;
         
         /**
          * Returns the amount of removed implications.
          */
-        virtual const_implication_size_type removedImplicationsSize() const = 0;
+        virtual const_implication_size_type removedImplicationsSize() const noexcept = 0;
         
         /**
          * Returns a begin iterator for the added implications.
          */
-        virtual const_implication_iterator beginAddedImplications() const = 0;
+        virtual const_implication_iterator beginAddedImplications() const noexcept = 0;
         
         /**
          * Returns an end iterator for the added implications.
          */
-        virtual const_implication_iterator endAddedImplications() const = 0;
+        virtual const_implication_iterator endAddedImplications() const noexcept = 0;
         
         /**
          * Returns the amount of added implications.
          */
-        virtual const_implication_size_type addedImplicationsSize() const = 0;
+        virtual const_implication_size_type addedImplicationsSize() const noexcept = 0;
         
         /**
          * Returns a begin iterator for the removed backbone literals.
          */
-        virtual const_backbone_iterator beginRemovedBackbones() const = 0;
+        virtual const_backbone_iterator beginRemovedBackbones() const noexcept = 0;
         
         /**
          * Returns an end iterator for the removed backbone literals.
          */
-        virtual const_backbone_iterator endRemovedBackbones() const = 0;
+        virtual const_backbone_iterator endRemovedBackbones() const noexcept = 0;
         
         /**
          * Returns the amount of removed backbone literals.
          */
-        virtual const_backbone_size_type removedBackbonesSize() const = 0;
+        virtual const_backbone_size_type removedBackbonesSize() const noexcept = 0;
         
-        ApproximationDelta();
+        ApproximationDelta() noexcept;
         virtual ~ApproximationDelta();
         ApproximationDelta(const ApproximationDelta& other) = delete;
         ApproximationDelta& operator= (const ApproximationDelta& other) = delete;
@@ -214,23 +214,23 @@ namespace Candy {
          * Returns a begin iterator for the collection of equivalence-class representations.
          * Users may add variables to the removal queues of these objects.
          */
-        virtual equivalenceimplications_iterator beginEquivalenceImplications() = 0;
+        virtual equivalenceimplications_iterator beginEquivalenceImplications() noexcept = 0;
         
         /**
          * Returns an end iterator for the collection of equivalence-class representations.
          */
-        virtual equivalenceimplications_iterator endEquivalenceImplications() = 0;
+        virtual equivalenceimplications_iterator endEquivalenceImplications() noexcept = 0;
         
         /**
          * Returns the amount of equivalence-class representations.
          * Users may add variables to the removal queue of this objects.
          */
-        virtual equivalenceimplications_size_type equivalenceImplicationsSize() const = 0;
+        virtual equivalenceimplications_size_type equivalenceImplicationsSize() const noexcept = 0;
         
         /**
          * Returns the collection of backbone literals.
          */
-        virtual Backbones& getBackbones() const = 0;
+        virtual Backbones& getBackbones() const noexcept = 0;
         
         /**
          * Commits the removals queued by the user in the EquivalenceImplications and Backbones
@@ -247,7 +247,7 @@ namespace Candy {
          */
         virtual std::unique_ptr<ApproximationDelta> createDelta() = 0;
         
-        ApproximationState();
+        ApproximationState() noexcept;
         virtual ~ApproximationState();
         ApproximationState(const ApproximationState& other) = delete;
         ApproximationState& operator=(const ApproximationState& other) = delete;

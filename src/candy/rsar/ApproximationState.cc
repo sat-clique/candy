@@ -41,7 +41,7 @@ namespace Candy {
     
     /* -- ApproximationDelta implementation --------------------------------------------------------- */
     
-    ApproximationDelta::ApproximationDelta() {
+    ApproximationDelta::ApproximationDelta() noexcept {
         
     }
     
@@ -51,20 +51,20 @@ namespace Candy {
     
     class ApproximationDeltaImpl : public ApproximationDelta {
     public:
-        ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                            const Backbones::CommitResult bbComitRes);
+        explicit ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
+                                        const Backbones::CommitResult bbComitRes) noexcept;
         
-        const_implication_iterator beginRemovedImplications() const override;
-        const_implication_iterator endRemovedImplications() const override;
-        const_implication_size_type removedImplicationsSize() const override;
+        const_implication_iterator beginRemovedImplications() const noexcept override;
+        const_implication_iterator endRemovedImplications() const noexcept override;
+        const_implication_size_type removedImplicationsSize() const noexcept override;
         
-        const_implication_iterator beginAddedImplications() const override;
-        const_implication_iterator endAddedImplications() const override;
-        const_implication_size_type addedImplicationsSize() const override;
+        const_implication_iterator beginAddedImplications() const noexcept override;
+        const_implication_iterator endAddedImplications() const noexcept override;
+        const_implication_size_type addedImplicationsSize() const noexcept override;
         
-        const_backbone_iterator beginRemovedBackbones() const override;
-        const_backbone_iterator endRemovedBackbones() const override;
-        const_backbone_size_type removedBackbonesSize() const override;
+        const_backbone_iterator beginRemovedBackbones() const noexcept override;
+        const_backbone_iterator endRemovedBackbones() const noexcept override;
+        const_backbone_size_type removedBackbonesSize() const noexcept override;
         
         virtual ~ApproximationDeltaImpl();
         ApproximationDeltaImpl(const ApproximationDeltaImpl &other) = delete;
@@ -78,7 +78,7 @@ namespace Candy {
      
     
     ApproximationDeltaImpl::ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                                     const Backbones::CommitResult bbCommitRes)
+                                     const Backbones::CommitResult bbCommitRes) noexcept
     : ApproximationDelta(), m_addedImplications(), m_removedImplications(), m_removedBackbones(bbCommitRes.removedBackbones) {
         for (auto&& eqCommit : eqCommitRes) {
             m_addedImplications.insert(m_addedImplications.end(),
@@ -90,39 +90,39 @@ namespace Candy {
         }
     }
     
-    ApproximationDelta::const_implication_iterator  ApproximationDeltaImpl::beginAddedImplications() const {
+    ApproximationDelta::const_implication_iterator  ApproximationDeltaImpl::beginAddedImplications() const noexcept{
         return m_addedImplications.begin();
     }
     
-    ApproximationDelta::const_implication_iterator ApproximationDeltaImpl::endAddedImplications() const {
+    ApproximationDelta::const_implication_iterator ApproximationDeltaImpl::endAddedImplications() const noexcept {
         return m_addedImplications.end();
     }
     
-    ApproximationDelta::const_implication_size_type ApproximationDeltaImpl::addedImplicationsSize() const {
+    ApproximationDelta::const_implication_size_type ApproximationDeltaImpl::addedImplicationsSize() const noexcept {
         return m_addedImplications.size();
     }
     
-    ApproximationDelta::const_implication_iterator ApproximationDeltaImpl::beginRemovedImplications() const {
+    ApproximationDelta::const_implication_iterator ApproximationDeltaImpl::beginRemovedImplications() const noexcept {
         return m_removedImplications.begin();
     }
     
-    ApproximationDelta::const_implication_iterator ApproximationDeltaImpl::endRemovedImplications() const {
+    ApproximationDelta::const_implication_iterator ApproximationDeltaImpl::endRemovedImplications() const noexcept {
         return m_removedImplications.end();
     }
     
-    ApproximationDelta::const_implication_size_type ApproximationDeltaImpl::removedImplicationsSize() const {
+    ApproximationDelta::const_implication_size_type ApproximationDeltaImpl::removedImplicationsSize() const noexcept {
         return m_removedImplications.size();
     }
     
-    ApproximationDelta::const_backbone_iterator ApproximationDeltaImpl::beginRemovedBackbones() const {
+    ApproximationDelta::const_backbone_iterator ApproximationDeltaImpl::beginRemovedBackbones() const noexcept {
         return m_removedBackbones.begin();
     }
     
-    ApproximationDelta::const_backbone_iterator ApproximationDeltaImpl::endRemovedBackbones() const {
+    ApproximationDelta::const_backbone_iterator ApproximationDeltaImpl::endRemovedBackbones() const noexcept {
         return m_removedBackbones.end();
     }
     
-    ApproximationDelta::const_backbone_size_type ApproximationDeltaImpl::removedBackbonesSize() const {
+    ApproximationDelta::const_backbone_size_type ApproximationDeltaImpl::removedBackbonesSize() const noexcept {
         return m_removedBackbones.size();
     }
     
@@ -132,14 +132,14 @@ namespace Candy {
     
     
     std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                                                           const Backbones::CommitResult bbComitRes) {
+                                                           const Backbones::CommitResult bbComitRes) noexcept {
         return std::unique_ptr<ApproximationDelta>(new ApproximationDeltaImpl(eqCommitRes, bbComitRes));
     }
     
     
     /* -- Backbones implementation --------------------------------------------------------- */
     
-    Backbones::Backbones() {
+    Backbones::Backbones() noexcept {
         
     }
     
@@ -149,11 +149,11 @@ namespace Candy {
     
     class BackbonesImpl : public Backbones {
     public:
-        BackbonesImpl(const std::vector<BackboneConjecture>& conjectures);
+        explicit BackbonesImpl(const std::vector<BackboneConjecture>& conjectures) noexcept;
         
-        void addVariableRemovalToWorkQueue(Var it) override;
+        void addVariableRemovalToWorkQueue(Var it) noexcept override;
         
-        const std::vector<Lit>& getBackboneLiterals() override;
+        const std::vector<Lit>& getBackboneLiterals() const noexcept override;
         
         const Backbones::CommitResult commitWorkQueue();
         void commitWorkQueueWithoutDelta();
@@ -179,7 +179,7 @@ namespace Candy {
     };
     
     
-    BackbonesImpl::BackbonesImpl(const std::vector<BackboneConjecture>& conjectures)
+    BackbonesImpl::BackbonesImpl(const std::vector<BackboneConjecture>& conjectures) noexcept
     : Backbones(), m_backbonesCached(), m_backbones(), m_removalWorkQueue() {
         for (auto& bbConj : conjectures) {
             m_backbonesCached.push_back(bbConj.getLit());
@@ -187,11 +187,11 @@ namespace Candy {
         }
     }
     
-    void BackbonesImpl::addVariableRemovalToWorkQueue(Var removal) {
+    void BackbonesImpl::addVariableRemovalToWorkQueue(Var removal) noexcept {
         m_removalWorkQueue.insert(removal);
     }
     
-    const std::vector<Lit>& BackbonesImpl::getBackboneLiterals() {
+    const std::vector<Lit>& BackbonesImpl::getBackboneLiterals() const noexcept {
         return m_backbonesCached;
     }
     
@@ -256,7 +256,7 @@ namespace Candy {
     
     /* -- EquivalenceImplications implementation --------------------------------------------------------- */
     
-    EquivalenceImplications::EquivalenceImplications() {
+    EquivalenceImplications::EquivalenceImplications() noexcept {
         
     }
     
@@ -272,14 +272,14 @@ namespace Candy {
          * contains fewer than two literals, an empty EquivalenceImplicationsImpl
          * object is constructed.
          */
-        EquivalenceImplicationsImpl(const EquivalenceConjecture &conjecture);
+        explicit EquivalenceImplicationsImpl(const EquivalenceConjecture &conjecture) noexcept;
         
-        void addVariableRemovalToWorkQueue(Var it) override;
+        void addVariableRemovalToWorkQueue(Var it) noexcept override;
         
         const EquivalenceImplications::CommitResult commitWorkQueue();
         void commitWorkQueueWithoutDelta();
         
-        const std::vector<Implication>& getImplications() const override;
+        const std::vector<Implication>& getImplications() const noexcept override;
         
         virtual ~EquivalenceImplicationsImpl();
         EquivalenceImplicationsImpl(const EquivalenceImplicationsImpl& other) = delete;
@@ -318,7 +318,7 @@ namespace Candy {
     };
     
     
-    EquivalenceImplicationsImpl::EquivalenceImplicationsImpl(const EquivalenceConjecture &conjecture)
+    EquivalenceImplicationsImpl::EquivalenceImplicationsImpl(const EquivalenceConjecture &conjecture) noexcept
     : EquivalenceImplications(), m_implicationsByAnte(), m_implicationsBySucc(),
     m_implicationsCached(), m_varRemovalWorkQueue() {
         
@@ -353,11 +353,11 @@ namespace Candy {
         }
     }
     
-    void EquivalenceImplicationsImpl::addVariableRemovalToWorkQueue(Var toBeRemoved) {
+    void EquivalenceImplicationsImpl::addVariableRemovalToWorkQueue(Var toBeRemoved) noexcept {
         m_varRemovalWorkQueue.insert(toBeRemoved);
     }
     
-    const std::vector<Implication>& EquivalenceImplicationsImpl::getImplications() const {
+    const std::vector<Implication>& EquivalenceImplicationsImpl::getImplications() const noexcept {
         return m_implicationsCached;
     }
     
@@ -471,7 +471,7 @@ namespace Candy {
     
     /* -- ApproximationState implementation --------------------------------------------------------- */
 
-    ApproximationState::ApproximationState() {
+    ApproximationState::ApproximationState() noexcept {
         
     }
     
@@ -481,13 +481,13 @@ namespace Candy {
     
     class ApproximationStateImpl : public ApproximationState {
     public:
-        ApproximationStateImpl(const Conjectures& conjectures);
+        explicit ApproximationStateImpl(const Conjectures& conjectures);
         
-        equivalenceimplications_iterator beginEquivalenceImplications() override;
-        equivalenceimplications_iterator endEquivalenceImplications() override;
-        equivalenceimplications_size_type equivalenceImplicationsSize() const override;
+        equivalenceimplications_iterator beginEquivalenceImplications() noexcept override;
+        equivalenceimplications_iterator endEquivalenceImplications() noexcept override;
+        equivalenceimplications_size_type equivalenceImplicationsSize() const noexcept override;
         
-        Backbones& getBackbones() const override;
+        Backbones& getBackbones() const noexcept override;
         
         std::unique_ptr<ApproximationDelta> createInitializationDelta() override;
         std::unique_ptr<ApproximationDelta> createDelta() override;
@@ -509,20 +509,20 @@ namespace Candy {
 
     
     
-    ApproximationState::equivalenceimplications_iterator ApproximationStateImpl::beginEquivalenceImplications() {
+    ApproximationState::equivalenceimplications_iterator ApproximationStateImpl::beginEquivalenceImplications() noexcept  {
         return m_equivalenceImplicationsRawPtr.begin();
     }
     
-    ApproximationState::equivalenceimplications_iterator ApproximationStateImpl::endEquivalenceImplications() {
+    ApproximationState::equivalenceimplications_iterator ApproximationStateImpl::endEquivalenceImplications() noexcept  {
         return m_equivalenceImplicationsRawPtr.end();
     }
     
     ApproximationState::equivalenceimplications_size_type
-    ApproximationStateImpl::equivalenceImplicationsSize() const {
+    ApproximationStateImpl::equivalenceImplicationsSize() const noexcept {
         return m_equivalenceImplicationsRawPtr.size();
     }
     
-    Backbones& ApproximationStateImpl::getBackbones() const {
+    Backbones& ApproximationStateImpl::getBackbones() const noexcept {
         return *m_backbones;
     }
     

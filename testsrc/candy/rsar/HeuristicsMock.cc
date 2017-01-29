@@ -49,7 +49,7 @@ namespace Candy {
         }
     }
     
-    void FakeHeuristic::inStepNRemove(int step, const std::vector<Var>& variables) {
+    void FakeHeuristic::inStepNRemove(int step, const std::vector<Var>& variables) noexcept {
         m_removals[step] = std::vector<Var>{variables};
     }
     

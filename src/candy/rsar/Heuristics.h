@@ -33,6 +33,9 @@ namespace Candy {
     
     class RefinementHeuristic {
     public:
+        // TODO: the following three methods should have the noexcept
+        // modifier. Alas, gmock does not seem to support mocking
+        // noexcept functions.
         virtual void beginRefinementStep() = 0;
         virtual void markRemovals(EquivalenceImplications& equivalence) = 0;
         virtual void markRemovals(Backbones& backbones) = 0;
