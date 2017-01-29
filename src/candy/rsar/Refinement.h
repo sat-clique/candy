@@ -55,19 +55,19 @@ namespace Candy {
     class EncodedApproximationDelta {
     public:
         /** Returns the collection of new clauses. */
-        virtual const std::vector<Cl>& getNewClauses() const = 0;
+        virtual const std::vector<Cl>& getNewClauses() const noexcept = 0;
         
         /** Returns the current collection of assumption literals. */
-        virtual const std::vector<Lit>& getAssumptionLiterals() const = 0;
+        virtual const std::vector<Lit>& getAssumptionLiterals() const noexcept = 0;
         
         /**
          * Returns the amount of clauses with their assumption literals not
          * deactivating a clause belonging to the approximation encoding.
          */
-        virtual size_t countEnabledClauses() const = 0;
+        virtual size_t countEnabledClauses() const noexcept = 0;
         
         
-        EncodedApproximationDelta();
+        EncodedApproximationDelta() noexcept;
         virtual ~EncodedApproximationDelta();
         EncodedApproximationDelta(const EncodedApproximationDelta& other) = delete;
         EncodedApproximationDelta& operator= (const EncodedApproximationDelta& other) = delete;
@@ -95,7 +95,7 @@ namespace Candy {
         /** Refines the currently existing approximation. */
         virtual std::unique_ptr<EncodedApproximationDelta> refine() = 0;
         
-        RefinementStrategy();
+        RefinementStrategy() noexcept;
         virtual ~RefinementStrategy();
         RefinementStrategy(const RefinementStrategy& other) = delete;
         RefinementStrategy& operator= (const RefinementStrategy& other) = delete;

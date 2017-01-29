@@ -38,7 +38,7 @@ namespace Candy {
     public:
         MOCK_METHOD0(beginRefinementStep, void ());
         MOCK_METHOD1(markRemovals, void(EquivalenceImplications&));
-        MOCK_METHOD1(markRemovals, void(Backbones& backbones));
+        MOCK_METHOD1(markRemovals, void(Backbones& backbones) noexcept);
     };
     
     class FakeHeuristic : public RefinementHeuristic {
@@ -47,7 +47,7 @@ namespace Candy {
         void markRemovals(EquivalenceImplications&) override;
         void markRemovals(Backbones& backbones) override;
         
-        void inStepNRemove(int step, const std::vector<Var>& variables);
+        void inStepNRemove(int step, const std::vector<Var>& variables) noexcept;
         
         FakeHeuristic();
         virtual ~FakeHeuristic();

@@ -38,13 +38,13 @@
 
 namespace Candy {
 
-    EncodedApproximationDelta::EncodedApproximationDelta() {
+    EncodedApproximationDelta::EncodedApproximationDelta() noexcept {
     }
     
     EncodedApproximationDelta::~EncodedApproximationDelta() {
     }
     
-    RefinementStrategy::RefinementStrategy() {
+    RefinementStrategy::RefinementStrategy() noexcept {
     }
     
     RefinementStrategy::~RefinementStrategy() {
@@ -52,11 +52,11 @@ namespace Candy {
     
     class EncodedApproximationDeltaImpl : public EncodedApproximationDelta {
     public:
-        const std::vector<Cl>& getNewClauses() const override;
-        const std::vector<Lit>& getAssumptionLiterals() const override;
-        size_t countEnabledClauses() const override;
+        const std::vector<Cl>& getNewClauses() const noexcept override;
+        const std::vector<Lit>& getAssumptionLiterals() const noexcept override;
+        size_t countEnabledClauses() const noexcept override;
         
-        EncodedApproximationDeltaImpl(std::unique_ptr<std::vector<Cl>> newClauses,
+        explicit EncodedApproximationDeltaImpl(std::unique_ptr<std::vector<Cl>> newClauses,
                                    const std::vector<Lit>& assumptionLiterals);
         
         virtual ~EncodedApproximationDeltaImpl();
@@ -83,15 +83,15 @@ namespace Candy {
     }
     
     
-    const std::vector<Cl>& EncodedApproximationDeltaImpl::getNewClauses() const {
+    const std::vector<Cl>& EncodedApproximationDeltaImpl::getNewClauses() const noexcept {
         return *m_newClauses;
     }
     
-    const std::vector<Lit>& EncodedApproximationDeltaImpl::getAssumptionLiterals() const {
+    const std::vector<Lit>& EncodedApproximationDeltaImpl::getAssumptionLiterals() const noexcept {
         return m_assumptionLiterals;
     }
     
-    size_t EncodedApproximationDeltaImpl::countEnabledClauses() const {
+    size_t EncodedApproximationDeltaImpl::countEnabledClauses() const noexcept {
         return m_activeClauseCount;
     }
 
@@ -103,7 +103,7 @@ namespace Candy {
         std::unique_ptr<EncodedApproximationDelta> init() override;
         std::unique_ptr<EncodedApproximationDelta> refine() override;
         
-        SimpleRefinementStrategy(const Conjectures& conjectures,
+        explicit SimpleRefinementStrategy(const Conjectures& conjectures,
                                  std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
                                  std::function<Var()> createVariable);
         virtual ~SimpleRefinementStrategy();
