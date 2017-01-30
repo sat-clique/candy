@@ -69,6 +69,30 @@ namespace Candy {
         EXPECT_EQ(activatedAssumptionLit(10), ~deactivatedAssumptionLit(10));
     }
     
+    TEST(RSARClauseEncoding, assumptionLiteralRetrieval) {
+        auto assumptionVar = 20;
+        auto implClause = encodeImplication(Implication{Glucose::mkLit(10, 0), Glucose::mkLit(100, 0)}, assumptionVar);
+        auto bbClause = encodeBackbone(BackboneConjecture{Glucose::mkLit(10,0)}, assumptionVar);
+        
+        EXPECT_EQ(getAssumptionLit(implClause), deactivatedAssumptionLit(20));
+        EXPECT_EQ(getAssumptionLit(bbClause), deactivatedAssumptionLit(20));
+    }
+    
+    TEST(RSARClauseEncoding, nonAssumptionLiteralRetrieval) {
+        auto assumptionVar = 20;
+        auto implClause = encodeImplication(Implication{Glucose::mkLit(10, 0), Glucose::mkLit(100, 0)}, assumptionVar);
+        auto bbClause = encodeBackbone(BackboneConjecture{Glucose::mkLit(10,0)}, assumptionVar);
+        
+        auto naLitsImpl = getNonAssumptionLits(implClause);
+        EXPECT_TRUE(true);
+        
+        EXPECT_TRUE((naLitsImpl == std::pair<Lit,Lit>{Glucose::mkLit(10, 1), Glucose::mkLit(100, 0)}
+                    || naLitsImpl == std::pair<Lit,Lit>{Glucose::mkLit(100, 0), Glucose::mkLit(10, 1)}));
+        
+        auto naLitsBB = getNonAssumptionLits(bbClause);
+        EXPECT_EQ(naLitsBB, (std::pair<Lit,Lit>{Glucose::mkLit(10, 0), Glucose::mkLit(10, 0)}));
+    }
+    
     TEST(RSARRefinementStrategy, refineEmptyNoHeuristics) {
         Candy::Conjectures testData;
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;

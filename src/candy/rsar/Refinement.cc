@@ -270,6 +270,18 @@ namespace Candy {
         return Cl({backbone.getLit(), deactivatedAssumptionLit(assumptionVar)});
     }
     
+    Lit getAssumptionLit(const Cl &clause) {
+        assert(clause.size() == 2 || clause.size() == 3);
+        return clause.back();
+    }
+    
+    std::pair<Lit, Lit> getNonAssumptionLits(const Cl &clause) {
+        std::pair<Lit, Lit> savedLits;
+        savedLits.first = clause[0];
+        savedLits.second = (clause.size() == 3 ? clause[1] : clause[0]);
+        return savedLits;
+    }
+    
     bool isActive(Lit assumptionLit) {
         return Glucose::sign(assumptionLit) == 0;
     }
