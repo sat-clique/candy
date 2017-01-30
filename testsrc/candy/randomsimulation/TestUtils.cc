@@ -74,14 +74,12 @@ namespace Candy {
     }
     
     bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits) {
-        if (conj.getLits().size() != lits.size()) {
+        if (conj.size() != lits.size()) {
             return false;
         }
         else {
             for (auto lit : lits) {
-                auto begin = conj.getLits().begin();
-                auto end = conj.getLits().end();
-                if (std::find(begin, end, lit) == end) {
+                if (std::find(conj.begin(), conj.end(), lit) == conj.end()) {
                     return false;
                 }
             }

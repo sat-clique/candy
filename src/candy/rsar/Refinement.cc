@@ -77,9 +77,9 @@ namespace Candy {
                                                            const std::vector<Lit>& assumptionLiterals) :
     EncodedApproximationDelta(), m_newClauses(std::move(newClauses)),
     m_assumptionLiterals(assumptionLiterals), m_activeClauseCount(0) {
-        for (auto lit : assumptionLiterals) {
-            m_activeClauseCount += (isActive(lit) ? 1 : 0);
-        }
+        m_activeClauseCount = std::count_if(assumptionLiterals.begin(),
+                                            assumptionLiterals.end(),
+                                            [](Lit l) { return isActive(l); });
     }
     
     
@@ -169,7 +169,7 @@ namespace Candy {
     
     
     void SimpleRefinementStrategy::updateApproximationState() {
-        bool markBackbones = !(m_approximationState->getBackbones().getBackboneLiterals().empty());
+        bool markBackbones = !(m_approximationState->getBackbones().empty());
         
         for (auto& heuristic : *m_heuristics) {
             heuristic->beginRefinementStep();
@@ -209,7 +209,7 @@ namespace Candy {
         
         auto clauses = std::unique_ptr<std::vector<Cl>>(new std::vector<Cl>(encodedDelta->getNewClauses()));
         
-        for (auto backboneConj : m_approximationState->getBackbones().getBackboneLiterals()) {
+        for (auto backboneConj : m_approximationState->getBackbones()) {
             Var assumptionVar = addAssumptionVariable();
             clauses->push_back(encodeBackbone(backboneConj, assumptionVar));
             m_assumptionLitsIdxByBackbone[backboneConj] = m_assumptionLits.size()-1;

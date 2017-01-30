@@ -465,7 +465,7 @@ namespace Candy {
                 }
                 // TODO: del? setIsSweepingArtifactVariable(partitionEntry.varId, true);
             }
-            if (conj.getLits().size() >= 2) {
+            if (conj.size() >= 2) {
                 target.addEquivalence(conj);
             }
         }

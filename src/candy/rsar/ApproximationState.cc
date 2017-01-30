@@ -153,7 +153,11 @@ namespace Candy {
         
         void addVariableRemovalToWorkQueue(Var it) noexcept override;
         
-        const std::vector<Lit>& getBackboneLiterals() const noexcept override;
+        const_iterator begin() const noexcept override;
+        const_iterator end() const noexcept override;
+        size_type size() const noexcept override;
+        bool empty() const noexcept override;
+        Lit at(size_type index) const override;
         
         const Backbones::CommitResult commitWorkQueue();
         void commitWorkQueueWithoutDelta();
@@ -191,9 +195,26 @@ namespace Candy {
         m_removalWorkQueue.insert(removal);
     }
     
-    const std::vector<Lit>& BackbonesImpl::getBackboneLiterals() const noexcept {
-        return m_backbonesCached;
+    BackbonesImpl::const_iterator BackbonesImpl::begin() const noexcept {
+        return m_backbonesCached.begin();
     }
+    
+    BackbonesImpl::const_iterator BackbonesImpl::end() const noexcept {
+        return m_backbonesCached.end();
+    }
+    
+    BackbonesImpl::size_type BackbonesImpl::size() const noexcept {
+        return m_backbonesCached.size();
+    }
+    
+    bool BackbonesImpl::empty() const noexcept {
+        return m_backbonesCached.empty();
+    }
+    
+    Lit BackbonesImpl::at(size_type index) const {
+        return m_backbonesCached[index];
+    }
+    
     
     const Backbones::CommitResult BackbonesImpl::commitWorkQueue() {
         Backbones::CommitResult result;
@@ -279,7 +300,11 @@ namespace Candy {
         const EquivalenceImplications::CommitResult commitWorkQueue();
         void commitWorkQueueWithoutDelta();
         
-        const std::vector<Implication>& getImplications() const noexcept override;
+        const_iterator begin() const noexcept override;
+        const_iterator end() const noexcept override;
+        size_type size() const noexcept override;
+        bool empty() const noexcept override;
+        Implication at(size_type index) const override;
         
         virtual ~EquivalenceImplicationsImpl();
         EquivalenceImplicationsImpl(const EquivalenceImplicationsImpl& other) = delete;
@@ -322,16 +347,13 @@ namespace Candy {
     : EquivalenceImplications(), m_implicationsByAnte(), m_implicationsBySucc(),
     m_implicationsCached(), m_varRemovalWorkQueue() {
         
-        auto& vars = conjecture.getLits();
+        //auto& vars = conjecture.getLits();
         
-        if (vars.size() > 1) {
-            for (size_t i = 0; i < vars.size()-1; ++i) {
-                addImplication(Implication{vars[i], vars[i+1]});
+        if (conjecture.size() > 1) {
+            for (size_t i = 0; i < conjecture.size()-1; ++i) {
+                addImplication(Implication{conjecture.at(i), conjecture.at(i+1)});
             }
-        
-            if (vars.size() > 1) {
-                addImplication(Implication{vars.back(), vars.front()});
-            }
+            addImplication(Implication{conjecture.at(conjecture.size()-1), conjecture.at(0)});
         }
         updateCache();
     }
@@ -357,8 +379,24 @@ namespace Candy {
         m_varRemovalWorkQueue.insert(toBeRemoved);
     }
     
-    const std::vector<Implication>& EquivalenceImplicationsImpl::getImplications() const noexcept {
-        return m_implicationsCached;
+    EquivalenceImplications::const_iterator EquivalenceImplicationsImpl::begin() const noexcept {
+        return m_implicationsCached.begin();
+    }
+    
+    EquivalenceImplications::const_iterator EquivalenceImplicationsImpl::end() const noexcept {
+        return m_implicationsCached.end();
+    }
+    
+    EquivalenceImplications::size_type EquivalenceImplicationsImpl::size() const noexcept {
+        return m_implicationsCached.size();
+    }
+    
+    bool EquivalenceImplicationsImpl::empty() const noexcept {
+        return m_implicationsCached.empty();
+    }
+    
+    Implication EquivalenceImplicationsImpl::at(size_type index) const {
+        return m_implicationsCached[index];
     }
     
     const EquivalenceImplications::CommitResult EquivalenceImplicationsImpl::commitWorkQueue() {
@@ -554,7 +592,7 @@ namespace Candy {
         
         for (auto&& equivalenceImpls : m_equivalenceImplications) {
             equivalenceImpls->commitWorkQueueWithoutDelta();
-            for (auto impl : equivalenceImpls->getImplications()) {
+            for (auto impl : *equivalenceImpls) {
                 addedEquivalences.newImplications.push_back(impl);
             }
         }

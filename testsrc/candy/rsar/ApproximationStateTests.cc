@@ -43,10 +43,12 @@ namespace Candy {
     static bool containsEquivalence(EquivalenceImplications& underTest, Lit a, Lit b);
     static bool containsLitAsAnteAndSucc(std::vector<Implication>& literals, Lit a);
     static std::pair<Lit,Lit> getSingleOccuringLiterals(std::vector<Implication>& implications);
-    static bool contains(EquivalenceConjecture& container, Lit lit);
     static bool contains(EquivalenceImplications& container, std::vector<Implication>& implications);
-    static bool contains(const std::vector<Lit>& container, Lit lit);
-    
+ 
+    template<typename X, typename Y>
+    static bool contains(const X& iterable, const Y& thing) {
+        return std::find(iterable.begin(), iterable.end(), thing) != iterable.end();
+    }
     
     static EquivalenceImplications::CommitResult commitWorkQueue(EquivalenceImplications& target, bool withGenDelta) {
         if (withGenDelta) {
@@ -63,7 +65,7 @@ namespace Candy {
         EquivalenceConjecture testData;
         auto underTest = createEquivalenceImplications(testData);
         
-        EXPECT_TRUE(underTest->getImplications().empty());
+        EXPECT_TRUE(underTest->empty());
     }
     
     
@@ -73,7 +75,7 @@ namespace Candy {
         testData.addLit(Glucose::mkLit(10, 0));
         auto underTest = createEquivalenceImplications(testData);
         
-        EXPECT_EQ(underTest->getImplications().size(), 2ull);
+        EXPECT_EQ(underTest->size(), 2ull);
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(0, 1), Glucose::mkLit(10, 0)));
     }
     
@@ -85,7 +87,7 @@ namespace Candy {
         testData.addLit(Glucose::mkLit(100, 0));
         auto underTest = createEquivalenceImplications(testData);
         
-        EXPECT_EQ(underTest->getImplications().size(), 3ull);
+        EXPECT_EQ(underTest->size(), 3ull);
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(0, 1), Glucose::mkLit(100, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(0, 1), Glucose::mkLit(10, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(10, 0), Glucose::mkLit(0, 1)));
@@ -100,7 +102,7 @@ namespace Candy {
         
         EXPECT_TRUE(commitResult.newImplications.empty());
         EXPECT_TRUE(commitResult.removedImplications.empty());
-        EXPECT_TRUE(underTest->getImplications().empty());
+        EXPECT_TRUE(underTest->empty());
     }
     
     
@@ -116,7 +118,7 @@ namespace Candy {
         
         EXPECT_TRUE(commitResult.newImplications.empty());
         EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
-        EXPECT_TRUE(underTest->getImplications().empty());
+        EXPECT_TRUE(underTest->empty());
         
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(0,1)));
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(10,0)));
@@ -134,7 +136,7 @@ namespace Candy {
         
         EXPECT_TRUE(commitResult.newImplications.empty());
         EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
-        EXPECT_TRUE(underTest->getImplications().empty());
+        EXPECT_TRUE(underTest->empty());
         
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(0,1)));
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(10,0)));
@@ -153,7 +155,7 @@ namespace Candy {
         
         EXPECT_EQ(commitResult.newImplications.size(), 1ull);
         EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
-        EXPECT_EQ(underTest->getImplications().size(), 2ull);
+        EXPECT_EQ(underTest->size(), 2ull);
         
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(10,0)));
         auto holeBoundaries = getSingleOccuringLiterals(commitResult.removedImplications);
@@ -178,7 +180,7 @@ namespace Candy {
         
         EXPECT_TRUE(commitResult.newImplications.empty());
         EXPECT_EQ(commitResult.removedImplications.size(), 3ull);
-        EXPECT_TRUE(underTest->getImplications().empty());
+        EXPECT_TRUE(underTest->empty());
         
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(10,0)));
         EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Glucose::mkLit(0,1)));
@@ -197,7 +199,7 @@ namespace Candy {
         underTest->addVariableRemovalToWorkQueue(100);
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_TRUE(underTest->getImplications().empty());
+        EXPECT_TRUE(underTest->empty());
         
         if (withGenDelta) {
             EXPECT_TRUE(commitResult.newImplications.empty());
@@ -228,12 +230,12 @@ namespace Candy {
         
         auto underTest = createEquivalenceImplications(testData);
         
-        ASSERT_EQ(underTest->getImplications().size(), 6ull);
+        ASSERT_EQ(underTest->size(), 6ull);
         
         underTest->addVariableRemovalToWorkQueue(100);
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_EQ(underTest->getImplications().size(), 5ull);
+        EXPECT_EQ(underTest->size(), 5ull);
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(1, 0), Glucose::mkLit(1000, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(1000, 0), Glucose::mkLit(10000, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(10000, 0), Glucose::mkLit(100000, 0)));
@@ -273,7 +275,7 @@ namespace Candy {
         
         auto underTest = createEquivalenceImplications(testData);
         
-        ASSERT_EQ(underTest->getImplications().size(), 6ull);
+        ASSERT_EQ(underTest->size(), 6ull);
         
         underTest->addVariableRemovalToWorkQueue(1);
         underTest->addVariableRemovalToWorkQueue(10);
@@ -281,7 +283,7 @@ namespace Candy {
         
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_EQ(underTest->getImplications().size(), 3ull);
+        EXPECT_EQ(underTest->size(), 3ull);
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(1000, 0), Glucose::mkLit(10000, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(10000, 0), Glucose::mkLit(100000, 0)));
         
@@ -321,14 +323,14 @@ namespace Candy {
         
         auto underTest = createEquivalenceImplications(testData);
         
-        ASSERT_EQ(underTest->getImplications().size(), 6ull);
+        ASSERT_EQ(underTest->size(), 6ull);
         
         underTest->addVariableRemovalToWorkQueue(1);
         underTest->addVariableRemovalToWorkQueue(1000);
         
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_EQ(underTest->getImplications().size(), 4ull);
+        EXPECT_EQ(underTest->size(), 4ull);
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(10, 0), Glucose::mkLit(100, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(100, 0), Glucose::mkLit(10000, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(10000, 0), Glucose::mkLit(100000, 0)));
@@ -367,7 +369,7 @@ namespace Candy {
         
         auto underTest = createEquivalenceImplications(testData);
         
-        ASSERT_EQ(underTest->getImplications().size(), 6ull);
+        ASSERT_EQ(underTest->size(), 6ull);
         
         underTest->addVariableRemovalToWorkQueue(1);
         underTest->addVariableRemovalToWorkQueue(1000);
@@ -375,7 +377,7 @@ namespace Candy {
         
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_EQ(underTest->getImplications().size(), 3ull);
+        EXPECT_EQ(underTest->size(), 3ull);
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(10, 0), Glucose::mkLit(100, 0)));
         EXPECT_TRUE(containsEquivalence(*underTest, Glucose::mkLit(100, 0), Glucose::mkLit(100000, 0)));
 
@@ -416,7 +418,7 @@ namespace Candy {
         std::vector<BackboneConjecture> testData;
         auto underTest = createBackbones(testData);
         
-        EXPECT_TRUE(underTest->getBackboneLiterals().empty());
+        EXPECT_TRUE(underTest->empty());
     }
     
     
@@ -425,8 +427,8 @@ namespace Candy {
         testData.push_back(BackboneConjecture(Glucose::mkLit(1,0)));
         auto underTest = createBackbones(testData);
         
-        EXPECT_EQ(underTest->getBackboneLiterals().size(), 1ull);
-        EXPECT_TRUE(contains(underTest->getBackboneLiterals(), Glucose::mkLit(1,0)));
+        EXPECT_EQ(underTest->size(), 1ull);
+        EXPECT_TRUE(contains(*underTest, Glucose::mkLit(1,0)));
     }
     
     TEST(RSARBackbones, createTriple) {
@@ -436,10 +438,10 @@ namespace Candy {
         testData.push_back(BackboneConjecture(Glucose::mkLit(3,0)));
         auto underTest = createBackbones(testData);
         
-        EXPECT_EQ(underTest->getBackboneLiterals().size(), 3ull);
-        EXPECT_TRUE(contains(underTest->getBackboneLiterals(), Glucose::mkLit(1,0)));
-        EXPECT_TRUE(contains(underTest->getBackboneLiterals(), Glucose::mkLit(2,0)));
-        EXPECT_TRUE(contains(underTest->getBackboneLiterals(), Glucose::mkLit(3,0)));
+        EXPECT_EQ(underTest->size(), 3ull);
+        EXPECT_TRUE(contains(*underTest, Glucose::mkLit(1,0)));
+        EXPECT_TRUE(contains(*underTest, Glucose::mkLit(2,0)));
+        EXPECT_TRUE(contains(*underTest, Glucose::mkLit(3,0)));
     }
     
     static void test_Backbones_removeInEmpty(bool withGenDelta) {
@@ -449,7 +451,7 @@ namespace Candy {
         underTest->addVariableRemovalToWorkQueue(10);
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_TRUE(underTest->getBackboneLiterals().empty());
+        EXPECT_TRUE(underTest->empty());
         
         if (withGenDelta) {
             EXPECT_TRUE(commitResult.removedBackbones.empty());
@@ -479,7 +481,7 @@ namespace Candy {
         
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_TRUE(underTest->getBackboneLiterals().empty());
+        EXPECT_TRUE(underTest->empty());
         
         if (withGenDelta) {
             EXPECT_EQ(commitResult.removedBackbones.size(), 3ull);
@@ -510,7 +512,7 @@ namespace Candy {
         
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
-        EXPECT_EQ(underTest->getBackboneLiterals().size(), 1ull);
+        EXPECT_EQ(underTest->size(), 1ull);
         
         if (withGenDelta) {
             EXPECT_EQ(commitResult.removedBackbones.size(), 2ull);
@@ -518,7 +520,7 @@ namespace Candy {
         
             EXPECT_TRUE(contains(commitResult.removedBackbones, Glucose::mkLit(1,0)));
             EXPECT_TRUE(contains(commitResult.removedBackbones, Glucose::mkLit(2,0)));
-            EXPECT_TRUE(contains(underTest->getBackboneLiterals(), Glucose::mkLit(3,0)));
+            EXPECT_TRUE(contains(*underTest, Glucose::mkLit(3,0)));
         }
     }
     
@@ -537,7 +539,7 @@ namespace Candy {
         auto underTest = createApproximationState(testData);
         
         EXPECT_TRUE(underTest->beginEquivalenceImplications() == underTest->endEquivalenceImplications());
-        EXPECT_TRUE(underTest->getBackbones().getBackboneLiterals().empty());
+        EXPECT_TRUE(underTest->getBackbones().empty());
         
         auto refDelta = (testInitDelta ? underTest->createInitializationDelta() : underTest->createDelta());
         EXPECT_TRUE(refDelta->beginAddedImplications() == refDelta->endAddedImplications());
@@ -569,7 +571,7 @@ namespace Candy {
         
         auto underTest = createApproximationState(testData);
         
-        ASSERT_EQ(underTest->getBackbones().getBackboneLiterals().size(), 1ull);
+        ASSERT_EQ(underTest->getBackbones().size(), 1ull);
         ASSERT_EQ(underTest->equivalenceImplicationsSize(), 1ull);
         
         if (remove) {
@@ -625,7 +627,7 @@ namespace Candy {
         
         auto underTest = createApproximationState(testData);
         
-        ASSERT_EQ(underTest->getBackbones().getBackboneLiterals().size(), 2ull);
+        ASSERT_EQ(underTest->getBackbones().size(), 2ull);
         ASSERT_EQ(underTest->equivalenceImplicationsSize(), 2ull);
         
         if (remove) {
@@ -665,10 +667,8 @@ namespace Candy {
     
     
     static bool containsEquivalence(EquivalenceImplications& underTest, Lit a, Lit b) {
-        auto& implications = underTest.getImplications();
-        
         std::unordered_map<Lit,Lit> implicationMap;
-        for (auto i : implications) {
+        for (auto i : underTest) {
             implicationMap[i.first] = i.second;
         }
         
@@ -726,23 +726,14 @@ namespace Candy {
         return std::pair<Lit,Lit>(l1, l2);
     }
     
-    static bool contains(EquivalenceConjecture& container, Lit lit) {
-        return std::find(container.getLits().begin(), container.getLits().end(), lit) !=
-            container.getLits().end();
-    }
-    
     static bool contains(EquivalenceImplications& container, std::vector<Implication>& implications) {
         std::unordered_set<Implication> work;
         work.insert(implications.begin(), implications.end());
         
-        for (auto impl : container.getImplications()) {
+        for (auto impl : container) {
             work.erase(impl);
         }
         
         return work.size() == 0ull;
-    }
-    
-    static bool contains(const std::vector<Lit>& container, Lit lit) {
-        return std::find(container.begin(), container.end(), lit) != container.end();
     }
 }

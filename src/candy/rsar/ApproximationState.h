@@ -58,16 +58,29 @@ namespace Candy {
             std::vector<Lit> removedBackbones;
         };
         
+        using const_iterator = std::vector<Lit>::const_iterator;
+        using size_type = std::vector<Lit>::size_type;
+        
         /**
          * Requests the removal of backbone literals having the given variable. Note
          * that this change is committed lazily.
          */
         virtual void addVariableRemovalToWorkQueue(Var it) noexcept = 0;
         
-        /**
-         * Returns the set of represented backbone literals.
-         */
-        virtual const std::vector<Lit>& getBackboneLiterals() const noexcept = 0;
+        /** Begin iterator for backbone literals. Gets invalidated when the work queue is committed. */
+        virtual const_iterator begin() const noexcept = 0;
+        
+        /** End iterator for backbone literals. Gets invalidated when the work queue is committed. */
+        virtual const_iterator end() const noexcept = 0;
+        
+        /** Returns the amount of backbone literals. */
+        virtual size_type size() const noexcept = 0;
+        
+        /** Returns true iff the object contains no backbone literals. */
+        virtual bool empty() const noexcept = 0;
+        
+        /** Returns the n'th stored backbone literal. */
+        virtual Lit at(size_type index) const = 0;
         
         Backbones() noexcept;
         virtual ~Backbones();
@@ -97,17 +110,29 @@ namespace Candy {
             std::vector<Implication> removedImplications;
         };
         
+        using const_iterator = std::vector<Implication>::const_iterator;
+        using size_type = std::vector<Implication>::size_type;
+        
         /**
          * Requests the removal of literals (having the given variable) from the represented
          * set of equivalent literals. Note that this change is committed lazily.
          */
         virtual void addVariableRemovalToWorkQueue(Var it) noexcept = 0;
         
-        /**
-         * Returns a reference to the collection of implications encoding the represented
-         * equivalences.
-         */
-        virtual const std::vector<Implication>& getImplications() const noexcept  = 0;
+        /** Begin iterator for implications. Gets invalidated when the work queue is committed. */
+        virtual const_iterator begin() const noexcept = 0;
+        
+        /** End iterator for implications. Gets invalidated when the work queue is committed. */
+        virtual const_iterator end() const noexcept = 0;
+        
+        /** Returns the amount of implications stored in this object. */
+        virtual size_type size() const noexcept = 0;
+        
+        /** Returns true iff no implications are stored in this object. */
+        virtual bool empty() const noexcept = 0;
+        
+        /** Returns the n'th stored implication. */
+        virtual Implication at(size_type index) const = 0;
         
         EquivalenceImplications() noexcept;
         virtual ~EquivalenceImplications();

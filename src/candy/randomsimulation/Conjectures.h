@@ -39,15 +39,18 @@ namespace Candy {
      */
     class EquivalenceConjecture {
     public:
+        typedef std::vector<Glucose::Lit>::const_iterator const_iterator;
+        typedef std::vector<Glucose::Lit>::size_type size_type;
+        
         /**
          * Adds a literal to the conjecture.
          */
         void addLit(Glucose::Lit lit);
         
-        /**
-         * Retrieves the literals conjected to be equivalent.
-         */
-        const std::vector<Glucose::Lit> &getLits() const;
+        const_iterator begin() const;
+        const_iterator end() const;
+        size_type size() const;
+        Lit at(size_type index) const;
         
         EquivalenceConjecture();
     private:
@@ -97,12 +100,12 @@ namespace Candy {
         /**
          * Adds an equivalence conjecture (by copying).
          */
-        void addEquivalence(EquivalenceConjecture &conj);
+        void addEquivalence(const EquivalenceConjecture &conj);
         
         /**
          * Adds a backbone conjecture (by copying).
          */
-        void addBackbone(BackboneConjecture &conj);
+        void addBackbone(const BackboneConjecture &conj);
         
     private:
         std::vector<EquivalenceConjecture> m_equivalences {};
