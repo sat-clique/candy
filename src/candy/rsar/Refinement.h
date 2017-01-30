@@ -31,6 +31,7 @@
 #include <core/SolverTypes.h>
 
 #include <vector>
+#include <utility>
 
 namespace Candy {
     class Conjectures;
@@ -127,6 +128,15 @@ namespace Candy {
     
     /** Encodes the given backbone literal as a SAT problem clause. */
     Cl encodeBackbone(BackboneConjecture backbone, Var assumptionVar);
+    
+    /** Returns the assumption literal contained in the given clause. */
+    Lit getAssumptionLit(const Cl &clause);
+    
+    /** Returns the non-assumption literals contained in the given clause created
+     * by encode...(). For backbone-encoding clauses, the two returned literals
+     * are equal.
+     */
+    std::pair<Lit, Lit> getNonAssumptionLits(const Cl &clause);
     
     /** Returns true iff the given assumption literal is marking "activeness". */
     bool isActive(Lit assumptionLit);
