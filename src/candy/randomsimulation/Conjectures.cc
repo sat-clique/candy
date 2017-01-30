@@ -37,8 +37,20 @@ namespace Candy {
         m_lits.push_back(lit);
     }
     
-    const std::vector<Glucose::Lit> &EquivalenceConjecture::getLits() const {
-        return m_lits;
+    EquivalenceConjecture::const_iterator EquivalenceConjecture::begin() const {
+        return m_lits.begin();
+    }
+    
+    EquivalenceConjecture::const_iterator EquivalenceConjecture::end() const {
+        return m_lits.end();
+    }
+    
+    EquivalenceConjecture::size_type EquivalenceConjecture::size() const {
+        return m_lits.size();
+    }
+    
+    Lit EquivalenceConjecture::at(EquivalenceConjecture::size_type index) const {
+        return m_lits[index];
     }
     
     BackboneConjecture::BackboneConjecture(Glucose::Lit lit) : m_lit(lit) {
@@ -49,11 +61,11 @@ namespace Candy {
         return m_lit;
     }
     
-    void Conjectures::addEquivalence(EquivalenceConjecture &conj) {
+    void Conjectures::addEquivalence(const EquivalenceConjecture &conj) {
         m_equivalences.push_back(conj);
     }
     
-    void Conjectures::addBackbone(BackboneConjecture &conj) {
+    void Conjectures::addBackbone(const BackboneConjecture &conj) {
         m_backbones.push_back(conj);
     }
     
