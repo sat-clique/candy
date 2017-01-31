@@ -1,4 +1,6 @@
 add_library(rsar
+  SolverAdapter.h
+  SolverAdapter.cc
   Refinement.h
   Refinement.cc
   Heuristics.h
