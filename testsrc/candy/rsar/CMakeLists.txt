@@ -1,4 +1,7 @@
 add_executable(rsar_tests Main.cc
+			  SolverMock.cc
+			  SolverMock.h
+			  SolverMockTests.cc
 			  TestUtils.h
 			  TestUtils.cc
 			  HeuristicsMock.h
