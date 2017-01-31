@@ -67,6 +67,12 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-rtti -fno-inline -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -fno-rtti -O3")
 
+
+### Additional Preprocessor Defintions
+
+add_definitions(-DSONIFICATION)
+
+
 ### Find libraries
 
 find_package(ZLIB)
@@ -101,7 +107,7 @@ set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include"
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
 
 add_subdirectory(src)
-set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES})
+set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES} sonification)
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
