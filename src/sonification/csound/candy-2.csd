@@ -33,6 +33,8 @@ gkbacktrack_upd init 0
 gkconflictlevel_upd init 0
 gkassigns_upd init 0
 
+gkdecisions_hwm init 0
+
 ;ROUTING
 connect "sampler", "out", "mixer", "mix1_sampler"
 connect "decision_level", "out", "mixer", "mix2_decision_level"
@@ -45,7 +47,7 @@ connect "eloquence", "out", "mixer", "mix6_eloquence"
 alwayson "oscReceiver"
 alwayson "restart_trigger"
 alwayson "decision_level"
-alwayson "backtrack_level"
+;alwayson "backtrack_level"
 alwayson "learnt_size"
 alwayson "conflict_trigger"
 alwayson "eloquence"
@@ -83,6 +85,9 @@ instr oscReceiver
   gkdecisions_upd OSClisten giOSC, "/decision", "f", kreceive2
   if (gkdecisions_upd == 1) then
     gkdecisions = kreceive2
+    if (gkdecisions > gkdecisions_hwm) then
+      gkdecisions_hwm = gkdecisions
+    endif
   endif
   
   gklearnt_upd OSClisten giOSC, "/learnt", "f", kreceive3
@@ -108,11 +113,11 @@ endin
 
 ;instrument: decision level meter
 instr decision_level
-  gkvar init 0
-  if gkvariables > 0 then
-    gkvar = 440 + (gkdecisions * 65800) / gkvariables
+  kvar init 0
+  if gkdecisions_hwm > 0 then
+    kvar = 440 + (gkdecisions * 258) / gkdecisions_hwm
   endif
-  adecision oscil 1, gkvar, gisine2
+  adecision oscil 1, kvar, gisaw
   outleta "out", adecision
 endin
 
@@ -120,9 +125,9 @@ endin
 instr backtrack_level
   kvar init 0
   if gkvariables > 0 then
-    kvar = 440 + (gkbacktrack * 65800) / gkvariables
+    kvar = 440 + (gkbacktrack * 258) / gkvariables
   endif
-  abacktrack oscil 1, kvar, gisaw
+  abacktrack oscil 1, kvar, gisine2
   outleta "out", abacktrack
 endin
 
@@ -146,31 +151,30 @@ instr learnt_size
 endin
 
 instr eloquence
-  asig1 gbuzz 1, 440, 10, 1, .9, 11
-  asig2 gbuzz 1, 440, 10, 1, .9, 13
-  asig = asig1 + asig2
-
+  kfreq init 0
+  ;asig gbuzz 1, 440, 10, 1, .9, 11
   if gkassigns > 0 then
-    kfreq = 200 + (gkdecisions * 16000) / gkassigns
+    kfreq = 440 + (gkdecisions * 258) / gkassigns
   endif
-  alow, ahigh, aband svfilter asig, kfreq, 490  
-  asum    = alow * 1 + ahigh * 0 + aband * 0
+  ;alow, ahigh, aband svfilter asig, kfreq, 490  
+  ;asum = alow * 1 + ahigh * 0 + aband * 0
+  asum oscil 1, kfreq, girect
   outleta "out", asum;
 endin
 
 instr conflict
   kdl init 0
   ilength init 0
-  if gkvariables > 0 then
-    kscale = (gkdecisions * 100) / gkvariables
+  if gkdecisions_hwm > 0 then
+    kscale = (gkdecisions * 100) / gkdecisions_hwm
   endif 
-  if (kscale > 50) then
+  if (kscale > 75) then
     kdl =  698.456 ;f
     ilength = .35
-  elseif (kscale > 25) then
+  elseif (kscale > 50) then
     kdl = 659.255 ;e
     ilength = .3
-  elseif (kscale > 5) then 
+  elseif (kscale > 25) then 
     kdl = 587.330 ;d
     ilength = .25
   else
@@ -220,10 +224,10 @@ instr mixer
   kstop OSClisten giOSC, "/stop", "f", kreceive0
   
   if (kstart == 1) then 
-    kch1vol = .5
+    kch1vol = 1
     kch2vol = 1
-    kch3vol = 1
-    kch4vol = 1
+    kch3vol = 0 ;backtrack_level
+    kch4vol = .7
     kch5vol = 1
     kch6vol = 1
   endif
@@ -272,9 +276,9 @@ endin
 <CsScore>
 ; NUM | INIT_TIME | SIZE | GEN_ROUTINE |  FILE_PATH   | IN_SKIP | FORMAT | CHANNEL
 f  1      0          0       1      "samples/46.WAV"     0         4         1
-f  2      0          0       1      "samples/06.WAV"     0         4         1
-f  3      0          0       1      "samples/16.WAV"     0         4         1
-f  4      0          0       1      "samples/26.WAV"     0         4         1
+f  2      0          0       1      "samples/23.WAV"     0         4         1
+f  3      0          0       1      "samples/26.WAV"     0         4         1
+f  4      0          0       1      "samples/36.WAV"     0         4         1
 ;  f2 0 16384 10 1                                          ; Sine
 ;  f3 0 16384 10 1 0.5 0.3 0.25 0.2 0.167 0.14 0.125 .111   ; Sawtooth
 ;  f4 0 16384 10 1 0   0.3 0    0.2 0     0.14 0     .111   ; Square
