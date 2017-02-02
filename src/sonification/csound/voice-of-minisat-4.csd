@@ -87,17 +87,16 @@ instr restart
   endif
   itablen = ftlen(giSample) ;length of the table
   idur = itablen / sr ;duration
-  aSamp poscil3 5, 1/idur, giSample
+  aSamp poscil3 3, 1/idur, giSample
   outleta "out", aSamp
 endin
 
 ;restart-trigger 
 instr restart_trigger
   krestart init 1
-  ktrig3 OSClisten giOSC, "/restart", "f", krestart
-  
+  ktrig3 OSClisten giOSC, "/restart", "f", krestart  
   if (krestart > 0) then
-    event "i", "restart", 0, 0.193152, 1
+    event "i", "restart", 0, 0.5, 2
     krestart = 0
   endif
 endin
