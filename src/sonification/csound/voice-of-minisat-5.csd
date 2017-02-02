@@ -103,12 +103,14 @@ endin
 
 opcode oVariables, k, 0 
   kreceive init 1
-  gknvars init 1
+  knvars init 1
   kans OSClisten giOSC, "/variables", "f", kreceive
   if (kans == 1) then
-    gknvars = kreceive
+    knvars = kreceive
+  else
+    printk 0,kreceive
   endif
-  xout gknvars
+  xout knvars
 endop
 
 opcode oDecision, k, 0 
