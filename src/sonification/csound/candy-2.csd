@@ -38,7 +38,6 @@ gkdecisions_hwm init 0
 ;ROUTING
 connect "sampler", "out", "mixer", "mix1_sampler"
 connect "decision_level", "out", "mixer", "mix2_decision_level"
-connect "backtrack_level", "out", "mixer", "mix3_backtrack_level"
 connect "learnt_size", "out", "mixer", "mix4_learnt_size"
 connect "conflict", "out", "mixer", "mix5_conflict"
 connect "eloquence", "out", "mixer", "mix6_eloquence"
@@ -47,7 +46,6 @@ connect "eloquence", "out", "mixer", "mix6_eloquence"
 alwayson "oscReceiver"
 alwayson "restart_trigger"
 alwayson "decision_level"
-;alwayson "backtrack_level"
 alwayson "learnt_size"
 alwayson "conflict_trigger"
 alwayson "eloquence"
@@ -117,18 +115,9 @@ instr decision_level
   if gkdecisions_hwm > 0 then
     kvar = 440 + (gkdecisions * 258) / gkdecisions_hwm
   endif
-  adecision oscil 1, kvar, gisaw
+  ;ares linseg .1, .2, .7, .3, 1, .5, .1
+  adecision oscil .7, kvar, gisaw
   outleta "out", adecision
-endin
-
-;instrument: backtrack level meter
-instr backtrack_level
-  kvar init 0
-  if gkvariables > 0 then
-    kvar = 440 + (gkbacktrack * 258) / gkvariables
-  endif
-  abacktrack oscil 1, kvar, gisine2
-  outleta "out", abacktrack
 endin
 
 instr learnt_size 
@@ -145,7 +134,8 @@ instr learnt_size
   endif
   kvar = 16000 - ((gklearnt * 16000) / 10)
   awhite unirand 16200
-  asound oscil 1, awhite, gisaw
+  aenv expseg 0.0001, .2, 1, .3, 0.0001
+  asound oscil aenv, awhite, gisaw
   afilt butterlp asound, kvar
   outleta "out", afilt
 endin
@@ -181,7 +171,7 @@ instr conflict
     kdl = 440 ;a
     ilength = .2
   endif
-  aenv expon 2, ilength, 0.0001
+  aenv expon 1, ilength, 0.0001
   aSig oscil aenv, kdl, gisaw
   outleta "out", aSig 
 endin
@@ -200,7 +190,7 @@ endin
 instr mixer
   ach1 inleta "mix1_sampler"
   ach2 inleta "mix2_decision_level"
-  ach3 inleta "mix3_backtrack_level"
+  ach3 inleta "mix3"
   ach4 inleta "mix4_learnt_size"
   ach5 inleta "mix5_conflict"
   ach6 inleta "mix6_eloquence"
@@ -226,7 +216,7 @@ instr mixer
   if (kstart == 1) then 
     kch1vol = 1
     kch2vol = 1
-    kch3vol = 0 ;backtrack_level
+    kch3vol = 0 ;unassigned
     kch4vol = .7
     kch5vol = 1
     kch6vol = 1
