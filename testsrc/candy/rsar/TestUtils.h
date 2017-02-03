@@ -29,9 +29,14 @@
 
 #include <core/SolverTypes.h>
 #include <simp/SimpSolver.h>
+#include <rsar/Heuristics.h>
+#include <randomsimulation/Conjectures.h>
+
+#include "SolverMock.h"
 
 #include <vector>
 #include <memory>
+#include <queue>
 
 
 namespace Candy {
@@ -55,6 +60,73 @@ namespace Candy {
         std::unique_ptr<Glucose::SimpSolver> m_solver;
         Var m_maxVar;
     };
+    
+    
+    /** 
+     * Returns true iff first and second occur in events, and second does
+     * not occur before first.
+     */
+    bool occursOnlyBefore(const std::vector<SolverMockEvent> &events,
+                          SolverMockEvent first,
+                          SolverMockEvent second);
+    
+    /**
+     * Returns true iff first and second occur in events, and first
+     * does not occur before second.
+     */
+    bool occursOnlyAfter(const std::vector<SolverMockEvent> &events,
+                         SolverMockEvent first,
+                         SolverMockEvent second);
+    
+    /**
+     * Returns true iff first and second occur in events, and first
+     * occurs before second.
+     */
+    bool occursBefore(const std::vector<SolverMockEvent> &events,
+                      SolverMockEvent first,
+                      SolverMockEvent second);
+    
+    /**
+     * Returns true iff first and second occur in events, and first
+     * occurs before after.
+     */
+    bool occursAfter(const std::vector<SolverMockEvent> &events,
+                     SolverMockEvent first,
+                     SolverMockEvent second);
+    
+    /** Prints the given solver mock event log. */
+    void printEventLog(const std::vector<SolverMockEvent> &events, bool insertNewlines = false);
+    
+    /** Returns true iff the given clause contains the given literal. */
+    bool contains(const Cl& clause, Lit lit);
+    
+    /** Creates an EquivalenceConjecture containing the given literals. */
+    EquivalenceConjecture createEquivalenceConjecture(const std::vector<Lit> &lits);
+    
+    /** Returns true iff the given variable contains in any of the given clauses. */
+    bool varOccursIn(const std::vector<Cl> &clauses, Var var);
+    
+    /** Randomly creates n distinct literals with variables in the range of 0 and
+     * the maximum variable occuring in the given problem instance f. */
+    std::vector<Lit> pickLiterals(const CNFProblem &f, int n);
+    
+    /** Returns 10 random indices of the given vector of literals, using the given
+     * RNG seed. */
+    std::priority_queue<std::vector<Lit>::size_type> getRandomIndices(const std::vector<Lit> &literals,
+                                                                      unsigned int seed);
+    
+    /** Returns a partitioning of the given vector of literals corresponding to the given
+     * indices. Clears its arguments. */
+    std::vector<std::vector<Lit>> convertToPartition(std::vector<Lit> &literals,
+                                                     std::priority_queue<std::vector<Lit>::size_type> &indices);
+    
+    /** Creates a (determinized) pseudorandom Conjectures object for the given literals. */
+    std::unique_ptr<Conjectures> createRandomConjectures(const std::vector<Lit> &literals,
+                                                         const CNFProblem& problem);
+    
+    /** Creates a (determinized) pseudorandomly behaving deactivation heuristic for
+     * the given literals, eventually marking all literals for deactivation. */
+    std::unique_ptr<RefinementHeuristic> createRandomHeuristic(const std::vector<Lit> &literals);
 }
 
 #endif

@@ -38,9 +38,6 @@
 #include <functional>
 
 namespace Candy {
-    static bool contains(Cl& clause, Lit lit) {
-        return std::find(clause.begin(), clause.end(), lit) != clause.end();
-    }
     
     TEST(RSARClauseEncoding, encodeBackbone) {
         BackboneConjecture backbone {Glucose::mkLit(10,1)};
