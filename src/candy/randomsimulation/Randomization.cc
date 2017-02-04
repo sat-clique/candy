@@ -29,6 +29,7 @@
 #include "Randomization.h"
 
 #include <utils/FastRand.h>
+#include <utils/MemUtils.h>
 
 namespace Candy {
     Randomization::~Randomization() {
@@ -80,6 +81,6 @@ namespace Candy {
     }
     
     std::unique_ptr<Randomization> createSimpleRandomization() {
-        return std::make_unique<SimpleRandomization>();
+        return backported_std::make_unique<SimpleRandomization>();
     }
 }

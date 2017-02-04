@@ -28,6 +28,8 @@
 
 #include "Propagation.h"
 
+#include <utils/MemUtils.h>
+
 #include "ClauseOrder.h"
 #include "SimulationVector.h"
 
@@ -114,6 +116,6 @@ namespace Candy {
     
     
     std::unique_ptr<Propagation> createInputToOutputPropagation() {
-        return std::make_unique<InputToOutputPropagation>();
+        return backported_std::make_unique<InputToOutputPropagation>();
     }
 }

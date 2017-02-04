@@ -28,6 +28,7 @@
 #include <simp/SimpSolver.h>
 
 #include <randomsimulation/Conjectures.h>
+#include <utils/MemUtils.h>
 
 #include "Heuristics.h"
 #include "Refinement.h"
@@ -529,16 +530,16 @@ namespace Candy {
         }
         
         std::unique_ptr<ARSolver> result;
-        result.reset(new ARSolverImpl(std::move(usedConjectures),
-                                      std::move(usedSolver),
-                                      m_maxRefinementSteps,
-                                      std::move(m_heuristics),
-                                      m_simpHandlingMode));
+        result = backported_std::make_unique<ARSolverImpl>(std::move(usedConjectures),
+                                                           std::move(usedSolver),
+                                                           m_maxRefinementSteps,
+                                                           std::move(m_heuristics),
+                                                           m_simpHandlingMode);
         return result;
     }
 
     
     std::unique_ptr<ARSolverBuilder> createARSolverBuilder() {
-        return std::unique_ptr<ARSolverBuilder>(new ARSolverBuilderImpl());
+        return backported_std::make_unique<ARSolverBuilderImpl>();
     }
 }

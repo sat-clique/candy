@@ -3,6 +3,7 @@ add_library(utils
     Options.h
     System.cc
     System.h
-    FastRand.h)
+    FastRand.h
+    MemUtils.h)
 
 

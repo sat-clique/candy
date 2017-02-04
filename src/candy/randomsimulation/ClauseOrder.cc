@@ -38,6 +38,8 @@
 #include <gates/GateAnalyzer.h>
 #include <core/SolverTypes.h>
 
+#include <utils/MemUtils.h>
+
 #include <iostream>
 
 namespace Candy {
@@ -250,7 +252,7 @@ namespace Candy {
     }
     
     std::unique_ptr<ClauseOrder> createRecursiveClauseOrder() {
-        return std::make_unique<RecursiveClauseOrder>();
+        return backported_std::make_unique<RecursiveClauseOrder>();
     }
     
     
@@ -316,6 +318,6 @@ namespace Candy {
     }
     
     std::unique_ptr<ClauseOrder> createNonrecursiveClauseOrder() {
-        return std::make_unique<NonrecursiveClauseOrder>();
+        return backported_std::make_unique<NonrecursiveClauseOrder>();
     }
 }

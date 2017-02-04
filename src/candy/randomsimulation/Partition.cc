@@ -33,6 +33,7 @@
 #include <iostream>
 
 #include <utils/FastRand.h>
+#include <utils/MemUtils.h>
 
 #include "SimulationVector.h"
 #include "Conjectures.h"
@@ -139,15 +140,15 @@ namespace Candy {
     
     
     std::unique_ptr<CompressionScheduleStrategy> createLinearCompressionScheduleStrategy(unsigned int freq) {
-        return std::make_unique<LinearCompressionScheduleStrategy>(freq);
+        return backported_std::make_unique<LinearCompressionScheduleStrategy>(freq);
     }
     
     std::unique_ptr<CompressionScheduleStrategy> createLogCompressionScheduleStrategy() {
-        return std::make_unique<LogCompressionScheduleStrategy>();
+        return backported_std::make_unique<LogCompressionScheduleStrategy>();
     }
     
     std::unique_ptr<CompressionScheduleStrategy> createNullCompressionScheduleStrategy() {
-        return std::make_unique<NullCompressionScheduleStrategy>();
+        return backported_std::make_unique<NullCompressionScheduleStrategy>();
     }
     
     
@@ -521,10 +522,10 @@ namespace Candy {
     }
     
     std::unique_ptr<Partition> createDefaultPartition() {
-        return createDefaultPartition(std::make_unique<LogCompressionScheduleStrategy>());
+        return createDefaultPartition(backported_std::make_unique<LogCompressionScheduleStrategy>());
     }
     
     std::unique_ptr<Partition> createDefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionScheduleStrategy) {
-        return std::make_unique<DefaultPartition>(std::move(compressionScheduleStrategy));
+        return backported_std::make_unique<DefaultPartition>(std::move(compressionScheduleStrategy));
     }
 }

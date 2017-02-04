@@ -26,6 +26,7 @@
 
 #include "ApproximationState.h"
 #include <randomsimulation/Conjectures.h>
+#include <utils/MemUtils.h>
 
 #include <set>
 #include <unordered_map>
@@ -136,7 +137,7 @@ namespace Candy {
     
     std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
                                                                  const Backbones::CommitResult& bbComitRes) noexcept {
-        return std::unique_ptr<ApproximationDelta>(new ApproximationDeltaImpl(eqCommitRes, bbComitRes));
+        return backported_std::make_unique<ApproximationDeltaImpl>(eqCommitRes, bbComitRes);
     }
     
     
@@ -253,7 +254,7 @@ namespace Candy {
     }
     
     std::unique_ptr<BackbonesImpl> createBackbones(const std::vector<BackboneConjecture>& conjectures) {
-        return std::unique_ptr<BackbonesImpl>(new BackbonesImpl(conjectures));
+        return backported_std::make_unique<BackbonesImpl>(conjectures);
     }
     
     BackbonesImpl::~BackbonesImpl() {
