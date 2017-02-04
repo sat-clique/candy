@@ -51,8 +51,8 @@ namespace Candy {
     
     class ApproximationDeltaImpl : public ApproximationDelta {
     public:
-        explicit ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                                        const Backbones::CommitResult bbComitRes) noexcept;
+        explicit ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+                                        const Backbones::CommitResult& bbComitRes) noexcept;
         
         const_implication_iterator beginRemovedImplications() const noexcept override;
         const_implication_iterator endRemovedImplications() const noexcept override;
@@ -77,9 +77,12 @@ namespace Candy {
     };
      
     
-    ApproximationDeltaImpl::ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                                     const Backbones::CommitResult bbCommitRes) noexcept
-    : ApproximationDelta(), m_addedImplications(), m_removedImplications(), m_removedBackbones(bbCommitRes.removedBackbones) {
+    ApproximationDeltaImpl::ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+                                     const Backbones::CommitResult& bbCommitRes) noexcept
+    : ApproximationDelta(),
+    m_addedImplications(),
+    m_removedImplications(),
+    m_removedBackbones(bbCommitRes.removedBackbones) {
         for (auto&& eqCommit : eqCommitRes) {
             m_addedImplications.insert(m_addedImplications.end(),
                                        eqCommit.newImplications.begin(),
@@ -131,8 +134,8 @@ namespace Candy {
     }
     
     
-    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                                                           const Backbones::CommitResult bbComitRes) noexcept {
+    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+                                                                 const Backbones::CommitResult& bbComitRes) noexcept {
         return std::unique_ptr<ApproximationDelta>(new ApproximationDeltaImpl(eqCommitRes, bbComitRes));
     }
     
@@ -184,7 +187,10 @@ namespace Candy {
     
     
     BackbonesImpl::BackbonesImpl(const std::vector<BackboneConjecture>& conjectures) noexcept
-    : Backbones(), m_backbonesCached(), m_backbones(), m_removalWorkQueue() {
+    : Backbones(),
+    m_backbonesCached(),
+    m_backbones(),
+    m_removalWorkQueue() {
         for (auto& bbConj : conjectures) {
             m_backbonesCached.push_back(bbConj.getLit());
             m_backbones.insert(bbConj.getLit());
@@ -344,8 +350,11 @@ namespace Candy {
     
     
     EquivalenceImplicationsImpl::EquivalenceImplicationsImpl(const EquivalenceConjecture &conjecture) noexcept
-    : EquivalenceImplications(), m_implicationsByAnte(), m_implicationsBySucc(),
-    m_implicationsCached(), m_varRemovalWorkQueue() {
+    : EquivalenceImplications(),
+    m_implicationsByAnte(),
+    m_implicationsBySucc(),
+    m_implicationsCached(),
+    m_varRemovalWorkQueue() {
         
         //auto& vars = conjecture.getLits();
         
@@ -565,8 +574,10 @@ namespace Candy {
     }
     
     ApproximationStateImpl::ApproximationStateImpl(const Conjectures& conjectures)
-    : ApproximationState(), m_equivalenceImplications(), m_equivalenceImplicationsRawPtr(),
-            m_backbones(createBackbones(conjectures.getBackbones())) {
+    : ApproximationState(),
+    m_equivalenceImplications(),
+    m_equivalenceImplicationsRawPtr(),
+    m_backbones(createBackbones(conjectures.getBackbones())) {
         for(auto& eq : conjectures.getEquivalences()) {
             m_equivalenceImplications.push_back(createEquivalenceImplications(eq));
             m_equivalenceImplicationsRawPtr.push_back(m_equivalenceImplications.back().get());

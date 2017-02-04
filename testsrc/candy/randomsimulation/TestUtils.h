@@ -56,13 +56,13 @@ namespace Candy {
     void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
     
     /// Returns true iff c contains the backbone conjecture for the literal lit.
-    bool hasBackboneConj(Conjectures &c, Glucose::Lit lit);
+    bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit);
     
     /// Returns true iff the given equivalence conjectures are equivalent.
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits);
+    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits);
 
     /// Returns true iff c contains the given equivalence conjecture.
-    bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits);
+    bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits);
     
     bool containsClause(const For& formula, const Cl& clause);
 }

@@ -62,7 +62,7 @@ namespace Candy {
         void markRemovals(EquivalenceImplications& equivalence) override;
         void markRemovals(Backbones& backbones) override;
         
-        ARSolverConflictHeuristic(std::function<std::unique_ptr<std::unordered_set<Var>>()> getConflitLits) noexcept;
+        explicit ARSolverConflictHeuristic(std::function<std::unique_ptr<std::unordered_set<Var>>()> getConflitLits) noexcept;
         virtual ~ARSolverConflictHeuristic();
         ARSolverConflictHeuristic(const ARSolverConflictHeuristic &other) = delete;
         ARSolverConflictHeuristic& operator= (const ARSolverConflictHeuristic &other) = delete;
@@ -73,7 +73,9 @@ namespace Candy {
     };
     
     ARSolverConflictHeuristic::ARSolverConflictHeuristic(std::function<std::unique_ptr<std::unordered_set<Var>>()> getConflitVars) noexcept
-    : RefinementHeuristic(), m_getConflitVars(getConflitVars), m_currentConflictVars() {
+    : RefinementHeuristic(),
+    m_getConflitVars(getConflitVars),
+    m_currentConflictVars() {
     }
     
     ARSolverConflictHeuristic::~ARSolverConflictHeuristic() {
@@ -276,6 +278,7 @@ namespace Candy {
             m_approxLitsByAssumption[assumptionLit] = otherLits;
             
             bool success = m_solver->addClause(clause);
+            (void)success; // prevents release-mode compiler from warning about unused variable success
             assert(success);
         }
     }
@@ -472,8 +475,12 @@ namespace Candy {
     };
     
     ARSolverBuilderImpl::ARSolverBuilderImpl() noexcept : ARSolverBuilder(),
-    m_conjectures(), m_solver(), m_maxRefinementSteps(-1), m_heuristics(),
-    m_simpHandlingMode(SimplificationHandlingMode::RESTRICT), m_called(false) {
+    m_conjectures(),
+    m_solver(),
+    m_maxRefinementSteps(-1),
+    m_heuristics(),
+    m_simpHandlingMode(SimplificationHandlingMode::RESTRICT),
+    m_called(false) {
         m_heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>);
         
     }

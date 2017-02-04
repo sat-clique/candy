@@ -67,7 +67,7 @@ namespace Candy {
      */
     class BackboneConjecture {
     public:
-        BackboneConjecture(Glucose::Lit lit);
+        explicit BackboneConjecture(Glucose::Lit lit);
         
         /**
          * Retrieves the literal conjected to belong to the backbone.

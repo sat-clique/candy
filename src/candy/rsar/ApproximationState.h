@@ -343,11 +343,11 @@ namespace Candy {
     void test_commitWorkQueueWithoutDelta(Backbones& target);
     
     std::unique_ptr<Backbones> createBackbones(const std::vector<BackboneConjecture>& conjectures);
-
+    
     std::unique_ptr<EquivalenceImplications> createEquivalenceImplications(const EquivalenceConjecture& conjs);
-
-    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult> eqCommitRes,
-                                                           const Backbones::CommitResult bbComitRes);
+    
+    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+                                                                 const Backbones::CommitResult& bbComitRes);
 }
 #endif
 
