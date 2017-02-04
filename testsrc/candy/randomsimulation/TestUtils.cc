@@ -65,7 +65,7 @@ namespace Candy {
         }
     }
     
-    bool hasBackboneConj(Conjectures &c, Glucose::Lit lit) {
+    bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit) {
         bool found = false;
         for (auto bb : c.getBackbones()) {
             found |= (bb.getLit() == lit);
@@ -73,7 +73,7 @@ namespace Candy {
         return found;
     }
     
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits) {
+    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits) {
         if (conj.size() != lits.size()) {
             return false;
         }
@@ -88,7 +88,7 @@ namespace Candy {
         return true;
     }
     
-    bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits) {
+    bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits) {
         auto invertedLits = negatedLits(lits);
         for (auto eqconj : c.getEquivalences()) {
             if (isEquivalenceConjEq(eqconj, lits) || isEquivalenceConjEq(eqconj, invertedLits)) {

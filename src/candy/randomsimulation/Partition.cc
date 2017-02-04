@@ -64,7 +64,7 @@ namespace Candy {
     public:
         bool shouldCompress(unsigned int round) override;
         
-        LinearCompressionScheduleStrategy(unsigned int freq);
+        explicit LinearCompressionScheduleStrategy(unsigned int freq);
         virtual ~LinearCompressionScheduleStrategy();
         LinearCompressionScheduleStrategy(const LinearCompressionScheduleStrategy& other) = delete;
         LinearCompressionScheduleStrategy& operator=(const LinearCompressionScheduleStrategy &other) = delete;
@@ -156,7 +156,7 @@ namespace Candy {
     
     class DefaultPartition : public Partition {
     public:
-        DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched);
+        explicit DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched);
         
         void setVariables(const std::vector<Glucose::Var> &variables) override;
         void update(const SimulationVectors &assignment) override;
@@ -218,8 +218,13 @@ namespace Candy {
     };
     
     DefaultPartition::DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched)
-    : Partition(), m_round(0), m_partitioningPos({}), m_partitioningNeg({}), m_variables({}),
-    m_compressionSched(std::move(compressionSched)), m_correlationCount(0) {
+    : Partition(),
+    m_round(0),
+    m_partitioningPos({}),
+    m_partitioningNeg({}),
+    m_variables({}),
+    m_compressionSched(std::move(compressionSched)),
+    m_correlationCount(0) {
         
     }
     
@@ -253,6 +258,7 @@ namespace Candy {
         for (size_t peIdx = 0; peIdx < m_partitioningPos.size(); ++peIdx) {
             PartitionEntry &partitionEntry = m_partitioningPos[peIdx];
             bool bbBefore = partitionEntry.backbone;
+            (void)bbBefore; // prevents release-mode compiler warning about unused variable (see assertion below)
             auto &simVec = varAssignments.getConst(partitionEntry.varId);
             
             for (size_t svIdx = (isInitialUpdate ? 1 : 0); svIdx < SimulationVector::VARSIMVECSIZE;
@@ -360,6 +366,7 @@ namespace Candy {
                 peNeg.groupId = varIdToNegGroupId[partitionEntry.varId];
                 peNeg.polarity = 0;
                 peNeg.backbone = 0;
+                peNeg.backboneVal = 0;
                 m_partitioningNeg[rewriteIndex] = peNeg;
                 
                 ++rewriteIndex;

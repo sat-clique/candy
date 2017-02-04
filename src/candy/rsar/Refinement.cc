@@ -74,9 +74,11 @@ namespace Candy {
     }
     
     EncodedApproximationDeltaImpl::EncodedApproximationDeltaImpl(std::unique_ptr<std::vector<Cl>> newClauses,
-                                                           const std::vector<Lit>& assumptionLiterals) :
-    EncodedApproximationDelta(), m_newClauses(std::move(newClauses)),
-    m_assumptionLiterals(assumptionLiterals), m_activeClauseCount(0) {
+                                                                 const std::vector<Lit>& assumptionLiterals) :
+    EncodedApproximationDelta(),
+    m_newClauses(std::move(newClauses)),
+    m_assumptionLiterals(assumptionLiterals),
+    m_activeClauseCount(0) {
         m_activeClauseCount = std::count_if(assumptionLiterals.begin(),
                                             assumptionLiterals.end(),
                                             [](Lit l) { return isActive(l); });
@@ -154,9 +156,13 @@ namespace Candy {
     SimpleRefinementStrategy::SimpleRefinementStrategy(const Conjectures& conjectures,
                                                        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
                                                        std::function<Var()> createVariable)
-    : RefinementStrategy(), m_heuristics(std::move(heuristics)), m_approximationState(createApproximationState(conjectures)),
-        m_createVariable(createVariable), m_assumptionLits(), m_assumptionLitsIdxByImpl(),
-        m_assumptionLitsIdxByBackbone() {
+    : RefinementStrategy(),
+    m_heuristics(std::move(heuristics)),
+    m_approximationState(createApproximationState(conjectures)),
+    m_createVariable(createVariable),
+    m_assumptionLits(),
+    m_assumptionLitsIdxByImpl(),
+    m_assumptionLitsIdxByBackbone() {
     }
     
     
@@ -211,7 +217,7 @@ namespace Candy {
         
         for (auto backboneConj : m_approximationState->getBackbones()) {
             Var assumptionVar = addAssumptionVariable();
-            clauses->push_back(encodeBackbone(backboneConj, assumptionVar));
+            clauses->push_back(encodeBackbone(BackboneConjecture{backboneConj}, assumptionVar));
             m_assumptionLitsIdxByBackbone[backboneConj] = m_assumptionLits.size()-1;
         }
         
