@@ -87,6 +87,11 @@ namespace Candy {
         test_noGates(*underTest);
     }
     
+    TEST(RSClauseOrderTest, noGates_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
+        test_noGates(*underTest);
+    }
+    
     
     
     static void test_singleGate(ClauseOrder& underTest) {
@@ -115,6 +120,11 @@ namespace Candy {
     
     TEST(RSClauseOrderTest, singleGate_recursiveImpl) {
         auto underTest = createRecursiveClauseOrder();
+        test_singleGate(*underTest);
+    }
+    
+    TEST(RSClauseOrderTest, singleGate_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
         test_singleGate(*underTest);
     }
     
@@ -154,6 +164,11 @@ namespace Candy {
     
     TEST(RSClauseOrderTest, fewGates_recursiveImpl) {
         auto underTest = createRecursiveClauseOrder();
+        test_fewGates(*underTest);
+    }
+    
+    TEST(RSClauseOrderTest, fewGates_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
         test_fewGates(*underTest);
     }
     
@@ -209,6 +224,11 @@ namespace Candy {
     
     TEST(RSClauseOrderTest, manyGates_recursiveImpl) {
         auto underTest = createRecursiveClauseOrder();
+        test_manyGates(*underTest);
+    }
+    
+    TEST(RSClauseOrderTest, manyGates_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
         test_manyGates(*underTest);
     }
 
