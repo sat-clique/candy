@@ -4,7 +4,7 @@
 </CsOptions>
 <CsInstruments>
 sr = 44100
-ksmps = 40
+ksmps = 10
 nchnls = 2
 0dbfs = 1.0
 
@@ -20,7 +20,7 @@ girims     ftgen 8, 0, 0, 1, "samples/29.WAV", 0, 4, 1;0.04
 gidistbd   ftgen 9, 0, 0, 1, "samples/38.WAV", 0, 4, 1;0.46
 ; FUNCTIONS
 ;f # time size 11 nh [lh] [r]
-giharms ftgen 10, 0, 16384, 11, 10, 5, 2
+giharms ftgen 10, 0, 16384, 11, 10, 1, .7
 gisaw   ftgen 11, 0, 16384, 10, 1, 0.5, 0.3, 0.25, 0.2, 0.167, 0.14, 0.125, .111
 ginoise ftgen 12, 0, 16384, 21, 4
 ;gisine  ftgen 13, 0, 16384, 10, 1
@@ -57,7 +57,7 @@ alwayson "restart_trigger"
 alwayson "decision_level"
 alwayson "learnt_trigger"
 alwayson "conflict_trigger"
-;alwayson "eloquence"
+alwayson "eloquence"
 
 cpuprc "learnt", 10
 
@@ -66,7 +66,7 @@ instr decision_level
   if gkdecisions_hwm > 0 then
     kvar = 440 + (gkdecisions * 258) / gkdecisions_hwm
   endif
-  adecision oscil .7, kvar, gisaw
+  adecision oscil .5, kvar, gisaw
   outleta "out", adecision
 endin
 
@@ -89,9 +89,9 @@ endin
 
 instr learnt
   ;aenv expon 1, .5, 0.0001
-  aenv linen 1, .3, .1, .1
-  klowpass = 16000 - (1600 * gklearnt)
-  anoise oscil aenv, .5, ginoise
+  aenv linen 1, .1, p3, .2
+  klowpass = 16000 - (16000 / 6 * gklearnt)
+  anoise oscil aenv, 440, ginoise
   aout butterlp anoise, klowpass
   outleta "out", aout
 endin
@@ -99,15 +99,13 @@ endin
 instr learnt_trigger 
   if (gklearnt_upd == 1) then 
     if (gklearnt == 1) then
-      event "i", "sampler", 0, .41, gibrrr
+      event "i", "sampler", 0, .41, gieff1
     elseif (gklearnt == 2) then
-      event "i", "sampler", 0, .25, gieff1
-    elseif (gklearnt == 3) then
       event "i", "sampler", 0, .25, gieff2
-    elseif (gklearnt > 10) then
-      gklearnt = 10
-      event "i", "learnt", 0, .5
+    elseif (gklearnt > 6) then
+      gklearnt = 6
     endif
+    event "i", "learnt", 0, .4
   endif
 endin
 
@@ -117,42 +115,37 @@ instr eloquence
     kfreq = 440 + (gkdecisions * 258) / gkassigns
   endif
   aharms oscil 1, kfreq, giharms
-  alow butterlp aharms, kfreq
-  outleta "out", alow;
+  ;alow butterlp aharms, kfreq
+  outleta "out", aharms;
 endin
 
 instr conflict
-  kdl init 0
-  ilength init 0
-  if gkdecisions_hwm > 0 then
-    kscale = (gkdecisions * 100) / gkdecisions_hwm
-  endif 
-  if (kscale > 75) then
-    kdl =  698.456 ;f
-    ilength = .35
-  elseif (kscale > 50) then
-    kdl = 659.255 ;e
-    ilength = .3
-  elseif (kscale > 25) then 
-    kdl = 587.330 ;d
-    ilength = .25
-  else
-    kdl = 440 ;a
-    ilength = .2
-  endif
-  aenv expon 1, ilength, 0.0001
-  aSig oscil aenv, kdl, gisaw
+  aenv expon 1, p3, 0.0001
+  aSig oscil aenv, p4, gisaw
   outleta "out", aSig 
 endin
 
 instr conflict_trigger
-  ;kcount init 0
+  kfrq init 0
+  kdur init 0
   if (gkconflictlevel_upd > 0) then
-    ;kcount = kcount + 1
-    ;if (kcount > 10) then	
-      event "i", "conflict", 0, 0.1
-    ;  kcount = 0
-    ;endif
+    if gkdecisions_hwm > 0 then
+      kscale = (gkdecisions * 100) / gkdecisions_hwm
+    endif 
+    if (kscale > 75) then
+      kfrq =  698.456 ;f
+      kdur = .45
+    elseif (kscale > 50) then
+      kfrq = 659.255 ;e
+      kdur = .4
+    elseif (kscale > 25) then 
+      kfrq = 587.330 ;d
+      kdur = .35
+    else
+      kfrq = 440 ;a
+      kdur = .3
+    endif
+    event "i", "conflict", 0, kdur, kfrq
   endif
 endin
 
