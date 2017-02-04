@@ -21,7 +21,6 @@ public:
 	void stop(int sat);
 	void restart();
 	void decisionLevel(int level);
-	void backtrackLevel(int level);
 	void conflictLevel(int level);
 	void assignmentLevel(int level);
 	void learntSize(int size);

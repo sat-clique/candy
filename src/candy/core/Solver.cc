@@ -1143,7 +1143,6 @@ lbool Solver::search(int nof_conflicts) {
 
       analyze(confl, learnt_clause, selectors, backtrack_level, nblevels, szWithoutSelectors);
 
-      sonification.backtrackLevel(backtrack_level);
       sonification.learntSize(learnt_clause.size());
 
       lbdQueue.push(nblevels);

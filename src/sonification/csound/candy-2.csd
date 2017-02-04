@@ -4,32 +4,41 @@
 </CsOptions>
 <CsInstruments>
 sr = 44100
-ksmps = 1
+ksmps = 40
 nchnls = 2
 0dbfs = 1.0
 
-;VOICES
-gisine ftgen 11, 0, 16384, 10, 1
-gisine2 ftgen 12, 0, 16384, 10, 1, .2, .08, .07
-gisaw ftgen 13, 0, 16384, 10, 1, 0.5, 0.3, 0.25, 0.2, 0.167, 0.14, 0.125, .111 
-girect ftgen 14, 0, 16384, 10, 1, 0, 0.3, 0, 0.2, 0, 0.14, 0, .111
-;  f4 0 16384 10 1 0   0.3 0    0.2 0     0.14 0     .111   ; Square
-;  f5 0 16384 10 1 1   1   1    0.7 0.5   0.3  0.1          ; Pulse
+; SAMPLES
+gibd       ftgen 1, 0, 0, 1, "samples/48.WAV", 0, 4, 1;0.31
+gihd       ftgen 2, 0, 0, 1, "samples/40.WAV", 0, 4, 1;0.58
+givoicehit ftgen 3, 0, 0, 1, "samples/26.WAV", 0, 4, 1;0.50
+girvbd     ftgen 4, 0, 0, 1, "samples/36.WAV", 0, 4, 1;0.24
+gieff1     ftgen 5, 0, 0, 1, "samples/12.WAV", 0, 4, 1;0.41
+gieff2     ftgen 6, 0, 0, 1, "samples/14.WAV", 0, 4, 1;0.25
+gibrrr     ftgen 7, 0, 0, 1, "samples/18.WAV", 0, 4, 1;0.25
+girims     ftgen 8, 0, 0, 1, "samples/29.WAV", 0, 4, 1;0.04
+gidistbd   ftgen 9, 0, 0, 1, "samples/38.WAV", 0, 4, 1;0.46
+; FUNCTIONS
+;f # time size 11 nh [lh] [r]
+giharms ftgen 10, 0, 16384, 11, 10, 5, 2
+gisaw   ftgen 11, 0, 16384, 10, 1, 0.5, 0.3, 0.25, 0.2, 0.167, 0.14, 0.125, .111
+ginoise ftgen 12, 0, 16384, 21, 4
+;gisine  ftgen 13, 0, 16384, 10, 1
+;gisine2 ftgen 14, 0, 16384, 10, 1, .2, .08, .07
+;girect  ftgen 15, 0, 16384, 10, 1, 0, 0.3, 0, 0.2, 0, 0.14, 0, .111
 
-;global variables
+;GLOBALS
 giOSC OSCinit 7000
 
 gkvariables init 0
 gkdecisions init 0
 gklearnt init 0
-gkbacktrack init 0
 gkconflictlevel init 0
 gkassigns init 0
 
 gkvariables_upd init 0
 gkdecisions_upd init 0
 gklearnt_upd init 0
-gkbacktrack_upd init 0
 gkconflictlevel_upd init 0
 gkassigns_upd init 0
 
@@ -38,7 +47,7 @@ gkdecisions_hwm init 0
 ;ROUTING
 connect "sampler", "out", "mixer", "mix1_sampler"
 connect "decision_level", "out", "mixer", "mix2_decision_level"
-connect "learnt_size", "out", "mixer", "mix4_learnt_size"
+connect "learnt", "out", "mixer", "mix4_learnt"
 connect "conflict", "out", "mixer", "mix5_conflict"
 connect "eloquence", "out", "mixer", "mix6_eloquence"
 
@@ -46,9 +55,20 @@ connect "eloquence", "out", "mixer", "mix6_eloquence"
 alwayson "oscReceiver"
 alwayson "restart_trigger"
 alwayson "decision_level"
-alwayson "learnt_size"
+alwayson "learnt_trigger"
 alwayson "conflict_trigger"
-alwayson "eloquence"
+;alwayson "eloquence"
+
+cpuprc "learnt", 10
+
+instr decision_level
+  kvar init 0
+  if gkdecisions_hwm > 0 then
+    kvar = 440 + (gkdecisions * 258) / gkdecisions_hwm
+  endif
+  adecision oscil .7, kvar, gisaw
+  outleta "out", adecision
+endin
 
 ;restart
 instr sampler
@@ -63,93 +83,42 @@ instr restart_trigger
   kreceive init 1
   kevent OSClisten giOSC, "/restart", "f", kreceive
   if (kevent > 0) then
-    event "i", "sampler", 0, 0.5, 1
+    event "i", "sampler", 0, .31, gibd
   endif
 endin
 
-instr oscReceiver
-  kreceive1 init 1
-  kreceive2 init 1
-  kreceive3 init 1
-  kreceive4 init 1
-  kreceive5 init 1
-  kreceive6 init 1
-  
-  gkvariables_upd OSClisten giOSC, "/variables", "f", kreceive1
-  if (gkvariables_upd == 1) then
-    gkvariables = kreceive1
-  endif
-  
-  gkdecisions_upd OSClisten giOSC, "/decision", "f", kreceive2
-  if (gkdecisions_upd == 1) then
-    gkdecisions = kreceive2
-    if (gkdecisions > gkdecisions_hwm) then
-      gkdecisions_hwm = gkdecisions
-    endif
-  endif
-  
-  gklearnt_upd OSClisten giOSC, "/learnt", "f", kreceive3
-  if (gklearnt_upd == 1) then
-    gklearnt = kreceive3
-  endif  
-  
-  gkbacktrack_upd OSClisten giOSC, "/backtrack", "f", kreceive4
-  if (gkbacktrack_upd == 1) then
-    gkbacktrack = kreceive4
-  endif
-  
-  gkconflictlevel_upd OSClisten giOSC, "/conflict", "f", kreceive5
-  if (gkconflictlevel_upd == 1) then
-    gkconflictlevel = kreceive5
-  endif
-  
-  gkassigns_upd OSClisten giOSC, "/assignments", "f", kreceive6
-  if (gkassigns_upd == 1) then
-    gkassigns = kreceive6
-  endif
+instr learnt
+  ;aenv expon 1, .5, 0.0001
+  aenv linen 1, .3, .1, .1
+  klowpass = 16000 - (1600 * gklearnt)
+  anoise oscil aenv, .5, ginoise
+  aout butterlp anoise, klowpass
+  outleta "out", aout
 endin
 
-;instrument: decision level meter
-instr decision_level
-  kvar init 0
-  if gkdecisions_hwm > 0 then
-    kvar = 440 + (gkdecisions * 258) / gkdecisions_hwm
-  endif
-  ;ares linseg .1, .2, .7, .3, 1, .5, .1
-  adecision oscil .7, kvar, gisaw
-  outleta "out", adecision
-endin
-
-instr learnt_size 
+instr learnt_trigger 
   if (gklearnt_upd == 1) then 
     if (gklearnt == 1) then
-      event "i", "sampler", 0, 0.5, 2
+      event "i", "sampler", 0, .41, gibrrr
     elseif (gklearnt == 2) then
-      event "i", "sampler", 0, 0.5, 3
+      event "i", "sampler", 0, .25, gieff1
     elseif (gklearnt == 3) then
-      event "i", "sampler", 0, 0.5, 4
+      event "i", "sampler", 0, .25, gieff2
     elseif (gklearnt > 10) then
       gklearnt = 10
+      event "i", "learnt", 0, .5
     endif
   endif
-  kvar = 16000 - ((gklearnt * 16000) / 10)
-  awhite unirand 16200
-  aenv expseg 0.0001, .2, 1, .3, 0.0001
-  asound oscil aenv, awhite, gisaw
-  afilt butterlp asound, kvar
-  outleta "out", afilt
 endin
 
 instr eloquence
   kfreq init 0
-  ;asig gbuzz 1, 440, 10, 1, .9, 11
   if gkassigns > 0 then
     kfreq = 440 + (gkdecisions * 258) / gkassigns
   endif
-  ;alow, ahigh, aband svfilter asig, kfreq, 490  
-  ;asum = alow * 1 + ahigh * 0 + aband * 0
-  asum oscil 1, kfreq, girect
-  outleta "out", asum;
+  aharms oscil 1, kfreq, giharms
+  alow butterlp aharms, kfreq
+  outleta "out", alow;
 endin
 
 instr conflict
@@ -191,14 +160,14 @@ instr mixer
   ach1 inleta "mix1_sampler"
   ach2 inleta "mix2_decision_level"
   ach3 inleta "mix3"
-  ach4 inleta "mix4_learnt_size"
+  ach4 inleta "mix4_learnt"
   ach5 inleta "mix5_conflict"
   ach6 inleta "mix6_eloquence"
   
   kch1vol init 0
   kch2vol init 0
   kch3vol init 0
-  kch4vol init 0
+  kch4vol init 1
   kch5vol init 0
   kch6vol init 0
   
@@ -217,7 +186,7 @@ instr mixer
     kch1vol = 1
     kch2vol = 1
     kch3vol = 0 ;unassigned
-    kch4vol = .7
+    kch4vol = 1
     kch5vol = 1
     kch6vol = 1
   endif
@@ -261,19 +230,45 @@ instr mixer
   outs aout, aout
 endin
 
+instr oscReceiver
+  kreceive1 init 1
+  kreceive2 init 1
+  kreceive3 init 1
+  kreceive5 init 1
+  kreceive6 init 1
+  
+  gkvariables_upd OSClisten giOSC, "/variables", "f", kreceive1
+  if (gkvariables_upd == 1) then
+    gkvariables = kreceive1
+  endif
+  
+  gkdecisions_upd OSClisten giOSC, "/decision", "f", kreceive2
+  if (gkdecisions_upd == 1) then
+    gkdecisions = kreceive2
+    if (gkdecisions > gkdecisions_hwm) then
+      gkdecisions_hwm = gkdecisions
+    endif
+  endif
+  
+  gklearnt_upd OSClisten giOSC, "/learnt", "f", kreceive3
+  if (gklearnt_upd == 1) then
+    gklearnt = kreceive3
+  endif
+  
+  gkconflictlevel_upd OSClisten giOSC, "/conflict", "f", kreceive5
+  if (gkconflictlevel_upd == 1) then
+    gkconflictlevel = kreceive5
+  endif
+  
+  gkassigns_upd OSClisten giOSC, "/assignments", "f", kreceive6
+  if (gkassigns_upd == 1) then
+    gkassigns = kreceive6
+  endif
+endin
+
 </CsInstruments>
 
 <CsScore>
-; NUM | INIT_TIME | SIZE | GEN_ROUTINE |  FILE_PATH   | IN_SKIP | FORMAT | CHANNEL
-f  1      0          0       1      "samples/46.WAV"     0         4         1
-f  2      0          0       1      "samples/23.WAV"     0         4         1
-f  3      0          0       1      "samples/26.WAV"     0         4         1
-f  4      0          0       1      "samples/36.WAV"     0         4         1
-;  f2 0 16384 10 1                                          ; Sine
-;  f3 0 16384 10 1 0.5 0.3 0.25 0.2 0.167 0.14 0.125 .111   ; Sawtooth
-;  f4 0 16384 10 1 0   0.3 0    0.2 0     0.14 0     .111   ; Square
-;  f5 0 16384 10 1 1   1   1    0.7 0.5   0.3  0.1          ; Pulse
-;  i "exit_listener" 0 40000
   i "mixer" 0 40000
   e
 </CsScore>

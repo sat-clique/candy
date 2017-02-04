@@ -43,10 +43,6 @@ void SolverSonification::decisionLevel(int level) {
   sendNumber("/decision", level);
 }
 
-void SolverSonification::backtrackLevel(int level) {
-  sendNumber("/backtrack", level);
-}
-
 void SolverSonification::conflictLevel(int level) {
   sendNumber("/conflict", level);
 }
