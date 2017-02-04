@@ -31,6 +31,7 @@
 #include <cassert>
 
 #include <gtest/gtest.h>
+#include <utils/MemUtils.h>
 
 namespace Candy {
     
@@ -124,7 +125,7 @@ namespace Candy {
     }
     
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder() {
-        return std::make_unique<GateStructureBuilderImpl>();
+        return backported_std::make_unique<GateStructureBuilderImpl>();
     }
     
     

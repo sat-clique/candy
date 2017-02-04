@@ -31,6 +31,7 @@
 
 
 #include <randomsimulation/Conjectures.h>
+#include <utils/MemUtils.h>
 
 #include <memory>
 #include <functional>
@@ -257,7 +258,7 @@ namespace Candy {
     std::unique_ptr<RefinementStrategy> createDefaultRefinementStrategy(const Conjectures& conjectures,
                                                                         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
                                                                         std::function<Var()> createVariable) {
-        return std::make_unique<SimpleRefinementStrategy>(conjectures, std::move(heuristics), createVariable);
+        return backported_std::make_unique<SimpleRefinementStrategy>(conjectures, std::move(heuristics), createVariable);
     }
     
     Lit activatedAssumptionLit(Var assumptionVar) {

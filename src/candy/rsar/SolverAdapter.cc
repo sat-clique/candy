@@ -27,7 +27,8 @@
 
 #include "SolverAdapter.h"
 
-#include "simp/SimpSolver.h"
+#include <simp/SimpSolver.h>
+#include <utils/MemUtils.h>
 
 namespace Candy {
     SolverAdapter::SolverAdapter() noexcept {
@@ -114,6 +115,6 @@ namespace Candy {
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter() {
-        return std::unique_ptr<SolverAdapter>(new GlucoseAdapter());
+        return backported_std::make_unique<GlucoseAdapter>();
     }
 }
