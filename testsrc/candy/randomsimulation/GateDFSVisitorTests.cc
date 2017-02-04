@@ -27,7 +27,7 @@
 #include <gtest/gtest.h>
 #include <randomsimulation/GateDFSVisitor.h>
 
-#include "TestGateStructure.h"
+#include <testutils/TestGateStructure.h>
 
 #include <iostream>
 

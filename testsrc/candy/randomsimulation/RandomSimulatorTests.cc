@@ -29,7 +29,8 @@
 #include <randomsimulation/RandomSimulator.h>
 #include <gates/GateAnalyzer.h>
 
-#include "TestGateStructure.h"
+#include <testutils/TestGateStructure.h>
+#include <testutils/TestUtils.h>
 #include "TestUtils.h"
 
 namespace Candy {
