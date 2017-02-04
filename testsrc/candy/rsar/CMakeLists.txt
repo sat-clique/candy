@@ -1,4 +1,4 @@
-add_executable(rsar_tests Main.cc
+add_executable(rsar_tests
 			  SolverMock.cc
 			  SolverMock.h
 			  SolverMockTests.cc
@@ -18,7 +18,7 @@ add_test(NAME rsar_module_tests COMMAND rsar_tests)
 
 target_include_directories(rsar_tests PUBLIC ${CMAKE_PROJECT_ROOT}/lib/googletest/googletest/include
                                              ${CMAKE_PROJECT_ROOT}/lib/googletest/googlemock/include)
-target_link_libraries(rsar_tests ${CANDY_LIBS} gtest gmock)
+target_link_libraries(rsar_tests ${CANDY_LIBS} gtest_main gtest gmock)
 
 file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "problems/*.cnf")
 message("Test CNF files: ${TEST_CNF_PROBLEMS}")
