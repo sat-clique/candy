@@ -27,7 +27,6 @@
 #include <gtest/gtest.h>
 
 #include <gates/GateAnalyzer.h>
-#include <randomsimulation/ClauseOrder.h>
 
 #include "TestGateStructure.h"
 #include "TestUtils.h"

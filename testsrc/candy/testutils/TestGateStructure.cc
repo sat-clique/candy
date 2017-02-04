@@ -30,7 +30,7 @@
 #include <unordered_set>
 #include <cassert>
 
-#include <gtest/gtest.h>
+//#include <gtest/gtest.h>
 #include <utils/MemUtils.h>
 
 namespace Candy {

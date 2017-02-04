@@ -33,7 +33,7 @@
 #include <gates/GateAnalyzer.h>
 #include <randomsimulation/ClauseOrder.h>
 
-#include "TestGateStructure.h"
+#include <testutils/TestGateStructure.h>
 #include "TestUtils.h"
 
 #include <unordered_set>

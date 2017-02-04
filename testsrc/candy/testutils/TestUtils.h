@@ -24,43 +24,38 @@
  
  */
 
-#include "TestUtils.h"
-#include <core/CNFProblem.h>
-#include <randomsimulation/Conjectures.h>
-#include <testutils/TestUtils.h>
+#ifndef X_4311DBC6_D73E_4BCA_A592_823CDA996EB9_TESTUTILS_H
+#define X_4311DBC6_D73E_4BCA_A592_823CDA996EB9_TESTUTILS_H
+
+#include <core/SolverTypes.h>
+#include <unordered_set>
+#include <vector>
+
 
 namespace Candy {
-    bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit) {
-        bool found = false;
-        for (auto bb : c.getBackbones()) {
-            found |= (bb.getLit() == lit);
-        }
-        return found;
-    }
-    
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits) {
-        if (conj.size() != lits.size()) {
-            return false;
-        }
-        else {
-            for (auto lit : lits) {
-                if (std::find(conj.begin(), conj.end(), lit) == conj.end()) {
-                    return false;
-                }
-            }
-        }
-        
-        return true;
-    }
-    
-    bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits) {
-        auto invertedLits = negatedLits(lits);
-        for (auto eqconj : c.getEquivalences()) {
-            if (isEquivalenceConjEq(eqconj, lits) || isEquivalenceConjEq(eqconj, invertedLits)) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
+    class CNFProblem;
 }
+
+namespace Candy {
+    class Conjectures;
+    class EquivalenceConjecture;
+    
+    /// Deletes the clauses in the given formula.
+    void deleteClauses(CNFProblem* formula);
+    
+    /// Asserts that variables does not contain the variable forbidden.
+    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
+    
+    /// Asserts that variables contains the variable required.
+    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var required);
+    
+    /// Returns a clause containing the negated lits of the given clause.
+    Cl negatedLits(const Cl& clause);
+    
+    /// Inserts the variables contained in the literals of lits in to the target set.
+    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
+    
+    bool containsClause(const For& formula, const Cl& clause);
+}
+
+#endif

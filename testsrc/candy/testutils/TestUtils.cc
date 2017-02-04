@@ -26,41 +26,49 @@
 
 #include "TestUtils.h"
 #include <core/CNFProblem.h>
-#include <randomsimulation/Conjectures.h>
-#include <testutils/TestUtils.h>
 
 namespace Candy {
-    bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit) {
+    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
+        assert(variables.find(forbidden) != variables.end()); // TODO refactor
+    }
+    
+    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
+        assert(variables.find(forbidden) == variables.end()); // TODO refactor
+    }
+    
+    void deleteClauses(CNFProblem* formula) {
+        
+        // TODO: This is a weird workaround. CNFProblem ought to own the formula and take care of its destruction.
+        
+        if (formula == nullptr) {
+            return;
+        }
+        
+        for (auto clause : formula->getProblem()) {
+            delete clause;
+        }
+        formula->getProblem().clear();
+    }
+    
+    Cl negatedLits(const Cl& clause) {
+        Cl result;
+        for (auto lit : clause) {
+            result.push_back(~lit);
+        }
+        return result;
+    }
+    
+    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target) {
+        for (auto lit : lits) {
+            target.insert(Glucose::var(lit));
+        }
+    }
+
+    bool containsClause(const For& formula, const Cl& clause) {
         bool found = false;
-        for (auto bb : c.getBackbones()) {
-            found |= (bb.getLit() == lit);
+        for (auto fcl : formula) {
+            found |= (*fcl == clause); // TODO: make this independent of literal positions
         }
         return found;
-    }
-    
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits) {
-        if (conj.size() != lits.size()) {
-            return false;
-        }
-        else {
-            for (auto lit : lits) {
-                if (std::find(conj.begin(), conj.end(), lit) == conj.end()) {
-                    return false;
-                }
-            }
-        }
-        
-        return true;
-    }
-    
-    bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits) {
-        auto invertedLits = negatedLits(lits);
-        for (auto eqconj : c.getEquivalences()) {
-            if (isEquivalenceConjEq(eqconj, lits) || isEquivalenceConjEq(eqconj, invertedLits)) {
-                return true;
-            }
-        }
-        
-        return false;
     }
 }
