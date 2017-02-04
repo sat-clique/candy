@@ -130,6 +130,11 @@ namespace Candy {
      * Creates an object of the simple (recursive) implementation of ClauseOrder.
      */
     std::unique_ptr<ClauseOrder> createRecursiveClauseOrder();
+    
+    /**
+     * Creates an object of the experimental non-recursive implementation of ClauseOrder.
+     */
+    std::unique_ptr<ClauseOrder> createNonrecursiveClauseOrder();
 }
 
 #endif

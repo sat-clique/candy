@@ -27,6 +27,7 @@
 // TODO: documentation
 
 #include "ClauseOrder.h"
+#include "GateDFSVisitor.h"
 
 #include <memory>
 #include <vector>
@@ -52,27 +53,34 @@ namespace Candy {
         
     }
     
-    class RecursiveClauseOrder : public ClauseOrder {
+    /**
+     * \class ClauseOrderImplBase
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief The base class for ClauseOrder implementations
+     *
+     * This class provides the common infrastructure of ClauseOrder
+     * implementations. "Final" implementations need only implement
+     * the readGates() method calling backtrack() in the correct order
+     * and setting up m_inputVariables as well as m_maxVar.
+     */
+    class ClauseOrderImplBase : public ClauseOrder {
     public:
-        void readGates(GateAnalyzer& analyzer) override;
+        void readGates(GateAnalyzer& analyzer) override = 0;
         const std::vector<Glucose::Var> &getInputVariables() const override;
         const std::vector<Glucose::Lit> &getGateOutputsOrdered() const override;
         const std::vector<const Cl*> &getClauses(Glucose::Var variable) const override;
         void setGateFilter(std::unique_ptr<GateFilter> gateFilter) override;
         unsigned int getAmountOfVars() const override;
         
-        RecursiveClauseOrder();
-        virtual ~RecursiveClauseOrder();
-        RecursiveClauseOrder(const RecursiveClauseOrder& other) = delete;
-        RecursiveClauseOrder& operator=(const RecursiveClauseOrder& other) = delete;
+        ClauseOrderImplBase();
+        virtual ~ClauseOrderImplBase();
+        ClauseOrderImplBase(const ClauseOrderImplBase& other) = delete;
+        ClauseOrderImplBase& operator=(const ClauseOrderImplBase& other) = delete;
         
-    private:
-        void readGatesRecursive(GateAnalyzer &analyzer, Glucose::Lit output,
-                                std::unordered_set<Glucose::Var>& seenInputs,
-                                std::unordered_set<Glucose::Var>& seenOutputs);
-        void backtrack(Gate &gate);
-        
-        void initializeFiltering();
+    protected:
+        void backtrack(GateAnalyzer& analyzer, Gate &gate);
         
         std::vector<Glucose::Var> m_inputVariables;
         std::vector<Glucose::Lit> m_outputLitsOrdered;
@@ -84,38 +92,78 @@ namespace Candy {
         bool m_filteringEnabled;
     };
     
-    RecursiveClauseOrder::RecursiveClauseOrder() : ClauseOrder(), m_inputVariables({}),
+    ClauseOrderImplBase::ClauseOrderImplBase() : ClauseOrder(), m_inputVariables({}),
     m_outputLitsOrdered({}), m_clausesByOutput({}), m_maxVar(-1), m_gateFilter(nullptr),
     m_enabledOutputs({}), m_filteringEnabled(false) {
     }
     
-    RecursiveClauseOrder::~RecursiveClauseOrder() {
+    ClauseOrderImplBase::~ClauseOrderImplBase() {
     }
     
-    void RecursiveClauseOrder::setGateFilter(std::unique_ptr<GateFilter> filter) {
+    void ClauseOrderImplBase::setGateFilter(std::unique_ptr<GateFilter> filter) {
         m_gateFilter = std::move(filter);
         m_filteringEnabled = true;
     }
     
-    const std::vector<Glucose::Var>& RecursiveClauseOrder::getInputVariables() const {
+    const std::vector<Glucose::Var>& ClauseOrderImplBase::getInputVariables() const {
         return m_inputVariables;
     }
     
-    const std::vector<Glucose::Lit>& RecursiveClauseOrder::getGateOutputsOrdered() const {
+    const std::vector<Glucose::Lit>& ClauseOrderImplBase::getGateOutputsOrdered() const {
         return m_outputLitsOrdered;
     }
     
-    const std::vector<const Cl*>& RecursiveClauseOrder::getClauses(Glucose::Var variable) const {
+    const std::vector<const Cl*>& ClauseOrderImplBase::getClauses(Glucose::Var variable) const {
         auto resultIter = m_clausesByOutput.find(variable);
         assert(resultIter != m_clausesByOutput.end());
         return resultIter->second;
     }
     
-    unsigned int RecursiveClauseOrder::getAmountOfVars() const {
+    unsigned int ClauseOrderImplBase::getAmountOfVars() const {
         return m_maxVar + 1;
     }
     
-    void RecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
+    void ClauseOrderImplBase::backtrack(GateAnalyzer& analyzer, Gate &gate) {
+        if (m_filteringEnabled) {
+            // backtrack the gate only if
+            //  - its output is an enabled variable
+            //  - for none of its input variables i, the following holds: i is an output variable of a gate and i is disabled.
+            
+            Glucose::Var outputVar = Glucose::var(gate.getOutput());
+            
+            if (m_enabledOutputs.find(outputVar) == m_enabledOutputs.end()) {
+                return; // no backtracking
+            }
+            
+            for (auto inputLit : gate.getInputs()) {
+                if (analyzer.getGate(inputLit).isDefined()
+                    && m_enabledOutputs.find(Glucose::var(inputLit)) == m_enabledOutputs.end()) {
+                    return; // no backtracking
+                }
+            }
+        }
+        
+        Glucose::Lit usedOutput;
+        For *usedGateClauses;
+        
+        if (gate.hasNonMonotonousParent()
+            || gate.getForwardClauses().size() <= gate.getBackwardClauses().size()) {
+            usedOutput = ~gate.getOutput();
+            usedGateClauses = &gate.getForwardClauses();
+        }
+        else {
+            usedOutput = gate.getOutput();
+            usedGateClauses = &gate.getBackwardClauses();
+        }
+        
+        m_outputLitsOrdered.push_back(usedOutput);
+        auto &clausesTarget = m_clausesByOutput[Glucose::var(usedOutput)];
+        assert (clausesTarget.empty());
+        clausesTarget.insert(clausesTarget.begin(), usedGateClauses->begin(), usedGateClauses->end());
+    }
+    
+    void ClauseOrderImplBase::readGates(GateAnalyzer& analyzer) {
+        (void)analyzer;
         m_inputVariables.clear();
         m_maxVar = -1;
         m_clausesByOutput.clear();
@@ -124,6 +172,41 @@ namespace Candy {
         if (m_filteringEnabled) {
             m_enabledOutputs = m_gateFilter->getEnabledOutputVars();
         }
+    }
+    
+    
+    /**
+     * \class RecursiveClauseOrder
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A ClauseOrder implementation based on recursion.
+     */
+    class RecursiveClauseOrder : public ClauseOrderImplBase {
+    public:
+        void readGates(GateAnalyzer& analyzer) override;
+        
+        RecursiveClauseOrder();
+        virtual ~RecursiveClauseOrder();
+        RecursiveClauseOrder(const RecursiveClauseOrder& other) = delete;
+        RecursiveClauseOrder& operator=(const RecursiveClauseOrder& other) = delete;
+        
+    private:
+        void readGatesRecursive(GateAnalyzer &analyzer, Glucose::Lit output,
+                                std::unordered_set<Glucose::Var>& seenInputs,
+                                std::unordered_set<Glucose::Var>& seenOutputs);
+    };
+    
+    RecursiveClauseOrder::RecursiveClauseOrder() : ClauseOrderImplBase() {
+        
+    }
+    
+    RecursiveClauseOrder::~RecursiveClauseOrder() {
+        
+    }
+    
+    void RecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
+        ClauseOrderImplBase::readGates(analyzer);
         
         if (analyzer.getGateCount() == 0) {
             return;
@@ -163,49 +246,76 @@ namespace Candy {
         
         assert(seenInputs.find(Glucose::var(output)) == seenInputs.end());
         
-        if (m_filteringEnabled) {
-            // backtrack the gate only if
-            //  - its output is an enabled variable
-            //  - for none of its input variables i, the following holds: i is an output variable of a gate and i is disabled.
-            
-            Glucose::Var outputVar = Glucose::var(output);
-            
-            if (m_enabledOutputs.find(outputVar) == m_enabledOutputs.end()) {
-                return; // no backtracking
-            }
-
-            for (auto inputLit : gate.getInputs()) {
-                if (analyzer.getGate(inputLit).isDefined()
-                    && m_enabledOutputs.find(Glucose::var(inputLit)) == m_enabledOutputs.end()) {
-                    return; // no backtracking
-                }
-            }
-        }
-        
-        backtrack(gate);
-    }
-    
-    void RecursiveClauseOrder::backtrack(Gate &gate) {
-        Glucose::Lit usedOutput;
-        For *usedGateClauses;
-        
-        if (gate.hasNonMonotonousParent()
-            || gate.getForwardClauses().size() <= gate.getBackwardClauses().size()) {
-            usedOutput = ~gate.getOutput();
-            usedGateClauses = &gate.getForwardClauses();
-        }
-        else {
-            usedOutput = gate.getOutput();
-            usedGateClauses = &gate.getBackwardClauses();
-        }
-        
-        m_outputLitsOrdered.push_back(usedOutput);
-        auto &clausesTarget = m_clausesByOutput[Glucose::var(usedOutput)];
-        assert (clausesTarget.empty());
-        clausesTarget.insert(clausesTarget.begin(), usedGateClauses->begin(), usedGateClauses->end());
+        backtrack(analyzer, gate);
     }
     
     std::unique_ptr<ClauseOrder> createRecursiveClauseOrder() {
         return std::make_unique<RecursiveClauseOrder>();
+    }
+    
+    
+    /**
+     * \class NonrecursiveClauseOrder
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief An experimental ClauseOrder implementation using the GateDFSVisitor.
+     */
+    class NonrecursiveClauseOrder : public ClauseOrderImplBase {
+    public:
+        void readGates(GateAnalyzer& analyzer) override;
+        
+        NonrecursiveClauseOrder();
+        virtual ~NonrecursiveClauseOrder();
+        NonrecursiveClauseOrder(const NonrecursiveClauseOrder& other) = delete;
+        NonrecursiveClauseOrder& operator=(const NonrecursiveClauseOrder& other) = delete;
+    };
+    
+    NonrecursiveClauseOrder::NonrecursiveClauseOrder() {
+        
+    }
+    
+    NonrecursiveClauseOrder::~NonrecursiveClauseOrder() {
+        
+    }
+    
+    struct DFSGateCollector {
+        std::vector<Gate*> backtrackSequence{};
+        std::vector<Var> inputs{};
+        int maxVar = -1;
+        
+        void init(size_t gateCount) {
+            backtrackSequence.reserve(gateCount);
+        }
+        
+        void backtrack(Gate* g) {
+            backtrackSequence.push_back(g);
+        }
+        
+        void visit(Gate* g) {
+            maxVar = std::max(maxVar, Glucose::var(g->getOutput()));
+        }
+        
+        void visitInput(Var v) {
+            maxVar = std::max(maxVar, v);
+            inputs.push_back(v);
+        }
+        
+        DFSGateCollector() = default;
+        DFSGateCollector(DFSGateCollector&& other) = default;
+        DFSGateCollector& operator=(DFSGateCollector&& other) = default;
+    };
+    
+    void NonrecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
+        DFSGateCollector orderedGates = visitDFS<DFSGateCollector>(analyzer);
+        m_inputVariables = std::move(orderedGates.inputs);
+        m_maxVar = orderedGates.maxVar;
+        for (auto gate : orderedGates.backtrackSequence) {
+            backtrack(analyzer, *gate);
+        }
+    }
+    
+    std::unique_ptr<ClauseOrder> createNonrecursiveClauseOrder() {
+        return std::make_unique<NonrecursiveClauseOrder>();
     }
 }
