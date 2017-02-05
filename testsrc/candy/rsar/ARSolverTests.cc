@@ -54,7 +54,7 @@ namespace Candy {
         
         auto& lastAssumptionLits = mock.mockctrl_getLastAssumptionLits();
         
-        EXPECT_EQ(lastAssumptionLits.size(), nAddedClauses);
+        EXPECT_EQ(lastAssumptionLits.size(), static_cast<size_t>(nAddedClauses));
         EXPECT_TRUE(std::all_of(lastAssumptionLits.begin(),
                                 lastAssumptionLits.end(),
                                 [](Lit l) { return !isActive(l); }));
@@ -199,7 +199,7 @@ namespace Candy {
         solverMock.mockctrl_setDefaultSolveResult(false);
         
         auto fakeHeur = std::unique_ptr<FakeHeuristic>(new FakeHeuristic());
-        for (int i = 0; i < deactivationsByStep.size(); ++i) {
+        for (size_t i = 0; i < deactivationsByStep.size(); ++i) {
             fakeHeur->inStepNRemove(i, deactivationsByStep[i]);
         }
         

@@ -32,6 +32,7 @@
 #include <simp/SimpSolver.h>
 
 #include <vector>
+#include <memory>
 
 namespace Candy {
     class Conjectures;

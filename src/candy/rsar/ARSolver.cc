@@ -409,11 +409,9 @@ namespace Candy {
         init(problem);
         
         bool sat = false, abort = false;
-        unsigned int i = 0;
-        std::unique_ptr<EncodedApproximationDelta> prevDelta;
+        int i = 0;
+        std::unique_ptr<EncodedApproximationDelta> currentDelta;
         do {
-            std::unique_ptr<EncodedApproximationDelta> currentDelta;
-            
             if (i == 0) {
                 currentDelta = m_refinementStrategy->init();
                 addInitialApproximationClauses(*currentDelta);
@@ -424,7 +422,7 @@ namespace Candy {
                 addApproximationClauses(*currentDelta);
             }
             
-            if (i < m_maxRefinementSteps) {
+            if (m_maxRefinementSteps < 0 || i < m_maxRefinementSteps) {
                 // can perform another step after this one => use the approximation clauses.
                 assert(currentDelta.get() != nullptr);
                 sat |= underlyingSolve(currentDelta->getAssumptionLiterals());
@@ -433,13 +431,12 @@ namespace Candy {
             }
             else {
                 // no further steps after this one => deactivate the approximation clauses completely.
-                assert(prevDelta.get() != nullptr);
-                auto assumptions = deactivatedAssumptions(*prevDelta);
+                assert(currentDelta.get() != nullptr);
+                auto assumptions = deactivatedAssumptions(*currentDelta);
                 sat |= underlyingSolve(assumptions);
                 abort = true;
             }
             
-            prevDelta = std::move(currentDelta);
             ++i;
         } while(!abort && !sat);
         return sat;
