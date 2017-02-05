@@ -52,7 +52,7 @@ namespace Candy {
     
     class ApproximationDeltaImpl : public ApproximationDelta {
     public:
-        explicit ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+        explicit ApproximationDeltaImpl(const std::vector<EquivalenceImplications::CommitResult>& eqCommitRes,
                                         const Backbones::CommitResult& bbComitRes) noexcept;
         
         const_implication_iterator beginRemovedImplications() const noexcept override;
@@ -78,7 +78,7 @@ namespace Candy {
     };
      
     
-    ApproximationDeltaImpl::ApproximationDeltaImpl(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+    ApproximationDeltaImpl::ApproximationDeltaImpl(const std::vector<EquivalenceImplications::CommitResult>& eqCommitRes,
                                      const Backbones::CommitResult& bbCommitRes) noexcept
     : ApproximationDelta(),
     m_addedImplications(),
@@ -135,7 +135,7 @@ namespace Candy {
     }
     
     
-    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<EquivalenceImplications::CommitResult>& eqCommitRes,
                                                                  const Backbones::CommitResult& bbComitRes) noexcept {
         return backported_std::make_unique<ApproximationDeltaImpl>(eqCommitRes, bbComitRes);
     }
@@ -586,7 +586,7 @@ namespace Candy {
     }
     
     std::unique_ptr<ApproximationDelta> ApproximationStateImpl::createDelta() {
-        std::vector<const EquivalenceImplications::CommitResult> eqCommitResults;
+        std::vector<EquivalenceImplications::CommitResult> eqCommitResults;
         
         for (auto&& equivalenceImpls : m_equivalenceImplications) {
             auto commitResult = equivalenceImpls->commitWorkQueue();
@@ -599,7 +599,7 @@ namespace Candy {
     }
     
     std::unique_ptr<ApproximationDelta> ApproximationStateImpl::createInitializationDelta() {
-        std::vector<const EquivalenceImplications::CommitResult> eqCommitResults;
+        std::vector<EquivalenceImplications::CommitResult> eqCommitResults;
         EquivalenceImplications::CommitResult addedEquivalences;
         
         for (auto&& equivalenceImpls : m_equivalenceImplications) {

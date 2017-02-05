@@ -95,7 +95,7 @@ namespace Candy {
         TestGateCollector collector = visitDFS<TestGateCollector>(ga);
         
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
-        EXPECT_EQ(collector.gateCount, ga.getGateCount());
+        EXPECT_EQ(collector.gateCount, static_cast<unsigned long>(ga.getGateCount()));
     }
     
     TEST(RSGateDFSVisitorTest, visitTinyGateStructure) {

@@ -346,7 +346,7 @@ namespace Candy {
     
     std::unique_ptr<EquivalenceImplications> createEquivalenceImplications(const EquivalenceConjecture& conjs);
     
-    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<const EquivalenceImplications::CommitResult>& eqCommitRes,
+    std::unique_ptr<ApproximationDelta> createApproximationDelta(const std::vector<EquivalenceImplications::CommitResult>& eqCommitRes,
                                                                  const Backbones::CommitResult& bbComitRes);
 }
 #endif
