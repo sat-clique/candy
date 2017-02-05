@@ -51,6 +51,10 @@ namespace Candy {
         
     }
     
+    GateFilter::GateFilter() {
+        
+    }
+    
     GateFilter::~GateFilter() {
         
     }
@@ -319,5 +323,55 @@ namespace Candy {
     
     std::unique_ptr<ClauseOrder> createNonrecursiveClauseOrder() {
         return backported_std::make_unique<NonrecursiveClauseOrder>();
+    }
+    
+    
+    /**
+     * \class NonmonotonousGateFilter
+     * 
+     * \ingroup RandomSimulation
+     *
+     * \brief A gate filter marking exactly the outputs of nonmonotonously nested gates as enabled.
+     */
+    class NonmonotonousGateFilter : public GateFilter {
+    public:
+        std::unordered_set<Glucose::Var> getEnabledOutputVars() override;
+        
+        NonmonotonousGateFilter(GateAnalyzer &analyzer);
+        virtual ~NonmonotonousGateFilter();
+        NonmonotonousGateFilter(const NonmonotonousGateFilter& other) = delete;
+        NonmonotonousGateFilter& operator=(const NonmonotonousGateFilter& other) = delete;
+        
+    private:
+        GateAnalyzer &m_analyzer;
+    };
+    
+    NonmonotonousGateFilter::NonmonotonousGateFilter(GateAnalyzer &analyzer)
+    : GateFilter(),
+    m_analyzer(analyzer) {
+    }
+    
+    NonmonotonousGateFilter::~NonmonotonousGateFilter() {
+    }
+    
+    std::unordered_set<Glucose::Var> NonmonotonousGateFilter::getEnabledOutputVars() {
+        std::unordered_set<Glucose::Var> result;
+        
+        // TODO: find a more direct way for iterating over the gates
+        auto topo = getTopoOrder(m_analyzer);
+        for (auto outputVar : topo.getOutputsOrdered()) {
+            auto& gate = m_analyzer.getGate(Glucose::mkLit(outputVar, 1));
+            if(gate.hasNonMonotonousParent()) {
+                result.insert(outputVar);
+            }
+        }
+        
+        return result;
+    }
+    
+    
+    
+    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(GateAnalyzer &analyzer) {
+        return backported_std::make_unique<NonmonotonousGateFilter>(analyzer);
     }
 }
