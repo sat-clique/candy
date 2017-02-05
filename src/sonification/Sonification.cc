@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include <src/sonification/Sonification.h>
+#include <sonification/Sonification.h>
 
 #ifdef SONIFICATION
 Sonification::Sonification() :

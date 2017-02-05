@@ -60,7 +60,7 @@
 
 #include "CNFProblem.h"
 
-#include "src/sonification/SolverSonification.h"
+#include "sonification/SolverSonification.h"
 
 namespace Glucose {
 
