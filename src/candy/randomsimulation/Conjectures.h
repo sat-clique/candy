@@ -29,6 +29,8 @@
 
 #include <core/SolverTypes.h>
 
+#include <memory>
+
 namespace Candy {
     /**
      * \class EquivalenceConjecture
@@ -111,6 +113,38 @@ namespace Candy {
         std::vector<EquivalenceConjecture> m_equivalences {};
         std::vector<BackboneConjecture> m_backbones {};
     };
+    
+    /**
+     * \class ConjectureFilter
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A filter for conjectures.
+     */
+    class ConjectureFilter {
+    public:
+        virtual Conjectures apply(const Conjectures& c) const = 0;
+        
+        ConjectureFilter();
+        virtual ~ConjectureFilter();
+        ConjectureFilter(const ConjectureFilter& other) = delete;
+        ConjectureFilter& operator= (const ConjectureFilter& other) = delete;
+    };
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates a ConjectureFilter removing equivalence conjectures larger than the
+     * given size.
+     */
+    std::unique_ptr<ConjectureFilter> createSizeConjectureFilter(size_t maxEquivSize);
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates a ConjectureFilter removing backbones from the conjecture set.
+     */
+    std::unique_ptr<ConjectureFilter> createBackboneRemovalConjectureFilter();
 }
 
 

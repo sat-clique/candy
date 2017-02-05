@@ -27,6 +27,7 @@
 // TODO: documentation
 
 #include "Conjectures.h"
+#include <utils/MemUtils.h>
 
 namespace Candy {
     EquivalenceConjecture::EquivalenceConjecture() : m_lits() {
@@ -75,5 +76,85 @@ namespace Candy {
     
     const std::vector<BackboneConjecture> &Conjectures::getBackbones() const {
         return m_backbones;
+    }
+    
+    ConjectureFilter::ConjectureFilter() {
+    }
+    
+    ConjectureFilter::~ConjectureFilter() {
+    }
+    
+    namespace {
+        class SizeConjectureFilter : public ConjectureFilter {
+        public:
+            Conjectures apply(const Conjectures& c) const override;
+            
+            explicit SizeConjectureFilter(size_t maxEquivSize);
+            virtual ~SizeConjectureFilter();
+            SizeConjectureFilter(const SizeConjectureFilter& other) = delete;
+            SizeConjectureFilter& operator= (const SizeConjectureFilter& other) = delete;
+            
+        private:
+            size_t m_maxEquivSize;
+        };
+        
+        SizeConjectureFilter::SizeConjectureFilter(size_t maxEquivSize)
+        : ConjectureFilter(),
+        m_maxEquivSize(maxEquivSize) {
+        }
+        
+        SizeConjectureFilter::~SizeConjectureFilter() {
+        }
+        
+        Conjectures SizeConjectureFilter::apply(const Candy::Conjectures &c) const {
+            Conjectures result;
+            for (auto& bb : c.getBackbones()) {
+                result.addBackbone(bb);
+            }
+            
+            for (auto& eq : c.getEquivalences()) {
+                if(eq.size() <= m_maxEquivSize) {
+                    result.addEquivalence(eq);
+                }
+            }
+            
+            return result;
+        }
+        
+        
+        class BackboneRemovalConjectureFilter : public ConjectureFilter {
+        public:
+            Conjectures apply(const Conjectures& c) const override;
+            
+            explicit BackboneRemovalConjectureFilter();
+            virtual ~BackboneRemovalConjectureFilter();
+            BackboneRemovalConjectureFilter(const BackboneRemovalConjectureFilter& other) = delete;
+            BackboneRemovalConjectureFilter& operator= (const BackboneRemovalConjectureFilter& other) = delete;
+        };
+        
+        BackboneRemovalConjectureFilter::BackboneRemovalConjectureFilter()
+        : ConjectureFilter() {
+        }
+        
+        BackboneRemovalConjectureFilter::~BackboneRemovalConjectureFilter() {
+        }
+        
+        Conjectures BackboneRemovalConjectureFilter::apply(const Candy::Conjectures &c) const {
+            Conjectures result;
+            
+            for (auto& eq : c.getEquivalences()) {
+                result.addEquivalence(eq);
+            }
+            
+            return result;
+        }
+    }
+    
+    std::unique_ptr<ConjectureFilter> createSizeConjectureFilter(size_t maxEquivSize) {
+        return backported_std::make_unique<SizeConjectureFilter>(maxEquivSize);
+    }
+    
+    std::unique_ptr<ConjectureFilter> createBackboneRemovalConjectureFilter() {
+        return backported_std::make_unique<BackboneRemovalConjectureFilter>();
     }
 }
