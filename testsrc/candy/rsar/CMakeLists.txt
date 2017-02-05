@@ -1,15 +1,19 @@
 add_executable(rsar_tests
-			  SolverMock.cc
-			  SolverMock.h
-			  SolverMockTests.cc
-			  TestUtils.h
-			  TestUtils.cc
-			  HeuristicsMock.h
-			  HeuristicsMock.cc
-			  RefinementTests.cc
-			  ApproximationStateTests.cc
-			  ARSolverTests.cc)
+    SolverMock.cc
+    SolverMock.h
+    SolverMockTests.cc
+    TestUtils.h
+    TestUtils.cc
+    HeuristicsMock.h
+    HeuristicsMock.cc
+    RefinementTests.cc
+    ApproximationStateTests.cc
+    ARSolverTests.cc
+    HeuristicsTests.cc
+)
 
+target_include_directories(rsar_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
+target_include_directories(rsar_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
 candy_executable_customizations(rsar_tests)
 
@@ -18,7 +22,7 @@ add_test(NAME rsar_module_tests COMMAND rsar_tests)
 
 target_include_directories(rsar_tests PUBLIC ${CMAKE_PROJECT_ROOT}/lib/googletest/googletest/include
                                              ${CMAKE_PROJECT_ROOT}/lib/googletest/googlemock/include)
-target_link_libraries(rsar_tests ${CANDY_LIBS} gtest_main gtest gmock)
+target_link_libraries(rsar_tests ${CANDY_LIBS} testutils gtest_main gtest gmock)
 
 file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "problems/*.cnf")
 message("Test CNF files: ${TEST_CNF_PROBLEMS}")
