@@ -27,17 +27,44 @@
 #ifndef X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 #define X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 
+#include <memory>
+#include <vector>
+
 namespace Candy {
     class EquivalenceImplications;
     class Backbones;
+    class GateAnalyzer;
     
+    /**
+     * \class RefinementHeuristic
+     *
+     * \ingroup RS_AbstractionRefinement
+     *
+     * \brief A variable removal heuristic for abstraction-refinement-based SAT solving.
+     *
+     */
     class RefinementHeuristic {
     public:
         // TODO: the following three methods should have the noexcept
         // modifier. Alas, gmock does not seem to support mocking
         // noexcept functions.
+        
+        /**
+         * Informs the heuristic that a new refinement step has begun. Needs to be called
+         * during initialization and at the beginning of each refinement step.
+         */
         virtual void beginRefinementStep() = 0;
+        
+        /**
+         * Adds variables to be removed at the current refinement step to the equivalence
+         * representation's variable removal work queue.
+         */
         virtual void markRemovals(EquivalenceImplications& equivalence) = 0;
+        
+        /**
+         * Adds variables to be removed at the current refinement step to the backbone
+         * representation's variable removal work queue.
+         */
         virtual void markRemovals(Backbones& backbones) = 0;
         
         RefinementHeuristic();
@@ -45,6 +72,20 @@ namespace Candy {
         RefinementHeuristic(const RefinementHeuristic &other) = delete;
         RefinementHeuristic& operator= (const RefinementHeuristic& other) = delete;
     };
+    
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Creates an instance of InputDepCountRefinementHeuristic.
+     *
+     * \param analyzer  the gate analyzer providing the gate structure
+     * \param config    a list i0, ..., iN of natural numbers. In refinement step X (X <= N),
+     *                  all variable outputs depending on more than iX input variables are
+     *                  marked for removal. For X > N, all remaining variables are marked for
+     *                  removal.
+     */
+    std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(GateAnalyzer& analyzer,
+                                                                                const std::vector<size_t>& config);
 }
 
 #endif
