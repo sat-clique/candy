@@ -59,10 +59,18 @@ namespace Candy {
          */
         virtual std::unordered_set<Glucose::Var> getEnabledOutputVars() = 0;
         
+        GateFilter();
         virtual ~GateFilter();
         GateFilter(const GateFilter& other) = delete;
         GateFilter& operator=(const GateFilter& other) = delete;
     };
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates a gate filter marking only the outputs of nonmonotonously nested gates as enabled.
+     */
+    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(GateAnalyzer &analyzer);
     
     /**
      * \class ClauseOrder
