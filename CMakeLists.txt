@@ -55,6 +55,9 @@ option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 # Enable dSYM hack (only relevant for macOS builds)
 option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
 
+# Enable Sonification
+option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
+
 
 ### Using ctest as a test
 
@@ -70,8 +73,9 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -fn
 
 ### Additional Preprocessor Defintions
 
-add_definitions(-DSONIFICATION)
-
+if(CANDY_ENABLE_SONIFICATION)
+  add_definitions(-DSONIFICATION)
+endif()
 
 ### Find libraries
 
@@ -97,12 +101,17 @@ endfunction()
 
 ### Set up include directories
 
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src)
 # for refactoring purposes, TODO: use e.g. candy/core/SolverTypes.h instead of core/SolverTypes.h
 include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 
 set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 
+if(CANDY_ENABLE_SONIFICATION)
+  # ...at least until we build oscpack via the submodule (TODO):
+  include_directories("/usr/local/include")
+  include_directories("/usr/include")
+endif()
 
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
 
