@@ -4,7 +4,7 @@
 </CsOptions>
 <CsInstruments>
 sr = 44100
-ksmps = 10
+ksmps = 1
 nchnls = 2
 0dbfs = 1.0
 
@@ -74,7 +74,7 @@ endin
 instr sampler
   ifn = p4
   idur = ftsr(ifn) / ftlen(ifn)
-  aSamp poscil3 3, idur, ifn
+  aSamp poscil3 2, idur, ifn
   outleta "out", aSamp
 endin
 
@@ -83,29 +83,29 @@ instr restart_trigger
   kreceive init 1
   kevent OSClisten giOSC, "/restart", "f", kreceive
   if (kevent > 0) then
-    event "i", "sampler", 0, .31, gibd
+    event "i", "sampler", 1, .31, gibd
   endif
 endin
 
 instr learnt
   ;aenv expon 1, .5, 0.0001
-  aenv linen 1, .1, p3, .2
-  klowpass = 16000 - (16000 / 6 * gklearnt)
+  aenv linen 2, .2, p3, .1
+  ilowpass = 16000 - (16000 / 6 * i(gklearnt))
   anoise oscil aenv, 440, ginoise
-  aout butterlp anoise, klowpass
+  aout butterlp anoise, ilowpass
   outleta "out", aout
 endin
 
 instr learnt_trigger 
   if (gklearnt_upd == 1) then 
     if (gklearnt == 1) then
-      event "i", "sampler", 0, .41, gieff1
+      event "i", "sampler", 1, .41, gieff1
     elseif (gklearnt == 2) then
-      event "i", "sampler", 0, .25, gieff2
+      event "i", "sampler", 1, .24, girvbd
     elseif (gklearnt > 6) then
       gklearnt = 6
     endif
-    event "i", "learnt", 0, .4
+    event "i", "learnt", 0, .2
   endif
 endin
 
