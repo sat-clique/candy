@@ -137,19 +137,20 @@ namespace Candy {
     }
     
     Conjectures BitparallelRandomSimulator::run() {
-        assert (m_abortThreshold >= 0.0f); // TODO: this violates Liskov substitution
+        assert (m_abortThreshold >= 0.0f);
         return runImpl(false, 0);
     }
     
     Conjectures BitparallelRandomSimulator::run(unsigned int nSteps) {
+        assert (nSteps > 0);
         return runImpl(true, nSteps);
     }
     
     Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps) {
         ensureInitialized();
         
-        assert (nSteps % SimulationVector::VARSIMVECVARS == 0);  // TODO: this violates Liskov substitution
         unsigned int realSteps = nSteps / (SimulationVector::VARSIMVECVARS);
+        realSteps += (nSteps % SimulationVector::VARSIMVECVARS == 0 ? 0 : 1);
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
         
