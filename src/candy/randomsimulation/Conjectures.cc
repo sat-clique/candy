@@ -78,6 +78,17 @@ namespace Candy {
         return m_backbones;
     }
     
+    std::uint64_t countLiteralEquivalences(const Conjectures& conjectures) {
+        std::uint64_t result = 0;
+        for (auto&& eq : conjectures.getEquivalences()) {
+            std::uint64_t size = eq.size();
+            result += ((size * size) - size) / 2;
+        }
+        return result;
+    }
+    
+    
+    
     ConjectureFilter::ConjectureFilter() {
     }
     
