@@ -56,7 +56,7 @@ namespace Candy {
          * \param indices The indices of the simulation vectors to be randomized.
          */
         virtual void randomize(SimulationVectors &simVectors,
-                               std::vector<SimulationVectors::index_t> indices) = 0;
+                               const std::vector<SimulationVectors::index_t> &indices) = 0;
         
         Randomization();
         virtual ~Randomization();
@@ -69,6 +69,56 @@ namespace Candy {
      * to "true".
      */
     std::unique_ptr<Randomization> createSimpleRandomization();
+    
+    /**
+     * Creates a Randomization object assigning variables to "true" with a chance of 1-(1/2^n).
+     *
+     * \param bias  an integer >= 1
+     */
+    std::unique_ptr<Randomization> createRandomizationBiasedToTrue(unsigned int bias);
+    
+    /**
+     * Creates a Randomization object assigning variables to "true" with a chance of 2^-n.
+     *
+     * \param bias  an integer >= 1
+     */
+    std::unique_ptr<Randomization> createRandomizationBiasedToFalse(unsigned int bias);
+    
+    /**
+     * Creates a Randomization object assigning variables to "true" with a chance of 1-(2^k)
+     * with k changing between randomize() invocations, k cycling through the sequence (k_i)
+     * with k_i = (minBias + i * step) mod (maxBias + 1).
+     *
+     * \param minBias  an integer >= 1
+     * \param maxBias  an integer >= 1
+     * \param step     an integer >= 0
+     */
+    std::unique_ptr<Randomization> createRandomizationCyclicallyBiasedToTrue(unsigned int minBias,
+                                                                             unsigned int maxBias,
+                                                                             unsigned int step);
+    
+    /**
+     * Creates a Randomization object assigning variables to "true" with a chance of 2^-k
+     * with k changing between randomize() invocations, k cycling through the sequence (k_i)
+     * with k_i = (minBias + i * step) mod (maxBias + 1).
+     *
+     * \param minBias  an integer >= 1
+     * \param maxBias  an integer >= 1
+     * \param step     an integer >= 0
+     */
+    std::unique_ptr<Randomization> createRandomizationCyclicallyBiasedToFalse(unsigned int minBias,
+                                                                              unsigned int maxBias,
+                                                                              unsigned int step);
+    
+    
+    /**
+     * Creates a Randomization alternatingly delegating calls to rand1 and rand2, changing the
+     * delegation target whenever the total amount of randomize() invocations is a multiple of
+     * the given period.
+     */
+    std::unique_ptr<Randomization> alternateRandomizations(std::unique_ptr<Randomization> rand1,
+                                                           std::unique_ptr<Randomization> rand2,
+                                                           unsigned int period);
 }
 
 #endif

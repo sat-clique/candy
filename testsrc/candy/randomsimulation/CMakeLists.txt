@@ -6,7 +6,8 @@ add_executable(randomsimulation_tests
     TestUtils.cc
     TestUtils.h
     RandomSimulatorTests.cc
-    GateDFSVisitorTests.cc)
+    GateDFSVisitorTests.cc
+    RandomizationTests.cc)
 
 candy_executable_customizations(randomsimulation_tests)
 
