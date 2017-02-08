@@ -29,6 +29,7 @@
 
 #include <core/SolverTypes.h>
 
+#include <cstdint>
 #include <memory>
 
 namespace Candy {
@@ -113,6 +114,13 @@ namespace Candy {
         std::vector<EquivalenceConjecture> m_equivalences {};
         std::vector<BackboneConjecture> m_backbones {};
     };
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Counts the pairs of literal-equivalence conjectures represented by the given Conjectures object.
+     */
+    std::uint64_t countLiteralEquivalences(const Conjectures& conjectures);
     
     /**
      * \class ConjectureFilter
