@@ -180,31 +180,31 @@ instr mixer
   kch5vol init .7
   
   kreceive1 init 1
-  kans1 OSClisten giOSC, "/volume/ch1", "f", kreceive1
+  kans1 OSClisten giOSC, "/volume/sampler", "f", kreceive1
   if (kans1 == 1) then
     kch1vol = kreceive1
   endif
   
   kreceive2 init 1
-  kans2 OSClisten giOSC, "/volume/ch2", "f", kreceive2
+  kans2 OSClisten giOSC, "/volume/learnt", "f", kreceive2
   if (kans2 == 1) then
     kch2vol = kreceive2
   endif
   
   kreceive3 init 1
-  kans3 OSClisten giOSC, "/volume/ch3", "f", kreceive3
+  kans3 OSClisten giOSC, "/volume/conflict", "f", kreceive3
   if (kans3 == 1) then
     kch3vol = kreceive3
   endif
   
   kreceive4 init 1
-  kans4 OSClisten giOSC, "/volume/ch4", "f", kreceive4
+  kans4 OSClisten giOSC, "/volume/depth", "f", kreceive4
   if (kans4 == 1) then
     kch4vol = kreceive4
   endif
   
   kreceive5 init 1
-  kans5 OSClisten giOSC, "/volume/ch5", "f", kreceive5
+  kans5 OSClisten giOSC, "/volume/eloquence", "f", kreceive5
   if (kans5 == 1) then
     kch5vol = kreceive5
   endif
