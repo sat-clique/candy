@@ -98,11 +98,6 @@ instr oscReceiver
     turnon "mixer"
     turnon "continuous_depth"
     turnon "continuous_eloquence"
-connect "sampler", "out", "mixer", "in_sampler"
-connect "learnt", "out", "mixer", "in_learnt"
-connect "conflict", "out", "mixer", "in_conflict"
-connect "continuous_depth", "out", "mixer", "in_continuous_depth"
-connect "continuous_eloquence", "out", "mixer", "in_continuous_eloquence"
   endif
   
   if (kstop == 1) then
@@ -110,6 +105,21 @@ connect "continuous_eloquence", "out", "mixer", "in_continuous_eloquence"
     turnoff2 "continuous_depth", 0, 0
     turnoff2 "continuous_eloquence", 0, 0
     ;scoreline {{ e 1 }}, 1
+  endif
+
+  kcount1 active "conflict"
+  if kcount1 > 20 then
+    turnoff2 "conflict", 1, 1
+  endif
+
+  kcount2 active "learnt"
+  if kcount2 > 20 then
+    turnoff2 "learnt", 1, 1
+  endif
+
+  kcount3 active "sampler"
+  if kcount3 > 20 then
+    turnoff2 "sampler", 1, 1
   endif
   
   kvariables init 0
@@ -149,10 +159,6 @@ connect "continuous_eloquence", "out", "mixer", "in_continuous_eloquence"
   kconflictlevel_upd OSClisten giOSC, "/conflict", "f", kconflictlevel
   if (kconflictlevel_upd == 1) then
     if gkdecisions_hwm > 0 then
-	 kcount active "conflict"
-	 if kcount > 20 then
-	   turnoff2 "conflict", 1, 1
-	 endif
       kval = round((kconflictlevel * 12.0) / gkdecisions_hwm)
       kfreq = 440 * exp(log(2.0) * kval/12.0)
       event "i", "conflict", 0, .4, kfreq
