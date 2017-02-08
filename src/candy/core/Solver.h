@@ -60,6 +60,8 @@
 
 #include "CNFProblem.h"
 
+#include "src/sonification/SolverSonification.h"
+
 namespace Glucose {
 
 using namespace std;
@@ -391,6 +393,8 @@ protected:
   double totalTime4Sat, totalTime4Unsat;
   int nbSatCalls, nbUnsatCalls;
   //vector<int> assumptionPositions, initialPositions;
+
+  SolverSonification sonification;
 
   // Main internal methods:
   //
