@@ -113,7 +113,7 @@ Solver::Solver() :
 // Resource constraints:
 //
         , conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
-        0.), nbSatCalls(0), nbUnsatCalls(0) {
+        0.), nbSatCalls(0), nbUnsatCalls(0), sonification() {
   MYFLAG = 0;
   // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
   // Kept here for simplicity
@@ -1092,6 +1092,8 @@ lbool Solver::search(int nof_conflicts) {
   bool blocked = false;
   starts++;
   for (;;) {
+	sonification.decisionLevel(decisionLevel());
+
     if (decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
       parallelImportUnaryClauses();
 
@@ -1099,8 +1101,11 @@ lbool Solver::search(int nof_conflicts) {
         return l_False;
     }
     CRef confl = propagate();
+    sonification.assignmentLevel(nAssigns());
 
     if (confl != CRef_Undef) {
+      sonification.conflictLevel(decisionLevel());
+
       if (parallelJobIsFinished())
         return l_Undef;
 
@@ -1137,6 +1142,8 @@ lbool Solver::search(int nof_conflicts) {
       selectors.clear();
 
       analyze(confl, learnt_clause, selectors, backtrack_level, nblevels, szWithoutSelectors);
+
+      sonification.learntSize(learnt_clause.size());
 
       lbdQueue.push(nblevels);
       sumLBD += nblevels;
@@ -1281,6 +1288,8 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
     return l_False;
   double curTime = cpuTime();
 
+  sonification.start(nVars(), nClauses());
+
   solves++;
 
   lbool status = l_Undef;
@@ -1309,6 +1318,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
   // Search:
   int curr_restarts = 0;
   while (status == l_Undef) {
+	sonification.restart();
     status = search(0); // the parameter is useless in glucose, kept to allow modifications
 
     if (!withinBudget())
@@ -1345,6 +1355,8 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
     nbUnsatCalls++;
     totalTime4Unsat += (finalTime - curTime);
   }
+
+  sonification.stop(status == l_True ? 1 : status == l_False ? 0 : -1);
 
   return status;
 
