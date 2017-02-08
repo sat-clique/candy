@@ -59,7 +59,7 @@ instr continuous_eloquence
   kfreq init 0
   if gkassigns > 0 then
     kval = (gkdecisions * 12.0) / gkassigns
-    kfreq = 440 * exp(log(2.0) * kval/-12.0)
+    kfreq = 220 * exp(log(2.0) * kval/12.0)
   endif
   aharms oscil 1, kfreq, giharms
   ;alow butterlp aharms, kfreq
