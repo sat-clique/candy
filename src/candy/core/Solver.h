@@ -659,10 +659,12 @@ inline bool Solver::solve(Lit p, Lit q, Lit r) {
 }
 inline bool Solver::solve(const vector<Lit>& assumps) {
   budgetOff();
+  assumptions.clear();
   assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
   return solve_() == l_True;
 }
 inline lbool Solver::solveLimited(const vector<Lit>& assumps) {
+  assumptions.clear();
   assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
   return solve_();
 }
