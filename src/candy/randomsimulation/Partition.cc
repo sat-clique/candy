@@ -31,6 +31,7 @@
 #include <memory>
 #include <unordered_map>
 #include <iostream>
+#include <cstdint>
 
 #include <utils/FastRand.h>
 #include <utils/MemUtils.h>
@@ -213,7 +214,7 @@ namespace Candy {
         std::vector<Glucose::Var> m_variables;
         
         std::unique_ptr<CompressionScheduleStrategy> m_compressionSched;
-        unsigned int m_correlationCount;
+        std::uint64_t m_correlationCount;
         
         float m_reductionRate = 1.0f;
     };
@@ -374,17 +375,18 @@ namespace Candy {
             }
         }
         
-        
-        size_t partitionSize = partition.size();
+        // actually computing 2*m_correlationCount, which is okay for computing the reduction rate
+        // because the factor 2 is canceled out.
+        std::uint64_t partitionSize = partition.size();
         if (partition[0].backbone) {
-            m_correlationCount += 2 * partition.size();
+            m_correlationCount += 2 * partitionSize;
         }
         else if (!allNegativePolarity && !allPositivePolarity) {
             // A mirroring partition exists for which this condition is true as well
-            m_correlationCount += ((partition.size() * partitionSize) - partitionSize)/2;
+            m_correlationCount += ((partitionSize * partitionSize) - partitionSize)/2;
         }
         else if (allPositivePolarity) {
-            m_correlationCount += ((partition.size() * partitionSize) - partitionSize);
+            m_correlationCount += ((partitionSize * partitionSize) - partitionSize);
         }
     }
 
