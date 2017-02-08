@@ -8,7 +8,7 @@
 #ifndef SRC_SONIFICATION_SOLVERSONIFICATION_H_
 #define SRC_SONIFICATION_SOLVERSONIFICATION_H_
 
-#include <src/sonification/Sonification.h>
+#include <sonification/Sonification.h>
 
 class SolverSonification: public Sonification {
 public:
