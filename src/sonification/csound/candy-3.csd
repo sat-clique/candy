@@ -4,7 +4,7 @@
 </CsOptions>
 <CsInstruments>
 sr = 44100
-ksmps = 1
+ksmps = 10
 nchnls = 2
 0dbfs = 1.0
 
@@ -35,11 +35,7 @@ connect "continuous_depth", "out", "mixer", "in_continuous_depth"
 connect "continuous_eloquence", "out", "mixer", "in_continuous_eloquence"
 
 ;ALWAYSON
-alwayson "oscReceiver"
-alwayson "continuous_depth"
-alwayson "continuous_eloquence"
-
-cpuprc "learnt", 10
+turnon "oscReceiver"
 
 ;GLOBALS
 giOSC OSCinit 7000
@@ -50,18 +46,20 @@ gkdecisions init 0
 gkdecisions_hwm init 0
 
 instr continuous_depth
-  kvar init 0
+  kfreq init 0
   if gkdecisions_hwm > 0 then
-    kvar = 440 + (gkdecisions * 258) / gkdecisions_hwm
+    kval = (gkdecisions * 12.0) / gkdecisions_hwm
+    kfreq = 440 * exp(log(2.0) * kval/12.0)
   endif
-  adecision oscil .5, kvar, gisaw
+  adecision oscil 1, kfreq, gisaw
   outleta "out", adecision
 endin
 
 instr continuous_eloquence
   kfreq init 0
   if gkassigns > 0 then
-    kfreq = 440 + (gkdecisions * 258) / gkassigns
+    kval = (gkdecisions * 12.0) / gkassigns
+    kfreq = 440 * exp(log(2.0) * kval/-12.0)
   endif
   aharms oscil 1, kfreq, giharms
   ;alow butterlp aharms, kfreq
@@ -92,6 +90,28 @@ instr conflict
 endin
 
 instr oscReceiver
+  kreceive0 init 1
+  kstart OSClisten giOSC, "/start", "f", kreceive0
+  kstop OSClisten giOSC, "/stop", "f", kreceive0
+  
+  if (kstart == 1) then 
+    turnon "mixer"
+    turnon "continuous_depth"
+    turnon "continuous_eloquence"
+connect "sampler", "out", "mixer", "in_sampler"
+connect "learnt", "out", "mixer", "in_learnt"
+connect "conflict", "out", "mixer", "in_conflict"
+connect "continuous_depth", "out", "mixer", "in_continuous_depth"
+connect "continuous_eloquence", "out", "mixer", "in_continuous_eloquence"
+  endif
+  
+  if (kstop == 1) then
+    turnoff2 "mixer", 0, 0
+    turnoff2 "continuous_depth", 0, 0
+    turnoff2 "continuous_eloquence", 0, 0
+    ;scoreline {{ e 1 }}, 1
+  endif
+  
   kvariables init 0
   kvariables_upd OSClisten giOSC, "/variables", "f", kvariables
   if (kvariables_upd == 1) then
@@ -117,9 +137,9 @@ instr oscReceiver
   klearnt_upd OSClisten giOSC, "/learnt", "f", klearnt
   if (klearnt_upd == 1) then
     if (klearnt == 1) then
-      event "i", "sampler", 1, .41, gieff1
+      event "i", "sampler", 0, .41, gieff1
     elseif (klearnt == 2) then
-      event "i", "sampler", 1, .24, girvbd
+      event "i", "sampler", 0, .24, girvbd
     elseif (klearnt < 6) then
       event "i", "learnt", 0, .2, klearnt
     endif    
@@ -129,8 +149,12 @@ instr oscReceiver
   kconflictlevel_upd OSClisten giOSC, "/conflict", "f", kconflictlevel
   if (kconflictlevel_upd == 1) then
     if gkdecisions_hwm > 0 then
-      kquant = round((kconflictlevel * 12) / gkdecisions_hwm)
-      kfreq = 440 * sqrt(kquant)
+	 kcount active "conflict"
+	 if kcount > 20 then
+	   turnoff2 "conflict", 1, 1
+	 endif
+      kval = round((kconflictlevel * 12.0) / gkdecisions_hwm)
+      kfreq = 440 * exp(log(2.0) * kval/12.0)
       event "i", "conflict", 0, .4, kfreq
     endif    
   endif
@@ -138,7 +162,7 @@ instr oscReceiver
   krestart init 0
   krestart_upd OSClisten giOSC, "/restart", "f", krestart
   if (krestart_upd == 1) then
-    event "i", "sampler", 1, .31, gibd
+    event "i", "sampler", 0, .31, gibd
   endif
 endin
 
@@ -149,55 +173,37 @@ instr mixer
   acdepth inleta "in_continuous_depth"
   aceloquence inleta "in_continuous_eloquence"
   
-  kch1vol init 0
-  kch2vol init 0
-  kch3vol init 0
-  kch4vol init 0
-  kch5vol init 0
+  kch1vol init 1
+  kch2vol init 1
+  kch3vol init .7
+  kch4vol init .7
+  kch5vol init .7
   
-  kreceive0 init 1
   kreceive1 init 1
-  kreceive2 init 1
-  kreceive3 init 1
-  kreceive4 init 1
-  kreceive5 init 1
-  
-  kstart OSClisten giOSC, "/start", "f", kreceive0
-  kstop OSClisten giOSC, "/stop", "f", kreceive0
-  
-  if (kstart == 1) then 
-    kch1vol = 1
-    kch2vol = 1
-    kch3vol = 1 
-    kch4vol = 1
-    kch5vol = 1
-  endif
-  
-  if (kstop == 1) then
-    scoreline {{ e 1 }}, 1
-    kch1vol = 0
-    kch2vol = 0
-    kch3vol = 0
-    kch4vol = 0
-    kch5vol = 0
-  endif
-  
   kans1 OSClisten giOSC, "/volume/ch1", "f", kreceive1
   if (kans1 == 1) then
     kch1vol = kreceive1
   endif
+  
+  kreceive2 init 1
   kans2 OSClisten giOSC, "/volume/ch2", "f", kreceive2
   if (kans2 == 1) then
     kch2vol = kreceive2
   endif
+  
+  kreceive3 init 1
   kans3 OSClisten giOSC, "/volume/ch3", "f", kreceive3
   if (kans3 == 1) then
     kch3vol = kreceive3
   endif
+  
+  kreceive4 init 1
   kans4 OSClisten giOSC, "/volume/ch4", "f", kreceive4
   if (kans4 == 1) then
     kch4vol = kreceive4
   endif
+  
+  kreceive5 init 1
   kans5 OSClisten giOSC, "/volume/ch5", "f", kreceive5
   if (kans5 == 1) then
     kch5vol = kreceive5
@@ -210,8 +216,6 @@ endin
 </CsInstruments>
 
 <CsScore>
-  i "mixer" 0 40000
-  e
 </CsScore>
 </CsoundSynthesizer>
 <bsbPanel>
