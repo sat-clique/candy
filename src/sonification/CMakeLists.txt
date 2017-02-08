@@ -4,6 +4,7 @@ add_library(sonification
     SolverSonification.cc
     SolverSonification.h)
 
-include_directories("/usr/local/include/oscpack/")
-
-target_link_libraries(sonification oscpack)
+if(CANDY_ENABLE_SONIFICATION)
+  # TODO: use find_package, or warn the user that oscpack needs to be installed
+  target_link_libraries(sonification oscpack)
+endif()

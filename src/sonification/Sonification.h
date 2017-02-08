@@ -8,8 +8,10 @@
 #ifndef SRC_SONIFICATION_SONIFICATION_H_
 #define SRC_SONIFICATION_SONIFICATION_H_
 
-#include "/usr/local/include/oscpack/osc/OscOutboundPacketStream.h"
-#include "/usr/local/include/oscpack/ip/UdpSocket.h"
+#ifdef SONIFICATION
+#include "oscpack/osc/OscOutboundPacketStream.h"
+#include "oscpack/ip/UdpSocket.h"
+#endif
 
 #define DEFAULT_ADDRESS "127.0.0.1"
 #define DEFAULT_PORT 7000
@@ -18,7 +20,11 @@
 
 class Sonification {
 private:
+#ifdef SONIFICATION
     UdpTransmitSocket transmitSocket;
+#else
+    void* transmitSocket;
+#endif
 
 public:
 	Sonification();
