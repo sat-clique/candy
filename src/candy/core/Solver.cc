@@ -89,6 +89,8 @@ static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial acti
 static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
     DoubleRange(0, false, HUGE_VAL, false));
 
+static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT32_MAX));
+
 //=================================================================================================
 // Constructor/Destructor:
 
@@ -1092,7 +1094,7 @@ lbool Solver::search(int nof_conflicts) {
   bool blocked = false;
   starts++;
   for (;;) {
-	sonification.decisionLevel(decisionLevel());
+	sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
     if (decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
       parallelImportUnaryClauses();

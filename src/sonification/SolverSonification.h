@@ -20,7 +20,7 @@ public:
 	void start(int nVars, int nClauses);
 	void stop(int sat);
 	void restart();
-	void decisionLevel(int level);
+	void decisionLevel(int level, int delay);
 	void conflictLevel(int level);
 	void assignmentLevel(int level);
 	void learntSize(int size);
