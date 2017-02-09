@@ -4,7 +4,7 @@
 </CsOptions>
 <CsInstruments>
 sr = 44100
-ksmps = 10
+ksmps = 20
 nchnls = 2
 0dbfs = 1.0
 
@@ -31,8 +31,8 @@ ginoise ftgen 12, 0, 16384, 21, 4
 connect "sampler", "out", "mixer", "in_sampler"
 connect "learnt", "out", "mixer", "in_learnt"
 connect "conflict", "out", "mixer", "in_conflict"
-connect "continuous_depth", "out", "mixer", "in_continuous_depth"
-connect "continuous_eloquence", "out", "mixer", "in_continuous_eloquence"
+connect "continuous_harms", "out", "mixer", "in_continuous_depth"
+connect "continuous_saw", "out", "mixer", "in_continuous_eloquence"
 
 ;ALWAYSON
 turnon "oscReceiver"
@@ -40,30 +40,32 @@ turnon "oscReceiver"
 ;GLOBALS
 giOSC OSCinit 7000
 
-gkvariables init 0
-gkassigns init 0
-gkdecisions init 0
-gkdecisions_hwm init 0
+opcode fract2octave, k, kkk
+    kfract, kbasefreq, kquant xin
+    if (kquant != 0) then
+	kfreq = kbasefreq * exp(log(2.0) * round(kfract * kquant) / kquant)
+    else 
+      kfreq = kbasefreq * exp(log(2.0) * kfract)
+    endif
+    xout kfreq
+endop
 
-instr continuous_depth
-  kfreq init 0
-  if gkdecisions_hwm > 0 then
-    kval = (gkdecisions * 12.0) / gkdecisions_hwm
-    kfreq = 440 * exp(log(2.0) * kval/12.0)
-  endif
-  adecision oscil 1, kfreq, gisaw
-  outleta "out", adecision
+instr continuous_harms
+  ifreq = p4
+  Schan = p5
+  kval chnget Schan
+  kfreq fract2octave kval, ifreq, 0.0
+  aout oscil 1, kfreq, giharms
+  outleta "out", aout
 endin
 
-instr continuous_eloquence
-  kfreq init 0
-  if gkassigns > 0 then
-    kval = (gkdecisions * 12.0) / gkassigns
-    kfreq = 220 * exp(log(2.0) * kval/12.0)
-  endif
-  aharms oscil 1, kfreq, giharms
-  ;alow butterlp aharms, kfreq
-  outleta "out", aharms;
+instr continuous_saw
+  ifreq = p4
+  Schan = p5
+  kval chnget Schan
+  kfreq fract2octave kval, ifreq, 0.0
+  aout oscil 1, kfreq, gisaw
+  outleta "out", aout
 endin
 
 instr sampler
@@ -89,63 +91,64 @@ instr conflict
   outleta "out", aSig 
 endin
 
+kcount active "conflict"
+if kcount > 42 then
+  turnoff2 "conflict", 1, 1
+endif
+
+kcount active "learnt"
+if kcount > 42 then
+  turnoff2 "learnt", 1, 1
+endif
+
+kcount active "sampler"
+if kcount > 42 then
+  turnoff2 "sampler", 1, 1
+endif
+
 instr oscReceiver
-  kreceive0 init 1
-  kstart OSClisten giOSC, "/start", "f", kreceive0
-  kstop OSClisten giOSC, "/stop", "f", kreceive0
-  
-  if (kstart == 1) then 
-    turnon "mixer"
-    turnon "continuous_depth"
-    turnon "continuous_eloquence"
-  endif
+  kreceive init 1
+  kstart OSClisten giOSC, "/start", "f", kreceive
+  kstop OSClisten giOSC, "/stop", "f", kreceive
+
+  chnset 0.0, "eloquence"
+  chnset 0.0, "depth"
+  scoreline_i {{
+    i "mixer" 0 -1
+    i "continuous_saw" 0 -1 220.0 "eloquence"
+    i "continuous_harms" 0 -1 440.0 "depth"
+  }}
   
   if (kstop == 1) then
     turnoff2 "mixer", 0, 0
-    turnoff2 "continuous_depth", 0, 0
-    turnoff2 "continuous_eloquence", 0, 0
-    ;scoreline {{ e 1 }}, 1
-  endif
-
-  kcount1 active "conflict"
-  if kcount1 > 20 then
-    turnoff2 "conflict", 1, 1
-  endif
-
-  kcount2 active "learnt"
-  if kcount2 > 20 then
-    turnoff2 "learnt", 1, 1
-  endif
-
-  kcount3 active "sampler"
-  if kcount3 > 20 then
-    turnoff2 "sampler", 1, 1
+    turnoff2 "continuous_saw", 0, 0
+    turnoff2 "continuous_harms", 0, 0
+    ;scoreline {{ e 1 }}, kstop
   endif
   
   kvariables init 0
-  kvariables_upd OSClisten giOSC, "/variables", "f", kvariables
-  if (kvariables_upd == 1) then
-    gkvariables = kvariables
-  endif
+  kupd OSClisten giOSC, "/variables", "i", kvariables
   
+  kassigns init 1
   kdecisions init 0
-  kdecisions_upd OSClisten giOSC, "/decision", "f", kdecisions
-  if (kdecisions_upd == 1) then
-    gkdecisions = kdecisions
-    if (kdecisions > gkdecisions_hwm) then
-      gkdecisions_hwm = kdecisions
+  kdecisions_hwm init 1
+  kupd OSClisten giOSC, "/decision", "i", kdecisions
+  if (kupd == 1) then
+    if (kdecisions > kdecisions_hwm) then
+      kdecisions_hwm = kdecisions
     endif
-  endif
+    chnset kdecisions / kassigns, "eloquence" 
+    chnset kdecisions / kdecisions_hwm, "depth"
+  endif    
   
-  kassigns init 0
-  kassigns_upd OSClisten giOSC, "/assignments", "f", kassigns
-  if (kassigns_upd == 1) then
-    gkassigns = kassigns
+  kupd OSClisten giOSC, "/assignments", "i", kassigns
+  if (kupd == 1) then
+    chnset kdecisions / kassigns, "eloquence" 
   endif
   
   klearnt init 0
-  klearnt_upd OSClisten giOSC, "/learnt", "f", klearnt
-  if (klearnt_upd == 1) then
+  kupd OSClisten giOSC, "/learnt", "i", klearnt
+  if (kupd == 1) then
     if (klearnt == 1) then
       event "i", "sampler", 0, .41, gieff1
     elseif (klearnt == 2) then
@@ -156,18 +159,18 @@ instr oscReceiver
   endif
   
   kconflictlevel init 0
-  kconflictlevel_upd OSClisten giOSC, "/conflict", "f", kconflictlevel
-  if (kconflictlevel_upd == 1) then
-    if gkdecisions_hwm > 0 then
-      kval = round((kconflictlevel * 12.0) / gkdecisions_hwm)
-      kfreq = 440 * exp(log(2.0) * kval/12.0)
+  kupd OSClisten giOSC, "/conflict", "i", kconflictlevel
+  if (kupd == 1) then
+    if kdecisions_hwm > 0 then
+      kval = kconflictlevel / kdecisions_hwm
+      kfreq fract2octave kval, 440.0, 12.0
       event "i", "conflict", 0, .4, kfreq
     endif    
   endif
   
   krestart init 0
-  krestart_upd OSClisten giOSC, "/restart", "f", krestart
-  if (krestart_upd == 1) then
+  kupd OSClisten giOSC, "/restart", "i", krestart
+  if (kupd == 1) then
     event "i", "sampler", 0, .31, gibd
   endif
 endin
