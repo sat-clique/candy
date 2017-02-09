@@ -39,8 +39,8 @@ void SolverSonification::restart() {
   sendNumber("/restart", 1);
 }
 
-void SolverSonification::decisionLevel(int level) {
-  sendNumber("/decision", level);
+void SolverSonification::decisionLevel(int level, int delay = 0) {
+  scheduleSendNumber("/decision", level, delay);
 }
 
 void SolverSonification::conflictLevel(int level) {

@@ -11,6 +11,7 @@
 #ifdef SONIFICATION
 #include "oscpack/osc/OscOutboundPacketStream.h"
 #include "oscpack/ip/UdpSocket.h"
+#include <chrono>
 #endif
 
 #define DEFAULT_ADDRESS "127.0.0.1"
@@ -22,8 +23,10 @@ class Sonification {
 private:
 #ifdef SONIFICATION
     UdpTransmitSocket transmitSocket;
+    std::chrono::system_clock::time_point scheduleOffset;
 #else
     void* transmitSocket;
+    void* scheduleOffset;
 #endif
 
 public:
@@ -34,6 +37,7 @@ public:
 	virtual ~Sonification();
 
 	void sendNumber(const char* name, int value);
+	void scheduleSendNumber(const char* name, int value, int delay = 1);
 };
 
 #endif /* SRC_SONIFICATION_SONIFICATION_H_ */
