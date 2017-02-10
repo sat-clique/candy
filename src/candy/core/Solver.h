@@ -104,13 +104,6 @@ public:
     }
   }
 
-  void* termCallbackState;
-  int (*termCallback)(void* state);
-  void setTermCallback(void* state, int (*termCallback)(void*)) {
-    this->termCallbackState = state;
-    this->termCallback = termCallback;
-  }
-
   // Problem specification:
   //
   virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
@@ -272,6 +265,11 @@ public:
 
   int countCalls = 0;
 
+  void setTermCallback(void* state, int (*termCallback)(void*)) {
+    this->termCallbackState = state;
+    this->termCallback = termCallback;
+  }
+
 protected:
 
   long curRestart;
@@ -289,7 +287,7 @@ protected:
   struct Watcher {
     CRef cref;
     Lit blocker;
-    Watcher() {
+    Watcher() : cref(0), blocker(lit_Undef) {
     }
     Watcher(CRef cr, Lit p) :
         cref(cr), blocker(p) {
@@ -330,7 +328,7 @@ protected:
 
   // Solver state:
   //
-  int lastIndexRed;
+  //int lastIndexRed;
   bool ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
   double cla_inc;          // Amount to bump next clause with.
   vector<double> activity;         // A heuristic measurement of the activity of a variable.
@@ -371,7 +369,7 @@ protected:
   // Used for restart strategies
   bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
   float sumLBD; // used to compute the global average of LBD. Restarts...
-  int sumAssumptions;
+  //int sumAssumptions;
   CRef lastLearntClause;
 
   // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
@@ -384,9 +382,9 @@ protected:
   unsigned int MYFLAG;
 
   // Initial reduceDB strategy
-  double max_learnts;
-  double learntsize_adjust_confl;
-  int learntsize_adjust_cnt;
+  //double max_learnts;
+  //double learntsize_adjust_confl;
+  //int learntsize_adjust_cnt;
 
   // Resource contraints:
   //
@@ -402,6 +400,9 @@ protected:
   //vector<int> assumptionPositions, initialPositions;
 
   SolverSonification sonification;
+
+  void* termCallbackState;
+  int (*termCallback)(void* state);
 
   // Main internal methods:
   //
@@ -631,7 +632,7 @@ inline void Solver::budgetOff() {
   conflict_budget = propagation_budget = -1;
 }
 inline bool Solver::withinBudget() const {
-  return !asynch_interrupt && (termCallback == NULL || 0 == termCallback(termCallbackState))
+  return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
       && (conflict_budget < 0 || conflicts < (uint64_t) conflict_budget)
       && (propagation_budget < 0 || propagations < (uint64_t) propagation_budget);
 }

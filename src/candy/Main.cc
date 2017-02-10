@@ -156,7 +156,6 @@ int main(int argc, char** argv) {
     SimpSolver S;
     double initial_time = cpuTime();
 
-    S.parsing = 1;
     S.verbosity = verb;
     S.verbEveryConflicts = vv;
     S.showModel = mod;
@@ -249,7 +248,7 @@ int main(int argc, char** argv) {
     signal(SIGINT, SIGINT_interrupt);
     signal(SIGXCPU, SIGINT_interrupt);
 
-    S.parsing = 0;
+    S.certifiedAllClauses = 0;
     if (pre/* && !S.isIncremental()*/) {
       printf("c | Preprocesing is fully done\n");
       S.eliminate(true);
