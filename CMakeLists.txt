@@ -134,7 +134,7 @@ endif()
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
 
 add_subdirectory(src)
-set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES} sonification)
+set(CANDY_LIBS utils core simp gates randomsimulation ${ZLIB_LIBRARIES} sonification ipasir)
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)

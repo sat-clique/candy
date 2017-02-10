@@ -28,7 +28,7 @@ class IPASIRCandy {
   void analyze() {
     fmap = new unsigned char [solver.nVars()];
     memset(fmap, 0, solver.nVars());
-    for(int i = 0; i < solver.conflict.size(); i++) {
+    for (unsigned int i = 0; i < solver.conflict.size(); i++) {
       fmap[var(solver.conflict[i])] = 1;
     }
   }
@@ -52,8 +52,7 @@ public:
     nomodel = true;
     if (lit) {
       clause.push_back(import(lit));
-    }
-    else {
+    } else {
       solver.addClause(clause);
       clause.clear();
     }
@@ -102,7 +101,7 @@ void* ipasir_init() {
 }
 
 void ipasir_release(void* s) {
-  delete s;
+  delete (IPASIRCandy*)s;
 }
 
 int ipasir_solve(void* s) {
