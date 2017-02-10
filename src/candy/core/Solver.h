@@ -104,6 +104,13 @@ public:
     }
   }
 
+  void* termCallbackState;
+  int (*termCallback)(void* state);
+  void setTermCallback(void* state, int (*termCallback)(void*)) {
+    this->termCallbackState = state;
+    this->termCallback = termCallback;
+  }
+
   // Problem specification:
   //
   virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
@@ -624,7 +631,8 @@ inline void Solver::budgetOff() {
   conflict_budget = propagation_budget = -1;
 }
 inline bool Solver::withinBudget() const {
-  return !asynch_interrupt && (conflict_budget < 0 || conflicts < (uint64_t) conflict_budget)
+  return !asynch_interrupt && (termCallback == NULL || 0 == termCallback(termCallbackState))
+      && (conflict_budget < 0 || conflicts < (uint64_t) conflict_budget)
       && (propagation_budget < 0 || propagations < (uint64_t) propagation_budget);
 }
 
