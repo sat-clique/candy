@@ -65,8 +65,6 @@ using namespace Glucose;
 
 //=================================================================================================
 
-static const char* _certified = "CORE -- CERTIFIED UNSAT";
-
 void printStats(Solver& solver) {
   double cpu_time = cpuTime();
   double mem_used = 0; //memUsedPeak();
@@ -93,6 +91,7 @@ void printStats(Solver& solver) {
 }
 
 static Solver* solver;
+
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
 static void SIGINT_interrupt(int signum) {
@@ -113,6 +112,39 @@ static void SIGINT_exit(int signum) {
   _exit(1);
 }
 
+static void setLimits(int cpu_lim, int mem_lim) {
+  // Set limit on CPU-time:
+  if (cpu_lim != INT32_MAX) {
+    rlimit rl;
+    getrlimit(RLIMIT_CPU, &rl);
+    if (rl.rlim_max == RLIM_INFINITY || (rlim_t) cpu_lim < rl.rlim_max) {
+      rl.rlim_cur = cpu_lim;
+      if (setrlimit(RLIMIT_CPU, &rl) == -1)
+        printf("c WARNING! Could not set resource limit: CPU-time.\n");
+    }
+  }
+
+  // Set limit on virtual memory:
+  if (mem_lim != INT32_MAX) {
+    rlim_t new_mem_lim = (rlim_t) mem_lim * 1024 * 1024;
+    rlimit rl;
+    getrlimit(RLIMIT_AS, &rl);
+    if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
+      rl.rlim_cur = new_mem_lim;
+      if (setrlimit(RLIMIT_AS, &rl) == -1)
+        printf("c WARNING! Could not set resource limit: Virtual memory.\n");
+    }
+  }
+}
+
+static void printModel(FILE* f, Solver* solver) {
+  fprintf(f, "v");
+  for (int i = 0; i < solver->nVars(); i++)
+    if (solver->model[i] != l_Undef)
+      fprintf(f, " %s%d", (solver->model[i] == l_True) ? "" : "-", i + 1);
+  fprintf(f, " 0\n");
+}
+
 //=================================================================================================
 // Main:
 
@@ -122,27 +154,23 @@ int main(int argc, char** argv) {
 
     setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
 
-#if defined(__linux__)
-    fpu_control_t oldcw, newcw;
-    _FPU_GETCW(oldcw);
-    newcw = (oldcw & ~_FPU_EXTENDED) | _FPU_DOUBLE;
-    _FPU_SETCW(newcw);
-    //printf("c WARNING: for repeatability, setting FPU to use double precision\n");
-#endif
     // Extra options:
     //
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
     BoolOption mod("MAIN", "model", "show model.", false);
     IntOption vv("MAIN", "vv", "Verbosity every vv conflicts", 10000, IntRange(1, INT32_MAX));
-    BoolOption pre("MAIN", "pre", "Completely turn on/off any preprocessing.", true);
+
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
-    BoolOption opt_certified(_certified, "certified", "Certified UNSAT using DRUP format", false);
-    StringOption opt_certified_file(_certified, "certified-output", "Certified UNSAT output file", "NULL");
 
-    BoolOption count_gates("MAIN", "count-gates", "count gates.", false);
-    BoolOption print_gates("MAIN", "print-gates", "print gates.", false);
+    BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
+    BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
+    BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
+    BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
 
+    StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
+
+    BoolOption opt_print_gates("GATE RECOGNITION", "print-gates", "print gates.", false);
     IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
@@ -153,14 +181,22 @@ int main(int argc, char** argv) {
 
     parseOptions(argc, argv, true);
 
-    SimpSolver S;
+    // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
+    signal(SIGINT, SIGINT_exit);
+    signal(SIGXCPU, SIGINT_exit);
+
+    setLimits(cpu_lim, mem_lim);
+
     double initial_time = cpuTime();
+
+    SimpSolver S;
+    solver = &S;
 
     S.verbosity = verb;
     S.verbEveryConflicts = vv;
     S.showModel = mod;
-
-    S.certifiedUNSAT = opt_certified;
+    S.certifiedAllClauses = 0;
+    S.certifiedUNSAT = do_certified;
     if (S.certifiedUNSAT) {
       if (!strcmp(opt_certified_file, "NULL")) {
         S.certifiedOutput = fopen("/dev/stdout", "wb");
@@ -168,35 +204,6 @@ int main(int argc, char** argv) {
         S.certifiedOutput = fopen(opt_certified_file, "wb");
       }
       fprintf(S.certifiedOutput, "o proof DRUP\n");
-    }
-
-    solver = &S;
-
-    // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
-    signal(SIGINT, SIGINT_exit);
-    signal(SIGXCPU, SIGINT_exit);
-
-    // Set limit on CPU-time:
-    if (cpu_lim != INT32_MAX) {
-      rlimit rl;
-      getrlimit(RLIMIT_CPU, &rl);
-      if (rl.rlim_max == RLIM_INFINITY || (rlim_t) cpu_lim < rl.rlim_max) {
-        rl.rlim_cur = cpu_lim;
-        if (setrlimit(RLIMIT_CPU, &rl) == -1)
-          printf("c WARNING! Could not set resource limit: CPU-time.\n");
-      }
-    }
-
-    // Set limit on virtual memory:
-    if (mem_lim != INT32_MAX) {
-      rlim_t new_mem_lim = (rlim_t) mem_lim * 1024 * 1024;
-      rlimit rl;
-      getrlimit(RLIMIT_AS, &rl);
-      if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
-        rl.rlim_cur = new_mem_lim;
-        if (setrlimit(RLIMIT_AS, &rl) == -1)
-          printf("c WARNING! Could not set resource limit: Virtual memory.\n");
-      }
     }
 
     Candy::CNFProblem dimacs;
@@ -210,7 +217,7 @@ int main(int argc, char** argv) {
 
     FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
 
-    if (count_gates) {
+    if (do_gaterecognition) {
       double recognition_time = cpuTime();
       Candy::GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold);
       gates.analyze();
@@ -223,15 +230,13 @@ int main(int argc, char** argv) {
       printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
       printf("c |                                                                                                       |\n");
       printf("c =========================================================================================================\n");
-      if (print_gates) {
+      if (opt_print_gates) {
         gates.printGates();
       }
       return 0;
     }
 
     S.insertClauses(dimacs);
-
-    dimacs.getProblem().clear();
 
     double parsed_time = cpuTime();
 
@@ -248,74 +253,57 @@ int main(int argc, char** argv) {
     signal(SIGINT, SIGINT_interrupt);
     signal(SIGXCPU, SIGINT_interrupt);
 
-    S.certifiedAllClauses = 0;
-    if (pre/* && !S.isIncremental()*/) {
+    lbool result = l_Undef;
+
+    if (do_preprocess/* && !S.isIncremental()*/) {
       printf("c | Preprocesing is fully done\n");
       S.eliminate(true);
+      if (!S.okay()) result = l_False;
       double simplified_time = cpuTime();
       if (S.verbosity > 0) {
         printf("c |  Simplification time:  %12.2f s                                                                 |\n", simplified_time - parsed_time);
+        if (result == l_False) {
+          printf("c =========================================================================================================\n");
+          printf("Solved by simplification\n");
+        }
       }
     }
     printf("c |                                                                                                       |\n");
-    if (!S.okay()) {
-      if (S.certifiedUNSAT)
-        fprintf(S.certifiedOutput, "0\n"), fclose(S.certifiedOutput);
-      if (res != NULL)
-        fprintf(res, "UNSAT\n"), fclose(res);
-      if (S.verbosity > 0) {
-        printf("c =========================================================================================================\n");
-        printf("Solved by simplification\n");
-        printStats(S);
-        printf("\n");
-      }
-      printf("s UNSATISFIABLE\n");
-      exit(20);
-    }
 
-    vector<Lit> dummy;
-    lbool ret = S.solveLimited(dummy);
+    if (result == l_Undef) {
+      vector<Lit> assumptions;
+      result = S.solveLimited(assumptions);
+    }
 
     if (S.verbosity > 0) {
       printStats(S);
       printf("\n");
     }
-    printf(ret == l_True ? "s SATISFIABLE\n" : ret == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+
+    printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     if (res != NULL) {
-      if (ret == l_True) {
-        printf("SAT\n");
-        for (int i = 0; i < S.nVars(); i++)
-          if (S.model[i] != l_Undef)
-            fprintf(res, "%s%s%d", (i == 0) ? "" : " ", (S.model[i] == l_True) ? "" : "-", i + 1);
-        fprintf(res, " 0\n");
-      } else {
-        if (ret == l_False) {
-          fprintf(res, "UNSAT\n");
-        }
+      fprintf(res, result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+      if (result == l_True) {
+        printModel(res, solver);
       }
       fclose(res);
     } else {
-      if (S.showModel && ret == l_True) {
-        printf("v ");
-        for (int i = 0; i < S.nVars(); i++)
-          if (S.model[i] != l_Undef)
-            printf("%s%s%d", (i == 0) ? "" : " ", (S.model[i] == l_True) ? "" : "-", i + 1);
-        printf(" 0\n");
+      if (S.showModel && result == l_True) {
+        printModel(stdout, solver);
       }
     }
 
-    if (S.certifiedUNSAT)
-      fprintf(S.certifiedOutput, "0\n"), fclose(S.certifiedOutput);
+    if (S.certifiedUNSAT) {
+      fprintf(S.certifiedOutput, "0\n");
+      fclose(S.certifiedOutput);
+    }
 
-#ifdef NDEBUG
-    exit(ret == l_True ? 10 : ret == l_False ? 20 : 0); // (faster than "return", which will invoke the destructor for 'Solver')
-#else
-    return (ret == l_True ? 10 : ret == l_False ? 20 : 0);
-#endif
-  } catch (OutOfMemoryException&) {
+    return (result == l_True ? 10 : result == l_False ? 20 : 0);
+  }
+  catch (OutOfMemoryException&) {
     printf("c =========================================================================================================\n");
-    printf("INDETERMINATE\n");
-    exit(0);
+    printf("s INDETERMINATE\n");
+    return 0;
   }
 }
