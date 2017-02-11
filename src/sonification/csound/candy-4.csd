@@ -46,6 +46,7 @@ instr continuous_harms
   kval chnget Schan
   kfreq fract2octave kval, ifreq, 0.0
   aout oscil 1, kfreq, giharms
+  aout lowpass2 aout, kfreq*2, 2
   outleta "out", aout
 endin
 
@@ -55,6 +56,7 @@ instr continuous_saw
   kval chnget Schan
   kfreq fract2octave kval, ifreq, 0.0
   aout oscil 1, kfreq, gisaw
+  aout lowpass2 aout, 2*kfreq, 2
   outleta "out", aout
 endin
 
@@ -62,7 +64,7 @@ instr sample_play
   ifn = p4
   idur = ftsr(ifn) / ftlen(ifn)
   ;idur = p3
-  aSamp poscil3 2, idur, ifn
+  aSamp poscil3 1, idur, ifn
   outleta "out", aSamp
 endin
 
@@ -154,20 +156,26 @@ instr sampler
   endif
 endin
 
-instr learnt
-  ;aenv expon 1, .5, 0.0001
-  ilearnt = p4
-  aenv linen 2, .2, p3, .1
-  ilowpass = 16000 - ((16000 / 6) * ilearnt)
-  anoise oscil aenv, 440, ginoise
-  aout butterlp anoise, ilowpass
-  outleta "out", aout
+instr learnt    
+  aenv expon 3, p3, 0.0001
+  ;aenv linen 2, .1, p3, .2
+  
+  ; performance too low:
+  ;ifreq = 2*p4-1
+  ;aout noise aenv, ifreq
+  
+  kfreq fract2octave p4, 880.0, 0
+  aout2 oscil aenv, kfreq, ginoise
+  aout3 lowpass2 aout2, kfreq, 30
+  
+  outleta "out", aout3
 endin
 
 instr conflict
   aenv expon 1, p3, 0.0001
-  aSig oscil aenv, p4, gisaw
-  outleta "out", aSig 
+  aout oscil aenv, p4, gisaw
+  aout lowpass2 aout, 2*p4, 3
+  outleta "out", aout 
 endin
 
 kcount active "conflict"
@@ -233,9 +241,9 @@ instr oscReceiver
     if (klearnt == 1) then
       chnset k(1), "sample5"
     elseif (klearnt == 2) then
-      chnset k(1), "sample4"
+      chnset k(1), "sample3"
     elseif (klearnt < 6) then
-      event "i", "learnt", 0, .2, klearnt
+      event "i", "learnt", 0, .5, (1 - (klearnt - 2) / 3)
     endif    
   endif
   
@@ -246,7 +254,7 @@ instr oscReceiver
       kval = kconflictlevel / kdecisions_hwm
       kfreq fract2octave kval, 440.0, 12.0
       event "i", "conflict", 0, .4, kfreq
-    endif    
+    endif        
   endif
   
   krestart init 0
@@ -265,9 +273,9 @@ instr mixer
   
   kch1vol init 1
   kch2vol init 1
-  kch3vol init .7
-  kch4vol init .7
-  kch5vol init .7
+  kch3vol init .3
+  kch4vol init .3
+  kch5vol init .3
   
   kreceive1 init 1
   kans1 OSClisten giOSC, "/volume/sampler", "f", kreceive1
