@@ -8,7 +8,8 @@ add_executable(randomsimulation_tests
     RandomSimulatorTests.cc
     GateDFSVisitorTests.cc
     RandomizationTests.cc
-    ConjectureFilterTests.cc)
+    ConjectureFilterTests.cc
+    GateFilterTests.cc)
 
 candy_executable_customizations(randomsimulation_tests)
 
