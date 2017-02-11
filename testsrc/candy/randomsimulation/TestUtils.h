@@ -40,13 +40,27 @@ namespace Candy {
     class Conjectures;
     class EquivalenceConjecture;
     
-    /// Returns true iff c contains the backbone conjecture for the literal lit.
+    /** \defgroup RandomSimulation_Tests */
+    
+    /**
+     * \ingroup RandomSimulation_Tests
+     *
+     * Returns true iff c contains the backbone conjecture for the literal lit.
+     */
     bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit);
     
-    /// Returns true iff the given equivalence conjectures are equivalent.
+    /**
+     * \ingroup RandomSimulation_Tests
+     *
+     * Returns true iff the given equivalence conjectures are equivalent.
+     */
     bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits);
 
-    /// Returns true iff c contains the given equivalence conjecture.
+    /**
+     * \ingroup RandomSimulation_Tests
+     *
+     * Returns true iff c contains the given equivalence conjecture.
+     */
     bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits);
 }
 

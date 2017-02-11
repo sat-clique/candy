@@ -40,21 +40,48 @@ namespace Candy {
     class Conjectures;
     class EquivalenceConjecture;
     
-    /// Deletes the clauses in the given formula.
+    /** \defgroup TestUtils */
+    
+    /**
+     * \ingroup TestUtils
+     *
+     * Deletes the clauses in the given formula.
+     */
     void deleteClauses(CNFProblem* formula);
     
-    /// Asserts that variables does not contain the variable forbidden.
+    /**
+     * \ingroup TestUtils
+     *
+     * Asserts that variables does not contain the variable forbidden.
+     */
     void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
     
-    /// Asserts that variables contains the variable required.
+    /**
+     * \ingroup TestUtils
+     *
+     * Asserts that variables contains the variable required.
+     */
     void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var required);
     
-    /// Returns a clause containing the negated lits of the given clause.
+    /**
+     * \ingroup TestUtils
+     *
+     * Returns a clause containing the negated lits of the given clause.
+     */
     Cl negatedLits(const Cl& clause);
     
-    /// Inserts the variables contained in the literals of lits in to the target set.
+    /**
+     * \ingroup TestUtils
+     *
+     * Inserts the variables contained in the literals of lits in to the target set.
+     */
     void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
     
+    /**
+     * \ingroup TestUtils
+     *
+     * Returns true iff the given formula contains the given clause.
+     */
     bool containsClause(const For& formula, const Cl& clause);
 }
 

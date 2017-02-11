@@ -160,6 +160,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates an instance of the RandomSimulator class using the implementation
      * chosen as default within this package.
      *
@@ -174,6 +176,8 @@ namespace Candy {
     std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a RandomSimulationBuilder for the default RandomSimulator implementation.
      * TODO: document defaults.
      */

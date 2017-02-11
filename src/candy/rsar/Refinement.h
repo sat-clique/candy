@@ -103,6 +103,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RS_AbstractionRefinement
+     *
      * Creates an instance of the default RefinementStrategy implementation,
      * using conjectures obtained via random simulation.
      *
@@ -117,28 +119,55 @@ namespace Candy {
                                                                         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
                                                                         std::function<Var()> createVariable);
     
-    /** Returns an assumption literal marking "activeness" for the given variable. */
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Returns an assumption literal marking "activeness" for the given variable.
+     */
     Lit activatedAssumptionLit(Var assumptionVar);
     
-    /** Returns an "inactive" assumption literal marking "inactiveness" for the given variable. */
+    /** 
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Returns an "inactive" assumption literal marking "inactiveness" for the given variable.
+     */
     Lit deactivatedAssumptionLit(Var assumptionVar);
     
-    /** Encodes the given implication as a SAT problem clause. */
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Encodes the given implication as a SAT problem clause.
+     */
     Cl encodeImplication(Implication implication, Var assumptionVar);
     
-    /** Encodes the given backbone literal as a SAT problem clause. */
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Encodes the given backbone literal as a SAT problem clause.
+     */
     Cl encodeBackbone(BackboneConjecture backbone, Var assumptionVar);
     
-    /** Returns the assumption literal contained in the given clause. */
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Returns the assumption literal contained in the given clause.
+     */
     Lit getAssumptionLit(const Cl &clause);
     
-    /** Returns the non-assumption literals contained in the given clause created
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Returns the non-assumption literals contained in the given clause created
      * by encode...(). For backbone-encoding clauses, the two returned literals
      * are equal.
      */
     std::pair<Lit, Lit> getNonAssumptionLits(const Cl &clause);
     
-    /** Returns true iff the given assumption literal is marking "activeness". */
+    /**
+     * \ingroup RS_AbstractionRefinement
+     *
+     * Returns true iff the given assumption literal is marking "activeness".
+     */
     bool isActive(Lit assumptionLit);
 }
 

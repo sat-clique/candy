@@ -40,18 +40,54 @@
 
 
 namespace Candy {
+    
+    /** \defgroup RS_AbstractionRefinement_Tests */
+    
+    /**
+     * \class EquivalencyChecker
+     *
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * \brief A simple literal equivalency checker
+     *
+     * EquivalencyChecker is a simple literal equivalency checker for testing whether a given
+     * pair of literals is equivalent wrt. to a given SAT problem instance, or whether a
+     * given literal belongs to the formula's backbone.
+     *
+     */
     class EquivalencyChecker {
     public:
         EquivalencyChecker();
+        
+        /** Adds the given clauses to the SAT problem which is regarded when checking
+         * equivalencies/backbones. */
         void addClauses(const std::vector<Cl>& clauses);
+        
+        /** Creates a variable which can be used in in the clauses passed to addClauses()
+         * and equivalency/backbone queries. */
         Var createVariable();
         
+        /** Creates all variables up to the given maximum. */
         void createVariables(Var max);
         
+        /** This method needs to be called between adding the "regular" variables and those
+         * used in the assumption literals. */
         void finishedAddingRegularVariables();
         
+        /** Returns true iff the literals a and b are equivalent wrt. the SAT problem instance
+         * given via addClauses(...), with the literals contained in the given collection of
+         * assumptions assumed to have the value true.
+         */
         bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b);
+        
+        /** Returns true iff all pairs of literals given in equivalentLits are equivalent wrt. the
+         * SAT problem instance given via addClauses(...), with the literals contained in the
+         * given collection of assumptions assumed to have the value true. */
         bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits);
+        
+        /** Returns true iff each of the literals given in backboneLits belongs to the backbone
+         * of the SAT problem instance given via addClauses(...), with the literals contained in
+         * the given collection of assumptions assumed to have the value true. */
         bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits);
         
     private:
@@ -63,6 +99,8 @@ namespace Candy {
     
     
     /** 
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
      * Returns true iff first and second occur in events, and second does
      * not occur before first.
      */
@@ -71,6 +109,8 @@ namespace Candy {
                           SolverMockEvent second);
     
     /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
      * Returns true iff first and second occur in events, and first
      * does not occur before second.
      */
@@ -79,6 +119,8 @@ namespace Candy {
                          SolverMockEvent second);
     
     /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
      * Returns true iff first and second occur in events, and first
      * occurs before second.
      */
@@ -87,6 +129,8 @@ namespace Candy {
                       SolverMockEvent second);
     
     /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
      * Returns true iff first and second occur in events, and first
      * occurs before after.
      */
@@ -94,38 +138,74 @@ namespace Candy {
                      SolverMockEvent first,
                      SolverMockEvent second);
     
-    /** Prints the given solver mock event log. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Prints the given solver mock event log.
+     */
     void printEventLog(const std::vector<SolverMockEvent> &events, bool insertNewlines = false);
     
-    /** Returns true iff the given clause contains the given literal. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Returns true iff the given clause contains the given literal.
+     */
     bool contains(const Cl& clause, Lit lit);
     
-    /** Creates an EquivalenceConjecture containing the given literals. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Creates an EquivalenceConjecture containing the given literals.
+     */
     EquivalenceConjecture createEquivalenceConjecture(const std::vector<Lit> &lits);
     
-    /** Returns true iff the given variable contains in any of the given clauses. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Returns true iff the given variable contains in any of the given clauses.
+     */
     bool varOccursIn(const std::vector<Cl> &clauses, Var var);
     
-    /** Randomly creates n distinct literals with variables in the range of 0 and
-     * the maximum variable occuring in the given problem instance f. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Randomly creates n distinct literals with variables in the range of 0 and
+     * the maximum variable occuring in the given problem instance f.
+     */
     std::vector<Lit> pickLiterals(const CNFProblem &f, int n);
     
-    /** Returns 10 random indices of the given vector of literals, using the given
-     * RNG seed. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Returns 10 random indices of the given vector of literals, using the given
+     * RNG seed.
+     */
     std::priority_queue<std::vector<Lit>::size_type> getRandomIndices(const std::vector<Lit> &literals,
                                                                       unsigned int seed);
     
-    /** Returns a partitioning of the given vector of literals corresponding to the given
-     * indices. Clears its arguments. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Returns a partitioning of the given vector of literals corresponding to the given
+     * indices. Clears its arguments.
+     */
     std::vector<std::vector<Lit>> convertToPartition(std::vector<Lit> &literals,
                                                      std::priority_queue<std::vector<Lit>::size_type> &indices);
     
-    /** Creates a (determinized) pseudorandom Conjectures object for the given literals. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Creates a (determinized) pseudorandom Conjectures object for the given literals.
+     */
     std::unique_ptr<Conjectures> createRandomConjectures(const std::vector<Lit> &literals,
                                                          const CNFProblem& problem);
     
-    /** Creates a (determinized) pseudorandomly behaving deactivation heuristic for
-     * the given literals, eventually marking all literals for deactivation. */
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Creates a (determinized) pseudorandomly behaving deactivation heuristic for
+     * the given literals, eventually marking all literals for deactivation.
+     */
     std::unique_ptr<RefinementHeuristic> createRandomHeuristic(const std::vector<Lit> &literals);
 }
 

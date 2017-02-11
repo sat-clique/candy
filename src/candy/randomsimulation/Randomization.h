@@ -65,12 +65,16 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a "simple" Randomization object, with a 50% chance of assigning variables
      * to "true".
      */
     std::unique_ptr<Randomization> createSimpleRandomization();
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Randomization object assigning variables to "true" with a chance of 1-(1/2^n).
      *
      * \param bias  an integer >= 1
@@ -78,6 +82,8 @@ namespace Candy {
     std::unique_ptr<Randomization> createRandomizationBiasedToTrue(unsigned int bias);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Randomization object assigning variables to "true" with a chance of 2^-n.
      *
      * \param bias  an integer >= 1
@@ -85,6 +91,8 @@ namespace Candy {
     std::unique_ptr<Randomization> createRandomizationBiasedToFalse(unsigned int bias);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Randomization object assigning variables to "true" with a chance of 1-(2^k)
      * with k changing between randomize() invocations, k cycling through the sequence (k_i)
      * with k_i = (minBias + i * step) mod (maxBias + 1).
@@ -98,6 +106,8 @@ namespace Candy {
                                                                              unsigned int step);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Randomization object assigning variables to "true" with a chance of 2^-k
      * with k changing between randomize() invocations, k cycling through the sequence (k_i)
      * with k_i = (minBias + i * step) mod (maxBias + 1).
@@ -112,6 +122,8 @@ namespace Candy {
     
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Randomization alternatingly delegating calls to rand1 and rand2, changing the
      * delegation target whenever the total amount of randomize() invocations is a multiple of
      * the given period.

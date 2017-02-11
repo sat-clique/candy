@@ -37,6 +37,13 @@
 #include <unordered_map>
 
 namespace Candy {
+    /**
+     * \class SolverMockEvent
+     *
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * \brief An enum for events recorded by SolverMock.
+     */
     enum class SolverMockEvent {
         ADD_PROBLEM,
         ADD_CLAUSE,
@@ -47,7 +54,7 @@ namespace Candy {
     /**
      * \class SolverMock
      *
-     * \ingroup RS_AbstractionRefinement
+     * \ingroup RS_AbstractionRefinement_Tests
      *
      * \brief An elaborate mock of Glucose
      *
@@ -163,6 +170,11 @@ namespace Candy {
         std::vector<SolverMockEvent> m_eventLog;
     };
     
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Creates a SolverMock instance.
+     */
     std::unique_ptr<SolverMock> createSolverMock();
 }
 
