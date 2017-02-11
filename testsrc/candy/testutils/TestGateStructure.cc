@@ -111,9 +111,21 @@ namespace Candy {
         return *this;
     }
     
-    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>&, Glucose::Lit) {
-        // TODO: implement this
-        assert(false);
+    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>& inputs,
+                                                                Glucose::Lit output) {
+        assertContainsVariable(m_gateVars, Glucose::var(output));
+        assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
+        
+        assert(inputs.size() == 2ull);
+        
+        addClause(Cl{inputs[0], inputs[1], ~output});
+        addClause(Cl{~inputs[0], ~inputs[1], ~output});
+        addClause(Cl{~inputs[0], inputs[1], output});
+        addClause(Cl{inputs[0], ~inputs[1], output});
+        
+        insertVariables(inputs, m_gateVars);
+        m_usedOutputs.insert(Glucose::var(output));
+        
         return *this;
     }
     
