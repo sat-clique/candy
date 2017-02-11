@@ -57,13 +57,16 @@ cmake_minimum_required(VERSION 3.5)
 ### Options
 
 # Enable LLVM coverage
-option(ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
+option(CANDY_ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
 # Enable LLVM address and leak sanitizer
-option(ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
+option(CANDY_ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
 
-# Enable dSYM hack (only relevant for macOS builds)
-option(ENSURE_DSYM "Ensure that .dSYM files are generated" OFF)
+# Enable -march=native - if set to OFF, at least SSE 4.1 will still be enabled.
+option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
+
+# Enable Sonification
+option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 
 # Disable RTTI and defines CANDY_HAS_NO_RTTI.
 # WARNING: Enable this only AFTER having thoroughly tested the code. In some places
@@ -88,17 +91,33 @@ add_subdirectory(doc)
 
 ### Compiler flags
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS  -march=native")
+set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
 
-if(ENABLE_LLVM_SANITIZER)
+if(CANDY_ENABLE_LLVM_SANITIZER)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif()
 
 if(CANDY_DISABLE_RTTI)
   message("WARNING: Use CANDY_DISABLE_RTTI only for the most optimized builds, since the test system relies on it")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -DCANDY_HAS_NO_RTTI")
+endif()
+
+
+
+if (CANDY_ENABLE_NATIVEARCH)
+  message("Compiling for the processor architecture of this machine.")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+else ()
+  message("Compiling for processors supporting at least SSE 4.1.")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+endif ()
+
+### Additional Preprocessor Defintions
+
+if(CANDY_ENABLE_SONIFICATION)
+  add_definitions(-DSONIFICATION)
 endif()
 
 ### Find libraries
@@ -131,11 +150,17 @@ include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 
 set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 
+if(CANDY_ENABLE_SONIFICATION)
+  # ...at least until we build oscpack via the submodule (TODO):
+  include_directories("/usr/local/include")
+  include_directories("/usr/include")
+endif()
 
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
 
 add_subdirectory(src)
-set(CANDY_LIBS utils core simp gates randomsimulation rsar ${ZLIB_LIBRARIES})
+
+set(CANDY_LIBS utils core simp gates randomsimulation rsar sonification ipasir ${ZLIB_LIBRARIES})
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
