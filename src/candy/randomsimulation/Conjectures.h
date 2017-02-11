@@ -56,6 +56,7 @@ namespace Candy {
         Lit at(size_type index) const;
         
         EquivalenceConjecture();
+        explicit EquivalenceConjecture(const std::vector<Lit>& equivalentLits);
     private:
         std::vector<Glucose::Lit> m_lits;
     };

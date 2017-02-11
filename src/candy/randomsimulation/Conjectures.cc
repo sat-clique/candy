@@ -34,6 +34,11 @@ namespace Candy {
         
     }
     
+    EquivalenceConjecture::EquivalenceConjecture(const std::vector<Lit>& equivalentLits)
+    : m_lits(equivalentLits) {
+        
+    }
+    
     void EquivalenceConjecture::addLit(Glucose::Lit lit) {
         m_lits.push_back(lit);
     }
