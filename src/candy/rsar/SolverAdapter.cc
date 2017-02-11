@@ -85,7 +85,7 @@ namespace Candy {
         }
         
         void setParsing(bool parsing) override {
-            m_solver.parsing = parsing;
+	  // TODO: m_solver.parsing = parsing;
         }
         
         const std::vector<Lit>& getConflict() override {

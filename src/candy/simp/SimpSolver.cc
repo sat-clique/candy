@@ -72,7 +72,7 @@ static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
 // Constructor/Destructor:
 
 SimpSolver::SimpSolver() :
-    Solver(), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(opt_simp_garbage_frac), use_asymm(
+    Solver(), certifiedAllClauses(0), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(opt_simp_garbage_frac), use_asymm(
         opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(0), elimorder(1), use_simplification(
         true), occurs(ClauseDeleted(ca)), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0) {
   vector<Lit> dummy(1, lit_Undef);
@@ -151,7 +151,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
   if (!Solver::addClause_(ps))
     return false;
 
-  if (!parsing && certifiedUNSAT) {
+  if (certifiedAllClauses && certifiedUNSAT) {
     for (unsigned int i = 0; i < ps.size(); i++)
       fprintf(certifiedOutput, "%i ", (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1));
     fprintf(certifiedOutput, "0\n");

@@ -89,11 +89,13 @@ static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial acti
 static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
     DoubleRange(0, false, HUGE_VAL, false));
 
+static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT32_MAX));
+
 //=================================================================================================
 // Constructor/Destructor:
 
 Solver::Solver() :
-    verbosity(0), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue), firstReduceDB(opt_first_reduce_db), incReduceDB(
+    verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue), firstReduceDB(opt_first_reduce_db), incReduceDB(
         opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(
         opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(
         opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(
@@ -113,7 +115,8 @@ Solver::Solver() :
 // Resource constraints:
 //
         , conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
-        0.), nbSatCalls(0), nbUnsatCalls(0) {
+        0.), nbSatCalls(0), nbUnsatCalls(0),
+		sonification(), termCallbackState(nullptr), termCallback(nullptr) {
   MYFLAG = 0;
   // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
   // Kept here for simplicity
@@ -1092,6 +1095,8 @@ lbool Solver::search(int nof_conflicts) {
   bool blocked = false;
   starts++;
   for (;;) {
+	sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
+
     if (decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
       parallelImportUnaryClauses();
 
@@ -1099,8 +1104,11 @@ lbool Solver::search(int nof_conflicts) {
         return l_False;
     }
     CRef confl = propagate();
+    sonification.assignmentLevel(nAssigns());
 
     if (confl != CRef_Undef) {
+      sonification.conflictLevel(decisionLevel());
+
       if (parallelJobIsFinished())
         return l_Undef;
 
@@ -1137,6 +1145,8 @@ lbool Solver::search(int nof_conflicts) {
       selectors.clear();
 
       analyze(confl, learnt_clause, selectors, backtrack_level, nblevels, szWithoutSelectors);
+
+      sonification.learntSize(learnt_clause.size());
 
       lbdQueue.push(nblevels);
       sumLBD += nblevels;
@@ -1230,6 +1240,7 @@ lbool Solver::search(int nof_conflicts) {
       uncheckedEnqueue(next);
     }
   }
+  return l_Undef; // not reached
 }
 
 double Solver::progressEstimate() const {
@@ -1281,6 +1292,8 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
     return l_False;
   double curTime = cpuTime();
 
+  sonification.start(nVars(), nClauses());
+
   solves++;
 
   lbool status = l_Undef;
@@ -1309,6 +1322,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
   // Search:
   int curr_restarts = 0;
   while (status == l_Undef) {
+	sonification.restart();
     status = search(0); // the parameter is useless in glucose, kept to allow modifications
 
     if (!withinBudget())
@@ -1345,6 +1359,8 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
     nbUnsatCalls++;
     totalTime4Unsat += (finalTime - curTime);
   }
+
+  sonification.stop(status == l_True ? 1 : status == l_False ? 0 : -1);
 
   return status;
 
