@@ -38,7 +38,7 @@ namespace Candy {
     /**
      * \class GateStructureBuilder
      *
-     * \ingroup RandomSimulation
+     * \ingroup TestUtils
      *
      * \brief A builder for gate structure encodings.
      */
@@ -71,6 +71,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup TestUtils
+     *
      * Creates a gate-structure builder without Plaisted-Greenbaum encoding.
      */
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder();

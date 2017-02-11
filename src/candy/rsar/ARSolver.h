@@ -131,7 +131,11 @@ namespace Candy {
         ARSolverBuilder& operator= (const ARSolverBuilder& other) = delete;
     };
     
-    /** creates an ARSolverBuilder instance. */
+    /** 
+     * \ingroup RS_AbstractionRefinement
+     *
+     * creates an ARSolverBuilder instance.
+     */
     std::unique_ptr<ARSolverBuilder> createARSolverBuilder();
 }
 

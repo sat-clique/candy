@@ -105,17 +105,23 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Partition object using a logarithmic compression schedule strategy (i.e. compression
      * at every 2^Nth step).
      */
     std::unique_ptr<Partition> createDefaultPartition();
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a Partition object using a custom compression schedule.
      */
     std::unique_ptr<Partition> createDefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionScheduleStrategy);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a linear compression schedule.
      *
      * \param freq The compression frequency: compress every freq steps
@@ -123,12 +129,16 @@ namespace Candy {
     std::unique_ptr<CompressionScheduleStrategy> createLinearCompressionScheduleStrategy(unsigned int freq);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a logarithmic compression schedule (i.e. compression
      * at every 2^Nth step).
      */
     std::unique_ptr<CompressionScheduleStrategy> createLogCompressionScheduleStrategy();
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a "null" compression schedule, i.e. no compression at all.
      */
     std::unique_ptr<CompressionScheduleStrategy> createNullCompressionScheduleStrategy();

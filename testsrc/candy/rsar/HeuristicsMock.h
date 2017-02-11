@@ -34,6 +34,13 @@
 #include <map>
 
 namespace Candy {
+    /**
+     * \class MockHeuristic
+     *
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * \brief A gmock-mockable subclass of RefinementHeuristic.
+     */
     class MockHeuristic : public RefinementHeuristic {
     public:
         MOCK_METHOD0(beginRefinementStep, void ());
@@ -41,12 +48,21 @@ namespace Candy {
         MOCK_METHOD1(markRemovals, void(Backbones& backbones) noexcept);
     };
     
+    /**
+     * \class FakeHeuristic
+     *
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * \brief A configurable RefinementHeuristic implementation for testing.
+     */
     class FakeHeuristic : public RefinementHeuristic {
     public:
         void beginRefinementStep() override;
         void markRemovals(EquivalenceImplications&) override;
         void markRemovals(Backbones& backbones) override;
         
+        /** Causes the fake heuristic to mark the given variables deactivated after
+         * the given amount of beginRefinementStep() invocations. */
         void inStepNRemove(int step, const std::vector<Var>& variables) noexcept;
         
         FakeHeuristic();

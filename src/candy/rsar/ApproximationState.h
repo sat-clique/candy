@@ -280,6 +280,8 @@ namespace Candy {
     
     
     /**
+     * \ingroup RS_AbstractionRefinement
+     *
      * Creates a ApproximationState instance using the equivalence classes and backbone
      * variables represented by the given Conjectures object.
      */
@@ -306,6 +308,8 @@ namespace std {
 #ifdef CANDY_EXPOSE_TESTING_INTERFACE
 namespace Candy {
     /**
+     * \ingroup RS_AbstractionRefinement
+     *
      * Commits the changes in the removal work queue, returning the removed
      * implications as well as the generated "patch" implications in a
      * CommitResult.
@@ -316,6 +320,8 @@ namespace Candy {
     const EquivalenceImplications::CommitResult test_commitWorkQueue(EquivalenceImplications& target);
     
     /**
+     * \ingroup RS_AbstractionRefinement
+     *
      * Commits the changes in the removal work queue, generating "patch" implications
      * as needed.
      *
@@ -325,6 +331,8 @@ namespace Candy {
     void test_commitWorkQueueWithoutDelta(EquivalenceImplications& target);
     
     /**
+     * \ingroup RS_AbstractionRefinement
+     *
      * Commits the changes in the removal work queue, returning the removed
      * backbone literals in a CommitResult.
      *
@@ -334,6 +342,8 @@ namespace Candy {
     const Backbones::CommitResult test_commitWorkQueue(Backbones& target);
     
     /**
+     * \ingroup RS_AbstractionRefinement
+     *
      * Commits the changes in the removal work queue.
      *
      * This function must only be called with objects created by

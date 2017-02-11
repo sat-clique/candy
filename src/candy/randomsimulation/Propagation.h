@@ -64,6 +64,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates an object of Propagation's default implementation.
      */
     std::unique_ptr<Propagation> createInputToOutputPropagation();

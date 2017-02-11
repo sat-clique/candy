@@ -37,6 +37,9 @@
 namespace Candy {
     // TODO: improve documentation
     
+    /** Interpreting the argument testData as a sequence of 4-bit values, this
+     * function computes a map mapping nibbles to their occurence count within testData.
+     */
     static std::unordered_map<std::uint8_t, std::uint64_t>
     getNibbleOccurences(const std::vector<SimulationVector::varsimvec_field_t>& testData) {
         std::unordered_map<std::uint8_t, std::uint64_t> result{};
@@ -57,8 +60,12 @@ namespace Candy {
         return result;
     }
     
+    /** Given the nibble-to-occurence-count map \p{occurences}, this function computes the
+     * corresponding empirical cumulative distribution function (i.e. nibble vs.
+     * cumulative probability of occurence).
+     */
     static std::unordered_map<std::uint8_t, double>
-    getEmpiricalDistributionFunction(const std::unordered_map<std::uint8_t, std::uint64_t>& occurences) {
+    getECDF(const std::unordered_map<std::uint8_t, std::uint64_t>& occurences) {
         std::uint64_t sampleSize = 0;
         for (auto& kv : occurences) {
             sampleSize += kv.second;
@@ -74,6 +81,8 @@ namespace Candy {
         return result;
     }
     
+    /** Gets the maximum value of |x - y| where x rsp. y are values of sample1 rsp. sample2 having
+     * the same key. */
     static double getMaxAbsDifference(const std::unordered_map<std::uint8_t, double>& sample1,
                                       const std::unordered_map<std::uint8_t, double>& sample2) {
         double diff = 0.0f;
@@ -85,12 +94,13 @@ namespace Candy {
     }
     
     /**
-     * Gets a sample from the reference distribution of 16-bit values for the given bias.
+     * Gets the reference empirical cumulative distribution function for 4-bit samples and
+     * the given bias.
      * If the given bias is positive, the sample is computed for the rsp. biased-to-true
      * distribution; if the bias is negative, the sample is computed for the rsp.
      * bias-to-false distribution with a bias of -bias.
      */
-    static std::unordered_map<std::uint8_t, double> getReferenceDistribution(int bias) {
+    static std::unordered_map<std::uint8_t, double> getReferenceECDF(int bias) {
         double probabilityOfTrue;
         if (bias > 0) {
             probabilityOfTrue = 1.0f - (std::exp2((double)(-bias)));
@@ -101,7 +111,7 @@ namespace Candy {
         
         std::unordered_map<std::uint8_t, double> individualProbs {};
         for (std::uint8_t i = 0; i < 16; ++i) {
-            std::bitset<16> iBits {i};
+            std::bitset<4> iBits {i};
             double ones = iBits.count();
             individualProbs[i] = std::pow(probabilityOfTrue, ones) * std::pow(1.0f-probabilityOfTrue, 4-ones);
         }
@@ -118,10 +128,13 @@ namespace Candy {
     
     /**
      * Performs a simple Kolmogorov–Smirnov 2-sample test on the given RNG
-     * (measured vs. reference distribution sample).
+     * (measured sample empirical cumulative distribution function vs.
+     * reference sample empirical distribution function).
+     * The test is performed by interpreting the RNG output as a stream of
+     * 4-bit samples.
      *
      * \param underTest                 The RNG to test
-     * \param referenceDistribution     The samples obtained using the reference distribution
+     * \param referenceDistribution     The reference distribution function
      * \param measurementStart          Gives the number of the first RNG invocation to sample
      * \param measurementPeriod         The period of RNG sample measurements
      * \param measurements              The number of RNG values to sample
@@ -150,7 +163,7 @@ namespace Candy {
         }
         
         auto occurences = getNibbleOccurences(sample);
-        auto sampleDistribution = getEmpiricalDistributionFunction(occurences);
+        auto sampleDistribution = getECDF(occurences);
         
         double ks = getMaxAbsDifference(sampleDistribution, referenceDistribution);
         
@@ -159,31 +172,31 @@ namespace Candy {
     
     TEST(RSRandomiztionTests, KolmogorovSmirnovTest_SimpleRandomization) {
         auto rng = createSimpleRandomization();
-        auto referenceDist = getReferenceDistribution(1);
+        auto referenceDist = getReferenceECDF(1);
         test_randomization(*rng, referenceDist, 0, 1, 1000, 0.01f);
     }
     
     TEST(RSRandomiztionTests, KolmogorovSmirnovTest_PositivelyBiasedRandomization_Bias1) {
         auto rng = createRandomizationBiasedToTrue(1);
-        auto referenceDist = getReferenceDistribution(1);
+        auto referenceDist = getReferenceECDF(1);
         test_randomization(*rng, referenceDist, 0, 1, 1000, 0.01f);
     }
     
     TEST(RSRandomiztionTests, KolmogorovSmirnovTest_PositivelyBiasedRandomization_Bias3) {
         auto rng = createRandomizationBiasedToTrue(3);
-        auto referenceDist = getReferenceDistribution(3);
+        auto referenceDist = getReferenceECDF(3);
         test_randomization(*rng, referenceDist, 0, 1, 1000, 0.01f);
     }
     
     TEST(RSRandomiztionTests, KolmogorovSmirnovTest_NegativelyBiasedRandomization_Bias1) {
         auto rng = createRandomizationBiasedToFalse(1);
-        auto referenceDist = getReferenceDistribution(-1);
+        auto referenceDist = getReferenceECDF(-1);
         test_randomization(*rng, referenceDist, 0, 1, 1000, 0.01f);
     }
     
     TEST(RSRandomiztionTests, KolmogorovSmirnovTest_NegativelyBiasedRandomization_Bias3) {
         auto rng = createRandomizationBiasedToFalse(3);
-        auto referenceDist = getReferenceDistribution(-3);
+        auto referenceDist = getReferenceECDF(-3);
         test_randomization(*rng, referenceDist, 0, 1, 1000, 0.01f);
     }
     
@@ -192,25 +205,25 @@ namespace Candy {
         int measurementPeriod = 4;
         
         std::cout << "Testing bias 1... ";
-        auto referenceDist = getReferenceDistribution(1);
+        auto referenceDist = getReferenceECDF(1);
         int measurementStart = 0;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
         
         std::cout << "3... ";
         rng = createRandomizationCyclicallyBiasedToTrue(1, 7, 2);
-        referenceDist = getReferenceDistribution(3);
+        referenceDist = getReferenceECDF(3);
         measurementStart = 1;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
         
         std::cout << "5... ";
         rng = createRandomizationCyclicallyBiasedToTrue(1, 7, 2);
-        referenceDist = getReferenceDistribution(5);
+        referenceDist = getReferenceECDF(5);
         measurementStart = 2;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
         
         std::cout << "7... " << std::endl;
         rng = createRandomizationCyclicallyBiasedToTrue(1, 7, 2);
-        referenceDist = getReferenceDistribution(7);
+        referenceDist = getReferenceECDF(7);
         measurementStart = 3;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
     }
@@ -220,25 +233,25 @@ namespace Candy {
         int measurementPeriod = 4;
         
         std::cout << "Testing bias 1... ";
-        auto referenceDist = getReferenceDistribution(-1);
+        auto referenceDist = getReferenceECDF(-1);
         int measurementStart = 0;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
         
         std::cout << "3... ";
         rng = createRandomizationCyclicallyBiasedToFalse(1, 7, 2);
-        referenceDist = getReferenceDistribution(-3);
+        referenceDist = getReferenceECDF(-3);
         measurementStart = 1;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
         
         std::cout << "5... ";
         rng = createRandomizationCyclicallyBiasedToFalse(1, 7, 2);
-        referenceDist = getReferenceDistribution(-5);
+        referenceDist = getReferenceECDF(-5);
         measurementStart = 2;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
         
         std::cout << "7... " << std::endl;
         rng = createRandomizationCyclicallyBiasedToFalse(1, 7, 2);
-        referenceDist = getReferenceDistribution(-7);
+        referenceDist = getReferenceECDF(-7);
         measurementStart = 3;
         test_randomization(*rng, referenceDist, measurementStart, measurementPeriod, 400, 0.01f);
     }

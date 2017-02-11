@@ -40,6 +40,8 @@ namespace Candy {
     /**
      * \class GateDFSMarkedGate
      *
+     * \ingroup RandomSimulation
+     *
      * \brief Helper data structure used by visitDFS() for marking gates for
      *   backtracking.
      */
@@ -49,6 +51,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * DFS-traverses the gate structure given by a Gate analyzer. A Collector object
      * is created, receiving pointers to the gates in order of their visitation
      * rsp. in topological order (backtracking).
@@ -120,6 +124,11 @@ namespace Candy {
         return collector;
     }
     
+    /*
+     * \ingroup RandomSimulation
+     *
+     * TODO: documentation
+     */
     class TopologicallyOrderedGates {
     public:
         TopologicallyOrderedGates()
@@ -150,6 +159,11 @@ namespace Candy {
         std::vector<Var> m_backtrackOutputOrder;
     };
 
+    /*
+     * \ingroup RandomSimulation
+     *
+     * TODO: documentation
+     */
     inline TopologicallyOrderedGates getTopoOrder(GateAnalyzer& analyzer) {
         return visitDFS<TopologicallyOrderedGates>(analyzer);
     }

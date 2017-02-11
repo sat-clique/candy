@@ -13,6 +13,13 @@
 # the test output only when it fails) or ctest --verbose
 #
 #
+# To build the documentation, run 
+#   make doxygen
+# or
+#   cmake --build . --target doxygen
+#
+# The documentation is generated in doc/ within your build directory. 
+#
 # II. Invoking cmake
 #
 # Examples:
@@ -76,6 +83,9 @@ option(CANDY_DISABLE_RTTI OFF "Disable RTTI and defines CANDY_HAS_NO_RTTI. Use w
 enable_testing()
 
 
+### Add doxygen targets
+add_subdirectory(doc)
+
 ### Compiler flags
 
 set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS  -march=native")
@@ -115,7 +125,7 @@ endfunction()
 
 ### Set up include directories
 
-include_directories(${PROJECT_SOURCE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/src)
 # for refactoring purposes, TODO: use e.g. candy/core/SolverTypes.h instead of core/SolverTypes.h
 include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 
