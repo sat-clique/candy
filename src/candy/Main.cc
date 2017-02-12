@@ -145,7 +145,7 @@ static void printModel(FILE* f, Solver* solver) {
   fprintf(f, " 0\n");
 }
 
-static lbool solve(SimpSolver& S, bool do_preprocess, bool parsed_time) {
+static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
   lbool result = l_Undef;
   
   if (do_preprocess/* && !S.isIncremental()*/) {
@@ -196,6 +196,12 @@ static void printResult(SimpSolver& S, lbool result, const char* outputFilename 
     fprintf(S.certifiedOutput, "0\n");
     fclose(S.certifiedOutput);
   }
+}
+
+static void installSignalHandlers() {
+  // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily:
+  signal(SIGINT, SIGINT_interrupt);
+  signal(SIGXCPU, SIGINT_interrupt);
 }
 
 //=================================================================================================
@@ -300,12 +306,10 @@ int main(int argc, char** argv) {
       printf("c |                                                                                                       |\n");
     }
 
-    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily:
-    signal(SIGINT, SIGINT_interrupt);
-    signal(SIGXCPU, SIGINT_interrupt);
+    installSignalHandlers();
 
     lbool result = solve(S, do_preprocess, parsed_time);
-    
+
     const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
     printResult(S, result, statsFilename);
 
