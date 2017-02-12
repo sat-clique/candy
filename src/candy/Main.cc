@@ -145,6 +145,32 @@ static void printModel(FILE* f, Solver* solver) {
   fprintf(f, " 0\n");
 }
 
+static lbool solve(SimpSolver& S, bool do_preprocess, bool parsed_time) {
+  lbool result = l_Undef;
+    
+  if (do_preprocess/* && !S.isIncremental()*/) {
+    printf("c | Preprocesing is fully done\n");
+    S.eliminate(true);
+    if (!S.okay()) result = l_False;
+    double simplified_time = cpuTime();
+    if (S.verbosity > 0) {
+      printf("c |  Simplification time:  %12.2f s                                                                 |\n", simplified_time - parsed_time);
+      if (result == l_False) {
+        printf("c =========================================================================================================\n");
+        printf("Solved by simplification\n");
+      }
+    }
+  }
+  printf("c |                                                                                                       |\n");
+  
+  if (result == l_Undef) {
+    vector<Lit> assumptions;
+    result = S.solveLimited(assumptions);
+  }
+  
+  return result;
+}
+
 //=================================================================================================
 // Main:
 
@@ -251,27 +277,7 @@ int main(int argc, char** argv) {
     signal(SIGINT, SIGINT_interrupt);
     signal(SIGXCPU, SIGINT_interrupt);
 
-    lbool result = l_Undef;
-
-    if (do_preprocess/* && !S.isIncremental()*/) {
-      printf("c | Preprocesing is fully done\n");
-      S.eliminate(true);
-      if (!S.okay()) result = l_False;
-      double simplified_time = cpuTime();
-      if (S.verbosity > 0) {
-        printf("c |  Simplification time:  %12.2f s                                                                 |\n", simplified_time - parsed_time);
-        if (result == l_False) {
-          printf("c =========================================================================================================\n");
-          printf("Solved by simplification\n");
-        }
-      }
-    }
-    printf("c |                                                                                                       |\n");
-
-    if (result == l_Undef) {
-      vector<Lit> assumptions;
-      result = S.solveLimited(assumptions);
-    }
+    lbool result = solve(S, do_preprocess, parsed_time);
 
     if (S.verbosity > 0) {
       printStats(S);
