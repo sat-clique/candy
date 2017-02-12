@@ -145,6 +145,9 @@ static void printModel(FILE* f, Solver* solver) {
   fprintf(f, " 0\n");
 }
 
+/**
+ * Runs the SAT solver, performing simplification if \p do_preprocess is true.
+ */
 static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
   lbool result = l_Undef;
   
@@ -171,6 +174,13 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
   return result;
 }
 
+/**
+ * Prints the SAT solving result \p result and, if the verbosity level of the solver \p S
+ * is greater than 0, print statistics about the solving process.
+ *
+ * If \p outputFilename is non-null, the result also gets written to the file given by
+ * \p outputFilename. The target file gets truncated.
+ */
 static void printResult(SimpSolver& S, lbool result, const char* outputFilename = nullptr) {
   if (S.verbosity > 0) {
     printStats(S);
@@ -192,14 +202,17 @@ static void printResult(SimpSolver& S, lbool result, const char* outputFilename 
     }
   }
   
+  // TODO: shouldn't this be done by the solver - maybe add a "shutdown()" method?
   if (S.certifiedUNSAT) {
     fprintf(S.certifiedOutput, "0\n");
     fclose(S.certifiedOutput);
   }
 }
 
+/**
+ * Changes to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+ */
 static void installSignalHandlers() {
-  // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily:
   signal(SIGINT, SIGINT_interrupt);
   signal(SIGXCPU, SIGINT_interrupt);
 }
