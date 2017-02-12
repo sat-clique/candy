@@ -215,8 +215,6 @@ int main(int argc, char** argv) {
       if (!dimacs.readDimacsFromFile(argv[1])) return 1;
     }
 
-    FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
-
     if (do_gaterecognition) {
       double recognition_time = cpuTime();
       Candy::GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold);
@@ -282,6 +280,7 @@ int main(int argc, char** argv) {
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
+    FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
     if (res != NULL) {
       fprintf(res, result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
       if (result == l_True) {
