@@ -147,7 +147,7 @@ static void printModel(FILE* f, Solver* solver) {
 
 static lbool solve(SimpSolver& S, bool do_preprocess, bool parsed_time) {
   lbool result = l_Undef;
-    
+  
   if (do_preprocess/* && !S.isIncremental()*/) {
     printf("c | Preprocesing is fully done\n");
     S.eliminate(true);
@@ -169,6 +169,33 @@ static lbool solve(SimpSolver& S, bool do_preprocess, bool parsed_time) {
   }
   
   return result;
+}
+
+static void printResult(SimpSolver& S, lbool result, const char* outputFilename = nullptr) {
+  if (S.verbosity > 0) {
+    printStats(S);
+    printf("\n");
+  }
+  
+  printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+  
+  FILE* res = outputFilename != nullptr ? fopen(outputFilename, "wb") : nullptr;
+  if (res != NULL) {
+    fprintf(res, result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+    if (result == l_True) {
+      printModel(res, solver);
+    }
+    fclose(res);
+  } else {
+    if (S.showModel && result == l_True) {
+      printModel(stdout, solver);
+    }
+  }
+  
+  if (S.certifiedUNSAT) {
+    fprintf(S.certifiedOutput, "0\n");
+    fclose(S.certifiedOutput);
+  }
 }
 
 //=================================================================================================
@@ -278,31 +305,9 @@ int main(int argc, char** argv) {
     signal(SIGXCPU, SIGINT_interrupt);
 
     lbool result = solve(S, do_preprocess, parsed_time);
-
-    if (S.verbosity > 0) {
-      printStats(S);
-      printf("\n");
-    }
-
-    printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
-
-    FILE* res = (argc >= 3) ? fopen(argv[argc - 1], "wb") : NULL;
-    if (res != NULL) {
-      fprintf(res, result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
-      if (result == l_True) {
-        printModel(res, solver);
-      }
-      fclose(res);
-    } else {
-      if (S.showModel && result == l_True) {
-        printModel(stdout, solver);
-      }
-    }
-
-    if (S.certifiedUNSAT) {
-      fprintf(S.certifiedOutput, "0\n");
-      fclose(S.certifiedOutput);
-    }
+    
+    const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
+    printResult(S, result, statsFilename);
 
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
   }
