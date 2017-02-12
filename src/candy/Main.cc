@@ -270,14 +270,14 @@ static void shutdownSolver(SimpSolver& S) {
 }
 
 struct GateRecognitionArguments {
-  int opt_gr_tries;
-  bool opt_gr_patterns;
-  bool opt_gr_semantic;
-  bool opt_gr_holistic;
-  bool opt_gr_lookahead;
-  bool opt_gr_intensify;
-  int opt_gr_lookahead_threshold;
-  bool opt_print_gates;
+  const int opt_gr_tries;
+  const bool opt_gr_patterns;
+  const bool opt_gr_semantic;
+  const bool opt_gr_holistic;
+  const bool opt_gr_lookahead;
+  const bool opt_gr_intensify;
+  const int opt_gr_lookahead_threshold;
+  const bool opt_print_gates;
 };
 
 /**
@@ -311,6 +311,64 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
   }
 }
 
+struct GlucoseArguments {
+  const int verb;
+  const bool mod;
+  const int vv;
+
+  const int cpu_lim;
+  const int mem_lim;
+
+  const bool do_solve;
+  const bool do_preprocess;
+  const bool do_certified;
+  const bool do_gaterecognition;
+
+  const char *opt_certified_file;
+
+  const GateRecognitionArguments gateRecognitionArgs;
+};
+
+static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
+  setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
+
+  // Extra options:
+  //
+  IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+  BoolOption mod("MAIN", "model", "show model.", false);
+  IntOption vv("MAIN", "vv", "Verbosity every vv conflicts", 10000, IntRange(1, INT32_MAX));
+
+  IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
+  IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
+
+  BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
+  BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
+  BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
+  BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
+
+  StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
+
+  BoolOption opt_print_gates("GATE RECOGNITION", "print-gates", "print gates.", false);
+  IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
+  BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
+  BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
+  BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
+  BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
+  IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
+  BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", false);
+
+  parseOptions(argc, argv, true);
+
+  GateRecognitionArguments gateRecognitionArgs {opt_gr_tries, opt_gr_patterns, opt_gr_semantic,
+    opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold,
+    opt_print_gates};
+
+  GlucoseArguments result {verb, mod, vv, cpu_lim, mem_lim, do_solve, do_preprocess, do_certified, do_gaterecognition,
+    opt_certified_file, gateRecognitionArgs};
+
+  return result;
+}
+
 //=================================================================================================
 // Main:
 
@@ -318,51 +376,24 @@ int main(int argc, char** argv) {
   try {
     printf("c\nc This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)\nc\n");
 
-    setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
-
-    // Extra options:
-    //
-    IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
-    BoolOption mod("MAIN", "model", "show model.", false);
-    IntOption vv("MAIN", "vv", "Verbosity every vv conflicts", 10000, IntRange(1, INT32_MAX));
-
-    IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
-    IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
-
-    BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
-    BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
-    BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
-    BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
-
-    StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
-
-    BoolOption opt_print_gates("GATE RECOGNITION", "print-gates", "print gates.", false);
-    IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
-    BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
-    BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
-    BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
-    BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
-    IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
-    BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", false);
-
-    parseOptions(argc, argv, true);
+    GlucoseArguments args = parseCommandLineArgs(argc, argv);
 
     // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
     installSignalHandlers(false);
 
-    setLimits(cpu_lim, mem_lim);
+    setLimits(args.cpu_lim, args.mem_lim);
 
     double initial_time = cpuTime();
 
     SimpSolver S;
     solver = &S;
     configureSolver(S,
-                    verb,               // verbosity
-                    vv,                 // verbosity every vv conflicts
-                    mod,                // show model
-                    0,                  // certifiedAllClauses
-                    do_certified,       // certifiedUNSAT
-                    opt_certified_file);// certifiedUNSAT output file
+                    args.verb,               // verbosity
+                    args.vv,                 // verbosity every vv conflicts
+                    args.mod,                // show model
+                    0,                       // certifiedAllClauses
+                    args.do_certified,       // certifiedUNSAT
+                    args.opt_certified_file);// certifiedUNSAT output file
 
 
     Candy::CNFProblem dimacs;
@@ -374,11 +405,9 @@ int main(int argc, char** argv) {
       if (!dimacs.readDimacsFromFile(argv[1])) return 1;
     }
 
-    GateRecognitionArguments gateRecognitionArgs{opt_gr_tries, opt_gr_patterns, opt_gr_semantic,
-        opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold,
-        opt_print_gates};
-    if (do_gaterecognition) {
-      benchmarkGateRecognition(dimacs, gateRecognitionArgs);
+    
+    if (args.do_gaterecognition) {
+      benchmarkGateRecognition(dimacs, args.gateRecognitionArgs);
       return 0;
     }
 
@@ -393,7 +422,7 @@ int main(int argc, char** argv) {
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
     installSignalHandlers(true);
 
-    lbool result = solve(S, do_preprocess, parsed_time);
+    lbool result = solve(S, args.do_preprocess, parsed_time);
 
     const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
     printResult(S, result, statsFilename);
