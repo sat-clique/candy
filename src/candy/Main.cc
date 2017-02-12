@@ -237,6 +237,33 @@ static void printProblemStatistics(SimpSolver& S, double parseTime) {
   printf("c |                                                                                                       |\n");
 }
 
+/**
+ * Configures the SAT solver \p S.
+ * 
+ * TODO: document parameters
+ */
+static void configureSolver(SimpSolver& S,
+                            int verbosity,
+                            int verbosityEveryConflicts,
+                            bool showModel,
+                            bool certifiedAllClauses,
+                            bool certifiedUNSAT,
+                            const char* certifiedUNSATfile) {
+  S.verbosity = verbosity;
+  S.verbEveryConflicts = verbosityEveryConflicts;
+  S.showModel = showModel;
+  S.certifiedAllClauses = certifiedAllClauses;
+  S.certifiedUNSAT = certifiedUNSAT;
+  if (S.certifiedUNSAT) {
+    if (!strcmp(certifiedUNSATfile, "NULL")) {
+      S.certifiedOutput = fopen("/dev/stdout", "wb");
+    } else {
+      S.certifiedOutput = fopen(certifiedUNSATfile, "wb");
+    }
+    fprintf(S.certifiedOutput, "o proof DRUP\n");
+  }
+}
+
 //=================================================================================================
 // Main:
 
@@ -282,20 +309,14 @@ int main(int argc, char** argv) {
 
     SimpSolver S;
     solver = &S;
+    configureSolver(S,
+                    verb,               // verbosity
+                    vv,                 // verbosity every vv conflicts
+                    mod,                // show model
+                    0,                  // certifiedAllClauses
+                    do_certified,       // certifiedUNSAT
+                    opt_certified_file);// certifiedUNSAT output file
 
-    S.verbosity = verb;
-    S.verbEveryConflicts = vv;
-    S.showModel = mod;
-    S.certifiedAllClauses = 0;
-    S.certifiedUNSAT = do_certified;
-    if (S.certifiedUNSAT) {
-      if (!strcmp(opt_certified_file, "NULL")) {
-        S.certifiedOutput = fopen("/dev/stdout", "wb");
-      } else {
-        S.certifiedOutput = fopen(opt_certified_file, "wb");
-      }
-      fprintf(S.certifiedOutput, "o proof DRUP\n");
-    }
 
     Candy::CNFProblem dimacs;
     if (argc == 1) {
