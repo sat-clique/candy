@@ -201,12 +201,6 @@ static void printResult(SimpSolver& S, lbool result, const char* outputFilename 
       printModel(stdout, solver);
     }
   }
-  
-  // TODO: shouldn't this be done by the solver - maybe add a "shutdown()" method?
-  if (S.certifiedUNSAT) {
-    fprintf(S.certifiedOutput, "0\n");
-    fclose(S.certifiedOutput);
-  }
 }
 
 /**
@@ -261,6 +255,17 @@ static void configureSolver(SimpSolver& S,
       S.certifiedOutput = fopen(certifiedUNSATfile, "wb");
     }
     fprintf(S.certifiedOutput, "o proof DRUP\n");
+  }
+}
+
+/**
+ * Shuts down the SAT solver \p S and frees resources as necessary.
+ */
+static void shutdownSolver(SimpSolver& S) {
+  // TODO: shouldn't this be done by the solver - maybe add a "shutdown()" method?
+  if (S.certifiedUNSAT) {
+    fprintf(S.certifiedOutput, "0\n");
+    fclose(S.certifiedOutput);
   }
 }
 
@@ -368,7 +373,7 @@ int main(int argc, char** argv) {
     double parsed_time = cpuTime();
 
     if (S.verbosity > 0) {
-        printProblemStatistics(S, parsed_time - initial_time);
+      printProblemStatistics(S, parsed_time - initial_time);
     }
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
@@ -378,6 +383,7 @@ int main(int argc, char** argv) {
 
     const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
     printResult(S, result, statsFilename);
+    shutdownSolver(S);
 
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
   }
