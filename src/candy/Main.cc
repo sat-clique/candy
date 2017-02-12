@@ -210,11 +210,31 @@ static void printResult(SimpSolver& S, lbool result, const char* outputFilename 
 }
 
 /**
- * Changes to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+ * Installs signal handlers for SIGINT and SIGXCPU.
+ * If \p handleInterruptsBySolver is true, the interrupts are handled by SIGINT_interrupt();
+ * otherwise, they are set up to be handled by SIGINT_exit().
  */
-static void installSignalHandlers() {
-  signal(SIGINT, SIGINT_interrupt);
-  signal(SIGXCPU, SIGINT_interrupt);
+static void installSignalHandlers(bool handleInterruptsBySolver) {
+  if (handleInterruptsBySolver) {
+    signal(SIGINT, SIGINT_interrupt);
+    signal(SIGXCPU, SIGINT_interrupt);
+  }
+  else {
+    signal(SIGINT, SIGINT_exit);
+    signal(SIGXCPU, SIGINT_exit);
+  }
+}
+
+/**
+ * Prints statistics about the problem to be solved.
+ */
+static void printProblemStatistics(SimpSolver& S, double parseTime) {
+  printf("c ========================================[ Problem Statistics ]===========================================\n");
+  printf("c |                                                                                                       |\n");
+  printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
+  printf("c |  Number of clauses:    %12d                                                                   |\n", S.nClauses());
+  printf("c |  Parse time:           %12.2f s                                                                 |\n", parseTime);
+  printf("c |                                                                                                       |\n");
 }
 
 //=================================================================================================
@@ -254,8 +274,7 @@ int main(int argc, char** argv) {
     parseOptions(argc, argv, true);
 
     // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
-    signal(SIGINT, SIGINT_exit);
-    signal(SIGXCPU, SIGINT_exit);
+    installSignalHandlers(false);
 
     setLimits(cpu_lim, mem_lim);
 
@@ -311,15 +330,11 @@ int main(int argc, char** argv) {
     double parsed_time = cpuTime();
 
     if (S.verbosity > 0) {
-      printf("c ========================================[ Problem Statistics ]===========================================\n");
-      printf("c |                                                                                                       |\n");
-      printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
-      printf("c |  Number of clauses:    %12d                                                                   |\n", S.nClauses());
-      printf("c |  Parse time:           %12.2f s                                                                 |\n", parsed_time - initial_time);
-      printf("c |                                                                                                       |\n");
+        printProblemStatistics(S, parsed_time - initial_time);
     }
 
-    installSignalHandlers();
+    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+    installSignalHandlers(true);
 
     lbool result = solve(S, do_preprocess, parsed_time);
 
