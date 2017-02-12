@@ -264,6 +264,37 @@ static void configureSolver(SimpSolver& S,
   }
 }
 
+/**
+ * Performs gate recognition on the problem \p dimacs and prints statistics.
+ *
+ * TODO: document parameters
+ */
+static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
+                                     int opt_gr_tries,
+                                     bool opt_gr_patterns,
+                                     bool opt_gr_semantic,
+                                     bool opt_gr_holistic,
+                                     bool opt_gr_lookahead,
+                                     bool opt_gr_intensify,
+                                     int opt_gr_lookahead_threshold,
+                                     bool opt_print_gates) {
+  double recognition_time = cpuTime();
+  Candy::GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold);
+  gates.analyze();
+  recognition_time = cpuTime() - recognition_time;
+  printf("c ========================================[ Problem Statistics ]===========================================\n");
+  printf("c |                                                                                                       |\n");
+  printf("c |  Number of gates:        %12d                                                                 |\n", gates.getGateCount());
+  printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
+  printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
+  printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
+  printf("c |                                                                                                       |\n");
+  printf("c =========================================================================================================\n");
+  if (opt_print_gates) {
+    gates.printGates();
+  }
+}
+
 //=================================================================================================
 // Main:
 
@@ -328,21 +359,7 @@ int main(int argc, char** argv) {
     }
 
     if (do_gaterecognition) {
-      double recognition_time = cpuTime();
-      Candy::GateAnalyzer gates(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold);
-      gates.analyze();
-      recognition_time = cpuTime() - recognition_time;
-      printf("c ========================================[ Problem Statistics ]===========================================\n");
-      printf("c |                                                                                                       |\n");
-      printf("c |  Number of gates:        %12d                                                                 |\n", gates.getGateCount());
-      printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
-      printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
-      printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
-      printf("c |                                                                                                       |\n");
-      printf("c =========================================================================================================\n");
-      if (opt_print_gates) {
-        gates.printGates();
-      }
+      benchmarkGateRecognition(dimacs, opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold, opt_print_gates);
       return 0;
     }
 
