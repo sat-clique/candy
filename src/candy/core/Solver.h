@@ -99,8 +99,6 @@ public:
     return ca[cref];
   }
 
-  // change the passed vector 'ps'.
-
   // Solving:
   //
   bool simplify();                        // Removes already satisfied clauses.
@@ -112,26 +110,28 @@ public:
   bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
   bool okay() const;                  // FALSE means solver is in a conflicting state
 
-  // Display clauses and literals
-  void printLit(Lit l);
-  void printClause(CRef c);
-  void printInitialClause(CRef c);
-
-  void printLit2(Lit l) {
-    printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
-  }
-
-  void printClause2(CRef cr) {
-    Clause &c = ca[cr];
-    for (int i = 0; i < c.size(); i++) {
-      printLit2(c[i]);
-      printf(" ");
+  // Display clauses and literals (Debug purpose)
+  void printLit(Lit l) {
+    if (status == l_True) {
+      printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
+    } else {
+      printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
     }
   }
 
-  void printProblem() {
+  void printClause(CRef cr, bool skipSelectorVariables=false) {
+    Clause &c = ca[cr];
+    for (int i = 0; i < c.size(); i++) {
+      if (!skipSelectorVariables || !isSelector(var(c[i]))) {
+        printLit(c[i]);
+        printf(" ");
+      }
+    }
+  }
+
+  void printProblem(bool skipSelectorVariables=false) {
     for (size_t i = 0; i < clauses.size(); i++) {
-      printClause2(clauses[i]);
+      printClause(clauses[i], skipSelectorVariables);
       printf("\n");
     }
   }
@@ -367,13 +367,7 @@ protected:
   vector<Lit> add_tmp;
   unsigned int MYFLAG;
 
-  // Initial reduceDB strategy
-  //double max_learnts;
-  //double learntsize_adjust_confl;
-  //int learntsize_adjust_cnt;
-
   // Resource contraints:
-  //
   int64_t conflict_budget;    // -1 means no budget.
   int64_t propagation_budget; // -1 means no budget.
   bool asynch_interrupt;
@@ -383,12 +377,13 @@ protected:
   int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
   double totalTime4Sat, totalTime4Unsat;
   int nbSatCalls, nbUnsatCalls;
-  //vector<int> assumptionPositions, initialPositions;
 
   SolverSonification sonification;
 
   void* termCallbackState;
   int (*termCallback)(void* state);
+
+  lbool status;
 
   // Main internal methods:
   //
@@ -666,31 +661,6 @@ inline lbool Solver::solveLimited(const vector<Lit>& assumps) {
 }
 inline bool Solver::okay() const {
   return ok;
-}
-
-//=================================================================================================
-// Debug etc:
-
-inline void Solver::printLit(Lit l) {
-  printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
-}
-
-inline void Solver::printClause(CRef cr) {
-  Clause &c = ca[cr];
-  for (int i = 0; i < c.size(); i++) {
-    printLit(c[i]);
-    printf(" ");
-  }
-}
-
-inline void Solver::printInitialClause(CRef cr) {
-  Clause &c = ca[cr];
-  for (int i = 0; i < c.size(); i++) {
-    if (!isSelector(var(c[i]))) {
-      printLit(c[i]);
-      printf(" ");
-    }
-  }
 }
 
 //=================================================================================================
