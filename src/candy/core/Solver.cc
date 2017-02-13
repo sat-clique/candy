@@ -116,7 +116,7 @@ Solver::Solver() :
 //
         , conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
         0.), nbSatCalls(0), nbUnsatCalls(0),
-		sonification(), termCallbackState(nullptr), termCallback(nullptr) {
+		sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
   MYFLAG = 0;
   // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
   // Kept here for simplicity
@@ -1293,10 +1293,8 @@ void Solver::printIncrementalStats() {
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
-
-lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless in core but useful for SimpSolver....
-    {
-
+// Parameters are useless in core but useful for SimpSolver....
+lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
   if (incremental && certifiedUNSAT) {
     printf("Can not use incremental and certified unsat in the same time\n");
     exit(-1);
@@ -1312,7 +1310,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) // Parameters are useless
 
   solves++;
 
-  lbool status = l_Undef;
+  status = l_Undef;
   if (!incremental && verbosity >= 1) {
     printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
     printf("c | Constants are supposed to work well together :-)                                                      |\n");
