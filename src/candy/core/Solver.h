@@ -80,21 +80,17 @@ public:
   Solver();
   virtual ~Solver();
 
-  void reserveVars(int n) {
-    assigns.reserve(n);
-    vardata.reserve(n);
-    activity.reserve(n);
-    seen.reserve(n);
-    permDiff.reserve(n);
-    polarity.reserve(n);
-    decision.reserve(n);
-    trail.resize(n);
-  }
-
   void insertClauses(Candy::CNFProblem dimacs) {
     vector<vector<Lit>*>& problem = dimacs.getProblem();
     if (dimacs.nVars() > nVars()) {
-      reserveVars(dimacs.nVars());
+      assigns.reserve(dimacs.nVars());
+      vardata.reserve(dimacs.nVars());
+      activity.reserve(dimacs.nVars());
+      seen.reserve(dimacs.nVars());
+      permDiff.reserve(dimacs.nVars());
+      polarity.reserve(dimacs.nVars());
+      decision.reserve(dimacs.nVars());
+      trail.resize(dimacs.nVars());
       for (int i = nVars(); i < dimacs.nVars(); i++) {
         newVar();
       }
