@@ -57,6 +57,8 @@ namespace Candy {
         
         EquivalenceConjecture();
         explicit EquivalenceConjecture(const std::vector<Lit>& equivalentLits);
+        EquivalenceConjecture(EquivalenceConjecture&& other) = default;
+        EquivalenceConjecture(const EquivalenceConjecture& other) = default;
     private:
         std::vector<Glucose::Lit> m_lits;
     };
@@ -72,6 +74,8 @@ namespace Candy {
     class BackboneConjecture {
     public:
         explicit BackboneConjecture(Glucose::Lit lit);
+        BackboneConjecture(BackboneConjecture&& other) = default;
+        BackboneConjecture(const BackboneConjecture& other) = default;
         
         /**
          * Retrieves the literal conjected to belong to the backbone.
@@ -110,6 +114,16 @@ namespace Candy {
          * Adds a backbone conjecture (by copying).
          */
         void addBackbone(const BackboneConjecture &conj);
+        
+        Conjectures(Conjectures&& other) = default;
+        Conjectures& operator=(Conjectures&& other) = default;
+        Conjectures() = default;
+        
+        // Deleting the default copy constructor & assignment operator
+        // to enforce efficiency - remove this restriction as soon as
+        // copying a Conjectures object becomes necessary.
+        Conjectures(Conjectures& other) = delete;
+        Conjectures& operator=(Conjectures& other) = delete;
         
     private:
         std::vector<EquivalenceConjecture> m_equivalences {};
