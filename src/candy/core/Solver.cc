@@ -174,36 +174,52 @@ Var Solver::newVar(bool sign, bool dvar) {
   return v;
 }
 
+void Solver::addClauses(Candy::CNFProblem dimacs) {
+  vector<vector<Lit>*>& problem = dimacs.getProblem();
+  if (dimacs.nVars() > nVars()) {
+    assigns.reserve(dimacs.nVars());
+    vardata.reserve(dimacs.nVars());
+    activity.reserve(dimacs.nVars());
+    seen.reserve(dimacs.nVars());
+    permDiff.reserve(dimacs.nVars());
+    polarity.reserve(dimacs.nVars());
+    decision.reserve(dimacs.nVars());
+    trail.resize(dimacs.nVars());
+    for (int i = nVars(); i < dimacs.nVars(); i++) {
+      newVar();
+    }
+  }
+  for (vector<Lit>* clause : problem) {
+    addClause(*clause);
+  }
+}
+
 bool Solver::addClause_(vector<Lit>& ps) {
   assert(decisionLevel() == 0);
   if (!ok)
     return false;
 
-  // Check if clause is satisfied and remove false/duplicate literals:
+  // remove duplicates:
   std::sort(ps.begin(), ps.end());
+  auto end = std::unique(ps.begin(), ps.end());
+  // remove false literals:
+  end = std::remove_if(ps.begin(), end, [this](Lit lit) { return value(lit) == l_False; });
 
-  vector<Lit> oc;
-  if (certifiedUNSAT) {
-    oc.insert(oc.end(), ps.begin(), ps.end());
-  }
-
-  Lit p = lit_Undef;
-  unsigned int j = 0;
-  for (unsigned int i = 0; i < ps.size(); i++)
-    if (value(ps[i]) == l_True || ps[i] == ~p) // clause is satisfied or tautology
-      return true;
-    else if (value(ps[i]) != l_False && ps[i] != p) // literal is false or duplicate
-      ps[j++] = p = ps[i];
-  ps.resize(j);
-
-  if (certifiedUNSAT && oc.size() > ps.size()) {
+  if (certifiedUNSAT && end != ps.end()) {
     for (Lit lit : ps) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
     fprintf(certifiedOutput, "0\n");
 
     fprintf(certifiedOutput, "d ");
-    for (Lit lit : oc) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
+    for (auto it = ps.begin(); it != end; it++) fprintf(certifiedOutput, "%i ", (var(*it) + 1) * (-2 * sign(*it) + 1));
     fprintf(certifiedOutput, "0\n");
   }
+
+  // erase removed:
+  ps.erase(end, ps.end());
+  // check for satisfied or tautologic clauses:
+  pair<vector<Lit>::iterator, vector<Lit>::iterator> p = std::mismatch(ps.begin()+1, ps.end(), ps.begin(),
+                                   [](Lit lit1, Lit lit2) { return lit1 != ~lit2; });
+  if (p.first != ps.end()) return true;
 
   if (ps.size() == 0) {
     return ok = false;
