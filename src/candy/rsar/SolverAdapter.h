@@ -29,6 +29,7 @@
 
 #include <core/SolverTypes.h>
 #include <core/CNFProblem.h>
+#include <simp/SimpSolver.h>
 
 #include <vector>
 #include <memory>
@@ -74,6 +75,7 @@ namespace Candy {
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter();
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(Glucose::SimpSolver& solver);
 }
 
 #endif

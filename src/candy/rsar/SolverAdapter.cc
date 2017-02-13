@@ -96,25 +96,45 @@ namespace Candy {
             return m_solver.newVar();
         }
         
-        virtual int getNVars() const override {
+        int getNVars() const override {
             return m_solver.nVars();
         }
+        
+        /*const Glucose::SimpSolver& getSolver() override {
+            return m_solver;
+        }*/
         
         virtual ~GlucoseAdapter() {
             
         }
         
-        GlucoseAdapter() : SolverAdapter() {
+        
+        GlucoseAdapter()
+        : SolverAdapter(),
+        m_ownedSolver(backported_std::make_unique<Glucose::SimpSolver>()),
+        m_solver(*m_ownedSolver) {
+        }
+        
+        explicit GlucoseAdapter(Glucose::SimpSolver& solver)
+        : SolverAdapter(),
+        m_ownedSolver(nullptr),
+        m_solver(solver) {
         }
         
         GlucoseAdapter(const GlucoseAdapter& other) = delete;
         GlucoseAdapter& operator= (const GlucoseAdapter& other) = delete;
         
     private:
-        Glucose::SimpSolver m_solver;
+        std::unique_ptr<Glucose::SimpSolver> m_ownedSolver;
+        Glucose::SimpSolver& m_solver;
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter() {
         return backported_std::make_unique<GlucoseAdapter>();
     }
+    
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(Glucose::SimpSolver& solver) {
+        return backported_std::make_unique<GlucoseAdapter>(solver);
+    }
+
 }
