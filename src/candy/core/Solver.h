@@ -195,7 +195,6 @@ public:
   double sizeTrailQueue;
 
   // Constants for reduce DB
-  int firstReduceDB;
   int incReduceDB;
   int specialIncReduceDB;
   unsigned int lbLBDFrozenClause;
@@ -249,8 +248,6 @@ public:
       propagations, conflicts, conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
   uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
-  int countCalls = 0;
-
   void setTermCallback(void* state, int (*termCallback)(void*)) {
     this->termCallbackState = state;
     this->termCallback = termCallback;
@@ -259,8 +256,8 @@ public:
 protected:
 
   long curRestart;
+
   // Helper structures:
-  //
   struct VarData {
     CRef reason;
     unsigned int level;
@@ -284,18 +281,11 @@ protected:
     bool operator!=(const Watcher& w) const {
       return cref != w.cref;
     }
-    /*        Watcher &operator=(Watcher w) {
-     this->cref = w.cref;
-     this->blocker = w.blocker;
-     return *this;
-     }
-     */
   };
 
   struct WatcherDeleted {
     const ClauseAllocator& ca;
-    WatcherDeleted(const ClauseAllocator& _ca) :
-        ca(_ca) {
+    WatcherDeleted(const ClauseAllocator& _ca) : ca(_ca) {
     }
     bool operator()(const Watcher& w) const {
       return ca[w.cref].mark() == 1;
@@ -304,17 +294,14 @@ protected:
 
   struct VarOrderLt {
     const vector<double>& activity;
-    bool operator ()(Var x, Var y) const {
+    bool operator()(Var x, Var y) const {
       return activity[x] > activity[y];
     }
-    VarOrderLt(const vector<double>& act) :
-        activity(act) {
+    VarOrderLt(const vector<double>& act) : activity(act) {
     }
   };
 
   // Solver state:
-  //
-  //int lastIndexRed;
   bool ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
   double cla_inc;          // Amount to bump next clause with.
   vector<double> activity;         // A heuristic measurement of the activity of a variable.
@@ -387,38 +374,38 @@ protected:
 
   // Main internal methods:
   //
-  void insertVarOrder(Var x);                                                 // Insert a variable in the decision order priority queue.
-  Lit pickBranchLit();                                                      // Return the next decision variable.
-  void newDecisionLevel();                                                      // Begins a new decision level.
-  void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
-  bool enqueue(Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
-  CRef propagate();                                                      // Perform unit propagation. Returns possibly conflicting clause.
-  CRef propagateUnaryWatches(Lit p);                                                  // Perform propagation on unary watches of p, can find only conflicts
-  void cancelUntil(int level);                                             // Backtrack until a certain level.
+  void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
+  Lit pickBranchLit(); // Return the next decision variable.
+  void newDecisionLevel(); // Begins a new decision level.
+  void uncheckedEnqueue(Lit p, CRef from = CRef_Undef); // Enqueue a literal. Assumes value of literal is undefined.
+  bool enqueue(Lit p, CRef from = CRef_Undef); // Test if fact 'p' contradicts current state, enqueue otherwise.
+  CRef propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+  CRef propagateUnaryWatches(Lit p); // Perform propagation on unary watches of p, can find only conflicts
+  void cancelUntil(int level); // Backtrack until a certain level.
   void analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit> & selectors, int& out_btlevel, unsigned int &nblevels, unsigned int &szWithoutSelectors); // (bt = backtrack)
-  void analyzeFinal(Lit p, vector<Lit>& out_conflict);                // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-  bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
-  lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
+  void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+  bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
+  lbool search(int nof_conflicts); // Search for a given number of conflicts.
   virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);                              // Main solve method (assumptions given in 'assumptions').
-  virtual void reduceDB();                                                      // Reduce the set of learnt clauses.
-  void removeSatisfied(vector<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
+  virtual void reduceDB(); // Reduce the set of learnt clauses.
+  void removeSatisfied(vector<CRef>& cs); // Shrink 'cs' to contain only non-satisfied clauses.
   void rebuildOrderHeap();
 
   // Maintaining Variable/Clause activity:
   //
-  void varDecayActivity();                      // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-  void varBumpActivity(Var v, double inc);     // Increase a variable with the current 'bump' value.
-  void varBumpActivity(Var v);                 // Increase a variable with the current 'bump' value.
-  void claDecayActivity();                      // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
-  void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
+  void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+  void varBumpActivity(Var v, double inc); // Increase a variable with the current 'bump' value.
+  void varBumpActivity(Var v); // Increase a variable with the current 'bump' value.
+  void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
+  void claBumpActivity(Clause& c); // Increase a clause with the current 'bump' value.
 
   // Operations on clauses:
   //
-  void attachClause(CRef cr);               // Attach a clause to watcher lists.
+  void attachClause(CRef cr); // Attach a clause to watcher lists.
   void detachClause(CRef cr, bool strict = false); // Detach a clause to watcher lists.
   void detachClausePurgatory(CRef cr, bool strict = false);
   void attachClausePurgatory(CRef cr);
-  void removeClause(CRef cr, bool inPurgatory = false);               // Detach and free a clause.
+  void removeClause(CRef cr, bool inPurgatory = false); // Detach and free a clause.
   bool locked(const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
   bool satisfied(const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
@@ -442,7 +429,6 @@ protected:
 
   // Static helpers:
   //
-
   // Returns a random float 0 <= x < 1. Seed must never be 0.
   static inline double drand(double& seed) {
     seed *= 1389796;
@@ -463,6 +449,7 @@ protected:
 inline CRef Solver::reason(Var x) const {
   return vardata[x].reason;
 }
+
 inline int Solver::level(Var x) const {
   return vardata[x].level;
 }
