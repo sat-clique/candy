@@ -190,6 +190,7 @@ namespace Candy {
     class ARSolverImpl : public ARSolver {
     public:
         bool solve(CNFProblem &problem) override;
+        bool solve() override;
         
         ARSolverImpl(std::unique_ptr<Conjectures> conjectures,
                      std::unique_ptr<SolverAdapter> solver,
@@ -206,7 +207,7 @@ namespace Candy {
          * Initializes the abstraction refinement system and performs
          * initialization-time simplification.
          */
-        void init(CNFProblem &problem);
+        void init();
         
         /** Runs the underlying SAT solver's simplification system. */
         void simplify();
@@ -356,9 +357,8 @@ namespace Candy {
         };
     }
     
-    void ARSolverImpl::init(CNFProblem &problem) {
+    void ARSolverImpl::init() {
         // Set up the underlying SAT solver
-        m_solver->insertClauses(problem);
         m_solver->setIncrementalMode();
         m_solver->setCertifiedUNSAT(false);
         m_solver->initNbInitialVars(m_solver->getNVars());
@@ -397,16 +397,18 @@ namespace Candy {
     }
 
     
+    bool ARSolverImpl::solve(Candy::CNFProblem &problem) {
+        m_solver->insertClauses(problem);
+        return solve();
+    }
     
-    
-    bool ARSolverImpl::solve(CNFProblem &problem) {
+    bool ARSolverImpl::solve() {
         if (m_maxRefinementSteps == 0) {
             // no refinement allowed -> use plain sat solving
-            m_solver->insertClauses(problem);
             return m_solver->solve();
         }
-
-        init(problem);
+        
+        init();
         
         bool sat = false, abort = false;
         int i = 0;
