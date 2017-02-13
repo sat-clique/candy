@@ -81,26 +81,28 @@ public:
 
   void readClause(Lit plit) {
     Cl* lits = new Cl();
-    if (var(plit)+1 > maxVars) maxVars = var(plit)+1;
     lits->push_back(plit);
+    maxVars = std::max(maxVars, var(plit)+1);
     problem.push_back(lits);
   }
 
   void readClause(Lit plit1, Lit plit2) {
     Cl* lits = new Cl();
-    if (var(plit1)+1 > maxVars) maxVars = var(plit1)+1;
     lits->push_back(plit1);
-    if (var(plit2)+1 > maxVars) maxVars = var(plit2)+1;
     lits->push_back(plit2);
+    maxVars = std::max(maxVars, std::max(var(plit1),var(plit2))+1);
+    problem.push_back(lits);
+  }
+
+  void readClause(std::initializer_list<Lit> list) {
+    Cl* lits = new Cl(list);
+    maxVars = var(std::max(list))+1;
     problem.push_back(lits);
   }
 
   void readClause(Cl& in) {
-    Cl* lits = new Cl();
-    for (Lit plit : in) {
-      if (var(plit)+1 > maxVars) maxVars = var(plit)+1;
-      lits->push_back(plit);
-    }
+    Cl* lits = new Cl(in);
+    maxVars = var(*std::max_element(in.begin(), in.end()))+1;
     problem.push_back(lits);
   }
 

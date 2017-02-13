@@ -80,35 +80,25 @@ public:
   Solver();
   virtual ~Solver();
 
-  void insertClauses(Candy::CNFProblem dimacs) {
-    vector<vector<Lit>*>& problem = dimacs.getProblem();
-    if (dimacs.nVars() > nVars()) {
-      assigns.reserve(dimacs.nVars());
-      vardata.reserve(dimacs.nVars());
-      activity.reserve(dimacs.nVars());
-      seen.reserve(dimacs.nVars());
-      permDiff.reserve(dimacs.nVars());
-      polarity.reserve(dimacs.nVars());
-      decision.reserve(dimacs.nVars());
-      trail.resize(dimacs.nVars());
-      for (int i = nVars(); i < dimacs.nVars(); i++) {
-        newVar();
-      }
-    }
-    for (vector<Lit>* clause : problem) {
-      addClause(*clause);
-    }
-  }
 
   // Problem specification:
   //
   virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-  bool addClause(const vector<Lit>& ps);                     // Add a clause to the solver.
-  bool addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-  bool addClause(Lit p);                                  // Add a unit clause to the solver.
-  bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
-  bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-  virtual bool addClause_(vector<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
+  bool addClause(const vector<Lit>& ps); // Add a clause to the solver.
+  bool addEmptyClause(); // Add the empty clause, making the solver contradictory.
+  bool addClause(Lit p); // Add a unit clause to the solver.
+  bool addClause(Lit p, Lit q); // Add a binary clause to the solver.
+  bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
+  virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will
+  void addClauses(Candy::CNFProblem dimacs);
+
+  // use with care (written for solver tests only)
+  Clause& getClause(unsigned int pos) {
+    assert(pos < clauses.size());
+    CRef cref = clauses[pos];
+    return ca[cref];
+  }
+
   // change the passed vector 'ps'.
 
   // Solving:
@@ -557,6 +547,7 @@ inline bool Solver::addClause(Lit p, Lit q, Lit r) {
   add_tmp.push_back(r);
   return addClause_(add_tmp);
 }
+
 inline bool Solver::locked(const Clause& c) const {
   if (c.size() > 2)
     return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c;
