@@ -95,35 +95,33 @@ static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "m
 // Constructor/Destructor:
 
 Solver::Solver() :
-    verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue), firstReduceDB(opt_first_reduce_db), incReduceDB(
-        opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(
-        opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(
-        opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(
-        false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false) // Not in the first parallel version
-        , panicModeLastRemoved(0), panicModeLastRemovedShared(0), useUnaryWatched(false), promoteOneWatchedClause(true)
+    verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R),
+    sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
+    incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
+    lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
+    var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode),
+    phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
+    panicModeLastRemoved(0), panicModeLastRemovedShared(0), useUnaryWatched(false), promoteOneWatchedClause(true),
 // Statistics: (formerly in 'SolverStats')
 //
-        , nbPromoted(0), originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbRemovedUnaryWatchedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(
-        0), nbUn(0), nbReduceDB(0), solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(
-        0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(
-        1)
+    nbPromoted(0), originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbRemovedUnaryWatchedClauses(0), nbReducedClauses(0),
+    nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0),
+    nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),
+    curRestart(1),
 
-        , ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), watchesBin(WatcherDeleted(ca)), unaryWatches(WatcherDeleted(ca)), trail_size(0), qhead(
-        0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), progress_estimate(0), remove_satisfied(true), reduceOnSize(false) //
-        , reduceOnSizeSize(12) // Constant to use on size reductions
-        , lastLearntClause(CRef_Undef)
+    ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), watchesBin(WatcherDeleted(ca)), unaryWatches(WatcherDeleted(ca)), trail_size(0), qhead(0),
+    simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), progress_estimate(0), remove_satisfied(true), reduceOnSize(false),
+    reduceOnSizeSize(12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(CRef_Undef), MYFLAG(0),
 // Resource constraints:
 //
-        , conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
-        0.), nbSatCalls(0), nbUnsatCalls(0),
-		sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
-  MYFLAG = 0;
-  // Initialize only first time. Useful for incremental solving (not in // version), useless otherwise
-  // Kept here for simplicity
+    conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX),
+    totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0),
+// Added since Candy
+//
+		sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef)
+{
   lbdQueue.initSize(sizeLBDQueue);
   trailQueue.initSize(sizeTrailQueue);
-  sumLBD = 0;
-  nbclausesbeforereduce = firstReduceDB;
 }
 
 Solver::~Solver() {
@@ -196,29 +194,29 @@ void Solver::addClauses(Candy::CNFProblem dimacs) {
 
 bool Solver::addClause_(vector<Lit>& ps) {
   assert(decisionLevel() == 0);
-  if (!ok)
-    return false;
+  if (!ok) return false;
 
   // remove duplicates:
   std::sort(ps.begin(), ps.end());
-  auto end = std::unique(ps.begin(), ps.end());
+  auto new_end = std::unique(ps.begin(), ps.end());
+
   // remove false literals:
-  end = std::remove_if(ps.begin(), end, [this](Lit lit) { return value(lit) == l_False; });
+  new_end = std::remove_if(ps.begin(), new_end, [this](Lit lit) { return value(lit) == l_False; });
 
-  if (certifiedUNSAT && end != ps.end()) {
-    for (Lit lit : ps) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
+  if (certifiedUNSAT && new_end != ps.end()) {
+    for (auto it = ps.begin(); it != new_end; it++) fprintf(certifiedOutput, "%i ", (var(*it) + 1) * (-2 * sign(*it) + 1));
     fprintf(certifiedOutput, "0\n");
-
     fprintf(certifiedOutput, "d ");
-    for (auto it = ps.begin(); it != end; it++) fprintf(certifiedOutput, "%i ", (var(*it) + 1) * (-2 * sign(*it) + 1));
+    for (Lit lit : ps) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
     fprintf(certifiedOutput, "0\n");
   }
 
   // erase removed:
-  ps.erase(end, ps.end());
+  ps.erase(new_end, ps.end());
+
   // check for satisfied or tautologic clauses:
-  pair<vector<Lit>::iterator, vector<Lit>::iterator> p = std::mismatch(ps.begin()+1, ps.end(), ps.begin(),
-                                   [](Lit lit1, Lit lit2) { return lit1 != ~lit2; });
+  //pair<vector<Lit>::iterator, vector<Lit>::iterator>
+  auto p = std::mismatch(ps.begin()+1, ps.end(), ps.begin(), [](Lit l1, Lit l2) { return l1 != ~l2; });
   if (p.first != ps.end()) return true;
 
   if (ps.size() == 0) {
@@ -303,7 +301,6 @@ void Solver::detachClausePurgatory(CRef cr, bool strict) {
 }
 
 void Solver::removeClause(CRef cr, bool inPurgatory) {
-
   Clause& c = ca[cr];
 
   if (certifiedUNSAT) {
