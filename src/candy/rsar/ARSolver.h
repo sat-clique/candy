@@ -62,6 +62,12 @@ namespace Candy {
          */
         virtual bool solve(CNFProblem &problem) = 0;
         
+        /**
+         * Returns true iff the SAT problem instance with which the underlying
+         * SAT solver has been instantiated is satisfiable.
+         */
+        virtual bool solve() = 0;
+        
         ARSolver() noexcept;
         virtual ~ARSolver();
         ARSolver(const ARSolver& other) = delete;
