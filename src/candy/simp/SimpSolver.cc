@@ -654,7 +654,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
   // If no more simplification is needed, free all simplification-related data structures:
   if (turn_off_elim) {
     touched.clear();
-    occurs.clear(true);
+    occurs.clear();
     n_occ.clear();
     elim_heap.clear();
     subsumption_queue.clear();

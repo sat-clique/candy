@@ -341,84 +341,50 @@ public:
   }
 
   std::vector<Elem>& operator[](const Idx& idx) {
-    //    checkDuplicateSimp(toInt(idx));
     return occs[toInt(idx)];
   }
-  std::vector<Elem>& lookup(const Idx& idx){
+
+  std::vector<Elem>& lookup(const Idx& idx) {
     if (dirty[toInt(idx)]) clean(idx);
     return occs[toInt(idx)];
   }
 
   void smudge(const Idx& idx) {
-    //    checkDuplicates();
     if (dirty[toInt(idx)] == 0) {
       dirty[toInt(idx)] = 1;
       dirties.push_back(idx);
     }
-    //    checkDuplicates();
   }
 
   void cleanAll() {
-    //    checkDuplicates();
     for (int i = 0; i < (int)dirties.size(); i++)
       // Dirties may contain duplicates so check here if a variable is already cleaned:
-      if (dirty[toInt(dirties[i])])
+      //if (dirty[toInt(dirties[i])])
         clean(dirties[i]);
     dirties.clear();
-    //    checkDuplicates();
   }
 
-  void clean(const Idx& idx){
-    //    checkDuplicates();
+  void clean(const Idx& idx) {
     std::vector<Elem>& vec = occs[toInt(idx)];
-    int i, j;
-    for (i = j = 0; i < (int)vec.size(); i++)
-      if (!deleted(vec[i]))
-        vec[j++] = vec[i];
-    vec.resize(j);
+    auto end = std::remove_if(vec.begin(), vec.end(), [this](Elem e) { return deleted(e); });
+    vec.erase(end, vec.end());
     dirty[toInt(idx)] = 0;
-    //    checkDuplicates();
   }
 
   void copyTo(OccLists &copy) const {
-    //    checkDuplicates();
     copy.clear();
     copy.occs.resize(occs.size());
     for(int i = 0; i < (int)occs.size(); i++)
       copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());
     copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
     copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
-    //    checkDuplicates();
   }
 
-  void clear(bool free = true) {
-    (void)free;
-    //    checkDuplicates();
+  void clear() {
     for (std::vector<Elem>& v : occs) v.clear();
     occs.clear();
     dirty.clear();
     dirties.clear();
-    //    checkDuplicates();
-  }
-
-  void checkDuplicates() const {
-    for (int i = 0; i < (int)occs.size(); i++) {
-      checkDuplicate(i);
-    }
-  }
-
-  void checkDuplicate(int intdx) const {
-    for (int i = 0; i < occs[intdx].size(); i++) {
-      for (int j = i + 1; j < occs[intdx].size(); j++) {
-        assert(!(occs[intdx][i] == occs[intdx][j]));
-      }
-    }
-  }
-
-  void checkDuplicateSimp(int intdx) const {
-    for (int j = 1; j < occs[intdx].size(); j++) {
-      assert(!(occs[intdx][0] == occs[intdx][j]));
-    }
   }
 };
 
