@@ -181,7 +181,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
   return true;
 }
 
-void SimpSolver::removeClause(CRef cr, bool inPurgatory) {
+void SimpSolver::removeClause(CRef cr) {
   const Clause& c = ca[cr];
 
   if (use_simplification)
@@ -191,7 +191,7 @@ void SimpSolver::removeClause(CRef cr, bool inPurgatory) {
       occurs.smudge(var(c[i]));
     }
 
-  Solver::removeClause(cr, inPurgatory);
+  Solver::removeClause(cr);
 }
 
 bool SimpSolver::strengthenClause(CRef cr, Lit l) {
