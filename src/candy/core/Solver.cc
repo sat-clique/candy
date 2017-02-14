@@ -109,7 +109,7 @@ Solver::Solver() :
         curRestart(1),
 
         ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), watchesBin(WatcherDeleted(ca)), unaryWatches(WatcherDeleted(ca)), trail_size(0), qhead(0),
-        simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), progress_estimate(0), remove_satisfied(true), reduceOnSize(false),
+        simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false),
         reduceOnSizeSize(12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(CRef_Undef), MYFLAG(0),
         // Resource constraints:
         //
@@ -996,7 +996,7 @@ lbool Solver::search(int nof_conflicts) {
       if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
         printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n", (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
             (int) dec_vars - (int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), (int) clauses_literals, (int) nbReduceDB, nLearnts(),
-            (int) nbDL2, (int) nbRemovedClauses, progressEstimate() * 100);
+            (int) nbDL2, (int) nbRemovedClauses, -1.0);
       }
       if (decisionLevel() == 0) {
         return l_False;
@@ -1055,7 +1055,6 @@ lbool Solver::search(int nof_conflicts) {
       // Our dynamic restart, see the SAT09 competition compagnion paper
       if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
         lbdQueue.fastclear();
-        progress_estimate = progressEstimate();
         int bt = 0;
         if (incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
           bt = (decisionLevel() < (int) assumptions.size()) ? decisionLevel() : (int) assumptions.size();
@@ -1110,19 +1109,6 @@ lbool Solver::search(int nof_conflicts) {
     }
   }
   return l_Undef; // not reached
-}
-
-double Solver::progressEstimate() const {
-  double progress = 0;
-  double F = 1.0 / nVars();
-
-  for (int i = 0; i <= (int) decisionLevel(); i++) {
-    int beg = i == 0 ? 0 : trail_lim[i - 1];
-    int end = i == decisionLevel() ? trail_size : trail_lim[i];
-    progress += pow(F, i) * (end - beg);
-  }
-
-  return progress / nVars();
 }
 
 void Solver::printIncrementalStats() {
