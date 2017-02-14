@@ -343,12 +343,12 @@ inline unsigned int Solver::computeLBD(const vector<Lit>& lits, int end) {
     if (end == -1)
       end = lits.size();
     int nbDone = 0;
-    for (unsigned int i = 0; i < lits.size(); i++) {
-      if (nbDone >= end)
-        break;
-      if (isSelector(var(lits[i])))
+    for (unsigned int i = 0; i < lits.size() && nbDone < end; i++) {
+      if (isSelector(var(lits[i]))) {
         continue;
-      nbDone++;
+      } else {
+        nbDone++;
+      }
       int l = level(var(lits[i]));
       if (permDiff[l] != MYFLAG) {
         permDiff[l] = MYFLAG;
@@ -378,12 +378,12 @@ inline unsigned int Solver::computeLBD(const Clause &c) {
 
   if (incremental) { // ----------------- INCREMENTAL MODE
     unsigned int nbDone = 0;
-    for (int i = 0; i < c.size(); i++) {
-      if (nbDone >= c.sizeWithoutSelectors())
-        break;
-      if (isSelector(var(c[i])))
+    for (int i = 0; i < c.size() && nbDone < c.sizeWithoutSelectors(); i++) {
+      if (isSelector(var(c[i]))) {
         continue;
-      nbDone++;
+      } else {
+        nbDone++;
+      }
       int l = level(var(c[i]));
       if (permDiff[l] != MYFLAG) {
         permDiff[l] = MYFLAG;
@@ -451,7 +451,6 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
-
 void Solver::cancelUntil(int level) {
   if (decisionLevel() > level) {
     for (int c = trail_size - 1; c >= trail_lim[level]; c--) {
@@ -521,19 +520,18 @@ void Solver::analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit>&selectors,
   do {
     assert(confl != CRef_Undef); // (otherwise should be UIP)
     Clause& c = ca[confl];
-    // Special case for binary clauses
-    // The first one has to be SAT
-    if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
 
+    // Special case for binary clauses: The first one has to be SAT
+    if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
       assert(value(c[1]) == l_True);
-      Lit tmp = c[0];
-      c[0] = c[1], c[1] = tmp;
+      std::swap(c[0], c[1]);
     }
 
     if (c.learnt()) {
       parallelImportClauseDuringConflictAnalysis(c, confl);
       claBumpActivity(c);
-    } else { // original clause
+    }
+    else { // original clause
       if (!c.getSeen()) {
         originalClausesSeen++;
         c.setSeen(true);
@@ -555,37 +553,35 @@ void Solver::analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit>&selectors,
     for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
       Lit q = c[j];
 
-      if (!seen[var(q)]) {
-        if (level(var(q)) == 0) {
-        } else { // Here, the old case
-          if (!isSelector(var(q)))
-            varBumpActivity(var(q));
-          seen[var(q)] = 1;
-          if (level(var(q)) >= decisionLevel()) {
-            pathC++;
-            // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-            if (!isSelector(var(q)) && (reason(var(q)) != CRef_Undef) && ca[reason(var(q))].learnt())
-              lastDecisionLevel.push_back(q);
-          } else {
-            if (isSelector(var(q))) {
-              assert(value(q) == l_False);
-              selectors.push_back(q);
-            } else
-              out_learnt.push_back(q);
-          }
+      if (!seen[var(q)] && level(var(q)) != 0) {
+        if (!isSelector(var(q))) {
+          varBumpActivity(var(q));
+        }
+        seen[var(q)] = 1;
+        if (level(var(q)) >= decisionLevel()) {
+          pathC++;
+          // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+          if (!isSelector(var(q)) && (reason(var(q)) != CRef_Undef) && ca[reason(var(q))].learnt())
+            lastDecisionLevel.push_back(q);
+        } else {
+          if (isSelector(var(q))) {
+            assert(value(q) == l_False);
+            selectors.push_back(q);
+          } else
+            out_learnt.push_back(q);
         }
       }
     }
 
     // Select next clause to look at:
-    while (!seen[var(trail[index--])])
-      ;
-    p = trail[index + 1];
+    while (!seen[var(trail[index])]) index--;
+
+    p = trail[index];
     confl = reason(var(p));
     seen[var(p)] = 0;
     pathC--;
-
   } while (pathC > 0);
+
   out_learnt[0] = ~p;
 
   // Simplify conflict clause:
@@ -685,7 +681,6 @@ void Solver::analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit>&selectors,
 
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
-
 bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
   analyze_stack.clear();
   analyze_stack.push_back(p);
@@ -783,7 +778,14 @@ void Solver::uncheckedEnqueue(Lit p, CRef from) {
  |________________________________________________________________________________________________@*/
 CRef Solver::propagate() {
   CRef confl = CRef_Undef;
-  int num_props = 0;
+
+  int num_props = trail_size - qhead;
+  if (num_props > 0) {
+    propagations += num_props;
+    simpDB_props -= num_props;
+  } else {
+    return CRef_Undef;
+  }
 
   watches.cleanAll();
   watchesBin.cleanAll();
@@ -791,80 +793,70 @@ CRef Solver::propagate() {
 
   while (qhead < trail_size) {
     Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
-    vector<Watcher>& ws = watches[p];
-    num_props++;
 
-    // First, Propagate binary clauses
+    // Propagate binary clauses
     vector<Watcher>& wbin = watchesBin[p];
-
     for (unsigned int k = 0; k < wbin.size(); k++) {
       Lit imp = wbin[k].blocker;
-
       if (value(imp) == l_False) {
         return wbin[k].cref;
       }
-
       if (value(imp) == l_Undef) {
         uncheckedEnqueue(imp, wbin[k].cref);
       }
     }
 
-    // Now propagate other 2-watched clauses
-    vector<Watcher>::iterator i, j;
-    for (i = ws.begin(), j = ws.begin(); i != ws.end();) {
+    // Propagate other 2-watched clauses
+    vector<Watcher>& ws = watches[p];
+    vector<Watcher>::iterator keep = ws.begin();
+    for (vector<Watcher>::iterator wit = ws.begin(); wit != ws.end();) {
       // Try to avoid inspecting the clause:
-      Lit blocker = i->blocker;
+      Lit blocker = wit->blocker;
       if (value(blocker) == l_True) {
-        *j++ = *i++;
+        *keep++ = *wit++;
         continue;
       }
 
       // Make sure the false literal is data[1]:
-      CRef cr = i->cref;
+      CRef cr = wit->cref;
       Clause& c = ca[cr];
       assert(!c.getOneWatched());
-      Lit false_lit = ~p;
-      if (c[0] == false_lit)
-        c[0] = c[1], c[1] = false_lit;
-      assert(c[1] == false_lit);
-      i++;
+      if (c[0] == ~p) {
+        std::swap(c[0], c[1]);
+      }
+      assert(c[1] == ~p);
+
+      wit++;
 
       // If 0th watch is true, then clause is already satisfied.
-      Lit first = c[0];
-      Watcher w = Watcher(cr, first);
-      if (first != blocker && value(first) == l_True) {
-        *j++ = w;
+      Watcher w = Watcher(cr, c[0]);
+      if (c[0] != blocker && value(c[0]) == l_True) {
+        *keep++ = w;
         continue;
       }
-      if (incremental) { // ----------------- INCREMENTAL MODE
+
+      // Find another watching literal
+      if (incremental && decisionLevel() <= (int)assumptions.size()) {
+        // INCREMENTAL MODE
         int choosenPos = -1;
         for (int k = 2; k < c.size(); k++) {
-
           if (value(c[k]) != l_False) {
-            if (decisionLevel() > (int) assumptions.size()) {
-              choosenPos = k;
+            choosenPos = k;
+            if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
               break;
-            } else {
-              choosenPos = k;
-
-              if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
-                break;
-              }
-            }
-
+            } // or try to find better pos
           }
         }
         if (choosenPos != -1) {
-          c[1] = c[choosenPos];
-          c[choosenPos] = false_lit;
+          std::swap(c[1], c[choosenPos]);
           watches[~c[1]].push_back(w);
           goto NextClause;
         }
-      } else {  // ----------------- DEFAULT  MODE (NOT INCREMENTAL)
+      } else {
+        // DEFAULT MODE (NOT INCREMENTAL)
         for (int k = 2; k < c.size(); k++) {
           if (value(c[k]) != l_False) {
-            c[1] = c[k];
-            c[k] = false_lit;
+            std::swap(c[1], c[k]);
             watches[~c[1]].push_back(w);
             goto NextClause;
           }
@@ -872,29 +864,25 @@ CRef Solver::propagate() {
       }
 
       // Did not find watch -- clause is unit under assignment:
-      *j++ = w;
-      if (value(first) == l_False) {
+      *keep++ = w;
+      if (value(c[0]) == l_False) {
         confl = cr;
         qhead = trail_size;
         // Copy the remaining watches:
-        while (i != ws.end())
-          *j++ = *i++;
+        while (wit != ws.end())
+          *keep++ = *wit++;
       } else {
-        uncheckedEnqueue(first, cr);
+        uncheckedEnqueue(c[0], cr);
       }
       NextClause: ;
     }
-    ws.resize(ws.size() - (i - j));
+    ws.erase(keep, ws.end());
 
     // unaryWatches "propagation"
     if (useUnaryWatched && confl == CRef_Undef) {
       confl = propagateUnaryWatches(p);
     }
-
   }
-
-  propagations += num_props;
-  simpDB_props -= num_props;
 
   return confl;
 }
