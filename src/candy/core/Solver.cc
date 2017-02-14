@@ -95,30 +95,30 @@ static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "m
 // Constructor/Destructor:
 
 Solver::Solver() :
-    verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R),
-    sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
-    incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
-    lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
-    var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode),
-    phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
-    panicModeLastRemoved(0), panicModeLastRemovedShared(0), useUnaryWatched(false), promoteOneWatchedClause(true),
-// Statistics: (formerly in 'SolverStats')
-//
-    nbPromoted(0), originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbRemovedUnaryWatchedClauses(0), nbReducedClauses(0),
-    nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0),
-    nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),
-    curRestart(1),
+        verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R),
+        sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
+        incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
+        lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
+        var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode),
+        phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
+        useUnaryWatched(false), promoteOneWatchedClause(true),
+        // Statistics: (formerly in 'SolverStats')
+        //
+        nbPromoted(0), originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbRemovedUnaryWatchedClauses(0), nbReducedClauses(0),
+        nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0),
+        nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),
+        curRestart(1),
 
-    ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), watchesBin(WatcherDeleted(ca)), unaryWatches(WatcherDeleted(ca)), trail_size(0), qhead(0),
-    simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), progress_estimate(0), remove_satisfied(true), reduceOnSize(false),
-    reduceOnSizeSize(12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(CRef_Undef), MYFLAG(0),
-// Resource constraints:
-//
-    conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX),
-    totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0),
-// Added since Candy
-//
-		sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef)
+        ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted(ca)), watchesBin(WatcherDeleted(ca)), unaryWatches(WatcherDeleted(ca)), trail_size(0), qhead(0),
+        simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), progress_estimate(0), remove_satisfied(true), reduceOnSize(false),
+        reduceOnSizeSize(12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(CRef_Undef), MYFLAG(0),
+        // Resource constraints:
+        //
+        conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX),
+        totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0),
+        // Added since Candy
+        //
+        sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef)
 {
   lbdQueue.initSize(sizeLBDQueue);
   trailQueue.initSize(sizeTrailQueue);
@@ -528,7 +528,6 @@ void Solver::analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit>&selectors,
     }
 
     if (c.learnt()) {
-      parallelImportClauseDuringConflictAnalysis(c, confl);
       claBumpActivity(c);
     }
     else { // original clause
@@ -958,9 +957,6 @@ CRef Solver::propagateUnaryWatches(Lit p) {
       Lit tmp = c[1];
       c[1] = c[index], c[index] = tmp;
       attachClause(cr);
-      // TODO used in function ParallelSolver::reportProgressArrayImports
-      //Override :-(
-      //goodImportsFromThreads[ca[cr].importedFrom()]++;
       ca[cr].setOneWatched(false);
       ca[cr].setExported(2);
     }
@@ -1096,22 +1092,13 @@ lbool Solver::search(int nof_conflicts) {
   bool blocked = false;
   starts++;
   for (;;) {
-	sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
+    sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
-    if (decisionLevel() == 0) { // We import clauses FIXME: ensure that we will import clauses enventually (restart after some point)
-      parallelImportUnaryClauses();
-
-      if (parallelImportClauses())
-        return l_False;
-    }
     CRef confl = propagate();
     sonification.assignmentLevel(nAssigns());
 
     if (confl != CRef_Undef) {
       sonification.conflictLevel(decisionLevel());
-
-      if (parallelJobIsFinished())
-        return l_Undef;
 
       sumDecisionLevels += decisionLevel();
       // CONFLICT
@@ -1163,7 +1150,6 @@ lbool Solver::search(int nof_conflicts) {
       if (learnt_clause.size() == 1) {
         uncheckedEnqueue(learnt_clause[0]);
         nbUn++;
-        parallelExportUnaryClause(learnt_clause[0]);
       } else {
         CRef cr = ca.alloc(learnt_clause, true);
         ca[cr].setLBD(nblevels);
@@ -1175,8 +1161,7 @@ lbool Solver::search(int nof_conflicts) {
           nbBin++; // stats
         learnts.push_back(cr);
         attachClause(cr);
-        lastLearntClause = cr; // Use in multithread (to hard to put inside ParallelSolver)
-        parallelExportClauseDuringSearch(ca[cr]);
+        lastLearntClause = cr;
         claBumpActivity(ca[cr]);
         uncheckedEnqueue(learnt_clause[0], cr);
       }
@@ -1203,8 +1188,7 @@ lbool Solver::search(int nof_conflicts) {
         if (learnts.size() > 0) {
           curRestart = (conflicts / nbclausesbeforereduce) + 1;
           reduceDB();
-          if (!panicModeIsEnabled())
-            nbclausesbeforereduce += incReduceDB;
+          nbclausesbeforereduce += incReduceDB;
         }
       }
 
@@ -1321,7 +1305,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
   // Search:
   int curr_restarts = 0;
   while (status == l_Undef) {
-	sonification.restart();
+    sonification.restart();
     status = search(0); // the parameter is useless in glucose, kept to allow modifications
 
     if (!withinBudget())
@@ -1423,34 +1407,4 @@ void Solver::garbageCollect() {
   if (verbosity >= 2)
     printf("|  Garbage collection:   %12d bytes => %12d bytes             |\n", ca.size() * ClauseAllocator::Unit_Size, to.size() * ClauseAllocator::Unit_Size);
   to.moveTo(ca);
-}
-
-//--------------------------------------------------------------
-// Functions related to MultiThread.
-// Useless in case of single core solver (aka original glucose)
-// Keep them empty if you just use core solver
-//--------------------------------------------------------------
-
-bool Solver::panicModeIsEnabled() {
-  return false;
-}
-
-void Solver::parallelImportUnaryClauses() {
-}
-
-bool Solver::parallelImportClauses() {
-  return false;
-}
-
-void Solver::parallelExportUnaryClause(Lit p) {
-}
-void Solver::parallelExportClauseDuringSearch(Clause &c) {
-}
-
-bool Solver::parallelJobIsFinished() {
-  // Parallel: another job has finished let's quit
-  return false;
-}
-
-void Solver::parallelImportClauseDuringConflictAnalysis(Clause &c, CRef confl) {
 }
