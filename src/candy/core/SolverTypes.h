@@ -164,7 +164,7 @@ class Clause {
     unsigned seen       : 1;
     unsigned reloced    : 1;
     unsigned exported   : 2; // Values to keep track of the clause status for exportations
-    unsigned oneWatched : 1;
+    unsigned _unusedBit : 1;
     unsigned lbd : BITS_LBD;
   }  header;
 
@@ -184,7 +184,7 @@ class Clause {
     header.lbd = 0;
     header.canbedel = 1;
     header.exported = 0;
-    header.oneWatched = 0;
+    header._unusedBit = 0;
     header.seen = 0;
     for (int i = 0; i < (int)ps.size(); i++)
       data[i].lit = ps[i];
@@ -254,8 +254,6 @@ public:
   bool getSeen() {return header.seen;}
   void setExported(unsigned int b) {header.exported = b;}
   unsigned int getExported() {return header.exported;}
-  void setOneWatched(bool b) {header.oneWatched = b;}
-  bool getOneWatched() {return header.oneWatched;}
   void setSizeWithoutSelectors   (unsigned int n)              {header.szWithoutSelectors = n; }
   unsigned int        sizeWithoutSelectors   () const        { return header.szWithoutSelectors; }
 
@@ -324,7 +322,6 @@ public:
       to[cr].activity() = c.activity();
       to[cr].setLBD(c.lbd());
       to[cr].setExported(c.getExported());
-      to[cr].setOneWatched(c.getOneWatched());
       to[cr].setSeen(c.getSeen());
       to[cr].setSizeWithoutSelectors(c.sizeWithoutSelectors());
       to[cr].setCanBeDel(c.canBeDel());

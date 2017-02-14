@@ -172,7 +172,7 @@ class SimpSolver : public Solver {
     bool          eliminateVar             (Var v);
     void          extendModel              ();
 
-    void          removeClause             (CRef cr,bool inPurgatory=false);
+    void          removeClause             (CRef cr);
     bool          strengthenClause         (CRef cr, Lit l);
     void          cleanUpClauses           ();
     bool          implied                  (const vector<Lit>& c);

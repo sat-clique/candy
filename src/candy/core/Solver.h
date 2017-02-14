@@ -89,7 +89,7 @@ public:
   bool addClause(Lit p); // Add a unit clause to the solver.
   bool addClause(Lit p, Lit q); // Add a binary clause to the solver.
   bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-  virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will
+  virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will change ps
   void addClauses(Candy::CNFProblem dimacs);
 
   // use with care (written for solver tests only)
@@ -162,6 +162,7 @@ public:
   void initNbInitialVars(int nb);
   void printIncrementalStats();
   bool isIncremental();
+
   // Resource contraints:
   //
   void setConfBudget(int64_t x);
@@ -178,15 +179,14 @@ public:
 
   // Extra results: (read-only member variable)
   //
-  vector<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
-  vector<Lit> conflict;          // If problem is unsatisfiable (possibly under assumptions),
-  // this vector represent the final conflict clause expressed in the assumptions.
+  vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
+  vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
   // Mode of operation:
   //
   int verbosity;
   int verbEveryConflicts;
-  int showModel;
+  int showModel;// deprecated: can go to main
 
   // Constants For restarts
   double K;
@@ -221,16 +221,12 @@ public:
   FILE* certifiedOutput;
   bool certifiedUNSAT;
 
-  bool useUnaryWatched;            // Enable unary watched literals
-  bool promoteOneWatchedClause;    // One watched clauses are promotted to two watched clauses if found empty
-
   // Statistics: (read-only member variable)
-  uint64_t nbPromoted;          // Number of clauses from unary to binary watch scheme
   uint64_t originalClausesSeen; // Number of original clauses seen
   uint64_t sumDecisionLevels;
   //
-  uint64_t nbRemovedClauses, nbRemovedUnaryWatchedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB, solves, starts, decisions, rnd_decisions,
-      propagations, conflicts, conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
+  uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB, solves, starts, decisions, rnd_decisions,
+    propagations, conflicts, conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
   uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
   void setTermCallback(void* state, int (*termCallback)(void*)) {
@@ -258,7 +254,7 @@ protected:
     Watcher() : cref(0), blocker(lit_Undef) {
     }
     Watcher(CRef cr, Lit p) :
-        cref(cr), blocker(p) {
+      cref(cr), blocker(p) {
     }
     bool operator==(const Watcher& w) const {
       return cref == w.cref;
@@ -296,7 +292,6 @@ protected:
   OccLists<Lit, Watcher, WatcherDeleted> unaryWatches;       //  Unary watch scheme (clauses are seen when they become empty
   vector<CRef> clauses;          // List of problem clauses.
   vector<CRef> learnts;          // List of learnt clauses.
-  vector<CRef> unaryWatchedClauses;  // List of imported clauses (after the purgatory) // TODO put inside ParallelSolver
 
   vector<lbool> assigns;          // The current assignments.
   vector<char> polarity;         // The preferred polarity of each variable.
@@ -365,7 +360,6 @@ protected:
   void uncheckedEnqueue(Lit p, CRef from = CRef_Undef); // Enqueue a literal. Assumes value of literal is undefined.
   bool enqueue(Lit p, CRef from = CRef_Undef); // Test if fact 'p' contradicts current state, enqueue otherwise.
   CRef propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-  CRef propagateUnaryWatches(Lit p); // Perform propagation on unary watches of p, can find only conflicts
   void cancelUntil(int level); // Backtrack until a certain level.
   void analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit> & selectors, int& out_btlevel, unsigned int &nblevels, unsigned int &szWithoutSelectors); // (bt = backtrack)
   void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -388,9 +382,7 @@ protected:
   //
   void attachClause(CRef cr); // Attach a clause to watcher lists.
   void detachClause(CRef cr, bool strict = false); // Detach a clause to watcher lists.
-  void detachClausePurgatory(CRef cr, bool strict = false);
-  void attachClausePurgatory(CRef cr);
-  void removeClause(CRef cr, bool inPurgatory = false); // Detach and free a clause.
+  void removeClause(CRef cr); // Detach and free a clause.
   bool locked(const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
   bool satisfied(const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
@@ -641,7 +633,7 @@ struct reduceDB_lt {
   ClauseAllocator& ca;
 
   reduceDB_lt(ClauseAllocator& ca_) :
-      ca(ca_) {
+    ca(ca_) {
   }
 
   bool operator()(CRef x, CRef y) {

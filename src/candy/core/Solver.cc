@@ -101,10 +101,9 @@ Solver::Solver() :
         lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
         var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode),
         phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
-        useUnaryWatched(false), promoteOneWatchedClause(true),
         // Statistics: (formerly in 'SolverStats')
         //
-        nbPromoted(0), originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbRemovedUnaryWatchedClauses(0), nbReducedClauses(0),
+        originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0),
         nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0),
         nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),
         curRestart(1),
@@ -252,13 +251,6 @@ void Solver::attachClause(CRef cr) {
     clauses_literals += c.size();
 }
 
-void Solver::attachClausePurgatory(CRef cr) {
-  const Clause& c = ca[cr];
-  assert(c.size() > 1);
-
-  unaryWatches[~c[0]].push_back(Watcher(cr, c[1]));
-}
-
 void Solver::detachClause(CRef cr, bool strict) {
   const Clause& c = ca[cr];
   assert(c.size() > 1);
@@ -288,19 +280,7 @@ void Solver::detachClause(CRef cr, bool strict) {
     clauses_literals -= c.size();
 }
 
-// The purgatory is the 1-Watched scheme for imported clauses
-
-void Solver::detachClausePurgatory(CRef cr, bool strict) {
-  const Clause& c = ca[cr];
-
-  assert(c.size() > 1);
-  if (strict)
-    remove(unaryWatches[~c[0]], Watcher(cr, c[1]));
-  else
-    unaryWatches.smudge(~c[0]);
-}
-
-void Solver::removeClause(CRef cr, bool inPurgatory) {
+void Solver::removeClause(CRef cr) {
   Clause& c = ca[cr];
 
   if (certifiedUNSAT) {
@@ -309,11 +289,7 @@ void Solver::removeClause(CRef cr, bool inPurgatory) {
       fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
     fprintf(certifiedOutput, "0\n");
   }
-
-  if (inPurgatory)
-    detachClausePurgatory(cr);
-  else
-    detachClause(cr);
+  detachClause(cr);
   // Don't leave pointers to free'd memory!
   if (locked(c))
     vardata[var(c[0])].reason = CRef_Undef;
@@ -819,7 +795,6 @@ CRef Solver::propagate() {
       // Make sure the false literal is data[1]:
       CRef cr = wit->cref;
       Clause& c = ca[cr];
-      assert(!c.getOneWatched());
       if (c[0] == ~p) {
         std::swap(c[0], c[1]);
       }
@@ -876,93 +851,7 @@ CRef Solver::propagate() {
       NextClause: ;
     }
     ws.erase(keep, ws.end());
-
-    // unaryWatches "propagation"
-    if (useUnaryWatched && confl == CRef_Undef) {
-      confl = propagateUnaryWatches(p);
-    }
   }
-
-  return confl;
-}
-
-/*_________________________________________________________________________________________________
- |
- |  propagateUnaryWatches : [Lit]  ->  [Clause*]
- |
- |  Description:
- |    Propagates unary watches of Lit p, return a conflict
- |    otherwise CRef_Undef
- |
- |________________________________________________________________________________________________@*/
-
-CRef Solver::propagateUnaryWatches(Lit p) {
-  CRef confl = CRef_Undef;
-  vector<Watcher>& ws = unaryWatches[p];
-  vector<Watcher>::iterator it, j;
-  for (it = ws.begin(), j = ws.begin(); it != ws.end();) {
-    // Try to avoid inspecting the clause:
-    Lit blocker = it->blocker;
-    if (value(blocker) == l_True) {
-      *j++ = *it++;
-      continue;
-    }
-
-    // Make sure the false literal is data[1]:
-    CRef cr = (*it).cref;
-    Clause& c = ca[cr];
-    assert(c.getOneWatched());
-    Lit false_lit = ~p;
-    assert(c[0] == false_lit); // this is unary watch... No other choice if "propagated"
-    //if (c[0] == false_lit)
-    //c[0] = c[1], c[1] = false_lit;
-    //assert(c[1] == false_lit);
-    it++;
-    Watcher w = Watcher(cr, c[0]);
-    for (int k = 1; k < c.size(); k++) {
-      if (value(c[k]) != l_False) {
-        c[0] = c[k];
-        c[k] = false_lit;
-        unaryWatches[~c[0]].push_back(w);
-        goto NextClauseUnary;
-      }
-    }
-
-    // Did not find watch -- clause is empty under assignment:
-    *j++ = w;
-
-    confl = cr;
-    qhead = trail_size;
-    // Copy the remaining watches:
-    while (it != ws.end())
-      *j++ = *it++;
-
-    // We can add it now to the set of clauses when backtracking
-    //printf("*");
-    if (promoteOneWatchedClause) {
-      nbPromoted++;
-      // Let's find the two biggest decision levels in the clause s.t. it will correctly be propagated when we'll backtrack
-      int maxlevel = -1;
-      int index = -1;
-      for (int k = 1; k < c.size(); k++) {
-        assert(value(c[k]) == l_False);
-        assert(level(var(c[k])) <= level(var(c[0])));
-        if (level(var(c[k])) > maxlevel) {
-          index = k;
-          maxlevel = level(var(c[k]));
-        }
-      }
-      detachClausePurgatory(cr, true); // TODO: check that the cleanAll is ok (use ",true" otherwise)
-      assert(index != -1);
-      Lit tmp = c[1];
-      c[1] = c[index], c[index] = tmp;
-      attachClause(cr);
-      ca[cr].setOneWatched(false);
-      ca[cr].setExported(2);
-    }
-    NextClauseUnary: ;
-  }
-  ws.resize(ws.size() - (it - j));
 
   return confl;
 }
@@ -1015,10 +904,7 @@ void Solver::removeSatisfied(vector<CRef>& cs) {
   for (i = j = 0; i < cs.size(); i++) {
     Clause& c = ca[cs[i]];
     if (satisfied(c))
-      if (c.getOneWatched())
-        removeClause(cs[i], true);
-      else
-        removeClause(cs[i]);
+      removeClause(cs[i]);
     else
       cs[j++] = cs[i];
   }
@@ -1058,7 +944,6 @@ bool Solver::simplify() {
 
   // Remove satisfied clauses:
   removeSatisfied(learnts);
-  removeSatisfied(unaryWatchedClauses);
   if (remove_satisfied) // Can be turned off.
     removeSatisfied(clauses);
   checkGarbage();
@@ -1153,7 +1038,6 @@ lbool Solver::search(int nof_conflicts) {
       } else {
         CRef cr = ca.alloc(learnt_clause, true);
         ca[cr].setLBD(nblevels);
-        ca[cr].setOneWatched(false);
         ca[cr].setSizeWithoutSelectors(szWithoutSelectors);
         if (nblevels <= 2)
           nbDL2++; // stats
@@ -1393,9 +1277,6 @@ void Solver::relocAll(ClauseAllocator& to) {
   //
   for (unsigned int i = 0; i < clauses.size(); i++)
     ca.reloc(clauses[i], to);
-
-  for (unsigned int i = 0; i < unaryWatchedClauses.size(); i++)
-    ca.reloc(unaryWatchedClauses[i], to);
 }
 
 void Solver::garbageCollect() {
