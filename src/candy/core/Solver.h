@@ -306,7 +306,6 @@ protected:
   int64_t simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
   vector<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
   Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
-  double progress_estimate;       // Set by 'search()'.
   bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
   bool reduceOnSize;
   int reduceOnSizeSize;                // See XMinisat paper
@@ -398,7 +397,6 @@ protected:
   uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
   CRef reason(Var x) const;
   int level(Var x) const;
-  double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
   bool withinBudget() const;
   inline bool isSelector(Var v) {
     return (incremental && v >= nbVarsInitialFormula);
