@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,8 @@
 #include <randomsimulation/RandomSimulator.h>
 #include <gates/GateAnalyzer.h>
 
-#include "TestGateStructure.h"
+#include <testutils/TestGateStructure.h>
+#include <testutils/TestUtils.h>
 #include "TestUtils.h"
 
 namespace Candy {

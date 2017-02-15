@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 // TODO: documentation
 
 #include "Propagation.h"
+
+#include <utils/MemUtils.h>
 
 #include "ClauseOrder.h"
 #include "SimulationVector.h"
@@ -114,6 +116,6 @@ namespace Candy {
     
     
     std::unique_ptr<Propagation> createInputToOutputPropagation() {
-        return std::unique_ptr<Propagation>(new InputToOutputPropagation());
+        return backported_std::make_unique<InputToOutputPropagation>();
     }
 }

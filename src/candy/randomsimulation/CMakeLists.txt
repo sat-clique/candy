@@ -12,6 +12,7 @@ add_library(randomsimulation
     Propagation.cc
     Propagation.h
     Conjectures.cc
-    Conjectures.h)
+    Conjectures.h
+    GateDFSVisitor.h)
 
 target_compile_options(randomsimulation PRIVATE -Wextra)

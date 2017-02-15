@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -27,6 +27,8 @@
 #include "RandomSimulator.h"
 
 #include <cassert>
+
+#include <utils/MemUtils.h>
 
 #include "ClauseOrder.h"
 #include "Partition.h"
@@ -110,7 +112,7 @@ namespace Candy {
     {
     }
     
-    static std::vector<Glucose::Var> variables(const std::vector<Glucose::Lit> literals) {
+    static std::vector<Glucose::Var> variables(const std::vector<Glucose::Lit>& literals) {
         std::vector<Glucose::Var> result;
         for (auto lit : literals) {
             result.push_back(Glucose::var(lit));
@@ -135,19 +137,20 @@ namespace Candy {
     }
     
     Conjectures BitparallelRandomSimulator::run() {
-        assert (m_abortThreshold >= 0.0f); // TODO: this violates Liskov substitution
+        assert (m_abortThreshold >= 0.0f);
         return runImpl(false, 0);
     }
     
     Conjectures BitparallelRandomSimulator::run(unsigned int nSteps) {
+        assert (nSteps > 0);
         return runImpl(true, nSteps);
     }
     
     Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps) {
         ensureInitialized();
         
-        assert (nSteps % SimulationVector::VARSIMVECVARS == 0);  // TODO: this violates Liskov substitution
         unsigned int realSteps = nSteps / (SimulationVector::VARSIMVECVARS);
+        realSteps += (nSteps % SimulationVector::VARSIMVECVARS == 0 ? 0 : 1);
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
         
@@ -265,18 +268,18 @@ namespace Candy {
             m_clauseOrderStrat->setGateFilter(std::move(gateFilter));
         }
         
-        return std::unique_ptr<RandomSimulator>(new BitparallelRandomSimulator(std::move(m_clauseOrderStrat),
-                                                            std::move(m_partitionStrat),
-                                                            std::move(m_randomizationStrat),
-                                                            std::move(m_propagationStrat),
-                                                            *m_gateAnalyzer,
-                                                            m_reductionRateAbortThreshold));
+        return backported_std::make_unique<BitparallelRandomSimulator>(std::move(m_clauseOrderStrat),
+                                                                       std::move(m_partitionStrat),
+                                                                       std::move(m_randomizationStrat),
+                                                                       std::move(m_propagationStrat),
+                                                                       *m_gateAnalyzer,
+                                                                       m_reductionRateAbortThreshold);
     }
     
 
     
     std::unique_ptr<RandomSimulatorBuilder> createDefaultRandomSimulatorBuilder() {
-        return std::unique_ptr<RandomSimulatorBuilder>(new BitparallelRandomSimulatorBuilder());
+        return backported_std::make_unique<BitparallelRandomSimulatorBuilder>();
     }
     
     std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer) {
