@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,10 @@
 #include <memory>
 #include <unordered_map>
 #include <iostream>
+#include <cstdint>
 
 #include <utils/FastRand.h>
+#include <utils/MemUtils.h>
 
 #include "SimulationVector.h"
 #include "Conjectures.h"
@@ -64,7 +66,7 @@ namespace Candy {
     public:
         bool shouldCompress(unsigned int round) override;
         
-        LinearCompressionScheduleStrategy(unsigned int freq);
+        explicit LinearCompressionScheduleStrategy(unsigned int freq);
         virtual ~LinearCompressionScheduleStrategy();
         LinearCompressionScheduleStrategy(const LinearCompressionScheduleStrategy& other) = delete;
         LinearCompressionScheduleStrategy& operator=(const LinearCompressionScheduleStrategy &other) = delete;
@@ -139,15 +141,15 @@ namespace Candy {
     
     
     std::unique_ptr<CompressionScheduleStrategy> createLinearCompressionScheduleStrategy(unsigned int freq) {
-        return std::unique_ptr<CompressionScheduleStrategy>(new LinearCompressionScheduleStrategy(freq));
+        return backported_std::make_unique<LinearCompressionScheduleStrategy>(freq);
     }
     
     std::unique_ptr<CompressionScheduleStrategy> createLogCompressionScheduleStrategy() {
-        return std::unique_ptr<CompressionScheduleStrategy>(new LogCompressionScheduleStrategy());
+        return backported_std::make_unique<LogCompressionScheduleStrategy>();
     }
     
     std::unique_ptr<CompressionScheduleStrategy> createNullCompressionScheduleStrategy() {
-        return std::unique_ptr<CompressionScheduleStrategy>(new NullCompressionScheduleStrategy());
+        return backported_std::make_unique<NullCompressionScheduleStrategy>();
     }
     
     
@@ -156,7 +158,7 @@ namespace Candy {
     
     class DefaultPartition : public Partition {
     public:
-        DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched);
+        explicit DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched);
         
         void setVariables(const std::vector<Glucose::Var> &variables) override;
         void update(const SimulationVectors &assignment) override;
@@ -212,14 +214,19 @@ namespace Candy {
         std::vector<Glucose::Var> m_variables;
         
         std::unique_ptr<CompressionScheduleStrategy> m_compressionSched;
-        unsigned int m_correlationCount;
+        std::uint64_t m_correlationCount;
         
         float m_reductionRate = 1.0f;
     };
     
     DefaultPartition::DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched)
-    : Partition(), m_round(0), m_partitioningPos({}), m_partitioningNeg({}), m_variables({}),
-    m_compressionSched(std::move(compressionSched)), m_correlationCount(0) {
+    : Partition(),
+    m_round(0),
+    m_partitioningPos({}),
+    m_partitioningNeg({}),
+    m_variables({}),
+    m_compressionSched(std::move(compressionSched)),
+    m_correlationCount(0) {
         
     }
     
@@ -253,6 +260,7 @@ namespace Candy {
         for (size_t peIdx = 0; peIdx < m_partitioningPos.size(); ++peIdx) {
             PartitionEntry &partitionEntry = m_partitioningPos[peIdx];
             bool bbBefore = partitionEntry.backbone;
+            (void)bbBefore; // prevents release-mode compiler warning about unused variable (see assertion below)
             auto &simVec = varAssignments.getConst(partitionEntry.varId);
             
             for (size_t svIdx = (isInitialUpdate ? 1 : 0); svIdx < SimulationVector::VARSIMVECSIZE;
@@ -360,23 +368,25 @@ namespace Candy {
                 peNeg.groupId = varIdToNegGroupId[partitionEntry.varId];
                 peNeg.polarity = 0;
                 peNeg.backbone = 0;
+                peNeg.backboneVal = 0;
                 m_partitioningNeg[rewriteIndex] = peNeg;
                 
                 ++rewriteIndex;
             }
         }
         
-        
-        size_t partitionSize = partition.size();
+        // actually computing 2*m_correlationCount, which is okay for computing the reduction rate
+        // because the factor 2 is canceled out.
+        std::uint64_t partitionSize = partition.size();
         if (partition[0].backbone) {
-            m_correlationCount += 2 * partition.size();
+            m_correlationCount += 2 * partitionSize;
         }
         else if (!allNegativePolarity && !allPositivePolarity) {
             // A mirroring partition exists for which this condition is true as well
-            m_correlationCount += ((partition.size() * partitionSize) - partitionSize)/2;
+            m_correlationCount += ((partitionSize * partitionSize) - partitionSize)/2;
         }
         else if (allPositivePolarity) {
-            m_correlationCount += ((partition.size() * partitionSize) - partitionSize);
+            m_correlationCount += ((partitionSize * partitionSize) - partitionSize);
         }
     }
 
@@ -465,7 +475,7 @@ namespace Candy {
                 }
                 // TODO: del? setIsSweepingArtifactVariable(partitionEntry.varId, true);
             }
-            if (conj.getLits().size() >= 2) {
+            if (conj.size() >= 2) {
                 target.addEquivalence(conj);
             }
         }
@@ -514,10 +524,10 @@ namespace Candy {
     }
     
     std::unique_ptr<Partition> createDefaultPartition() {
-        return createDefaultPartition(std::unique_ptr<CompressionScheduleStrategy>(new LogCompressionScheduleStrategy()));
+        return createDefaultPartition(backported_std::make_unique<LogCompressionScheduleStrategy>());
     }
     
     std::unique_ptr<Partition> createDefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionScheduleStrategy) {
-        return std::unique_ptr<Partition>(new DefaultPartition(std::move(compressionScheduleStrategy)));
+        return backported_std::make_unique<DefaultPartition>(std::move(compressionScheduleStrategy));
     }
 }

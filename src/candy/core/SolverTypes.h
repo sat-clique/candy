@@ -57,6 +57,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector>
 #include <algorithm>
+#include <functional>
 
 #include "mtl/Alg.h"
 #include "mtl/Alloc.h"
@@ -448,6 +449,25 @@ using Var = Glucose::Var;
 using Lit = Glucose::Lit;
 typedef std::vector<Lit> Cl;
 typedef std::vector<Cl*> For;
+}
+
+
+// add std::hash template specialization
+namespace std {
+    
+    template <>
+    struct hash<Candy::Lit>
+    {
+        std::size_t operator()(const Candy::Lit& key) const
+        {
+            Candy::Var hashedVar = Glucose::var(key);
+            if (Glucose::sign(key) == 0) {
+                hashedVar = ~hashedVar;
+            }
+            return std::hash<Candy::Var>()(hashedVar);
+        }
+    };
+    
 }
 
 

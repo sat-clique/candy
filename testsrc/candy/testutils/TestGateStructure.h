@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ namespace Candy {
     /**
      * \class GateStructureBuilder
      *
-     * \ingroup RandomSimulation
+     * \ingroup TestUtils
      *
      * \brief A builder for gate structure encodings.
      */
@@ -71,6 +71,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup TestUtils
+     *
      * Creates a gate-structure builder without Plaisted-Greenbaum encoding.
      */
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder();
