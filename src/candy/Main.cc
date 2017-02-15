@@ -497,7 +497,8 @@ int main(int argc, char** argv) {
 
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
   }
-  catch (OutOfMemoryException&) {
+  catch (std::bad_alloc& ba){
+    //printf("c Bad_Alloc Caught: %s\n", ba.what());
     printf("c =========================================================================================================\n");
     printf("s INDETERMINATE\n");
     return 0;
