@@ -118,7 +118,6 @@ Solver::Solver() :
                 conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
                                 0.), nbSatCalls(0), nbUnsatCalls(0),
                 // Added since Candy
-                //
                 sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
     lbdQueue.initSize(sizeLBDQueue);
     trailQueue.initSize(sizeTrailQueue);
@@ -248,10 +247,12 @@ void Solver::attachClause(CRef cr) {
         watches[~c[0]].push_back(Watcher(cr, c[1]));
         watches[~c[1]].push_back(Watcher(cr, c[0]));
     }
-    if (c.learnt())
+
+    if (c.learnt()) {
         learnts_literals += c.size();
-    else
+    } else {
         clauses_literals += c.size();
+    }
 }
 
 void Solver::detachClause(CRef cr, bool strict) {
@@ -1183,7 +1184,6 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     while (status == l_Undef) {
         sonification.restart();
         status = search(0); // the parameter is useless in glucose, kept to allow modifications
-
         if (!withinBudget())
             break;
         curr_restarts++;
