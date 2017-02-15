@@ -102,7 +102,7 @@ public:
 
   void readClause(Cl& in) {
     Cl* lits = new Cl(in);
-    maxVars = var(*std::max_element(in.begin(), in.end()))+1;
+    maxVars = std::max(maxVars, var(*std::max_element(in.begin(), in.end()))+1);
     problem.push_back(lits);
   }
 
