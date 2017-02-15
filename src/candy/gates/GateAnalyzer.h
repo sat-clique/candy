@@ -104,6 +104,7 @@ private:
   // problem to analyze:
   CNFProblem problem;
   Glucose::Solver solver;
+  vector<Lit> assumptions;
 
   // control structures:
   vector<For> index; // occurrence lists
