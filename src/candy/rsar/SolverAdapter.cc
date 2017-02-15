@@ -54,7 +54,7 @@ namespace Candy {
         }
         
         void insertClauses(const CNFProblem &problem) override {
-            m_solver.insertClauses(problem);
+            m_solver.addClauses(problem);
         }
         
         void setFrozen(Var variable, bool frozen) override {
