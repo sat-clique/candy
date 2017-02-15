@@ -22,7 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define Glucose_Heap_h
 
 #include <vector>
-#include <cassert>
+#include <assert.h>
 
 using namespace std;
 
