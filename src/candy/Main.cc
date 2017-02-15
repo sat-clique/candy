@@ -52,6 +52,8 @@
 #include <signal.h>
 #include <zlib.h>
 #include <sys/resource.h>
+#include <string>
+#include <stdexcept>
 
 #include "core/CNFProblem.h"
 #include "utils/System.h"
@@ -60,6 +62,7 @@
 #include "simp/SimpSolver.h"
 
 #include "gates/GateAnalyzer.h"
+#include "rsar/ARSolver.h"
 
 using namespace Glucose;
 
@@ -311,6 +314,25 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
   }
 }
 
+
+struct RandomSimulationArguments {
+    const int nRounds;
+    const double rrat;
+    const bool filterConjecturesBySize;
+    const int maxConjectureSize;
+    const bool removeBackboneConjectures;
+    const bool filterGatesByNonmono;
+};
+
+struct RSARArguments {
+    const bool useRSAR;
+    const int maxRefinementSteps;
+    const Candy::SimplificationHandlingMode simplificationHandlingMode;
+    const bool withCoverageHeuristic;
+    const std::string coverageHeuristicConfiguration;
+};
+
+
 struct GlucoseArguments {
   const int verb;
   const bool mod;
@@ -327,7 +349,25 @@ struct GlucoseArguments {
   const char *opt_certified_file;
 
   const GateRecognitionArguments gateRecognitionArgs;
+  const RandomSimulationArguments randomSimulationArgs;
+  const RSARArguments rsarArgs;
 };
+
+static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str) {
+    if (str == "DISABLE") {
+        return Candy::SimplificationHandlingMode::DISABLE;
+    }
+    if (str == "FREEZE") {
+        return Candy::SimplificationHandlingMode::FREEZE;
+    }
+    if (str == "RESTRICT") {
+        return Candy::SimplificationHandlingMode::RESTRICT;
+    }
+    if (str == "FULL") {
+        return Candy::SimplificationHandlingMode::FULL;
+    }
+    throw std::invalid_argument(str);
+}
 
 static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
   setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
@@ -357,14 +397,41 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
   IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
   BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", false);
 
+
+  IntOption opt_rs_nrounds("RANDOMSIMULATION", "rs-rounds",
+                           "Amount of random simulation rounds (multiples of 2048)", 0, IntRange(0, INT32_MAX));
+  DoubleOption opt_rs_rrat("RANDOMSIMULATION", "rs-rrat",
+                           "Reduction rate abort threshold", 0.01, DoubleRange(0.0f, true, 1.0f, false));
+  IntOption opt_rs_filterConjBySize("RANDOMSIMULATION", "rs-max-conj-size",
+                                    "Max. allowed literal equivalence conjecture size (0: disable filtering by size)",
+                                    0, IntRange(0, INT32_MAX));
+  BoolOption opt_rs_removeBackboneConj("RANDOMSIMULATION", "rs-remove-backbone-conj",
+                                       "Filter out conjectures about the problem's backbone", false);
+  BoolOption opt_rs_filterGatesByNonmono("RANDOMSIMULATION", "rs-only-nonmono-gates",
+                                         "Use only nonmonotonously nested gates for random simulation", false);
+
+  BoolOption opt_rsar_enable("RSAR", "rsar-enable", "Enable random-simulation-based abstraction refinement SAT solving",
+                             false);
+  IntOption opt_rsar_maxRefinementSteps("RSAR", "rsar-max-refinements", "Max. refinement steps", 10, IntRange(1, INT32_MAX));
+  StringOption opt_rsar_simpMode("RSAR", "rsar-simpmode", "Simplification handling mode", "RESTRICT");
+  StringOption opt_rsar_coverageHeurConf("RSAR", "rsar-heur-cov", "Coverage heuristic configuration", "");
+
   parseOptions(argc, argv, true);
 
   GateRecognitionArguments gateRecognitionArgs {opt_gr_tries, opt_gr_patterns, opt_gr_semantic,
     opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold,
     opt_print_gates};
 
+  RandomSimulationArguments rsArgs {opt_rs_nrounds, opt_rs_rrat, opt_rs_filterConjBySize > 0,
+    opt_rs_filterConjBySize, opt_rs_removeBackboneConj, opt_rs_filterGatesByNonmono };
+
+  RSARArguments rsarArgs {opt_rsar_enable, opt_rsar_maxRefinementSteps,
+      parseSimplificationHandlingMode(std::string{opt_rsar_simpMode}),
+      std::string{opt_rsar_coverageHeurConf} != "",
+      std::string{opt_rsar_coverageHeurConf}};
+
   GlucoseArguments result {verb, mod, vv, cpu_lim, mem_lim, do_solve, do_preprocess, do_certified, do_gaterecognition,
-    opt_certified_file, gateRecognitionArgs};
+    opt_certified_file, gateRecognitionArgs, rsArgs, rsarArgs};
 
   return result;
 }
