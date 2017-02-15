@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,8 @@
 #include <unordered_set>
 #include <cassert>
 
-#include <gtest/gtest.h>
+//#include <gtest/gtest.h>
+#include <utils/MemUtils.h>
 
 namespace Candy {
     
@@ -110,9 +111,21 @@ namespace Candy {
         return *this;
     }
     
-    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>&, Glucose::Lit) {
-        // TODO: implement this
-        assert(false);
+    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>& inputs,
+                                                                Glucose::Lit output) {
+        assertContainsVariable(m_gateVars, Glucose::var(output));
+        assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
+        
+        assert(inputs.size() == 2ull);
+        
+        addClause(Cl{inputs[0], inputs[1], ~output});
+        addClause(Cl{~inputs[0], ~inputs[1], ~output});
+        addClause(Cl{~inputs[0], inputs[1], output});
+        addClause(Cl{inputs[0], ~inputs[1], output});
+        
+        insertVariables(inputs, m_gateVars);
+        m_usedOutputs.insert(Glucose::var(output));
+        
         return *this;
     }
     
@@ -124,7 +137,7 @@ namespace Candy {
     }
     
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder() {
-        return std::unique_ptr<GateStructureBuilder>(new GateStructureBuilderImpl());
+        return backported_std::make_unique<GateStructureBuilderImpl>();
     }
     
     
