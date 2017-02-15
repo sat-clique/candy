@@ -72,9 +72,9 @@ static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
 // Constructor/Destructor:
 
 SimpSolver::SimpSolver() :
-    Solver(), certifiedAllClauses(0), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(opt_simp_garbage_frac), use_asymm(
-        opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(0), elimorder(1), use_simplification(
-        true), occurs(ClauseDeleted(ca)), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0) {
+        Solver(), certifiedAllClauses(0), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(opt_simp_garbage_frac), use_asymm(
+            opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(0), elimorder(1), use_simplification(
+                true), occurs(ClauseDeleted(ca)), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0) {
   vector<Lit> dummy(1, lit_Undef);
   ca.extra_clause_field = true; // NOTE: must happen before allocating the dummy clause below.
   bwdsub_tmpunit = ca.alloc(dummy);
@@ -181,7 +181,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
   return true;
 }
 
-void SimpSolver::removeClause(CRef cr, bool inPurgatory) {
+void SimpSolver::removeClause(CRef cr) {
   const Clause& c = ca[cr];
 
   if (use_simplification)
@@ -191,7 +191,7 @@ void SimpSolver::removeClause(CRef cr, bool inPurgatory) {
       occurs.smudge(var(c[i]));
     }
 
-  Solver::removeClause(cr, inPurgatory);
+  Solver::removeClause(cr);
 }
 
 bool SimpSolver::strengthenClause(CRef cr, Lit l) {
@@ -654,7 +654,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
   // If no more simplification is needed, free all simplification-related data structures:
   if (turn_off_elim) {
     touched.clear();
-    occurs.clear(true);
+    occurs.clear();
     n_occ.clear();
     elim_heap.clear();
     subsumption_queue.clear();
