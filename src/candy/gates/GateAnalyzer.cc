@@ -26,6 +26,7 @@
 
 #include "gates/GateAnalyzer.h"
 #include "core/Solver.h"
+#include "core/Utilities.h"
 
 namespace Candy {
 
@@ -39,6 +40,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
   index = buildIndexFromClauses(problem.getProblem());
   if (useHolistic) solver.addClauses(problem);
   solver.setIncrementalMode();
+  solver.initNbInitialVars(problem.nVars());
 }
 
 // heuristically select clauses
@@ -55,7 +57,7 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   CNFProblem constraint;
-  Lit alit = Glucose::mkLit(problem.newVar(), false);
+  Lit alit = Glucose::mkLit(problem.nVars()+assumptions.size(), false);
   Cl clause;
   for (const For& f : { fwd, bwd })
   for (Cl* cl : f) {
@@ -71,9 +73,11 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
 #endif
     clause.clear();
   }
+  assert(solver.isSelector(var(alit)));
   solver.addClauses(constraint);
-  bool isRightUnique = !solver.solve(~alit);
-  solver.addClause(alit);
+  assumptions.push_back(~alit);
+  bool isRightUnique = !solver.solve(assumptions);
+  assumptions.back() = alit;
   return isRightUnique;
 }
 
