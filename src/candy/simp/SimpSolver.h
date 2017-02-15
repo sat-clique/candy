@@ -61,122 +61,122 @@ namespace Glucose {
 
 
 class SimpSolver : public Solver {
- public:
-    // Constructor/Destructor:
-    //
-    SimpSolver();
-    ~SimpSolver();
-    
-    // Problem specification:
-    //
-    virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    bool    addClause (const vector<Lit>& ps);
-    bool    addEmptyClause();                // Add the empty clause to the solver.
-    bool    addClause (Lit p);               // Add a unit clause to the solver.
-    bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
-    bool    addClause (Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-    virtual bool    addClause_(vector<Lit>& ps);
-    bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
+public:
+  // Constructor/Destructor:
+  //
+  SimpSolver();
+  ~SimpSolver();
 
-    // Variable mode:
-    // 
-    void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.
-    bool    isEliminated(Var v) const;
+  // Problem specification:
+  //
+  virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+  bool    addClause (const vector<Lit>& ps);
+  bool    addEmptyClause();                // Add the empty clause to the solver.
+  bool    addClause (Lit p);               // Add a unit clause to the solver.
+  bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
+  bool    addClause (Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
+  virtual bool    addClause_(vector<Lit>& ps);
+  bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
-    // Solving:
-    //
-    bool    solve       (const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    lbool   solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    bool    solve       (                     bool do_simp = true, bool turn_off_simp = false);
-    bool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);       
-    bool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);
-    bool    solve       (Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
-    bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification. 
+  // Variable mode:
+  //
+  void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.
+  bool    isEliminated(Var v) const;
 
-    // Memory managment:
-    //
-    virtual void garbageCollect();
+  // Solving:
+  //
+  bool    solve       (const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+  lbool   solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+  bool    solve       (                     bool do_simp = true, bool turn_off_simp = false);
+  bool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);
+  bool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);
+  bool    solve       (Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
+  bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification.
 
-    // Mode of operation:
-    //
-    int     certifiedAllClauses;
-    int     grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
-    int     clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
-                               // -1 means no limit.
-    int     subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
-    double  simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
+  // Memory managment:
+  //
+  virtual void garbageCollect();
 
-    bool    use_asymm;         // Shrink clauses by asymmetric branching.
-    bool    use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
-    bool    use_elim;          // Perform variable elimination.
-    // Statistics:
-    //
-    int     merges;
-    int     asymm_lits;
-    int     eliminated_vars;
+  // Mode of operation:
+  //
+  int     certifiedAllClauses;
+  int     grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
+  int     clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
+  // -1 means no limit.
+  int     subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
+  double  simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
 
- protected:
+  bool    use_asymm;         // Shrink clauses by asymmetric branching.
+  bool    use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
+  bool    use_elim;          // Perform variable elimination.
+  // Statistics:
+  //
+  int     merges;
+  int     asymm_lits;
+  int     eliminated_vars;
 
-    // Helper structures:
-    //
-    struct ElimLt {
-        const vector<int>& n_occ;
-        explicit ElimLt(const vector<int>& no) : n_occ(no) {}
+protected:
 
-        // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
-        // 32-bit implementation instead then, but this will have to do for now.
-        uint64_t cost  (Var x)        const { return (uint64_t)n_occ[toInt(mkLit(x))] * (uint64_t)n_occ[toInt(~mkLit(x))]; }
-        bool operator()(Var x, Var y) const { return cost(x) < cost(y); }
-        
-        // TODO: investigate this order alternative more.
-        // bool operator()(Var x, Var y) const { 
-        //     int c_x = cost(x);
-        //     int c_y = cost(y);
-        //     return c_x < c_y || c_x == c_y && x < y; }
-    };
+  // Helper structures:
+  //
+  struct ElimLt {
+    const vector<int>& n_occ;
+    explicit ElimLt(const vector<int>& no) : n_occ(no) {}
 
-    struct ClauseDeleted {
-        const ClauseAllocator& ca;
-        explicit ClauseDeleted(const ClauseAllocator& _ca) : ca(_ca) {}
-        bool operator()(const CRef& cr) const { return ca[cr].mark() == 1; } };
+    // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
+    // 32-bit implementation instead then, but this will have to do for now.
+    uint64_t cost  (Var x)        const { return (uint64_t)n_occ[toInt(mkLit(x))] * (uint64_t)n_occ[toInt(~mkLit(x))]; }
+    bool operator()(Var x, Var y) const { return cost(x) < cost(y); }
 
-    // Solver state:
-    //
-    int                 elimorder;
-    bool                use_simplification;
-    vector<uint32_t>       elimclauses;
-    vector<char>           touched;
-    OccLists<Var, CRef, ClauseDeleted> occurs;
-    vector<int>            n_occ;
-    Heap<ElimLt>        elim_heap;
-    deque<CRef>         subsumption_queue;
-    vector<char>           frozen;
-    vector<char>           eliminated;
-    int        bwdsub_assigns;
-    int                 n_touched;
+    // TODO: investigate this order alternative more.
+    // bool operator()(Var x, Var y) const {
+    //     int c_x = cost(x);
+    //     int c_y = cost(y);
+    //     return c_x < c_y || c_x == c_y && x < y; }
+  };
 
-    // Temporaries:
-    //
-    CRef                bwdsub_tmpunit;
+  struct ClauseDeleted {
+    const ClauseAllocator& ca;
+    explicit ClauseDeleted(const ClauseAllocator& _ca) : ca(_ca) {}
+    bool operator()(const CRef& cr) const { return ca[cr].mark() == 1; } };
 
-    // Main internal methods:
-    //
-    virtual lbool         solve_                   (bool do_simp = true, bool turn_off_simp = false);
-    bool          asymm                    (Var v, CRef cr);
-    bool          asymmVar                 (Var v);
-    void          updateElimHeap           (Var v);
-    void          gatherTouchedClauses     ();
-    bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
-    bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, int& size);
-    bool          backwardSubsumptionCheck (bool verbose = false);
-    bool          eliminateVar             (Var v);
-    void          extendModel              ();
+  // Solver state:
+  //
+  int                 elimorder;
+  bool                use_simplification;
+  vector<uint32_t>       elimclauses;
+  vector<char>           touched;
+  OccLists<Var, CRef, ClauseDeleted> occurs;
+  vector<int>            n_occ;
+  Heap<ElimLt>        elim_heap;
+  deque<CRef>         subsumption_queue;
+  vector<char>           frozen;
+  vector<char>           eliminated;
+  int        bwdsub_assigns;
+  int                 n_touched;
 
-    void          removeClause             (CRef cr,bool inPurgatory=false);
-    bool          strengthenClause         (CRef cr, Lit l);
-    void          cleanUpClauses           ();
-    bool          implied                  (const vector<Lit>& c);
-    virtual void          relocAll                 (ClauseAllocator& to);
+  // Temporaries:
+  //
+  CRef                bwdsub_tmpunit;
+
+  // Main internal methods:
+  //
+  virtual lbool solve_                   (bool do_simp = true, bool turn_off_simp = false);
+  bool          asymm                    (Var v, CRef cr);
+  bool          asymmVar                 (Var v);
+  void          updateElimHeap           (Var v);
+  void          gatherTouchedClauses     ();
+  bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
+  bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, int& size);
+  bool          backwardSubsumptionCheck (bool verbose = false);
+  bool          eliminateVar             (Var v);
+  void          extendModel              ();
+
+  void          removeClause             (CRef cr);
+  bool          strengthenClause         (CRef cr, Lit l);
+  void          cleanUpClauses           ();
+  bool          implied                  (const vector<Lit>& c);
+  virtual void          relocAll                 (ClauseAllocator& to);
 };
 
 
@@ -186,10 +186,10 @@ class SimpSolver : public Solver {
 
 inline bool SimpSolver::isEliminated (Var v) const { return eliminated[v]; }
 inline void SimpSolver::updateElimHeap(Var v) {
-    assert(use_simplification);
-    // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
-    if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
-        elim_heap.update(v); }
+  assert(use_simplification);
+  // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
+  if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
+    elim_heap.update(v); }
 
 
 inline bool SimpSolver::addClause(const vector<Lit>& ps) { add_tmp.clear(); add_tmp.insert(add_tmp.end(), ps.begin(), ps.end()); return addClause_(add_tmp); }
@@ -204,16 +204,16 @@ inline bool SimpSolver::solve        (Lit p       ,        bool do_simp, bool tu
 inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); return solve_(do_simp, turn_off_simp) == l_True; }
 inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); assumptions.push_back(r); return solve_(do_simp, turn_off_simp) == l_True; }
 inline bool SimpSolver::solve(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-    return solve_(do_simp, turn_off_simp) == l_True;
+  budgetOff();
+  assumptions.clear();
+  assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+  return solve_(do_simp, turn_off_simp) == l_True;
 }
 
 inline lbool SimpSolver::solveLimited(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
-    assumptions.clear();
-    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-    return solve_(do_simp, turn_off_simp);
+  assumptions.clear();
+  assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+  return solve_(do_simp, turn_off_simp);
 }
 
 //=================================================================================================
