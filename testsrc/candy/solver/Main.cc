@@ -53,8 +53,7 @@ TEST (GateAnalyzerTestPatterns, removeDuplicates) {
   formula.readClause({mkLit(1), mkLit(2), mkLit(1)});
   Solver solver;
   solver.addClauses(formula);
-  Glucose::Clause clause = solver.getClause(0);
-  ASSERT_NE(clause, nullptr);
+  Candy::Clause& clause = solver.getClause(0);
   ASSERT_EQ(clause.size(), 2);
 }
 
@@ -82,8 +81,7 @@ TEST (GateAnalyzerTestPatterns, propagateEarly3) {
   Solver solver;
   solver.addClauses(formula);
   ASSERT_EQ(solver.nClauses(), 1);
-  Glucose::Clause clause = solver.getClause(0);
-  ASSERT_NE(clause, nullptr);
+  Candy::Clause& clause = solver.getClause(0);
   ASSERT_EQ(clause.size(), 2);
 }
 
