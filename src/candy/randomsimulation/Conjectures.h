@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,9 @@
 
 #include <core/SolverTypes.h>
 
+#include <cstdint>
+#include <memory>
+
 namespace Candy {
     /**
      * \class EquivalenceConjecture
@@ -39,18 +42,25 @@ namespace Candy {
      */
     class EquivalenceConjecture {
     public:
+        typedef std::vector<Glucose::Lit>::const_iterator const_iterator;
+        typedef std::vector<Glucose::Lit>::size_type size_type;
+        
         /**
          * Adds a literal to the conjecture.
          */
         void addLit(Glucose::Lit lit);
         
-        /**
-         * Retrieves the literals conjected to be equivalent.
-         */
-        const std::vector<Glucose::Lit> &getLits() const;
+        const_iterator begin() const;
+        const_iterator end() const;
+        size_type size() const;
+        Lit at(size_type index) const;
         
+        EquivalenceConjecture();
+        explicit EquivalenceConjecture(const std::vector<Lit>& equivalentLits);
+        EquivalenceConjecture(EquivalenceConjecture&& other) = default;
+        EquivalenceConjecture(const EquivalenceConjecture& other) = default;
     private:
-        std::vector<Glucose::Lit> m_lits {};
+        std::vector<Glucose::Lit> m_lits;
     };
     
     /**
@@ -63,12 +73,14 @@ namespace Candy {
      */
     class BackboneConjecture {
     public:
-        BackboneConjecture(Glucose::Lit lit);
+        explicit BackboneConjecture(Glucose::Lit lit);
+        BackboneConjecture(BackboneConjecture&& other) = default;
+        BackboneConjecture(const BackboneConjecture& other) = default;
         
         /**
          * Retrieves the literal conjected to belong to the backbone.
          */
-        Glucose::Lit getLit();
+        Glucose::Lit getLit() const;
         
     private:
         Glucose::Lit m_lit;
@@ -96,17 +108,66 @@ namespace Candy {
         /**
          * Adds an equivalence conjecture (by copying).
          */
-        void addEquivalence(EquivalenceConjecture &conj);
+        void addEquivalence(const EquivalenceConjecture &conj);
         
         /**
          * Adds a backbone conjecture (by copying).
          */
-        void addBackbone(BackboneConjecture &conj);
+        void addBackbone(const BackboneConjecture &conj);
+        
+        Conjectures(Conjectures&& other) = default;
+        Conjectures& operator=(Conjectures&& other) = default;
+        Conjectures() = default;
+        
+        // Deleting the default copy constructor & assignment operator
+        // to enforce efficiency - remove this restriction as soon as
+        // copying a Conjectures object becomes necessary.
+        Conjectures(Conjectures& other) = delete;
+        Conjectures& operator=(Conjectures& other) = delete;
         
     private:
         std::vector<EquivalenceConjecture> m_equivalences {};
         std::vector<BackboneConjecture> m_backbones {};
     };
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Counts the pairs of literal-equivalence conjectures represented by the given Conjectures object.
+     */
+    std::uint64_t countLiteralEquivalences(const Conjectures& conjectures);
+    
+    /**
+     * \class ConjectureFilter
+     *
+     * \ingroup RandomSimulation
+     *
+     * \brief A filter for conjectures.
+     */
+    class ConjectureFilter {
+    public:
+        virtual Conjectures apply(const Conjectures& c) const = 0;
+        
+        ConjectureFilter();
+        virtual ~ConjectureFilter();
+        ConjectureFilter(const ConjectureFilter& other) = delete;
+        ConjectureFilter& operator= (const ConjectureFilter& other) = delete;
+    };
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates a ConjectureFilter removing equivalence conjectures larger than the
+     * given size.
+     */
+    std::unique_ptr<ConjectureFilter> createSizeConjectureFilter(size_t maxEquivSize);
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates a ConjectureFilter removing backbones from the conjecture set.
+     */
+    std::unique_ptr<ConjectureFilter> createBackboneRemovalConjectureFilter();
 }
 
 

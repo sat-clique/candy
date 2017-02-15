@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@
 #include <gates/GateAnalyzer.h>
 #include <randomsimulation/ClauseOrder.h>
 
-#include "TestGateStructure.h"
+#include <testutils/TestGateStructure.h>
 #include "TestUtils.h"
 
 #include <unordered_set>
@@ -87,6 +87,11 @@ namespace Candy {
         test_noGates(*underTest);
     }
     
+    TEST(RSClauseOrderTest, noGates_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
+        test_noGates(*underTest);
+    }
+    
     
     
     static void test_singleGate(ClauseOrder& underTest) {
@@ -115,6 +120,11 @@ namespace Candy {
     
     TEST(RSClauseOrderTest, singleGate_recursiveImpl) {
         auto underTest = createRecursiveClauseOrder();
+        test_singleGate(*underTest);
+    }
+    
+    TEST(RSClauseOrderTest, singleGate_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
         test_singleGate(*underTest);
     }
     
@@ -154,6 +164,11 @@ namespace Candy {
     
     TEST(RSClauseOrderTest, fewGates_recursiveImpl) {
         auto underTest = createRecursiveClauseOrder();
+        test_fewGates(*underTest);
+    }
+    
+    TEST(RSClauseOrderTest, fewGates_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
         test_fewGates(*underTest);
     }
     
@@ -209,6 +224,11 @@ namespace Candy {
     
     TEST(RSClauseOrderTest, manyGates_recursiveImpl) {
         auto underTest = createRecursiveClauseOrder();
+        test_manyGates(*underTest);
+    }
+    
+    TEST(RSClauseOrderTest, manyGates_nonrecursiveImpl) {
+        auto underTest = createNonrecursiveClauseOrder();
         test_manyGates(*underTest);
     }
 

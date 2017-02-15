@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -69,11 +69,12 @@ namespace Candy {
         /**
          * Performs random simulation using a maximum amount of variable assignment rounds.
          * 
-         * \param nSteps The maximum amount of variable assignment rounds. Note that depending
+         * \param nSteps The nonzero maximum amount of variable assignment rounds. Note that depending
          *   on the random simulator's configuration, fewer than the maximum amount of
          *   rounds may actually be performed due to heuristic decisions. (This heuristic is
          *   disabled by default.)
-         *  TODO: document restrictions on nRounds
+         *   Implementations of RandomSimulator may (e.g. due to alignment requirements) actually
+         *   perform more (up to a compile-time defined constant) rounds than given by nRounds.
          */
         virtual Conjectures run(unsigned int nRounds) = 0;
         
@@ -81,7 +82,7 @@ namespace Candy {
          * Performs random simulation until the random simulator heuristically determines
          * that further simulation is not worthwile. Since this heuristic is disabled by
          * default, you need to create the RandomSimulator object with a rsp. heuristic
-         * configuration.
+         * configuration. Otherwise, it is an error to call this method.
          */
         virtual Conjectures run() = 0;
         virtual ~RandomSimulator();
@@ -159,8 +160,13 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates an instance of the RandomSimulator class using the implementation
      * chosen as default within this package.
+     *
+     * Note: this implementation of RandomSimulator rounds the maximum amount of simulation rounds
+     *   up to the next multiple of 2048.
      *
      * \param gateAnalyzer      The gate structure on which to perform random simulation Note that
      *   the random simulation system does not invoke gateAnalyzer.analyze(), and does not configure
@@ -170,6 +176,8 @@ namespace Candy {
     std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer);
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates a RandomSimulationBuilder for the default RandomSimulator implementation.
      * TODO: document defaults.
      */
