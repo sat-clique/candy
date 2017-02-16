@@ -510,10 +510,10 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         }
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.learnt() && c.lbd() > 2) {
+        if (c.learnt() && c.getLBD() > 2) {
             unsigned int nblevels = computeLBD(c);
-            if (nblevels + 1 < c.lbd()) { // improve the LBD
-                if (c.lbd() <= lbLBDFrozenClause) {
+            if (nblevels + 1 < c.getLBD()) { // improve the LBD
+                if (c.getLBD() <= lbLBDFrozenClause) {
                     c.setCanBeDel(false);
                 }
                 // seems to be interesting : keep it for the next round
@@ -629,7 +629,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
     if (lastDecisionLevel.size() > 0) {
         for (unsigned int i = 0; i < lastDecisionLevel.size(); i++) {
-            if (reason(var(lastDecisionLevel[i]))->lbd() < lbd)
+            if (reason(var(lastDecisionLevel[i]))->getLBD() < lbd)
                 varBumpActivity(var(lastDecisionLevel[i]));
         }
         lastDecisionLevel.clear();
@@ -859,10 +859,10 @@ void Solver::reduceDB() {
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
     // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
-    if (learnts[learnts.size() / RATIOREMOVECLAUSES]->lbd() <= 3)
+    if (learnts[learnts.size() / RATIOREMOVECLAUSES]->getLBD() <= 3)
         nbclausesbeforereduce += specialIncReduceDB;
     // Useless :-)
-    if (learnts.back()->lbd() <= 5)
+    if (learnts.back()->getLBD() <= 5)
         nbclausesbeforereduce += specialIncReduceDB;
 
     // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
@@ -871,7 +871,7 @@ void Solver::reduceDB() {
     for (unsigned int i = 0; i < limit; i++) {
         Candy::Clause& c = *learnts[i];
         if (!c.canBeDel()) break; // frozen clauses area reached early (see reduceDB_lt)
-        if (c.lbd() > 2 && c.size() > 2 && !locked(learnts[i])) {
+        if (c.getLBD() > 2 && c.size() > 2 && !locked(learnts[i])) {
             removeClause(learnts[i]);
         }
     }
