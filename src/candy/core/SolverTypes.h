@@ -164,8 +164,7 @@ class Clause {
     unsigned size       : BITS_REALSIZE;
     unsigned seen       : 1;
     unsigned reloced    : 1;
-    unsigned exported   : 2; // Values to keep track of the clause status for exportations
-    unsigned oneWatched : 1;
+    unsigned _unused    : 3; // Unused bits
     unsigned lbd : BITS_LBD;
   }  header;
 
@@ -184,8 +183,7 @@ class Clause {
     header.size      = ps.size();
     header.lbd = 0;
     header.canbedel = 1;
-    header.exported = 0;
-    header.oneWatched = 0;
+    header._unused = 0;
     header.seen = 0;
     for (int i = 0; i < (int)ps.size(); i++)
       data[i].lit = ps[i];
@@ -239,11 +237,6 @@ public:
   float&       activity    ()              { assert(header.extra_size > 0); return data[header.size].act; }
   uint32_t     abstraction () const        { assert(header.extra_size > 0); return data[header.size].abs; }
 
-  // Handle imported clauses lazy sharing
-  bool        wasImported() const {return header.extra_size > 1;}
-  uint32_t    importedFrom () const       { assert(header.extra_size > 1); return data[header.size + 1].abs;}
-  void setImportedFrom(uint32_t ifrom) {assert(header.extra_size > 1); data[header.size+1].abs = ifrom;}
-
   Lit          subsumes    (const Clause& other) const;
   void         strengthen  (Lit p);
   void         setLBD(int i)  {if (i < (1<<(BITS_LBD-1))) header.lbd = i; else header.lbd = (1<<(BITS_LBD-1));}
@@ -253,12 +246,8 @@ public:
   bool canBeDel() {return header.canbedel;}
   void setSeen(bool b) {header.seen = b;}
   bool getSeen() {return header.seen;}
-  void setExported(unsigned int b) {header.exported = b;}
-  unsigned int getExported() {return header.exported;}
-  void setOneWatched(bool b) {header.oneWatched = b;}
-  bool getOneWatched() {return header.oneWatched;}
   void setSizeWithoutSelectors   (unsigned int n)              {header.szWithoutSelectors = n; }
-  unsigned int        sizeWithoutSelectors   () const        { return header.szWithoutSelectors; }
+  unsigned int sizeWithoutSelectors   () const        { return header.szWithoutSelectors; }
 
 };
 
@@ -283,13 +272,13 @@ public:
     RegionAllocator<uint32_t>::moveTo(to); }
 
   template<class Lits>
-  CRef alloc(const Lits& ps, bool learnt = false, bool imported = false)
+  CRef alloc(const Lits& ps, bool learnt = false)
   {
     assert(sizeof(Lit)      == sizeof(uint32_t));
     assert(sizeof(float)    == sizeof(uint32_t));
 
     bool use_extra = learnt | extra_clause_field;
-    int extra_size = imported?3:(use_extra?1:0);
+    int extra_size = use_extra ? 1 : 0;
     CRef cid = RegionAllocator<uint32_t>::alloc(clauseWord32Size(ps.size(), extra_size));
     new (lea(cid)) Clause(ps, extra_size, learnt);
 
@@ -315,23 +304,18 @@ public:
 
     if (c.reloced()) { cr = c.relocation(); return; }
 
-    cr = to.alloc(c, c.learnt(), c.wasImported());
+    cr = to.alloc(c, c.learnt());
     c.relocate(cr);
 
     // Copy extra data-fields:
     // (This could be cleaned-up. Generalize Clause-constructor to be applicable here instead?)
     to[cr].mark(c.mark());
-    if (to[cr].learnt())        {
+    if (to[cr].learnt()) {
       to[cr].activity() = c.activity();
       to[cr].setLBD(c.lbd());
-      to[cr].setExported(c.getExported());
-      to[cr].setOneWatched(c.getOneWatched());
       to[cr].setSeen(c.getSeen());
       to[cr].setSizeWithoutSelectors(c.sizeWithoutSelectors());
       to[cr].setCanBeDel(c.canBeDel());
-      if (c.wasImported()) {
-        to[cr].setImportedFrom(c.importedFrom());
-      }
     }
     else if (to[cr].has_extra()) to[cr].calcAbstraction();
   }
@@ -358,84 +342,50 @@ public:
   }
 
   std::vector<Elem>& operator[](const Idx& idx) {
-//    checkDuplicateSimp(toInt(idx));
     return occs[toInt(idx)];
   }
-  std::vector<Elem>& lookup(const Idx& idx){
+
+  std::vector<Elem>& lookup(const Idx& idx) {
     if (dirty[toInt(idx)]) clean(idx);
     return occs[toInt(idx)];
   }
 
   void smudge(const Idx& idx) {
-//    checkDuplicates();
     if (dirty[toInt(idx)] == 0) {
       dirty[toInt(idx)] = 1;
       dirties.push_back(idx);
     }
-//    checkDuplicates();
   }
 
   void cleanAll() {
-//    checkDuplicates();
     for (int i = 0; i < (int)dirties.size(); i++)
       // Dirties may contain duplicates so check here if a variable is already cleaned:
-      if (dirty[toInt(dirties[i])])
+      //if (dirty[toInt(dirties[i])])
         clean(dirties[i]);
     dirties.clear();
-//    checkDuplicates();
   }
 
-  void clean(const Idx& idx){
-//    checkDuplicates();
+  void clean(const Idx& idx) {
     std::vector<Elem>& vec = occs[toInt(idx)];
-    int i, j;
-    for (i = j = 0; i < (int)vec.size(); i++)
-      if (!deleted(vec[i]))
-        vec[j++] = vec[i];
-    vec.resize(j);
+    auto end = std::remove_if(vec.begin(), vec.end(), [this](Elem e) { return deleted(e); });
+    vec.erase(end, vec.end());
     dirty[toInt(idx)] = 0;
-//    checkDuplicates();
   }
 
   void copyTo(OccLists &copy) const {
-//    checkDuplicates();
     copy.clear();
     copy.occs.resize(occs.size());
     for(int i = 0; i < (int)occs.size(); i++)
       copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(), occs[i].end());
     copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
     copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
-//    checkDuplicates();
   }
 
-  void clear(bool free = true) {
-      (void)free;
-//    checkDuplicates();
+  void clear() {
     for (std::vector<Elem>& v : occs) v.clear();
     occs.clear();
     dirty.clear();
     dirties.clear();
-//    checkDuplicates();
-  }
-
-  void checkDuplicates() const {
-    for (int i = 0; i < (int)occs.size(); i++) {
-      checkDuplicate(i);
-    }
-  }
-
-  void checkDuplicate(int intdx) const {
-    for (int i = 0; i < occs[intdx].size(); i++) {
-      for (int j = i + 1; j < occs[intdx].size(); j++) {
-        assert(!(occs[intdx][i] == occs[intdx][j]));
-      }
-    }
-  }
-
-  void checkDuplicateSimp(int intdx) const {
-    for (int j = 1; j < occs[intdx].size(); j++) {
-      assert(!(occs[intdx][0] == occs[intdx][j]));
-    }
   }
 };
 
@@ -495,10 +445,10 @@ inline void Clause::strengthen(Lit p)
 
 
 namespace Candy {
-  using Var = Glucose::Var;
-  using Lit = Glucose::Lit;
-  typedef std::vector<Lit> Cl;
-  typedef std::vector<Cl*> For;
+using Var = Glucose::Var;
+using Lit = Glucose::Lit;
+typedef std::vector<Lit> Cl;
+typedef std::vector<Cl*> For;
 }
 
 

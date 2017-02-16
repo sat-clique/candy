@@ -80,40 +80,24 @@ public:
   Solver();
   virtual ~Solver();
 
-  void reserveVars(int n) {
-    assigns.reserve(n);
-    vardata.reserve(n);
-    activity.reserve(n);
-    seen.reserve(n);
-    permDiff.reserve(n);
-    polarity.reserve(n);
-    decision.reserve(n);
-    trail.resize(n);
-  }
-
-  void insertClauses(Candy::CNFProblem dimacs) {
-    vector<vector<Lit>*>& problem = dimacs.getProblem();
-    if (dimacs.nVars() > nVars()) {
-      reserveVars(dimacs.nVars());
-      for (int i = nVars(); i < dimacs.nVars(); i++) {
-        newVar();
-      }
-    }
-    for (vector<Lit>* clause : problem) {
-      addClause(*clause);
-    }
-  }
 
   // Problem specification:
   //
   virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-  bool addClause(const vector<Lit>& ps);                     // Add a clause to the solver.
-  bool addEmptyClause();                                   // Add the empty clause, making the solver contradictory.
-  bool addClause(Lit p);                                  // Add a unit clause to the solver.
-  bool addClause(Lit p, Lit q);                           // Add a binary clause to the solver.
-  bool addClause(Lit p, Lit q, Lit r);                    // Add a ternary clause to the solver.
-  virtual bool addClause_(vector<Lit>& ps);                     // Add a clause to the solver without making superflous internal copy. Will
-  // change the passed vector 'ps'.
+  bool addClause(const vector<Lit>& ps); // Add a clause to the solver.
+  bool addEmptyClause(); // Add the empty clause, making the solver contradictory.
+  bool addClause(Lit p); // Add a unit clause to the solver.
+  bool addClause(Lit p, Lit q); // Add a binary clause to the solver.
+  bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
+  virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will change ps
+  void addClauses(Candy::CNFProblem dimacs);
+
+  // use with care (written for solver tests only)
+  Clause& getClause(unsigned int pos) {
+    assert(pos < clauses.size());
+    CRef cref = clauses[pos];
+    return ca[cref];
+  }
 
   // Solving:
   //
@@ -126,26 +110,28 @@ public:
   bool solve(Lit p, Lit q, Lit r);     // Search for a model that respects three assumptions.
   bool okay() const;                  // FALSE means solver is in a conflicting state
 
-  // Display clauses and literals
-  void printLit(Lit l);
-  void printClause(CRef c);
-  void printInitialClause(CRef c);
-
-  void printLit2(Lit l) {
-    printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
-  }
-
-  void printClause2(CRef cr) {
-    Clause &c = ca[cr];
-    for (int i = 0; i < c.size(); i++) {
-      printLit2(c[i]);
-      printf(" ");
+  // Display clauses and literals (Debug purpose)
+  void printLit(Lit l) {
+    if (status == l_True) {
+      printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
+    } else {
+      printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
     }
   }
 
-  void printProblem() {
+  void printClause(CRef cr, bool skipSelectorVariables=false) {
+    Clause &c = ca[cr];
+    for (int i = 0; i < c.size(); i++) {
+      if (!skipSelectorVariables || !isSelector(var(c[i]))) {
+        printLit(c[i]);
+        printf(" ");
+      }
+    }
+  }
+
+  void printProblem(bool skipSelectorVariables=false) {
     for (size_t i = 0; i < clauses.size(); i++) {
-      printClause2(clauses[i]);
+      printClause(clauses[i], skipSelectorVariables);
       printf("\n");
     }
   }
@@ -176,6 +162,7 @@ public:
   void initNbInitialVars(int nb);
   void printIncrementalStats();
   bool isIncremental();
+
   // Resource contraints:
   //
   void setConfBudget(int64_t x);
@@ -192,15 +179,14 @@ public:
 
   // Extra results: (read-only member variable)
   //
-  vector<lbool> model;             // If problem is satisfiable, this vector contains the model (if any).
-  vector<Lit> conflict;          // If problem is unsatisfiable (possibly under assumptions),
-  // this vector represent the final conflict clause expressed in the assumptions.
+  vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
+  vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
   // Mode of operation:
   //
   int verbosity;
   int verbEveryConflicts;
-  int showModel;
+  int showModel;// deprecated: can go to main
 
   // Constants For restarts
   double K;
@@ -209,7 +195,6 @@ public:
   double sizeTrailQueue;
 
   // Constants for reduce DB
-  int firstReduceDB;
   int incReduceDB;
   int specialIncReduceDB;
   unsigned int lbLBDFrozenClause;
@@ -236,34 +221,13 @@ public:
   FILE* certifiedOutput;
   bool certifiedUNSAT;
 
-  // Panic mode.
-  // Save memory
-  uint32_t panicModeLastRemoved, panicModeLastRemovedShared;
-
-  bool useUnaryWatched;            // Enable unary watched literals
-  bool promoteOneWatchedClause;    // One watched clauses are promotted to two watched clauses if found empty
-
-  // Functions useful for multithread solving
-  // Useless in the sequential case
-  // Overide in ParallelSolver
-  virtual void parallelImportClauseDuringConflictAnalysis(Clause &c, CRef confl);
-  virtual bool parallelImportClauses(); // true if the empty clause was received
-  virtual void parallelImportUnaryClauses();
-  virtual void parallelExportUnaryClause(Lit p);
-  virtual void parallelExportClauseDuringSearch(Clause &c);
-  virtual bool parallelJobIsFinished();
-  virtual bool panicModeIsEnabled();
-
   // Statistics: (read-only member variable)
-  uint64_t nbPromoted;          // Number of clauses from unary to binary watch scheme
   uint64_t originalClausesSeen; // Number of original clauses seen
   uint64_t sumDecisionLevels;
   //
-  uint64_t nbRemovedClauses, nbRemovedUnaryWatchedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB, solves, starts, decisions, rnd_decisions,
-      propagations, conflicts, conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
+  uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB, solves, starts, decisions, rnd_decisions,
+    propagations, conflicts, conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
   uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
-
-  int countCalls = 0;
 
   void setTermCallback(void* state, int (*termCallback)(void*)) {
     this->termCallbackState = state;
@@ -273,8 +237,8 @@ public:
 protected:
 
   long curRestart;
+
   // Helper structures:
-  //
   struct VarData {
     CRef reason;
     unsigned int level;
@@ -290,7 +254,7 @@ protected:
     Watcher() : cref(0), blocker(lit_Undef) {
     }
     Watcher(CRef cr, Lit p) :
-        cref(cr), blocker(p) {
+      cref(cr), blocker(p) {
     }
     bool operator==(const Watcher& w) const {
       return cref == w.cref;
@@ -298,18 +262,11 @@ protected:
     bool operator!=(const Watcher& w) const {
       return cref != w.cref;
     }
-    /*        Watcher &operator=(Watcher w) {
-     this->cref = w.cref;
-     this->blocker = w.blocker;
-     return *this;
-     }
-     */
   };
 
   struct WatcherDeleted {
     const ClauseAllocator& ca;
-    WatcherDeleted(const ClauseAllocator& _ca) :
-        ca(_ca) {
+    WatcherDeleted(const ClauseAllocator& _ca) : ca(_ca) {
     }
     bool operator()(const Watcher& w) const {
       return ca[w.cref].mark() == 1;
@@ -318,17 +275,14 @@ protected:
 
   struct VarOrderLt {
     const vector<double>& activity;
-    bool operator ()(Var x, Var y) const {
+    bool operator()(Var x, Var y) const {
       return activity[x] > activity[y];
     }
-    VarOrderLt(const vector<double>& act) :
-        activity(act) {
+    VarOrderLt(const vector<double>& act) : activity(act) {
     }
   };
 
   // Solver state:
-  //
-  //int lastIndexRed;
   bool ok;               // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
   double cla_inc;          // Amount to bump next clause with.
   vector<double> activity;         // A heuristic measurement of the activity of a variable.
@@ -338,7 +292,6 @@ protected:
   OccLists<Lit, Watcher, WatcherDeleted> unaryWatches;       //  Unary watch scheme (clauses are seen when they become empty
   vector<CRef> clauses;          // List of problem clauses.
   vector<CRef> learnts;          // List of learnt clauses.
-  vector<CRef> unaryWatchedClauses;  // List of imported clauses (after the purgatory) // TODO put inside ParallelSolver
 
   vector<lbool> assigns;          // The current assignments.
   vector<char> polarity;         // The preferred polarity of each variable.
@@ -353,7 +306,6 @@ protected:
   int64_t simpDB_props;     // Remaining number of propagations that must be made before next execution of 'simplify()'.
   vector<Lit> assumptions;      // Current set of assumptions provided to solve by the user.
   Heap<VarOrderLt> order_heap;       // A priority queue of variables ordered with respect to the variable activity.
-  double progress_estimate;       // Set by 'search()'.
   bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
   bool reduceOnSize;
   int reduceOnSizeSize;                // See XMinisat paper
@@ -381,13 +333,7 @@ protected:
   vector<Lit> add_tmp;
   unsigned int MYFLAG;
 
-  // Initial reduceDB strategy
-  //double max_learnts;
-  //double learntsize_adjust_confl;
-  //int learntsize_adjust_cnt;
-
   // Resource contraints:
-  //
   int64_t conflict_budget;    // -1 means no budget.
   int64_t propagation_budget; // -1 means no budget.
   bool asynch_interrupt;
@@ -397,47 +343,45 @@ protected:
   int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
   double totalTime4Sat, totalTime4Unsat;
   int nbSatCalls, nbUnsatCalls;
-  //vector<int> assumptionPositions, initialPositions;
 
   SolverSonification sonification;
 
   void* termCallbackState;
   int (*termCallback)(void* state);
 
+  lbool status;
+
   // Main internal methods:
   //
-  void insertVarOrder(Var x);                                                 // Insert a variable in the decision order priority queue.
-  Lit pickBranchLit();                                                      // Return the next decision variable.
-  void newDecisionLevel();                                                      // Begins a new decision level.
-  void uncheckedEnqueue(Lit p, CRef from = CRef_Undef);                         // Enqueue a literal. Assumes value of literal is undefined.
-  bool enqueue(Lit p, CRef from = CRef_Undef);                         // Test if fact 'p' contradicts current state, enqueue otherwise.
-  CRef propagate();                                                      // Perform unit propagation. Returns possibly conflicting clause.
-  CRef propagateUnaryWatches(Lit p);                                                  // Perform propagation on unary watches of p, can find only conflicts
-  void cancelUntil(int level);                                             // Backtrack until a certain level.
+  void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
+  Lit pickBranchLit(); // Return the next decision variable.
+  void newDecisionLevel(); // Begins a new decision level.
+  void uncheckedEnqueue(Lit p, CRef from = CRef_Undef); // Enqueue a literal. Assumes value of literal is undefined.
+  bool enqueue(Lit p, CRef from = CRef_Undef); // Test if fact 'p' contradicts current state, enqueue otherwise.
+  CRef propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+  void cancelUntil(int level); // Backtrack until a certain level.
   void analyze(CRef confl, vector<Lit>& out_learnt, vector<Lit> & selectors, int& out_btlevel, unsigned int &nblevels, unsigned int &szWithoutSelectors); // (bt = backtrack)
-  void analyzeFinal(Lit p, vector<Lit>& out_conflict);                // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-  bool litRedundant(Lit p, uint32_t abstract_levels);                       // (helper method for 'analyze()')
-  lbool search(int nof_conflicts);                                     // Search for a given number of conflicts.
+  void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+  bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
+  lbool search(int nof_conflicts); // Search for a given number of conflicts.
   virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);                              // Main solve method (assumptions given in 'assumptions').
-  virtual void reduceDB();                                                      // Reduce the set of learnt clauses.
-  void removeSatisfied(vector<CRef>& cs);                                         // Shrink 'cs' to contain only non-satisfied clauses.
+  virtual void reduceDB(); // Reduce the set of learnt clauses.
+  void removeSatisfied(vector<CRef>& cs); // Shrink 'cs' to contain only non-satisfied clauses.
   void rebuildOrderHeap();
 
   // Maintaining Variable/Clause activity:
   //
-  void varDecayActivity();                      // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-  void varBumpActivity(Var v, double inc);     // Increase a variable with the current 'bump' value.
-  void varBumpActivity(Var v);                 // Increase a variable with the current 'bump' value.
-  void claDecayActivity();                      // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
-  void claBumpActivity(Clause& c);             // Increase a clause with the current 'bump' value.
+  void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+  void varBumpActivity(Var v, double inc); // Increase a variable with the current 'bump' value.
+  void varBumpActivity(Var v); // Increase a variable with the current 'bump' value.
+  void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
+  void claBumpActivity(Clause& c); // Increase a clause with the current 'bump' value.
 
   // Operations on clauses:
   //
-  void attachClause(CRef cr);               // Attach a clause to watcher lists.
+  void attachClause(CRef cr); // Attach a clause to watcher lists.
   void detachClause(CRef cr, bool strict = false); // Detach a clause to watcher lists.
-  void detachClausePurgatory(CRef cr, bool strict = false);
-  void attachClausePurgatory(CRef cr);
-  void removeClause(CRef cr, bool inPurgatory = false);               // Detach and free a clause.
+  void removeClause(CRef cr); // Detach and free a clause.
   bool locked(const Clause& c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
   bool satisfied(const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
@@ -453,7 +397,6 @@ protected:
   uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
   CRef reason(Var x) const;
   int level(Var x) const;
-  double progressEstimate() const; // DELETE THIS ?? IT'S NOT VERY USEFUL ...
   bool withinBudget() const;
   inline bool isSelector(Var v) {
     return (incremental && v >= nbVarsInitialFormula);
@@ -461,7 +404,6 @@ protected:
 
   // Static helpers:
   //
-
   // Returns a random float 0 <= x < 1. Seed must never be 0.
   static inline double drand(double& seed) {
     seed *= 1389796;
@@ -482,6 +424,7 @@ protected:
 inline CRef Solver::reason(Var x) const {
   return vardata[x].reason;
 }
+
 inline int Solver::level(Var x) const {
   return vardata[x].level;
 }
@@ -561,6 +504,7 @@ inline bool Solver::addClause(Lit p, Lit q, Lit r) {
   add_tmp.push_back(r);
   return addClause_(add_tmp);
 }
+
 inline bool Solver::locked(const Clause& c) const {
   if (c.size() > 2)
     return value(c[0]) == l_True && reason(var(c[0])) != CRef_Undef && ca.lea(reason(var(c[0]))) == &c;
@@ -682,37 +626,12 @@ inline bool Solver::okay() const {
 }
 
 //=================================================================================================
-// Debug etc:
-
-inline void Solver::printLit(Lit l) {
-  printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
-}
-
-inline void Solver::printClause(CRef cr) {
-  Clause &c = ca[cr];
-  for (int i = 0; i < c.size(); i++) {
-    printLit(c[i]);
-    printf(" ");
-  }
-}
-
-inline void Solver::printInitialClause(CRef cr) {
-  Clause &c = ca[cr];
-  for (int i = 0; i < c.size(); i++) {
-    if (!isSelector(var(c[i]))) {
-      printLit(c[i]);
-      printf(" ");
-    }
-  }
-}
-
-//=================================================================================================
 
 struct reduceDB_lt {
   ClauseAllocator& ca;
 
   reduceDB_lt(ClauseAllocator& ca_) :
-      ca(ca_) {
+    ca(ca_) {
   }
 
   bool operator()(CRef x, CRef y) {
