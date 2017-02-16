@@ -924,28 +924,25 @@ void Solver::rebuildOrderHeap() {
  |  simplify : [void]  ->  [bool]
  |
  |  Description:
- |    Simplify the clause database according to the current top-level assigment. Currently, the only
+ |    Simplify the clause database according to the current top-level assignment. Currently, the only
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
  |________________________________________________________________________________________________@*/
 bool Solver::simplify() {
   assert(decisionLevel() == 0);
 
-  if (!ok)
+  if (!ok || propagate() != CRef_Undef) {
     return ok = false;
-  else {
-    CRef cr = propagate();
-    if (cr != CRef_Undef) {
-      return ok = false;
-    }
   }
 
-  if (nAssigns() == simpDB_assigns || (simpDB_props > 0))
+  if (nAssigns() == simpDB_assigns || (simpDB_props > 0)) {
     return true;
+  }
 
   // Remove satisfied clauses:
   removeSatisfied(learnts);
-  if (remove_satisfied) // Can be turned off.
+  if (remove_satisfied) {// Can be turned off.
     removeSatisfied(clauses);
+  }
   checkGarbage();
   rebuildOrderHeap();
 
@@ -971,7 +968,6 @@ bool Solver::simplify() {
 lbool Solver::search(int nof_conflicts) {
   assert(ok);
   int backtrack_level;
-  int conflictC = 0;
   vector<Lit> learnt_clause, selectors;
   unsigned int nblevels, szWithoutSelectors = 0;
   bool blocked = false;
@@ -988,7 +984,6 @@ lbool Solver::search(int nof_conflicts) {
       sumDecisionLevels += decisionLevel();
       // CONFLICT
       conflicts++;
-      conflictC++;
       conflictsRestarts++;
       if (conflicts % 5000 == 0 && var_decay < max_var_decay)
         var_decay += 0.01;
@@ -1097,7 +1092,6 @@ lbool Solver::search(int nof_conflicts) {
         decisions++;
         next = pickBranchLit();
         if (next == lit_Undef) {
-          //printf("c last restart ## conflicts  :  %d %d \n", conflictC, decisionLevel());
           // Model found:
           return l_True;
         }
