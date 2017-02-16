@@ -225,192 +225,184 @@ public:
     }
 
 protected:
+	long curRestart;
 
-    long curRestart;
+	// Helper structures:
+	struct VarData {
+	    Candy::Clause* reason;
+		unsigned int level;
+	};
 
-    // Helper structures:
-    struct VarData {
-        Candy::Clause* reason;
-        unsigned int level;
-    };
+	static inline VarData mkVarData(Candy::Clause* cr, unsigned int l) {
+		VarData d = { cr, l };
+		return d;
+	}
 
-    static inline VarData mkVarData(Candy::Clause* cr, unsigned int l) {
-        VarData d = { cr, l };
-        return d;
-    }
+	struct Watcher {
+	    Candy::Clause* cref;
+		Lit blocker;
+		Watcher() :
+				cref(0), blocker(lit_Undef) {
+		}
+		Watcher(Candy::Clause* cr, Lit p) :
+				cref(cr), blocker(p) {
+		}
+		bool operator==(const Watcher& w) const {
+			return cref == w.cref;
+		}
+		bool operator!=(const Watcher& w) const {
+			return cref != w.cref;
+		}
+	};
 
-    struct Watcher {
-        Candy::Clause* cref;
-        Lit blocker;
-        Watcher() :
-                cref(0), blocker(lit_Undef) {
-        }
-        Watcher(Candy::Clause* cr, Lit p) :
-                cref(cr), blocker(p) {
-        }
-        bool operator==(const Watcher& w) const {
-            return cref == w.cref;
-        }
-        bool operator!=(const Watcher& w) const {
-            return cref != w.cref;
-        }
-    };
+	struct WatcherDeleted {
+		WatcherDeleted() { }
+		bool operator()(const Watcher& w) const {
+			return w.cref->mark() == 1;
+		}
+	};
 
-    struct WatcherDeleted {
-        WatcherDeleted() {
-        }
-        bool operator()(const Watcher& w) const {
-            return w.cref->mark() == 1;
-        }
-    };
+	struct VarOrderLt {
+		const vector<double>& activity;
+		bool operator()(Var x, Var y) const {
+			return activity[x] > activity[y];
+		}
+		VarOrderLt(const vector<double>& act) :
+				activity(act) {
+		}
+	};
 
-    struct VarOrderLt {
-        const vector<double>& activity;
-        bool operator()(Var x, Var y) const {
-            return activity[x] > activity[y];
-        }
-        VarOrderLt(const vector<double>& act) :
-                activity(act) {
-        }
-    };
+	// Solver state:
+	bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+	double cla_inc;          // Amount to bump next clause with.
+	vector<double> activity; // A heuristic measurement of the activity of a variable.
+	double var_inc;          // Amount to bump next variable with.
+	OccLists<Lit, Watcher, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+	OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+	vector<Candy::Clause*> clauses;          // List of problem clauses.
+	vector<Candy::Clause*> learnts;          // List of learnt clauses.
 
-    // Solver state:
-    bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-    double cla_inc;          // Amount to bump next clause with.
-    vector<double> activity; // A heuristic measurement of the activity of a variable.
-    double var_inc;          // Amount to bump next variable with.
-    OccLists<Lit, Watcher, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    OccLists<Lit, Watcher, WatcherDeleted> unaryWatches; //  Unary watch scheme (clauses are seen when they become empty
-    vector<Candy::Clause*> clauses;          // List of problem clauses.
-    vector<Candy::Clause*> learnts;          // List of learnt clauses.
+	vector<lbool> assigns;          // The current assignments.
+	vector<char> polarity;         // The preferred polarity of each variable.
+	vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
+	vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
+	int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
+	vector<int> nbpos;
+	vector<int> trail_lim; // Separator indices for different decision levels in 'trail'.
+	vector<VarData> vardata;       // Stores reason and level for each variable.
+	int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+	int simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
+	int64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
+	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+	Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
+	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+	bool reduceOnSize;
+	int reduceOnSizeSize;                // See XMinisat paper
+	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
 
-    vector<lbool> assigns;          // The current assignments.
-    vector<char> polarity;         // The preferred polarity of each variable.
-    vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
-    vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
-    int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
-    vector<int> nbpos;
-    vector<int> trail_lim; // Separator indices for different decision levels in 'trail'.
-    vector<VarData> vardata;       // Stores reason and level for each variable.
-    int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
-    int simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
-    int64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
-    vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-    Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
-    bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
-    bool reduceOnSize;
-    int reduceOnSizeSize;                // See XMinisat paper
-    vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
+	// UPDATEVARACTIVITY trick (see competition'09 companion paper)
+	vector<Lit> lastDecisionLevel;
 
-    // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-    vector<Lit> lastDecisionLevel;
-    int nbclausesbeforereduce; // To know when it is time to reduce clause database
+	int nbclausesbeforereduce; // To know when it is time to reduce clause database
 
-    // Used for restart strategies
-    bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
-    float sumLBD; // used to compute the global average of LBD. Restarts...
-    //int sumAssumptions;
+	// Used for restart strategies
+	bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
+	float sumLBD; // used to compute the global average of LBD. Restarts...
+	//int sumAssumptions;
+	Candy::Clause* lastLearntClause;
 
-    Candy::Clause* lastLearntClause;
+	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
+	// used, exept 'seen' wich is used in several places.
+	//
+	vector<char> seen;
+	vector<Lit> analyze_stack;
+	vector<Lit> analyze_toclear;
+	vector<Lit> add_tmp;
+	unsigned int MYFLAG;
 
-    // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-    // used, exept 'seen' wich is used in several places.
-    //
-    vector<char> seen;
-    vector<Lit> analyze_stack;
-    vector<Lit> analyze_toclear;
-    vector<Lit> add_tmp;
-    unsigned int MYFLAG;
+	// Resource contraints:
+	int64_t conflict_budget;    // -1 means no budget.
+	int64_t propagation_budget; // -1 means no budget.
+	bool asynch_interrupt;
 
-    // Resource contraints:
-    int64_t conflict_budget;    // -1 means no budget.
-    int64_t propagation_budget; // -1 means no budget.
-    bool asynch_interrupt;
+	// Variables added for incremental mode
+	int incremental; // Use incremental SAT Solver
+	int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
+	double totalTime4Sat, totalTime4Unsat;
+	int nbSatCalls, nbUnsatCalls;
 
-    // Variables added for incremental mode
-    int incremental; // Use incremental SAT Solver
-    int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
-    double totalTime4Sat, totalTime4Unsat;
-    int nbSatCalls, nbUnsatCalls;
+	SolverSonification sonification;
 
-    SolverSonification sonification;
+	void* termCallbackState;
+	int (*termCallback)(void* state);
 
-    void* termCallbackState;
-    int (*termCallback)(void* state);
+	lbool status;
 
-    lbool status;
+	// Main internal methods:
+	//
+	void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
+	Lit pickBranchLit(); // Return the next decision variable.
+	void newDecisionLevel(); // Begins a new decision level.
+	void uncheckedEnqueue(Lit p, Candy::Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
+	bool enqueue(Lit p, Candy::Clause* from = nullptr); // Test if fact 'p' contradicts current state, enqueue otherwise.
+	Candy::Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+	void cancelUntil(int level); // Backtrack until a certain level.
+	void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>& selectors,
+			int& out_btlevel, unsigned int &nblevels,
+			unsigned int &szWithoutSelectors); // (bt = backtrack)
+	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
+	lbool search(int nof_conflicts); // Search for a given number of conflicts.
+	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
+	virtual void reduceDB(); // Reduce the set of learnt clauses.
+	void removeSatisfied(vector<Candy::Clause*>& cs); // Shrink 'cs' to contain only non-satisfied clauses.
+	void rebuildOrderHeap();
 
-    // Main internal methods:
-    //
-    void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
-    Lit pickBranchLit(); // Return the next decision variable.
-    void newDecisionLevel(); // Begins a new decision level.
+	// Maintaining Variable/Clause activity:
+	//
+	void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+	void varBumpActivity(Var v, double inc); // Increase a variable with the current 'bump' value.
+	void varBumpActivity(Var v); // Increase a variable with the current 'bump' value.
+	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
+	void claBumpActivity(Candy::Clause& c); // Increase a clause with the current 'bump' value.
 
-    void uncheckedEnqueue(Lit p, Candy::Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
-    bool enqueue(Lit p, Candy::Clause* from = nullptr); // Test if fact 'p' contradicts current state, enqueue otherwise.
-    Candy::Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-    void cancelUntil(int level); // Backtrack until a certain level.
-    void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>& selectors, int& out_btlevel, unsigned int &nblevels,
-            unsigned int &szWithoutSelectors); // (bt = backtrack)
-    void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-    bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
-    lbool search(int nof_conflicts); // Search for a given number of conflicts.
-    virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
-    virtual void reduceDB(); // Reduce the set of learnt clauses.
+	// Operations on clauses:
+	//
+	void attachClause(Candy::Clause* cr); // Attach a clause to watcher lists.
+	void detachClause(Candy::Clause* cr, bool strict = false); // Detach a clause to watcher lists.
+	void removeClause(Candy::Clause* cr); // Detach and free a clause.
+	bool locked(Candy::Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
+	bool satisfied(const Candy::Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
-    void removeSatisfied(vector<Candy::Clause*>& cs); // Shrink 'cs' to contain only non-satisfied clauses.
+	unsigned int computeLBD(const vector<Lit>& lits, int end = -1);
+	unsigned int computeLBD(const Candy::Clause &c);
+	void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
-    void rebuildOrderHeap();
+	// Misc:
+	//
+	int decisionLevel() const; // Gives the current decisionlevel.
+	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
+	Candy::Clause* reason(Var x) const;
+	int level(Var x) const;
+	bool withinBudget() const;
+	inline bool isSelector(Var v) {
+		return (incremental && v >= nbVarsInitialFormula);
+	}
 
-    // Maintaining Variable/Clause activity:
-    //
-    void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-    void varBumpActivity(Var v, double inc); // Increase a variable with the current 'bump' value.
-    void varBumpActivity(Var v); // Increase a variable with the current 'bump' value.
-    void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
+	// Static helpers:
+	//
+	// Returns a random float 0 <= x < 1. Seed must never be 0.
+	static inline double drand(double& seed) {
+		seed *= 1389796;
+		int q = (int) (seed / 2147483647);
+		seed -= (double) q * 2147483647;
+		return seed / 2147483647;
+	}
 
-    void claBumpActivity(Candy::Clause& c); // Increase a clause with the current 'bump' value.
-
-    // Operations on clauses:
-    //
-    void attachClause(Candy::Clause* cr); // Attach a clause to watcher lists.
-    void detachClause(Candy::Clause* cr, bool strict = false); // Detach a clause to watcher lists.
-    void removeClause(Candy::Clause* cr); // Detach and free a clause.
-    bool locked(Candy::Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
-    bool satisfied(const Candy::Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
-
-    unsigned int computeLBD(const vector<Lit>& lits, int end = -1);
-    unsigned int computeLBD(const Candy::Clause &c);
-    void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
-
-    // Misc:
-    //
-    int decisionLevel() const; // Gives the current decisionlevel.
-    uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
-
-    Candy::Clause* reason(Var x) const;
-
-    int level(Var x) const;
-    bool withinBudget() const;
-    inline bool isSelector(Var v) {
-        return (incremental && v >= nbVarsInitialFormula);
-    }
-
-    // Static helpers:
-    //
-    // Returns a random float 0 <= x < 1. Seed must never be 0.
-    static inline double drand(double& seed) {
-        seed *= 1389796;
-        int q = (int) (seed / 2147483647);
-        seed -= (double) q * 2147483647;
-        return seed / 2147483647;
-    }
-
-    // Returns a random integer 0 <= x < size. Seed must never be 0.
-    static inline int irand(double& seed, int size) {
-        return (int) (drand(seed) * size);
-    }
+	// Returns a random integer 0 <= x < size. Seed must never be 0.
+	static inline int irand(double& seed, int size) {
+		return (int) (drand(seed) * size);
+	}
 };
 
 //=================================================================================================

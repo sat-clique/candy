@@ -40,7 +40,6 @@ TEST (GateAnalyzerTestPatterns, countgates) {
 //
 //  ASSERT_EQ (output, "70229");
 //}
-//
 //TEST (GateAnalyzerTestPatternSemanticIntensification, countgates) {
 //  CNFProblem dimacs;
 //  dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");

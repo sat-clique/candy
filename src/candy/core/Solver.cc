@@ -110,7 +110,7 @@ Solver::Solver() :
                                 0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(
                                 1),
 
-                ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), unaryWatches(WatcherDeleted()), trail_size(0), qhead(
+                ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), trail_size(0), qhead(
                                 0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
                                 12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
                 // Resource constraints:
@@ -157,8 +157,6 @@ Var Solver::newVar(bool sign, bool dvar) {
     watches.init(mkLit(v, true));
     watchesBin.init(mkLit(v, false));
     watchesBin.init(mkLit(v, true));
-    unaryWatches.init(mkLit(v, false));
-    unaryWatches.init(mkLit(v, true));
     assigns.push_back(l_Undef);
     vardata.push_back(mkVarData(nullptr, 0));
     activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
@@ -261,10 +259,8 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
 
     if (c.size() == 2) {
         if (strict) {
-            auto ol = watchesBin[~c[0]];
-            ol.erase(std::remove(ol.begin(), ol.end(), Watcher(cr, c[1])), ol.end());
-            ol = watchesBin[~c[1]];
-            ol.erase(std::remove(ol.begin(), ol.end(), Watcher(cr, c[0])), ol.end());
+            watchesBin[~c[0]].erase(std::remove(watchesBin[~c[0]].begin(), watchesBin[~c[0]].end(), Watcher(cr, c[1])), watchesBin[~c[0]].end());
+            watchesBin[~c[1]].erase(std::remove(watchesBin[~c[1]].begin(), watchesBin[~c[1]].end(), Watcher(cr, c[0])), watchesBin[~c[1]].end());
         } else {
             // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
             watchesBin.smudge(~c[0]);
@@ -272,10 +268,8 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
         }
     } else {
         if (strict) {
-            auto ol = watches[~c[0]];
-            ol.erase(std::remove(ol.begin(), ol.end(), Watcher(cr, c[1])), ol.end());
-            ol = watches[~c[1]];
-            ol.erase(std::remove(ol.begin(), ol.end(), Watcher(cr, c[0])), ol.end());
+            watches[~c[0]].erase(std::remove(watches[~c[0]].begin(), watches[~c[0]].end(), Watcher(cr, c[1])), watches[~c[0]].end());
+            watches[~c[1]].erase(std::remove(watches[~c[1]].begin(), watches[~c[1]].end(), Watcher(cr, c[0])), watches[~c[1]].end());
         } else {
             // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
             watches.smudge(~c[0]);
@@ -771,7 +765,6 @@ Candy::Clause* Solver::propagate() {
 
     watches.cleanAll();
     watchesBin.cleanAll();
-    unaryWatches.cleanAll();
 
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
