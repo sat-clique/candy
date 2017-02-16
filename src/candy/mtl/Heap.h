@@ -22,7 +22,7 @@
 #define Glucose_Heap_h
 
 #include <vector>
-#include <cassert>
+#include <assert.h>
 
 using namespace std;
 
