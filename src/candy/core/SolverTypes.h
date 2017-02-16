@@ -204,8 +204,7 @@ class OccLists {
 public:
 	OccLists() {
 	}
-	OccLists(const Deleted& d) :
-	    deleted(d) {
+	OccLists(const Deleted& d) : deleted(d) {
 	}
 
 	void init(const Idx& idx) {

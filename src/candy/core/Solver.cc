@@ -73,7 +73,7 @@ static IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conf
 static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 300, IntRange(0, INT32_MAX));
 static IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 1000, IntRange(0, INT32_MAX));
 static IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30,
-                IntRange(0, INT32_MAX));
+        IntRange(0, INT32_MAX));
 
 static IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT32_MAX));
 static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The min LBD required to minimize clause", 6, IntRange(3, INT32_MAX));
@@ -82,44 +82,41 @@ static DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity deca
 static DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
 static DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
 static DoubleOption opt_random_var_freq(_cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable", 0,
-                DoubleRange(0, true, 1, true));
+        DoubleRange(0, true, 1, true));
 static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random variable selection", 91648253, DoubleRange(0, false, HUGE_VAL, false));
 static IntOption opt_ccmin_mode(_cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange(0, 2));
 static IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
 static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
 static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
-                DoubleRange(0, false, HUGE_VAL, false));
+        DoubleRange(0, false, HUGE_VAL, false));
 
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
-                IntRange(0, INT32_MAX));
+        IntRange(0, INT32_MAX));
 
 //=================================================================================================
 // Constructor/Destructor:
 
 Solver::Solver() :
-                verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(
-                                opt_size_trail_queue), incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(
-                                opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(
-                                opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(
-                                opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(
-                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
-                // Statistics: (formerly in 'SolverStats')
-                //
-                originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
-                                0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(0), nbstopsrestartssame(
-                                0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(
-                                1),
+        verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue), incReduceDB(
+                opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(
+                opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(
+                opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(
+                opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
+        // Statistics: (formerly in 'SolverStats')
+        //
+        originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
+                0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(
+                0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(1),
 
-                ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), unaryWatches(WatcherDeleted()), trail_size(0), qhead(
-                                0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
-                                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
-                // Resource constraints:
-                //
-                conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
-                                0.), nbSatCalls(0), nbUnsatCalls(0),
-                // Added since Candy
-                //
-                sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
+        ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), unaryWatches(WatcherDeleted()), trail_size(0), qhead(0), simpDB_assigns(
+                -1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
+                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
+        // Resource constraints:
+        //
+        conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
+                0.), nbSatCalls(0), nbUnsatCalls(0),
+        // Added since Candy
+        sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
     lbdQueue.initSize(sizeLBDQueue);
     trailQueue.initSize(sizeTrailQueue);
 }
@@ -493,7 +490,8 @@ Lit Solver::pickBranchLit() {
  |        rest of literals. There may be others from the same level though.
  |
  |________________________________________________________________________________________________@*/
-void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd, unsigned int &szWithoutSelectors) {
+void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd,
+        unsigned int &szWithoutSelectors) {
     int pathC = 0;
     Lit p = lit_Undef;
 
@@ -908,7 +906,7 @@ void Solver::reduceDB() {
 }
 
 void Solver::removeSatisfied(vector<Candy::Clause*>& cs) {
-    cs.erase(std::remove_if(cs.begin(), cs.end(), [this] (Candy::Clause* c) { return satisfied(*c); } ), cs.end());
+    cs.erase(std::remove_if(cs.begin(), cs.end(), [this] (Candy::Clause* c) {return satisfied(*c);}), cs.end());
 }
 
 void Solver::rebuildOrderHeap() {
@@ -990,8 +988,8 @@ lbool Solver::search(int nof_conflicts) {
 
             if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
                 printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n", (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
-                                (int) dec_vars - (int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), (int) clauses_literals,
-                                (int) nbReduceDB, nLearnts(), (int) nbDL2, (int) nbRemovedClauses, -1.0);
+                        (int) dec_vars - (int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), (int) clauses_literals, (int) nbReduceDB,
+                        nLearnts(), (int) nbDL2, (int) nbRemovedClauses, -1.0);
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -1152,9 +1150,9 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
         printf("c |                                |                                |                                     |\n");
         printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:               |\n");
         printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d                     |\n", lbdQueue.maxSize(),
-                        nbclausesbeforereduce, lbSizeMinimizingClause);
+                nbclausesbeforereduce, lbSizeMinimizingClause);
         printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d                     |\n", trailQueue.maxSize(), incReduceDB,
-                        lbLBDMinimizingClause);
+                lbLBDMinimizingClause);
         printf("c |   * K            : %6.2f      |   * Special   : %6d         |                                     |\n", K, specialIncReduceDB);
         printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                                     |\n", R, lbLBDFrozenClause);
         printf("c |                                |                                |                                     |\n");
@@ -1171,7 +1169,6 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     while (status == l_Undef) {
         sonification.restart();
         status = search(0); // the parameter is useless in glucose, kept to allow modifications
-
         if (!withinBudget())
             break;
         curr_restarts++;
