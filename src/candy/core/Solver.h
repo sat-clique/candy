@@ -348,8 +348,7 @@ protected:
 	Candy::Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
 	void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>& selectors,
-			int& out_btlevel, unsigned int &nblevels,
-			unsigned int &szWithoutSelectors); // (bt = backtrack)
+			int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
 	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
 	lbool search(int nof_conflicts); // Search for a given number of conflicts.
@@ -371,6 +370,7 @@ protected:
 	void attachClause(Candy::Clause* cr); // Attach a clause to watcher lists.
 	void detachClause(Candy::Clause* cr, bool strict = false); // Detach a clause to watcher lists.
 	void removeClause(Candy::Clause* cr); // Detach and free a clause.
+	unsigned int freeMarkedClauses(vector<Candy::Clause*>& list);
 	bool locked(Candy::Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
 	bool satisfied(const Candy::Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
@@ -613,6 +613,10 @@ struct reduceDB_lt {
     }
 
     bool operator()(Candy::Clause* x, Candy::Clause* y) {
+        // Moved additional criteria from reduceDB
+        if (!x->canBeDel() && y->canBeDel()) return 1;
+        if (!y->canBeDel() && x->canBeDel()) return 0;
+        if (!x->canBeDel() && !y->canBeDel()) return 0;
         // Main criteria... Like in MiniSat we keep all binary clauses
         if (x->size() > 2 && y->size() == 2)
             return 1;

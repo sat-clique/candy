@@ -14,9 +14,7 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     header.learnt = learnt;
     header.lbd = 0;
     header.canbedel = 1;
-    header._unused = 0;
     header.seen = 0;
-    header.szWithoutSelectors = 0;
 
     literals.insert(literals.end(), ps.begin(), ps.end());
 
@@ -32,9 +30,7 @@ Clause::Clause(std::initializer_list<Lit> list) {
     header.learnt = false;
     header.lbd = 0;
     header.canbedel = 1;
-    header._unused = 0;
     header.seen = 0;
-    header.szWithoutSelectors = 0;
 
     literals.insert(literals.end(), list.begin(), list.end());
 
@@ -176,14 +172,6 @@ void Clause::setSeen(bool b) {
 
 bool Clause::getSeen() {
     return header.seen;
-}
-
-void Clause::setSizeWithoutSelectors(unsigned int n) {
-    header.szWithoutSelectors = n;
-}
-
-unsigned int Clause::sizeWithoutSelectors() const {
-    return header.szWithoutSelectors;
 }
 
 } /* namespace Candy */
