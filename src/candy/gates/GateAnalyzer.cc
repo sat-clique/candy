@@ -73,7 +73,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
 #endif
     clause.clear();
   }
-  assert(solver.isSelector(var(alit)));
+//  assert(solver.isSelector(var(alit)));
   solver.addClauses(constraint);
   assumptions.push_back(~alit);
   bool isRightUnique = !solver.solve(assumptions);
