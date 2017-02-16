@@ -12,7 +12,7 @@
 
 namespace Candy {
 
-#define BITS_LBD 13
+#define BITS_LBD 16
 //#define BITS_SIZEWITHOUTSEL 19
 //#define BITS_REALSIZE 21
 
@@ -23,9 +23,10 @@ class Clause {
         unsigned learnt :1;
         unsigned canbedel :1;
         unsigned seen :1;
-        unsigned lbd :BITS_LBD;
-        //unsigned _unused :14; // Unused bits of 32
+        unsigned _unused :11; // Unused bits of 16
     } header;
+
+    uint16_t lbd;
 
     union {
         float act;
@@ -44,8 +45,6 @@ public:
     bool contains(Lit lit);
 
     int size() const;
-    void shrink(int i);
-    void pop_back();
     bool learnt() const;
     bool has_extra() const;
     uint32_t mark() const;
@@ -63,7 +62,7 @@ public:
     Lit subsumes(const Clause& other) const;
     void strengthen(Lit p);
     void setLBD(int i);
-    unsigned int lbd() const;
+    unsigned int getLBD() const;
     void setCanBeDel(bool b);
     bool canBeDel();
     void setSeen(bool b);

@@ -12,9 +12,11 @@ namespace Candy {
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     header.mark = 0;
     header.learnt = learnt;
-    header.lbd = 0;
     header.canbedel = 1;
     header.seen = 0;
+    header._unused = 0;
+
+    lbd = 0;
 
     literals.insert(literals.end(), ps.begin(), ps.end());
 
@@ -28,9 +30,11 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
 Clause::Clause(std::initializer_list<Lit> list) {
     header.mark = 0;
     header.learnt = false;
-    header.lbd = 0;
     header.canbedel = 1;
     header.seen = 0;
+    header._unused = 0;
+
+    lbd = 0;
 
     literals.insert(literals.end(), list.begin(), list.end());
 
@@ -57,14 +61,6 @@ bool Clause::contains(Lit lit) {
 
 int Clause::size() const {
     return literals.size();
-}
-
-void Clause::shrink(int i) {
-    literals.resize(literals.size() - i);
-}
-
-void Clause::pop_back() {
-    shrink(1);
 }
 
 bool Clause::learnt() const {
@@ -149,14 +145,14 @@ void Clause::strengthen(Lit p) {
 
 void Clause::setLBD(int i) {
     if (i < (1 << (BITS_LBD - 1))) {
-        header.lbd = i;
+        lbd = i;
     } else {
-        header.lbd = (1 << (BITS_LBD - 1));
+        lbd = (1 << (BITS_LBD - 1));
     }
 }
 
-unsigned int Clause::lbd() const {
-    return header.lbd;
+unsigned int Clause::getLBD() const {
+    return lbd;
 }
 
 void Clause::setCanBeDel(bool b) {

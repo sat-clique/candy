@@ -627,9 +627,9 @@ struct reduceDB_lt {
             return 0;
 
         // Second one  based on literal block distance
-        if (x->lbd() > y->lbd())
+        if (x->getLBD() > y->getLBD())
             return 1;
-        if (x->lbd() < y->lbd())
+        if (x->getLBD() < y->getLBD())
             return 0;
 
         // Finally we can use old activity or size, we choose the last one
