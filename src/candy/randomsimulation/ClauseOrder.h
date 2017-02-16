@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -59,10 +59,18 @@ namespace Candy {
          */
         virtual std::unordered_set<Glucose::Var> getEnabledOutputVars() = 0;
         
+        GateFilter();
         virtual ~GateFilter();
         GateFilter(const GateFilter& other) = delete;
         GateFilter& operator=(const GateFilter& other) = delete;
     };
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates a gate filter marking only the outputs of nonmonotonously nested gates as enabled.
+     */
+    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(GateAnalyzer &analyzer);
     
     /**
      * \class ClauseOrder
@@ -127,9 +135,18 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates an object of the simple (recursive) implementation of ClauseOrder.
      */
     std::unique_ptr<ClauseOrder> createRecursiveClauseOrder();
+    
+    /**
+     * \ingroup RandomSimulation
+     *
+     * Creates an object of the experimental non-recursive implementation of ClauseOrder.
+     */
+    std::unique_ptr<ClauseOrder> createNonrecursiveClauseOrder();
 }
 
 #endif

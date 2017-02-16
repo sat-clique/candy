@@ -3,5 +3,5 @@ add_subdirectory(core)
 add_subdirectory(simp)
 add_subdirectory(gates)
 add_subdirectory(randomsimulation)
+add_subdirectory(rsar)
 add_subdirectory(ipasir)
-

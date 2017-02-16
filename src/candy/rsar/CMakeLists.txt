@@ -1,0 +1,11 @@
+add_library(rsar
+  SolverAdapter.h
+  SolverAdapter.cc
+  ARSolver.h
+  ARSolver.cc
+  Refinement.h
+  Refinement.cc
+  Heuristics.h
+  Heuristics.cc
+  ApproximationState.h
+  ApproximationState.cc)
