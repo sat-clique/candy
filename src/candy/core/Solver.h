@@ -288,7 +288,6 @@ protected:
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, Watcher, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 	OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	OccLists<Lit, Watcher, WatcherDeleted> unaryWatches; //  Unary watch scheme (clauses are seen when they become empty
 	vector<Candy::Clause*> clauses;          // List of problem clauses.
 	vector<Candy::Clause*> learnts;          // List of learnt clauses.
 

@@ -16,6 +16,7 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     header.canbedel = 1;
     header._unused = 0;
     header.seen = 0;
+    header.szWithoutSelectors = 0;
 
     literals.insert(literals.end(), ps.begin(), ps.end());
 
@@ -33,6 +34,7 @@ Clause::Clause(std::initializer_list<Lit> list) {
     header.canbedel = 1;
     header._unused = 0;
     header.seen = 0;
+    header.szWithoutSelectors = 0;
 
     literals.insert(literals.end(), list.begin(), list.end());
 
