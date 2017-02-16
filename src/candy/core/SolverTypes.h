@@ -191,7 +191,6 @@ inline lbool toLbool(int v) {
 }
 
 //=================================================================================================
-
 // OccLists -- a class for maintaining occurence lists with lazy deletion:
 
 template<class Idx, class Elem, class Deleted>
