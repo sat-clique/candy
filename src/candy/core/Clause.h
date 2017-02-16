@@ -13,19 +13,18 @@
 namespace Candy {
 
 #define BITS_LBD 13
-#define BITS_SIZEWITHOUTSEL 19
-#define BITS_REALSIZE 21
+//#define BITS_SIZEWITHOUTSEL 19
+//#define BITS_REALSIZE 21
 
 class Clause {
 
     struct {
         unsigned mark :2;
         unsigned learnt :1;
-        unsigned szWithoutSelectors : BITS_SIZEWITHOUTSEL;
         unsigned canbedel :1;
         unsigned seen :1;
-        unsigned _unused :27; // Unused bits
-        unsigned lbd : BITS_LBD;
+        unsigned lbd :BITS_LBD;
+        //unsigned _unused :14; // Unused bits of 32
     } header;
 
     union {
@@ -69,8 +68,6 @@ public:
     bool canBeDel();
     void setSeen(bool b);
     bool getSeen();
-    void setSizeWithoutSelectors(unsigned int n);
-    unsigned int sizeWithoutSelectors() const;
 };
 
 } /* namespace Candy */

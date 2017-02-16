@@ -340,7 +340,6 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
     assert(decisionLevel() == 0);
 
     while (subsumption_queue.size() > 0 || bwdsub_assigns < trail_size) {
-
         // Empty subsumption queue and return immediately on user-interrupt:
         if (asynch_interrupt) {
             subsumption_queue.clear();

@@ -295,7 +295,6 @@ void Solver::removeClause(Candy::Clause* cr) {
     if (locked(cr))
         vardata[var(c[0])].reason = nullptr;
     c.mark(1);
-    delete cr;
 }
 
 bool Solver::satisfied(const Candy::Clause& c) const {
@@ -354,12 +353,9 @@ inline unsigned int Solver::computeLBD(const Candy::Clause &c) {
     MYFLAG++;
 
     if (incremental) { // ----------------- INCREMENTAL MODE
-        unsigned int nbDone = 0;
-        for (int i = 0; i < c.size() && nbDone < c.sizeWithoutSelectors(); i++) {
+        for (int i = 0; i < c.size(); i++) {
             if (isSelector(var(c[i]))) {
                 continue;
-            } else {
-                nbDone++;
             }
             int l = level(var(c[i]));
             if (permDiff[l] != MYFLAG) {
@@ -486,7 +482,7 @@ Lit Solver::pickBranchLit() {
  |        rest of literals. There may be others from the same level though.
  |
  |________________________________________________________________________________________________@*/
-void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd, unsigned int &szWithoutSelectors) {
+void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd) {
     int pathC = 0;
     Lit p = lit_Undef;
 
@@ -626,16 +622,6 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         out_learnt[1] = p;
         out_btlevel = level(var(p));
     }
-    if (incremental) {
-        szWithoutSelectors = 0;
-        for (unsigned int i = 0; i < out_learnt.size(); i++) {
-            if (!isSelector(var((out_learnt[i]))))
-                szWithoutSelectors++;
-            else if (i > 0)
-                break;
-        }
-    } else
-        szWithoutSelectors = out_learnt.size();
 
     // Compute LBD
     lbd = computeLBD(out_learnt, out_learnt.size() - selectors.size());
@@ -869,7 +855,6 @@ Candy::Clause* Solver::propagate() {
  |________________________________________________________________________________________________@*/
 
 void Solver::reduceDB() {
-    unsigned int i, j;
     nbReduceDB++;
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
@@ -883,20 +868,25 @@ void Solver::reduceDB() {
     // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
     // Keep clauses which seem to be useful (their lbd was reduce during this sequence)
     unsigned int limit = learnts.size() / 2;
-
-    for (i = j = 0; i < learnts.size(); i++) {
+    for (unsigned int i = 0; i < limit; i++) {
         Candy::Clause& c = *learnts[i];
-        if (c.lbd() > 2 && c.size() > 2 && c.canBeDel() && !locked(learnts[i]) && (i < limit)) {
+        if (!c.canBeDel()) break; // frozen clauses area reached early (see reduceDB_lt)
+        if (c.lbd() > 2 && c.size() > 2 && !locked(learnts[i])) {
             removeClause(learnts[i]);
-            nbRemovedClauses++;
-        } else {
-            if (!c.canBeDel())
-                limit++; //we keep c, so we can delete an other clause
-            c.setCanBeDel(true); // At the next step, c can be delete
-            learnts[j++] = learnts[i];
         }
     }
-    learnts.resize(j);
+    nbRemovedClauses += freeMarkedClauses(learnts);
+    for (Candy::Clause* c : learnts) { // "unfreeze" remaining clauses
+        c->setCanBeDel(true);
+    }
+}
+
+unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
+    auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->mark() == 1; });
+    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { delete c; });
+    int nRemoved = std::distance(new_end, list.end());
+    list.erase(new_end, list.end());
+    return nRemoved;
 }
 
 void Solver::removeSatisfied(vector<Candy::Clause*>& cs) {
@@ -961,7 +951,7 @@ lbool Solver::search(int nof_conflicts) {
     assert(ok);
     int backtrack_level;
     vector<Lit> learnt_clause, selectors;
-    unsigned int nblevels, szWithoutSelectors = 0;
+    unsigned int nblevels;
     bool blocked = false;
     starts++;
     for (;;) {
@@ -1004,7 +994,7 @@ lbool Solver::search(int nof_conflicts) {
             learnt_clause.clear();
             selectors.clear();
 
-            analyze(confl, learnt_clause, selectors, backtrack_level, nblevels, szWithoutSelectors);
+            analyze(confl, learnt_clause, selectors, backtrack_level, nblevels);
 
             sonification.learntSize(learnt_clause.size());
 
@@ -1025,7 +1015,6 @@ lbool Solver::search(int nof_conflicts) {
             } else {
                 Candy::Clause* cr = new Candy::Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
-                cr->setSizeWithoutSelectors(szWithoutSelectors);
                 if (nblevels <= 2)
                     nbDL2++; // stats
                 if (cr->size() == 2)
