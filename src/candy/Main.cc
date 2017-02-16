@@ -59,6 +59,7 @@
 #include "utils/System.h"
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
+#include "utils/StringUtils.h"
 #include "simp/SimpSolver.h"
 
 #include "gates/GateAnalyzer.h"
@@ -316,22 +317,37 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
 
 
 struct RandomSimulationArguments {
-    const int nRounds;
-    const double rrat;
-    const bool filterConjecturesBySize;
-    const int maxConjectureSize;
-    const bool removeBackboneConjectures;
-    const bool filterGatesByNonmono;
+  const int nRounds;
+  const double rrat;
+  const bool filterConjecturesBySize;
+  const int maxConjectureSize;
+  const bool removeBackboneConjectures;
+  const bool filterGatesByNonmono;
 };
 
 struct RSARArguments {
-    const bool useRSAR;
-    const int maxRefinementSteps;
-    const Candy::SimplificationHandlingMode simplificationHandlingMode;
-    const bool withCoverageHeuristic;
-    const std::string coverageHeuristicConfiguration;
+  const bool useRSAR;
+  const int maxRefinementSteps;
+  const Candy::SimplificationHandlingMode simplificationHandlingMode;
+  const bool withInputDepCountHeuristic;
+  const std::string inputDepCountHeuristicConfiguration;
 };
 
+static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str) {
+  if (str == "DISABLE") {
+    return Candy::SimplificationHandlingMode::DISABLE;
+  }
+  if (str == "FREEZE") {
+    return Candy::SimplificationHandlingMode::FREEZE;
+  }
+  if (str == "RESTRICT") {
+    return Candy::SimplificationHandlingMode::RESTRICT;
+  }
+  if (str == "FULL") {
+    return Candy::SimplificationHandlingMode::FULL;
+  }
+  throw std::invalid_argument(str);
+}
 
 struct GlucoseArguments {
   const int verb;
@@ -353,21 +369,6 @@ struct GlucoseArguments {
   const RSARArguments rsarArgs;
 };
 
-static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str) {
-    if (str == "DISABLE") {
-        return Candy::SimplificationHandlingMode::DISABLE;
-    }
-    if (str == "FREEZE") {
-        return Candy::SimplificationHandlingMode::FREEZE;
-    }
-    if (str == "RESTRICT") {
-        return Candy::SimplificationHandlingMode::RESTRICT;
-    }
-    if (str == "FULL") {
-        return Candy::SimplificationHandlingMode::FULL;
-    }
-    throw std::invalid_argument(str);
-}
 
 static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
   setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
@@ -414,7 +415,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
                              false);
   IntOption opt_rsar_maxRefinementSteps("RSAR", "rsar-max-refinements", "Max. refinement steps", 10, IntRange(1, INT32_MAX));
   StringOption opt_rsar_simpMode("RSAR", "rsar-simpmode", "Simplification handling mode", "RESTRICT");
-  StringOption opt_rsar_coverageHeurConf("RSAR", "rsar-heur-cov", "Coverage heuristic configuration", "");
+  StringOption opt_rsar_inputDepCountHeurConf("RSAR", "rsar-heur-idc", "Input dependency count heuristic configuration", "");
 
   parseOptions(argc, argv, true);
 
@@ -427,8 +428,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 
   RSARArguments rsarArgs {opt_rsar_enable, opt_rsar_maxRefinementSteps,
       parseSimplificationHandlingMode(std::string{opt_rsar_simpMode}),
-      std::string{opt_rsar_coverageHeurConf} != "",
-      std::string{opt_rsar_coverageHeurConf}};
+      std::string{opt_rsar_inputDepCountHeurConf} != "",
+      std::string{opt_rsar_inputDepCountHeurConf}};
 
   GlucoseArguments result {verb, mod, vv, cpu_lim, mem_lim, do_solve, do_preprocess, do_certified, do_gaterecognition,
     opt_certified_file, gateRecognitionArgs, rsArgs, rsarArgs};
