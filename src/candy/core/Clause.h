@@ -17,6 +17,7 @@ namespace Candy {
 #define BITS_REALSIZE 21
 
 class Clause {
+
     struct {
         unsigned mark :2;
         unsigned learnt :1;
