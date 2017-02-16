@@ -60,10 +60,16 @@
 #include "utils/ParseUtils.h"
 #include "utils/Options.h"
 #include "utils/StringUtils.h"
+#include "utils/MemUtils.h"
 #include "simp/SimpSolver.h"
 
 #include "gates/GateAnalyzer.h"
 #include "rsar/ARSolver.h"
+#include "rsar/SolverAdapter.h"
+#include "rsar/Heuristics.h"
+#include "randomsimulation/RandomSimulator.h"
+#include "randomsimulation/Conjectures.h"
+#include "randomsimulation/ClauseOrder.h"
 
 using namespace Glucose;
 
@@ -284,6 +290,18 @@ struct GateRecognitionArguments {
   const bool opt_print_gates;
 };
 
+static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem &dimacs,
+                                                               const GateRecognitionArguments& recognitionArgs) {
+  return backported_std::make_unique<Candy::GateAnalyzer>(dimacs,
+                                                          recognitionArgs.opt_gr_tries,
+                                                          recognitionArgs.opt_gr_patterns,
+                                                          recognitionArgs.opt_gr_semantic,
+                                                          recognitionArgs.opt_gr_holistic,
+                                                          recognitionArgs.opt_gr_lookahead,
+                                                          recognitionArgs.opt_gr_intensify,
+                                                          recognitionArgs.opt_gr_lookahead_threshold);
+}
+
 /**
  * Performs gate recognition on the problem \p dimacs and prints statistics.
  *
@@ -292,26 +310,19 @@ struct GateRecognitionArguments {
 static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
                                      const GateRecognitionArguments& recognitionArgs) {
   double recognition_time = cpuTime();
-  Candy::GateAnalyzer gates(dimacs,
-                            recognitionArgs.opt_gr_tries,
-                            recognitionArgs.opt_gr_patterns,
-                            recognitionArgs.opt_gr_semantic,
-                            recognitionArgs.opt_gr_holistic,
-                            recognitionArgs.opt_gr_lookahead,
-                            recognitionArgs.opt_gr_intensify,
-                            recognitionArgs.opt_gr_lookahead_threshold);
-  gates.analyze();
+  auto gates = createGateAnalyzer(dimacs, recognitionArgs);
+  gates->analyze();
   recognition_time = cpuTime() - recognition_time;
   printf("c ========================================[ Problem Statistics ]===========================================\n");
   printf("c |                                                                                                       |\n");
-  printf("c |  Number of gates:        %12d                                                                 |\n", gates.getGateCount());
+  printf("c |  Number of gates:        %12d                                                                 |\n", gates->getGateCount());
   printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
   printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
   printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
   printf("c |                                                                                                       |\n");
   printf("c =========================================================================================================\n");
   if (recognitionArgs.opt_print_gates) {
-    gates.printGates();
+    gates->printGates();
   }
 }
 
@@ -347,6 +358,70 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
     return Candy::SimplificationHandlingMode::FULL;
   }
   throw std::invalid_argument(str);
+}
+
+static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
+                                                                   const RandomSimulationArguments& rsArguments) {
+  // TODO: validate arguments
+
+  auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
+  simulatorBuilder->withGateAnalyzer(analyzer);
+  simulatorBuilder->withReductionRateAbortThreshold(rsArguments.rrat);
+
+  if (rsArguments.filterGatesByNonmono) {
+    simulatorBuilder->withGateFilter(Candy::createNonmonotonousGateFilter(analyzer));
+  }
+
+  auto randomSimulator = simulatorBuilder->build();
+  auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds));
+
+  if (rsArguments.filterConjecturesBySize) {
+    auto sizeFilter = Candy::createSizeConjectureFilter(rsArguments.maxConjectureSize);
+    conjectures = sizeFilter->apply(conjectures);
+  }
+
+  if (rsArguments.removeBackboneConjectures) {
+    auto bbFilter = Candy::createBackboneRemovalConjectureFilter();
+    conjectures = bbFilter->apply(conjectures);
+  }
+
+  return backported_std::make_unique<Candy::Conjectures>(std::move(conjectures));
+}
+
+std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer,
+                                                SimpSolver& satSolver,
+                                                std::unique_ptr<Candy::Conjectures> conjectures,
+                                                const RSARArguments& rsarArguments) {
+  // TODO: validate arguments
+
+  auto arSolverBuilder = Candy::createARSolverBuilder();
+  arSolverBuilder->withConjectures(std::move(conjectures));
+  arSolverBuilder->withMaxRefinementSteps(rsarArguments.maxRefinementSteps);
+  arSolverBuilder->withSimplificationHandlingMode(rsarArguments.simplificationHandlingMode);
+  arSolverBuilder->withSolver(Candy::createNonowningGlucoseAdapter(satSolver));
+
+  if (rsarArguments.withInputDepCountHeuristic) {
+    const std::string& limitsString = rsarArguments.inputDepCountHeuristicConfiguration;
+    std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
+    arSolverBuilder->addRefinementHeuristic(Candy::createInputDepCountRefinementHeuristic(analyzer,
+                                                                                          limits));
+  }
+
+  return arSolverBuilder->build();
+}
+
+static lbool solveWithRSAR(SimpSolver& solver,
+                           Candy::CNFProblem& problem,
+                           const GateRecognitionArguments& gateRecognitionArgs,
+                           const RandomSimulationArguments& rsArguments,
+                           const RSARArguments& rsarArguments) {
+  auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
+  gateAnalyzer->analyze();
+  auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments);
+  auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
+  auto result = arSolver->solve();
+
+  return lbool(result);
 }
 
 struct GlucoseArguments {
@@ -490,7 +565,14 @@ int main(int argc, char** argv) {
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
     installSignalHandlers(true);
 
-    lbool result = solve(S, args.do_preprocess, parsed_time);
+    lbool result;
+    if (!args.rsarArgs.useRSAR) {
+      result = solve(S, args.do_preprocess, parsed_time);
+    }
+    else {
+      result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs,
+                             args.randomSimulationArgs, args.rsarArgs);
+    }
 
     const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
     printResult(S, result, statsFilename);
