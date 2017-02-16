@@ -43,8 +43,12 @@ public:
   For& getProblem() {
     return problem;
   }
+    
+  const For& getProblem() const {
+    return problem;
+  }
 
-  int nVars() {
+  int nVars() const {
     return maxVars;
   }
 
@@ -68,7 +72,7 @@ public:
     return true;
   }
 
-  bool readDimacsFromFile(char* filename) {
+  bool readDimacsFromFile(const char* filename) {
     gzFile in = gzopen(filename, "rb");
     if (in == NULL) {
       printf("ERROR! Could not open file: %s\n", filename);
@@ -102,7 +106,7 @@ public:
 
   void readClause(Cl& in) {
     Cl* lits = new Cl(in);
-    maxVars = var(*std::max_element(in.begin(), in.end()))+1;
+    maxVars = std::max(maxVars, var(*std::max_element(in.begin(), in.end()))+1);
     problem.push_back(lits);
   }
 

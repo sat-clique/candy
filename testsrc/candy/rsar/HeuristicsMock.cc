@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,38 @@
  
  */
 
+#include "HeuristicsMock.h"
+#include <core/SolverTypes.h>
+#include <rsar/ApproximationState.h>
+
 #include <gtest/gtest.h>
 
-int main(int argc, char **argv) {
-    ::testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+namespace Candy {
+    void FakeHeuristic::beginRefinementStep() {
+        m_step++;
+    }
+    
+    void FakeHeuristic::markRemovals(EquivalenceImplications& equivalences) {
+        ASSERT_TRUE(m_step >= 0);
+        for (auto var : m_removals[m_step]) {
+            equivalences.addVariableRemovalToWorkQueue(var);
+        }
+    }
+    
+    void FakeHeuristic::markRemovals(Backbones& backbones) {
+        ASSERT_TRUE(m_step >= 0);
+        for (auto var : m_removals[m_step]) {
+            backbones.addVariableRemovalToWorkQueue(var);
+        }
+    }
+    
+    void FakeHeuristic::inStepNRemove(int step, const std::vector<Var>& variables) noexcept {
+        m_removals[step] = std::vector<Var>{variables};
+    }
+    
+    FakeHeuristic::FakeHeuristic() : m_removals(), m_step(-1) {
+    }
+    
+    FakeHeuristic::~FakeHeuristic() {
+    }
 }

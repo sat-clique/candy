@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -40,31 +40,28 @@ namespace Candy {
     class Conjectures;
     class EquivalenceConjecture;
     
-    /// Deletes the clauses in the given formula.
-    void deleteClauses(CNFProblem* formula);
+    /** \defgroup RandomSimulation_Tests */
     
-    /// Asserts that variables does not contain the variable forbidden.
-    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
+    /**
+     * \ingroup RandomSimulation_Tests
+     *
+     * Returns true iff c contains the backbone conjecture for the literal lit.
+     */
+    bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit);
     
-    /// Asserts that variables contains the variable required.
-    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var required);
-    
-    /// Returns a clause containing the negated lits of the given clause.
-    Cl negatedLits(const Cl& clause);
-    
-    /// Inserts the variables contained in the literals of lits in to the target set.
-    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
-    
-    /// Returns true iff c contains the backbone conjecture for the literal lit.
-    bool hasBackboneConj(Conjectures &c, Glucose::Lit lit);
-    
-    /// Returns true iff the given equivalence conjectures are equivalent.
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, std::vector<Glucose::Lit> lits);
+    /**
+     * \ingroup RandomSimulation_Tests
+     *
+     * Returns true iff the given equivalence conjectures are equivalent.
+     */
+    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits);
 
-    /// Returns true iff c contains the given equivalence conjecture.
-    bool hasEquivalenceConj(Conjectures &c, std::vector<Glucose::Lit> lits);
-    
-    bool containsClause(const For& formula, const Cl& clause);
+    /**
+     * \ingroup RandomSimulation_Tests
+     *
+     * Returns true iff c contains the given equivalence conjecture.
+     */
+    bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits);
 }
 
 #endif

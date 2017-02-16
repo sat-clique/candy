@@ -1,4 +1,4 @@
-/* Copyright (c) 2017 Felix Kutzner
+/* Copyright (c) 2017 Felix Kutzner (github.com/fkutzner)
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -64,6 +64,8 @@ namespace Candy {
     };
     
     /**
+     * \ingroup RandomSimulation
+     *
      * Creates an object of Propagation's default implementation.
      */
     std::unique_ptr<Propagation> createInputToOutputPropagation();
