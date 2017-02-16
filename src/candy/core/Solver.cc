@@ -97,26 +97,28 @@ static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "m
 // Constructor/Destructor:
 
 Solver::Solver() :
-        verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue), incReduceDB(
-                opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(
-                opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(
-                opt_clause_decay), random_var_freq(opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(
-                opt_phase_saving), rnd_pol(false), rnd_init_act(opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
-        // Statistics: (formerly in 'SolverStats')
-        //
-        originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
-                0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(
-                0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(1),
+                verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(
+                                opt_size_trail_queue), incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(
+                                opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(
+                                opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(
+                                opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(
+                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
+                // Statistics: (formerly in 'SolverStats')
+                //
+                originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
+                                0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(0), nbstopsrestartssame(
+                                0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(
+                                1),
 
-        ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), unaryWatches(WatcherDeleted()), trail_size(0), qhead(0), simpDB_assigns(
-                -1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
-                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
-        // Resource constraints:
-        //
-        conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
-                0.), nbSatCalls(0), nbUnsatCalls(0),
-        // Added since Candy
-        sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
+                ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), unaryWatches(WatcherDeleted()), trail_size(0), qhead(
+                                0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
+                                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
+                // Resource constraints:
+                //
+                conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
+                                0.), nbSatCalls(0), nbUnsatCalls(0),
+                // Added since Candy
+                sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
     lbdQueue.initSize(sizeLBDQueue);
     trailQueue.initSize(sizeTrailQueue);
 }
@@ -490,8 +492,7 @@ Lit Solver::pickBranchLit() {
  |        rest of literals. There may be others from the same level though.
  |
  |________________________________________________________________________________________________@*/
-void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd,
-        unsigned int &szWithoutSelectors) {
+void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd, unsigned int &szWithoutSelectors) {
     int pathC = 0;
     Lit p = lit_Undef;
 
@@ -906,7 +907,7 @@ void Solver::reduceDB() {
 }
 
 void Solver::removeSatisfied(vector<Candy::Clause*>& cs) {
-    cs.erase(std::remove_if(cs.begin(), cs.end(), [this] (Candy::Clause* c) {return satisfied(*c);}), cs.end());
+    cs.erase(std::remove_if(cs.begin(), cs.end(), [this] (Candy::Clause* c) { return satisfied(*c); } ), cs.end());
 }
 
 void Solver::rebuildOrderHeap() {

@@ -74,7 +74,6 @@ class Solver {
     friend class SolverConfiguration;
 
 public:
-
     // Constructor/Destructor:
     //
     Solver();
@@ -450,21 +449,20 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 }
 
 inline void Solver::claDecayActivity() {
-    cla_inc *= (1 / clause_decay);
+	cla_inc *= (1 / clause_decay);
 }
-
 inline void Solver::claBumpActivity(Candy::Clause& c) {
-    if ((c.activity() += cla_inc) > 1e20) {
-        // Rescale:
-        for (Candy::Clause* clause : learnts)
-            clause->activity() *= 1e-20;
-        cla_inc *= 1e-20;
-    }
+	if ((c.activity() += cla_inc) > 1e20) {
+		// Rescale:
+		for (Candy::Clause* clause : learnts)
+			clause->activity() *= 1e-20;
+		cla_inc *= 1e-20;
+	}
 }
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
 inline bool Solver::enqueue(Lit p, Candy::Clause* from) {
-    return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
+	return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 inline bool Solver::addClause(const vector<Lit>& ps) {
     add_tmp.clear();
