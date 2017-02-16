@@ -248,10 +248,12 @@ void Solver::attachClause(CRef cr) {
         watches[~c[0]].push_back(Watcher(cr, c[1]));
         watches[~c[1]].push_back(Watcher(cr, c[0]));
     }
-    if (c.learnt())
+
+    if (c.learnt()) {
         learnts_literals += c.size();
-    else
+    } else {
         clauses_literals += c.size();
+    }
 }
 
 void Solver::detachClause(CRef cr, bool strict) {
