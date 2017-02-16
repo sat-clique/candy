@@ -37,7 +37,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
   index = buildIndexFromClauses(problem.getProblem());
-  if (useHolistic) solver.insertClauses(problem);
+  if (useHolistic) solver.addClauses(problem);
   solver.setIncrementalMode();
 }
 
@@ -71,7 +71,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
 #endif
     clause.clear();
   }
-  solver.insertClauses(constraint);
+  solver.addClauses(constraint);
   bool isRightUnique = !solver.solve(~alit);
   solver.addClause(alit);
   return isRightUnique;

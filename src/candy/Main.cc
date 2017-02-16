@@ -554,7 +554,7 @@ int main(int argc, char** argv) {
       return 0;
     }
 
-    S.insertClauses(dimacs);
+    S.addClauses(dimacs);
 
     double parsed_time = cpuTime();
 
