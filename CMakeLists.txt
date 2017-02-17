@@ -68,6 +68,9 @@ option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
 # Enable Sonification
 option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 
+# Enable Static Linking
+option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
+
 # Disable RTTI and defines CANDY_HAS_NO_RTTI.
 # WARNING: Enable this only AFTER having thoroughly tested the code. In some places
 # RTTI is needed for testing (and only in places where it is also safe to use a
@@ -104,7 +107,12 @@ if(CANDY_DISABLE_RTTI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -DCANDY_HAS_NO_RTTI")
 endif()
 
-
+if(CANDY_ENABLE_STATIC_LINKING)
+  message("Static linking is enabled.")
+  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  SET(BUILD_SHARED_LIBRARIES OFF)
+  SET(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
 
 if (CANDY_ENABLE_NATIVEARCH)
   message("Compiling for the processor architecture of this machine.")
