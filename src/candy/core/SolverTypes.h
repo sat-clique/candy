@@ -69,7 +69,7 @@ typedef int Var;
 #define var_Undef (-1)
 
 struct Lit {
-	int x;
+	int32_t x;
 
 	operator int() const {
 		return x;
