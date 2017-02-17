@@ -117,7 +117,7 @@ public:
     }
 
     void printClause(Candy::Clause& c, bool skipSelectorVariables = false) {
-        for (int i = 0; i < c.size(); i++) {
+        for (unsigned int i = 0; i < c.size(); i++) {
             if (!skipSelectorVariables || !isSelector(var(c[i]))) {
                 printLit(c[i]);
                 printf(" ");
@@ -258,7 +258,7 @@ protected:
 	struct WatcherDeleted {
 		WatcherDeleted() { }
 		bool operator()(const Watcher& w) const {
-			return w.cref->mark() == 1;
+			return w.cref->getMark() == 1;
 		}
 	};
 

@@ -48,7 +48,7 @@
  **************************************************************************************************/
 
 #include <errno.h>
-
+#include <iostream>
 #include <signal.h>
 #include <zlib.h>
 #include <sys/resource.h>
@@ -441,7 +441,10 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 
 int main(int argc, char** argv) {
   try {
-    printf("c\nc This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)\nc\n");
+    std::cout << "This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
+    std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
+    std::cout << "c Size of Vector: " << sizeof(std::vector<Lit>) << std::endl;
+    std::cout << "c Size of Float: " << sizeof(float) << std::endl;
 
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
 

@@ -168,7 +168,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
         // consequence of how backward subsumption is used to mimic
         // forward subsumption.
         subsumption_queue.push_back(cr);
-        for (int i = 0; i < c.size(); i++) {
+        for (unsigned int i = 0; i < c.size(); i++) {
             occurs[var(c[i])].push_back(cr);
             n_occ[toInt(c[i])]++;
             touched[var(c[i])] = 1;
@@ -185,7 +185,7 @@ void SimpSolver::removeClause(Candy::Clause* cr) {
     const Candy::Clause& c = *cr;
 
     if (use_simplification)
-        for (int i = 0; i < c.size(); i++) {
+        for (unsigned int i = 0; i < c.size(); i++) {
             n_occ[toInt(c[i])]--;
             updateElimHeap(var(c[i]));
             occurs.smudge(var(c[i]));
@@ -204,7 +204,7 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
     subsumption_queue.push_back(cr);
 
     if (certifiedUNSAT) {
-        for (int i = 0; i < c.size(); i++)
+        for (unsigned int i = 0; i < c.size(); i++)
             if (c[i] != l)
                 fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
         fprintf(certifiedOutput, "0\n");
@@ -216,7 +216,7 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
     } else {
         if (certifiedUNSAT) {
             fprintf(certifiedOutput, "d ");
-            for (int i = 0; i < c.size(); i++)
+            for (unsigned int i = 0; i < c.size(); i++)
                 fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
             fprintf(certifiedOutput, "0\n");
         }
@@ -241,9 +241,9 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
     const Candy::Clause& ps = ps_smallest ? _qs : _ps;
     const Candy::Clause& qs = ps_smallest ? _ps : _qs;
 
-    for (int i = 0; i < qs.size(); i++) {
+    for (unsigned int i = 0; i < qs.size(); i++) {
         if (var(qs[i]) != v) {
-            for (int j = 0; j < ps.size(); j++)
+            for (unsigned int j = 0; j < ps.size(); j++)
                 if (var(ps[j]) == var(qs[i]))
                     if (ps[j] == ~qs[i])
                         return false;
@@ -254,7 +254,7 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
         next: ;
     }
 
-    for (int i = 0; i < ps.size(); i++)
+    for (unsigned int i = 0; i < ps.size(); i++)
         if (var(ps[i]) != v)
             out_clause.push_back(ps[i]);
 
@@ -271,9 +271,9 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
 
     size = ps.size() - 1;
 
-    for (int i = 0; i < qs.size(); i++) {
+    for (unsigned int i = 0; i < qs.size(); i++) {
         if (var(_qs[i]) != v) {
-            for (int j = 0; j < ps.size(); j++)
+            for (unsigned int j = 0; j < ps.size(); j++)
                 if (var(_ps[j]) == var(_qs[i]))
                     if (_ps[j] == ~_qs[i])
                         return false;
@@ -293,23 +293,23 @@ void SimpSolver::gatherTouchedClauses() {
 
     unsigned int i, j;
     for (i = j = 0; i < subsumption_queue.size(); i++)
-        if (subsumption_queue[i]->mark() == 0)
-            subsumption_queue[i]->mark(2);
+        if (subsumption_queue[i]->getMark() == 0)
+            subsumption_queue[i]->setMark(2);
 
     for (unsigned int i = 0; i < touched.size(); i++)
         if (touched[i]) {
             const vector<Candy::Clause*>& cs = occurs.lookup(i);
             for (unsigned int j = 0; j < cs.size(); j++)
-                if (cs[j]->mark() == 0) {
+                if (cs[j]->getMark() == 0) {
                     subsumption_queue.push_back(cs[j]);
-                    cs[j]->mark(2);
+                    cs[j]->setMark(2);
                 }
             touched[i] = 0;
         }
 
     for (i = 0; i < subsumption_queue.size(); i++)
-        if (subsumption_queue[i]->mark() == 2)
-            subsumption_queue[i]->mark(0);
+        if (subsumption_queue[i]->getMark() == 2)
+            subsumption_queue[i]->setMark(0);
 
     n_touched = 0;
 }
@@ -359,7 +359,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
         subsumption_queue.pop_front();
         Candy::Clause& c = *cr;
 
-        if (c.mark())
+        if (c.getMark())
             continue;
 
         if (verbose && verbosity >= 2 && cnt++ % 1000 == 0)
@@ -369,16 +369,16 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
 
         // Find best variable to scan:
         Var best = var(c[0]);
-        for (int i = 1; i < c.size(); i++)
+        for (unsigned int i = 1; i < c.size(); i++)
             if (occurs[var(c[i])].size() < occurs[best].size())
                 best = var(c[i]);
 
         // Search all candidates:
         vector<Candy::Clause*>& cs = occurs.lookup(best);
         for (unsigned int j = 0; j < cs.size(); j++)
-            if (c.mark())
+            if (c.getMark())
                 break;
-            else if (!cs[j]->mark() && cs[j] != cr && (subsumption_lim == -1 || cs[j]->size() < subsumption_lim)) {
+            else if (!cs[j]->getMark() && cs[j] != cr && (subsumption_lim == -1 || (int)cs[j]->size() < subsumption_lim)) {
                 Lit l = c.subsumes(*cs[j]);
 
                 if (l == lit_Undef)
@@ -403,12 +403,12 @@ bool SimpSolver::asymm(Var v, Candy::Clause* cr) {
     Candy::Clause& c = *cr;
     assert(decisionLevel() == 0);
 
-    if (c.mark() || satisfied(c))
+    if (c.getMark() || satisfied(c))
         return true;
 
     trail_lim.push_back(trail_size);
     Lit l = lit_Undef;
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned int i = 0; i < c.size(); i++)
         if (var(c[i]) != v && value(c[i]) != l_False)
             uncheckedEnqueue(~c[i]);
         else
@@ -451,7 +451,7 @@ static void mkElimClause(vector<uint32_t>& elimclauses, Var v, Candy::Clause& c)
 
     // Copy clause to elimclauses-vector. Remember position where the
     // variable 'v' occurs:
-    for (int i = 0; i < c.size(); i++) {
+    for (unsigned int i = 0; i < c.size(); i++) {
         elimclauses.push_back(toInt(c[i]));
         if (var(c[i]) == v)
             v_pos = i + first;
@@ -551,7 +551,7 @@ bool SimpSolver::substitute(Var v, Lit x) {
         Candy::Clause& c = *cls[i];
 
         subst_clause.clear();
-        for (int j = 0; j < c.size(); j++) {
+        for (unsigned int j = 0; j < c.size(); j++) {
             Lit p = c[j];
             subst_clause.push_back(var(p) == v ? x ^ sign(p) : p);
         }
@@ -677,5 +677,5 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 
 void SimpSolver::cleanUpClauses() {
     occurs.cleanAll();
-    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->mark(); }), clauses.end());
+    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->getMark(); }), clauses.end());
 }

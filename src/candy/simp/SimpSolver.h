@@ -141,7 +141,7 @@ protected:
         explicit ClauseDeleted() {
         }
         bool operator()(const Candy::Clause* cr) const {
-            return cr->mark() == 1;
+            return cr->getMark() == 1;
         }
     };
 
