@@ -30,33 +30,33 @@ turnon "oscReceiver"
 ;GLOBALS
 giOSC OSCinit 7000
 
-opcode fract2octave, k, kkk
-    kfract, kbasefreq, kquant xin
+opcode fract2octave, k, kkkk
+    kfract, kbasefreq, kspread, kquant xin
     if (kquant != 0) then
-	kfreq = kbasefreq * exp(log(2.0) * round(kfract * kquant) / kquant)
+	kfreq = kbasefreq * exp(log(2.0) * round(kfract * kquant * kspread) / kquant)
     else 
-      kfreq = kbasefreq * exp(log(2.0) * kfract)
+      kfreq = kbasefreq * exp(log(2.0) * kfract * kspread)
     endif
     xout kfreq
 endop
 
 instr continuous_harms
   ifreq = p4
-  Schan = p5
-  kval chnget Schan
-  kfreq fract2octave kval, ifreq, 0.0
+  ispread = p5
+  kval chnget "continuous_harms"
+  kfreq fract2octave kval, ifreq, ispread, 0
   aout oscil 1, kfreq, giharms
-  aout lowpass2 aout, kfreq*2, 2
+  aout lowpass2 aout, kfreq*4, 2
   outleta "out", aout
 endin
 
 instr continuous_saw
   ifreq = p4
-  Schan = p5
-  kval chnget Schan
-  kfreq fract2octave kval, ifreq, 0.0
+  ispread = p5
+  kval chnget "continuous_saw"
+  kfreq fract2octave kval, ifreq, ispread, 0
   aout oscil 1, kfreq, gisaw
-  aout lowpass2 aout, 2*kfreq, 2
+  aout lowpass2 aout, kfreq*4, 2
   outleta "out", aout
 endin
 
@@ -158,13 +158,8 @@ endin
 
 instr learnt    
   aenv expon 3, p3, 0.0001
-  ;aenv linen 2, .1, p3, .2
-  
-  ; performance too low:
-  ;ifreq = 2*p4-1
-  ;aout noise aenv, ifreq
-  
-  kfreq fract2octave p4, 880.0, 0
+  ;aenv linen 2, .1, p3, .2  
+  kfreq fract2octave p4, 880.0, 0, 1
   aout2 oscil aenv, kfreq, ginoise
   aout3 lowpass2 aout2, kfreq, 30
   
@@ -174,7 +169,7 @@ endin
 instr conflict
   aenv expon 1, p3, 0.0001
   aout oscil aenv, p4, gisaw
-  aout lowpass2 aout, 2*p4, 3
+  ;aout lowpass2 aout, p4*4, 2
   outleta "out", aout 
 endin
 
@@ -198,14 +193,13 @@ instr oscReceiver
   kstart OSClisten giOSC, "/start", "f", kreceive
   kstop OSClisten giOSC, "/stop", "f", kreceive
 
-  chnset 0, "eloquence"
-  chnset 0, "depth"
-  scoreline_i {{
-    i "mixer" 0 -1
-    i "sampler" 0 -1
-    i "continuous_saw" 0 -1 220.0 "eloquence"
-    i "continuous_harms" 0 -1 440.0 "depth"
-  }}
+  chnset 0, "continuous_saw"
+  chnset 0, "continuous_harms"
+  
+  schedule "mixer", 0, -1
+  schedule "sampler", 0, -1
+  schedule "continuous_saw", 0, -1, 55, 2
+  schedule "continuous_harms", 0, -1, 440, 1
   
   if (kstop == 1) then
     turnoff2 "mixer", 0, 0
@@ -226,13 +220,13 @@ instr oscReceiver
     if (kdecisions > kdecisions_hwm) then
       kdecisions_hwm = kdecisions
     endif
-    chnset kdecisions / kassigns, "eloquence" 
-    chnset kdecisions / kdecisions_hwm, "depth"
+    chnset 1 - kdecisions / kassigns, "continuous_saw" 
+    chnset kdecisions / kdecisions_hwm, "continuous_harms"
   endif    
   
   kupd OSClisten giOSC, "/assignments", "i", kassigns
   if (kupd == 1) then
-    chnset kdecisions / kassigns, "eloquence" 
+    chnset 1 - kdecisions / kassigns, "continuous_saw" 
   endif
   
   klearnt init 0
@@ -252,7 +246,7 @@ instr oscReceiver
   if (kupd == 1) then
     if kdecisions_hwm > 0 then
       kval = kconflictlevel / kdecisions_hwm
-      kfreq fract2octave kval, 440.0, 12.0
+      kfreq fract2octave kval, 440, 12, 1
       event "i", "conflict", 0, .4, kfreq
     endif        
   endif
