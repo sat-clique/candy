@@ -4,6 +4,8 @@ add_library(utils
     System.cc
     System.h
     FastRand.h
-    MemUtils.h)
+    MemUtils.h
+    ParseUtils.h
+    StringUtils.h)
 
 
