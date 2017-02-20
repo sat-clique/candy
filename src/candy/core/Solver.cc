@@ -216,9 +216,11 @@ bool Solver::addClause_(vector<Lit>& ps) {
 
     // check for satisfied or tautologic clauses:
     //pair<vector<Lit>::iterator, vector<Lit>::iterator>
-    auto p = std::mismatch(ps.begin() + 1, ps.end(), ps.begin(), [](Lit l1, Lit l2) {return l1 != ~l2;});
-    if (p.first != ps.end())
+    auto taut = std::mismatch(ps.begin() + 1, ps.end(), ps.begin(), [](Lit l1, Lit l2) { return l1 != ~l2; });
+    auto pos_true = std::find_if(ps.begin(), ps.end(), [this](Lit lit) { return value(lit) == l_True; });
+    if (taut.first != ps.end() || pos_true != ps.end()) {
         return true;
+    }
 
     if (ps.size() == 0) {
         return ok = false;
