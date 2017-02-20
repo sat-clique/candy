@@ -10,17 +10,17 @@
 namespace Candy {
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
-    header.mark = 0;
-    header.learnt = learnt;
-    header.canbedel = 1;
-    header.seen = 0;
-    header._unused = 0;
+    mark = 0;
+    this->learnt = learnt;
+    canbedel = 1;
+    seen = 0;
+    //_unused = 0;
+    setLBD(0);
 
-    lbd = 0;
+    std::copy(ps.begin(), ps.end(), literals);
+    length = ps.size();
 
-    literals.insert(literals.end(), ps.begin(), ps.end());
-
-    if (header.learnt) {
+    if (learnt) {
         data.act = 0;
     } else {
         calcAbstraction();
@@ -28,17 +28,17 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
 }
 
 Clause::Clause(std::initializer_list<Lit> list) {
-    header.mark = 0;
-    header.learnt = false;
-    header.canbedel = 1;
-    header.seen = 0;
-    header._unused = 0;
+    mark = 0;
+    learnt = false;
+    canbedel = 1;
+    seen = 0;
+    //_unused = 0;
+    setLBD(0);
 
-    lbd = 0;
+    std::copy(list.begin(), list.end(), literals);
+    length = list.size();
 
-    literals.insert(literals.end(), list.begin(), list.end());
-
-    if (header.learnt) {
+    if (learnt) {
         data.act = 0;
     } else {
         calcAbstraction();
@@ -47,46 +47,52 @@ Clause::Clause(std::initializer_list<Lit> list) {
 
 Clause::~Clause() { }
 
-void Clause::calcAbstraction() {
-    uint32_t abstraction = 0;
-    for (Lit lit : literals) {
-        abstraction |= 1 << (var(lit) & 31);
-    }
-    data.abs = abstraction;
-}
-
-bool Clause::contains(Lit lit) {
-    return std::find(literals.begin(), literals.end(), lit) != literals.end();
-}
-
-int Clause::size() const {
-    return literals.size();
-}
-
-bool Clause::learnt() const {
-    return header.learnt;
-}
-
-uint32_t Clause::mark() const {
-    return header.mark;
-}
-
-void Clause::mark(uint32_t m) {
-    header.mark = m;
-}
-
-const Lit& Clause::last() const {
-    return literals.back();
-}
-
-// NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for
-//       subsumption operations to behave correctly.
 Lit& Clause::operator [](int i) {
     return literals[i];
 }
 
 Lit Clause::operator [](int i) const {
     return literals[i];
+}
+
+Clause::const_iterator Clause::begin() const {
+    return literals;
+}
+
+Clause::const_iterator Clause::end() const {
+    return literals + length;
+}
+
+Clause::iterator Clause::begin() {
+    return literals;
+}
+
+Clause::iterator Clause::end() {
+    return literals + length;
+}
+
+uint32_t Clause::size() const {
+    return length;
+}
+
+bool Clause::contains(Lit lit) {
+    return std::find(begin(), end(), lit) != end();
+}
+
+bool Clause::isLearnt() const {
+    return learnt;
+}
+
+uint32_t Clause::getMark() const {
+    return mark;
+}
+
+void Clause::setMark(uint32_t m) {
+    mark = m;
+}
+
+const Lit Clause::back() const {
+    return *(this->end()-1);
 }
 
 float& Clause::activity() {
@@ -110,8 +116,8 @@ uint32_t Clause::abstraction() const {
  *       p          - The literal p can be deleted from 'other'
  */
 Lit Clause::subsumes(const Clause& other) const {
-    assert(!header.learnt);
-    assert(!other.header.learnt);
+    assert(!learnt);
+    assert(!other.learnt);
 
     if (other.size() < size() || (data.abs & ~other.data.abs) != 0) {
         return Glucose::lit_Error;
@@ -119,9 +125,9 @@ Lit Clause::subsumes(const Clause& other) const {
 
     Lit ret = Glucose::lit_Undef;
 
-    for (Lit c : literals) {
+    for (Lit c : *this) {
         // search for c or ~c
-        for (Lit d : other.literals) {
+        for (Lit d : other) {
             if (c == d) {
                 goto ok;
             }
@@ -139,16 +145,14 @@ Lit Clause::subsumes(const Clause& other) const {
 }
 
 void Clause::strengthen(Lit p) {
-    literals.erase(remove(literals.begin(), literals.end(), p), literals.end());
+    if (std::remove(begin(), end(), p) != end()) {
+        --length;
+    }
     calcAbstraction();
 }
 
 void Clause::setLBD(int i) {
-    if (i < (1 << (BITS_LBD - 1))) {
-        lbd = i;
-    } else {
-        lbd = (1 << (BITS_LBD - 1));
-    }
+    lbd = std::min(i, UINT16_MAX);
 }
 
 unsigned int Clause::getLBD() const {
@@ -156,18 +160,26 @@ unsigned int Clause::getLBD() const {
 }
 
 void Clause::setCanBeDel(bool b) {
-    header.canbedel = b;
+    canbedel = b;
 }
 bool Clause::canBeDel() {
-    return header.canbedel;
+    return canbedel;
 }
 
 void Clause::setSeen(bool b) {
-    header.seen = b;
+    seen = b;
 }
 
 bool Clause::getSeen() {
-    return header.seen;
+    return seen;
+}
+
+void Clause::calcAbstraction() {
+    uint32_t abstraction = 0;
+    for (Lit lit : *this) {
+        abstraction |= 1 << (var(lit) & 31);
+    }
+    data.abs = abstraction;
 }
 
 } /* namespace Candy */

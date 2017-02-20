@@ -12,20 +12,12 @@
 
 namespace Candy {
 
-#define BITS_LBD 16
-//#define BITS_SIZEWITHOUTSEL 19
-//#define BITS_REALSIZE 21
-
 class Clause {
-
-    struct {
-        unsigned mark :2;
-        unsigned learnt :1;
-        unsigned canbedel :1;
-        unsigned seen :1;
-        unsigned _unused :11; // Unused bits of 16
-    } header;
-
+    unsigned mark :2;
+    unsigned learnt :1;
+    unsigned canbedel :1;
+    unsigned seen :1;
+    //unsigned _unused :11; // Unused bits of 16
     uint16_t lbd;
 
     union {
@@ -33,34 +25,43 @@ class Clause {
         uint32_t abs;
     } data;
 
-    std::vector<Lit> literals;
+    uint32_t length;
+    Lit literals[1];
+
+private:
+    void calcAbstraction();
+
 
 public:
     Clause(const std::vector<Lit>& ps, bool learnt);
     Clause(std::initializer_list<Lit> list);
     virtual ~Clause();
 
-    void calcAbstraction();
+    typedef Lit* iterator;
+    typedef const Lit* const_iterator;
 
-    bool contains(Lit lit);
-
-    int size() const;
-    bool learnt() const;
-    bool has_extra() const;
-    uint32_t mark() const;
-    void mark(uint32_t m);
-    const Lit& last() const;
-
-    // NOTE: somewhat unsafe to change the clause in-place! Must manually call 'calcAbstraction' afterwards for
-    //       subsumption operations to behave correctly.
     Lit& operator [](int i);
     Lit operator [](int i) const;
+
+    const_iterator begin() const;
+    const_iterator end() const;
+    iterator begin();
+    iterator end();
+    uint32_t size() const;
+
+    const Lit back() const;
+    bool contains(Lit lit);
+
+    bool isLearnt() const;
+    uint32_t getMark() const;
+    void setMark(uint32_t m);
 
     float& activity();
     uint32_t abstraction() const;
 
     Lit subsumes(const Clause& other) const;
     void strengthen(Lit p);
+
     void setLBD(int i);
     unsigned int getLBD() const;
     void setCanBeDel(bool b);
