@@ -228,8 +228,7 @@ bool Solver::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        void* mem = new char[sizeof(Candy::Clause) + ps.size() * sizeof(Lit)];
-        Candy::Clause* cr = new (mem) Candy::Clause(ps, false);
+        Candy::Clause* cr = new (ps.size()) Candy::Clause(ps, false);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -886,7 +885,7 @@ void Solver::reduceDB() {
 
 unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
     auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->getMark() == 1; });
-    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { c->~Clause(); delete [] c; });
+    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { c->~Clause(); delete c; });
     int nRemoved = std::distance(new_end, list.end());
     list.erase(new_end, list.end());
     return nRemoved;
@@ -1016,8 +1015,7 @@ lbool Solver::search(int nof_conflicts) {
                 uncheckedEnqueue(learnt_clause[0]);
                 nbUn++;
             } else {
-                void* mem = new char[sizeof(Candy::Clause) + learnt_clause.size() * sizeof(Lit)];
-                Candy::Clause* cr = new (mem) Candy::Clause(learnt_clause, true);
+                Candy::Clause* cr = new (learnt_clause.size()) Candy::Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
                 if (nblevels <= 2)
                     nbDL2++; // stats

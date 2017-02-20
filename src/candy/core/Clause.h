@@ -28,14 +28,24 @@ class Clause {
     uint32_t length;
     Lit literals[1];
 
-private:
-    void calcAbstraction();
-
-
 public:
     Clause(const std::vector<Lit>& ps, bool learnt);
     Clause(std::initializer_list<Lit> list);
     virtual ~Clause();
+
+    void* operator new (std::size_t size) throw() {
+        assert(0 & "use new with number of literals like this: new (vector.size()) Clause(vector)");
+        return nullptr;
+    }
+
+    void* operator new (std::size_t size, uint32_t length) {
+        void* mem = malloc(sizeof(Candy::Clause) + length * sizeof(Lit));
+        return mem;
+    }
+
+    void operator delete (void* p) {
+        delete (Clause*)p;
+    }
 
     typedef Lit* iterator;
     typedef const Lit* const_iterator;
@@ -48,6 +58,8 @@ public:
     iterator begin();
     iterator end();
     uint32_t size() const;
+
+    void calcAbstraction();
 
     const Lit back() const;
     bool contains(Lit lit);
