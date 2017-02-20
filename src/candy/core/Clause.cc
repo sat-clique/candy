@@ -5,9 +5,12 @@
  *      Author: markus
  */
 
-#include <core/Clause.h>
+#include <candy/core/Clause.h>
+#include <candy/core/ClauseAllocator.h>
 
 namespace Candy {
+
+ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 10);
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     mark = 0;

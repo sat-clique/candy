@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_CLAUSEALLOCATOR_H_
 
 #include <vector>
+#include <cstdint>
 
 namespace Candy {
 
@@ -16,21 +17,28 @@ class Clause;
 
 class ClauseAllocator {
 
-    std::vector<std::vector<Clause*>> pools;
-    std::vector<void*> pages;
-
 public:
-    ClauseAllocator(uint16_t max_sized_pools, uint16_t elements_per_pool=1000000);
+    ClauseAllocator(uint32_t _number_of_pools, uint32_t _elements_per_pool);
     virtual ~ClauseAllocator();
 
-    Clause* allocate(int32_t length);
+    void* allocate(uint32_t length);
     void deallocate(Clause*);
 
-private:
-    uint16_t number_of_pools;
-    uint16_t elements_per_pool;
+    uint32_t clauseBytes(uint32_t length);
 
-    void refillPool(int32_t clause_size);
+private:
+    std::vector<std::vector<void*>> pools;
+    std::vector<char*> pages;
+
+    uint32_t number_of_pools;
+    uint32_t initial_elements_per_pool;
+
+    uint32_t stats_active_total = 0;
+    uint32_t stats_active_long = 0;
+    std::vector<uint32_t> stats_active_counts;
+
+    std::vector<void*>& getPool(int32_t length);
+    void refillPool(int32_t nElem, int32_t clause_size);
 
 };
 
