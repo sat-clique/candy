@@ -53,7 +53,7 @@ namespace Candy {
         GateAnalyzer ga{*testData};
         ga.analyze();
         
-        ASSERT_EQ(ga.getGateCount(), 3ull);
+        ASSERT_EQ(ga.getGateCount(), 3);
         
         auto underTest = createNonmonotonousGateFilter(ga);
         
@@ -79,7 +79,7 @@ namespace Candy {
         GateAnalyzer ga{*testData};
         ga.analyze();
         
-        ASSERT_EQ(ga.getGateCount(), 4ull);
+        ASSERT_EQ(ga.getGateCount(), 4);
         
         auto underTest = createNonmonotonousGateFilter(ga);
         
