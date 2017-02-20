@@ -50,6 +50,27 @@ Clause::Clause(std::initializer_list<Lit> list) {
 
 Clause::~Clause() { }
 
+void* Clause::operator new (std::size_t size) throw() {
+    assert(0 && "use new with number of literals like this: new (vector.size()) Clause(vector)");
+    return nullptr;
+}
+
+void* Clause::operator new (std::size_t size, uint32_t length) {
+    return allocate(length);
+}
+
+void Clause::operator delete (void* p) {
+    deallocate((Clause*)p);
+}
+
+void* Clause::allocate(uint32_t length) {
+    return allocator->allocate(length);
+}
+
+void Clause::deallocate(Clause* clause) {
+    allocator->deallocate(clause);
+}
+
 Lit& Clause::operator [](int i) {
     return literals[i];
 }
