@@ -54,6 +54,8 @@
 #include <sys/resource.h>
 #include <string>
 #include <stdexcept>
+#include <iostream>
+#include <regex>
 
 #include "core/CNFProblem.h"
 #include "utils/System.h"
@@ -70,6 +72,7 @@
 #include "randomsimulation/RandomSimulator.h"
 #include "randomsimulation/Conjectures.h"
 #include "randomsimulation/ClauseOrder.h"
+#include "randomsimulation/SimulationVector.h"
 
 using namespace Glucose;
 
@@ -329,6 +332,7 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
 
 struct RandomSimulationArguments {
   const int nRounds;
+  const bool abortByRRAT;
   const double rrat;
   const bool filterConjecturesBySize;
   const int maxConjectureSize;
@@ -357,16 +361,17 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
   if (str == "FULL") {
     return Candy::SimplificationHandlingMode::FULL;
   }
-  throw std::invalid_argument(str);
+  throw std::invalid_argument(str + ": Unknown simplification handling mode");
 }
 
 static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
                                                                    const RandomSimulationArguments& rsArguments) {
-  // TODO: validate arguments
-
   auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
   simulatorBuilder->withGateAnalyzer(analyzer);
-  simulatorBuilder->withReductionRateAbortThreshold(rsArguments.rrat);
+
+  if (rsArguments.abortByRRAT) {
+    simulatorBuilder->withReductionRateAbortThreshold(rsArguments.rrat);
+  }
 
   if (rsArguments.filterGatesByNonmono) {
     simulatorBuilder->withGateFilter(Candy::createNonmonotonousGateFilter(analyzer));
@@ -388,12 +393,25 @@ static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAn
   return backported_std::make_unique<Candy::Conjectures>(std::move(conjectures));
 }
 
+std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString) {
+  std::regex unsignedIntRegex {"^(\\s*[0-9]+\\s*)+$"};
+  if (!std::regex_match(limitsString, unsignedIntRegex)) {
+    throw std::invalid_argument(limitsString + ": invalid limits");
+  }
+    
+  std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
+    
+  if (limits.size() == 0) {
+    throw std::invalid_argument(limitsString + ": invalid limits");
+  }
+    
+  return limits;
+}
+
 std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer,
                                                 SimpSolver& satSolver,
                                                 std::unique_ptr<Candy::Conjectures> conjectures,
                                                 const RSARArguments& rsarArguments) {
-  // TODO: validate arguments
-
   auto arSolverBuilder = Candy::createARSolverBuilder();
   arSolverBuilder->withConjectures(std::move(conjectures));
   arSolverBuilder->withMaxRefinementSteps(rsarArguments.maxRefinementSteps);
@@ -401,8 +419,7 @@ std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer,
   arSolverBuilder->withSolver(Candy::createNonowningGlucoseAdapter(satSolver));
 
   if (rsarArguments.withInputDepCountHeuristic) {
-    const std::string& limitsString = rsarArguments.inputDepCountHeuristicConfiguration;
-    std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
+    auto limits = getARInputDepCountHeuristicLimits(rsarArguments.inputDepCountHeuristicConfiguration);
     arSolverBuilder->addRefinementHeuristic(Candy::createInputDepCountRefinementHeuristic(analyzer,
                                                                                           limits));
   }
@@ -475,7 +492,10 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 
 
   IntOption opt_rs_nrounds("RANDOMSIMULATION", "rs-rounds",
-                           "Amount of random simulation rounds (multiples of 2048)", 0, IntRange(0, INT32_MAX));
+                           "Amount of random simulation rounds (gets rounded up to the next multiple of 2048)",
+                           1048576, IntRange(1, INT32_MAX));
+  BoolOption opt_rs_abortbyrrat("RANDOMSIMULATION", "rs-abort-by-rrat",
+                                "Abort random simulation when the reduction rate falls below the RRAT threshold", false);
   DoubleOption opt_rs_rrat("RANDOMSIMULATION", "rs-rrat",
                            "Reduction rate abort threshold", 0.01, DoubleRange(0.0f, true, 1.0f, false));
   IntOption opt_rs_filterConjBySize("RANDOMSIMULATION", "rs-max-conj-size",
@@ -498,7 +518,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify, opt_gr_lookahead_threshold,
     opt_print_gates};
 
-  RandomSimulationArguments rsArgs {opt_rs_nrounds, opt_rs_rrat, opt_rs_filterConjBySize > 0,
+  RandomSimulationArguments rsArgs {opt_rs_nrounds, opt_rs_abortbyrrat, opt_rs_rrat, opt_rs_filterConjBySize > 0,
     opt_rs_filterConjBySize, opt_rs_removeBackboneConj, opt_rs_filterGatesByNonmono };
 
   RSARArguments rsarArgs {opt_rsar_enable, opt_rsar_maxRefinementSteps,
