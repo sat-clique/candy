@@ -222,6 +222,7 @@ namespace Candy {
         
         for (auto rootClause : analyzer.getRoots()) {
             for (auto rootLit : *rootClause) {
+                m_maxVar = std::max(m_maxVar, Glucose::var(rootLit));
                 if (analyzer.getGate(rootLit).isDefined()) {
                     readGatesRecursive(analyzer, rootLit, seenInputs, seenOutputs);
                 }
@@ -295,6 +296,7 @@ namespace Candy {
         }
         
         void backtrack(Gate* g) {
+            maxVar = std::max(maxVar, Glucose::var(g->getOutput()));
             backtrackSequence.push_back(g);
         }
         
