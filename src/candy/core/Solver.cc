@@ -228,7 +228,8 @@ bool Solver::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Candy::Clause* cr = new Candy::Clause(ps, false);
+        void* mem = new char[sizeof(Candy::Clause) + ps.size() * sizeof(Lit)];
+        Candy::Clause* cr = new (mem) Candy::Clause(ps, false);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -248,7 +249,7 @@ void Solver::attachClause(Candy::Clause* cr) {
         watches[~c[1]].push_back(Watcher(cr, c[0]));
     }
 
-    if (c.learnt()) {
+    if (c.isLearnt()) {
         learnts_literals += c.size();
     } else {
         clauses_literals += c.size();
@@ -278,7 +279,7 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
             watches.smudge(~c[1]);
         }
     }
-    if (c.learnt())
+    if (c.isLearnt())
         learnts_literals -= c.size();
     else
         clauses_literals -= c.size();
@@ -288,7 +289,7 @@ void Solver::removeClause(Candy::Clause* cr) {
     Candy::Clause& c = *cr;
     if (certifiedUNSAT) {
         fprintf(certifiedOutput, "d ");
-        for (int i = 0; i < c.size(); i++)
+        for (unsigned int i = 0; i < c.size(); i++)
             fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
         fprintf(certifiedOutput, "0\n");
     }
@@ -296,7 +297,7 @@ void Solver::removeClause(Candy::Clause* cr) {
     // Don't leave pointers to free'd memory!
     if (locked(cr))
         vardata[var(c[0])].reason = nullptr;
-    c.mark(1);
+    c.setMark(1);
 }
 
 bool Solver::satisfied(const Candy::Clause& c) const {
@@ -304,7 +305,7 @@ bool Solver::satisfied(const Candy::Clause& c) const {
         return (value(c[0]) == l_True) || (value(c[1]) == l_True);
 
     // Default mode
-    for (int i = 0; i < c.size(); i++)
+    for (unsigned int i = 0; i < c.size(); i++)
         if (value(c[i]) == l_True)
             return true;
     return false;
@@ -355,7 +356,7 @@ inline unsigned int Solver::computeLBD(const Candy::Clause &c) {
     MYFLAG++;
 
     if (incremental) { // ----------------- INCREMENTAL MODE
-        for (int i = 0; i < c.size(); i++) {
+        for (unsigned int i = 0; i < c.size(); i++) {
             if (isSelector(var(c[i]))) {
                 continue;
             }
@@ -366,7 +367,7 @@ inline unsigned int Solver::computeLBD(const Candy::Clause &c) {
             }
         }
     } else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
-        for (int i = 0; i < c.size(); i++) {
+        for (unsigned int i = 0; i < c.size(); i++) {
             int l = level(var(c[i]));
             if (permDiff[l] != MYFLAG) {
                 permDiff[l] = MYFLAG;
@@ -377,7 +378,7 @@ inline unsigned int Solver::computeLBD(const Candy::Clause &c) {
 
     if (!reduceOnSize)
         return nblevels;
-    if (c.size() < reduceOnSizeSize)
+    if ((int)c.size() < reduceOnSizeSize)
         return c.size(); // See the XMinisat paper
     return c.size() + nblevels;
 
@@ -502,7 +503,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
             std::swap(c[0], c[1]);
         }
 
-        if (c.learnt()) {
+        if (c.isLearnt()) {
             claBumpActivity(c);
         } else { // original clause
             if (!c.getSeen()) {
@@ -512,7 +513,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         }
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.learnt() && c.getLBD() > 2) {
+        if (c.isLearnt() && c.getLBD() > 2) {
             unsigned int nblevels = computeLBD(c);
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
@@ -523,7 +524,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
             }
         }
 
-        for (int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+        for (unsigned int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
             Lit q = c[j];
 
             if (!seen[var(q)] && level(var(q)) != 0) {
@@ -534,7 +535,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
                 if (level(var(q)) >= decisionLevel()) {
                     pathC++;
                     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    if (!isSelector(var(q)) && (reason(var(q)) != nullptr) && reason(var(q))->learnt())
+                    if (!isSelector(var(q)) && (reason(var(q)) != nullptr) && reason(var(q))->isLearnt())
                         lastDecisionLevel.push_back(q);
                 } else {
                     if (isSelector(var(q))) {
@@ -585,7 +586,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
             else {
                 Candy::Clause& c = *reason(var(out_learnt[i]));
                 // Thanks to Siert Wieringa for this bug fix!
-                for (int k = ((c.size() == 2) ? 0 : 1); k < c.size(); k++)
+                for (unsigned int k = ((c.size() == 2) ? 0 : 1); k < c.size(); k++)
                     if (!seen[var(c[k])] && level(var(c[k])) > 0) {
                         out_learnt[j++] = out_learnt[i];
                         break;
@@ -659,7 +660,7 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
             c[0] = c[1], c[1] = tmp;
         }
 
-        for (int i = 1; i < c.size(); i++) {
+        for (unsigned int i = 1; i < c.size(); i++) {
             Lit p = c[i];
             if (!seen[var(p)]) {
                 if (level(var(p)) > 0) {
@@ -710,7 +711,7 @@ void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
                 //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
                 // Bug in case of assumptions due to special data structures for Binary.
                 // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
-                for (int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
+                for (unsigned int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
                     if (level(var(c[j])) > 0)
                         seen[var(c[j])] = 1;
             }
@@ -799,7 +800,7 @@ Candy::Clause* Solver::propagate() {
 
             if (incremental) { // ----------------- INCREMENTAL MODE
                 int chosenPos = -1;
-                for (int k = 2; k < c.size(); k++) {
+                for (unsigned int k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         if (decisionLevel() > (int) assumptions.size()) {
                             chosenPos = k;
@@ -819,7 +820,7 @@ Candy::Clause* Solver::propagate() {
                 }
             } else {
                 // DEFAULT MODE (NOT INCREMENTAL)
-                for (int k = 2; k < c.size(); k++) {
+                for (unsigned int k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         std::swap(c[1], c[k]);
                         watches[~c[1]].push_back(w);
@@ -884,8 +885,8 @@ void Solver::reduceDB() {
 }
 
 unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
-    auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->mark() == 1; });
-    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { delete c; });
+    auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->getMark() == 1; });
+    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { c->~Clause(); delete [] c; });
     int nRemoved = std::distance(new_end, list.end());
     list.erase(new_end, list.end());
     return nRemoved;
@@ -1015,7 +1016,8 @@ lbool Solver::search(int nof_conflicts) {
                 uncheckedEnqueue(learnt_clause[0]);
                 nbUn++;
             } else {
-                Candy::Clause* cr = new Candy::Clause(learnt_clause, true);
+                void* mem = new char[sizeof(Candy::Clause) + learnt_clause.size() * sizeof(Lit)];
+                Candy::Clause* cr = new (mem) Candy::Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
                 if (nblevels <= 2)
                     nbDL2++; // stats
