@@ -7,51 +7,74 @@
 
 #include <core/ClauseAllocator.h>
 
-#include <Clause.h>
+#include <candy/core/Clause.h>
+#include <iostream>
 
 namespace Candy {
 
-ClauseAllocator::ClauseAllocator(uint16_t number_of_pools, uint16_t elements_per_pool) {
-    this->number_of_pools = number_of_pools;
-    this->elements_per_pool = elements_per_pool;
-    std::vector<std::vector<Clause*>> pools(number_of_pools);
-    for (int i = 0; i < number_of_pools; i++) {
-        refillPool(i+1);
+ClauseAllocator::ClauseAllocator(uint32_t _number_of_pools, uint32_t _elements_per_pool) :
+    number_of_pools(_number_of_pools),
+    initial_elements_per_pool(_elements_per_pool),
+    stats_active_total(0),
+    stats_active_long(0),
+    stats_active_counts(_number_of_pools, 0)
+{
+    for (uint32_t i = 0; i < number_of_pools; i++) {
+        pools.push_back(std::vector<void*>());
+        refillPool(initial_elements_per_pool, i+1);
     }
 }
 
 ClauseAllocator::~ClauseAllocator() {
-    for (void* page : pages) {
-        free(page);
+    for (char* page : pages) {
+        delete [] page;
     }
 }
 
-Clause* ClauseAllocator::allocate(int32_t length) {
+uint32_t ClauseAllocator::clauseBytes(uint32_t length) {
+    return (sizeof(Clause) + sizeof(Lit) * (length-1));
+}
+
+void* ClauseAllocator::allocate(uint32_t length) {
+    stats_active_total++;
     if (length-1 < number_of_pools) {
-        if (pools[length-1].size() == 0) refillPool(length);
-        Clause* clause = pools[length-1].back();
-        pools[length-1].pop_back();
+        stats_active_counts[length-1]++;
+        std::vector<void*>& pool = getPool(length);
+        void* clause = pool.back();
+        pool.pop_back();
         return clause;
-    } else {
-        return malloc(sizeof(Clause) + sizeof(Lit) * (length-1));
+    }
+    else {
+        stats_active_long++;
+        return new char[clauseBytes(length)];
     }
 }
 
 void ClauseAllocator::deallocate(Clause* clause) {
-    if (clause->length-1 < number_of_pools) {
-        pools[clause->length - 1].push_back(clause);
+    stats_active_total--;
+    if (clause->size()-1 < number_of_pools) {
+        stats_active_counts[clause->size()-1]--;
+        pools[clause->size()-1].push_back(clause);
     }
     else {
-        free(clause);
+        stats_active_long--;
+        delete [] clause;
     }
 }
 
-void ClauseAllocator::refillPool(int32_t length) {
-    uint16_t clause_bytes = (sizeof(Clause) + sizeof(Lit) * (length-1));
-    void* pool = malloc(clause_bytes * elements_per_pool);
+std::vector<void*>& ClauseAllocator::getPool(int32_t length) {
+    if (pools[length-1].size() == 0) {
+        refillPool(stats_active_counts[length-1], length);
+    }
+    return pools[length-1];
+}
+
+void ClauseAllocator::refillPool(int32_t nElem, int32_t length) {
+    uint16_t clause_bytes = clauseBytes(length);
+    char* pool = new char[clause_bytes * nElem];
     pages.push_back(pool);
-    for (void* pos = pool; pos < pool + (clause_bytes * elements_per_pool); pos += clause_bytes) {
-        pools[length-1].push_back((Clause*)pos);
+    for (char* pos = pool; pos < pool + (clause_bytes * nElem); pos += clause_bytes) {
+        pools[length-1].push_back(pos);
     }
 }
 

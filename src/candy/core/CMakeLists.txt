@@ -3,6 +3,8 @@ add_library(core
     Utilities.cc
     Clause.cc
     Clause.h
+    ClauseAllocator.cc
+    ClauseAllocator.h
     BoundedQueue.h
     CNFProblem.h
     Constants.h
