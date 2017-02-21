@@ -17,7 +17,7 @@ class Clause {
     unsigned mark :2;
     unsigned learnt :1;
     unsigned canbedel :1;
-    unsigned seen :1;
+    //unsigned seen :1;
     //unsigned _unused :11; // Unused bits of 16
     uint16_t lbd;
 
@@ -75,8 +75,6 @@ public:
     unsigned int getLBD() const;
     void setCanBeDel(bool b);
     bool canBeDel();
-    void setSeen(bool b);
-    bool getSeen();
 };
 
 } /* namespace Candy */
