@@ -492,7 +492,8 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         // Special case for binary clauses: The first one has to be SAT
         if (asslit != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
-            std::swap(c[0], c[1]);
+            c.swap(0, 1);
+            assert(value(c[0]) == l_True);
         }
 
         if (c.isLearnt()) {
@@ -570,6 +571,8 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         out_learnt.erase(end, out_learnt.end());
     }
 
+    assert(out_learnt[0] == ~asslit);
+
     tot_literals += out_learnt.size();
 
     /* ***************************************
@@ -592,7 +595,8 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
                 max_i = i;
         // Swap-in this literal at index 1:
         Lit p = out_learnt[max_i];
-        std::swap(out_learnt[max_i], out_learnt[1]);
+        out_learnt[max_i] = out_learnt[1];
+        out_learnt[1] = p;
         out_btlevel = level(var(p));
     }
 
@@ -629,7 +633,7 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
         analyze_stack.pop_back(); //
         if (c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
-            std::swap(c[0], c[1]);
+            c.swap(0, 1);
         }
 
         for (Lit p : c) {
@@ -754,7 +758,7 @@ Candy::Clause* Solver::propagate() {
             Candy::Clause* cr = wit->cref;
             Candy::Clause& c = *wit->cref;
             if (c[0] == ~p) {
-                std::swap(c[0], c[1]);
+                c.swap(0, 1);
             }
             assert(c[1] == ~p);
 
@@ -783,7 +787,7 @@ Candy::Clause* Solver::propagate() {
                     }
                 }
                 if (chosenPos != -1) {
-                    std::swap(c[1], c[chosenPos]);
+                    c.swap(1, chosenPos);
                     watches[~c[1]].push_back(w);
                     goto NextClause;
                 }
@@ -791,7 +795,7 @@ Candy::Clause* Solver::propagate() {
                 // DEFAULT MODE (NOT INCREMENTAL)
                 for (unsigned int k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
-                        std::swap(c[1], c[k]);
+                        c.swap(1, k);
                         watches[~c[1]].push_back(w);
                         goto NextClause;
                     }

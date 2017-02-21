@@ -103,6 +103,17 @@ bool Clause::contains(Lit lit) {
     return std::find(begin(), end(), lit) != end();
 }
 
+bool Clause::contains(Var v) {
+    return std::find_if(begin(), end(), [v](Lit lit) { return var(lit) == v; }) != end();
+}
+
+void Clause::swap(uint32_t pos1, uint32_t pos2) {
+    assert(pos1 < length && pos2 < length);
+    Lit tmp = literals[pos1];
+    literals[pos1] = literals[pos2];
+    literals[pos2] = tmp;
+}
+
 bool Clause::isLearnt() const {
     return learnt;
 }
@@ -186,6 +197,7 @@ unsigned int Clause::getLBD() const {
 void Clause::setCanBeDel(bool b) {
     canbedel = b;
 }
+
 bool Clause::canBeDel() {
     return canbedel;
 }
