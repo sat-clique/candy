@@ -652,7 +652,9 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
         rebuildOrderHeap();
     }
     occurs.cleanAll();
-    freeMarkedClauses(clauses);
+    //TODO: why not free space of orignial clauses if simplification is done?
+    //freeMarkedClauses(clauses);
+    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->getMark(); }), clauses.end());
     
     if (verbosity >= 0 && elimclauses.size() > 0)
         printf("c |  Eliminated clauses:     %10.2f Mb                                                                |\n", 
