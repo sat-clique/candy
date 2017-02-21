@@ -105,7 +105,7 @@ Solver::Solver() :
                                 opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
                 // Statistics: (formerly in 'SolverStats')
                 //
-                originalClausesSeen(0), sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
+                sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
                                 0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(0), nbstopsrestartssame(
                                 0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(
                                 1),
@@ -300,14 +300,7 @@ void Solver::removeClause(Candy::Clause* cr) {
 }
 
 bool Solver::satisfied(const Candy::Clause& c) const {
-    if (incremental)
-        return (value(c[0]) == l_True) || (value(c[1]) == l_True);
-
-    // Default mode
-    for (unsigned int i = 0; i < c.size(); i++)
-        if (value(c[i]) == l_True)
-            return true;
-    return false;
+    return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
 }
 
 /************************************************************
@@ -486,7 +479,7 @@ Lit Solver::pickBranchLit() {
  |________________________________________________________________________________________________@*/
 void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd) {
     int pathC = 0;
-    Lit p = lit_Undef;
+    Lit asslit = lit_Undef;
 
     // Generate conflict clause:
     //
@@ -497,18 +490,13 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         Candy::Clause& c = *confl;
 
         // Special case for binary clauses: The first one has to be SAT
-        if (p != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
+        if (asslit != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
             std::swap(c[0], c[1]);
         }
 
         if (c.isLearnt()) {
             claBumpActivity(c);
-        } else { // original clause
-            if (!c.getSeen()) {
-                originalClausesSeen++;
-                c.setSeen(true);
-            }
         }
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
@@ -523,25 +511,23 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
             }
         }
 
-        for (unsigned int j = (p == lit_Undef) ? 0 : 1; j < c.size(); j++) {
-            Lit q = c[j];
+        for (unsigned int j = (asslit == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+            Lit lit = c[j];
 
-            if (!seen[var(q)] && level(var(q)) != 0) {
-                if (!isSelector(var(q))) {
-                    varBumpActivity(var(q));
-                }
-                seen[var(q)] = 1;
-                if (level(var(q)) >= decisionLevel()) {
+            if (!seen[var(lit)] && level(var(lit)) != 0) {
+                varBumpActivity(var(lit));
+                seen[var(lit)] = 1;
+                if (level(var(lit)) >= decisionLevel()) {
                     pathC++;
                     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    if (!isSelector(var(q)) && (reason(var(q)) != nullptr) && reason(var(q))->isLearnt())
-                        lastDecisionLevel.push_back(q);
+                    if ((reason(var(lit)) != nullptr) && reason(var(lit))->isLearnt())
+                        lastDecisionLevel.push_back(lit);
                 } else {
-                    if (isSelector(var(q))) {
-                        assert(value(q) == l_False);
-                        selectors.push_back(q);
+                    if (isSelector(var(lit))) {
+                        assert(value(lit) == l_False);
+                        selectors.push_back(lit);
                     } else
-                        out_learnt.push_back(q);
+                        out_learnt.push_back(lit);
                 }
             }
         }
@@ -550,66 +536,52 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
         while (!seen[var(trail[index])])
             index--;
 
-        p = trail[index];
-        confl = reason(var(p));
-        seen[var(p)] = 0;
+        asslit = trail[index];
+        confl = reason(var(asslit));
+        seen[var(asslit)] = 0;
         pathC--;
     } while (pathC > 0);
 
-    out_learnt[0] = ~p;
+    out_learnt[0] = ~asslit;
 
     // Simplify conflict clause:
-    //
-    unsigned int i, j;
-
-    for (unsigned int i = 0; i < selectors.size(); i++)
-        out_learnt.push_back(selectors[i]);
+    out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
+    max_literals += out_learnt.size();
 
     analyze_toclear.clear();
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
+
     if (ccmin_mode == 2) {
         uint32_t abstract_level = 0;
-        for (i = 1; i < out_learnt.size(); i++)
+        for (unsigned int i = 1; i < out_learnt.size(); i++)
             abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
 
-        for (i = j = 1; i < out_learnt.size(); i++)
-            if (reason(var(out_learnt[i])) == nullptr || !litRedundant(out_learnt[i], abstract_level))
-                out_learnt[j++] = out_learnt[i];
+        auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
+                [this, abstract_level] (Lit lit) {
+                    return reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
+                });
+        out_learnt.erase(end, out_learnt.end());
+    }
+    else if (ccmin_mode == 1) {
+        auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
+                [this] (Lit lit) {
+                    return reason(var(lit)) != nullptr && seenAny(*reason(var(lit)));
+                });
+        out_learnt.erase(end, out_learnt.end());
+    }
 
-    } else if (ccmin_mode == 1) {
-        for (i = j = 1; i < out_learnt.size(); i++) {
-            Var x = var(out_learnt[i]);
-
-            if (reason(x) == nullptr)
-                out_learnt[j++] = out_learnt[i];
-            else {
-                Candy::Clause& c = *reason(var(out_learnt[i]));
-                // Thanks to Siert Wieringa for this bug fix!
-                for (unsigned int k = ((c.size() == 2) ? 0 : 1); k < c.size(); k++)
-                    if (!seen[var(c[k])] && level(var(c[k])) > 0) {
-                        out_learnt[j++] = out_learnt[i];
-                        break;
-                    }
-            }
-        }
-    } else
-        i = j = out_learnt.size();
-
-    max_literals += out_learnt.size();
-    out_learnt.resize(j);
     tot_literals += out_learnt.size();
 
     /* ***************************************
      Minimisation with binary clauses of the asserting clause
      First of all : we look for small clauses
      Then, we reduce clauses with small LBD.
-     Otherwise, this can be useless
-     */
-    if (!incremental && (int) out_learnt.size() <= lbSizeMinimizingClause) {
+     Otherwise, this can be useless */
+    if (!incremental && (int)out_learnt.size() <= lbSizeMinimizingClause) {
         minimisationWithBinaryResolution(out_learnt);
     }
+
     // Find correct backtrack level:
-    //
     if (out_learnt.size() == 1)
         out_btlevel = 0;
     else {
@@ -620,8 +592,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
                 max_i = i;
         // Swap-in this literal at index 1:
         Lit p = out_learnt[max_i];
-        out_learnt[max_i] = out_learnt[1];
-        out_learnt[1] = p;
+        std::swap(out_learnt[max_i], out_learnt[1]);
         out_btlevel = level(var(p));
     }
 
@@ -630,17 +601,20 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
 
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
     if (lastDecisionLevel.size() > 0) {
-        for (unsigned int i = 0; i < lastDecisionLevel.size(); i++) {
-            if (reason(var(lastDecisionLevel[i]))->getLBD() < lbd)
-                varBumpActivity(var(lastDecisionLevel[i]));
+        for (Lit lit : lastDecisionLevel) {
+            if (reason(var(lit))->getLBD() < lbd)
+                varBumpActivity(var(lit));
         }
         lastDecisionLevel.clear();
     }
 
-    for (unsigned int j = 0; j < analyze_toclear.size(); j++)
-        seen[var(analyze_toclear[j])] = 0; // ('seen[]' is now cleared)
-    for (unsigned int j = 0; j < selectors.size(); j++)
-        seen[var(selectors[j])] = 0;
+    // clear seen[]
+    for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
+}
+
+bool Solver::seenAny(Candy::Clause& c) {
+    Candy::Clause::iterator begin = (c.size() == 2) ? c.begin() : c.begin() + 1;
+    return std::none_of(begin, c.end(), [this] (Lit clit) { return !seen[var(clit)] && level(var(clit)) > 0; });
 }
 
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
@@ -655,24 +629,20 @@ bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
         analyze_stack.pop_back(); //
         if (c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
-            Lit tmp = c[0];
-            c[0] = c[1], c[1] = tmp;
+            std::swap(c[0], c[1]);
         }
 
-        for (unsigned int i = 1; i < c.size(); i++) {
-            Lit p = c[i];
-            if (!seen[var(p)]) {
-                if (level(var(p)) > 0) {
-                    if (reason(var(p)) != nullptr && (abstractLevel(var(p)) & abstract_levels) != 0) {
-                        seen[var(p)] = 1;
-                        analyze_stack.push_back(p);
-                        analyze_toclear.push_back(p);
-                    } else {
-                        for (unsigned int j = top; j < analyze_toclear.size(); j++)
-                            seen[var(analyze_toclear[j])] = 0;
-                        analyze_toclear.resize(top);
-                        return false;
-                    }
+        for (Lit p : c) {
+            if (!seen[var(p)] && level(var(p)) > 0) {
+                if (reason(var(p)) != nullptr && (abstractLevel(var(p)) & abstract_levels) != 0) {
+                    seen[var(p)] = 1;
+                    analyze_stack.push_back(p);
+                    analyze_toclear.push_back(p);
+                } else {
+                    for (unsigned int j = top; j < analyze_toclear.size(); j++)
+                        seen[var(analyze_toclear[j])] = 0;
+                    analyze_toclear.resize(top);
+                    return false;
                 }
             }
         }
@@ -885,7 +855,7 @@ void Solver::reduceDB() {
 
 unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
     auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->getMark() == 1; });
-    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { c->~Clause(); delete c; });
+    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { delete c; });
     int nRemoved = std::distance(new_end, list.end());
     list.erase(new_end, list.end());
     return nRemoved;

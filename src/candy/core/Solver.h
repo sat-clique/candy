@@ -212,7 +212,7 @@ public:
     bool certifiedUNSAT;
 
     // Statistics: (read-only member variable)
-    uint64_t originalClausesSeen; // Number of original clauses seen
+    //uint64_t originalClausesSeen; // Number of original clauses seen
     uint64_t sumDecisionLevels;
     //
     uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB, solves, starts, decisions, rnd_decisions, propagations, conflicts,
@@ -350,6 +350,7 @@ protected:
 	void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>& selectors,
 			int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+	bool seenAny(Candy::Clause& clause);
 	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
 	lbool search(int nof_conflicts); // Search for a given number of conflicts.
 	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
@@ -425,7 +426,9 @@ inline void Solver::varDecayActivity() {
     var_inc *= (1 / var_decay);
 }
 inline void Solver::varBumpActivity(Var v) {
-    varBumpActivity(v, var_inc);
+    if (!isSelector(v)) {
+        varBumpActivity(v, var_inc);
+    }
 }
 inline void Solver::varBumpActivity(Var v, double inc) {
     if ((activity[v] += inc) > 1e100) {
@@ -487,10 +490,8 @@ inline bool Solver::addClause(Lit p, Lit q, Lit r) {
 // TODO: optimize conditions
 inline bool Solver::locked(Candy::Clause* cr) const {
     Candy::Clause& c = *cr;
-    if (c.size() > 2)
-        return value(c[0]) == l_True && reason(var(c[0])) != nullptr && reason(var(c[0])) == cr;
-    return (value(c[0]) == l_True && reason(var(c[0])) != nullptr && reason(var(c[0])) == cr)
-            || (value(c[1]) == l_True && reason(var(c[1])) != nullptr && reason(var(c[1])) == cr);
+    if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
+    return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
 }
 
 inline void Solver::newDecisionLevel() {

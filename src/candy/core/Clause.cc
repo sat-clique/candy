@@ -16,7 +16,7 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     mark = 0;
     this->learnt = learnt;
     canbedel = 1;
-    seen = 0;
+    //seen = 0;
     //_unused = 0;
     setLBD(0);
 
@@ -34,7 +34,7 @@ Clause::Clause(std::initializer_list<Lit> list) {
     mark = 0;
     learnt = false;
     canbedel = 1;
-    seen = 0;
+    //seen = 0;
     //_unused = 0;
     setLBD(0);
 
@@ -188,14 +188,6 @@ void Clause::setCanBeDel(bool b) {
 }
 bool Clause::canBeDel() {
     return canbedel;
-}
-
-void Clause::setSeen(bool b) {
-    seen = b;
-}
-
-bool Clause::getSeen() {
-    return seen;
 }
 
 void Clause::calcAbstraction() {
