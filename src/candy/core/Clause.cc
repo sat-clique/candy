@@ -10,14 +10,12 @@
 
 namespace Candy {
 
-ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 10);
+ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 1000);
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     mark = 0;
     this->learnt = learnt;
     canbedel = 1;
-    //seen = 0;
-    //_unused = 0;
     setLBD(0);
 
     std::copy(ps.begin(), ps.end(), literals);
@@ -34,8 +32,6 @@ Clause::Clause(std::initializer_list<Lit> list) {
     mark = 0;
     learnt = false;
     canbedel = 1;
-    //seen = 0;
-    //_unused = 0;
     setLBD(0);
 
     std::copy(list.begin(), list.end(), literals);
