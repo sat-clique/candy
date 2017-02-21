@@ -184,7 +184,7 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
  * If \p outputFilename is non-null, the result also gets written to the file given by
  * \p outputFilename. The target file gets truncated.
  */
-static void printResult(SimpSolver& S, lbool result, const char* outputFilename = nullptr) {
+static void printResult(Solver& S, lbool result, const char* outputFilename = nullptr) {
   if (S.verbosity > 0) {
     printStats(S);
     printf("\n");
@@ -225,7 +225,7 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 /**
  * Prints statistics about the problem to be solved.
  */
-static void printProblemStatistics(SimpSolver& S, double parseTime) {
+static void printProblemStatistics(Solver& S, double parseTime) {
   printf("c ========================================[ Problem Statistics ]===========================================\n");
   printf("c |                                                                                                       |\n");
   printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
@@ -264,7 +264,7 @@ static void configureSolver(SimpSolver& S,
 /**
  * Shuts down the SAT solver \p S and frees resources as necessary.
  */
-static void shutdownSolver(SimpSolver& S) {
+static void shutdownSolver(Solver& S) {
   // TODO: shouldn't this be done by the solver - maybe add a "shutdown()" method?
   if (S.certifiedUNSAT) {
     fprintf(S.certifiedOutput, "0\n");

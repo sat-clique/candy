@@ -60,6 +60,9 @@ public:
 
     const Lit back() const;
     bool contains(Lit lit);
+    bool contains(Var var);
+
+    void swap(uint32_t pos1, uint32_t pos2);
 
     bool isLearnt() const;
     uint32_t getMark() const;

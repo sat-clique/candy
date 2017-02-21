@@ -77,7 +77,7 @@ static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
 SimpSolver::SimpSolver() :
                 Solver(), certifiedAllClauses(0), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(
                                 opt_simp_garbage_frac), use_asymm(opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(
-                                0), elimorder(1), use_simplification(true), occurs(ClauseDeleted()), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0), bwdsub_tmpunit({ lit_Undef }) {
+                                0), elimorder(1), use_simplification(true), occurs(ClauseDeleted()), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0) {
     remove_satisfied = false;
 }
 
@@ -106,14 +106,13 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 
     if (do_simp) {
         // Assumptions must be temporarily frozen to run variable elimination:
-        for (unsigned int i = 0; i < assumptions.size(); i++) {
-            Var v = var(assumptions[i]);
+        for (Lit lit : assumptions) {
+            Var v = var(lit);
 
             // If an assumption has been eliminated, remember it.
             assert(!isEliminated(v));
 
-            if (!frozen[v]) {
-                // Freeze and store.
+            if (!frozen[v]) { // Freeze and store.
                 setFrozen(v, true);
                 extra_frozen.push_back(v);
             }
@@ -124,16 +123,15 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 
     if (result == l_True)
         result = Solver::solve_();
-    else if (verbosity >= 1)
-        printf("===============================================================================\n");
 
     if (result == l_True)
         extendModel();
 
-    if (do_simp)
-        // Unfreeze the assumptions that were frozen:
-        for (Var v : extra_frozen)
+    if (do_simp) { // Unfreeze the assumptions that were frozen:
+        for (Var v : extra_frozen) {
             setFrozen(v, false);
+        }
+    }
 
     return result;
 }
@@ -159,8 +157,6 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
 
     if (use_simplification && clauses.size() == nclauses + 1) {
         Candy::Clause* cr = clauses.back();
-        const Candy::Clause& c = *cr;
-
         // NOTE: the clause is added to the queue immediately and then
         // again during 'gatherTouchedClauses()'. If nothing happens
         // in between, it will only be checked once. Otherwise, it may
@@ -168,13 +164,13 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
         // consequence of how backward subsumption is used to mimic
         // forward subsumption.
         subsumption_queue.push_back(cr);
-        for (unsigned int i = 0; i < c.size(); i++) {
-            occurs[var(c[i])].push_back(cr);
-            n_occ[toInt(c[i])]++;
-            touched[var(c[i])] = 1;
+        for (Lit lit : *cr) {
+            occurs[var(lit)].push_back(cr);
+            n_occ[toInt(lit)]++;
+            touched[var(lit)] = 1;
             n_touched++;
-            if (elim_heap.inHeap(var(c[i])))
-                elim_heap.increase(var(c[i]));
+            if (elim_heap.inHeap(var(lit)))
+                elim_heap.increase(var(lit));
         }
     }
 
@@ -182,20 +178,17 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
 }
 
 void SimpSolver::removeClause(Candy::Clause* cr) {
-    const Candy::Clause& c = *cr;
-
-    if (use_simplification)
-        for (unsigned int i = 0; i < c.size(); i++) {
-            n_occ[toInt(c[i])]--;
-            updateElimHeap(var(c[i]));
-            occurs.smudge(var(c[i]));
+    if (use_simplification) {
+        for (Lit lit : *cr) {
+            n_occ[toInt(lit)]--;
+            updateElimHeap(var(lit));
+            occurs.smudge(var(lit));
         }
-
+    }
     Solver::removeClause(cr);
 }
 
 bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
-    Candy::Clause& c = *cr;
     assert(decisionLevel() == 0);
     assert(use_simplification);
 
@@ -204,32 +197,32 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
     subsumption_queue.push_back(cr);
 
     if (certifiedUNSAT) {
-        for (unsigned int i = 0; i < c.size(); i++)
-            if (c[i] != l)
-                fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
+        for (Lit lit : *cr)
+            if (lit != l) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
         fprintf(certifiedOutput, "0\n");
     }
 
-    if (c.size() == 2) {
+    if (cr->size() == 2) {
         removeClause(cr);
-        c.strengthen(l);
-    } else {
+        cr->strengthen(l);
+        return enqueue((*cr)[0]) && propagate() == nullptr;
+    }
+    else {
         if (certifiedUNSAT) {
             fprintf(certifiedOutput, "d ");
-            for (unsigned int i = 0; i < c.size(); i++)
-                fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
+            for (Lit lit : *cr) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
             fprintf(certifiedOutput, "0\n");
         }
 
         detachClause(cr, true);
-        c.strengthen(l);
+        cr->strengthen(l);
         attachClause(cr);
         occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
         n_occ[toInt(l)]--;
         updateElimHeap(var(l));
+        assert(cr->size() > 1);
+        return true;
     }
-
-    return c.size() == 1 ? enqueue(c[0]) && propagate() == nullptr : true;
 }
 
 // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
@@ -241,22 +234,23 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
     const Candy::Clause& ps = ps_smallest ? _qs : _ps;
     const Candy::Clause& qs = ps_smallest ? _ps : _qs;
 
-    for (unsigned int i = 0; i < qs.size(); i++) {
-        if (var(qs[i]) != v) {
-            for (unsigned int j = 0; j < ps.size(); j++)
-                if (var(ps[j]) == var(qs[i]))
-                    if (ps[j] == ~qs[i])
-                        return false;
-                    else
-                        goto next;
-            out_clause.push_back(qs[i]);
+    for (Lit qlit : qs) {
+        if (var(qlit) != v) {
+            auto p = find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return var(plit) == var(qlit); });
+            if (p == ps.end()) {
+                out_clause.push_back(qlit);
+            }
+            else if (*p == ~qlit) {
+                return false;
+            }
         }
-        next: ;
     }
 
-    for (unsigned int i = 0; i < ps.size(); i++)
-        if (var(ps[i]) != v)
-            out_clause.push_back(ps[i]);
+    for (Lit plit : ps) {
+        if (var(plit) != v) {
+            out_clause.push_back(plit);
+        }
+    }
 
     return true;
 }
@@ -271,17 +265,16 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
 
     size = ps.size() - 1;
 
-    for (unsigned int i = 0; i < qs.size(); i++) {
-        if (var(_qs[i]) != v) {
-            for (unsigned int j = 0; j < ps.size(); j++)
-                if (var(_ps[j]) == var(_qs[i]))
-                    if (_ps[j] == ~_qs[i])
-                        return false;
-                    else
-                        goto next;
-            size++;
+    for (Lit qlit : qs) {
+        if (var(qlit) != v) {
+            auto p = find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return var(plit) == var(qlit); });
+            if (p == ps.end()) {
+                size++;
+            }
+            else if (*p == ~qlit) {
+                return false;
+            }
         }
-        next: ;
     }
 
     return true;
@@ -291,25 +284,25 @@ void SimpSolver::gatherTouchedClauses() {
     if (n_touched == 0)
         return;
 
-    unsigned int i, j;
-    for (i = j = 0; i < subsumption_queue.size(); i++)
-        if (subsumption_queue[i]->getMark() == 0)
-            subsumption_queue[i]->setMark(2);
+    for (Candy::Clause* c : subsumption_queue)
+        if (c->getMark() == 0)
+            c->setMark(2);
 
     for (unsigned int i = 0; i < touched.size(); i++)
         if (touched[i]) {
             const vector<Candy::Clause*>& cs = occurs.lookup(i);
-            for (unsigned int j = 0; j < cs.size(); j++)
-                if (cs[j]->getMark() == 0) {
-                    subsumption_queue.push_back(cs[j]);
-                    cs[j]->setMark(2);
+            for (Candy::Clause* c : cs) {
+                if (c->getMark() == 0) {
+                    subsumption_queue.push_back(c);
+                    c->setMark(2);
                 }
+            }
             touched[i] = 0;
         }
 
-    for (i = 0; i < subsumption_queue.size(); i++)
-        if (subsumption_queue[i]->getMark() == 2)
-            subsumption_queue[i]->setMark(0);
+    for (Candy::Clause* c : subsumption_queue)
+        if (c->getMark() == 2)
+            c->setMark(0);
 
     n_touched = 0;
 }
@@ -318,14 +311,15 @@ bool SimpSolver::implied(const vector<Lit>& c) {
     assert(decisionLevel() == 0);
 
     trail_lim.push_back(trail_size);
-    for (unsigned int i = 0; i < c.size(); i++)
-        if (value(c[i]) == l_True) {
+    for (Lit lit : c) {
+        if (value(lit) == l_True) {
             cancelUntil(0);
             return false;
-        } else if (value(c[i]) != l_False) {
-            assert(value(c[i]) == l_Undef);
-            uncheckedEnqueue(~c[i]);
+        } else if (value(lit) != l_False) {
+            assert(value(lit) == l_Undef);
+            uncheckedEnqueue(~lit);
         }
+    }
 
     bool result = propagate() != nullptr;
     cancelUntil(0);
@@ -337,6 +331,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
     int cnt = 0;
     int subsumed = 0;
     int deleted_literals = 0;
+    Candy::Clause bwdsub_tmpunit({ lit_Undef });
     assert(decisionLevel() == 0);
 
     while (subsumption_queue.size() > 0 || bwdsub_assigns < trail_size) {
@@ -357,70 +352,79 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
 
         Candy::Clause* cr = subsumption_queue.front();
         subsumption_queue.pop_front();
-        Candy::Clause& c = *cr;
 
-        if (c.getMark())
+        if (cr->getMark())
             continue;
 
         if (verbose && verbosity >= 2 && cnt++ % 1000 == 0)
             printf("subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", (int) subsumption_queue.size(), subsumed, deleted_literals);
 
-        assert(c.size() > 1 || value(c[0]) == l_True);    // Unit-clauses should have been propagated before this point.
+        assert(cr->size() > 1 || value((*cr)[0]) == l_True); // Unit-clauses should have been propagated before this point.
 
         // Find best variable to scan:
-        Var best = var(c[0]);
-        for (unsigned int i = 1; i < c.size(); i++)
-            if (occurs[var(c[i])].size() < occurs[best].size())
-                best = var(c[i]);
+        Var best = var((*cr)[0]);
+        for (unsigned int i = 1; i < cr->size(); i++)
+            if (occurs[var((*cr)[i])].size() < occurs[best].size())
+                best = var((*cr)[i]);
 
         // Search all candidates:
         vector<Candy::Clause*>& cs = occurs.lookup(best);
-        for (unsigned int j = 0; j < cs.size(); j++)
-            if (c.getMark())
+        for (unsigned int i = 0; i < cs.size(); i++) {
+            Candy::Clause* csi = cs[i];
+            if (cr->getMark()) {
                 break;
-            else if (!cs[j]->getMark() && cs[j] != cr && (subsumption_lim == -1 || (int)cs[j]->size() < subsumption_lim)) {
-                Lit l = c.subsumes(*cs[j]);
+            }
+            else if (csi != cr && (subsumption_lim == -1 || (int)csi->size() < subsumption_lim)) {
+                Lit l = cr->subsumes(*csi);
 
-                if (l == lit_Undef)
-                    subsumed++, removeClause(cs[j]);
+                if (l == lit_Undef) {
+                    subsumed++;
+                    removeClause(csi);
+                }
                 else if (l != lit_Error) {
                     deleted_literals++;
 
-                    if (!strengthenClause(cs[j], ~l))
+                    if (!strengthenClause(csi, ~l))
                         return false;
 
                     // Did current candidate get deleted from cs? Then check candidate at index j again:
                     if (var(l) == best)
-                        j--;
+                        i--;
                 }
             }
+        }
     }
 
     return true;
 }
 
 bool SimpSolver::asymm(Var v, Candy::Clause* cr) {
-    Candy::Clause& c = *cr;
     assert(decisionLevel() == 0);
 
-    if (c.getMark() || satisfied(c))
+    if (cr->getMark() || satisfied(*cr)) {
         return true;
+    }
 
     trail_lim.push_back(trail_size);
     Lit l = lit_Undef;
-    for (unsigned int i = 0; i < c.size(); i++)
-        if (var(c[i]) != v && value(c[i]) != l_False)
-            uncheckedEnqueue(~c[i]);
-        else
-            l = c[i];
+    for (Lit lit : *cr) {
+        if (var(lit) != v && value(lit) != l_False) {
+            uncheckedEnqueue(~lit);
+        }
+        else {
+            l = lit;
+        }
+    }
 
     if (propagate() != nullptr) {
         cancelUntil(0);
         asymm_lits++;
-        if (!strengthenClause(cr, l))
+        if (!strengthenClause(cr, l)) {
             return false;
-    } else
+        }
+    } else {
         cancelUntil(0);
+    }
 
     return true;
 }
@@ -433,8 +437,8 @@ bool SimpSolver::asymmVar(Var v) {
     if (value(v) != l_Undef || cls.size() == 0)
         return true;
 
-    for (unsigned int i = 0; i < cls.size(); i++)
-        if (!asymm(v, cls[i]))
+    for (Candy::Clause* c : cls)
+        if (!asymm(v, c))
             return false;
 
     return backwardSubsumptionCheck();
@@ -446,23 +450,19 @@ static void mkElimClause(vector<uint32_t>& elimclauses, Lit x) {
 }
 
 static void mkElimClause(vector<uint32_t>& elimclauses, Var v, Candy::Clause& c) {
-    int first = elimclauses.size();
-    int v_pos = -1;
+    assert(c.contains(v));
+    uint32_t first = elimclauses.size();
 
-    // Copy clause to elimclauses-vector. Remember position where the
-    // variable 'v' occurs:
-    for (unsigned int i = 0; i < c.size(); i++) {
-        elimclauses.push_back(toInt(c[i]));
-        if (var(c[i]) == v)
-            v_pos = i + first;
+    // Copy clause to elimclauses-vector
+    for (Lit lit : c) {
+        if (var(lit) != v || first == elimclauses.size()) {
+            elimclauses.push_back(lit);
+        } else {
+            // Swap such that 'v' will occur first in the clause:
+            elimclauses.push_back(elimclauses[first]);
+            elimclauses[first] = lit;
+        }
     }
-    assert(v_pos != -1);
-
-    // Swap the first literal with the 'v' literal, so that the literal
-    // containing 'v' will occur first in the clause:
-    uint32_t tmp = elimclauses[v_pos];
-    elimclauses[v_pos] = elimclauses[first];
-    elimclauses[first] = tmp;
 
     // Store the length of the clause last:
     elimclauses.push_back(c.size());
@@ -474,7 +474,6 @@ bool SimpSolver::eliminateVar(Var v) {
     assert(value(v) == l_Undef);
 
     // Split the occurrences into positive and negative:
-    //
     vector<Candy::Clause*>& cls = occurs.lookup(v);
     vector<Candy::Clause*> pos, neg;
     for (Candy::Clause* cl : cls) {
@@ -488,14 +487,15 @@ bool SimpSolver::eliminateVar(Var v) {
 
     // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
     // clause must exceed the limit on the maximal clause size (if it is set):
-    //
     int cnt = 0;
-    int clause_size = 0;
-
-    for (unsigned int i = 0; i < pos.size(); i++)
-        for (unsigned int j = 0; j < neg.size(); j++)
-            if (merge(*pos[i], *neg[j], v, clause_size) && (++cnt > (int) cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim)))
+    for (Candy::Clause* pc : pos) {
+        for (Candy::Clause* nc : neg) {
+            int clause_size = 0;
+            if (merge(*pc, *nc, v, clause_size) && (++cnt > (int)cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim))) {
                 return true;
+            }
+        }
+    }
 
     // Delete and store old clauses:
     eliminated[v] = true;
@@ -503,24 +503,24 @@ bool SimpSolver::eliminateVar(Var v) {
     eliminated_vars++;
 
     if (pos.size() > neg.size()) {
-        for (unsigned int i = 0; i < neg.size(); i++)
-            mkElimClause(elimclauses, v, *neg[i]);
+        for (Candy::Clause* c : neg)
+            mkElimClause(elimclauses, v, *c);
         mkElimClause(elimclauses, mkLit(v));
     } else {
-        for (unsigned int i = 0; i < pos.size(); i++)
-            mkElimClause(elimclauses, v, *pos[i]);
+        for (Candy::Clause* c : pos)
+            mkElimClause(elimclauses, v, *c);
         mkElimClause(elimclauses, ~mkLit(v));
     }
 
     // Produce clauses in cross product:
     vector<Lit>& resolvent = add_tmp;
-    for (unsigned int i = 0; i < pos.size(); i++)
-        for (unsigned int j = 0; j < neg.size(); j++)
-            if (merge(*pos[i], *neg[j], v, resolvent) && !addClause_(resolvent))
+    for (Candy::Clause* pc : pos)
+        for (Candy::Clause* nc : neg)
+            if (merge(*pc, *nc, v, resolvent) && !addClause_(resolvent))
                 return false;
 
-    for (unsigned int i = 0; i < cls.size(); i++)
-        removeClause(cls[i]);
+    for (Candy::Clause* c : cls)
+        removeClause(c);
 
     // Free occurs list for this variable:
     occurs[v].clear();
@@ -539,40 +539,33 @@ bool SimpSolver::substitute(Var v, Lit x) {
     assert(!isEliminated(v));
     assert(value(v) == l_Undef);
 
-    if (!ok)
+    if (!ok) {
         return false;
+    }
 
     eliminated[v] = true;
     setDecisionVar(v, false);
+
     const vector<Candy::Clause*>& cls = occurs.lookup(v);
-
-    vector<Lit>& subst_clause = add_tmp;
-    for (unsigned int i = 0; i < cls.size(); i++) {
-        Candy::Clause& c = *cls[i];
-
-        subst_clause.clear();
-        for (unsigned int j = 0; j < c.size(); j++) {
-            Lit p = c[j];
-            subst_clause.push_back(var(p) == v ? x ^ sign(p) : p);
+    for (Candy::Clause* c : cls) {
+        add_tmp.clear();
+        for (Lit lit : *c) {
+            add_tmp.push_back(var(lit) == v ? x ^ sign(lit) : lit);
         }
-
-        if (!addClause_(subst_clause))
+        if (!addClause_(add_tmp)) {
             return ok = false;
-
-        removeClause(cls[i]);
+        }
+        removeClause(c);
     }
 
     return true;
 }
 
 void SimpSolver::extendModel() {
-    int i, j;
+    model.resize(nVars());
+
     Lit x;
-
-    if (model.size() == 0)
-        model.resize(nVars());
-
-    for (i = elimclauses.size() - 1; i > 0; i -= j) {
+    for (int i = elimclauses.size()-1, j; i > 0; i -= j) {
         for (j = elimclauses[i--]; j > 1; j--, i--)
             if (modelValue(toLit(elimclauses[i])) != l_False)
                 goto next;
@@ -587,21 +580,20 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
     if (!simplify()) {
         ok = false;
         return false;
-    } else if (!use_simplification)
+    }
+    else if (!use_simplification) {
         return true;
-
-    // Main simplification loop:
-    //
-
-    int toPerform = clauses.size() <= 4800000;
-
-    if (!toPerform) {
-        printf("c Too many clauses... No preprocessing\n");
     }
 
-    while (toPerform && (n_touched > 0 || bwdsub_assigns < trail_size || elim_heap.size() > 0)) {
+    if (clauses.size() > 4800000) {
+        printf("c Too many clauses... No preprocessing\n");
+        goto cleanup;
+    }
+
+    // Main simplification loop:
+    while (n_touched > 0 || bwdsub_assigns < trail_size || elim_heap.size() > 0) {
         gatherTouchedClauses();
-        // printf("  ## (time = %6.2f s) BWD-SUB: queue = %d, trail = %d\n", cpuTime(), subsumption_queue.size(), trail.size() - bwdsub_assigns);
+
         if ((subsumption_queue.size() > 0 || bwdsub_assigns < trail_size) && !backwardSubsumptionCheck(true)) {
             ok = false;
             goto cleanup;
@@ -616,18 +608,11 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
             goto cleanup;
         }
 
-        // printf("  ## (time = %6.2f s) ELIM: vars = %d\n", cpuTime(), elim_heap.size());
-        for (int cnt = 0; !elim_heap.empty(); cnt++) {
+        while (!elim_heap.empty() && !asynch_interrupt) {
             Var elim = elim_heap.removeMin();
-
-            if (asynch_interrupt)
-                break;
 
             if (isEliminated(elim) || value(elim) != l_Undef)
                 continue;
-
-            if (verbosity >= 2 && cnt % 100 == 0)
-                printf("elimination left: %10d\r", elim_heap.size());
 
             if (use_asymm) {
                 // Temporarily freeze variable. Otherwise, it would immediately end up on the queue again:
@@ -640,7 +625,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
                 frozen[elim] = was_frozen;
             }
 
-            // At this point, the variable may have been set by assymetric branching, so check it
+            // At this point, the variable may have been set by asymmetric branching, so check it
             // again. Also, don't eliminate frozen variables:
             if (use_elim && value(elim) == l_Undef && !frozen[elim] && !eliminateVar(elim)) {
                 ok = false;
@@ -665,17 +650,13 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 
         // Force full cleanup (this is safe and desirable since it only happens once):
         rebuildOrderHeap();
-        cleanUpClauses();
-    } else {
-        // Cheaper cleanup:
-        cleanUpClauses(); // TODO: can we make 'cleanUpClauses()' not be linear in the problem size somehow?
     }
+    occurs.cleanAll();
+    freeMarkedClauses(clauses);
+    
+    if (verbosity >= 0 && elimclauses.size() > 0)
+        printf("c |  Eliminated clauses:     %10.2f Mb                                                                |\n", 
+               double(elimclauses.size() * sizeof(uint32_t)) / (1024*1024));
 
     return ok;
-
-}
-
-void SimpSolver::cleanUpClauses() {
-    occurs.cleanAll();
-    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->getMark(); }), clauses.end());
 }
