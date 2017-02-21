@@ -59,8 +59,11 @@ cmake_minimum_required(VERSION 3.5)
 # Enable LLVM coverage
 option(CANDY_ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
-# Enable LLVM address and leak sanitizer
+# Enable LLVM address sanitizer
 option(CANDY_ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
+
+# Enable LLVM undefined-behavior, address and leak sanitizer
+option(CANDY_ENABLE_LLVM_SANITIZER_FULL "Enable LLVM address, memory and undefined-behavior sanitizer" OFF)
 
 # Enable -march=native - if set to OFF, at least SSE 4.1 will still be enabled.
 option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
@@ -100,6 +103,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3
 
 if(CANDY_ENABLE_LLVM_SANITIZER)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+endif()
+
+if(CANDY_ENABLE_LLVM_SANITIZER_FULL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address,memory,undefined")
 endif()
 
 if(CANDY_DISABLE_RTTI)
