@@ -14,22 +14,22 @@
 namespace Candy {
 
 class Clause {
-    unsigned mark :2;
-    unsigned learnt :1;
-    unsigned canbedel :1;
-    //unsigned seen :1;
-    //unsigned _unused :11; // Unused bits of 16
-    uint16_t lbd;
-
+public:
     union {
         float act;
         uint32_t abs;
     } data;
 
-    uint32_t length;
+    uint16_t lbd;
+    uint16_t length;
+
+    unsigned mark :2;
+    unsigned learnt :1;
+    unsigned canbedel :1;
+
     Lit literals[1];
 
-protected:
+//protected:
     static ClauseAllocator* allocator;
 
 public:

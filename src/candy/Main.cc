@@ -443,8 +443,18 @@ int main(int argc, char** argv) {
   try {
     std::cout << "This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
     std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
-    std::cout << "c Size of Vector: " << sizeof(std::vector<Lit>) << std::endl;
-    std::cout << "c Size of Float: " << sizeof(float) << std::endl;
+
+    Candy::Clause clause({lit_Undef});
+    uint64_t start = (uint64_t)&clause;
+    uint64_t lbd = (uint64_t)&(clause.lbd);
+    uint64_t length = (uint64_t)&(clause.length);
+    uint64_t data = (uint64_t)&(clause.data);
+    uint64_t literals = (uint64_t)&(clause.literals);
+
+    std::cout << "lbd starts at " << lbd - start << std::endl;
+    std::cout << "length starts at " << length - start << std::endl;
+    std::cout << "data starts at " << data - start << std::endl;
+    std::cout << "literals starts at " << literals - start << std::endl;
 
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
 
