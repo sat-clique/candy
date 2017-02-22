@@ -13,7 +13,8 @@ namespace Candy {
 ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 1000);
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
-    header.mark = 0;
+    header.deleted = 0;
+    header.versatile_flag = 0;
     header.learnt = learnt;
     header.canbedel = 1;
     setLBD(0);
@@ -29,7 +30,8 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
 }
 
 Clause::Clause(std::initializer_list<Lit> list) {
-    header.mark = 0;
+    header.deleted = 0;
+    header.versatile_flag = 0;
     header.learnt = false;
     header.canbedel = 1;
     setLBD(0);
@@ -90,31 +92,32 @@ uint16_t Clause::size() const {
     return length;
 }
 
-bool Clause::contains(Lit lit) {
+bool Clause::contains(const Lit lit) const {
     return std::find(begin(), end(), lit) != end();
 }
 
-bool Clause::contains(Var v) {
+bool Clause::contains(const Var v) const {
     return std::find_if(begin(), end(), [v](Lit lit) { return var(lit) == v; }) != end();
-}
-
-void Clause::swap(uint16_t pos1, uint16_t pos2) {
-    assert(pos1 < length && pos2 < length);
-    Lit tmp = literals[pos1];
-    literals[pos1] = literals[pos2];
-    literals[pos2] = tmp;
 }
 
 bool Clause::isLearnt() const {
     return header.learnt;
 }
 
-uint32_t Clause::getMark() const {
-    return header.mark;
+bool Clause::isDeleted() const {
+    return header.deleted;
 }
 
-void Clause::setMark(uint32_t m) {
-    header.mark = m;
+void Clause::setDeleted() {
+    header.deleted = 1;
+}
+
+bool Clause::isFlagged() const {
+    return header.versatile_flag;
+}
+
+void Clause::setFlagged(bool flag) {
+    header.versatile_flag = flag;
 }
 
 const Lit Clause::back() const {
@@ -127,54 +130,6 @@ float& Clause::activity() {
 
 uint32_t Clause::abstraction() const {
     return data.abs;
-}
-
-/**
- *  subsumes : (other : const Clause&)  ->  Lit
- *
- *  Description:
- *       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
- *       by subsumption resolution.
- *
- *    Result:
- *       lit_Error  - No subsumption or simplification
- *       lit_Undef  - Clause subsumes 'other'
- *       p          - The literal p can be deleted from 'other'
- */
-Lit Clause::subsumes(const Clause& other) const {
-    assert(!header.learnt);
-    assert(!other.header.learnt);
-
-    if (other.size() < size() || (data.abs & ~other.data.abs) != 0) {
-        return Glucose::lit_Error;
-    }
-
-    Lit ret = Glucose::lit_Undef;
-
-    for (Lit c : *this) {
-        // search for c or ~c
-        for (Lit d : other) {
-            if (c == d) {
-                goto ok;
-            }
-            else if (ret == Glucose::lit_Undef && c == ~d) {
-                ret = c;
-                goto ok;
-            }
-        }
-        // did not find it
-        return Glucose::lit_Error;
-        ok: ;
-    }
-
-    return ret;
-}
-
-void Clause::strengthen(Lit p) {
-    if (std::remove(begin(), end(), p) != end()) {
-        --length;
-    }
-    calcAbstraction();
 }
 
 void Clause::setLBD(uint16_t i) {
@@ -190,7 +145,7 @@ void Clause::setCanBeDel(bool b) {
     header.canbedel = b;
 }
 
-bool Clause::canBeDel() {
+bool Clause::canBeDel() const {
     return header.canbedel;
 }
 

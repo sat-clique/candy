@@ -224,36 +224,23 @@ public:
 	}
 
 	void smudge(const Idx& idx) {
-		if (dirty[toInt(idx)] == 0) {
-			dirty[toInt(idx)] = 1;
+		if (!dirty[toInt(idx)]) {
+			dirty[toInt(idx)] = true;
 			dirties.push_back(idx);
 		}
 	}
 
 	void cleanAll() {
-		for (int i = 0; i < (int) dirties.size(); i++)
-			// Dirties may contain duplicates so check here if a variable is already cleaned:
-			//if (dirty[toInt(dirties[i])])
-			clean(dirties[i]);
+		for (Idx dirty : dirties)
+			clean(dirty);
 		dirties.clear();
 	}
 
 	void clean(const Idx& idx) {
 		std::vector<Elem>& vec = occs[toInt(idx)];
-		auto end = std::remove_if(vec.begin(), vec.end(),
-				[this](Elem e) {return deleted(e);});
+		auto end = std::remove_if(vec.begin(), vec.end(), [this](Elem e) {return deleted(e);});
 		vec.erase(end, vec.end());
 		dirty[toInt(idx)] = 0;
-	}
-
-	void copyTo(OccLists &copy) const {
-		copy.clear();
-		copy.occs.resize(occs.size());
-		for (int i = 0; i < (int) occs.size(); i++)
-			copy.occs[i].insert(copy.occs[i].end(), occs[i].begin(),
-					occs[i].end());
-		copy.dirty.insert(copy.dirty.end(), dirty.begin(), dirty.end());
-		copy.dirties.insert(copy.dirties.end(), dirties.begin(), dirties.end());
 	}
 
 	void clear() {

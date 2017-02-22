@@ -296,7 +296,7 @@ void Solver::removeClause(Candy::Clause* cr) {
     // Don't leave pointers to free'd memory!
     if (locked(cr))
         vardata[var(c[0])].reason = nullptr;
-    c.setMark(1);
+    c.setDeleted();
 }
 
 bool Solver::satisfied(const Candy::Clause& c) const {
@@ -858,7 +858,7 @@ void Solver::reduceDB() {
 }
 
 unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
-    auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->getMark() == 1; });
+    auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->isDeleted(); });
     std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { delete c; });
     int nRemoved = std::distance(new_end, list.end());
     list.erase(new_end, list.end());
