@@ -95,8 +95,8 @@ public:
         uint64_t literals = (uint64_t)&(clause.literals);
         std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
         std::cout << "c Header starts at " << header - start << std::endl;
-        std::cout << "c LBD starts at " << lbd - start << std::endl;
         std::cout << "c Data-union starts at " << data - start << std::endl;
+        std::cout << "c LBD starts at " << lbd - start << std::endl;
         std::cout << "c Length starts at " << length - start << std::endl;
         std::cout << "c Literals start at " << literals - start << std::endl;
     }

@@ -12,10 +12,9 @@
 
 namespace Candy {
 
-ClauseAllocator::ClauseAllocator(uint32_t _number_of_pools, uint32_t _elements_per_pool) :
+ClauseAllocator::ClauseAllocator(uint32_t _number_of_pools, uint32_t _initial_elements_per_pool) :
     number_of_pools(_number_of_pools),
-    initial_elements_per_pool(_elements_per_pool),
-    stats_active_total(0),
+    initial_elements_per_pool(_initial_elements_per_pool),
     stats_active_long(0),
     stats_active_counts(_number_of_pools, 0)
 {
@@ -36,7 +35,6 @@ uint32_t ClauseAllocator::clauseBytes(uint32_t length) {
 }
 
 void* ClauseAllocator::allocate(uint32_t length) {
-    stats_active_total++;
     if (length-1 < number_of_pools) {
         stats_active_counts[length-1]++;
         std::vector<void*>& pool = getPool(length);
@@ -51,7 +49,6 @@ void* ClauseAllocator::allocate(uint32_t length) {
 }
 
 void ClauseAllocator::deallocate(Clause* clause) {
-    stats_active_total--;
     if (clause->size()-1 < number_of_pools) {
         stats_active_counts[clause->size()-1]--;
         pools[clause->size()-1].push_back(clause);
