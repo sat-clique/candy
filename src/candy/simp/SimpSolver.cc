@@ -214,9 +214,16 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
             fprintf(certifiedOutput, "0\n");
         }
 
-        detachClause(cr, true);
-        cr->strengthen(l);
-        attachClause(cr);
+        // TODO: check why this optimization wont work
+//        if (~l == (*cr)[0] || ~l == (*cr)[1]) {
+            detachClause(cr, true);
+            cr->strengthen(l);
+            attachClause(cr);
+//        }
+//        else {
+//            cr->strengthen(l);
+//        }
+
         occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
         n_occ[toInt(l)]--;
         updateElimHeap(var(l));
@@ -227,6 +234,8 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
 
 // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
 bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, vector<Lit>& out_clause) {
+    assert(_ps.contains(v));
+    assert(_qs.contains(v));
     merges++;
     out_clause.clear();
 
@@ -257,6 +266,8 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
 
 // Returns FALSE if clause is always satisfied.
 bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, int& size) {
+    assert(_ps.contains(v));
+    assert(_qs.contains(v));
     merges++;
 
     bool ps_smallest = _ps.size() < _qs.size();
@@ -285,24 +296,22 @@ void SimpSolver::gatherTouchedClauses() {
         return;
 
     for (Candy::Clause* c : subsumption_queue)
-        if (c->getMark() == 0)
-            c->setMark(2);
+        c->setFlagged(true);
 
     for (unsigned int i = 0; i < touched.size(); i++)
         if (touched[i]) {
             const vector<Candy::Clause*>& cs = occurs.lookup(i);
             for (Candy::Clause* c : cs) {
-                if (c->getMark() == 0) {
+                if (!c->isFlagged() && !c->isDeleted()) {
                     subsumption_queue.push_back(c);
-                    c->setMark(2);
+                    c->setFlagged(true);
                 }
             }
             touched[i] = 0;
         }
 
     for (Candy::Clause* c : subsumption_queue)
-        if (c->getMark() == 2)
-            c->setMark(0);
+        c->setFlagged(false);
 
     n_touched = 0;
 }
@@ -353,7 +362,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
         Candy::Clause* cr = subsumption_queue.front();
         subsumption_queue.pop_front();
 
-        if (cr->getMark())
+        if (cr->isDeleted())
             continue;
 
         if (verbose && verbosity >= 2 && cnt++ % 1000 == 0)
@@ -371,7 +380,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
         vector<Candy::Clause*>& cs = occurs.lookup(best);
         for (unsigned int i = 0; i < cs.size(); i++) {
             Candy::Clause* csi = cs[i];
-            if (cr->getMark()) {
+            if (cr->isDeleted()) {
                 break;
             }
             else if (csi != cr && (subsumption_lim == -1 || (int)csi->size() < subsumption_lim)) {
@@ -401,7 +410,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
 bool SimpSolver::asymm(Var v, Candy::Clause* cr) {
     assert(decisionLevel() == 0);
 
-    if (cr->getMark() || satisfied(*cr)) {
+    if (cr->isDeleted() || satisfied(*cr)) {
         return true;
     }
 
@@ -654,7 +663,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
     occurs.cleanAll();
     //TODO: why not free space of orignial clauses if simplification is done?
     //freeMarkedClauses(clauses);
-    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->getMark(); }), clauses.end());
+    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->isDeleted(); }), clauses.end());
     
     if (verbosity >= 0 && elimclauses.size() > 0)
         printf("c |  Eliminated clauses:     %10.2f Mb                                                                |\n", 

@@ -257,8 +257,8 @@ protected:
 
 	struct WatcherDeleted {
 		WatcherDeleted() { }
-		bool operator()(const Watcher& w) const {
-			return w.cref->getMark() == 1;
+		inline bool operator()(const Watcher& w) const {
+			return w.cref->isDeleted() == 1;
 		}
 	};
 

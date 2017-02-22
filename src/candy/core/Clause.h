@@ -18,7 +18,8 @@ namespace Candy {
 
 class Clause {
     struct {
-        unsigned mark :2;
+        unsigned deleted :1;
+        unsigned versatile_flag :1;
         unsigned learnt :1;
         unsigned canbedel :1;
     } header;
@@ -34,7 +35,7 @@ class Clause {
     Lit literals[1];
 
 private:
-    void* operator new (std::size_t size) throw() { assert(0); return nullptr; };
+    void* operator new (std::size_t size) throw() { assert(size != size); return nullptr; };
 
 protected:
     static ClauseAllocator* allocator;
@@ -65,25 +66,79 @@ public:
     void calcAbstraction();
 
     const Lit back() const;
-    bool contains(Lit lit);
-    bool contains(Var var);
+    bool contains(const Lit lit) const;
+    bool contains(const Var var) const;
 
-    void swap(uint16_t pos1, uint16_t pos2);
+    inline void swap(uint16_t pos1, uint16_t pos2) {
+        assert(pos1 < length && pos2 < length);
+        Lit tmp = literals[pos1];
+        literals[pos1] = literals[pos2];
+        literals[pos2] = tmp;
+    }
 
     bool isLearnt() const;
-    uint32_t getMark() const;
-    void setMark(uint32_t m);
+
+    bool isDeleted() const;
+    void setDeleted();
+    bool isFlagged() const;
+    void setFlagged(bool flag);
 
     float& activity();
     uint32_t abstraction() const;
 
-    Lit subsumes(const Clause& other) const;
-    void strengthen(Lit p);
-
     void setLBD(uint16_t i);
     uint16_t getLBD() const;
     void setCanBeDel(bool b);
-    bool canBeDel();
+    bool canBeDel() const;
+
+
+    /**
+     *  subsumes : (other : const Clause&)  ->  Lit
+     *
+     *  Description:
+     *       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
+     *       by subsumption resolution.
+     *
+     *    Result:
+     *       lit_Error  - No subsumption or simplification
+     *       lit_Undef  - Clause subsumes 'other'
+     *       p          - The literal p can be deleted from 'other'
+     */
+    inline Lit subsumes(const Clause& other) const {
+        assert(!header.learnt);
+        assert(!other.header.learnt);
+
+        if (other.size() < size() || (data.abs & ~other.data.abs) != 0) {
+            return Glucose::lit_Error;
+        }
+
+        Lit ret = Glucose::lit_Undef;
+
+        for (Lit c : *this) {
+            // search for c or ~c
+            for (Lit d : other) {
+                if (c == d) {
+                    goto ok;
+                }
+                else if (ret == Glucose::lit_Undef && c == ~d) {
+                    ret = c;
+                    goto ok;
+                }
+            }
+            // did not find it
+            return Glucose::lit_Error;
+            ok: ;
+        }
+
+        return ret;
+    }
+
+    inline void strengthen(Lit p) {
+        if (std::remove(begin(), end(), p) != end()) {
+            --length;
+        }
+        calcAbstraction();
+    }
 
     static void printAlignment() {
         Clause clause({Glucose::lit_Undef});

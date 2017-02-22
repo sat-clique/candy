@@ -140,8 +140,8 @@ protected:
     struct ClauseDeleted {
         explicit ClauseDeleted() {
         }
-        bool operator()(const Candy::Clause* cr) const {
-            return cr->getMark() == 1;
+        inline bool operator()(const Candy::Clause* cr) const {
+            return cr->isDeleted();
         }
     };
 
