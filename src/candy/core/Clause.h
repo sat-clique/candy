@@ -10,11 +10,19 @@
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/ClauseAllocator.h"
+#include <iostream>
 
 namespace Candy {
 
+#define BITS_LBD 13
+
 class Clause {
-public:
+    struct {
+        unsigned mark :2;
+        unsigned learnt :1;
+        unsigned canbedel :1;
+    } header;
+
     union {
         float act;
         uint32_t abs;
@@ -23,13 +31,12 @@ public:
     uint16_t lbd;
     uint16_t length;
 
-    unsigned mark :2;
-    unsigned learnt :1;
-    unsigned canbedel :1;
-
     Lit literals[1];
 
-//protected:
+private:
+    void* operator new (std::size_t size) throw() { assert(0); return nullptr; };
+
+protected:
     static ClauseAllocator* allocator;
 
 public:
@@ -37,11 +44,10 @@ public:
     Clause(std::initializer_list<Lit> list);
     virtual ~Clause();
 
-    void* operator new (std::size_t size) throw();
-    void* operator new (std::size_t size, uint32_t length);
+    void* operator new (std::size_t size, uint16_t length);
     void operator delete (void* p);
 
-    static void* allocate(uint32_t length);
+    static void* allocate(uint16_t length);
     static void deallocate(Clause* clause);
 
     typedef Lit* iterator;
@@ -54,7 +60,7 @@ public:
     const_iterator end() const;
     iterator begin();
     iterator end();
-    uint32_t size() const;
+    uint16_t size() const;
 
     void calcAbstraction();
 
@@ -62,7 +68,7 @@ public:
     bool contains(Lit lit);
     bool contains(Var var);
 
-    void swap(uint32_t pos1, uint32_t pos2);
+    void swap(uint16_t pos1, uint16_t pos2);
 
     bool isLearnt() const;
     uint32_t getMark() const;
@@ -74,10 +80,26 @@ public:
     Lit subsumes(const Clause& other) const;
     void strengthen(Lit p);
 
-    void setLBD(int i);
-    unsigned int getLBD() const;
+    void setLBD(uint16_t i);
+    uint16_t getLBD() const;
     void setCanBeDel(bool b);
     bool canBeDel();
+
+    static void printAlignment() {
+        Clause clause({Glucose::lit_Undef});
+        uint64_t start = (uint64_t)&clause;
+        uint64_t header = (uint64_t)&(clause.header);
+        uint64_t data = (uint64_t)&(clause.data);
+        uint64_t lbd = (uint64_t)&(clause.lbd);
+        uint64_t length = (uint64_t)&(clause.length);
+        uint64_t literals = (uint64_t)&(clause.literals);
+        std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
+        std::cout << "c Header starts at " << header - start << std::endl;
+        std::cout << "c LBD starts at " << lbd - start << std::endl;
+        std::cout << "c Data-union starts at " << data - start << std::endl;
+        std::cout << "c Length starts at " << length - start << std::endl;
+        std::cout << "c Literals start at " << literals - start << std::endl;
+    }
 };
 
 } /* namespace Candy */
