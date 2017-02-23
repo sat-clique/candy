@@ -259,10 +259,18 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
     assert(cr->size() > 1);
     Candy::Clause& c = *cr;
 
+    if (c.isLearnt()) {
+        learnts_literals -= c.size();
+    } else {
+        clauses_literals -= c.size();
+    }
+
     if (c.size() == 2) {
         if (strict) {
-            watchesBin[~c[0]].erase(std::remove(watchesBin[~c[0]].begin(), watchesBin[~c[0]].end(), Watcher(cr, c[1])), watchesBin[~c[0]].end());
-            watchesBin[~c[1]].erase(std::remove(watchesBin[~c[1]].begin(), watchesBin[~c[1]].end(), Watcher(cr, c[0])), watchesBin[~c[1]].end());
+            vector<Watcher>& list0 = watchesBin[~c[0]];
+            vector<Watcher>& list1 = watchesBin[~c[1]];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [cr](Watcher w){ return w.cref == cr; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [cr](Watcher w){ return w.cref == cr; }), list1.end());
         } else {
             // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
             watchesBin.smudge(~c[0]);
@@ -270,18 +278,16 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
         }
     } else {
         if (strict) {
-            watches[~c[0]].erase(std::remove(watches[~c[0]].begin(), watches[~c[0]].end(), Watcher(cr, c[1])), watches[~c[0]].end());
-            watches[~c[1]].erase(std::remove(watches[~c[1]].begin(), watches[~c[1]].end(), Watcher(cr, c[0])), watches[~c[1]].end());
+            vector<Watcher>& list0 = watches[~c[0]];
+            vector<Watcher>& list1 = watches[~c[1]];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [cr](Watcher w){ return w.cref == cr; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [cr](Watcher w){ return w.cref == cr; }), list1.end());
         } else {
             // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
             watches.smudge(~c[0]);
             watches.smudge(~c[1]);
         }
     }
-    if (c.isLearnt())
-        learnts_literals -= c.size();
-    else
-        clauses_literals -= c.size();
 }
 
 void Solver::removeClause(Candy::Clause* cr) {
@@ -761,6 +767,7 @@ Candy::Clause* Solver::propagate() {
                 c.swap(0, 1);
             }
             assert(c[1] == ~p);
+            assert(!cr->isDeleted());
 
             wit++;
 
@@ -851,15 +858,27 @@ void Solver::reduceDB() {
             removeClause(learnts[i]);
         }
     }
+    watches.cleanAll();
+    watchesBin.cleanAll();
     nbRemovedClauses += freeMarkedClauses(learnts);
     for (Candy::Clause* c : learnts) { // "unfreeze" remaining clauses
         c->setCanBeDel(true);
     }
 }
 
+/**
+ * Make sure all references are cleared before space is handed back to ClauseAllocator
+ */
 unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
-    auto new_end = std::remove_if(list.begin(), list.end(), [this](Candy::Clause* c) { return c->isDeleted(); });
-    std::for_each(new_end, list.end(), [this] (Candy::Clause* c) { delete c; });
+    auto new_end = std::remove_if(list.begin(), list.end(),
+            [this](Candy::Clause* c) {
+                if (c->isDeleted()) {
+                    delete c;
+                    return true;
+                } else {
+                    return false;
+                }
+            });
     int nRemoved = std::distance(new_end, list.end());
     list.erase(new_end, list.end());
     return nRemoved;
