@@ -20,7 +20,7 @@ ClauseAllocator::ClauseAllocator(uint32_t _number_of_pools, uint32_t _initial_el
 {
     for (uint32_t i = 0; i < number_of_pools; i++) {
         pools.push_back(std::vector<void*>());
-        refillPool(initial_elements_per_pool, i+1);
+        refillPool(i);
     }
 }
 
@@ -35,44 +35,62 @@ uint32_t ClauseAllocator::clauseBytes(uint32_t length) {
 }
 
 void* ClauseAllocator::allocate(uint32_t length) {
-    if (length-1 < number_of_pools) {
-        stats_active_counts[length-1]++;
-        std::vector<void*>& pool = getPool(length);
+    uint16_t index = getPoolIndex(length);
+    if (index < number_of_pools) {
+        stats_active_counts[index]++;
+        std::vector<void*>& pool = getPool(index);
         void* clause = pool.back();
         pool.pop_back();
         return clause;
     }
     else {
         stats_active_long++;
-        return new char[clauseBytes(length)];
+        return malloc(clauseBytes(length));
     }
 }
 
 void ClauseAllocator::deallocate(Clause* clause) {
-    if (clause->size()-1 < number_of_pools) {
-        stats_active_counts[clause->size()-1]--;
-        pools[clause->size()-1].push_back(clause);
+    uint16_t index = getPoolIndex(clause->size());
+    if (index < number_of_pools) {
+        stats_active_counts[index]--;
+        getPool(index).push_back(clause);
     }
     else {
         stats_active_long--;
-        delete [] (char*)clause;
+        free((void*)clause);
     }
 }
 
-std::vector<void*>& ClauseAllocator::getPool(int32_t length) {
-    if (pools[length-1].size() == 0) {
-        refillPool(stats_active_counts[length-1], length);
+std::vector<void*>& ClauseAllocator::getPool(uint16_t index) {
+    if (pools[index].size() == 0) {
+        refillPool(index);
     }
-    return pools[length-1];
+    return pools[index];
 }
 
-void ClauseAllocator::refillPool(int32_t nElem, int32_t length) {
-    uint16_t clause_bytes = clauseBytes(length);
+/*
+ * header size is 20
+ * literal size is 4
+ * index 0: clause of length 0-3 has length 32
+ * index 1: clause of length 4-11 has length 64
+ * index 2: clause of length 12-19 has length 64 + 32
+ * ...
+ * minimum space: min = size * 4 + 20
+ * aligned space: ali = min + 32 - min % 32
+ * index: ali / 32 - 1
+ * index: (size + 4) / 8
+ */
+void ClauseAllocator::refillPool(uint16_t index) {
+    uint32_t nElem = stats_active_counts[index];
+    uint16_t clause_bytes = (index+1)*32;
     uint32_t bytes_total = clause_bytes * nElem;
-    char* pool = new char[bytes_total];
+    char* pool = (char*)malloc(bytes_total + clause_bytes);
     pages.push_back(pool);
-    for (int pos = 0; pos < bytes_total; pos += clause_bytes) {
-        pools[length-1].push_back(pool + pos);
+    char* align = (char*)((((uintptr_t)pool) + 32) & ~(static_cast<uintptr_t>(31)));
+    assert((uintptr_t)align - (uintptr_t)pool > 0);
+    assert((uintptr_t)align - (uintptr_t)pool <= 32);
+    for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
+        pools[index].push_back(align + pos);
     }
 }
 
