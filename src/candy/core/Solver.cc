@@ -194,32 +194,35 @@ bool Solver::addClause_(vector<Lit>& ps) {
     if (!ok)
         return false;
 
-    // remove duplicates:
     std::sort(ps.begin(), ps.end());
-    auto new_end = std::unique(ps.begin(), ps.end());
 
-    // remove false literals:
-    new_end = std::remove_if(ps.begin(), new_end, [this](Lit lit) {return value(lit) == l_False;});
+    vector<Lit> oc;
+    if (certifiedUNSAT) {
+        auto pos = find_if(ps.begin(), ps.end(), [this](Lit lit) { return value(lit) == l_True || value(lit) == l_False; });
+        if (pos != ps.end()) oc.insert(oc.end(), ps.begin(), ps.end());
+    }
 
-    if (certifiedUNSAT && new_end != ps.end()) {
-        for (auto it = ps.begin(); it != new_end; it++)
-            fprintf(certifiedOutput, "%i ", (var(*it) + 1) * (-2 * sign(*it) + 1));
+    Lit p;
+    unsigned int i, j;
+    for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
+        if (value(ps[i]) == l_True || ps[i] == ~p) {
+            return true;
+        }
+        else if (value(ps[i]) != l_False && ps[i] != p) {
+            ps[j++] = p = ps[i];
+        }
+    }
+    ps.resize(j);
+
+    if (oc.size() > 0 && certifiedUNSAT) {
+        for (Lit lit : oc)
+            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
         fprintf(certifiedOutput, "0\n");
+
         fprintf(certifiedOutput, "d ");
         for (Lit lit : ps)
             fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
         fprintf(certifiedOutput, "0\n");
-    }
-
-    // erase removed:
-    ps.erase(new_end, ps.end());
-
-    // check for satisfied or tautologic clauses:
-    //pair<vector<Lit>::iterator, vector<Lit>::iterator>
-    auto taut = std::mismatch(ps.begin() + 1, ps.end(), ps.begin(), [](Lit l1, Lit l2) { return l1 != ~l2; });
-    auto pos_true = std::find_if(ps.begin(), ps.end(), [this](Lit lit) { return value(lit) == l_True; });
-    if (taut.first != ps.end() || pos_true != ps.end()) {
-        return true;
     }
 
     if (ps.size() == 0) {
@@ -730,6 +733,11 @@ Candy::Clause* Solver::propagate() {
     } else {
         return nullptr;
     }
+
+    // Must remain for now (SimpSolver smudges clauses and propagates)
+    // TODO: check is smudge has any runtime benefits
+    watches.cleanAll();
+    watchesBin.cleanAll();
 
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.

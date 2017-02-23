@@ -527,12 +527,9 @@ bool SimpSolver::eliminateVar(Var v) {
 
     // Free occurs list for this variable:
     occurs[v].clear();
-
-    // Free watchers lists for this variable, if possible:
-    if (watches[mkLit(v)].size() == 0)
-        watches[mkLit(v)].clear();
-    if (watches[~mkLit(v)].size() == 0)
-        watches[~mkLit(v)].clear();
+    // Free watchers lists for this variable:
+    watches[mkLit(v)].clear();
+    watches[~mkLit(v)].clear();
 
     return backwardSubsumptionCheck();
 }
