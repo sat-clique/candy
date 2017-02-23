@@ -45,7 +45,7 @@ TEST (GateAnalyzerTestPatterns, rejectSatisfied) {
   formula.readClause(mkLit(1), mkLit(2));
   Solver solver;
   solver.addClauses(formula);
-  ASSERT_EQ(solver.nClauses(), 1);
+  ASSERT_EQ(solver.nClauses(), 0);
 }
 
 TEST (GateAnalyzerTestPatterns, removeDuplicates) {
