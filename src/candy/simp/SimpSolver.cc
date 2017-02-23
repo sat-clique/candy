@@ -214,15 +214,9 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
             fprintf(certifiedOutput, "0\n");
         }
 
-        // TODO: check why this optimization wont work
-//        if (~l == (*cr)[0] || ~l == (*cr)[1]) {
-            detachClause(cr, true);
-            cr->strengthen(l);
-            attachClause(cr);
-//        }
-//        else {
-//            cr->strengthen(l);
-//        }
+        detachClause(cr, true);
+        cr->strengthen(l);
+        attachClause(cr);
 
         occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
         n_occ[toInt(l)]--;
@@ -661,9 +655,9 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
         rebuildOrderHeap();
     }
     occurs.cleanAll();
-    //TODO: why not free space of orignial clauses if simplification is done?
-    //freeMarkedClauses(clauses);
-    clauses.erase(remove_if(clauses.begin(), clauses.end(), [this](Candy::Clause* cl) { return cl->isDeleted(); }), clauses.end());
+    watches.cleanAll();
+    watchesBin.cleanAll();
+    freeMarkedClauses(clauses);
     
     if (verbosity >= 0 && elimclauses.size() > 0)
         printf("c |  Eliminated clauses:     %10.2f Mb                                                                |\n", 

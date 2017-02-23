@@ -614,18 +614,15 @@ struct reduceDB_lt {
     }
 
     bool operator()(Candy::Clause* x, Candy::Clause* y) {
+        assert(x != nullptr);
+        assert(y != nullptr);
         // Moved additional criteria from reduceDB
-        if (!x->canBeDel() && y->canBeDel()) return 1;
-        if (!y->canBeDel() && x->canBeDel()) return 0;
-        if (!x->canBeDel() && !y->canBeDel()) return 0;
+        if (!x->canBeDel() && y->canBeDel()) return 0;
+        if (!y->canBeDel() && x->canBeDel()) return 1;
         // Main criteria... Like in MiniSat we keep all binary clauses
-        if (x->size() > 2 && y->size() == 2)
-            return 1;
-
-        if (y->size() > 2 && x->size() == 2)
-            return 0;
-        if (x->size() == 2 && y->size() == 2)
-            return 0;
+        if (x->size() > 2 && y->size() == 2) return 1;
+        if (y->size() > 2 && x->size() == 2) return 0;
+        if (x->size() == 2 && y->size() == 2) return 0;
 
         // Second one  based on literal block distance
         if (x->getLBD() > y->getLBD())

@@ -55,7 +55,7 @@ void ClauseAllocator::deallocate(Clause* clause) {
     }
     else {
         stats_active_long--;
-        delete [] clause;
+        delete [] (char*)clause;
     }
 }
 
@@ -68,10 +68,11 @@ std::vector<void*>& ClauseAllocator::getPool(int32_t length) {
 
 void ClauseAllocator::refillPool(int32_t nElem, int32_t length) {
     uint16_t clause_bytes = clauseBytes(length);
-    char* pool = new char[clause_bytes * nElem];
+    uint32_t bytes_total = clause_bytes * nElem;
+    char* pool = new char[bytes_total];
     pages.push_back(pool);
-    for (char* pos = pool; pos < pool + (clause_bytes * nElem); pos += clause_bytes) {
-        pools[length-1].push_back(pos);
+    for (int pos = 0; pos < bytes_total; pos += clause_bytes) {
+        pools[length-1].push_back(pool + pos);
     }
 }
 
