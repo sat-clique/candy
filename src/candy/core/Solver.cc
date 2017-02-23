@@ -739,13 +739,13 @@ Candy::Clause* Solver::propagate() {
 
         // Propagate binary clauses
         vector<Watcher>& wbin = watchesBin[p];
-        for (unsigned int k = 0; k < wbin.size(); k++) {
-            Lit imp = wbin[k].blocker;
+        for (auto watcher : wbin) {
+            Lit imp = watcher.blocker;
             if (value(imp) == l_False) {
-                return wbin[k].cref;
+                return watcher.cref;
             }
             if (value(imp) == l_Undef) {
-                uncheckedEnqueue(imp, wbin[k].cref);
+                uncheckedEnqueue(imp, watcher.cref);
             }
         }
 
