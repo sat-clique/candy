@@ -731,9 +731,6 @@ Candy::Clause* Solver::propagate() {
         return nullptr;
     }
 
-    watches.cleanAll();
-    watchesBin.cleanAll();
-
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
 
