@@ -17,20 +17,19 @@ namespace Candy {
 #define BITS_LBD 13
 
 class Clause {
-    struct {
-        unsigned deleted :1;
-        unsigned versatile_flag :1;
-        unsigned learnt :1;
-        unsigned canbedel :1;
-    } header;
+    uint32_t length;
 
     union {
         float act;
         uint32_t abs;
     } data;
 
-    uint16_t lbd;
-    uint16_t length;
+    struct {
+        unsigned deleted :1;
+        unsigned learnt :1;
+        unsigned frozen :1;
+        unsigned lbd :BITS_LBD;
+    } header;
 
     Lit literals[1];
 
@@ -43,7 +42,7 @@ protected:
 public:
     Clause(const std::vector<Lit>& ps, bool learnt);
     Clause(std::initializer_list<Lit> list);
-    virtual ~Clause();
+    ~Clause();
 
     void* operator new (std::size_t size, uint16_t length);
     void operator delete (void* p);
@@ -80,16 +79,13 @@ public:
 
     bool isDeleted() const;
     void setDeleted();
-    bool isFlagged() const;
-    void setFlagged(bool flag);
+    bool isFrozen() const;
+    void setFrozen(bool flag);
+    void setLBD(uint16_t i);
+    uint16_t getLBD() const;
 
     float& activity();
     uint32_t abstraction() const;
-
-    void setLBD(uint16_t i);
-    uint16_t getLBD() const;
-    void setCanBeDel(bool b);
-    bool canBeDel() const;
 
 
     /**
@@ -145,14 +141,12 @@ public:
         uint64_t start = (uint64_t)&clause;
         uint64_t header = (uint64_t)&(clause.header);
         uint64_t data = (uint64_t)&(clause.data);
-        uint64_t lbd = (uint64_t)&(clause.lbd);
         uint64_t length = (uint64_t)&(clause.length);
         uint64_t literals = (uint64_t)&(clause.literals);
         std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
-        std::cout << "c Header starts at " << header - start << std::endl;
-        std::cout << "c Data-union starts at " << data - start << std::endl;
-        std::cout << "c LBD starts at " << lbd - start << std::endl;
         std::cout << "c Length starts at " << length - start << std::endl;
+        std::cout << "c Data-union starts at " << data - start << std::endl;
+        std::cout << "c Header starts at " << header - start << std::endl;
         std::cout << "c Literals start at " << literals - start << std::endl;
     }
 };

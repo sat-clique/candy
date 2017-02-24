@@ -14,9 +14,8 @@ ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 1000);
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     header.deleted = 0;
-    header.versatile_flag = 0;
     header.learnt = learnt;
-    header.canbedel = 1;
+    header.frozen = 0;
     setLBD(0);
 
     std::copy(ps.begin(), ps.end(), literals);
@@ -31,9 +30,8 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
 
 Clause::Clause(std::initializer_list<Lit> list) {
     header.deleted = 0;
-    header.versatile_flag = 0;
     header.learnt = false;
-    header.canbedel = 1;
+    header.frozen = 0;
     setLBD(0);
 
     std::copy(list.begin(), list.end(), literals);
@@ -112,12 +110,12 @@ void Clause::setDeleted() {
     header.deleted = 1;
 }
 
-bool Clause::isFlagged() const {
-    return header.versatile_flag;
+bool Clause::isFrozen() const {
+    return header.frozen;
 }
 
-void Clause::setFlagged(bool flag) {
-    header.versatile_flag = flag;
+void Clause::setFrozen(bool flag) {
+    header.frozen = flag;
 }
 
 const Lit Clause::back() const {
@@ -134,19 +132,11 @@ uint32_t Clause::abstraction() const {
 
 void Clause::setLBD(uint16_t i) {
     uint16_t lbd_max = (1 << BITS_LBD) - 1;
-    lbd = std::min(i, lbd_max);
+    header.lbd = std::min(i, lbd_max);
 }
 
 uint16_t Clause::getLBD() const {
-    return lbd;
-}
-
-void Clause::setCanBeDel(bool b) {
-    header.canbedel = b;
-}
-
-bool Clause::canBeDel() const {
-    return header.canbedel;
+    return header.lbd;
 }
 
 void Clause::calcAbstraction() {

@@ -514,7 +514,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&
             unsigned int nblevels = computeLBD(c);
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
-                    c.setCanBeDel(false);
+                    c.setFrozen(true);
                 }
                 // seems to be interesting : keep it for the next round
                 c.setLBD(nblevels); // Update it
@@ -858,7 +858,7 @@ void Solver::reduceDB() {
     unsigned int limit = learnts.size() / 2;
     for (unsigned int i = 0; i < limit; i++) {
         Candy::Clause& c = *learnts[i];
-        if (!c.canBeDel()) break; // frozen clauses area reached early (see reduceDB_lt)
+        if (c.isFrozen()) break; // frozen clauses area reached early (see reduceDB_lt)
         if (c.getLBD() > 2 && c.size() > 2 && !locked(learnts[i])) {
             removeClause(learnts[i]);
         }
@@ -867,7 +867,7 @@ void Solver::reduceDB() {
     watchesBin.cleanAll();
     nbRemovedClauses += freeMarkedClauses(learnts);
     for (Candy::Clause* c : learnts) { // "unfreeze" remaining clauses
-        c->setCanBeDel(true);
+        c->setFrozen(false);
     }
 }
 
