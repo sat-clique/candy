@@ -290,22 +290,22 @@ void SimpSolver::gatherTouchedClauses() {
         return;
 
     for (Candy::Clause* c : subsumption_queue)
-        c->setFlagged(true);
+        c->setFrozen(true);
 
     for (unsigned int i = 0; i < touched.size(); i++)
         if (touched[i]) {
             const vector<Candy::Clause*>& cs = occurs.lookup(i);
             for (Candy::Clause* c : cs) {
-                if (!c->isFlagged() && !c->isDeleted()) {
+                if (!c->isFrozen() && !c->isDeleted()) {
                     subsumption_queue.push_back(c);
-                    c->setFlagged(true);
+                    c->setFrozen(true);
                 }
             }
             touched[i] = 0;
         }
 
     for (Candy::Clause* c : subsumption_queue)
-        c->setFlagged(false);
+        c->setFrozen(false);
 
     n_touched = 0;
 }

@@ -40,20 +40,21 @@ private:
     std::vector<void*>& getPool(uint16_t index);
     void refillPool(uint16_t index);
 
+    /*
+     * clause size is 16
+     * literal size is 4
+     * index 0: clause of length 1 has length 16
+     * index 1: clause of length 2-5 has length 32
+     * index 2: clause of length 6-9 has length 48
+     * index 3: clause of length 10-13 has length 64
+     * ...
+     * minimum space: min = size * 4 + 20
+     * aligned space: ali = min + 32 - min % 32
+     * index: ali / 32 - 1
+     * index: (size + 4) / 8
+     */
     inline uint16_t getPoolIndex(uint32_t size) {
-        /*
-         * header size is 20
-         * literal size is 4
-         * index 0: clause of length 0-3 has length 32
-         * index 1: clause of length 4-11 has length 64
-         * index 2: clause of length 12-19 has length 64 + 32
-         * ...
-         * minimum space: min = size * 4 + 20
-         * aligned space: ali = min + 32 - min % 32
-         * index: ali / 32 - 1
-         * index: (size + 4) / 8
-         */
-        return (size + 4) / 8;
+        return (size + 2) / 4;
     }
 
 };

@@ -68,27 +68,15 @@ std::vector<void*>& ClauseAllocator::getPool(uint16_t index) {
     return pools[index];
 }
 
-/*
- * header size is 20
- * literal size is 4
- * index 0: clause of length 0-3 has length 32
- * index 1: clause of length 4-11 has length 64
- * index 2: clause of length 12-19 has length 64 + 32
- * ...
- * minimum space: min = size * 4 + 20
- * aligned space: ali = min + 32 - min % 32
- * index: ali / 32 - 1
- * index: (size + 4) / 8
- */
 void ClauseAllocator::refillPool(uint16_t index) {
     uint32_t nElem = stats_active_counts[index];
-    uint16_t clause_bytes = (index+1)*32;
+    uint16_t clause_bytes = (index+1)*16;
     uint32_t bytes_total = clause_bytes * nElem;
     char* pool = (char*)malloc(bytes_total + clause_bytes);
     pages.push_back(pool);
-    char* align = (char*)((((uintptr_t)pool) + 32) & ~(static_cast<uintptr_t>(31)));
+    char* align = (char*)((((uintptr_t)pool) + 16) & ~(static_cast<uintptr_t>(31)));
     assert((uintptr_t)align - (uintptr_t)pool > 0);
-    assert((uintptr_t)align - (uintptr_t)pool <= 32);
+    assert((uintptr_t)align - (uintptr_t)pool <= 16);
     for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
         pools[index].push_back(align + pos);
     }
