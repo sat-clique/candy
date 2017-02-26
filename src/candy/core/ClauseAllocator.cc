@@ -64,7 +64,7 @@ void ClauseAllocator::deallocate(Clause* clause) {
 std::vector<void*>& ClauseAllocator::getPool(uint16_t index) {
     if (pools[index].size() == 0) {
         // workaround clause shrinking (clauses changing pools):
-        uint32_t nElem = std::max(stats_active_counts[index], (uint32_t)100);
+        uint32_t nElem = std::max(stats_active_counts[index], initial_elements_per_pool);
         refillPool(index, nElem);
 //        for (int i = 0; i < number_of_pools; i++) {
 //            printf("pool %i: use %i of %i; ", i, stats_active_counts[i], stats_active_counts[i] + pools[i].size());
