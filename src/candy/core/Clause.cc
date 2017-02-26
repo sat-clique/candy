@@ -10,7 +10,7 @@
 
 namespace Candy {
 
-ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 1000);
+ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 100);
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     header.deleted = 0;
