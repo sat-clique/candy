@@ -38,20 +38,17 @@ private:
     std::vector<uint32_t> stats_active_counts;
 
     std::vector<void*>& getPool(uint16_t index);
-    void refillPool(uint16_t index);
+    void refillPool(uint16_t index, uint32_t nElem);
 
     /*
-     * clause size is 16
-     * literal size is 4
+     * clause header is 12 bytes
+     * literal size is 4 bytes
      * index 0: clause of length 1 has length 16
      * index 1: clause of length 2-5 has length 32
      * index 2: clause of length 6-9 has length 48
      * index 3: clause of length 10-13 has length 64
      * ...
-     * minimum space: min = size * 4 + 20
-     * aligned space: ali = min + 32 - min % 32
-     * index: ali / 32 - 1
-     * index: (size + 4) / 8
+     * index = (length + 2) / 4
      */
     inline uint16_t getPoolIndex(uint32_t size) {
         return (size + 2) / 4;
