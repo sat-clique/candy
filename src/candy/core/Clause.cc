@@ -146,6 +146,10 @@ uint16_t Clause::getLBD() const {
     return header & LBD_MASK;
 }
 
+uint16_t Clause::getHeader() const {
+    return header;
+}
+
 void Clause::calcAbstraction() {
     uint32_t abstraction = 0;
     for (Lit lit : *this) {
