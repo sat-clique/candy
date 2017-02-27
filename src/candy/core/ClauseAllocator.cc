@@ -75,7 +75,7 @@ std::vector<void*>& ClauseAllocator::getPool(uint16_t index) {
 }
 
 void ClauseAllocator::refillPool(uint16_t index, uint32_t nElem) {
-    uint16_t nLits = 1 + index * 4;
+    uint16_t nLits = 2 + index * 4;
     uint16_t clause_bytes = sizeof(Clause)-sizeof(Lit) + nLits * sizeof(Lit);
     uint32_t bytes_total = clause_bytes * nElem;
     char* pool = (char*)malloc(bytes_total + clause_bytes); // one more for alignment
