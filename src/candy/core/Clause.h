@@ -66,22 +66,6 @@ public:
      * - clauses are learnt
      * - clauses have the bigger lbd
      */
-//    friend bool operator <(const Clause& clause1, const Clause& clause2) {
-//        return clause1.header > clause2.header || (clause1.header == clause2.header && clause1.data.act < clause2.data.act);
-//    }
-//
-//    friend bool operator >(const Clause& clause1, const Clause& clause2) {
-//        return clause2 < clause1;
-//    }
-//
-//    friend bool operator <=(const Clause& clause1, const Clause& clause2) {
-//        return !(clause1 > clause2);
-//    }
-//
-//    friend bool operator >=(const Clause& clause1, const Clause& clause2) {
-//        return !(clause1 < clause2);
-//    }
-
     bool operator <(Clause& clause2) {
         return header > clause2.header || (header == clause2.header && data.act < clause2.data.act);
     }
@@ -128,6 +112,7 @@ public:
     void setFrozen(bool flag);
     void setLBD(uint16_t i);
     uint16_t getLBD() const;
+    uint16_t getHeader() const;
 
     float& activity();
     uint32_t abstraction() const;
