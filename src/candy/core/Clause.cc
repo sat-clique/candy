@@ -13,13 +13,11 @@ namespace Candy {
 ClauseAllocator* Clause::allocator = new ClauseAllocator(50, 100);
 
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
-    header.deleted = 0;
-    header.learnt = learnt;
-    header.frozen = 0;
-    setLBD(0);
-
     std::copy(ps.begin(), ps.end(), literals);
     length = ps.size();
+    header = 0;
+    setLearnt(learnt);
+    setFrozen(false);
 
     if (learnt) {
         data.act = 0;
@@ -29,19 +27,11 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
 }
 
 Clause::Clause(std::initializer_list<Lit> list) {
-    header.deleted = 0;
-    header.learnt = false;
-    header.frozen = 0;
-    setLBD(0);
-
     std::copy(list.begin(), list.end(), literals);
     length = list.size();
-
-    if (header.learnt) {
-        data.act = 0;
-    } else {
-        calcAbstraction();
-    }
+    header = 0;
+    setFrozen(false);
+    calcAbstraction();
 }
 
 Clause::~Clause() { }
@@ -99,23 +89,38 @@ bool Clause::contains(const Var v) const {
 }
 
 bool Clause::isLearnt() const {
-    return header.learnt;
+    return (bool)(header & LEARNT_MASK);
+}
+
+void Clause::setLearnt(bool learnt) {
+    if (learnt) {
+        header |= LEARNT_MASK;
+    } else {
+        header &= ~LEARNT_MASK;
+    }
 }
 
 bool Clause::isDeleted() const {
-    return header.deleted;
+    return (bool)(header & DELETED_MASK);
 }
 
 void Clause::setDeleted() {
-    header.deleted = 1;
+    header |= DELETED_MASK;
 }
 
+/*
+ * Frozen flag is now inverted so complete header can be used for sorting
+ */
 bool Clause::isFrozen() const {
-    return header.frozen;
+    return !(bool)(header & UNFROZEN_MASK);
 }
 
 void Clause::setFrozen(bool flag) {
-    header.frozen = flag;
+    if (!flag) {
+        header |= UNFROZEN_MASK;
+    } else {
+        header &= ~UNFROZEN_MASK;
+    }
 }
 
 const Lit Clause::back() const {
@@ -131,12 +136,14 @@ uint32_t Clause::abstraction() const {
 }
 
 void Clause::setLBD(uint16_t i) {
-    uint16_t lbd_max = (1 << BITS_LBD) - 1;
-    header.lbd = std::min(i, lbd_max);
+    uint16_t lbd_max = LBD_MASK;
+    uint16_t flags = header & ~LBD_MASK;
+    header = std::min(i, lbd_max);
+    header |= flags;
 }
 
 uint16_t Clause::getLBD() const {
-    return header.lbd;
+    return header & LBD_MASK;
 }
 
 void Clause::calcAbstraction() {
