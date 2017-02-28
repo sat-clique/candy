@@ -617,8 +617,8 @@ struct reduceDB_lt {
         assert(x != nullptr);
         assert(y != nullptr);
         // Moved additional criteria from reduceDB
-        if (!x->isFrozen() && y->isFrozen()) return 1;
-        if (!y->isFrozen() && x->isFrozen()) return 0;
+//        if (!x->isFrozen() && y->isFrozen()) return 1;
+//        if (!y->isFrozen() && x->isFrozen()) return 0;
         // Main criteria... Like in MiniSat we keep all binary clauses
         if (x->size() > 2 && y->size() == 2) return 1;
         if (y->size() > 2 && x->size() == 2) return 0;
