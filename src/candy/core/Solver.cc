@@ -858,8 +858,8 @@ void Solver::reduceDB() {
     unsigned int limit = learnts.size() / 2;
     for (unsigned int i = 0; i < limit; i++) {
         Candy::Clause& c = *learnts[i];
-        if (c.isFrozen()) break; // frozen clauses area reached early (see reduceDB_lt)
-        if (c.getLBD() > 2 && c.size() > 2 && !locked(learnts[i])) {
+        //if (c.isFrozen()) break; // frozen clauses area reached early (see reduceDB_lt)
+        if (!c.isFrozen() && c.getLBD() > 2 && c.size() > 2 && !locked(learnts[i])) {
             removeClause(learnts[i]);
         }
     }
