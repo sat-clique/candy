@@ -44,14 +44,13 @@ private:
      * clause header is 8 bytes
      * literal size is 4 bytes
      * index 0: clause of length 1-2 has length 16
-     * index 1: clause of length 3-6 has length 32
-     * index 2: clause of length 7-10 has length 48
-     * index 3: clause of length 14-18 has length 64
+     * index 1: clause of length 3-4 has length 24
+     * index 2: clause of length 5-6 has length 32
      * ...
-     * index = (length + 2) / 4
+     * index = (length - 1) / 2
      */
     inline uint16_t getPoolIndex(uint32_t size) {
-        return (size + 1) / 4;
+        return (size - 1) / 2;
     }
 
 };
