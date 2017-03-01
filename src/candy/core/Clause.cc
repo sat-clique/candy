@@ -72,6 +72,33 @@ void Clause::setDeleted() {
     header |= DELETED_MASK;
 }
 
+/** Frozen flag is stored inverted so complete header could be used for sorting */
+bool Clause::isFrozen() const {
+    return !(bool)(header & UNFROZEN_MASK);
+}
+
+void Clause::setFrozen(bool flag) {
+    if (!flag) {
+        header |= UNFROZEN_MASK;
+    } else {
+        header &= ~UNFROZEN_MASK;
+    }
+}
+
+uint16_t Clause::getLBD() const {
+    return header & LBD_MASK;
+}
+
+void Clause::setLBD(uint16_t i) {
+    uint16_t flags = header & ~LBD_MASK;
+    header = std::min(i, LBD_MASK);
+    header |= flags;
+}
+
+float& Clause::activity() {
+    return data.act;
+}
+
 uint32_t Clause::abstraction() const {
     return data.abs;
 }
