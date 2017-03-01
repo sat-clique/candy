@@ -909,10 +909,10 @@ bool Solver::simplify() {
     }
 
     // Remove satisfied clauses:
-    std::for_each(learnts.begin(), learnts.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) c->setDeleted(); } );
+    std::for_each(learnts.begin(), learnts.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
     freeMarkedClauses(learnts);
     if (remove_satisfied) { // Can be turned off.
-        std::for_each(clauses.begin(), clauses.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) c->setDeleted(); } );
+        std::for_each(clauses.begin(), clauses.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
         freeMarkedClauses(clauses);
     }
 
