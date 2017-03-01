@@ -347,15 +347,13 @@ protected:
 	bool enqueue(Lit p, Candy::Clause* from = nullptr); // Test if fact 'p' contradicts current state, enqueue otherwise.
 	Candy::Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
-	void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>& selectors,
-			int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
+	void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
 	bool seenAny(Candy::Clause& clause);
 	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
 	lbool search(int nof_conflicts); // Search for a given number of conflicts.
 	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
-	void removeSatisfied(vector<Candy::Clause*>& cs); // Shrink 'cs' to contain only non-satisfied clauses.
 	void rebuildOrderHeap();
 
 	// Maintaining Variable/Clause activity:
@@ -381,7 +379,7 @@ protected:
 
 	// Misc:
 	//
-	int decisionLevel() const; // Gives the current decisionlevel.
+	uint32_t decisionLevel() const; // Gives the current decisionlevel.
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
 	Candy::Clause* reason(Var x) const;
 	int level(Var x) const;
@@ -498,7 +496,7 @@ inline void Solver::newDecisionLevel() {
     trail_lim.push_back(trail_size);
 }
 
-inline int Solver::decisionLevel() const {
+inline uint32_t Solver::decisionLevel() const {
     return trail_lim.size();
 }
 inline uint32_t Solver::abstractLevel(Var x) const {

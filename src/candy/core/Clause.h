@@ -107,8 +107,16 @@ public:
         return length;
     }
 
+    inline const Lit first() const {
+        return literals[0];
+    }
+
+    inline const Lit second() const {
+        return literals[1];
+    }
+
     inline const Lit back() const {
-        return *(this->end()-1);
+        return literals[length-1];
     }
 
     void calcAbstraction();
@@ -127,39 +135,14 @@ public:
     void setLearnt(bool learnt);
     bool isDeleted() const;
     void setDeleted();
-
+    bool isFrozen() const;
+    void setFrozen(bool flag);
+    uint16_t getLBD() const;
+    void setLBD(uint16_t i);
     uint16_t getHeader() const;
+
+    float& activity();
     uint32_t abstraction() const;
-
-    /**
-     * Frozen flag is stored inverted so complete header could be used for sorting
-     */
-    inline bool isFrozen() const {
-        return !(bool)(header & UNFROZEN_MASK);
-    }
-
-    inline void setFrozen(bool flag) {
-        if (!flag) {
-            header |= UNFROZEN_MASK;
-        } else {
-            header &= ~UNFROZEN_MASK;
-        }
-    }
-
-    inline uint16_t getLBD() const {
-        return header & LBD_MASK;
-    }
-
-    inline void setLBD(uint16_t i) {
-        uint16_t lbd_max = LBD_MASK;
-        uint16_t flags = header & ~LBD_MASK;
-        header = std::min(i, lbd_max);
-        header |= flags;
-    }
-
-    inline float& activity() {
-        return data.act;
-    }
 
     /**
      *  subsumes : (other : const Clause&)  ->  Lit

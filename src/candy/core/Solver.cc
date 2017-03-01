@@ -486,9 +486,10 @@ Lit Solver::pickBranchLit() {
  |        rest of literals. There may be others from the same level though.
  |
  |________________________________________________________________________________________________@*/
-void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, vector<Lit>&selectors, int& out_btlevel, unsigned int &lbd) {
+void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, unsigned int &lbd) {
     int pathC = 0;
     Lit asslit = lit_Undef;
+    vector<Lit> selectors;
 
     // Generate conflict clause:
     //
@@ -745,66 +746,53 @@ Candy::Clause* Solver::propagate() {
         // Propagate binary clauses
         vector<Watcher>& wbin = watchesBin[p];
         for (auto watcher : wbin) {
-            Lit imp = watcher.blocker;
-            if (value(imp) == l_False) {
+            if (value(watcher.blocker) == l_False) {
                 return watcher.cref;
             }
-            if (value(imp) == l_Undef) {
-                uncheckedEnqueue(imp, watcher.cref);
+            if (value(watcher.blocker) == l_Undef) {
+                uncheckedEnqueue(watcher.blocker, watcher.cref);
             }
         }
 
         // Propagate other 2-watched clauses
         vector<Watcher>& ws = watches[p];
         vector<Watcher>::iterator keep = ws.begin();
-        for (vector<Watcher>::iterator wit = ws.begin(); wit != ws.end();) {
+        for (vector<Watcher>::iterator watcher = ws.begin(); watcher != ws.end();) {
             // Try to avoid inspecting the clause:
-            Lit blocker = wit->blocker;
+            Lit blocker = watcher->blocker;
             if (value(blocker) == l_True) {
-                *keep++ = *wit++;
+                *keep++ = *watcher++;
                 continue;
             }
 
             // Make sure the false literal is data[1]:
-            Candy::Clause* cr = wit->cref;
-            Candy::Clause& c = *wit->cref;
-            if (c[0] == ~p) {
-                c.swap(0, 1);
+            Candy::Clause* cr = watcher->cref;
+            if (cr->first() == ~p) {
+                cr->swap(0, 1);
             }
-            assert(c[1] == ~p);
-            assert(!cr->isDeleted());
 
-            wit++;
-
+            watcher++;
             // If 0th watch is true, then clause is already satisfied.
-            Watcher w = Watcher(cr, c[0]);
-            if (c[0] != blocker && value(c[0]) == l_True) {
+            Watcher w = Watcher(cr, cr->first());
+            if (cr->first() != blocker && value(cr->first()) == l_True) {
                 *keep++ = w;
                 continue;
             }
 
-            if (incremental) { // ----------------- INCREMENTAL MODE
-                int chosenPos = -1;
+            if (incremental) { // INCREMENTAL MODE
+                Candy::Clause& c = *cr;
                 for (unsigned int k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
-                        if (decisionLevel() > (int) assumptions.size()) {
-                            chosenPos = k;
-                            break;
-                        } else {
-                            chosenPos = k;
-                            if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
-                                break;
-                            }
+                        if (decisionLevel() > assumptions.size() || value(c[k]) == l_True || !isSelector(var(c[k]))) {
+                            c.swap(1, k);
+                            watches[~c[1]].push_back(w);
+                            goto NextClause;
                         }
                     }
                 }
-                if (chosenPos != -1) {
-                    c.swap(1, chosenPos);
-                    watches[~c[1]].push_back(w);
-                    goto NextClause;
-                }
-            } else {
-                // DEFAULT MODE (NOT INCREMENTAL)
+            }
+            else { // DEFAULT MODE (NOT INCREMENTAL)
+                Candy::Clause& c = *cr;
                 for (unsigned int k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         c.swap(1, k);
@@ -816,15 +804,17 @@ Candy::Clause* Solver::propagate() {
 
             // Did not find watch -- clause is unit under assignment:
             *keep++ = w;
-            if (value(c[0]) == l_False) {
+            if (value(cr->first()) == l_False) {
                 confl = cr;
                 qhead = trail_size;
-                // Copy the remaining watches:
-                while (wit != ws.end())
-                    *keep++ = *wit++;
-            } else {
-                uncheckedEnqueue(c[0], cr);
+                while (watcher != ws.end()) { // Copy the remaining watches
+                    *keep++ = *watcher++;
+                }
             }
+            else {
+                uncheckedEnqueue(cr->first(), cr);
+            }
+
             NextClause: ;
         }
         ws.erase(keep, ws.end());
@@ -889,10 +879,6 @@ unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
     return nRemoved;
 }
 
-void Solver::removeSatisfied(vector<Candy::Clause*>& cs) {
-    cs.erase(std::remove_if(cs.begin(), cs.end(), [this] (Candy::Clause* c) { return satisfied(*c); } ), cs.end());
-}
-
 void Solver::rebuildOrderHeap() {
     vector<Var> vs;
     for (Var v = 0; v < nVars(); v++)
@@ -921,9 +907,11 @@ bool Solver::simplify() {
     }
 
     // Remove satisfied clauses:
-    removeSatisfied(learnts);
+    std::for_each(learnts.begin(), learnts.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) c->setDeleted(); } );
+    freeMarkedClauses(learnts);
     if (remove_satisfied) { // Can be turned off.
-        removeSatisfied(clauses);
+        std::for_each(clauses.begin(), clauses.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) c->setDeleted(); } );
+        freeMarkedClauses(clauses);
     }
 
     rebuildOrderHeap();
@@ -950,7 +938,7 @@ bool Solver::simplify() {
 lbool Solver::search(int nof_conflicts) {
     assert(ok);
     int backtrack_level;
-    vector<Lit> learnt_clause, selectors;
+    vector<Lit> learnt_clause;
     unsigned int nblevels;
     bool blocked = false;
     starts++;
@@ -958,6 +946,7 @@ lbool Solver::search(int nof_conflicts) {
         sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
         Candy::Clause* confl = propagate();
+
         sonification.assignmentLevel(nAssigns());
 
         if (confl != nullptr) {
@@ -980,6 +969,7 @@ lbool Solver::search(int nof_conflicts) {
             }
 
             trailQueue.push(trail_size);
+
             // BLOCK RESTART (CP 2012 paper)
             if (conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
@@ -992,9 +982,8 @@ lbool Solver::search(int nof_conflicts) {
             }
 
             learnt_clause.clear();
-            selectors.clear();
 
-            analyze(confl, learnt_clause, selectors, backtrack_level, nblevels);
+            analyze(confl, learnt_clause, backtrack_level, nblevels);
 
             sonification.learntSize(learnt_clause.size());
 
