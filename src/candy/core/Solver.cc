@@ -429,7 +429,7 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 //
 void Solver::cancelUntil(int level) {
-    if (decisionLevel() > level) {
+    if ((int)decisionLevel() > level) {
         for (int c = trail_size - 1; c >= trail_lim[level]; c--) {
             Var x = var(trail[c]);
             assigns[x] = l_Undef;
@@ -503,7 +503,6 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
         if (asslit != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
             c.swap(0, 1);
-            assert(value(c[0]) == l_True);
         }
 
         if (c.isLearnt()) {
@@ -528,24 +527,27 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
             if (!seen[var(lit)] && level(var(lit)) != 0) {
                 varBumpActivity(var(lit));
                 seen[var(lit)] = 1;
-                if (level(var(lit)) >= decisionLevel()) {
+                if (level(var(lit)) >= (int)decisionLevel()) {
                     pathC++;
                     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    if ((reason(var(lit)) != nullptr) && reason(var(lit))->isLearnt())
+                    if ((reason(var(lit)) != nullptr) && reason(var(lit))->isLearnt()) {
                         lastDecisionLevel.push_back(lit);
+                    }
                 } else {
                     if (isSelector(var(lit))) {
                         assert(value(lit) == l_False);
                         selectors.push_back(lit);
-                    } else
+                    } else {
                         out_learnt.push_back(lit);
+                    }
                 }
             }
         }
 
         // Select next clause to look at:
-        while (!seen[var(trail[index])])
+        while (!seen[var(trail[index])]) {
             index--;
+        }
 
         asslit = trail[index];
         confl = reason(var(asslit));
@@ -1022,7 +1024,7 @@ lbool Solver::search(int nof_conflicts) {
                 lbdQueue.fastclear();
                 int bt = 0;
                 if (incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
-                    bt = (decisionLevel() < (int) assumptions.size()) ? decisionLevel() : (int) assumptions.size();
+                    bt = (decisionLevel() < assumptions.size()) ? decisionLevel() : (int) assumptions.size();
                 cancelUntil(bt);
                 return l_Undef;
             }
@@ -1042,7 +1044,7 @@ lbool Solver::search(int nof_conflicts) {
 
             lastLearntClause = nullptr;
             Lit next = lit_Undef;
-            while (decisionLevel() < (int) assumptions.size()) {
+            while (decisionLevel() < assumptions.size()) {
                 // Perform user provided assumption:
                 Lit p = assumptions[decisionLevel()];
                 if (value(p) == l_True) {
