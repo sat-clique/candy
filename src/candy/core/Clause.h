@@ -49,14 +49,16 @@ public:
     void* operator new (std::size_t size, uint16_t length);
     void operator delete (void* p);
 
-    static void* allocate(uint16_t length);
-    static void deallocate(Clause* clause);
-
     typedef Lit* iterator;
     typedef const Lit* const_iterator;
 
-    Lit& operator [](int i);
-    Lit operator [](int i) const;
+    inline Lit& operator [](int i) {
+        return literals[i];
+    }
+
+    inline Lit operator [](int i) const {
+        return literals[i];
+    }
 
     /**
      * clauses are smaller if header is bigger or (if header is equal) activity is smaller
@@ -85,15 +87,32 @@ public:
         return !(clause1 < clause2);
     }
 
-    const_iterator begin() const;
-    const_iterator end() const;
-    iterator begin();
-    iterator end();
-    uint16_t size() const;
+    inline const_iterator begin() const {
+        return literals;
+    }
+
+    inline const_iterator end() const {
+        return literals + length;
+    }
+
+    inline iterator begin() {
+        return literals;
+    }
+
+    inline iterator end() {
+        return literals + length;
+    }
+
+    inline uint16_t size() const {
+        return length;
+    }
+
+    inline const Lit back() const {
+        return *(this->end()-1);
+    }
 
     void calcAbstraction();
 
-    const Lit back() const;
     bool contains(const Lit lit) const;
     bool contains(const Var var) const;
 
@@ -108,15 +127,39 @@ public:
     void setLearnt(bool learnt);
     bool isDeleted() const;
     void setDeleted();
-    bool isFrozen() const;
-    void setFrozen(bool flag);
-    void setLBD(uint16_t i);
-    uint16_t getLBD() const;
-    uint16_t getHeader() const;
 
-    float& activity();
+    uint16_t getHeader() const;
     uint32_t abstraction() const;
 
+    /**
+     * Frozen flag is stored inverted so complete header could be used for sorting
+     */
+    inline bool isFrozen() const {
+        return !(bool)(header & UNFROZEN_MASK);
+    }
+
+    inline void setFrozen(bool flag) {
+        if (!flag) {
+            header |= UNFROZEN_MASK;
+        } else {
+            header &= ~UNFROZEN_MASK;
+        }
+    }
+
+    inline uint16_t getLBD() const {
+        return header & LBD_MASK;
+    }
+
+    inline void setLBD(uint16_t i) {
+        uint16_t lbd_max = LBD_MASK;
+        uint16_t flags = header & ~LBD_MASK;
+        header = std::min(i, lbd_max);
+        header |= flags;
+    }
+
+    inline float& activity() {
+        return data.act;
+    }
 
     /**
      *  subsumes : (other : const Clause&)  ->  Lit

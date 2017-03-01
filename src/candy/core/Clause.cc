@@ -37,47 +37,11 @@ Clause::Clause(std::initializer_list<Lit> list) {
 Clause::~Clause() { }
 
 void* Clause::operator new (std::size_t size, uint16_t length) {
-    return allocate(length);
-}
-
-void Clause::operator delete (void* p) {
-    deallocate((Clause*)p);
-}
-
-void* Clause::allocate(uint16_t length) {
     return allocator->allocate(length);
 }
 
-void Clause::deallocate(Clause* clause) {
-    allocator->deallocate(clause);
-}
-
-Lit& Clause::operator [](int i) {
-    return literals[i];
-}
-
-Lit Clause::operator [](int i) const {
-    return literals[i];
-}
-
-Clause::const_iterator Clause::begin() const {
-    return literals;
-}
-
-Clause::const_iterator Clause::end() const {
-    return literals + length;
-}
-
-Clause::iterator Clause::begin() {
-    return literals;
-}
-
-Clause::iterator Clause::end() {
-    return literals + length;
-}
-
-uint16_t Clause::size() const {
-    return length;
+void Clause::operator delete (void* p) {
+    allocator->deallocate((Clause*)p);
 }
 
 bool Clause::contains(const Lit lit) const {
@@ -108,42 +72,8 @@ void Clause::setDeleted() {
     header |= DELETED_MASK;
 }
 
-/*
- * Frozen flag is now inverted so complete header can be used for sorting
- */
-bool Clause::isFrozen() const {
-    return !(bool)(header & UNFROZEN_MASK);
-}
-
-void Clause::setFrozen(bool flag) {
-    if (!flag) {
-        header |= UNFROZEN_MASK;
-    } else {
-        header &= ~UNFROZEN_MASK;
-    }
-}
-
-const Lit Clause::back() const {
-    return *(this->end()-1);
-}
-
-float& Clause::activity() {
-    return data.act;
-}
-
 uint32_t Clause::abstraction() const {
     return data.abs;
-}
-
-void Clause::setLBD(uint16_t i) {
-    uint16_t lbd_max = LBD_MASK;
-    uint16_t flags = header & ~LBD_MASK;
-    header = std::min(i, lbd_max);
-    header |= flags;
-}
-
-uint16_t Clause::getLBD() const {
-    return header & LBD_MASK;
 }
 
 uint16_t Clause::getHeader() const {

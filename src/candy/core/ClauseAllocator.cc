@@ -66,10 +66,10 @@ std::vector<void*>& ClauseAllocator::getPool(uint16_t index) {
         // workaround clause shrinking (clauses changing pools):
         uint32_t nElem = std::max(stats_active_counts[index], initial_elements_per_pool);
         refillPool(index, nElem);
-//        for (int i = 0; i < number_of_pools; i++) {
-//            printf("pool %i: use %i of %i; ", i, stats_active_counts[i], stats_active_counts[i] + pools[i].size());
-//        }
-//        printf("%i exceed pool-handled size\n", stats_active_long);
+        for (int i = 0; i < number_of_pools; i++) {
+            printf("pool %i: use %i of %i; ", i, stats_active_counts[i], stats_active_counts[i] + pools[i].size());
+        }
+        printf("%i exceed pool-handled size\n", stats_active_long);
     }
     return pools[index];
 }
@@ -87,6 +87,19 @@ void ClauseAllocator::refillPool(uint16_t index, uint32_t nElem) {
 //        pools[index].push_back(align + pos);
         pools[index].push_back(pool + pos);
     }
+}
+
+/*
+ * clause header is 8 bytes
+ * literal size is 4 bytes
+ * index 0: clause of length 1-2 has length 16
+ * index 1: clause of length 3-4 has length 24
+ * index 2: clause of length 5-6 has length 32
+ * ...
+ * index = (length - 1) / 2
+ */
+uint16_t ClauseAllocator::getPoolIndex(uint32_t size) {
+    return (size - 1) / 2;
 }
 
 } /* namespace Candy */

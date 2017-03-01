@@ -40,18 +40,7 @@ private:
     std::vector<void*>& getPool(uint16_t index);
     void refillPool(uint16_t index, uint32_t nElem);
 
-    /*
-     * clause header is 8 bytes
-     * literal size is 4 bytes
-     * index 0: clause of length 1-2 has length 16
-     * index 1: clause of length 3-4 has length 24
-     * index 2: clause of length 5-6 has length 32
-     * ...
-     * index = (length - 1) / 2
-     */
-    inline uint16_t getPoolIndex(uint32_t size) {
-        return (size - 1) / 2;
-    }
+    uint16_t getPoolIndex(uint32_t size);
 
 };
 
