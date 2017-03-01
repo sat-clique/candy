@@ -910,11 +910,13 @@ bool Solver::simplify() {
 
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    freeMarkedClauses(learnts);
     if (remove_satisfied) { // Can be turned off.
         std::for_each(clauses.begin(), clauses.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
-        freeMarkedClauses(clauses);
     }
+    watches.cleanAll();
+    watchesBin.cleanAll();
+    freeMarkedClauses(learnts);
+    freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
 
