@@ -149,10 +149,9 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
     if (!Solver::addClause_(ps))
         return false;
 
+    // TODO: bring back parsing flag
     if (certifiedAllClauses && certifiedUNSAT) {
-        for (unsigned int i = 0; i < ps.size(); i++)
-            fprintf(certifiedOutput, "%i ", (var(ps[i]) + 1) * (-2 * sign(ps[i]) + 1));
-        fprintf(certifiedOutput, "0\n");
+        printCertificateLearnt(ps);
     }
 
     if (use_simplification && clauses.size() == nclauses + 1) {
@@ -197,9 +196,7 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
     subsumption_queue.push_back(cr);
 
     if (certifiedUNSAT) {
-        for (Lit lit : *cr)
-            if (lit != l) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
+        printCertificateLearntExcept(cr, l);
     }
 
     if (cr->size() == 2) {
@@ -209,9 +206,7 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
     }
     else {
         if (certifiedUNSAT) {
-            fprintf(certifiedOutput, "d ");
-            for (Lit lit : *cr) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-            fprintf(certifiedOutput, "0\n");
+            printCertificateRemoved(cr);
         }
 
         detachClause(cr, true);
