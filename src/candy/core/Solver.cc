@@ -215,14 +215,8 @@ bool Solver::addClause_(vector<Lit>& ps) {
     ps.resize(j);
 
     if (oc.size() > 0 && certifiedUNSAT) {
-        for (Lit lit : oc)
-            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
-
-        fprintf(certifiedOutput, "d ");
-        for (Lit lit : ps)
-            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
+        printCertificateLearnt(ps);
+        printCertificateRemoved(oc);
     }
 
     if (ps.size() == 0) {
@@ -296,10 +290,7 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
 void Solver::removeClause(Candy::Clause* cr) {
     Candy::Clause& c = *cr;
     if (certifiedUNSAT) {
-        fprintf(certifiedOutput, "d ");
-        for (unsigned int i = 0; i < c.size(); i++)
-            fprintf(certifiedOutput, "%i ", (var(c[i]) + 1) * (-2 * sign(c[i]) + 1));
-        fprintf(certifiedOutput, "0\n");
+        printCertificateRemoved(cr);
     }
     detachClause(cr);
     // Don't leave pointers to free'd memory!
@@ -402,21 +393,17 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
 
         vector<Watcher>& wbin = watchesBin[p];
         int nb = 0;
-        for (unsigned int k = 0; k < wbin.size(); k++) {
-            Lit imp = wbin[k].blocker;
-            if (permDiff[var(imp)] == MYFLAG && value(imp) == l_True) {
+        for (Watcher& watcher : wbin) {
+            if (permDiff[var(watcher.blocker)] == MYFLAG && value(watcher.blocker) == l_True) {
                 nb++;
-                permDiff[var(imp)] = MYFLAG - 1;
+                permDiff[var(watcher.blocker)] = MYFLAG - 1;
             }
         }
-        unsigned int l = out_learnt.size() - 1;
         if (nb > 0) {
             nbReducedClauses++;
-            for (unsigned int i = 1; i < out_learnt.size() - nb; i++) {
+            for (unsigned int i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
                 if (permDiff[var(out_learnt[i])] != MYFLAG) {
-                    Lit p = out_learnt[l];
-                    out_learnt[l] = out_learnt[i];
-                    out_learnt[i] = p;
+                    std::swap(out_learnt[i], out_learnt[l]);
                     l--;
                     i--;
                 }
@@ -492,8 +479,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
     vector<Lit> selectors;
 
     // Generate conflict clause:
-    //
-    out_learnt.push_back(mkLit(0)); // (leave room for the asserting literal)
+    out_learnt.push_back(Glucose::lit_Undef); // (leave room for the asserting literal)
     int index = trail_size - 1;
     do {
         assert(confl != nullptr); // (otherwise should be UIP)
@@ -597,8 +583,9 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
     }
 
     // Find correct backtrack level:
-    if (out_learnt.size() == 1)
+    if (out_learnt.size() == 1) {
         out_btlevel = 0;
+    }
     else {
         int max_i = 1;
         // Find the first literal assigned at the next-highest level:
@@ -910,11 +897,13 @@ bool Solver::simplify() {
 
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    freeMarkedClauses(learnts);
     if (remove_satisfied) { // Can be turned off.
         std::for_each(clauses.begin(), clauses.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
-        freeMarkedClauses(clauses);
     }
+    watches.cleanAll();
+    watchesBin.cleanAll();
+    freeMarkedClauses(learnts);
+    freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
 
@@ -995,9 +984,7 @@ lbool Solver::search(int nof_conflicts) {
             cancelUntil(backtrack_level);
 
             if (certifiedUNSAT) {
-                for (unsigned int i = 0; i < learnt_clause.size(); i++)
-                    fprintf(certifiedOutput, "%i ", (var(learnt_clause[i]) + 1) * (-2 * sign(learnt_clause[i]) + 1));
-                fprintf(certifiedOutput, "0\n");
+                printCertificateLearnt(learnt_clause);
             }
 
             if (learnt_clause.size() == 1) {

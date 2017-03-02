@@ -27,6 +27,12 @@
 #  Generate a debug build:
 #    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug path/to/sources
 #
+#  Generate a sanitizer build:
+#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_LLVM_SANITIZER=1 path/to/sources
+#  Run with symbolizer:
+#    export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
+#    ASAN_OPTIONS=symbolize=1 ./candy ...
+#
 #  Generate a release build:
 #    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release path/to/sources
 #
