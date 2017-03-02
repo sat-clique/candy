@@ -20,6 +20,8 @@ echo "set logscale y"
 echo "set title \"$title\""
 
 echo "f(x)=x"
+echo "g(x)=10*x"
+echo "h(x)=x/10"
 echo "timeout=5000"
 
 echo "set datafile separator ';'"
@@ -31,13 +33,16 @@ echo "set ylabel '$c2'"
 echo "set xrange [1:6000]"
 echo "set yrange [1:6000]"
 
-echo "set style line 1 lt 1 lw 1 lc 26" #rgb 'red'"
-echo "set style line 2 lt 1 lw 1 lc 27" #rgb 'green'"
+echo "set style line 1 lt 1 lw 1 lc 26"
+echo "set style line 2 lt 1 lw 1 lc 27"
+#echo "set style line 3 lt 2 lw 1 lc 27"
 
 echo "plot timeout ls 1 title 'Timeout'"
 echo "set arrow from 5000,1 to 5000,6000 nohead ls 1"
 echo "replot f(x) ls 2 notitle"
-echo "replot \"$f\" u (\$${c1}==0?1:\$$c1):(\$${c2}==0?1:\$$c2) title \"$title\" with points lc 1"
+echo "replot g(x) lc 27 lt 3 lw 1 notitle"
+echo "replot h(x) lc 27 lt 3 lw 1 notitle"
+echo "replot \"$f\" u (\$${c1}==0?1:\$$c1):(\$${c2}==0?1:\$$c2) title \"$title\" with points lc 1 pt 3"
 
 echo "set term postscript eps enhanced color"
 echo "set output 'result.pdf'"
