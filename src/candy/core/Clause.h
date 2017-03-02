@@ -56,7 +56,7 @@ public:
         return literals[i];
     }
 
-    inline Lit operator [](int i) const {
+    inline const Lit operator [](int i) const {
         return literals[i];
     }
 

@@ -80,11 +80,7 @@ void ClauseAllocator::refillPool(uint16_t index, uint32_t nElem) {
     uint32_t bytes_total = clause_bytes * nElem;
     char* pool = (char*)malloc(bytes_total + clause_bytes); // one more for alignment
     pages.push_back(pool);
-//    char* align = (char*)((((uintptr_t)pool) + 16) & ~(static_cast<uintptr_t>(15)));
-//    assert((uintptr_t)align - (uintptr_t)pool > 0);
-//    assert((uintptr_t)align - (uintptr_t)pool <= 16);
     for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
-//        pools[index].push_back(align + pos);
         pools[index].push_back(pool + pos);
     }
 }
