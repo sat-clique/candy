@@ -132,6 +132,32 @@ public:
         }
     }
 
+    void printCertificateLearnt(vector<Lit>& vec) {
+        for (Lit lit : vec)
+            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
+        fprintf(certifiedOutput, "0\n");
+    }
+
+    void printCertificateLearntExcept(Candy::Clause* c, Lit p) {
+        for (Lit lit : *c)
+            if (lit != p) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
+        fprintf(certifiedOutput, "0\n");
+    }
+
+    void printCertificateRemoved(Candy::Clause* c) {
+        fprintf(certifiedOutput, "d ");
+        for (Lit lit : *c)
+            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
+        fprintf(certifiedOutput, "0\n");
+    }
+
+    void printCertificateRemoved(vector<Lit>& vec) {
+        fprintf(certifiedOutput, "d ");
+        for (Lit lit : vec)
+            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
+        fprintf(certifiedOutput, "0\n");
+    }
+
     // Variable mode:
     //
     void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
@@ -208,6 +234,7 @@ public:
     double garbage_frac; // The fraction of wasted memory allowed before a garbage collection is triggered.
 
     // Certified UNSAT ( Thanks to Marijn Heule)
+    // TODO: use class member functions for certified output
     FILE* certifiedOutput;
     bool certifiedUNSAT;
 
@@ -219,6 +246,7 @@ public:
             conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
     uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
 
+    //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void*)) {
         this->termCallbackState = state;
         this->termCallback = termCallback;
