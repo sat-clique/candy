@@ -27,6 +27,12 @@
 #  Generate a debug build:
 #    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug path/to/sources
 #
+#  Generate a sanitizer build:
+#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_LLVM_SANITIZER=1 path/to/sources
+#  Run with symbolizer:
+#    export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
+#    ASAN_OPTIONS=symbolize=1 ./candy ...
+#
 #  Generate a release build:
 #    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release path/to/sources
 #
@@ -59,14 +65,20 @@ cmake_minimum_required(VERSION 3.5)
 # Enable LLVM coverage
 option(CANDY_ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
 
-# Enable LLVM address and leak sanitizer
+# Enable LLVM address sanitizer
 option(CANDY_ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
+
+# Enable LLVM undefined-behavior, address and leak sanitizer
+option(CANDY_ENABLE_LLVM_SANITIZER_FULL "Enable LLVM address, memory and undefined-behavior sanitizer" OFF)
 
 # Enable -march=native - if set to OFF, at least SSE 4.1 will still be enabled.
 option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
 
 # Enable Sonification
 option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
+
+# Enable Static Linking
+option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 
 # Disable RTTI and defines CANDY_HAS_NO_RTTI.
 # WARNING: Enable this only AFTER having thoroughly tested the code. In some places
@@ -99,12 +111,21 @@ if(CANDY_ENABLE_LLVM_SANITIZER)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
 endif()
 
+if(CANDY_ENABLE_LLVM_SANITIZER_FULL)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address,memory,undefined")
+endif()
+
 if(CANDY_DISABLE_RTTI)
   message("WARNING: Use CANDY_DISABLE_RTTI only for the most optimized builds, since the test system relies on it")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -DCANDY_HAS_NO_RTTI")
 endif()
 
-
+if(CANDY_ENABLE_STATIC_LINKING)
+  message("Static linking is enabled.")
+  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  SET(BUILD_SHARED_LIBRARIES OFF)
+  SET(CMAKE_EXE_LINKER_FLAGS "-static")
+endif()
 
 if (CANDY_ENABLE_NATIVEARCH)
   message("Compiling for the processor architecture of this machine.")

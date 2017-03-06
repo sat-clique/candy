@@ -1,6 +1,10 @@
 add_library(core
     Solver.cc
     Utilities.cc
+    Clause.cc
+    Clause.h
+    ClauseAllocator.cc
+    ClauseAllocator.h
     BoundedQueue.h
     CNFProblem.h
     Constants.h

@@ -48,7 +48,7 @@
  **************************************************************************************************/
 
 #include <errno.h>
-
+#include <iostream>
 #include <signal.h>
 #include <zlib.h>
 #include <sys/resource.h>
@@ -184,7 +184,7 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
  * If \p outputFilename is non-null, the result also gets written to the file given by
  * \p outputFilename. The target file gets truncated.
  */
-static void printResult(SimpSolver& S, lbool result, const char* outputFilename = nullptr) {
+static void printResult(Solver& S, lbool result, const char* outputFilename = nullptr) {
   if (S.verbosity > 0) {
     printStats(S);
     printf("\n");
@@ -225,7 +225,7 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 /**
  * Prints statistics about the problem to be solved.
  */
-static void printProblemStatistics(SimpSolver& S, double parseTime) {
+static void printProblemStatistics(Solver& S, double parseTime) {
   printf("c ========================================[ Problem Statistics ]===========================================\n");
   printf("c |                                                                                                       |\n");
   printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
@@ -264,7 +264,7 @@ static void configureSolver(SimpSolver& S,
 /**
  * Shuts down the SAT solver \p S and frees resources as necessary.
  */
-static void shutdownSolver(SimpSolver& S) {
+static void shutdownSolver(Solver& S) {
   // TODO: shouldn't this be done by the solver - maybe add a "shutdown()" method?
   if (S.certifiedUNSAT) {
     fprintf(S.certifiedOutput, "0\n");
@@ -438,10 +438,11 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 
 //=================================================================================================
 // Main:
-
 int main(int argc, char** argv) {
   try {
-    printf("c\nc This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)\nc\n");
+    std::cout << "This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
+
+    Candy::Clause::printAlignment();
 
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
 
@@ -497,7 +498,8 @@ int main(int argc, char** argv) {
 
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
   }
-  catch (OutOfMemoryException&) {
+  catch (std::bad_alloc& ba){
+    //printf("c Bad_Alloc Caught: %s\n", ba.what());
     printf("c =========================================================================================================\n");
     printf("s INDETERMINATE\n");
     return 0;
