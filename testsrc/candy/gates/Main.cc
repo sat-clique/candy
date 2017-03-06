@@ -13,19 +13,19 @@
 
 using namespace Candy;
 
-TEST (GateAnalyzerTestPatterns, countgates) {
-  CNFProblem dimacs;
-  dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");
-
-  // create test out
-  GateAnalyzer gates(dimacs, 0, true, false);
-  gates.analyze();
-  testing::internal::CaptureStdout();
-  printf("%d", gates.getGateCount());
-  std::string output = testing::internal::GetCapturedStdout();
-
-  ASSERT_EQ (output, "14446");
-}
+//TEST (GateAnalyzerTestPatterns, countgates) {
+//  CNFProblem dimacs;
+//  dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");
+//
+//  // create test out
+//  GateAnalyzer gates(dimacs, 0, true, false);
+//  gates.analyze();
+//  testing::internal::CaptureStdout();
+//  printf("%d", gates.getGateCount());
+//  std::string output = testing::internal::GetCapturedStdout();
+//
+//  ASSERT_EQ (output, "14446");
+//}
 
 //TEST (GateAnalyzerTestPatternSemantic, countgates) {
 //  CNFProblem dimacs;
@@ -40,7 +40,6 @@ TEST (GateAnalyzerTestPatterns, countgates) {
 //
 //  ASSERT_EQ (output, "70229");
 //}
-//
 //TEST (GateAnalyzerTestPatternSemanticIntensification, countgates) {
 //  CNFProblem dimacs;
 //  dimacs.readDimacsFromFile("velev-vliw-uns-2.0-uq5.cnf");

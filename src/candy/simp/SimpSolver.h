@@ -1,56 +1,57 @@
 /***************************************************************************************[SimpSolver.h]
  Glucose -- Copyright (c) 2009-2014, Gilles Audemard, Laurent Simon
-                                CRIL - Univ. Artois, France
-                                LRI  - Univ. Paris Sud, France (2009-2013)
-                                Labri - Univ. Bordeaux, France
+ CRIL - Univ. Artois, France
+ LRI  - Univ. Paris Sud, France (2009-2013)
+ Labri - Univ. Bordeaux, France
 
  Syrup (Glucose Parallel) -- Copyright (c) 2013-2014, Gilles Audemard, Laurent Simon
-                                CRIL - Univ. Artois, France
-                                Labri - Univ. Bordeaux, France
+ CRIL - Univ. Artois, France
+ Labri - Univ. Bordeaux, France
 
-Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
-is based on. (see below).
+ Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
+ Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it
+ is based on. (see below).
 
-Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
-version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
-without restriction, including the rights to use, copy, modify, merge, publish, distribute,
-sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is 
-furnished to do so, subject to the following conditions:
+ Glucose-Syrup sources are based on another copyright. Permissions and copyrights for the parallel
+ version of Glucose-Syrup (the "Software") are granted, free of charge, to deal with the Software
+ without restriction, including the rights to use, copy, modify, merge, publish, distribute,
+ sublicence, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-- The above and below copyrights notices and this permission notice shall be included in all
-copies or substantial portions of the Software;
-- The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
-be used in any competitive event (sat competitions/evaluations) without the express permission of 
-the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
-using Glucose Parallel as an embedded SAT engine (single core or not).
+ - The above and below copyrights notices and this permission notice shall be included in all
+ copies or substantial portions of the Software;
+ - The parallel version of Glucose (all files modified since Glucose 3.0 releases, 2013) cannot
+ be used in any competitive event (sat competitions/evaluations) without the express permission of
+ the authors (Gilles Audemard / Laurent Simon). This is also the case for any competitive event
+ using Glucose Parallel as an embedded SAT engine (single core or not).
 
 
---------------- Original Minisat Copyrights
+ --------------- Original Minisat Copyrights
 
-Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
-Copyright (c) 2007-2010, Niklas Sorensson
+ Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+ Copyright (c) 2007-2010, Niklas Sorensson
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
-associated documentation files (the "Software"), to deal in the Software without restriction,
-including without limitation the rights to use, copy, modify, merge, publish, distribute,
-sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+ Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
+ associated documentation files (the "Software"), to deal in the Software without restriction,
+ including without limitation the rights to use, copy, modify, merge, publish, distribute,
+ sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is
+ furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all copies or
-substantial portions of the Software.
+ The above copyright notice and this permission notice shall be included in all copies or
+ substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
-NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
-OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT
+ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
+ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
 #ifndef Glucose_SimpSolver_h
 #define Glucose_SimpSolver_h
 
-#include "core/Solver.h"
+#include "candy/core/Solver.h"
+#include "candy/core/Clause.h"
 #include <deque>
 
 using namespace std;
@@ -59,161 +60,209 @@ namespace Glucose {
 
 //=================================================================================================
 
-
-class SimpSolver : public Solver {
+class SimpSolver: public Solver {
 public:
-  // Constructor/Destructor:
-  //
-  SimpSolver();
-  ~SimpSolver();
+    // Constructor/Destructor:
+    //
+    SimpSolver();
+    ~SimpSolver();
 
-  // Problem specification:
-  //
-  virtual Var     newVar    (bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-  bool    addClause (const vector<Lit>& ps);
-  bool    addEmptyClause();                // Add the empty clause to the solver.
-  bool    addClause (Lit p);               // Add a unit clause to the solver.
-  bool    addClause (Lit p, Lit q);        // Add a binary clause to the solver.
-  bool    addClause (Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
-  virtual bool    addClause_(vector<Lit>& ps);
-  bool    substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
+    // Problem specification:
+    //
+    virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    bool addClause(const vector<Lit>& ps);
+    bool addEmptyClause();                // Add the empty clause to the solver.
+    bool addClause(Lit p);               // Add a unit clause to the solver.
+    bool addClause(Lit p, Lit q);        // Add a binary clause to the solver.
+    bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
+    virtual bool addClause_(vector<Lit>& ps);
+    bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
-  // Variable mode:
-  //
-  void    setFrozen (Var v, bool b); // If a variable is frozen it will not be eliminated.
-  bool    isEliminated(Var v) const;
+    // Variable mode:
+    //
+    void setFrozen(Var v, bool b); // If a variable is frozen it will not be eliminated.
+    bool isEliminated(Var v) const;
 
-  // Solving:
-  //
-  bool    solve       (const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-  lbool   solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-  bool    solve       (                     bool do_simp = true, bool turn_off_simp = false);
-  bool    solve       (Lit p       ,        bool do_simp = true, bool turn_off_simp = false);
-  bool    solve       (Lit p, Lit q,        bool do_simp = true, bool turn_off_simp = false);
-  bool    solve       (Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
-  bool    eliminate   (bool turn_off_elim = false);  // Perform variable elimination based simplification.
+    // Solving:
+    //
+    bool solve(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+    lbool solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
+    bool solve(bool do_simp = true, bool turn_off_simp = false);
+    bool solve(Lit p, bool do_simp = true, bool turn_off_simp = false);
+    bool solve(Lit p, Lit q, bool do_simp = true, bool turn_off_simp = false);
+    bool solve(Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
+    bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
 
-  // Memory managment:
-  //
-  virtual void garbageCollect();
+    // Mode of operation:
+    //
+    int certifiedAllClauses;
+    int grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
+    int clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
+    // -1 means no limit.
+    int subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
+    double simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
 
-  // Mode of operation:
-  //
-  int     certifiedAllClauses;
-  int     grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
-  int     clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
-  // -1 means no limit.
-  int     subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
-  double  simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
-
-  bool    use_asymm;         // Shrink clauses by asymmetric branching.
-  bool    use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
-  bool    use_elim;          // Perform variable elimination.
-  // Statistics:
-  //
-  int     merges;
-  int     asymm_lits;
-  int     eliminated_vars;
+    bool use_asymm;         // Shrink clauses by asymmetric branching.
+    bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
+    bool use_elim;          // Perform variable elimination.
+    // Statistics:
+    //
+    int merges;
+    int asymm_lits;
+    int eliminated_vars;
 
 protected:
 
-  // Helper structures:
-  //
-  struct ElimLt {
-    const vector<int>& n_occ;
-    explicit ElimLt(const vector<int>& no) : n_occ(no) {}
+    // Helper structures:
+    //
+    struct ElimLt {
+        const vector<int>& n_occ;
+        explicit ElimLt(const vector<int>& no) :
+                        n_occ(no) {
+        }
 
-    // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
-    // 32-bit implementation instead then, but this will have to do for now.
-    uint64_t cost  (Var x)        const { return (uint64_t)n_occ[toInt(mkLit(x))] * (uint64_t)n_occ[toInt(~mkLit(x))]; }
-    bool operator()(Var x, Var y) const { return cost(x) < cost(y); }
+        // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
+        // 32-bit implementation instead then, but this will have to do for now.
+        uint64_t cost(Var x) const {
+            return (uint64_t) n_occ[toInt(mkLit(x))] * (uint64_t) n_occ[toInt(~mkLit(x))];
+        }
+        bool operator()(Var x, Var y) const {
+            return cost(x) < cost(y);
+        }
 
-    // TODO: investigate this order alternative more.
-    // bool operator()(Var x, Var y) const {
-    //     int c_x = cost(x);
-    //     int c_y = cost(y);
-    //     return c_x < c_y || c_x == c_y && x < y; }
-  };
+        // TODO: investigate this order alternative more.
+        // bool operator()(Var x, Var y) const {
+        //     int c_x = cost(x);
+        //     int c_y = cost(y);
+        //     return c_x < c_y || c_x == c_y && x < y; }
+    };
 
-  struct ClauseDeleted {
-    const ClauseAllocator& ca;
-    explicit ClauseDeleted(const ClauseAllocator& _ca) : ca(_ca) {}
-    bool operator()(const CRef& cr) const { return ca[cr].mark() == 1; } };
+    struct ClauseDeleted {
+        explicit ClauseDeleted() {
+        }
+        inline bool operator()(const Candy::Clause* cr) const {
+            return cr->isDeleted();
+        }
+    };
 
-  // Solver state:
-  //
-  int                 elimorder;
-  bool                use_simplification;
-  vector<uint32_t>       elimclauses;
-  vector<char>           touched;
-  OccLists<Var, CRef, ClauseDeleted> occurs;
-  vector<int>            n_occ;
-  Heap<ElimLt>        elim_heap;
-  deque<CRef>         subsumption_queue;
-  vector<char>           frozen;
-  vector<char>           eliminated;
-  int        bwdsub_assigns;
-  int                 n_touched;
+    // Solver state:
+    //
+    int elimorder;
+    bool use_simplification;
+    vector<uint32_t> elimclauses;
+    vector<char> touched;
+    OccLists<Var, Candy::Clause*, ClauseDeleted> occurs;
+    vector<int> n_occ;
+    Heap<ElimLt> elim_heap;
+    deque<Candy::Clause*> subsumption_queue;
+    vector<char> frozen;
+    vector<char> eliminated;
+    int bwdsub_assigns;
+    int n_touched;
 
-  // Temporaries:
-  //
-  CRef                bwdsub_tmpunit;
+    // Main internal methods:
+    //
+    virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);
+    bool asymm(Var v, Candy::Clause* cr);
+    bool asymmVar(Var v);
+    void updateElimHeap(Var v);
+    void gatherTouchedClauses();
+    bool merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, vector<Lit>& out_clause);
+    bool merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, int& size);
+    bool backwardSubsumptionCheck(bool verbose = false);
+    bool eliminateVar(Var v);
+    void extendModel();
 
-  // Main internal methods:
-  //
-  virtual lbool solve_                   (bool do_simp = true, bool turn_off_simp = false);
-  bool          asymm                    (Var v, CRef cr);
-  bool          asymmVar                 (Var v);
-  void          updateElimHeap           (Var v);
-  void          gatherTouchedClauses     ();
-  bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
-  bool          merge                    (const Clause& _ps, const Clause& _qs, Var v, int& size);
-  bool          backwardSubsumptionCheck (bool verbose = false);
-  bool          eliminateVar             (Var v);
-  void          extendModel              ();
-
-  void          removeClause             (CRef cr);
-  bool          strengthenClause         (CRef cr, Lit l);
-  void          cleanUpClauses           ();
-  bool          implied                  (const vector<Lit>& c);
-  virtual void          relocAll                 (ClauseAllocator& to);
+    void removeClause(Candy::Clause* cr);
+    bool strengthenClause(Candy::Clause* cr, Lit l);
+    void cleanUpClauses();
+    bool implied(const vector<Lit>& c);
 };
-
 
 //=================================================================================================
 // Implementation of inline methods:
 
-
-inline bool SimpSolver::isEliminated (Var v) const { return eliminated[v]; }
+inline bool SimpSolver::isEliminated(Var v) const {
+    return eliminated[v];
+}
 inline void SimpSolver::updateElimHeap(Var v) {
-  assert(use_simplification);
-  // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
-  if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
-    elim_heap.update(v); }
+    assert(use_simplification);
+    // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
+    if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
+        elim_heap.update(v);
+}
 
+inline bool SimpSolver::addClause(const vector<Lit>& ps) {
+    add_tmp.clear();
+    add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
+    return addClause_(add_tmp);
+}
+inline bool SimpSolver::addEmptyClause() {
+    add_tmp.clear();
+    return addClause_(add_tmp);
+}
+inline bool SimpSolver::addClause(Lit p) {
+    add_tmp.clear();
+    add_tmp.push_back(p);
+    return addClause_(add_tmp);
+}
+inline bool SimpSolver::addClause(Lit p, Lit q) {
+    add_tmp.clear();
+    add_tmp.push_back(p);
+    add_tmp.push_back(q);
+    return addClause_(add_tmp);
+}
+inline bool SimpSolver::addClause(Lit p, Lit q, Lit r) {
+    add_tmp.clear();
+    add_tmp.push_back(p);
+    add_tmp.push_back(q);
+    add_tmp.push_back(r);
+    return addClause_(add_tmp);
+}
+inline void SimpSolver::setFrozen(Var v, bool b) {
+    frozen[v] = (char) b;
+    if (use_simplification && !b) {
+        updateElimHeap(v);
+    }
+}
 
-inline bool SimpSolver::addClause(const vector<Lit>& ps) { add_tmp.clear(); add_tmp.insert(add_tmp.end(), ps.begin(), ps.end()); return addClause_(add_tmp); }
-inline bool SimpSolver::addEmptyClause()                     { add_tmp.clear(); return addClause_(add_tmp); }
-inline bool SimpSolver::addClause    (Lit p)                 { add_tmp.clear(); add_tmp.push_back(p); return addClause_(add_tmp); }
-inline bool SimpSolver::addClause    (Lit p, Lit q)          { add_tmp.clear(); add_tmp.push_back(p); add_tmp.push_back(q); return addClause_(add_tmp); }
-inline bool SimpSolver::addClause    (Lit p, Lit q, Lit r)   { add_tmp.clear(); add_tmp.push_back(p); add_tmp.push_back(q); add_tmp.push_back(r); return addClause_(add_tmp); }
-inline void SimpSolver::setFrozen    (Var v, bool b) { frozen[v] = (char)b; if (use_simplification && !b) { updateElimHeap(v); } }
-
-inline bool SimpSolver::solve        (                     bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (Lit p       ,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (Lit p, Lit q,        bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); return solve_(do_simp, turn_off_simp) == l_True; }
-inline bool SimpSolver::solve        (Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp)  { budgetOff(); assumptions.clear(); assumptions.push_back(p); assumptions.push_back(q); assumptions.push_back(r); return solve_(do_simp, turn_off_simp) == l_True; }
+inline bool SimpSolver::solve(bool do_simp, bool turn_off_simp) {
+    budgetOff();
+    assumptions.clear();
+    return solve_(do_simp, turn_off_simp) == l_True;
+}
+inline bool SimpSolver::solve(Lit p, bool do_simp, bool turn_off_simp) {
+    budgetOff();
+    assumptions.clear();
+    assumptions.push_back(p);
+    return solve_(do_simp, turn_off_simp) == l_True;
+}
+inline bool SimpSolver::solve(Lit p, Lit q, bool do_simp, bool turn_off_simp) {
+    budgetOff();
+    assumptions.clear();
+    assumptions.push_back(p);
+    assumptions.push_back(q);
+    return solve_(do_simp, turn_off_simp) == l_True;
+}
+inline bool SimpSolver::solve(Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp) {
+    budgetOff();
+    assumptions.clear();
+    assumptions.push_back(p);
+    assumptions.push_back(q);
+    assumptions.push_back(r);
+    return solve_(do_simp, turn_off_simp) == l_True;
+}
 inline bool SimpSolver::solve(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
-  budgetOff();
-  assumptions.clear();
-  assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-  return solve_(do_simp, turn_off_simp) == l_True;
+    budgetOff();
+    assumptions.clear();
+    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+    return solve_(do_simp, turn_off_simp) == l_True;
 }
 
 inline lbool SimpSolver::solveLimited(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
-  assumptions.clear();
-  assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-  return solve_(do_simp, turn_off_simp);
+    assumptions.clear();
+    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+    return solve_(do_simp, turn_off_simp);
 }
 
 //=================================================================================================
