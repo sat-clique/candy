@@ -48,7 +48,7 @@ namespace Candy {
     }
     
     static void test_singleUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
-        std::vector<Glucose::Var> relevantVars = {0, 1, 2};
+        std::vector<Var> relevantVars = {0, 1, 2};
         
         SimulationVectors assignment;
         assignment.initialize(3);
@@ -64,9 +64,9 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 1ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
         
-        std::vector<Glucose::Lit> eqConj1 = {Glucose::mkLit(1, 0), Glucose::mkLit(2, 1)};
+        std::vector<Lit> eqConj1 = {mkLit(1, 0), mkLit(2, 1)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
     }
     
@@ -84,7 +84,7 @@ namespace Candy {
     
     
     static void test_multiUpdateAllRelevantAllInConjs(std::unique_ptr<Partition> underTest) {
-        std::vector<Glucose::Var> relevantVars = {0, 1, 2};
+        std::vector<Var> relevantVars = {0, 1, 2};
         
         SimulationVectors assignment;
         assignment.initialize(3);
@@ -106,9 +106,9 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 1ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
         
-        std::vector<Glucose::Lit> eqConj1 = {Glucose::mkLit(1, 0), Glucose::mkLit(2, 1)};
+        std::vector<Lit> eqConj1 = {mkLit(1, 0), mkLit(2, 1)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
     }
     
@@ -125,7 +125,7 @@ namespace Candy {
     }
     
     static void test_singleUpdateAllRelevant(std::unique_ptr<Partition> underTest) {
-        std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        std::vector<Var> relevantVars = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
         SimulationVectors assignment;
         assignment.initialize(10);
@@ -151,14 +151,14 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 2ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 2ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(0, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(1, 0)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(1, 0)));
         
-        std::vector<Glucose::Lit> eqConj1 = {Glucose::mkLit(3, 0),
-            Glucose::mkLit(7, 1),
-            Glucose::mkLit(9, 1)};
-        std::vector<Glucose::Lit> eqConj2 = {Glucose::mkLit(2, 0),
-            Glucose::mkLit(4, 0)};
+        std::vector<Lit> eqConj1 = {mkLit(3, 0),
+            mkLit(7, 1),
+            mkLit(9, 1)};
+        std::vector<Lit> eqConj2 = {mkLit(2, 0),
+            mkLit(4, 0)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj2));
     }
@@ -176,7 +176,7 @@ namespace Candy {
     }
     
     void test_multiUpdateAllRelevant(std::unique_ptr<Partition> underTest) {
-        std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        std::vector<Var> relevantVars = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
         SimulationVectors assignment;
         assignment.initialize(10);
@@ -223,14 +223,14 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 2ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 2ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(0, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(1, 0)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(1, 0)));
         
-        std::vector<Glucose::Lit> eqConj1 = {Glucose::mkLit(3, 0),
-            Glucose::mkLit(7, 1),
-            Glucose::mkLit(9, 1)};
-        std::vector<Glucose::Lit> eqConj2 = {Glucose::mkLit(2, 0),
-            Glucose::mkLit(4, 0)};
+        std::vector<Lit> eqConj1 = {mkLit(3, 0),
+            mkLit(7, 1),
+            mkLit(9, 1)};
+        std::vector<Lit> eqConj2 = {mkLit(2, 0),
+            mkLit(4, 0)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj2));
     }
@@ -249,7 +249,7 @@ namespace Candy {
     
     
     static void test_multipleBackboneVars(std::unique_ptr<Partition> underTest) {
-        std::vector<Glucose::Var> relevantVars = {0, 1, 2, 3, 4};
+        std::vector<Var> relevantVars = {0, 1, 2, 3, 4};
         
         SimulationVectors assignment;
         assignment.initialize(5);
@@ -267,11 +267,11 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 3ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(0, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(3, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, Glucose::mkLit(4, 0)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(3, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(4, 0)));
         
-        std::vector<Glucose::Lit> eqConj1 = {Glucose::mkLit(1, 0), Glucose::mkLit(2, 1)};
+        std::vector<Lit> eqConj1 = {mkLit(1, 0), mkLit(2, 1)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
     }
     

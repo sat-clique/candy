@@ -113,9 +113,9 @@ namespace Candy {
                     if (g.isDefined() && visited.find(&g) == visited.end()) {
                         work.push(GateDFSMarkedGate{&g, false});
                     }
-                    else if (!g.isDefined() && seenInputs.find(Glucose::var(input)) == seenInputs.end()) {
-                        seenInputs.emplace(Glucose::var(input));
-                        collector.visitInput(Glucose::var(input));
+                    else if (!g.isDefined() && seenInputs.find(var(input)) == seenInputs.end()) {
+                        seenInputs.emplace(var(input));
+                        collector.visitInput(var(input));
                     }
                 }
             }
@@ -136,7 +136,7 @@ namespace Candy {
         }
         
         void backtrack(Gate* g) {
-            m_backtrackOutputOrder.push_back(Glucose::var(g->getOutput()));
+            m_backtrackOutputOrder.push_back(var(g->getOutput()));
         }
         
         void visit(Gate* g) {

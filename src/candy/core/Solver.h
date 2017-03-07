@@ -62,7 +62,7 @@
 
 #include "sonification/SolverSonification.h"
 
-namespace Glucose {
+namespace Candy {
 
 using namespace std;
 
@@ -106,31 +106,6 @@ public:
     bool solve(Lit p, Lit q); // Search for a model that respects two assumptions.
     bool solve(Lit p, Lit q, Lit r); // Search for a model that respects three assumptions.
     bool okay() const;           // FALSE means solver is in a conflicting state
-
-    // Display clauses and literals (Debug purpose)
-    void printLit(Lit l) {
-        if (status == l_True) {
-            printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, modelValue(l) == l_True ? '1' : (modelValue(l) == l_False ? '0' : 'X'));
-        } else {
-            printf("%s%d:%c", sign(l) ? "-" : "", var(l) + 1, value(l) == l_True ? '1' : (value(l) == l_False ? '0' : 'X'));
-        }
-    }
-
-    void printClause(Candy::Clause& c, bool skipSelectorVariables = false) {
-        for (unsigned int i = 0; i < c.size(); i++) {
-            if (!skipSelectorVariables || !isSelector(var(c[i]))) {
-                printLit(c[i]);
-                printf(" ");
-            }
-        }
-    }
-
-    void printProblem(bool skipSelectorVariables = false) {
-        for (auto clause : clauses) {
-            printClause(*clause, skipSelectorVariables);
-            printf("\n");
-        }
-    }
 
     void printCertificateLearnt(vector<Lit>& vec) {
         for (Lit lit : vec)
@@ -322,10 +297,10 @@ protected:
 	int simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
 	int64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-	Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
+	Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 	bool reduceOnSize;
-	int reduceOnSizeSize;                // See XMinisat paper
+	int reduceOnSizeSize;                // See XMinisat paper /* constant to use on size reduction */
 	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
 
 	// UPDATEVARACTIVITY trick (see competition'09 companion paper)
@@ -334,7 +309,7 @@ protected:
 	int nbclausesbeforereduce; // To know when it is time to reduce clause database
 
 	// Used for restart strategies
-	bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
+	Glucose::bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
 	float sumLBD; // used to compute the global average of LBD. Restarts...
 	//int sumAssumptions;
 	Candy::Clause* lastLearntClause;

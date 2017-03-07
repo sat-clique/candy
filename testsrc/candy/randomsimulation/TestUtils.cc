@@ -30,7 +30,7 @@
 #include <testutils/TestUtils.h>
 
 namespace Candy {
-    bool hasBackboneConj(const Conjectures &c, Glucose::Lit lit) {
+    bool hasBackboneConj(const Conjectures &c, Lit lit) {
         bool found = false;
         for (auto bb : c.getBackbones()) {
             found |= (bb.getLit() == lit);

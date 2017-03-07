@@ -471,7 +471,7 @@ namespace Candy {
                     continue;
                 }*/
                 if (!partitionEntry.backbone) {
-                    conj.addLit(Glucose::mkLit(partitionEntry.varId, partitionEntry.polarity));
+                    conj.addLit(mkLit(partitionEntry.varId, partitionEntry.polarity));
                 }
                 // TODO: del? setIsSweepingArtifactVariable(partitionEntry.varId, true);
             }
@@ -484,7 +484,7 @@ namespace Candy {
     void DefaultPartition::addBackbonesToConjectures(Conjectures &target) {
         for (auto &partitionEntry : m_partitioningPos) {
             if (partitionEntry.backbone) {
-                BackboneConjecture conj {Glucose::mkLit(partitionEntry.varId, partitionEntry.backboneVal)};
+                BackboneConjecture conj {mkLit(partitionEntry.varId, partitionEntry.backboneVal)};
                 target.addBackbone(conj);
             }
         }

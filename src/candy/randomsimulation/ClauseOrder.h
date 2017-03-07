@@ -57,7 +57,7 @@ namespace Candy {
          * Retrieves the set of gates marked enabled by the filter, represented
          * as a collection of their output variables.
          */
-        virtual std::unordered_set<Glucose::Var> getEnabledOutputVars() = 0;
+        virtual std::unordered_set<Var> getEnabledOutputVars() = 0;
         
         GateFilter();
         virtual ~GateFilter();
@@ -95,7 +95,7 @@ namespace Candy {
         /**
          * Retrieves a collection of the variables which are not gate-output variables.
          */
-        virtual const std::vector<Glucose::Var> &getInputVariables() const = 0;
+        virtual const std::vector<Var> &getInputVariables() const = 0;
         
         /**
          * Retrieves a topologically-ordered sequence of gate-output literals.
@@ -104,7 +104,7 @@ namespace Candy {
          *   - literals O' which are outputs of a gate whose value (transitively)
          *     depends on a variable not marked enabled by the gate filter.
          */
-        virtual const std::vector<Glucose::Lit> &getGateOutputsOrdered() const = 0;
+        virtual const std::vector<Lit> &getGateOutputsOrdered() const = 0;
         
         /**
          * For a variable V occuring in getGateOutputsOrdered() as the literal L,
@@ -113,7 +113,7 @@ namespace Candy {
          * of the gate. If the gate is nested monotonically, these clauses are the
          * gate's forward clauses.
          */
-        virtual const std::vector<const Cl*> &getClauses(Glucose::Var variable) const = 0;
+        virtual const std::vector<const Cl*> &getClauses(Var variable) const = 0;
         
         /**
          * Sets a gate filter defining the output variables to be regarded

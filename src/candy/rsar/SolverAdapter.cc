@@ -111,11 +111,11 @@ namespace Candy {
         
         GlucoseAdapter()
         : SolverAdapter(),
-        m_ownedSolver(backported_std::make_unique<Glucose::SimpSolver>()),
+        m_ownedSolver(backported_std::make_unique<SimpSolver>()),
         m_solver(*m_ownedSolver) {
         }
         
-        explicit GlucoseAdapter(Glucose::SimpSolver& solver)
+        explicit GlucoseAdapter(SimpSolver& solver)
         : SolverAdapter(),
         m_ownedSolver(nullptr),
         m_solver(solver) {
@@ -125,15 +125,15 @@ namespace Candy {
         GlucoseAdapter& operator= (const GlucoseAdapter& other) = delete;
         
     private:
-        std::unique_ptr<Glucose::SimpSolver> m_ownedSolver;
-        Glucose::SimpSolver& m_solver;
+        std::unique_ptr<SimpSolver> m_ownedSolver;
+        SimpSolver& m_solver;
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter() {
         return backported_std::make_unique<GlucoseAdapter>();
     }
     
-    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(Glucose::SimpSolver& solver) {
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(SimpSolver& solver) {
         return backported_std::make_unique<GlucoseAdapter>(solver);
     }
 

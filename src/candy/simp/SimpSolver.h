@@ -56,7 +56,7 @@
 
 using namespace std;
 
-namespace Glucose {
+namespace Candy {
 
 //=================================================================================================
 
@@ -153,7 +153,7 @@ protected:
     vector<char> touched;
     OccLists<Var, Candy::Clause*, ClauseDeleted> occurs;
     vector<int> n_occ;
-    Heap<ElimLt> elim_heap;
+    Glucose::Heap<ElimLt> elim_heap;
     deque<Candy::Clause*> subsumption_queue;
     vector<char> frozen;
     vector<char> eliminated;

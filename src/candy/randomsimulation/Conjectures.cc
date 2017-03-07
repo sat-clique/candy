@@ -39,7 +39,7 @@ namespace Candy {
         
     }
     
-    void EquivalenceConjecture::addLit(Glucose::Lit lit) {
+    void EquivalenceConjecture::addLit(Lit lit) {
         m_lits.push_back(lit);
     }
     
@@ -59,11 +59,11 @@ namespace Candy {
         return m_lits[index];
     }
     
-    BackboneConjecture::BackboneConjecture(Glucose::Lit lit) : m_lit(lit) {
+    BackboneConjecture::BackboneConjecture(Lit lit) : m_lit(lit) {
         
     }
     
-    Glucose::Lit BackboneConjecture::getLit() const {
+    Lit BackboneConjecture::getLit() const {
         return m_lit;
     }
     

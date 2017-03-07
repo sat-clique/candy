@@ -5,13 +5,19 @@
  *      Author: markus
  */
 
-#ifndef CORE_UTILITIES_H_
-#define CORE_UTILITIES_H_
+#ifndef UTILITIES_H
+#define UTILITIES_H
 
-#include "core/SolverTypes.h"
+#include "candy/core/SolverTypes.h"
+#include "candy/core/Clause.h"
+#include <vector>
 
 void printLiteral(Candy::Lit lit);
 void printClause(Candy::Cl& clause);
 void printClauses(Candy::For& formula);
 
-#endif /* CORE_UTILITIES_H_ */
+void printProblem(std::vector<Candy::Clause*> clauses, std::vector<Candy::lbool> values);
+void printClause(Candy::Clause& c, std::vector<Candy::lbool> values);
+void printLiteral(Candy::Lit lit, std::vector<Candy::lbool> values);
+
+#endif /* UTILITIES_H */

@@ -47,17 +47,17 @@ namespace Candy {
         /**
          * Adds an AND gate to the gate structure.
          */
-        virtual GateStructureBuilder& withAnd(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) = 0;
+        virtual GateStructureBuilder& withAnd(const std::vector<Lit>& inputs, Lit output) = 0;
         
         /**
          * Adds an OR gate to the gate structure.
          */
-        virtual GateStructureBuilder& withOr(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) = 0;
+        virtual GateStructureBuilder& withOr(const std::vector<Lit>& inputs, Lit output) = 0;
         
         /**
          * Adds an XOR gate to the gate structure.
          */
-        virtual GateStructureBuilder& withXor(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) = 0;
+        virtual GateStructureBuilder& withXor(const std::vector<Lit>& inputs, Lit output) = 0;
         
         /**
          * Builds the gate structure's encoding.

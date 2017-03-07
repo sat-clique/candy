@@ -54,14 +54,14 @@ namespace Candy {
      *
      * Asserts that variables does not contain the variable forbidden.
      */
-    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var forbidden);
+    void assertContainsVariable(const std::unordered_set<Var>& variables, const Var forbidden);
     
     /**
      * \ingroup TestUtils
      *
      * Asserts that variables contains the variable required.
      */
-    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, const Glucose::Var required);
+    void assertDoesNotContainVariable(const std::unordered_set<Var>& variables, const Var required);
     
     /**
      * \ingroup TestUtils
@@ -75,7 +75,7 @@ namespace Candy {
      *
      * Inserts the variables contained in the literals of lits in to the target set.
      */
-    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target);
+    void insertVariables(const std::vector<Lit>& lits, std::unordered_set<Var>& target);
     
     /**
      * \ingroup TestUtils

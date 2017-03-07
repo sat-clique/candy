@@ -161,10 +161,10 @@ public:
         assert(!other.isLearnt());
 
         if (other.size() < size() || (data.abs & ~other.data.abs) != 0) {
-            return Glucose::lit_Error;
+            return lit_Error;
         }
 
-        Lit ret = Glucose::lit_Undef;
+        Lit ret = lit_Undef;
 
         for (Lit c : *this) {
             // search for c or ~c
@@ -172,13 +172,13 @@ public:
                 if (c == d) {
                     goto ok;
                 }
-                else if (ret == Glucose::lit_Undef && c == ~d) {
+                else if (ret == lit_Undef && c == ~d) {
                     ret = c;
                     goto ok;
                 }
             }
             // did not find it
-            return Glucose::lit_Error;
+            return lit_Error;
             ok: ;
         }
 
@@ -193,7 +193,7 @@ public:
     }
 
     static void printAlignment() {
-        Clause clause({Glucose::lit_Undef});
+        Clause clause({lit_Undef});
         uint64_t start = (uint64_t)&clause;
         uint64_t header = (uint64_t)&(clause.header);
         uint64_t data = (uint64_t)&(clause.data);

@@ -55,6 +55,7 @@
 #include "candy/core/SolverTypes.h"
 
 using namespace Glucose;
+using namespace Candy;
 
 //=================================================================================================
 // Options:
@@ -112,7 +113,7 @@ Solver::Solver() :
 
                 ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), trail_size(0), qhead(
                                 0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
-                                12) /* constant to use on size reduction */, nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
+                                12), nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
                 // Resource constraints:
                 //
                 conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
@@ -479,7 +480,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
     vector<Lit> selectors;
 
     // Generate conflict clause:
-    out_learnt.push_back(Glucose::lit_Undef); // (leave room for the asserting literal)
+    out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
     int index = trail_size - 1;
     do {
         assert(confl != nullptr); // (otherwise should be UIP)

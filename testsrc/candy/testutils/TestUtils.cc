@@ -28,11 +28,11 @@
 #include <core/CNFProblem.h>
 
 namespace Candy {
-    void assertContainsVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
+    void assertContainsVariable(const std::unordered_set<Var>& variables, Var forbidden) {
         assert(variables.find(forbidden) != variables.end()); // TODO refactor
     }
     
-    void assertDoesNotContainVariable(const std::unordered_set<Glucose::Var>& variables, Glucose::Var forbidden) {
+    void assertDoesNotContainVariable(const std::unordered_set<Var>& variables, Var forbidden) {
         assert(variables.find(forbidden) == variables.end()); // TODO refactor
     }
     
@@ -58,9 +58,9 @@ namespace Candy {
         return result;
     }
     
-    void insertVariables(const std::vector<Glucose::Lit>& lits, std::unordered_set<Glucose::Var>& target) {
+    void insertVariables(const std::vector<Lit>& lits, std::unordered_set<Var>& target) {
         for (auto lit : lits) {
-            target.insert(Glucose::var(lit));
+            target.insert(var(lit));
         }
     }
 

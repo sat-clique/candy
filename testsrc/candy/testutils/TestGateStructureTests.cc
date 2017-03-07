@@ -39,40 +39,40 @@ namespace Candy {
         auto& formula = cnf->getProblem();
         
         EXPECT_EQ(formula.size(), 1ul);
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_andGate) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withAnd({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
+        gateBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto cnf = gateBuilder->build();
         auto& formula = cnf->getProblem();
         
         EXPECT_EQ(formula.size(), 4ul);
         
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 0), Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 1), Glucose::mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 0), mkLit(2, 0), mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 1), mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(2, 1), mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_orGate) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto cnf = gateBuilder->build();
         auto& formula = cnf->getProblem();
         
         EXPECT_EQ(formula.size(), 4ul);
         
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1), Glucose::mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(1, 0), Glucose::mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(2, 0), Glucose::mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Cl({Glucose::mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 1), mkLit(2, 1), mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 0), mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(2, 0), mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(formula, Cl({mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_simple) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto formula = gateBuilder->build();
         
         GateAnalyzer ga(*formula);
@@ -82,9 +82,9 @@ namespace Candy {
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_threeGates) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
-        gateBuilder->withAnd({Glucose::mkLit(3, 1), Glucose::mkLit(4, 1), Glucose::mkLit(5, 1)}, Glucose::mkLit(1,1));
-        gateBuilder->withAnd({Glucose::mkLit(6, 1), Glucose::mkLit(7, 1)}, Glucose::mkLit(2,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1), mkLit(5, 1)}, mkLit(1,1));
+        gateBuilder->withAnd({mkLit(6, 1), mkLit(7, 1)}, mkLit(2,1));
         auto formula = gateBuilder->build();
         
         GateAnalyzer ga(*formula);
