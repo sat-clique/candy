@@ -113,10 +113,6 @@ namespace Candy {
         //std::cout << "initnb:" << n << std::endl;
         m_minAssumptionVar = n;
     }
-        
-    void SolverMock::setCertifiedUNSAT(bool cu) {
-        m_isCertifiedUNSATSet = cu;
-    }
     
     void SolverMock::setParsing(bool parsing) {
         m_isParsingSet = parsing;
@@ -145,10 +141,6 @@ namespace Candy {
     
     bool SolverMock::mockctrl_isParsingSet() const noexcept {
         return m_isParsingSet;
-    }
-    
-    bool SolverMock::mockctrl_isCertifiedUNSATSet() const noexcept {
-        return m_isCertifiedUNSATSet;
     }
     
     bool SolverMock::mockctrl_isAssumptionVar(Var v) const noexcept {

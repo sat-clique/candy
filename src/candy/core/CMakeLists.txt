@@ -5,6 +5,8 @@ add_library(core
     Clause.h
     ClauseAllocator.cc
     ClauseAllocator.h
+    Certificate.cc
+    Certificate.h
     BoundedQueue.h
     CNFProblem.h
     Constants.h

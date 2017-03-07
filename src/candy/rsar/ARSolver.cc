@@ -360,7 +360,6 @@ namespace Candy {
     void ARSolverImpl::init() {
         // Set up the underlying SAT solver
         m_solver->setIncrementalMode();
-        m_solver->setCertifiedUNSAT(false);
         m_solver->initNbInitialVars(m_solver->getNVars());
         m_solver->setParsing(false);
         

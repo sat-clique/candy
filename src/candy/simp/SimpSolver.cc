@@ -76,7 +76,7 @@ static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
 // Constructor/Destructor:
 
 SimpSolver::SimpSolver() :
-                Solver(), certifiedAllClauses(0), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(
+                Solver(), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(
                                 opt_simp_garbage_frac), use_asymm(opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(
                                 0), elimorder(1), use_simplification(true), occurs(ClauseDeleted()), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0) {
     remove_satisfied = false;
@@ -150,11 +150,6 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
     if (!Solver::addClause_(ps))
         return false;
 
-    // TODO: bring back parsing flag
-    if (certifiedAllClauses && certifiedUNSAT) {
-        printCertificateLearnt(ps);
-    }
-
     if (use_simplification && clauses.size() == nclauses + 1) {
         Candy::Clause* cr = clauses.back();
         // NOTE: the clause is added to the queue immediately and then
@@ -196,9 +191,7 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
     // if (!find(subsumption_queue, &c))
     subsumption_queue.push_back(cr);
 
-    if (certifiedUNSAT) {
-        printCertificateLearntExcept(cr, l);
-    }
+    certificate.learntExcept(cr, l);
 
     if (cr->size() == 2) {
         removeClause(cr);
@@ -206,9 +199,7 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
         return enqueue((*cr)[0]) && propagate() == nullptr;
     }
     else {
-        if (certifiedUNSAT) {
-            printCertificateRemoved(cr);
-        }
+        certificate.removed(cr);
 
         detachClause(cr, true);
         cr->strengthen(l);

@@ -74,7 +74,6 @@ namespace Candy {
         void initNbInitialVars(int n) override;
         int getNVars() const override;
         
-        void setCertifiedUNSAT(bool cu) override;
         void setParsing(bool parsing) override;
         
         const std::vector<Lit>& getConflict() override;
@@ -88,9 +87,6 @@ namespace Candy {
         
         /** Returns true iff parsing has been set to true. */
         bool mockctrl_isParsingSet() const noexcept;
-        
-        /** Returns true iff certifiedUNSAT has been set to true. */
-        bool mockctrl_isCertifiedUNSATSet() const noexcept;
         
         /** Returns true iff v is an assumption variable. */
         bool mockctrl_isAssumptionVar(Var v) const noexcept;

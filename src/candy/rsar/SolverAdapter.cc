@@ -79,11 +79,7 @@ namespace Candy {
         void initNbInitialVars(int n) override {
             m_solver.initNbInitialVars(n);
         }
-        
-        void setCertifiedUNSAT(bool cu) override {
-            m_solver.certifiedUNSAT = cu;
-        }
-        
+
         void setParsing(bool parsing) override {
 	  // TODO: m_solver.parsing = parsing;
         }

@@ -53,6 +53,7 @@
 #include "candy/core/Solver.h"
 #include "candy/core/Constants.h"
 #include "candy/core/SolverTypes.h"
+#include "candy/core/Certificate.h"
 
 using namespace Glucose;
 using namespace Candy;
@@ -103,7 +104,7 @@ Solver::Solver() :
                                 opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(
                                 opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(
                                 opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(
-                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certifiedOutput(NULL), certifiedUNSAT(false),
+                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certificate(nullptr, false),
                 // Statistics: (formerly in 'SolverStats')
                 //
                 sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
@@ -113,7 +114,7 @@ Solver::Solver() :
 
                 ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), trail_size(0), qhead(
                                 0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
-                                12), nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), lastLearntClause(nullptr), MYFLAG(0),
+                                12), nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), MYFLAG(0),
                 // Resource constraints:
                 //
                 conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
@@ -198,7 +199,7 @@ bool Solver::addClause_(vector<Lit>& ps) {
     std::sort(ps.begin(), ps.end());
 
     vector<Lit> oc;
-    if (certifiedUNSAT) {
+    if (certificate.isActive()) {
         auto pos = find_if(ps.begin(), ps.end(), [this](Lit lit) { return value(lit) == l_True || value(lit) == l_False; });
         if (pos != ps.end()) oc.insert(oc.end(), ps.begin(), ps.end());
     }
@@ -215,10 +216,8 @@ bool Solver::addClause_(vector<Lit>& ps) {
     }
     ps.resize(j);
 
-    if (oc.size() > 0 && certifiedUNSAT) {
-        printCertificateLearnt(ps);
-        printCertificateRemoved(oc);
-    }
+    certificate.learnt(ps);
+    certificate.removed(oc);
 
     if (ps.size() == 0) {
         return ok = false;
@@ -290,9 +289,7 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
 
 void Solver::removeClause(Candy::Clause* cr) {
     Candy::Clause& c = *cr;
-    if (certifiedUNSAT) {
-        printCertificateRemoved(cr);
-    }
+    certificate.removed(cr);
     detachClause(cr);
     // Don't leave pointers to free'd memory!
     if (locked(cr))
@@ -984,9 +981,7 @@ lbool Solver::search(int nof_conflicts) {
 
             cancelUntil(backtrack_level);
 
-            if (certifiedUNSAT) {
-                printCertificateLearnt(learnt_clause);
-            }
+            certificate.learnt(learnt_clause);
 
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
@@ -1000,7 +995,6 @@ lbool Solver::search(int nof_conflicts) {
                     nbBin++; // stats
                 learnts.push_back(cr);
                 attachClause(cr);
-                lastLearntClause = cr;
                 claBumpActivity(*cr);
                 uncheckedEnqueue(learnt_clause[0], cr);
             }
@@ -1030,7 +1024,6 @@ lbool Solver::search(int nof_conflicts) {
                 }
             }
 
-            lastLearntClause = nullptr;
             Lit next = lit_Undef;
             while (decisionLevel() < assumptions.size()) {
                 // Perform user provided assumption:
@@ -1088,7 +1081,7 @@ void Solver::printIncrementalStats() {
 // NOTE: assumptions passed in member-variable 'assumptions'.
 // Parameters are useless in core but useful for SimpSolver....
 lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
-    if (incremental && certifiedUNSAT) {
+    if (incremental && certificate.isActive()) {
         printf("Can not use incremental and certified unsat in the same time\n");
         exit(-1);
     }
@@ -1139,10 +1132,8 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     if (!incremental && verbosity >= 1)
         printf("c =========================================================================================================\n");
 
-    if (certifiedUNSAT) { // Want certified output
-        if (status == l_False)
-            fprintf(certifiedOutput, "0\n");
-        fclose(certifiedOutput);
+    if (status == l_False) {
+        certificate.proof();
     }
 
     if (status == l_True) {
