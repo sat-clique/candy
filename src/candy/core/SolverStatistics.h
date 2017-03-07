@@ -8,6 +8,9 @@
 #ifndef SRC_CANDY_CORE_SOLVERSTATISTICS_H_
 #define SRC_CANDY_CORE_SOLVERSTATISTICS_H_
 
+#include <cstdint>
+#include <cstdio>
+
 namespace Candy {
 
 class SolverStatistics {

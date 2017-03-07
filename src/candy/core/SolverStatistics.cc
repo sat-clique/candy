@@ -7,9 +7,6 @@
 
 #include <core/SolverStatistics.h>
 #include "candy/utils/System.h"
-#include <stdint.h>
-#include <inttypes.h>
-#include <limits.h>
 
 namespace Candy {
 
@@ -70,6 +67,7 @@ void SolverStatistics::printFinalStats(double cpu_time, double mem_used) {
     if (mem_used != 0)
         printf("Memory used           : %.2f MB\n", mem_used);
     printf("c CPU time              : %g s\n", cpu_time);
+    printf("\n");
 }
 
 } /* namespace Candy */

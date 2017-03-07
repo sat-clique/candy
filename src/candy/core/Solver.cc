@@ -99,16 +99,38 @@ static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "m
 // Constructor/Destructor:
 
 Solver::Solver() :
-                verbosity(0), verbEveryConflicts(10000), showModel(0), K(opt_K), R(opt_R), sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(
-                                opt_size_trail_queue), incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db), lbLBDFrozenClause(
-                                opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(
-                                opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(
-                                opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(
-                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certificate(nullptr, false), statistics(), curRestart(1),
-
-                ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), trail_size(0), qhead(
-                                0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
-                                12), nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), MYFLAG(0),
+                verbosity(0),
+                verbEveryConflicts(10000),
+                showModel(0),
+                K(opt_K), R(opt_R),
+                sizeLBDQueue(opt_size_lbd_queue),
+                sizeTrailQueue(opt_size_trail_queue),
+                incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
+                lbLBDFrozenClause(opt_lb_lbd_frozen_clause),
+                lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
+                var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay),
+                random_var_freq(opt_random_var_freq), random_seed(opt_random_seed),
+                ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving),
+                rnd_pol(false), rnd_init_act(opt_rnd_init_act),
+                garbage_frac(opt_garbage_frac),
+                certificate(nullptr, false),
+                statistics(),
+                curRestart(1),
+                ok(true),
+                cla_inc(1), var_inc(1),
+                watches(WatcherDeleted()),
+                watchesBin(WatcherDeleted()),
+                trail_size(0),
+                qhead(0),
+                simpDB_assigns(-1),
+                simpDB_props(0),
+                order_heap(VarOrderLt(activity)),
+                remove_satisfied(true),
+                reduceOnSize(false),
+                reduceOnSizeSize(12),
+                nbclausesbeforereduce(opt_first_reduce_db),
+                sumLBD(0),
+                MYFLAG(0),
                 // Resource constraints:
                 //
                 conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX),
@@ -828,7 +850,6 @@ void Solver::reduceDB() {
     unsigned int limit = learnts.size() / 2;
     for (unsigned int i = 0; i < limit; i++) {
         Candy::Clause& c = *learnts[i];
-        //if (c.isFrozen()) break; // frozen clauses area reached early (see reduceDB_lt)
         if (!c.isFrozen() && c.getLBD() > 2 && c.size() > 2 && !locked(learnts[i])) {
             removeClause(learnts[i]);
         }
@@ -885,9 +906,9 @@ bool Solver::simplify() {
     }
 
     // Remove satisfied clauses:
-    std::for_each(learnts.begin(), learnts.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
+    std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     if (remove_satisfied) { // Can be turned off.
-        std::for_each(clauses.begin(), clauses.end(), [this] (Candy::Clause* c) { if (satisfied(*c)) removeClause(c); } );
+        std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     }
     watches.cleanAll();
     watchesBin.cleanAll();
