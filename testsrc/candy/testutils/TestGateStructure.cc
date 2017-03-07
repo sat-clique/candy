@@ -45,9 +45,9 @@ namespace Candy {
     
     class GateStructureBuilderImpl : public GateStructureBuilder {
     public:
-        GateStructureBuilderImpl& withAnd(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) override;
-        GateStructureBuilderImpl& withOr(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) override;
-        GateStructureBuilderImpl& withXor(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) override;
+        GateStructureBuilderImpl& withAnd(const std::vector<Lit>& inputs, Lit output) override;
+        GateStructureBuilderImpl& withOr(const std::vector<Lit>& inputs, Lit output) override;
+        GateStructureBuilderImpl& withXor(const std::vector<Lit>& inputs, Lit output) override;
         std::unique_ptr<CNFProblem, void(*)(CNFProblem*)> build() override;
         
         GateStructureBuilderImpl();
@@ -57,8 +57,8 @@ namespace Candy {
         
     private:
         std::unique_ptr<CNFProblem> m_builtClauses;
-        std::unordered_set<Glucose::Var> m_usedOutputs;
-        std::unordered_set<Glucose::Var> m_gateVars;
+        std::unordered_set<Var> m_usedOutputs;
+        std::unordered_set<Var> m_gateVars;
         
         void addClause(Cl it);
     };
@@ -69,7 +69,7 @@ namespace Candy {
     
     GateStructureBuilderImpl::GateStructureBuilderImpl() : GateStructureBuilder(), m_builtClauses(new CNFProblem()),
     m_usedOutputs({}), m_gateVars({}) {
-        addClause({Glucose::mkLit(0,1)});
+        addClause({mkLit(0,1)});
         m_gateVars.insert(0);
     }
     
@@ -77,9 +77,9 @@ namespace Candy {
         
     }
     
-    GateStructureBuilderImpl& GateStructureBuilderImpl::withAnd(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) {
-        assertContainsVariable(m_gateVars, Glucose::var(output));
-        assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
+    GateStructureBuilderImpl& GateStructureBuilderImpl::withAnd(const std::vector<Lit>& inputs, Lit output) {
+        assertContainsVariable(m_gateVars, var(output));
+        assertDoesNotContainVariable(m_usedOutputs, var(output));
         
         Cl fwd = negatedLits(inputs);
         fwd.push_back(output);
@@ -90,13 +90,13 @@ namespace Candy {
         }
         
         insertVariables(inputs, m_gateVars);
-        m_usedOutputs.insert(Glucose::var(output));
+        m_usedOutputs.insert(var(output));
         return *this;
     }
     
-    GateStructureBuilderImpl& GateStructureBuilderImpl::withOr(const std::vector<Glucose::Lit>& inputs, Glucose::Lit output) {
-        assertContainsVariable(m_gateVars, Glucose::var(output));
-        assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
+    GateStructureBuilderImpl& GateStructureBuilderImpl::withOr(const std::vector<Lit>& inputs, Lit output) {
+        assertContainsVariable(m_gateVars, var(output));
+        assertDoesNotContainVariable(m_usedOutputs, var(output));
         
         Cl bwd(inputs);
         bwd.push_back(~output);
@@ -107,14 +107,14 @@ namespace Candy {
         }
         
         insertVariables(inputs, m_gateVars);
-        m_usedOutputs.insert(Glucose::var(output));
+        m_usedOutputs.insert(var(output));
         return *this;
     }
     
-    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Glucose::Lit>& inputs,
-                                                                Glucose::Lit output) {
-        assertContainsVariable(m_gateVars, Glucose::var(output));
-        assertDoesNotContainVariable(m_usedOutputs, Glucose::var(output));
+    GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Lit>& inputs,
+                                                                Lit output) {
+        assertContainsVariable(m_gateVars, var(output));
+        assertDoesNotContainVariable(m_usedOutputs, var(output));
         
         assert(inputs.size() == 2ull);
         
@@ -124,7 +124,7 @@ namespace Candy {
         addClause(Cl{inputs[0], ~inputs[1], output});
         
         insertVariables(inputs, m_gateVars);
-        m_usedOutputs.insert(Glucose::var(output));
+        m_usedOutputs.insert(var(output));
         
         return *this;
     }

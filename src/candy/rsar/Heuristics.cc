@@ -78,7 +78,7 @@ namespace Candy {
             std::unordered_map<Gate*, std::vector<Gate*>> result;
             
             for (auto output : gateOutputs) {
-                auto& dependentGate = analyzer.getGate(Glucose::mkLit(output, 1));
+                auto& dependentGate = analyzer.getGate(mkLit(output, 1));
                 for (auto inputLit : dependentGate.getInputs()) {
                     auto &gate = analyzer.getGate(inputLit);
                     if (gate.isDefined()) {
@@ -110,16 +110,16 @@ namespace Candy {
             std::unordered_map<Var, size_t> inputDependencyCount;
             
             for (auto gateOutput : topo.getOutputsOrdered()) {
-                auto& gate = analyzer.getGate(Glucose::mkLit(gateOutput));
+                auto& gate = analyzer.getGate(mkLit(gateOutput));
                 auto& inputsViaDependencies = inputDependencies[&gate];
                 
                 for (auto inpLit : gate.getInputs()) {
                     if (!analyzer.getGate(inpLit).isDefined()) {
-                        auto inpVar = Glucose::var(inpLit);
+                        auto inpVar = var(inpLit);
                         inputsViaDependencies.insert(inpVar);
                     }
                 }
-                inputDependencyCount[Glucose::var(gate.getOutput())] = inputsViaDependencies.size();
+                inputDependencyCount[var(gate.getOutput())] = inputsViaDependencies.size();
                 
                 // move the information about input variables to the gates depending on this one
                 for (auto dependent : dependents[&gate]) {
@@ -201,7 +201,7 @@ namespace Candy {
             assert(m_step > 0);
             genericMarkRemovals<EquivalenceImplications, Implication>(equivalence,
                                                                       [](Implication litPair) {
-                                                                          return Glucose::var(litPair.first);
+                                                                          return var(litPair.first);
                                                                       },
                                                                       m_deactivationsByStep[m_step-1]);
         }
@@ -210,7 +210,7 @@ namespace Candy {
             assert(m_step > 0);
             genericMarkRemovals<Backbones, Lit> (backbones,
                                                  [](Lit lit) {
-                                                     return Glucose::var(lit);
+                                                     return var(lit);
                                                  },
                                                  m_deactivationsByStep[m_step-1]);
         }

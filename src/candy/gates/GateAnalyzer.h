@@ -44,12 +44,12 @@
 namespace Candy {
 
 typedef struct Gate {
-  Lit out = Glucose::lit_Undef;
+  Lit out = lit_Undef;
   For fwd, bwd;
   bool notMono = false;
   vector<Lit> inp;
 
-  inline bool isDefined() { return out != Glucose::lit_Undef; }
+  inline bool isDefined() { return out != lit_Undef; }
 
   // Compatibility functions
   inline Lit getOutput() { return out; }
@@ -103,7 +103,7 @@ public:
 private:
   // problem to analyze:
   CNFProblem problem;
-  Glucose::Solver solver;
+  Candy::Solver solver;
   vector<Lit> assumptions;
 
   // control structures:

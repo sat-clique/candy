@@ -75,7 +75,7 @@ namespace Candy {
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter();
-    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(Glucose::SimpSolver& solver);
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(SimpSolver& solver);
 }
 
 #endif

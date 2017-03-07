@@ -44,9 +44,9 @@ namespace Candy {
         Var var2 = underTest.newVar();
         
         underTest.insertClauses(problem);
-        underTest.addClause(Cl{Glucose::mkLit(var1,0)});
+        underTest.addClause(Cl{mkLit(var1,0)});
         underTest.simplify();
-        underTest.addClause(Cl{Glucose::mkLit(var2,0)});
+        underTest.addClause(Cl{mkLit(var2,0)});
         underTest.solve();
         
         auto expected2 = std::vector<SolverMockEvent>{

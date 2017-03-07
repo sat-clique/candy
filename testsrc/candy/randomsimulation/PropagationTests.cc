@@ -40,16 +40,16 @@ namespace Candy {
     class MockClauseOrder : public ClauseOrder {
     public:
         void readGates(GateAnalyzer& analyzer) override;
-        const std::vector<Glucose::Var> &getInputVariables() const override;
-        const std::vector<Glucose::Lit> &getGateOutputsOrdered() const override;
-        const std::vector<const Cl*> &getClauses(Glucose::Var variable) const override;
+        const std::vector<Var> &getInputVariables() const override;
+        const std::vector<Lit> &getGateOutputsOrdered() const override;
+        const std::vector<const Cl*> &getClauses(Var variable) const override;
         void setGateFilter(std::unique_ptr<GateFilter> gateFilter) override;
         unsigned int getAmountOfVars() const override;
         
-        void addAnd(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit o, bool pos = true);
-        void addAnd(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit i3, Glucose::Lit o, bool pos = true);
-        void addOr(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit o, bool pos = true);
-        void addOr(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit i3, Glucose::Lit o, bool pos = true);
+        void addAnd(Lit i1, Lit i2, Lit o, bool pos = true);
+        void addAnd(Lit i1, Lit i2, Lit i3, Lit o, bool pos = true);
+        void addOr(Lit i1, Lit i2, Lit o, bool pos = true);
+        void addOr(Lit i1, Lit i2, Lit i3, Lit o, bool pos = true);
         
         MockClauseOrder();
         virtual ~MockClauseOrder();
@@ -57,15 +57,15 @@ namespace Candy {
         MockClauseOrder& operator=(const MockClauseOrder& other) = delete;
         
     private:
-        void addGateWithInput(Glucose::Lit i);
-        void addGateWithOutput(Glucose::Lit o);
+        void addGateWithInput(Lit i);
+        void addGateWithOutput(Lit o);
         
-        Glucose::Var m_maxVar = -1;
-        std::vector<Glucose::Var> m_inputVariables_v {};
-        std::set<Glucose::Var> m_outputVariables {};
-        std::set<Glucose::Var> m_inputVariables {};
-        std::vector<Glucose::Lit> m_outputs {};
-        std::unordered_map<Glucose::Var, std::vector<const Cl*>> m_gateClauses {};
+        Var m_maxVar = -1;
+        std::vector<Var> m_inputVariables_v {};
+        std::set<Var> m_outputVariables {};
+        std::set<Var> m_inputVariables {};
+        std::vector<Lit> m_outputs {};
+        std::unordered_map<Var, std::vector<const Cl*>> m_gateClauses {};
     };
     
     MockClauseOrder::MockClauseOrder() {
@@ -86,15 +86,15 @@ namespace Candy {
         // no implementation
     }
     
-    const std::vector<Glucose::Var> &MockClauseOrder::getInputVariables() const {
+    const std::vector<Var> &MockClauseOrder::getInputVariables() const {
         return m_inputVariables_v;
     }
     
-    const std::vector<Glucose::Lit> &MockClauseOrder::getGateOutputsOrdered() const {
+    const std::vector<Lit> &MockClauseOrder::getGateOutputsOrdered() const {
         return m_outputs;
     }
     
-    const std::vector<const Cl*> &MockClauseOrder::getClauses(Glucose::Var variable) const {
+    const std::vector<const Cl*> &MockClauseOrder::getClauses(Var variable) const {
         auto resultIter = m_gateClauses.find(variable);
         assert (resultIter != m_gateClauses.end());
         return resultIter->second;
@@ -104,29 +104,29 @@ namespace Candy {
         return m_maxVar + 1;
     }
     
-    void MockClauseOrder::addGateWithInput(Glucose::Lit i) {
-        if (m_outputVariables.find(Glucose::var(i)) != m_outputVariables.end()) {
+    void MockClauseOrder::addGateWithInput(Lit i) {
+        if (m_outputVariables.find(var(i)) != m_outputVariables.end()) {
             return;
         }
-        if (m_inputVariables.find(Glucose::var(i)) == m_inputVariables.end()) {
-            m_inputVariables_v.push_back(Glucose::var(i));
-            m_inputVariables.insert(Glucose::var(i));
+        if (m_inputVariables.find(var(i)) == m_inputVariables.end()) {
+            m_inputVariables_v.push_back(var(i));
+            m_inputVariables.insert(var(i));
         }
         
-        m_maxVar = std::max(m_maxVar, Glucose::var(i));
+        m_maxVar = std::max(m_maxVar, var(i));
     }
     
-    void MockClauseOrder::addGateWithOutput(Glucose::Lit o) {
-        assert(m_inputVariables.find(Glucose::var(o)) == m_inputVariables.end());
-        assert(m_outputVariables.find(Glucose::var(o)) == m_outputVariables.end());
-        m_outputVariables.insert(Glucose::var(o));
+    void MockClauseOrder::addGateWithOutput(Lit o) {
+        assert(m_inputVariables.find(var(o)) == m_inputVariables.end());
+        assert(m_outputVariables.find(var(o)) == m_outputVariables.end());
+        m_outputVariables.insert(var(o));
         m_outputs.push_back(o);
         
-        m_maxVar = std::max(m_maxVar, Glucose::var(o));
+        m_maxVar = std::max(m_maxVar, var(o));
     }
     
     
-    void MockClauseOrder::addAnd(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit o, bool pos) {
+    void MockClauseOrder::addAnd(Lit i1, Lit i2, Lit o, bool pos) {
         addGateWithInput(i1);
         addGateWithInput(i2);
         
@@ -136,7 +136,7 @@ namespace Candy {
             cl1->push_back(~i1);
             cl1->push_back(~i2);
             cl1->push_back(o);
-            m_gateClauses[Glucose::var(o)].push_back(cl1);
+            m_gateClauses[var(o)].push_back(cl1);
         }
         else {
             addGateWithOutput(~o);
@@ -148,12 +148,12 @@ namespace Candy {
             cl3->push_back(i2);
             cl3->push_back(~o);
             
-            m_gateClauses[Glucose::var(o)].push_back(cl2);
-            m_gateClauses[Glucose::var(o)].push_back(cl3);
+            m_gateClauses[var(o)].push_back(cl2);
+            m_gateClauses[var(o)].push_back(cl3);
         }
     }
     
-    void MockClauseOrder::addAnd(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit i3, Glucose::Lit o, bool pos) {
+    void MockClauseOrder::addAnd(Lit i1, Lit i2, Lit i3, Lit o, bool pos) {
         addGateWithInput(i1);
         addGateWithInput(i2);
         addGateWithInput(i3);
@@ -165,7 +165,7 @@ namespace Candy {
             cl1->push_back(~i2);
             cl1->push_back(~i3);
             cl1->push_back(o);
-            m_gateClauses[Glucose::var(o)].push_back(cl1);
+            m_gateClauses[var(o)].push_back(cl1);
         }
         else {
             addGateWithOutput(~o);
@@ -180,13 +180,13 @@ namespace Candy {
             Cl* cl4 = new Cl();
             cl4->push_back(i3);
             cl4->push_back(~o);
-            m_gateClauses[Glucose::var(o)].push_back(cl2);
-            m_gateClauses[Glucose::var(o)].push_back(cl3);
-            m_gateClauses[Glucose::var(o)].push_back(cl4);
+            m_gateClauses[var(o)].push_back(cl2);
+            m_gateClauses[var(o)].push_back(cl3);
+            m_gateClauses[var(o)].push_back(cl4);
         }
     }
     
-    void MockClauseOrder::addOr(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit o, bool pos) {
+    void MockClauseOrder::addOr(Lit i1, Lit i2, Lit o, bool pos) {
         addGateWithInput(i1);
         addGateWithInput(i2);
         
@@ -196,7 +196,7 @@ namespace Candy {
             cl1->push_back(i1);
             cl1->push_back(i2);
             cl1->push_back(~o);
-            m_gateClauses[Glucose::var(o)].push_back(cl1);
+            m_gateClauses[var(o)].push_back(cl1);
         }
         else {
             addGateWithOutput(o);
@@ -209,12 +209,12 @@ namespace Candy {
             cl3->push_back(o);
             
             
-            m_gateClauses[Glucose::var(o)].push_back(cl2);
-            m_gateClauses[Glucose::var(o)].push_back(cl3);
+            m_gateClauses[var(o)].push_back(cl2);
+            m_gateClauses[var(o)].push_back(cl3);
         }
     }
     
-    void MockClauseOrder::addOr(Glucose::Lit i1, Glucose::Lit i2, Glucose::Lit i3, Glucose::Lit o, bool pos) {
+    void MockClauseOrder::addOr(Lit i1, Lit i2, Lit i3, Lit o, bool pos) {
         addGateWithInput(i1);
         addGateWithInput(i2);
         addGateWithInput(i3);
@@ -226,7 +226,7 @@ namespace Candy {
             cl1->push_back(i2);
             cl1->push_back(i3);
             cl1->push_back(~o);
-            m_gateClauses[Glucose::var(o)].push_back(cl1);
+            m_gateClauses[var(o)].push_back(cl1);
         }
         else {
             addGateWithOutput(o);
@@ -242,9 +242,9 @@ namespace Candy {
             cl4->push_back(~i3);
             cl4->push_back(o);
             
-            m_gateClauses[Glucose::var(o)].push_back(cl2);
-            m_gateClauses[Glucose::var(o)].push_back(cl3);
-            m_gateClauses[Glucose::var(o)].push_back(cl4);
+            m_gateClauses[var(o)].push_back(cl2);
+            m_gateClauses[var(o)].push_back(cl3);
+            m_gateClauses[var(o)].push_back(cl4);
         }
         
     }
@@ -271,7 +271,7 @@ namespace Candy {
         
         assignment.initialize(3);
         
-        mco.addAnd(Glucose::mkLit(2, 1), Glucose::mkLit(0, 1), Glucose::mkLit(1, 1), false);
+        mco.addAnd(mkLit(2, 1), mkLit(0, 1), mkLit(1, 1), false);
         
         assignment.get(0).vars[0] = 0x5F00ull;
         assignment.get(2).vars[0] = 0x9F00ull;
@@ -291,9 +291,9 @@ namespace Candy {
         
         assignment.initialize(7);
         
-        mco.addAnd(Glucose::mkLit(2, 1), Glucose::mkLit(0, 1), Glucose::mkLit(1, 1), false);
-        mco.addOr(Glucose::mkLit(1, 1), Glucose::mkLit(3, 0), Glucose::mkLit(4, 0), Glucose::mkLit(5, 1), true);
-        mco.addAnd(Glucose::mkLit(5, 1), Glucose::mkLit(1, 0), Glucose::mkLit(6, 0), true);
+        mco.addAnd(mkLit(2, 1), mkLit(0, 1), mkLit(1, 1), false);
+        mco.addOr(mkLit(1, 1), mkLit(3, 0), mkLit(4, 0), mkLit(5, 1), true);
+        mco.addAnd(mkLit(5, 1), mkLit(1, 0), mkLit(6, 0), true);
         
         assignment.get(0).vars[2] =  0x5F00ull;
         assignment.get(2).vars[2] =  0x9F00ull;

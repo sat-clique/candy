@@ -35,12 +35,12 @@ namespace Candy {
 
     bool SolverMock::solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) {
         /*for (auto lit : assumptions) {
-            std::cout << Glucose::var(lit) << std::endl;
+            std::cout << var(lit) << std::endl;
         }*/
         EXPECT_TRUE(std::all_of(assumptions.begin(), assumptions.end(),
-                                [this](Lit l) { return Glucose::var(l) >= m_minAssumptionVar; }));
+                                [this](Lit l) { return var(l) >= m_minAssumptionVar; }));
         EXPECT_TRUE(std::all_of(assumptions.begin(), assumptions.end(),
-                                [this](Lit l) { return !this->isEliminated(Glucose::var(l)); }));
+                                [this](Lit l) { return !this->isEliminated(var(l)); }));
         m_lastAssumptionLits = assumptions;
         return solve();
     }
@@ -66,9 +66,9 @@ namespace Candy {
     
     bool SolverMock::addClause(const Cl &clause) {
         EXPECT_TRUE(std::all_of(clause.begin(), clause.end(),
-                                [this](Lit l) { return Glucose::var(l) <= m_maxCreatedVar; }));
+                                [this](Lit l) { return var(l) <= m_maxCreatedVar; }));
         EXPECT_TRUE(std::all_of(clause.begin(), clause.end(),
-                                [this](Lit l) { return !this->isEliminated(Glucose::var(l)); }));
+                                [this](Lit l) { return !this->isEliminated(var(l)); }));
         m_addedClauses.push_back(clause);
         ++m_nClausesAddedSinceLastSolve;
         m_eventLog.push_back(SolverMockEvent::ADD_CLAUSE);

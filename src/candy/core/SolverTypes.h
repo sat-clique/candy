@@ -47,8 +47,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef Glucose_SolverTypes_h
-#define Glucose_SolverTypes_h
+#ifndef SolverTypes_h
+#define SolverTypes_h
 
 #include <assert.h>
 #include <stdint.h>
@@ -58,9 +58,10 @@
 #include <algorithm>
 #include <functional>
 
-namespace Glucose {
+namespace Candy {
+
 //=================================================================================================
-// Variables, literals, lifted booleans, clauses:
+// Variables, literals, lifted booleans:
 
 // NOTE! Variables are just integers. No abstraction here. They should be chosen from 0..N,
 // so that they can be used as array indices.
@@ -124,9 +125,6 @@ inline Lit toLit(int i) {
 	return p;
 }
 
-//const Lit lit_Undef = mkLit(var_Undef, false);  // }- Useful special constants.
-//const Lit lit_Error = mkLit(var_Undef, true );  // }
-
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
 
@@ -138,9 +136,9 @@ const Lit lit_Error = { -1 };  // }
 //       does enough constant propagation to produce sensible code, and this appears to be somewhat
 //       fragile unfortunately.
 
-#define l_True  (Glucose::lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
-#define l_False (Glucose::lbool((uint8_t)1))
-#define l_Undef (Glucose::lbool((uint8_t)2))
+#define l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+#define l_False (lbool((uint8_t)1))
+#define l_Undef (lbool((uint8_t)2))
 
 class lbool {
 	uint8_t value;
@@ -252,14 +250,15 @@ public:
 	}
 };
 
-//=================================================================================================
-}
-
-namespace Candy {
-using Var = Glucose::Var;
-using Lit = Glucose::Lit;
 typedef std::vector<Lit> Cl;
 typedef std::vector<Cl*> For;
+
+}
+
+// legacy
+namespace Glucose {
+using Var = Candy::Var;
+using Lit = Candy::Lit;
 }
 
 // add std::hash template specialization
@@ -268,8 +267,8 @@ namespace std {
 template<>
 struct hash<Candy::Lit> {
 	std::size_t operator()(const Candy::Lit& key) const {
-		Candy::Var hashedVar = Glucose::var(key);
-		if (Glucose::sign(key) == 0) {
+		Candy::Var hashedVar = Candy::var(key);
+		if (Candy::sign(key) == 0) {
 			hashedVar = ~hashedVar;
 		}
 		return std::hash<Candy::Var>()(hashedVar);

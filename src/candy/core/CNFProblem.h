@@ -124,7 +124,7 @@ private:
     for (int plit = parseInt(in); plit != 0; plit = parseInt(in)) {
       int var = abs(plit);
       if (var > maxVars) maxVars = var;
-      lits->push_back(Glucose::mkLit(var-1, plit < 0));
+      lits->push_back(mkLit(var-1, plit < 0));
     }
     problem.push_back(lits);
   }

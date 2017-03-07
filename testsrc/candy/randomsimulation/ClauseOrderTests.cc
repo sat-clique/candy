@@ -58,13 +58,13 @@ namespace Candy {
     
     /// Returns true iff the given gate analyzer contains exactly the given clauses containing the
     /// given output literal, for the rsp. gate with the given output literal.
-    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Cl*>& clauses);
+    static bool containsClauses(GateAnalyzer& analyzer, Lit outputLiteral, const std::vector<const Cl*>& clauses);
     
     /// Returns true iff all given clauses contain the given literal.
-    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Cl*>& clauses);
+    static bool allClausesContain(Lit literal, const std::vector<const Cl*>& clauses);
     
     /// Returns true iff literals contains firstVar and secondVar, and firstVar appears before secondVar in literals.
-    static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals);
+    static bool appearsOrdered(Var firstVar, Var secondVar, const std::vector<Lit> &literals);
     
     
     
@@ -96,7 +96,7 @@ namespace Candy {
     
     static void test_singleGate(ClauseOrder& underTest) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto formula = gateBuilder->build();
         
         GateAnalyzer ga(*formula);
@@ -110,7 +110,7 @@ namespace Candy {
         EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 1ul);
         EXPECT_EQ(underTest.getInputVariables().size(), 2ul);
         
-        EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Glucose::Var>({1,2})));
+        EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Var>({1,2})));
         
         for (auto lit : underTest.getGateOutputsOrdered()) {
             EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(0)));
@@ -132,9 +132,9 @@ namespace Candy {
     
     static void test_fewGates(ClauseOrder& underTest) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
-        gateBuilder->withAnd({Glucose::mkLit(3, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(1,1));
-        gateBuilder->withAnd({Glucose::mkLit(5, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(3,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
+        gateBuilder->withAnd({mkLit(5, 1), mkLit(4, 1)}, mkLit(3,1));
         
         auto formula = gateBuilder->build();
         
@@ -149,7 +149,7 @@ namespace Candy {
         EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 3ul);
         EXPECT_EQ(underTest.getInputVariables().size(), 3ul);
         
-        EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Glucose::Var>({2,5,4})));
+        EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Var>({2,5,4})));
 
         
         EXPECT_TRUE(appearsOrdered(1, 0, underTest.getGateOutputsOrdered()));
@@ -157,8 +157,8 @@ namespace Candy {
         EXPECT_TRUE(appearsOrdered(3, 1, underTest.getGateOutputsOrdered()));
         
         for (auto lit : underTest.getGateOutputsOrdered()) {
-            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(Glucose::var(lit))));
-            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(Glucose::var(lit))));
+            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(var(lit))));
+            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(var(lit))));
         }
     }
     
@@ -176,16 +176,16 @@ namespace Candy {
     
     static void test_manyGates(ClauseOrder& underTest) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
-        gateBuilder->withAnd({Glucose::mkLit(3, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(1,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
         
-        gateBuilder->withAnd({Glucose::mkLit(5, 1), Glucose::mkLit(4, 1), Glucose::mkLit(6, 1)}, Glucose::mkLit(3,0));
-        gateBuilder->withAnd({Glucose::mkLit(7, 0), Glucose::mkLit(6, 0)}, Glucose::mkLit(4,1));
+        gateBuilder->withAnd({mkLit(5, 1), mkLit(4, 1), mkLit(6, 1)}, mkLit(3,0));
+        gateBuilder->withAnd({mkLit(7, 0), mkLit(6, 0)}, mkLit(4,1));
         
         
-        gateBuilder->withOr({Glucose::mkLit(8, 1), Glucose::mkLit(9,0), Glucose::mkLit(5,0)}, Glucose::mkLit(7,0));
-        gateBuilder->withAnd({Glucose::mkLit(10, 1), Glucose::mkLit(9,0), Glucose::mkLit(6,0)}, Glucose::mkLit(8,0));
-        gateBuilder->withAnd({Glucose::mkLit(11, 1), Glucose::mkLit(12,0), Glucose::mkLit(13,0)}, Glucose::mkLit(5,0));
+        gateBuilder->withOr({mkLit(8, 1), mkLit(9,0), mkLit(5,0)}, mkLit(7,0));
+        gateBuilder->withAnd({mkLit(10, 1), mkLit(9,0), mkLit(6,0)}, mkLit(8,0));
+        gateBuilder->withAnd({mkLit(11, 1), mkLit(12,0), mkLit(13,0)}, mkLit(5,0));
         
 
         
@@ -204,7 +204,7 @@ namespace Candy {
         EXPECT_EQ(underTest.getGateOutputsOrdered().size(), 7ul);
         EXPECT_EQ(underTest.getInputVariables().size(), 7ul);
         
-        EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Glucose::Var>({2,6,9,10,11,12,13})));
+        EXPECT_TRUE(equals(underTest.getInputVariables(), std::vector<Var>({2,6,9,10,11,12,13})));
         
         
         EXPECT_TRUE(appearsOrdered(1, 0, underTest.getGateOutputsOrdered()));
@@ -217,8 +217,8 @@ namespace Candy {
         EXPECT_TRUE(appearsOrdered(5, 7, underTest.getGateOutputsOrdered()));
         
         for (auto lit : underTest.getGateOutputsOrdered()) {
-            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(Glucose::var(lit))));
-            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(Glucose::var(lit))));
+            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(var(lit))));
+            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(var(lit))));
         }
     }
     
@@ -271,12 +271,12 @@ namespace Candy {
         return std::find(iterable->begin(), iterable->end(), thing) != iterable->end();
     }
     
-    static bool containsClauses(GateAnalyzer& analyzer, Glucose::Lit outputLiteral, const std::vector<const Cl*>& clauses) {
+    static bool containsClauses(GateAnalyzer& analyzer, Lit outputLiteral, const std::vector<const Cl*>& clauses) {
         auto &gate = analyzer.getGate(outputLiteral);
         return gate.isDefined() && (equals(gate.getForwardClauses(), clauses) || equals(gate.getBackwardClauses(), clauses));
     }
     
-    static bool allClausesContain(Glucose::Lit literal, const std::vector<const Cl*>& clauses) {
+    static bool allClausesContain(Lit literal, const std::vector<const Cl*>& clauses) {
         for (auto clause : clauses) {
             if (!contains(clause, literal)) {
                 return false;
@@ -285,12 +285,12 @@ namespace Candy {
         return true;
     }
     
-    static bool appearsOrdered(Glucose::Var firstVar, Glucose::Var secondVar, const std::vector<Glucose::Lit> &literals) {
+    static bool appearsOrdered(Var firstVar, Var secondVar, const std::vector<Lit> &literals) {
         bool foundFirstLit = false;
         bool foundSecondLit = false;
         for (auto lit : literals) {
-            foundFirstLit |= Glucose::var(lit) == firstVar;
-            foundSecondLit |= Glucose::var(lit) == secondVar;
+            foundFirstLit |= var(lit) == firstVar;
+            foundSecondLit |= var(lit) == secondVar;
             if (foundSecondLit && !foundFirstLit) {
                 return false;
             }

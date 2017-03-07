@@ -76,22 +76,22 @@ namespace Candy {
         
         for (auto outputLit : clauseOrder.getGateOutputsOrdered()) {
             AlignedSimVector allSat = createVarSimVector(true);
-            auto outputVar = Glucose::var(outputLit);
+            auto outputVar = var(outputLit);
             auto& gateClauses = clauseOrder.getClauses(outputVar);
 
             for (auto clause : gateClauses) {
                 AlignedSimVector satAssgn = createVarSimVector(false);
                 for (auto literal : *clause) {
-                    if (Glucose::var(literal) == outputVar) {
+                    if (var(literal) == outputVar) {
                         continue;
                     }
                     
-                    AlignedSimVector* varAssgn = &(assignment.get(Glucose::var(literal)));
+                    AlignedSimVector* varAssgn = &(assignment.get(var(literal)));
                     
                     varAssgn = reinterpret_cast<AlignedSimVector*>(
                                 __builtin_assume_aligned(varAssgn, RANDSIM_ALIGNMENT));
                     
-                    if (Glucose::sign(literal) == true) {
+                    if (sign(literal) == true) {
                         satAssgn |= *varAssgn;
                     }
                     else {
@@ -105,7 +105,7 @@ namespace Candy {
             outputAssgn = reinterpret_cast<AlignedSimVector*>(
                             __builtin_assume_aligned(outputAssgn, RANDSIM_ALIGNMENT));
 
-            if (Glucose::sign(outputLit) == true) {
+            if (sign(outputLit) == true) {
                 *outputAssgn = ~allSat;
             }
             else {

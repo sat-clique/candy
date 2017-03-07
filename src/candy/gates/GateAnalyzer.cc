@@ -57,7 +57,7 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   CNFProblem constraint;
-  Lit alit = Glucose::mkLit(problem.nVars()+assumptions.size(), false);
+  Lit alit = mkLit(problem.nVars()+assumptions.size(), false);
   Cl clause;
   for (const For& f : { fwd, bwd })
   for (Cl* cl : f) {
@@ -290,7 +290,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
   for (Var cand : candidates) {
     // generate candidate definition for output
     For fwd, bwd;
-    Lit out = Glucose::mkLit(cand, false);
+    Lit out = mkLit(cand, false);
 
 #ifdef GADebug
     printf("candidate variable: %i\n", cand+1);

@@ -95,9 +95,9 @@ namespace Candy {
     
     TEST(RSARRefinementHeuristicsTests, InputDepCount_deactivatesThreeGatesSeq) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
-        gateBuilder->withAnd({Glucose::mkLit(3, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(1,1));
-        gateBuilder->withAnd({Glucose::mkLit(5, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(3,1));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
+        gateBuilder->withAnd({mkLit(5, 1), mkLit(4, 1)}, mkLit(3,1));
         auto problem = gateBuilder->build();
         GateAnalyzer analyzer{*problem};
         analyzer.analyze();
@@ -106,10 +106,10 @@ namespace Candy {
         underTest->beginRefinementStep();
         
         FakeEquivalenceImplications fakeEq;
-        fakeEq.setLiterals({Glucose::mkLit(0, 1),
-            Glucose::mkLit(0, 1),
-            Glucose::mkLit(1, 1),
-            Glucose::mkLit(3, 1)});
+        fakeEq.setLiterals({mkLit(0, 1),
+            mkLit(0, 1),
+            mkLit(1, 1),
+            mkLit(3, 1)});
         
         // initialization: no removals under this config
         underTest->markRemovals(fakeEq);
@@ -134,13 +134,13 @@ namespace Candy {
     
     TEST(RSARRefinementHeuristicsTests, InputDepCount_deactivatesManyGatesSeq) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0,1));
-        gateBuilder->withAnd({Glucose::mkLit(3, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(1,1));
-        gateBuilder->withAnd({Glucose::mkLit(5, 1), Glucose::mkLit(4, 1), Glucose::mkLit(6, 1)}, Glucose::mkLit(3,0));
-        gateBuilder->withAnd({Glucose::mkLit(7, 0), Glucose::mkLit(6, 0)}, Glucose::mkLit(4,1));
-        gateBuilder->withOr({Glucose::mkLit(8, 1), Glucose::mkLit(9,0), Glucose::mkLit(5,0)}, Glucose::mkLit(7,0));
-        gateBuilder->withAnd({Glucose::mkLit(10, 1), Glucose::mkLit(9,0), Glucose::mkLit(6,0)}, Glucose::mkLit(8,0));
-        gateBuilder->withAnd({Glucose::mkLit(11, 1), Glucose::mkLit(12,0), Glucose::mkLit(13,0)}, Glucose::mkLit(5,0));
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
+        gateBuilder->withAnd({mkLit(5, 1), mkLit(4, 1), mkLit(6, 1)}, mkLit(3,0));
+        gateBuilder->withAnd({mkLit(7, 0), mkLit(6, 0)}, mkLit(4,1));
+        gateBuilder->withOr({mkLit(8, 1), mkLit(9,0), mkLit(5,0)}, mkLit(7,0));
+        gateBuilder->withAnd({mkLit(10, 1), mkLit(9,0), mkLit(6,0)}, mkLit(8,0));
+        gateBuilder->withAnd({mkLit(11, 1), mkLit(12,0), mkLit(13,0)}, mkLit(5,0));
 
         // Input depenency counts by variable:
         // 0:7; 1:6; 3:6; 4:6; 5:3; 7:6; 8:3
@@ -153,15 +153,15 @@ namespace Candy {
         underTest->beginRefinementStep();
         
         FakeEquivalenceImplications fakeEq;
-        fakeEq.setLiterals({Glucose::mkLit(0, 1),
-            Glucose::mkLit(0, 1),
-            Glucose::mkLit(1, 1),
-            Glucose::mkLit(3, 1),
-            Glucose::mkLit(4, 1),
-            Glucose::mkLit(5, 1),
-            Glucose::mkLit(6, 1),
-            Glucose::mkLit(7, 1),
-            Glucose::mkLit(8, 1)});
+        fakeEq.setLiterals({mkLit(0, 1),
+            mkLit(0, 1),
+            mkLit(1, 1),
+            mkLit(3, 1),
+            mkLit(4, 1),
+            mkLit(5, 1),
+            mkLit(6, 1),
+            mkLit(7, 1),
+            mkLit(8, 1)});
         
         // initialization: no removals under this config
         underTest->markRemovals(fakeEq);

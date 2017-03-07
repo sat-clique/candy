@@ -36,7 +36,7 @@
 namespace Candy {
 
     EquivalencyChecker::EquivalencyChecker()
-    : m_solver(std::unique_ptr<Glucose::SimpSolver>(new Glucose::SimpSolver())), m_maxVar(0) {
+    : m_solver(std::unique_ptr<SimpSolver>(new SimpSolver())), m_maxVar(0) {
         m_solver->setIncrementalMode();
         m_solver->certifiedUNSAT = false;
     }
@@ -44,7 +44,7 @@ namespace Candy {
     void EquivalencyChecker::addClauses(const std::vector<Cl>& clauses) {
         for (auto& clause : clauses) {
             for (auto lit : clause) {
-                ASSERT_TRUE(Glucose::var(lit) <= m_maxVar);
+                ASSERT_TRUE(var(lit) <= m_maxVar);
             }
             m_solver->addClause(clause);
         }
@@ -68,8 +68,8 @@ namespace Candy {
     bool EquivalencyChecker::isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) {
         std::vector<Lit> extendedAssumptions {assumptions};
         
-        Lit assumption1 = Glucose::mkLit(createVariable(), 1);
-        Lit assumption2 = Glucose::mkLit(createVariable(), 1);
+        Lit assumption1 = mkLit(createVariable(), 1);
+        Lit assumption2 = mkLit(createVariable(), 1);
         
         addClauses({Cl{assumption1, a}, Cl{assumption1, ~b},
             Cl{assumption2, ~a}, Cl{assumption2, b}});
@@ -102,7 +102,7 @@ namespace Candy {
     bool EquivalencyChecker::isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) {
         bool allBackbone = true;
         for (auto lit : backboneLits) {
-            Lit assumption = Glucose::mkLit(createVariable(), 1);
+            Lit assumption = mkLit(createVariable(), 1);
             addClauses({Cl{~lit, assumption}});
             std::vector<Lit> extendedAssumptions {assumptions};
             extendedAssumptions.push_back(~assumption);
@@ -123,13 +123,13 @@ namespace Candy {
         
         checker.finishedAddingRegularVariables();
         
-        checker.addClauses({{Glucose::mkLit(0, 0), Glucose::mkLit(1, 1)},
-            {Glucose::mkLit(1, 0), Glucose::mkLit(0, 1)},
-            {Glucose::mkLit(2, 0), Glucose::mkLit(3, 1)}});
+        checker.addClauses({{mkLit(0, 0), mkLit(1, 1)},
+            {mkLit(1, 0), mkLit(0, 1)},
+            {mkLit(2, 0), mkLit(3, 1)}});
         
-        EXPECT_FALSE(checker.isEquivalent({}, Glucose::mkLit(2, 1), Glucose::mkLit(3,1)));
-        EXPECT_TRUE(checker.isEquivalent({}, Glucose::mkLit(0, 1), Glucose::mkLit(1,1)));
-        EXPECT_FALSE(checker.isEquivalent({}, Glucose::mkLit(0, 0), Glucose::mkLit(1,1)));
+        EXPECT_FALSE(checker.isEquivalent({}, mkLit(2, 1), mkLit(3,1)));
+        EXPECT_TRUE(checker.isEquivalent({}, mkLit(0, 1), mkLit(1,1)));
+        EXPECT_FALSE(checker.isEquivalent({}, mkLit(0, 0), mkLit(1,1)));
     }
     
     TEST(RSARTestUtils, EquivalencyChecker_checkBackbones) {
@@ -140,13 +140,13 @@ namespace Candy {
         checker.createVariables(3);
 
         checker.addClauses({
-            {Glucose::mkLit(0, 0), Glucose::mkLit(1, 1)},
-            {Glucose::mkLit(3, 0), Glucose::mkLit(0, 1)},
-            {Glucose::mkLit(2, 0), Glucose::mkLit(3, 1)}});
+            {mkLit(0, 0), mkLit(1, 1)},
+            {mkLit(3, 0), mkLit(0, 1)},
+            {mkLit(2, 0), mkLit(3, 1)}});
         
         
-        EXPECT_TRUE(checker.isBackbones({Glucose::mkLit(3, 1)}, {Glucose::mkLit(0, 1)}));
-        EXPECT_FALSE(checker.isBackbones({Glucose::mkLit(3, 1)}, {Glucose::mkLit(2, 0)}));
+        EXPECT_TRUE(checker.isBackbones({mkLit(3, 1)}, {mkLit(0, 1)}));
+        EXPECT_FALSE(checker.isBackbones({mkLit(3, 1)}, {mkLit(2, 0)}));
     }
     
     
@@ -231,11 +231,11 @@ namespace Candy {
         return result;
     }
     
-    bool varOccursIn(const std::vector<Cl> &clauses, Var var) {
+    bool varOccursIn(const std::vector<Cl> &clauses, Var v) {
         bool result = false;
         for (auto&& clause : clauses) {
-            result |= (std::find_if(clause.begin(), clause.end(), [var](Lit l) {
-                return Glucose::var(l) == var;
+            result |= (std::find_if(clause.begin(), clause.end(), [v](Lit l) {
+                return var(l) == v;
             }) != clause.end());
         }
         return result;
@@ -258,7 +258,7 @@ namespace Candy {
             auto sign = randState % 2;
             
             if (chosenVars.find(var) == chosenVars.end()) {
-                result.push_back(Glucose::mkLit(var, sign));
+                result.push_back(mkLit(var, sign));
                 chosenVars.insert(var);
             }
         }
@@ -345,7 +345,7 @@ namespace Candy {
             std::transform(partition[i].begin(),
                            partition[i].end(),
                            partitionVars.begin(),
-                           [](Lit lit) { return Glucose::var(lit); });
+                           [](Lit lit) { return var(lit); });
             
             fakeHeur->inStepNRemove(i, partitionVars);
         }

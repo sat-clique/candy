@@ -95,7 +95,7 @@ namespace Candy {
         }
         
         for (Implication impl : equivalence) {
-            Var first = Glucose::var(impl.first);
+            Var first = var(impl.first);
             if (m_currentConflictVars->find(first) != m_currentConflictVars->end()) {
                 equivalence.addVariableRemovalToWorkQueue(first);
                 m_currentConflictVars->erase(first);
@@ -111,7 +111,7 @@ namespace Candy {
         }
         
         for (Lit bbLit : backbones) {
-            Var first = Glucose::var(bbLit);
+            Var first = var(bbLit);
             if (m_currentConflictVars->find(first) != m_currentConflictVars->end()) {
                 backbones.addVariableRemovalToWorkQueue(first);
                 m_currentConflictVars->erase(first);
@@ -161,7 +161,7 @@ namespace Candy {
     void ARSolverGarbageCollectorHeuristic::markRemovals(EquivalenceImplications& equivalence) {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Implication impl : equivalence) {
-                Var first = Glucose::var(impl.first);
+                Var first = var(impl.first);
                 if (m_solver.isEliminated(first)) {
                     equivalence.addVariableRemovalToWorkQueue(first);
                 }
@@ -172,7 +172,7 @@ namespace Candy {
     void ARSolverGarbageCollectorHeuristic::markRemovals(Backbones& backbones) {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Lit bbLit : backbones) {
-                Var first = Glucose::var(bbLit);
+                Var first = var(bbLit);
                 if (m_solver.isEliminated(first)) {
                     backbones.addVariableRemovalToWorkQueue(first);
                 }
@@ -291,7 +291,7 @@ namespace Candy {
             // due to simplification.
             for (auto&& clause : delta.getNewClauses()) {
                 for (auto lit : clause) {
-                    m_solver->setFrozen(Glucose::var(lit), true);
+                    m_solver->setFrozen(var(lit), true);
                 }
             }
         }
@@ -310,7 +310,7 @@ namespace Candy {
     static const std::vector<Lit> deactivatedAssumptions(EncodedApproximationDelta& delta) {
         std::vector<Lit> result;
         for (auto lit : delta.getAssumptionLiterals()) {
-            result.push_back(deactivatedAssumptionLit(Glucose::var(lit)));
+            result.push_back(deactivatedAssumptionLit(var(lit)));
         }
         return result;
     }
@@ -324,7 +324,7 @@ namespace Candy {
         for (auto&& equivalenceConj : m_conjectures->getEquivalences()) {
             EquivalenceConjecture copy;
             for (auto lit : equivalenceConj) {
-                if (!m_solver->isEliminated(Glucose::var(lit))) {
+                if (!m_solver->isEliminated(var(lit))) {
                     copy.addLit(lit);
                 }
             }
@@ -334,7 +334,7 @@ namespace Candy {
         }
         
         for (auto backboneConj : m_conjectures->getBackbones()) {
-            if (!m_solver->isEliminated(Glucose::var(backboneConj.getLit()))) {
+            if (!m_solver->isEliminated(var(backboneConj.getLit()))) {
                 newConjectures->addBackbone(backboneConj);
             }
         }

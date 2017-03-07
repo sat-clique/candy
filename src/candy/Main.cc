@@ -74,12 +74,12 @@
 #include "randomsimulation/ClauseOrder.h"
 #include "randomsimulation/SimulationVector.h"
 
-using namespace Glucose;
+using namespace Candy;
 
 //=================================================================================================
 
 void printStats(Solver& solver) {
-  double cpu_time = cpuTime();
+  double cpu_time = Glucose::cpuTime();
   double mem_used = 0; //memUsedPeak();
   printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", solver.starts, (solver.starts > 0 ? solver.conflicts / solver.starts : 0));
   printf("c blocked restarts      : %" PRIu64" (multiple: %" PRIu64") \n", solver.nbstopsrestarts, solver.nbstopsrestartssame);
@@ -168,7 +168,7 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
     printf("c | Preprocesing is fully done\n");
     S.eliminate(true);
     if (!S.okay()) result = l_False;
-    double simplified_time = cpuTime();
+    double simplified_time = Glucose::cpuTime();
     if (S.verbosity > 0) {
       printf("c |  Simplification time:  %12.2f s                                                                 |\n", simplified_time - parsed_time);
       if (result == l_False) {
@@ -312,10 +312,10 @@ static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem
  */
 static void benchmarkGateRecognition(Candy::CNFProblem &dimacs,
                                      const GateRecognitionArguments& recognitionArgs) {
-  double recognition_time = cpuTime();
+  double recognition_time = Glucose::cpuTime();
   auto gates = createGateAnalyzer(dimacs, recognitionArgs);
   gates->analyze();
-  recognition_time = cpuTime() - recognition_time;
+  recognition_time = Glucose::cpuTime() - recognition_time;
   printf("c ========================================[ Problem Statistics ]===========================================\n");
   printf("c |                                                                                                       |\n");
   printf("c |  Number of gates:        %12d                                                                 |\n", gates->getGateCount());
@@ -463,6 +463,7 @@ struct GlucoseArguments {
 
 
 static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
+  using namespace Glucose;
   setUsageHelp("c USAGE: %s [options] <input-file> <result-output-file>\n\n  where input may be either in plain or gzipped DIMACS.\n");
 
   // Extra options:
@@ -547,7 +548,7 @@ int main(int argc, char** argv) {
 
     setLimits(args.cpu_lim, args.mem_lim);
 
-    double initial_time = cpuTime();
+    double initial_time = Glucose::cpuTime();
 
     SimpSolver S;
     solver = &S;
@@ -577,7 +578,7 @@ int main(int argc, char** argv) {
 
     S.addClauses(dimacs);
 
-    double parsed_time = cpuTime();
+    double parsed_time = Glucose::cpuTime();
 
     if (S.verbosity > 0) {
       printProblemStatistics(S, parsed_time - initial_time);

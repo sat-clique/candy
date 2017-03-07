@@ -51,6 +51,7 @@
 #include "candy/utils/System.h"
 #include "candy/core/Clause.h"
 
+using namespace Candy;
 using namespace Glucose;
 using namespace std;
 

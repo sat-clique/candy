@@ -227,7 +227,7 @@ namespace Candy {
         Backbones::CommitResult result;
         
         for (Var v : m_removalWorkQueue) {
-            Lit candidate = Glucose::mkLit(v, 0);
+            Lit candidate = mkLit(v, 0);
             
             if (m_backbones.find(candidate) == m_backbones.end()) {
                 candidate = ~candidate;
@@ -369,13 +369,13 @@ namespace Candy {
     }
     
     void EquivalenceImplicationsImpl::addImplication(Implication implication) {
-        m_implicationsByAnte[Glucose::var(implication.first)] = implication;
-        m_implicationsBySucc[Glucose::var(implication.second)] = implication;
+        m_implicationsByAnte[var(implication.first)] = implication;
+        m_implicationsBySucc[var(implication.second)] = implication;
     }
     
     void EquivalenceImplicationsImpl::removeImplication(Implication implication) {
-        m_implicationsByAnte.erase(Glucose::var(implication.first));
-        m_implicationsBySucc.erase(Glucose::var(implication.second));
+        m_implicationsByAnte.erase(var(implication.first));
+        m_implicationsBySucc.erase(var(implication.second));
     }
     
     void EquivalenceImplicationsImpl::updateCache() {
@@ -433,20 +433,20 @@ namespace Candy {
             
             
             // collect longest sequence of implications to be removed (forward part)
-            for (Var current = Glucose::var(m_implicationsByAnte[first].second);
+            for (Var current = var(m_implicationsByAnte[first].second);
                  current != first
                  && m_varRemovalWorkQueue.find(current) != m_varRemovalWorkQueue.end()
                  && removalQueue.front().first != removalQueue.back().second;
-                 current = Glucose::var(m_implicationsByAnte[current].second)) {
+                 current = var(m_implicationsByAnte[current].second)) {
                 
                 removalQueue.push_back(m_implicationsByAnte[current]);
             }
 
             // collect longest sequence of implications to be removed (backward part)
-            for (Var current = Glucose::var(m_implicationsBySucc[first].first);
+            for (Var current = var(m_implicationsBySucc[first].first);
                  current != first && m_varRemovalWorkQueue.find(current) != m_varRemovalWorkQueue.end()
                  && removalQueue.front().first != removalQueue.back().second;
-                 current = Glucose::var(m_implicationsBySucc[current].first)) {
+                 current = var(m_implicationsBySucc[current].first)) {
                 removalQueue.push_front(m_implicationsBySucc[current]);
             }
 
@@ -464,8 +464,8 @@ namespace Candy {
             //std::cout << "newAnte: " << newAnte << " newSucc: " << newSucc << std::endl;
             
             if (newAnte != newSucc
-                && m_varRemovalWorkQueue.find(Glucose::var(newAnte)) == m_varRemovalWorkQueue.end()
-                && m_varRemovalWorkQueue.find(Glucose::var(newSucc)) == m_varRemovalWorkQueue.end()) {
+                && m_varRemovalWorkQueue.find(var(newAnte)) == m_varRemovalWorkQueue.end()
+                && m_varRemovalWorkQueue.find(var(newSucc)) == m_varRemovalWorkQueue.end()) {
                 // create patch X->Y
                 //std::cout << "Adding a patch" << std::endl;
                 addImplication(Implication{newAnte, newSucc});
@@ -474,8 +474,8 @@ namespace Candy {
             
             // update removal queue
             for (auto impl : removalQueue) {
-                m_varRemovalWorkQueue.erase(Glucose::var(impl.first));
-                m_varRemovalWorkQueue.erase(Glucose::var(impl.second));
+                m_varRemovalWorkQueue.erase(var(impl.first));
+                m_varRemovalWorkQueue.erase(var(impl.second));
             }
             
             result.removedImplications.insert(result.removedImplications.end(),

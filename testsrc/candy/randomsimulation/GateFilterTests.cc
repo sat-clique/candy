@@ -45,9 +45,9 @@ namespace Candy {
     
     TEST(RSGateFiltersTest, nonMonoFilterOnlyMonoNestedGatesProducesEmptyResult) {
         auto testDataBuilder = createGateStructureBuilder();
-        testDataBuilder->withAnd({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0, 1));
-        testDataBuilder->withAnd({Glucose::mkLit(3, 1), Glucose::mkLit(4, 1)}, Glucose::mkLit(1, 1));
-        testDataBuilder->withAnd({Glucose::mkLit(5, 1), Glucose::mkLit(6, 1)}, Glucose::mkLit(2, 1));
+        testDataBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
+        testDataBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
+        testDataBuilder->withAnd({mkLit(5, 1), mkLit(6, 1)}, mkLit(2, 1));
         
         auto testData = testDataBuilder->build();
         GateAnalyzer ga{*testData};
@@ -64,16 +64,16 @@ namespace Candy {
         auto testDataBuilder = createGateStructureBuilder();
         
         // this gate is expected to be removed
-        testDataBuilder->withAnd({Glucose::mkLit(1, 1), Glucose::mkLit(2, 1)}, Glucose::mkLit(0, 1));
+        testDataBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
         
         // this gate is expected to be removed
-        testDataBuilder->withXor({Glucose::mkLit(3, 0), Glucose::mkLit(4, 1)}, Glucose::mkLit(1, 1));
+        testDataBuilder->withXor({mkLit(3, 0), mkLit(4, 1)}, mkLit(1, 1));
 
         // this gate is expected to remain
-        testDataBuilder->withAnd({Glucose::mkLit(5, 1), Glucose::mkLit(6, 1)}, Glucose::mkLit(3, 1));
+        testDataBuilder->withAnd({mkLit(5, 1), mkLit(6, 1)}, mkLit(3, 1));
         
         // this gate is expected to remain
-        testDataBuilder->withAnd({Glucose::mkLit(7, 1), Glucose::mkLit(8, 1)}, Glucose::mkLit(4, 1));
+        testDataBuilder->withAnd({mkLit(7, 1), mkLit(8, 1)}, mkLit(4, 1));
         
         auto testData = testDataBuilder->build();
         GateAnalyzer ga{*testData};
