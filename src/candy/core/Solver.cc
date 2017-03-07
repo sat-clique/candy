@@ -318,13 +318,12 @@ void Solver::detachClause(Clause* cr, bool strict) {
 }
 
 void Solver::removeClause(Clause* cr) {
-    Clause& c = *cr;
     certificate.removed(cr);
     detachClause(cr);
     // Don't leave pointers to free'd memory!
     if (locked(cr))
-        vardata[var(c[0])].reason = nullptr;
-    c.setDeleted();
+        vardata[var(cr->first())].reason = nullptr;
+    cr->setDeleted();
 }
 
 bool Solver::satisfied(const Clause& c) const {
@@ -1081,10 +1080,6 @@ lbool Solver::search(int nof_conflicts) {
         }
     }
     return l_Undef; // not reached
-}
-
-void Solver::printIncrementalStats() {
-    statistics.printIncrementalStats();
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
