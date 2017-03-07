@@ -102,22 +102,30 @@ Solver::Solver() :
                 verbosity(0),
                 verbEveryConflicts(10000),
                 showModel(0),
-                K(opt_K), R(opt_R),
+                K(opt_K),
+                R(opt_R),
                 sizeLBDQueue(opt_size_lbd_queue),
                 sizeTrailQueue(opt_size_trail_queue),
-                incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
+                incReduceDB(opt_inc_reduce_db),
+                specialIncReduceDB(opt_spec_inc_reduce_db),
                 lbLBDFrozenClause(opt_lb_lbd_frozen_clause),
-                lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
-                var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay),
-                random_var_freq(opt_random_var_freq), random_seed(opt_random_seed),
-                ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving),
-                rnd_pol(false), rnd_init_act(opt_rnd_init_act),
-                garbage_frac(opt_garbage_frac),
+                lbSizeMinimizingClause(opt_lb_size_minimzing_clause),
+                lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
+                var_decay(opt_var_decay),
+                max_var_decay(opt_max_var_decay),
+                clause_decay(opt_clause_decay),
+                random_var_freq(opt_random_var_freq),
+                random_seed(opt_random_seed),
+                ccmin_mode(opt_ccmin_mode),
+                phase_saving(opt_phase_saving),
+                rnd_pol(false),
+                rnd_init_act(opt_rnd_init_act),
                 certificate(nullptr, false),
                 statistics(),
                 curRestart(1),
                 ok(true),
-                cla_inc(1), var_inc(1),
+                cla_inc(1),
+                var_inc(1),
                 watches(WatcherDeleted()),
                 watchesBin(WatcherDeleted()),
                 trail_size(0),
@@ -133,9 +141,16 @@ Solver::Solver() :
                 MYFLAG(0),
                 // Resource constraints:
                 //
-                conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX),
+                conflict_budget(-1),
+                propagation_budget(-1),
+                asynch_interrupt(false),
+                incremental(false),
+                nbVarsInitialFormula(INT32_MAX),
                 // Added since Candy
-                sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
+                sonification(),
+                termCallbackState(nullptr),
+                termCallback(nullptr),
+                status(l_Undef) {
     lbdQueue.initSize(sizeLBDQueue);
     trailQueue.initSize(sizeTrailQueue);
 }
@@ -946,7 +961,7 @@ lbool Solver::search(int nof_conflicts) {
     for (;;) {
         sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
-        Candy::Clause* confl = propagate();
+        Clause* confl = propagate();
 
         sonification.assignmentLevel(nAssigns());
 

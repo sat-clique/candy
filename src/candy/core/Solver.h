@@ -84,12 +84,9 @@ public:
     // Problem specification:
     //
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    bool addClause(const vector<Lit>& ps); // Add a clause to the solver.
-    bool addEmptyClause(); // Add the empty clause, making the solver contradictory.
-    bool addClause(Lit p); // Add a unit clause to the solver.
-    bool addClause(Lit p, Lit q); // Add a binary clause to the solver.
-    bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
     virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will change ps
+    bool addClause(const vector<Lit>& ps); // Add a clause to the solver.
+    bool addClause(std::initializer_list<Lit> lits);
     void addClauses(Candy::CNFProblem dimacs);
 
     // use with care (written for solver tests only)
@@ -103,10 +100,7 @@ public:
     bool simplify();                       // Removes already satisfied clauses.
     bool solve(const vector<Lit>& assumps); // Search for a model that respects a given set of assumptions.
     lbool solveLimited(const vector<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
-    bool solve();                        // Search without assumptions.
-    bool solve(Lit p);  // Search for a model that respects a single assumption.
-    bool solve(Lit p, Lit q); // Search for a model that respects two assumptions.
-    bool solve(Lit p, Lit q, Lit r); // Search for a model that respects three assumptions.
+    bool solve(std::initializer_list<Lit> assumps);
     bool okay() const;           // FALSE means solver is in a conflicting state
 
     // Variable mode:
@@ -180,9 +174,6 @@ public:
     int phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
     bool rnd_pol;            // Use random polarities for branching heuristics.
     bool rnd_init_act; // Initialize variable activities with a small random value.
-
-    // Constant for Memory managment
-    double garbage_frac; // The fraction of wasted memory allowed before a garbage collection is triggered.
 
     // Certified UNSAT ( Thanks to Marijn Heule)
     Certificate certificate;
@@ -428,26 +419,9 @@ inline bool Solver::addClause(const vector<Lit>& ps) {
     add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
     return addClause_(add_tmp);
 }
-inline bool Solver::addEmptyClause() {
+inline bool Solver::addClause(std::initializer_list<Lit> lits) {
     add_tmp.clear();
-    return addClause_(add_tmp);
-}
-inline bool Solver::addClause(Lit p) {
-    add_tmp.clear();
-    add_tmp.push_back(p);
-    return addClause_(add_tmp);
-}
-inline bool Solver::addClause(Lit p, Lit q) {
-    add_tmp.clear();
-    add_tmp.push_back(p);
-    add_tmp.push_back(q);
-    return addClause_(add_tmp);
-}
-inline bool Solver::addClause(Lit p, Lit q, Lit r) {
-    add_tmp.clear();
-    add_tmp.push_back(p);
-    add_tmp.push_back(q);
-    add_tmp.push_back(r);
+    add_tmp.insert(add_tmp.end(), lits.begin(), lits.end());
     return addClause_(add_tmp);
 }
 
@@ -530,30 +504,10 @@ inline bool Solver::withinBudget() {
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
 // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
 // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
-inline bool Solver::solve() {
+inline bool Solver::solve(std::initializer_list<Lit> assumps) {
     budgetOff();
     assumptions.clear();
-    return solve_() == l_True;
-}
-inline bool Solver::solve(Lit p) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.push_back(p);
-    return solve_() == l_True;
-}
-inline bool Solver::solve(Lit p, Lit q) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.push_back(p);
-    assumptions.push_back(q);
-    return solve_() == l_True;
-}
-inline bool Solver::solve(Lit p, Lit q, Lit r) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.push_back(p);
-    assumptions.push_back(q);
-    assumptions.push_back(r);
+    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
     return solve_() == l_True;
 }
 inline bool Solver::solve(const vector<Lit>& assumps) {
