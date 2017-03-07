@@ -70,12 +70,9 @@ public:
     // Problem specification:
     //
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    bool addClause(const vector<Lit>& ps);
-    bool addEmptyClause();                // Add the empty clause to the solver.
-    bool addClause(Lit p);               // Add a unit clause to the solver.
-    bool addClause(Lit p, Lit q);        // Add a binary clause to the solver.
-    bool addClause(Lit p, Lit q, Lit r); // Add a ternary clause to the solver.
     virtual bool addClause_(vector<Lit>& ps);
+    bool addClause(const vector<Lit>& ps);
+    bool addClause(std::initializer_list<Lit> lits);
     bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
     // Variable mode:
@@ -87,10 +84,7 @@ public:
     //
     bool solve(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
     lbool solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    bool solve(bool do_simp = true, bool turn_off_simp = false);
-    bool solve(Lit p, bool do_simp = true, bool turn_off_simp = false);
-    bool solve(Lit p, Lit q, bool do_simp = true, bool turn_off_simp = false);
-    bool solve(Lit p, Lit q, Lit r, bool do_simp = true, bool turn_off_simp = false);
+    bool solve(std::initializer_list<Lit> assumps, bool do_simp = true, bool turn_off_simp = false);
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
 
     // Mode of operation:
@@ -196,26 +190,9 @@ inline bool SimpSolver::addClause(const vector<Lit>& ps) {
     add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
     return addClause_(add_tmp);
 }
-inline bool SimpSolver::addEmptyClause() {
+inline bool SimpSolver::addClause(std::initializer_list<Lit> lits) {
     add_tmp.clear();
-    return addClause_(add_tmp);
-}
-inline bool SimpSolver::addClause(Lit p) {
-    add_tmp.clear();
-    add_tmp.push_back(p);
-    return addClause_(add_tmp);
-}
-inline bool SimpSolver::addClause(Lit p, Lit q) {
-    add_tmp.clear();
-    add_tmp.push_back(p);
-    add_tmp.push_back(q);
-    return addClause_(add_tmp);
-}
-inline bool SimpSolver::addClause(Lit p, Lit q, Lit r) {
-    add_tmp.clear();
-    add_tmp.push_back(p);
-    add_tmp.push_back(q);
-    add_tmp.push_back(r);
+    add_tmp.insert(add_tmp.end(), lits.begin(), lits.end());
     return addClause_(add_tmp);
 }
 inline void SimpSolver::setFrozen(Var v, bool b) {
@@ -225,30 +202,10 @@ inline void SimpSolver::setFrozen(Var v, bool b) {
     }
 }
 
-inline bool SimpSolver::solve(bool do_simp, bool turn_off_simp) {
+inline bool SimpSolver::solve(std::initializer_list<Lit> assumps, bool do_simp, bool turn_off_simp) {
     budgetOff();
     assumptions.clear();
-    return solve_(do_simp, turn_off_simp) == l_True;
-}
-inline bool SimpSolver::solve(Lit p, bool do_simp, bool turn_off_simp) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.push_back(p);
-    return solve_(do_simp, turn_off_simp) == l_True;
-}
-inline bool SimpSolver::solve(Lit p, Lit q, bool do_simp, bool turn_off_simp) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.push_back(p);
-    assumptions.push_back(q);
-    return solve_(do_simp, turn_off_simp) == l_True;
-}
-inline bool SimpSolver::solve(Lit p, Lit q, Lit r, bool do_simp, bool turn_off_simp) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.push_back(p);
-    assumptions.push_back(q);
-    assumptions.push_back(r);
+    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
     return solve_(do_simp, turn_off_simp) == l_True;
 }
 inline bool SimpSolver::solve(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {

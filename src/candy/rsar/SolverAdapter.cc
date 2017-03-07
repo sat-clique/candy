@@ -46,7 +46,7 @@ namespace Candy {
         }
         
         bool solve() override {
-            return m_solver.solve();
+            return m_solver.solve({});
         }
         
         bool addClause(const Cl &clause) override {
