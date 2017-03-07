@@ -104,21 +104,14 @@ Solver::Solver() :
                                 opt_lb_lbd_frozen_clause), lbSizeMinimizingClause(opt_lb_size_minimzing_clause), lbLBDMinimizingClause(
                                 opt_lb_lbd_minimzing_clause), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay), clause_decay(opt_clause_decay), random_var_freq(
                                 opt_random_var_freq), random_seed(opt_random_seed), ccmin_mode(opt_ccmin_mode), phase_saving(opt_phase_saving), rnd_pol(false), rnd_init_act(
-                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certificate(nullptr, false),
-                // Statistics: (formerly in 'SolverStats')
-                //
-                sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0), solves(0), starts(
-                                0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0), nbstopsrestarts(0), nbstopsrestartssame(
-                                0), lastblockatrestart(0), dec_vars(0), clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0), curRestart(
-                                1),
+                                opt_rnd_init_act), garbage_frac(opt_garbage_frac), certificate(nullptr, false), statistics(), curRestart(1),
 
                 ok(true), cla_inc(1), var_inc(1), watches(WatcherDeleted()), watchesBin(WatcherDeleted()), trail_size(0), qhead(
                                 0), simpDB_assigns(-1), simpDB_props(0), order_heap(VarOrderLt(activity)), remove_satisfied(true), reduceOnSize(false), reduceOnSizeSize(
                                 12), nbclausesbeforereduce(opt_first_reduce_db), sumLBD(0), MYFLAG(0),
                 // Resource constraints:
                 //
-                conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX), totalTime4Sat(0.), totalTime4Unsat(
-                                0.), nbSatCalls(0), nbUnsatCalls(0),
+                conflict_budget(-1), propagation_budget(-1), asynch_interrupt(false), incremental(false), nbVarsInitialFormula(INT32_MAX),
                 // Added since Candy
                 sonification(), termCallbackState(nullptr), termCallback(nullptr), status(l_Undef) {
     lbdQueue.initSize(sizeLBDQueue);
@@ -246,9 +239,9 @@ void Solver::attachClause(Candy::Clause* cr) {
     }
 
     if (c.isLearnt()) {
-        learnts_literals += c.size();
+        statistics.incLearntsLiterals(c.size());
     } else {
-        clauses_literals += c.size();
+        statistics.incClausesLiterals(c.size());
     }
 }
 
@@ -257,9 +250,9 @@ void Solver::detachClause(Candy::Clause* cr, bool strict) {
     Candy::Clause& c = *cr;
 
     if (c.isLearnt()) {
-        learnts_literals -= c.size();
+        statistics.incLearntsLiterals(-1 * c.size());
     } else {
-        clauses_literals -= c.size();
+        statistics.incClausesLiterals(-1 * c.size());
     }
 
     if (c.size() == 2) {
@@ -398,7 +391,7 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
             }
         }
         if (nb > 0) {
-            nbReducedClauses++;
+            statistics.incReducedClauses();
             for (unsigned int i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
                 if (permDiff[var(out_learnt[i])] != MYFLAG) {
                     std::swap(out_learnt[i], out_learnt[l]);
@@ -439,7 +432,7 @@ Lit Solver::pickBranchLit() {
     if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
         next = order_heap[irand(random_seed, order_heap.size())];
         if (value(next) == l_Undef && decision[next])
-            rnd_decisions++;
+            statistics.incRndDecisions();
     }
 
     // Activity based decision:
@@ -543,7 +536,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
 
     // Simplify conflict clause:
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
-    max_literals += out_learnt.size();
+    statistics.incMaxLiterals();
 
     analyze_toclear.clear();
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
@@ -569,7 +562,7 @@ void Solver::analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btl
 
     assert(out_learnt[0] == ~asslit);
 
-    tot_literals += out_learnt.size();
+    statistics.incTotLiterals();
 
     /* ***************************************
      Minimisation with binary clauses of the asserting clause
@@ -716,7 +709,7 @@ Candy::Clause* Solver::propagate() {
 
     int num_props = trail_size - qhead;
     if (num_props > 0) {
-        propagations += num_props;
+        statistics.incPropagations(num_props);
         simpDB_props -= num_props;
     } else {
         return nullptr;
@@ -820,7 +813,7 @@ Candy::Clause* Solver::propagate() {
  |________________________________________________________________________________________________@*/
 
 void Solver::reduceDB() {
-    nbReduceDB++;
+    statistics.incNBReduceDB();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
     // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
@@ -842,7 +835,6 @@ void Solver::reduceDB() {
     }
     watches.cleanAll();
     watchesBin.cleanAll();
-    nbRemovedClauses += freeMarkedClauses(learnts);
     for (Candy::Clause* c : learnts) { // "unfreeze" remaining clauses
         c->setFrozen(false);
     }
@@ -851,7 +843,7 @@ void Solver::reduceDB() {
 /**
  * Make sure all references are cleared before space is handed back to ClauseAllocator
  */
-unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
+void Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
     auto new_end = std::remove_if(list.begin(), list.end(),
             [this](Candy::Clause* c) {
                 if (c->isDeleted()) {
@@ -861,9 +853,8 @@ unsigned int Solver::freeMarkedClauses(vector<Candy::Clause*>& list) {
                     return false;
                 }
             });
-    int nRemoved = std::distance(new_end, list.end());
+    statistics.incRemovedClauses(std::distance(new_end, list.end()));
     list.erase(new_end, list.end());
-    return nRemoved;
 }
 
 void Solver::rebuildOrderHeap() {
@@ -906,7 +897,7 @@ bool Solver::simplify() {
     rebuildOrderHeap();
 
     simpDB_assigns = nAssigns();
-    simpDB_props = clauses_literals + learnts_literals; // (shouldn't depend on stats really, but it will do for now)
+    simpDB_props = statistics.getTotalLiterals(); // (shouldn't depend on stats really, but it will do for now)
 
     return true;
 }
@@ -930,7 +921,7 @@ lbool Solver::search(int nof_conflicts) {
     vector<Lit> learnt_clause;
     unsigned int nblevels;
     bool blocked = false;
-    starts++;
+    statistics.incStarts();
     for (;;) {
         sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
@@ -941,17 +932,15 @@ lbool Solver::search(int nof_conflicts) {
         if (confl != nullptr) {
             sonification.conflictLevel(decisionLevel());
 
-            sumDecisionLevels += decisionLevel();
+            statistics.incSumDecisionLevels(decisionLevel());
             // CONFLICT
-            conflicts++;
-            conflictsRestarts++;
-            if (conflicts % 5000 == 0 && var_decay < max_var_decay)
+            statistics.incConflicts();
+            statistics.incConflictsRestarts();
+            if (statistics.getConflicts() % 5000 == 0 && var_decay < max_var_decay)
                 var_decay += 0.01;
 
-            if (verbosity >= 1 && conflicts % verbEveryConflicts == 0) {
-                printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n", (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
-                        (int) dec_vars - (int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), (int) clauses_literals, (int) nbReduceDB,
-                        nLearnts(), (int) nbDL2, (int) nbRemovedClauses, -1.0);
+            if (verbosity >= 1 && statistics.getConflicts() % verbEveryConflicts == 0) {
+                statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts());
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -960,12 +949,12 @@ lbool Solver::search(int nof_conflicts) {
             trailQueue.push(trail_size);
 
             // BLOCK RESTART (CP 2012 paper)
-            if (conflictsRestarts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
+            if (statistics.getConflictsRestarts() > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
-                nbstopsrestarts++;
+                statistics.incNBStopsRestarts();
                 if (!blocked) {
-                    lastblockatrestart = starts;
-                    nbstopsrestartssame++;
+                    statistics.saveLastBlockAtRestart();
+                    statistics.incNBStopsRestartsSame();
                     blocked = true;
                 }
             }
@@ -985,14 +974,14 @@ lbool Solver::search(int nof_conflicts) {
 
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
-                nbUn++;
+                statistics.incNBUn();
             } else {
                 Candy::Clause* cr = new (learnt_clause.size()) Candy::Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
                 if (nblevels <= 2)
-                    nbDL2++; // stats
+                    statistics.incNBDL2();
                 if (cr->size() == 2)
-                    nbBin++; // stats
+                    statistics.incNBBin();
                 learnts.push_back(cr);
                 attachClause(cr);
                 claBumpActivity(*cr);
@@ -1002,7 +991,7 @@ lbool Solver::search(int nof_conflicts) {
             claDecayActivity();
         } else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
-            if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / conflictsRestarts)))) {
+            if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / statistics.getConflictsRestarts())))) {
                 lbdQueue.fastclear();
                 int bt = 0;
                 if (incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
@@ -1016,9 +1005,9 @@ lbool Solver::search(int nof_conflicts) {
                 return l_False;
             }
             // Perform clause database reduction !
-            if (conflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
+            if (statistics.getConflicts() >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {
-                    curRestart = (conflicts / nbclausesbeforereduce) + 1;
+                    curRestart = (statistics.getConflicts() / nbclausesbeforereduce) + 1;
                     reduceDB();
                     nbclausesbeforereduce += incReduceDB;
                 }
@@ -1042,7 +1031,7 @@ lbool Solver::search(int nof_conflicts) {
 
             if (next == lit_Undef) {
                 // New variable decision:
-                decisions++;
+                statistics.incDecisions();
                 next = pickBranchLit();
                 if (next == lit_Undef) {
                     // Model found:
@@ -1059,23 +1048,7 @@ lbool Solver::search(int nof_conflicts) {
 }
 
 void Solver::printIncrementalStats() {
-
-    printf("c---------- Glucose Stats -------------------------\n");
-    printf("c restarts              : %" PRIu64"\n", starts);
-    printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
-    printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
-    printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
-    printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
-    printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
-
-    printf("c conflicts             : %" PRIu64"\n", conflicts);
-    printf("c decisions             : %" PRIu64"\n", decisions);
-    printf("c propagations          : %" PRIu64"\n", propagations);
-
-    printf("\nc SAT Calls             : %d in %g seconds\n", nbSatCalls, totalTime4Sat);
-    printf("c UNSAT Calls           : %d in %g seconds\n", nbUnsatCalls, totalTime4Unsat);
-
-    printf("c--------------------------------------------------\n");
+    statistics.printIncrementalStats();
 }
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
@@ -1094,7 +1067,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     sonification.start(nVars(), nClauses());
 
-    solves++;
+    statistics.incSolves();
 
     status = l_Undef;
     if (!incremental && verbosity >= 1) {
@@ -1149,12 +1122,12 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     double finalTime = cpuTime();
     if (status == l_True) {
-        nbSatCalls++;
-        totalTime4Sat += (finalTime - curTime);
+        statistics.incNBSatCalls();
+        statistics.incTotalTime4Sat(finalTime - curTime);
     }
     if (status == l_False) {
-        nbUnsatCalls++;
-        totalTime4Unsat += (finalTime - curTime);
+        statistics.incNBUnsatCalls();
+        statistics.incTotalTime4Unsat(finalTime - curTime);
     }
 
     sonification.stop(status == l_True ? 1 : status == l_False ? 0 : -1);

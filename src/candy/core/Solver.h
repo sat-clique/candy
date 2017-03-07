@@ -58,6 +58,7 @@
 #include <vector>
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
+#include "candy/core/SolverStatistics.h"
 
 #include "CNFProblem.h"
 
@@ -123,7 +124,7 @@ public:
     int nClauses() const;       // The current number of original clauses.
     int nLearnts() const;       // The current number of learnt clauses.
     int nVars() const;       // The current number of variables.
-    int nFreeVars() const;
+    int nFreeVars();
 
     inline char valuePhase(Var v) {
         return polarity[v];
@@ -185,14 +186,7 @@ public:
 
     // Certified UNSAT ( Thanks to Marijn Heule)
     Certificate certificate;
-
-    // Statistics: (read-only member variable)
-    //uint64_t originalClausesSeen; // Number of original clauses seen
-    uint64_t sumDecisionLevels;
-    //
-    uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB, solves, starts, decisions, rnd_decisions, propagations, conflicts,
-            conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
-    uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+    SolverStatistics statistics;
 
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void*)) {
@@ -302,8 +296,6 @@ protected:
 	// Variables added for incremental mode
 	int incremental; // Use incremental SAT Solver
 	int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
-	double totalTime4Sat, totalTime4Unsat;
-	int nbSatCalls, nbUnsatCalls;
 
 	SolverSonification sonification;
 
@@ -343,7 +335,7 @@ protected:
 	void attachClause(Candy::Clause* cr); // Attach a clause to watcher lists.
 	void detachClause(Candy::Clause* cr, bool strict = false); // Detach a clause to watcher lists.
 	void removeClause(Candy::Clause* cr); // Detach and free a clause.
-	unsigned int freeMarkedClauses(vector<Candy::Clause*>& list);
+	void freeMarkedClauses(vector<Candy::Clause*>& list);
 	bool locked(Candy::Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
 	bool satisfied(const Candy::Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
@@ -357,7 +349,7 @@ protected:
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
 	Candy::Clause* reason(Var x) const;
 	int level(Var x) const;
-	bool withinBudget() const;
+	bool withinBudget();
 	inline bool isSelector(Var v) {
 		return (incremental && v >= nbVarsInitialFormula);
 	}
@@ -500,26 +492,26 @@ inline int Solver::nLearnts() const {
 inline int Solver::nVars() const {
     return vardata.size();
 }
-inline int Solver::nFreeVars() const {
-    return (int) dec_vars - (trail_lim.size() == 0 ? trail_size : trail_lim[0]);
+inline int Solver::nFreeVars() {
+    return statistics.getDecVars() - (trail_lim.size() == 0 ? trail_size : trail_lim[0]);
 }
 inline void Solver::setPolarity(Var v, bool b) {
     polarity[v] = b;
 }
 inline void Solver::setDecisionVar(Var v, bool b) {
     if (b && !decision[v])
-        dec_vars++;
+        statistics.incDecVars();
     else if (!b && decision[v])
-        dec_vars--;
+        statistics.incDecVars(-1);
 
     decision[v] = b;
     insertVarOrder(v);
 }
 inline void Solver::setConfBudget(int64_t x) {
-    conflict_budget = conflicts + x;
+    conflict_budget = statistics.getConflicts() + x;
 }
 inline void Solver::setPropBudget(int64_t x) {
-    propagation_budget = propagations + x;
+    propagation_budget = statistics.getPropagations() + x;
 }
 inline void Solver::interrupt() {
     asynch_interrupt = true;
@@ -530,9 +522,9 @@ inline void Solver::clearInterrupt() {
 inline void Solver::budgetOff() {
     conflict_budget = propagation_budget = -1;
 }
-inline bool Solver::withinBudget() const {
+inline bool Solver::withinBudget() {
     return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
-            && (conflict_budget < 0 || conflicts < (uint64_t) conflict_budget) && (propagation_budget < 0 || propagations < (uint64_t) propagation_budget);
+            && (conflict_budget < 0 || statistics.getConflicts() < conflict_budget) && (propagation_budget < 0 || statistics.getPropagations() < propagation_budget);
 }
 
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
