@@ -57,6 +57,7 @@
 #include "candy/core/Constants.h"
 #include <vector>
 #include "candy/core/Clause.h"
+#include "candy/core/Certificate.h"
 
 #include "CNFProblem.h"
 
@@ -106,32 +107,6 @@ public:
     bool solve(Lit p, Lit q); // Search for a model that respects two assumptions.
     bool solve(Lit p, Lit q, Lit r); // Search for a model that respects three assumptions.
     bool okay() const;           // FALSE means solver is in a conflicting state
-
-    void printCertificateLearnt(vector<Lit>& vec) {
-        for (Lit lit : vec)
-            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
-    }
-
-    void printCertificateLearntExcept(Candy::Clause* c, Lit p) {
-        for (Lit lit : *c)
-            if (lit != p) fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
-    }
-
-    void printCertificateRemoved(Candy::Clause* c) {
-        fprintf(certifiedOutput, "d ");
-        for (Lit lit : *c)
-            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
-    }
-
-    void printCertificateRemoved(vector<Lit>& vec) {
-        fprintf(certifiedOutput, "d ");
-        for (Lit lit : vec)
-            fprintf(certifiedOutput, "%i ", (var(lit) + 1) * (-2 * sign(lit) + 1));
-        fprintf(certifiedOutput, "0\n");
-    }
 
     // Variable mode:
     //
@@ -209,9 +184,7 @@ public:
     double garbage_frac; // The fraction of wasted memory allowed before a garbage collection is triggered.
 
     // Certified UNSAT ( Thanks to Marijn Heule)
-    // TODO: use class member functions for certified output
-    FILE* certifiedOutput;
-    bool certifiedUNSAT;
+    Certificate certificate;
 
     // Statistics: (read-only member variable)
     //uint64_t originalClausesSeen; // Number of original clauses seen
@@ -311,8 +284,6 @@ protected:
 	// Used for restart strategies
 	Glucose::bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
 	float sumLBD; // used to compute the global average of LBD. Restarts...
-	//int sumAssumptions;
-	Candy::Clause* lastLearntClause;
 
 	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
 	// used, exept 'seen' wich is used in several places.

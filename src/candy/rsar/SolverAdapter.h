@@ -61,7 +61,6 @@ namespace Candy {
         virtual void setIncrementalMode() = 0;
         virtual void initNbInitialVars(int n) = 0;
         
-        virtual void setCertifiedUNSAT(bool cu) = 0;
         virtual void setParsing(bool parsing) = 0;
         virtual int getNVars() const = 0;
         

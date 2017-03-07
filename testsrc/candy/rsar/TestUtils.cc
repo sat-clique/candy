@@ -38,7 +38,6 @@ namespace Candy {
     EquivalencyChecker::EquivalencyChecker()
     : m_solver(std::unique_ptr<SimpSolver>(new SimpSolver())), m_maxVar(0) {
         m_solver->setIncrementalMode();
-        m_solver->certifiedUNSAT = false;
     }
     
     void EquivalencyChecker::addClauses(const std::vector<Cl>& clauses) {
