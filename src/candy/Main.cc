@@ -76,14 +76,6 @@
 
 using namespace Candy;
 
-//=================================================================================================
-
-void printStats(Solver& solver) {
-    double cpu_time = Glucose::cpuTime();
-    double mem_used = 0; //memUsedPeak();
-    solver.statistics.printFinalStats(cpu_time, mem_used);
-}
-
 static Solver* solver;
 
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
@@ -96,12 +88,11 @@ static void SIGINT_interrupt(int signum) {
 // destructors and may cause deadlocks if a malloc/free function happens to be running (these
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
-    printf("\n");
-    printf("*** INTERRUPTED ***\n");
+    printf("\n*** INTERRUPTED ***\n");
     if (solver->verbosity > 0) {
-        printStats(*solver);
-        printf("\n");
-        printf("*** INTERRUPTED ***\n");
+        double cpu_time = Glucose::cpuTime();
+        double mem_used = 0; //memUsedPeak();
+        solver->statistics.printFinalStats(cpu_time, mem_used);
     }
     _exit(1);
 }
@@ -178,8 +169,9 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
  */
 static void printResult(Solver& S, lbool result, const char* outputFilename = nullptr) {
     if (S.verbosity > 0) {
-        printStats(S);
-        printf("\n");
+        double cpu_time = Glucose::cpuTime();
+        double mem_used = 0; //memUsedPeak();
+        solver->statistics.printFinalStats(cpu_time, mem_used);
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
