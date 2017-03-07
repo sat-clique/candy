@@ -133,7 +133,7 @@ protected:
     struct ClauseDeleted {
         explicit ClauseDeleted() {
         }
-        inline bool operator()(const Candy::Clause* cr) const {
+        inline bool operator()(const Clause* cr) const {
             return cr->isDeleted();
         }
     };
@@ -144,10 +144,10 @@ protected:
     bool use_simplification;
     vector<uint32_t> elimclauses;
     vector<char> touched;
-    OccLists<Var, Candy::Clause*, ClauseDeleted> occurs;
+    OccLists<Var, Clause*, ClauseDeleted> occurs;
     vector<int> n_occ;
     Glucose::Heap<ElimLt> elim_heap;
-    deque<Candy::Clause*> subsumption_queue;
+    deque<Clause*> subsumption_queue;
     vector<char> frozen;
     vector<char> eliminated;
     int bwdsub_assigns;
@@ -156,18 +156,18 @@ protected:
     // Main internal methods:
     //
     virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);
-    bool asymm(Var v, Candy::Clause* cr);
+    bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
     void updateElimHeap(Var v);
     void gatherTouchedClauses();
-    bool merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, vector<Lit>& out_clause);
-    bool merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, int& size);
+    bool merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
+    bool merge(const Clause& _ps, const Clause& _qs, Var v, int& size);
     bool backwardSubsumptionCheck(bool verbose = false);
     bool eliminateVar(Var v);
     void extendModel();
 
-    void removeClause(Candy::Clause* cr);
-    bool strengthenClause(Candy::Clause* cr, Lit l);
+    void removeClause(Clause* cr);
+    bool strengthenClause(Clause* cr, Lit l);
     void cleanUpClauses();
     bool implied(const vector<Lit>& c);
 };

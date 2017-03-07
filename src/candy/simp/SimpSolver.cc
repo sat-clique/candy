@@ -151,7 +151,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
         return false;
 
     if (use_simplification && clauses.size() == nclauses + 1) {
-        Candy::Clause* cr = clauses.back();
+        Clause* cr = clauses.back();
         // NOTE: the clause is added to the queue immediately and then
         // again during 'gatherTouchedClauses()'. If nothing happens
         // in between, it will only be checked once. Otherwise, it may
@@ -172,7 +172,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
     return true;
 }
 
-void SimpSolver::removeClause(Candy::Clause* cr) {
+void SimpSolver::removeClause(Clause* cr) {
     if (use_simplification) {
         for (Lit lit : *cr) {
             n_occ[toInt(lit)]--;
@@ -183,7 +183,7 @@ void SimpSolver::removeClause(Candy::Clause* cr) {
     Solver::removeClause(cr);
 }
 
-bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
+bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
     assert(decisionLevel() == 0);
     assert(use_simplification);
 
@@ -214,15 +214,15 @@ bool SimpSolver::strengthenClause(Candy::Clause* cr, Lit l) {
 }
 
 // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
-bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, vector<Lit>& out_clause) {
+bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause) {
     assert(_ps.contains(v));
     assert(_qs.contains(v));
     merges++;
     out_clause.clear();
 
     bool ps_smallest = _ps.size() < _qs.size();
-    const Candy::Clause& ps = ps_smallest ? _qs : _ps;
-    const Candy::Clause& qs = ps_smallest ? _ps : _qs;
+    const Clause& ps = ps_smallest ? _qs : _ps;
+    const Clause& qs = ps_smallest ? _ps : _qs;
 
     for (Lit qlit : qs) {
         if (var(qlit) != v) {
@@ -246,14 +246,14 @@ bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v
 }
 
 // Returns FALSE if clause is always satisfied.
-bool SimpSolver::merge(const Candy::Clause& _ps, const Candy::Clause& _qs, Var v, int& size) {
+bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, int& size) {
     assert(_ps.contains(v));
     assert(_qs.contains(v));
     merges++;
 
     bool ps_smallest = _ps.size() < _qs.size();
-    const Candy::Clause& ps = ps_smallest ? _qs : _ps;
-    const Candy::Clause& qs = ps_smallest ? _ps : _qs;
+    const Clause& ps = ps_smallest ? _qs : _ps;
+    const Clause& qs = ps_smallest ? _ps : _qs;
 
     size = ps.size() - 1;
 
@@ -276,13 +276,13 @@ void SimpSolver::gatherTouchedClauses() {
     if (n_touched == 0)
         return;
 
-    for (Candy::Clause* c : subsumption_queue)
+    for (Clause* c : subsumption_queue)
         c->setFrozen(true);
 
     for (unsigned int i = 0; i < touched.size(); i++)
         if (touched[i]) {
-            const vector<Candy::Clause*>& cs = occurs.lookup(i);
-            for (Candy::Clause* c : cs) {
+            const vector<Clause*>& cs = occurs.lookup(i);
+            for (Clause* c : cs) {
                 if (!c->isFrozen() && !c->isDeleted()) {
                     subsumption_queue.push_back(c);
                     c->setFrozen(true);
@@ -291,7 +291,7 @@ void SimpSolver::gatherTouchedClauses() {
             touched[i] = 0;
         }
 
-    for (Candy::Clause* c : subsumption_queue)
+    for (Clause* c : subsumption_queue)
         c->setFrozen(false);
 
     n_touched = 0;
@@ -321,7 +321,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
     int cnt = 0;
     int subsumed = 0;
     int deleted_literals = 0;
-    Candy::Clause bwdsub_tmpunit({ lit_Undef });
+    Clause bwdsub_tmpunit({ lit_Undef });
     assert(decisionLevel() == 0);
 
     while (subsumption_queue.size() > 0 || bwdsub_assigns < trail_size) {
@@ -340,7 +340,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
             subsumption_queue.push_back(&bwdsub_tmpunit);
         }
 
-        Candy::Clause* cr = subsumption_queue.front();
+        Clause* cr = subsumption_queue.front();
         subsumption_queue.pop_front();
 
         if (cr->isDeleted())
@@ -358,9 +358,9 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
                 best = var((*cr)[i]);
 
         // Search all candidates:
-        vector<Candy::Clause*>& cs = occurs.lookup(best);
+        vector<Clause*>& cs = occurs.lookup(best);
         for (unsigned int i = 0; i < cs.size(); i++) {
-            Candy::Clause* csi = cs[i];
+            Clause* csi = cs[i];
             if (cr->isDeleted()) {
                 break;
             }
@@ -388,7 +388,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
     return true;
 }
 
-bool SimpSolver::asymm(Var v, Candy::Clause* cr) {
+bool SimpSolver::asymm(Var v, Clause* cr) {
     assert(decisionLevel() == 0);
 
     if (cr->isDeleted() || satisfied(*cr)) {
@@ -422,12 +422,12 @@ bool SimpSolver::asymm(Var v, Candy::Clause* cr) {
 bool SimpSolver::asymmVar(Var v) {
     assert(use_simplification);
 
-    const vector<Candy::Clause*>& cls = occurs.lookup(v);
+    const vector<Clause*>& cls = occurs.lookup(v);
 
     if (value(v) != l_Undef || cls.size() == 0)
         return true;
 
-    for (Candy::Clause* c : cls)
+    for (Clause* c : cls)
         if (!asymm(v, c))
             return false;
 
@@ -439,7 +439,7 @@ static void mkElimClause(vector<uint32_t>& elimclauses, Lit x) {
     elimclauses.push_back(1);
 }
 
-static void mkElimClause(vector<uint32_t>& elimclauses, Var v, Candy::Clause& c) {
+static void mkElimClause(vector<uint32_t>& elimclauses, Var v, Clause& c) {
     assert(c.contains(v));
     uint32_t first = elimclauses.size();
 
@@ -464,9 +464,9 @@ bool SimpSolver::eliminateVar(Var v) {
     assert(value(v) == l_Undef);
 
     // Split the occurrences into positive and negative:
-    vector<Candy::Clause*>& cls = occurs.lookup(v);
-    vector<Candy::Clause*> pos, neg;
-    for (Candy::Clause* cl : cls) {
+    vector<Clause*>& cls = occurs.lookup(v);
+    vector<Clause*> pos, neg;
+    for (Clause* cl : cls) {
         if (cl->contains(mkLit(v))) {
             pos.push_back(cl);
         }
@@ -478,8 +478,8 @@ bool SimpSolver::eliminateVar(Var v) {
     // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
     // clause must exceed the limit on the maximal clause size (if it is set):
     int cnt = 0;
-    for (Candy::Clause* pc : pos) {
-        for (Candy::Clause* nc : neg) {
+    for (Clause* pc : pos) {
+        for (Clause* nc : neg) {
             int clause_size = 0;
             if (merge(*pc, *nc, v, clause_size) && (++cnt > (int)cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim))) {
                 return true;
@@ -493,23 +493,23 @@ bool SimpSolver::eliminateVar(Var v) {
     eliminated_vars++;
 
     if (pos.size() > neg.size()) {
-        for (Candy::Clause* c : neg)
+        for (Clause* c : neg)
             mkElimClause(elimclauses, v, *c);
         mkElimClause(elimclauses, mkLit(v));
     } else {
-        for (Candy::Clause* c : pos)
+        for (Clause* c : pos)
             mkElimClause(elimclauses, v, *c);
         mkElimClause(elimclauses, ~mkLit(v));
     }
 
     // Produce clauses in cross product:
     vector<Lit>& resolvent = add_tmp;
-    for (Candy::Clause* pc : pos)
-        for (Candy::Clause* nc : neg)
+    for (Clause* pc : pos)
+        for (Clause* nc : neg)
             if (merge(*pc, *nc, v, resolvent) && !addClause_(resolvent))
                 return false;
 
-    for (Candy::Clause* c : cls)
+    for (Clause* c : cls)
         removeClause(c);
 
     // Free occurs list for this variable:
@@ -533,8 +533,8 @@ bool SimpSolver::substitute(Var v, Lit x) {
     eliminated[v] = true;
     setDecisionVar(v, false);
 
-    const vector<Candy::Clause*>& cls = occurs.lookup(v);
-    for (Candy::Clause* c : cls) {
+    const vector<Clause*>& cls = occurs.lookup(v);
+    for (Clause* c : cls) {
         add_tmp.clear();
         for (Lit lit : *c) {
             add_tmp.push_back(var(lit) == v ? x ^ sign(lit) : lit);

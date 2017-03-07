@@ -238,7 +238,7 @@ public:
 		std::vector<Elem>& vec = occs[toInt(idx)];
 		auto end = std::remove_if(vec.begin(), vec.end(), [this](Elem e) {return deleted(e);});
 		vec.erase(end, vec.end());
-		dirty[toInt(idx)] = 0;
+		dirty[toInt(idx)] = false;
 	}
 
 	void clear() {

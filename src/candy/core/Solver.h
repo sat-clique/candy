@@ -87,10 +87,10 @@ public:
     virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will change ps
     bool addClause(const vector<Lit>& ps); // Add a clause to the solver.
     bool addClause(std::initializer_list<Lit> lits);
-    void addClauses(Candy::CNFProblem dimacs);
+    void addClauses(CNFProblem dimacs);
 
     // use with care (written for solver tests only)
-    Candy::Clause& getClause(unsigned int pos) {
+    Clause& getClause(unsigned int pos) {
         assert(pos < clauses.size());
         return *clauses[pos];
     }
@@ -190,24 +190,21 @@ protected:
 
 	// Helper structures:
 	struct VarData {
-	    Candy::Clause* reason;
+	    Clause* reason;
 		unsigned int level;
+		VarData() :
+		    reason(nullptr), level(0) {}
+		VarData(Clause* _reason, unsigned int _level) :
+		    reason(_reason), level(_level) {}
 	};
 
-	static inline VarData mkVarData(Candy::Clause* cr, unsigned int l) {
-		VarData d = { cr, l };
-		return d;
-	}
-
 	struct Watcher {
-	    Candy::Clause* cref;
+	    Clause* cref;
 		Lit blocker;
 		Watcher() :
-				cref(0), blocker(lit_Undef) {
-		}
-		Watcher(Candy::Clause* cr, Lit p) :
-				cref(cr), blocker(p) {
-		}
+			cref(nullptr), blocker(lit_Undef) {}
+		Watcher(Clause* cr, Lit p) :
+			cref(cr), blocker(p) {}
 		bool operator==(const Watcher& w) const {
 			return cref == w.cref;
 		}
@@ -240,15 +237,14 @@ protected:
 	double var_inc;          // Amount to bump next variable with.
 	OccLists<Lit, Watcher, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 	OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	vector<Candy::Clause*> clauses;          // List of problem clauses.
-	vector<Candy::Clause*> learnts;          // List of learnt clauses.
+	vector<Clause*> clauses;          // List of problem clauses.
+	vector<Clause*> learnts;          // List of learnt clauses.
 
 	vector<lbool> assigns;          // The current assignments.
 	vector<char> polarity;         // The preferred polarity of each variable.
 	vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
 	vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
 	int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
-	vector<int> nbpos;
 	vector<int> trail_lim; // Separator indices for different decision levels in 'trail'.
 	vector<VarData> vardata;       // Stores reason and level for each variable.
 	int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
@@ -300,13 +296,13 @@ protected:
 	void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
 	Lit pickBranchLit(); // Return the next decision variable.
 	void newDecisionLevel(); // Begins a new decision level.
-	void uncheckedEnqueue(Lit p, Candy::Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
-	bool enqueue(Lit p, Candy::Clause* from = nullptr); // Test if fact 'p' contradicts current state, enqueue otherwise.
-	Candy::Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
+	bool enqueue(Lit p, Clause* from = nullptr); // Test if fact 'p' contradicts current state, enqueue otherwise.
+	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
-	void analyze(Candy::Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
+	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-	bool seenAny(Candy::Clause& clause);
+	bool seenAny(Clause& clause);
 	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
 	lbool search(int nof_conflicts); // Search for a given number of conflicts.
 	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
@@ -319,26 +315,26 @@ protected:
 	void varBumpActivity(Var v, double inc); // Increase a variable with the current 'bump' value.
 	void varBumpActivity(Var v); // Increase a variable with the current 'bump' value.
 	void claDecayActivity(); // Decay all clauses with the specified factor. Implemented by increasing the 'bump' value instead.
-	void claBumpActivity(Candy::Clause& c); // Increase a clause with the current 'bump' value.
+	void claBumpActivity(Clause& c); // Increase a clause with the current 'bump' value.
 
 	// Operations on clauses:
 	//
-	void attachClause(Candy::Clause* cr); // Attach a clause to watcher lists.
-	void detachClause(Candy::Clause* cr, bool strict = false); // Detach a clause to watcher lists.
-	void removeClause(Candy::Clause* cr); // Detach and free a clause.
-	void freeMarkedClauses(vector<Candy::Clause*>& list);
-	bool locked(Candy::Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
-	bool satisfied(const Candy::Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
+	void attachClause(Clause* cr); // Attach a clause to watcher lists.
+	void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
+	void removeClause(Clause* cr); // Detach and free a clause.
+	void freeMarkedClauses(vector<Clause*>& list);
+	bool locked(Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
+	bool satisfied(const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
 	unsigned int computeLBD(const vector<Lit>& lits, int end = -1);
-	unsigned int computeLBD(const Candy::Clause &c);
+	unsigned int computeLBD(const Clause &c);
 	void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
 	// Misc:
 	//
 	uint32_t decisionLevel() const; // Gives the current decisionlevel.
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
-	Candy::Clause* reason(Var x) const;
+	Clause* reason(Var x) const;
 	int level(Var x) const;
 	bool withinBudget();
 	inline bool isSelector(Var v) {
@@ -364,7 +360,7 @@ protected:
 //=================================================================================================
 // Implementation of inline methods:
 
-inline Candy::Clause* Solver::reason(Var x) const {
+inline Clause* Solver::reason(Var x) const {
     return vardata[x].reason;
 }
 
@@ -401,17 +397,17 @@ inline void Solver::varBumpActivity(Var v, double inc) {
 inline void Solver::claDecayActivity() {
 	cla_inc *= (1 / clause_decay);
 }
-inline void Solver::claBumpActivity(Candy::Clause& c) {
+inline void Solver::claBumpActivity(Clause& c) {
 	if ((c.activity() += cla_inc) > 1e20) {
 		// Rescale:
-		for (Candy::Clause* clause : learnts)
+		for (Clause* clause : learnts)
 			clause->activity() *= 1e-20;
 		cla_inc *= 1e-20;
 	}
 }
 
 // NOTE: enqueue does not set the ok flag! (only public methods do)
-inline bool Solver::enqueue(Lit p, Candy::Clause* from) {
+inline bool Solver::enqueue(Lit p, Clause* from) {
 	return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
 }
 inline bool Solver::addClause(const vector<Lit>& ps) {
@@ -426,8 +422,8 @@ inline bool Solver::addClause(std::initializer_list<Lit> lits) {
 }
 
 // TODO: optimize conditions
-inline bool Solver::locked(Candy::Clause* cr) const {
-    Candy::Clause& c = *cr;
+inline bool Solver::locked(Clause* cr) const {
+    Clause& c = *cr;
     if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
     return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
 }
@@ -531,27 +527,20 @@ struct reduceDB_lt {
     reduceDB_lt() {
     }
 
-    bool operator()(Candy::Clause* x, Candy::Clause* y) {
+    bool operator()(Clause* x, Clause* y) {
         assert(x != nullptr);
         assert(y != nullptr);
-        // Moved additional criteria from reduceDB
-//        if (!x->isFrozen() && y->isFrozen()) return 1;
-//        if (!y->isFrozen() && x->isFrozen()) return 0;
         // Main criteria... Like in MiniSat we keep all binary clauses
         if (x->size() > 2 && y->size() == 2) return 1;
         if (y->size() > 2 && x->size() == 2) return 0;
         if (x->size() == 2 && y->size() == 2) return 0;
 
         // Second one  based on literal block distance
-        if (x->getLBD() > y->getLBD())
-            return 1;
-        if (x->getLBD() < y->getLBD())
-            return 0;
+        if (x->getLBD() > y->getLBD()) return 1;
+        if (x->getLBD() < y->getLBD()) return 0;
 
         // Finally we can use old activity or size, we choose the last one
         return x->activity() < y->activity();
-        //return x->size() < y->size();
-        //return ca[x].size() > 2 && (ca[y].size() == 2 || ca[x].activity() < ca[y].activity()); }
     }
 };
 
