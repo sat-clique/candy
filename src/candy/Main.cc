@@ -92,7 +92,7 @@ static void SIGINT_exit(int signum) {
     if (solver->verbosity > 0) {
         double cpu_time = Glucose::cpuTime();
         double mem_used = 0; //memUsedPeak();
-        solver->statistics.printFinalStats(cpu_time, mem_used);
+        solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
     }
     _exit(1);
 }
@@ -171,7 +171,7 @@ static void printResult(Solver& S, lbool result, const char* outputFilename = nu
     if (S.verbosity > 0) {
         double cpu_time = Glucose::cpuTime();
         double mem_used = 0; //memUsedPeak();
-        solver->statistics.printFinalStats(cpu_time, mem_used);
+        solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
