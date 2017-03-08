@@ -16,9 +16,9 @@ namespace Candy {
 class SolverStatistics {
     uint64_t sumDecisionLevels;
     uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB;
-    uint64_t solves, starts, decisions, rnd_decisions, propagations, conflicts;
-    uint64_t conflictsRestarts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
-    uint64_t dec_vars, clauses_literals, learnts_literals, max_literals, tot_literals;
+    uint64_t solves, starts, decisions, rnd_decisions;
+    uint64_t nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
+    uint64_t dec_vars, clauses_literals, max_literals, tot_literals;
     double totalTime4Sat, totalTime4Unsat;
     int nbSatCalls, nbUnsatCalls;
 
@@ -26,44 +26,16 @@ public:
     SolverStatistics();
     virtual ~SolverStatistics();
 
-    void printIncrementalStats();
-    void printIntermediateStats(int trail, int clauses, int learnts);
-    void printFinalStats(double cpu_time, double mem_used);
-
-    inline int64_t getTotalLiterals() {
-        return learnts_literals + clauses_literals;
-    }
-
-    inline int64_t getConflicts() {
-        return conflicts;
-    }
-
-    inline int64_t getPropagations() {
-        return propagations;
-    }
-
-    inline int64_t getConflictsRestarts() {
-        return conflictsRestarts;
-    }
+    void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
+    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts);
+    void printFinalStats(double cpu_time, double mem_used, uint64_t conflicts, uint64_t propagations);
 
     inline void incDecVars(int amount = 1) {
         dec_vars += amount;
     }
 
-    inline int getDecVars() {
-        return dec_vars;
-    }
-
-    inline void incLearntsLiterals(int amount) {
-        learnts_literals += amount;
-    }
-
     inline void incClausesLiterals(int amount) {
         clauses_literals += amount;
-    }
-
-    inline void incPropagations(int amount) {
-        propagations += amount;
     }
 
     inline void incRemovedClauses(int amount) {
@@ -72,10 +44,6 @@ public:
 
     inline void incSumDecisionLevels(int amount) {
         sumDecisionLevels += amount;
-    }
-
-    inline void incConflicts(int amount = 1) {
-        conflicts += amount;
     }
 
     inline void incDecisions(int amount = 1) {
@@ -100,10 +68,6 @@ public:
 
     inline void incTotalTime4Unsat(int amount) {
         totalTime4Unsat += amount;
-    }
-
-    inline void incConflictsRestarts(int amount = 1) {
-        conflictsRestarts += amount;
     }
 
     inline void incReducedClauses(int amount = 1) {

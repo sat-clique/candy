@@ -109,7 +109,6 @@ public:
     int nClauses() const;       // The current number of original clauses.
     int nLearnts() const;       // The current number of learnt clauses.
     int nVars() const;       // The current number of variables.
-    int nFreeVars();
 
     inline char valuePhase(Var v) {
         return polarity[v];
@@ -170,6 +169,8 @@ public:
     // Certified UNSAT ( Thanks to Marijn Heule)
     Certificate certificate;
     SolverStatistics statistics;
+    // a few stats are used for heuristics control, keep them here:
+    uint64_t nConflicts, nPropagations, nLiterals;
 
 protected:
 	long curRestart;
@@ -440,9 +441,6 @@ inline int Solver::nLearnts() const {
 inline int Solver::nVars() const {
     return vardata.size();
 }
-inline int Solver::nFreeVars() {
-    return statistics.getDecVars() - (trail_lim.size() == 0 ? trail_size : trail_lim[0]);
-}
 inline void Solver::setPolarity(Var v, bool b) {
     polarity[v] = b;
 }
@@ -456,10 +454,10 @@ inline void Solver::setDecisionVar(Var v, bool b) {
     insertVarOrder(v);
 }
 inline void Solver::setConfBudget(int64_t x) {
-    conflict_budget = statistics.getConflicts() + x;
+    conflict_budget = nConflicts + x;
 }
 inline void Solver::setPropBudget(int64_t x) {
-    propagation_budget = statistics.getPropagations() + x;
+    propagation_budget = nPropagations + x;
 }
 inline void Solver::setInterrupt(bool value) {
     asynch_interrupt = value;
@@ -469,7 +467,7 @@ inline void Solver::budgetOff() {
 }
 inline bool Solver::withinBudget() {
     return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
-            && (conflict_budget < 0 || statistics.getConflicts() < conflict_budget) && (propagation_budget < 0 || statistics.getPropagations() < propagation_budget);
+            && (conflict_budget < 0 || nConflicts < (uint64_t)conflict_budget) && (propagation_budget < 0 || nPropagations < (uint64_t)propagation_budget);
 }
 
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a

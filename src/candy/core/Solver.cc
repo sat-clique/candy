@@ -122,6 +122,9 @@ Solver::Solver() :
                 rnd_init_act(opt_rnd_init_act),
                 certificate(nullptr, false),
                 statistics(),
+                nConflicts(0),
+                nPropagations(0),
+                nLiterals(0),
                 curRestart(1),
                 ok(true),
                 cla_inc(1),
@@ -275,22 +278,16 @@ void Solver::attachClause(Clause* cr) {
         watches[~c[1]].push_back(Watcher(cr, c[0]));
     }
 
-    if (c.isLearnt()) {
-        statistics.incLearntsLiterals(c.size());
-    } else {
-        statistics.incClausesLiterals(c.size());
-    }
+    nLiterals += c.size();
+    statistics.incClausesLiterals(c.size());
 }
 
 void Solver::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
     Clause& c = *cr;
 
-    if (c.isLearnt()) {
-        statistics.incLearntsLiterals(-1 * c.size());
-    } else {
-        statistics.incClausesLiterals(-1 * c.size());
-    }
+    nLiterals -= c.size();
+    statistics.incClausesLiterals(-1 * c.size());
 
     if (c.size() == 2) {
         if (strict) {
@@ -572,7 +569,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
     // Simplify conflict clause:
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
-    statistics.incMaxLiterals();
+    statistics.incMaxLiterals(out_learnt.size());
 
     analyze_toclear.clear();
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
@@ -598,7 +595,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
     assert(out_learnt[0] == ~asslit);
 
-    statistics.incTotLiterals();
+    statistics.incTotLiterals(out_learnt.size());
 
     /* ***************************************
      Minimisation with binary clauses of the asserting clause
@@ -745,7 +742,7 @@ Clause* Solver::propagate() {
 
     int num_props = trail_size - qhead;
     if (num_props > 0) {
-        statistics.incPropagations(num_props);
+        nPropagations += num_props;
         simpDB_props -= num_props;
     } else {
         return nullptr;
@@ -933,7 +930,7 @@ bool Solver::simplify() {
     rebuildOrderHeap();
 
     simpDB_assigns = nAssigns();
-    simpDB_props = statistics.getTotalLiterals(); // (shouldn't depend on stats really, but it will do for now)
+    simpDB_props = nLiterals; // (shouldn't depend on stats really, but it will do for now)
 
     return true;
 }
@@ -969,15 +966,14 @@ lbool Solver::search(int nof_conflicts) {
             sonification.conflictLevel(decisionLevel());
 
             statistics.incSumDecisionLevels(decisionLevel());
-            statistics.incConflicts();
-            statistics.incConflictsRestarts();
+            ++nConflicts;
 
-            if (statistics.getConflicts() % 5000 == 0 && var_decay < max_var_decay) {
+            if (nConflicts % 5000 == 0 && var_decay < max_var_decay) {
                 var_decay += 0.01;
             }
 
-            if (verbosity >= 1 && statistics.getConflicts() % verbEveryConflicts == 0) {
-                statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts());
+            if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
+                statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts(), nConflicts);
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -986,7 +982,7 @@ lbool Solver::search(int nof_conflicts) {
             trailQueue.push(trail_size);
 
             // BLOCK RESTART (CP 2012 paper)
-            if (statistics.getConflictsRestarts() > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
+            if (nConflicts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
                 statistics.incNBStopsRestarts();
                 if (!blocked) {
@@ -1031,7 +1027,7 @@ lbool Solver::search(int nof_conflicts) {
             claDecayActivity();
         } else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
-            if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / statistics.getConflictsRestarts())))) {
+            if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts)))) {
                 lbdQueue.fastclear();
                 int bt = 0;
                 if (incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
@@ -1045,9 +1041,9 @@ lbool Solver::search(int nof_conflicts) {
                 return l_False;
             }
             // Perform clause database reduction !
-            if (statistics.getConflicts() >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
+            if (nConflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {
-                    curRestart = (statistics.getConflicts() / nbclausesbeforereduce) + 1;
+                    curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     reduceDB();
                     nbclausesbeforereduce += incReduceDB;
                 }

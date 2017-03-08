@@ -12,16 +12,16 @@ namespace Candy {
 
 SolverStatistics::SolverStatistics() :
     sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0),
-    solves(0), starts(0), decisions(0), rnd_decisions(0), propagations(0), conflicts(0), conflictsRestarts(0),
+    solves(0), starts(0), decisions(0), rnd_decisions(0),
     nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0),
-    clauses_literals(0), learnts_literals(0), max_literals(0), tot_literals(0),
+    clauses_literals(0), max_literals(0), tot_literals(0),
     totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0)
 {
 }
 
 SolverStatistics::~SolverStatistics() { }
 
-void SolverStatistics::printIncrementalStats() {
+void SolverStatistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations) {
     printf("c---------- Glucose Stats -------------------------\n");
     printf("c restarts              : %" PRIu64"\n", starts);
     printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
@@ -41,12 +41,12 @@ void SolverStatistics::printIncrementalStats() {
 }
 
 
-void SolverStatistics::printIntermediateStats(int trail, int clauses, int learnts) {
+void SolverStatistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
     printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n", (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
                             (int)dec_vars - trail, clauses, (int) clauses_literals, (int) nbReduceDB, learnts, (int) nbDL2, (int) nbRemovedClauses, -1.0);
 }
 
-void SolverStatistics::printFinalStats(double cpu_time, double mem_used) {
+void SolverStatistics::printFinalStats(double cpu_time, double mem_used, uint64_t conflicts, uint64_t propagations) {
     printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
     printf("c blocked restarts      : %" PRIu64" (multiple: %" PRIu64") \n", nbstopsrestarts, nbstopsrestartssame);
     printf("c last block at restart : %" PRIu64"\n", lastblockatrestart);
