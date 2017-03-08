@@ -751,11 +751,6 @@ Clause* Solver::propagate() {
         return nullptr;
     }
 
-    // Must remain for now (SimpSolver smudges clauses and propagates)
-    // TODO: check is smudge has any runtime benefits
-    watches.cleanAll();
-    watchesBin.cleanAll();
-
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
 
@@ -912,6 +907,9 @@ void Solver::rebuildOrderHeap() {
 bool Solver::simplify() {
     assert(decisionLevel() == 0);
 
+    //TODO: check if this cleanup is necessary:
+    watches.cleanAll();
+    watchesBin.cleanAll();
     if (!ok || propagate() != nullptr) {
         return ok = false;
     }
@@ -967,15 +965,16 @@ lbool Solver::search(int nof_conflicts) {
 
         sonification.assignmentLevel(nAssigns());
 
-        if (confl != nullptr) {
+        if (confl != nullptr) { // CONFLICT
             sonification.conflictLevel(decisionLevel());
 
             statistics.incSumDecisionLevels(decisionLevel());
-            // CONFLICT
             statistics.incConflicts();
             statistics.incConflictsRestarts();
-            if (statistics.getConflicts() % 5000 == 0 && var_decay < max_var_decay)
+
+            if (statistics.getConflicts() % 5000 == 0 && var_decay < max_var_decay) {
                 var_decay += 0.01;
+            }
 
             if (verbosity >= 1 && statistics.getConflicts() % verbEveryConflicts == 0) {
                 statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts());

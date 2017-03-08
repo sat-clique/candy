@@ -192,6 +192,7 @@ bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
 
     if (cr->size() == 2) {
         removeClause(cr);
+        watchesBin.cleanAll();
         cr->strengthen(l);
         return enqueue((*cr)[0]) && propagate() == nullptr;
     }
@@ -403,6 +404,8 @@ bool SimpSolver::asymm(Var v, Clause* cr) {
         }
     }
 
+    watches.cleanAll();
+    watchesBin.cleanAll();
     if (propagate() != nullptr) {
         cancelUntil(0);
         asymm_lits++;
