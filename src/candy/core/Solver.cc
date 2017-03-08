@@ -852,24 +852,25 @@ void Solver::reduceDB() {
     statistics.incNBReduceDB();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
-    // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
-    if (learnts[learnts.size() / RATIOREMOVECLAUSES]->getLBD() <= 3)
-        nbclausesbeforereduce += specialIncReduceDB;
-    // Useless :-)
-    if (learnts.back()->getLBD() <= 5)
-        nbclausesbeforereduce += specialIncReduceDB;
+    nbclausesbeforereduce += specialIncReduceDB;
 
-    // Don't delete binary or locked clauses. From the rest, delete clauses from the first half
-    // Keep clauses which seem to be useful (their lbd was reduce during this sequence)
-    unsigned int limit = learnts.size() / 2;
-    for (unsigned int i = 0; i < limit; i++) {
-        Clause& c = *learnts[i];
-        if (!c.isFrozen() && c.getLBD() > 2 && c.size() > 2 && !locked(learnts[i])) {
-            removeClause(learnts[i]);
+    size_t index = (learnts.size() + learntsBin.size()) / 2;
+    if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
+        // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
+        nbclausesbeforereduce += specialIncReduceDB;
+    }
+
+    // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
+    // Keep clauses which seem to be useful (i.e. their lbd was reduce during this sequence => frozen)
+    size_t limit = std::min(learnts.size(), index);
+    for (size_t i = 0; i < limit; i++) {
+        Clause* c = learnts[i];
+        if (c->getLBD() <= 2) break; // small lbds come last in sequence (see ordering by reduceDB_lt())
+        if (!c->isFrozen() && !locked(c)) {
+            removeClause(c);
         }
     }
     watches.cleanAll();
-    watchesBin.cleanAll();
     for (Clause* c : learnts) { // "unfreeze" remaining clauses
         c->setFrozen(false);
     }
@@ -921,12 +922,14 @@ bool Solver::simplify() {
 
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
+    std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     if (remove_satisfied) { // Can be turned off.
         std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     }
     watches.cleanAll();
     watchesBin.cleanAll();
     freeMarkedClauses(learnts);
+    freeMarkedClauses(learntsBin);
     freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
@@ -1017,7 +1020,10 @@ lbool Solver::search(int nof_conflicts) {
                     statistics.incNBDL2();
                 if (cr->size() == 2)
                     statistics.incNBBin();
-                learnts.push_back(cr);
+                if (cr->size() == 2)
+                    learntsBin.push_back(cr);
+                else
+                    learnts.push_back(cr);
                 attachClause(cr);
                 claBumpActivity(*cr);
                 uncheckedEnqueue(learnt_clause[0], cr);
