@@ -58,17 +58,12 @@ using namespace std;
 
 namespace Candy {
 
-//=================================================================================================
-
 class SimpSolver: public Solver {
 public:
-    // Constructor/Destructor:
-    //
     SimpSolver();
     ~SimpSolver();
 
     // Problem specification:
-    //
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     virtual bool addClause_(vector<Lit>& ps);
     bool addClause(const vector<Lit>& ps);
@@ -76,70 +71,56 @@ public:
     bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
 
     // Variable mode:
-    //
     void setFrozen(Var v, bool b); // If a variable is frozen it will not be eliminated.
     bool isEliminated(Var v) const;
 
     // Solving:
-    //
     bool solve(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
     lbool solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
     bool solve(std::initializer_list<Lit> assumps, bool do_simp = true, bool turn_off_simp = false);
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
 
     // Mode of operation:
-    //
     int grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
-    int clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit.
-    // -1 means no limit.
+    int clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. -1 means no limit.
     int subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
     double simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
 
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
     bool use_elim;          // Perform variable elimination.
+
     // Statistics:
-    //
     int merges;
     int asymm_lits;
     int eliminated_vars;
 
 protected:
-
     // Helper structures:
-    //
     struct ElimLt {
         const vector<int>& n_occ;
-        explicit ElimLt(const vector<int>& no) :
-                        n_occ(no) {
-        }
+        explicit ElimLt(const vector<int>& no) : n_occ(no) { }
 
-        // TODO: are 64-bit operations here noticably bad on 32-bit platforms? Could use a saturating
-        // 32-bit implementation instead then, but this will have to do for now.
         uint64_t cost(Var x) const {
             return (uint64_t) n_occ[toInt(mkLit(x))] * (uint64_t) n_occ[toInt(~mkLit(x))];
         }
-        bool operator()(Var x, Var y) const {
-            return cost(x) < cost(y);
-        }
 
         // TODO: investigate this order alternative more.
-        // bool operator()(Var x, Var y) const {
-        //     int c_x = cost(x);
-        //     int c_y = cost(y);
-        //     return c_x < c_y || c_x == c_y && x < y; }
+        bool operator()(Var x, Var y) const {
+            uint64_t c_x = cost(x);
+            uint64_t c_y = cost(y);
+            return c_x < c_y;// || c_x == c_y && x < y;
+        }
     };
 
     struct ClauseDeleted {
-        explicit ClauseDeleted() {
-        }
+        explicit ClauseDeleted() { }
         inline bool operator()(const Clause* cr) const {
             return cr->isDeleted();
         }
     };
 
     // Solver state:
-    //
     int elimorder;
     bool use_simplification;
     vector<uint32_t> elimclauses;
@@ -154,7 +135,6 @@ protected:
     int n_touched;
 
     // Main internal methods:
-    //
     virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
@@ -168,13 +148,10 @@ protected:
 
     void removeClause(Clause* cr);
     bool strengthenClause(Clause* cr, Lit l);
-    void cleanUpClauses();
     bool implied(const vector<Lit>& c);
 };
 
-//=================================================================================================
 // Implementation of inline methods:
-
 inline bool SimpSolver::isEliminated(Var v) const {
     return eliminated[v];
 }
@@ -221,7 +198,6 @@ inline lbool SimpSolver::solveLimited(const vector<Lit>& assumps, bool do_simp, 
     return solve_(do_simp, turn_off_simp);
 }
 
-//=================================================================================================
 }
 
 #endif

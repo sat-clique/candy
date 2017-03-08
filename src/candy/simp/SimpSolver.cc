@@ -109,10 +109,7 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
         // Assumptions must be temporarily frozen to run variable elimination:
         for (Lit lit : assumptions) {
             Var v = var(lit);
-
-            // If an assumption has been eliminated, remember it.
             assert(!isEliminated(v));
-
             if (!frozen[v]) { // Freeze and store.
                 setFrozen(v, true);
                 extra_frozen.push_back(v);

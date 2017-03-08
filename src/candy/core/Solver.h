@@ -68,21 +68,15 @@ namespace Candy {
 
 using namespace std;
 
-//=================================================================================================
-// Solver -- the main class:
-
 class Solver {
 
     friend class SolverConfiguration;
 
 public:
-    // Constructor/Destructor:
-    //
     Solver();
     virtual ~Solver();
 
     // Problem specification:
-    //
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     virtual bool addClause_(vector<Lit>& ps); // Add a clause to the solver without making superflous internal copy. Will change ps
     bool addClause(const vector<Lit>& ps); // Add a clause to the solver.
@@ -96,7 +90,6 @@ public:
     }
 
     // Solving:
-    //
     bool simplify();                       // Removes already satisfied clauses.
     bool solve(const vector<Lit>& assumps); // Search for a model that respects a given set of assumptions.
     lbool solveLimited(const vector<Lit>& assumps); // Search for a model that respects a given set of assumptions (With resource constraints).
@@ -104,12 +97,10 @@ public:
     bool okay() const;           // FALSE means solver is in a conflicting state
 
     // Variable mode:
-    //
     void setPolarity(Var v, bool b); // Declare which polarity the decision heuristic should use for a variable. Requires mode 'polarity_user'.
     void setDecisionVar(Var v, bool b); // Declare if a variable should be eligible for selection in the decision heuristic.
 
     // Read state:
-    //
     lbool value(Var x) const;       // The current value of a variable.
     lbool value(Lit p) const;       // The current value of a literal.
     lbool modelValue(Var x) const; // The value of a variable in the last model. The last call to solve must have been satisfiable.
@@ -130,20 +121,22 @@ public:
     bool isIncremental();
 
     // Resource contraints:
-    //
     void setConfBudget(int64_t x);
     void setPropBudget(int64_t x);
     void budgetOff();
-    void interrupt(); // Trigger a (potentially asynchronous) interruption of the solver.
-    void clearInterrupt();     // Clear interrupt indicator flag.
+    void setInterrupt(bool value = true); // Trigger a (potentially asynchronous) interruption of the solver.
+
+    //TODO: use std::function<int(void*)> as type here
+    void setTermCallback(void* state, int (*termCallback)(void*)) {
+        this->termCallbackState = state;
+        this->termCallback = termCallback;
+    }
 
     // Extra results: (read-only member variable)
-    //
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
     // Mode of operation:
-    //
     int verbosity;
     int verbEveryConflicts;
     int showModel;  // deprecated: can go to main
@@ -177,12 +170,6 @@ public:
     // Certified UNSAT ( Thanks to Marijn Heule)
     Certificate certificate;
     SolverStatistics statistics;
-
-    //TODO: use std::function<int(void*)> as type here
-    void setTermCallback(void* state, int (*termCallback)(void*)) {
-        this->termCallbackState = state;
-        this->termCallback = termCallback;
-    }
 
 protected:
 	long curRestart;
@@ -224,9 +211,7 @@ protected:
 		bool operator()(Var x, Var y) const {
 			return activity[x] > activity[y];
 		}
-		VarOrderLt(const vector<double>& act) :
-				activity(act) {
-		}
+		VarOrderLt(const vector<double>& act) : activity(act) {}
 	};
 
 	// Solver state:
@@ -238,6 +223,7 @@ protected:
 	OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 	vector<Clause*> clauses;          // List of problem clauses.
 	vector<Clause*> learnts;          // List of learnt clauses.
+	vector<Clause*> learntsBin;       // List of binary learnt clauses.
 
 	vector<lbool> assigns;          // The current assignments.
 	vector<char> polarity;         // The preferred polarity of each variable.
@@ -267,7 +253,6 @@ protected:
 
 	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
 	// used, exept 'seen' wich is used in several places.
-	//
 	vector<char> seen;
 	vector<Lit> analyze_stack;
 	vector<Lit> analyze_toclear;
@@ -291,7 +276,6 @@ protected:
 	lbool status;
 
 	// Main internal methods:
-	//
 	void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
 	Lit pickBranchLit(); // Return the next decision variable.
 	void newDecisionLevel(); // Begins a new decision level.
@@ -309,7 +293,6 @@ protected:
 	void rebuildOrderHeap();
 
 	// Maintaining Variable/Clause activity:
-	//
 	void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
 	void varBumpActivity(Var v, double inc); // Increase a variable with the current 'bump' value.
 	void varBumpActivity(Var v); // Increase a variable with the current 'bump' value.
@@ -317,7 +300,6 @@ protected:
 	void claBumpActivity(Clause& c); // Increase a clause with the current 'bump' value.
 
 	// Operations on clauses:
-	//
 	void attachClause(Clause* cr); // Attach a clause to watcher lists.
 	void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
 	void removeClause(Clause* cr); // Detach and free a clause.
@@ -330,7 +312,6 @@ protected:
 	void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
 	// Misc:
-	//
 	uint32_t decisionLevel() const; // Gives the current decisionlevel.
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
 	Clause* reason(Var x) const;
@@ -341,7 +322,6 @@ protected:
 	}
 
 	// Static helpers:
-	//
 	// Returns a random float 0 <= x < 1. Seed must never be 0.
 	static inline double drand(double& seed) {
 		seed *= 1389796;
@@ -356,9 +336,8 @@ protected:
 	}
 };
 
-//=================================================================================================
-// Implementation of inline methods:
 
+// Implementation of inline methods:
 inline Clause* Solver::reason(Var x) const {
     return vardata[x].reason;
 }
@@ -387,7 +366,6 @@ inline void Solver::varBumpActivity(Var v, double inc) {
             activity[i] *= 1e-100;
         var_inc *= 1e-100;
     }
-
     // Update order_heap with respect to new activity:
     if (order_heap.inHeap(v))
         order_heap.decrease(v);
@@ -401,6 +379,8 @@ inline void Solver::claBumpActivity(Clause& c) {
 		// Rescale:
 		for (Clause* clause : learnts)
 			clause->activity() *= 1e-20;
+        for (Clause* clause : learntsBin)
+            clause->activity() *= 1e-20;
 		cla_inc *= 1e-20;
 	}
 }
@@ -420,7 +400,6 @@ inline bool Solver::addClause(std::initializer_list<Lit> lits) {
     return addClause_(add_tmp);
 }
 
-// TODO: optimize conditions
 inline bool Solver::locked(Clause* cr) const {
     Clause& c = *cr;
     if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
@@ -456,7 +435,7 @@ inline int Solver::nClauses() const {
     return clauses.size();
 }
 inline int Solver::nLearnts() const {
-    return learnts.size();
+    return learnts.size() + learntsBin.size();
 }
 inline int Solver::nVars() const {
     return vardata.size();
@@ -482,11 +461,8 @@ inline void Solver::setConfBudget(int64_t x) {
 inline void Solver::setPropBudget(int64_t x) {
     propagation_budget = statistics.getPropagations() + x;
 }
-inline void Solver::interrupt() {
-    asynch_interrupt = true;
-}
-inline void Solver::clearInterrupt() {
-    asynch_interrupt = false;
+inline void Solver::setInterrupt(bool value) {
+    asynch_interrupt = value;
 }
 inline void Solver::budgetOff() {
     conflict_budget = propagation_budget = -1;
@@ -520,26 +496,12 @@ inline bool Solver::okay() const {
     return ok;
 }
 
-//=================================================================================================
-
 struct reduceDB_lt {
     reduceDB_lt() {
     }
 
     bool operator()(Clause* x, Clause* y) {
-        assert(x != nullptr);
-        assert(y != nullptr);
-        // Main criteria... Like in MiniSat we keep all binary clauses
-        if (x->size() > 2 && y->size() == 2) return 1;
-        if (y->size() > 2 && x->size() == 2) return 0;
-        if (x->size() == 2 && y->size() == 2) return 0;
-
-        // Second one  based on literal block distance
-        if (x->getLBD() > y->getLBD()) return 1;
-        if (x->getLBD() < y->getLBD()) return 0;
-
-        // Finally we can use old activity or size, we choose the last one
-        return x->activity() < y->activity();
+        return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
     }
 };
 
