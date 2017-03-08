@@ -1011,14 +1011,15 @@ lbool Solver::search(int nof_conflicts) {
             } else {
                 Clause* cr = new (learnt_clause.size()) Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
-                if (nblevels <= 2)
+                if (nblevels <= 2) {
                     statistics.incNBDL2();
-                if (cr->size() == 2)
-                    statistics.incNBBin();
-                if (cr->size() == 2)
+                }
+                if (cr->size() == 2) {
                     learntsBin.push_back(cr);
-                else
+                    statistics.incNBBin();
+                } else {
                     learnts.push_back(cr);
+                }
                 attachClause(cr);
                 claBumpActivity(*cr);
                 uncheckedEnqueue(learnt_clause[0], cr);

@@ -46,20 +46,20 @@ public:
         sumDecisionLevels += amount;
     }
 
-    inline void incDecisions(int amount = 1) {
-        decisions += amount;
+    inline void incDecisions() {
+        ++decisions;
     }
 
-    inline void incSolves(int amount = 1) {
-        solves += amount;
+    inline void incSolves() {
+        ++solves;
     }
 
-    inline void incNBSatCalls(int amount = 1) {
-        nbSatCalls += amount;
+    inline void incNBSatCalls() {
+        ++nbSatCalls;
     }
 
-    inline void incNBUnsatCalls(int amount = 1) {
-        nbUnsatCalls += amount;
+    inline void incNBUnsatCalls() {
+        ++nbUnsatCalls;
     }
 
     inline void incTotalTime4Sat(int amount) {
@@ -70,48 +70,48 @@ public:
         totalTime4Unsat += amount;
     }
 
-    inline void incReducedClauses(int amount = 1) {
-        nbReducedClauses += amount;
+    inline void incReducedClauses() {
+        ++nbReducedClauses;
     }
 
-    inline void incNBReduceDB(int amount = 1) {
-        nbReduceDB += amount;
+    inline void incNBReduceDB() {
+        ++nbReduceDB;
     }
 
-    inline void incRndDecisions(int amount = 1) {
-        rnd_decisions += amount;
+    inline void incRndDecisions() {
+        ++rnd_decisions;
     }
 
-    inline void incMaxLiterals(int amount = 1) {
+    inline void incMaxLiterals(int amount) {
         max_literals += amount;
     }
 
-    inline void incTotLiterals(int amount = 1) {
+    inline void incTotLiterals(int amount) {
         tot_literals += amount;
     }
 
-    inline void incStarts(int amount = 1) {
-        starts += amount;
+    inline void incStarts() {
+        ++starts;
     }
 
-    inline void incNBUn(int amount = 1) {
-        nbUn += amount;
+    inline void incNBUn() {
+        ++nbUn;
     }
 
-    inline void incNBDL2(int amount = 1) {
-        nbDL2 += amount;
+    inline void incNBDL2() {
+        ++nbDL2;
     }
 
-    inline void incNBBin(int amount = 1) {
-        nbBin += amount;
+    inline void incNBBin() {
+        ++nbBin;
     }
 
-    inline void incNBStopsRestarts(int amount = 1) {
-        nbstopsrestarts += amount;
+    inline void incNBStopsRestarts() {
+        ++nbstopsrestarts;
     }
 
-    inline void incNBStopsRestartsSame(int amount = 1) {
-        nbstopsrestartssame += amount;
+    inline void incNBStopsRestartsSame() {
+        ++nbstopsrestartssame;
     }
 
     inline void saveLastBlockAtRestart() {
