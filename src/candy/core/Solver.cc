@@ -249,8 +249,10 @@ bool Solver::addClause_(vector<Lit>& ps) {
     }
     ps.resize(j);
 
-    certificate.learnt(ps);
-    certificate.removed(oc);
+    if (oc.size() > 0) {
+        certificate.learnt(ps);
+        certificate.removed(oc);
+    }
 
     if (ps.size() == 0) {
         return ok = false;
