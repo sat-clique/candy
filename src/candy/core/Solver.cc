@@ -279,7 +279,6 @@ void Solver::attachClause(Clause* cr) {
     }
 
     nLiterals += c.size();
-    statistics.incClausesLiterals(c.size());
 }
 
 void Solver::detachClause(Clause* cr, bool strict) {
@@ -287,7 +286,6 @@ void Solver::detachClause(Clause* cr, bool strict) {
     Clause& c = *cr;
 
     nLiterals -= c.size();
-    statistics.incClausesLiterals(-1 * c.size());
 
     if (c.size() == 2) {
         if (strict) {
@@ -848,7 +846,9 @@ void Solver::reduceDB() {
     statistics.incNBReduceDB();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
-    nbclausesbeforereduce += specialIncReduceDB;
+    if (learntsBin.size() > 0 || learnts.back()->getLBD() <= 2) {
+        nbclausesbeforereduce += specialIncReduceDB;
+    }
 
     size_t index = (learnts.size() + learntsBin.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
@@ -862,7 +862,7 @@ void Solver::reduceDB() {
     for (size_t i = 0; i < limit; i++) {
         Clause* c = learnts[i];
         if (c->getLBD() <= 2) break; // small lbds come last in sequence (see ordering by reduceDB_lt())
-        if (!c->isFrozen() && !locked(c)) {
+        if (!c->isFrozen() && (value(c->first()) != l_True || reason(var(c->first())) != c)) {//&& !locked(c)) {
             removeClause(c);
         }
     }
@@ -977,7 +977,7 @@ lbool Solver::search(int nof_conflicts) {
             }
 
             if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
-                statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts(), nConflicts);
+                statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts(), nConflicts, nLiterals);
             }
             if (decisionLevel() == 0) {
                 return l_False;

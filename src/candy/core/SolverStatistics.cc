@@ -14,7 +14,7 @@ SolverStatistics::SolverStatistics() :
     sumDecisionLevels(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0), nbReduceDB(0),
     solves(0), starts(0), decisions(0), rnd_decisions(0),
     nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0), dec_vars(0),
-    clauses_literals(0), max_literals(0), tot_literals(0),
+    max_literals(0), tot_literals(0),
     totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0)
 {
 }
@@ -41,9 +41,9 @@ void SolverStatistics::printIncrementalStats(uint64_t conflicts, uint64_t propag
 }
 
 
-void SolverStatistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
+void SolverStatistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals) {
     printf("c | %8d   %7d    %5d | %7d %8d %8d | %5d %8d   %6d %8d | %6.3f %% |\n", (int) starts, (int) nbstopsrestarts, (int) (conflicts / starts),
-                            (int)dec_vars - trail, clauses, (int) clauses_literals, (int) nbReduceDB, learnts, (int) nbDL2, (int) nbRemovedClauses, -1.0);
+                            (int)dec_vars - trail, clauses, (int) literals, (int) nbReduceDB, learnts, (int) nbDL2, (int) nbRemovedClauses, -1.0);
 }
 
 void SolverStatistics::printFinalStats(double cpu_time, double mem_used, uint64_t conflicts, uint64_t propagations) {
