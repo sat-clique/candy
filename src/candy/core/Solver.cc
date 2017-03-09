@@ -748,6 +748,10 @@ Clause* Solver::propagate() {
         return nullptr;
     }
 
+    //TODO: check why callers still make this necessary:
+    watchesBin.cleanAll();
+    watches.cleanAll();
+
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
 
