@@ -75,7 +75,8 @@ std::vector<void*>& ClauseAllocator::getPool(uint16_t index) {
 }
 
 void ClauseAllocator::refillPool(uint16_t index, uint32_t nElem) {
-    uint16_t nLits = 2 + index * 2;
+    uint16_t nLits = 1 + index;
+    //uint16_t nLits = 2 + index * 2;
     uint16_t clause_bytes = sizeof(Clause) - sizeof(Lit) + nLits * sizeof(Lit);
     uint32_t bytes_total = clause_bytes * nElem;
     char* pool = (char*)malloc(bytes_total + clause_bytes); // one more for alignment
@@ -95,7 +96,8 @@ void ClauseAllocator::refillPool(uint16_t index, uint32_t nElem) {
  * index = (length - 1) / 2
  */
 uint16_t ClauseAllocator::getPoolIndex(uint32_t size) {
-    return (size - 1) / 2;
+    return size - 1;
+    //return (size - 1) / 2;
 }
 
 } /* namespace Candy */
