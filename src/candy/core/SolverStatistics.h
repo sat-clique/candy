@@ -18,7 +18,7 @@ class SolverStatistics {
     uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB;
     uint64_t solves, starts, decisions, rnd_decisions;
     uint64_t nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
-    uint64_t dec_vars, clauses_literals, max_literals, tot_literals;
+    uint64_t dec_vars, max_literals, tot_literals;
     double totalTime4Sat, totalTime4Unsat;
     int nbSatCalls, nbUnsatCalls;
 
@@ -27,15 +27,11 @@ public:
     virtual ~SolverStatistics();
 
     void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
-    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts);
+    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals);
     void printFinalStats(double cpu_time, double mem_used, uint64_t conflicts, uint64_t propagations);
 
     inline void incDecVars(int amount = 1) {
         dec_vars += amount;
-    }
-
-    inline void incClausesLiterals(int amount) {
-        clauses_literals += amount;
     }
 
     inline void incRemovedClauses(int amount) {
