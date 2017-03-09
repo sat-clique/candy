@@ -239,8 +239,11 @@ protected:
 	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 	Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+
+	// See XMinisat paper: prefer size over LBD for small clauses in reduceDB
 	bool reduceOnSize;
-	int reduceOnSizeSize;                // See XMinisat paper /* constant to use on size reduction */
+	int reduceOnSizeSize;
+
 	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
 
 	// UPDATEVARACTIVITY trick (see competition'09 companion paper)
@@ -308,8 +311,8 @@ protected:
 	bool locked(Clause* c) const; // Returns TRUE if a clause is a reason for some implication in the current state.
 	bool satisfied(const Clause& c) const; // Returns TRUE if a clause is satisfied in the current state.
 
-	unsigned int computeLBD(const vector<Lit>& lits, int end = -1);
-	unsigned int computeLBD(const Clause &c);
+	template <typename Iterator>
+	unsigned int computeLBD(Iterator it, Iterator end);
 	void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
 	// Misc:
@@ -499,6 +502,11 @@ struct reduceDB_lt {
     }
 
     bool operator()(Clause* x, Clause* y) {
+//        if (reduceOnSize) {
+//            int lbd1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
+//            int lbd2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
+//            return lbd1 > lbd2 || (lbd1 == lbd2 && x->activity() < y->activity());
+//        }
         return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
     }
 };

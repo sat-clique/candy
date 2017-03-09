@@ -328,29 +328,27 @@ bool Solver::satisfied(const Clause& c) const {
 /************************************************************
  * Compute LBD functions
  *************************************************************/
-inline unsigned int Solver::computeLBD(const vector<Lit>& lits, int end) {
+template <typename Iterator>
+inline unsigned int Solver::computeLBD(Iterator it, Iterator end) {
     int nblevels = 0;
     MYFLAG++;
 
     if (incremental) { // ----------------- INCREMENTAL MODE
-        if (end == -1)
-            end = lits.size();
-        int nbDone = 0;
-        for (unsigned int i = 0; i < lits.size() && nbDone < end; i++) {
-            if (isSelector(var(lits[i]))) {
+        for (; it != end; it++) {
+            Lit lit = *it;
+            if (isSelector(var(lit))) {
                 continue;
-            } else {
-                nbDone++;
             }
-            int l = level(var(lits[i]));
+            int l = level(var(lit));
             if (permDiff[l] != MYFLAG) {
                 permDiff[l] = MYFLAG;
                 nblevels++;
             }
         }
-    } else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
-        for (unsigned int i = 0; i < lits.size(); i++) {
-            int l = level(var(lits[i]));
+    } else { // -------- DEFAULT MODE
+        for (; it != end; it++) {
+            Lit lit = *it;
+            int l = level(var(lit));
             if (permDiff[l] != MYFLAG) {
                 permDiff[l] = MYFLAG;
                 nblevels++;
@@ -358,52 +356,15 @@ inline unsigned int Solver::computeLBD(const vector<Lit>& lits, int end) {
         }
     }
 
-    if (!reduceOnSize)
-        return nblevels;
-    if ((int) lits.size() < reduceOnSizeSize)
-        return lits.size(); // See the XMinisat paper
-    return lits.size() + nblevels;
-}
-
-inline unsigned int Solver::computeLBD(const Clause &c) {
-    int nblevels = 0;
-    MYFLAG++;
-
-    if (incremental) { // ----------------- INCREMENTAL MODE
-        for (unsigned int i = 0; i < c.size(); i++) {
-            if (isSelector(var(c[i]))) {
-                continue;
-            }
-            int l = level(var(c[i]));
-            if (permDiff[l] != MYFLAG) {
-                permDiff[l] = MYFLAG;
-                nblevels++;
-            }
-        }
-    } else { // -------- DEFAULT MODE. NOT A LOT OF DIFFERENCES... BUT EASIER TO READ
-        for (unsigned int i = 0; i < c.size(); i++) {
-            int l = level(var(c[i]));
-            if (permDiff[l] != MYFLAG) {
-                permDiff[l] = MYFLAG;
-                nblevels++;
-            }
-        }
-    }
-
-    if (!reduceOnSize)
-        return nblevels;
-    if ((int)c.size() < reduceOnSizeSize)
-        return c.size(); // See the XMinisat paper
-    return c.size() + nblevels;
-
+    return nblevels;
 }
 
 /******************************************************************
- * Minimisation with binary reolution
+ * Minimisation with binary resolution
  ******************************************************************/
 void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
     // Find the LBD measure
-    unsigned int lbd = computeLBD(out_learnt);
+    unsigned int lbd = computeLBD(out_learnt.begin(), out_learnt.end());
     Lit p = ~out_learnt[0];
 
     if (lbd <= lbLBDMinimizingClause) {
@@ -455,7 +416,6 @@ void Solver::cancelUntil(int level) {
 
 //=================================================================================================
 // Major methods:
-
 Lit Solver::pickBranchLit() {
     Var next = var_Undef;
 
@@ -519,7 +479,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
         if (c.isLearnt() && c.getLBD() > 2) {
-            unsigned int nblevels = computeLBD(c);
+            unsigned int nblevels = computeLBD(c.begin(), c.end());
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
                     c.setFrozen(true);
@@ -622,7 +582,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
     }
 
     // Compute LBD
-    lbd = computeLBD(out_learnt, out_learnt.size() - selectors.size());
+    lbd = computeLBD(out_learnt.begin(), out_learnt.end() - selectors.size());
 
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
     if (lastDecisionLevel.size() > 0) {
