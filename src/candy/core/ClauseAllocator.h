@@ -19,7 +19,7 @@ class ClauseAllocator {
 
 public:
     inline static ClauseAllocator& getInstance() {
-        static ClauseAllocator allocator(600);
+        static ClauseAllocator allocator;
         return allocator;
     }
 
@@ -45,6 +45,15 @@ public:
             pool.pop_back();
             return clause;
         }
+        else if (index < xxl_pool_max_size) {
+            stats_active_xxl++;
+            if (xxl_pool.size() == 0) {
+                refillXXLPool();
+            }
+            void* clause = xxl_pool.back();
+            xxl_pool.pop_back();
+            return clause;
+        }
         else {
             stats_active_long++;
             return malloc(clauseBytes(length));
@@ -57,6 +66,10 @@ public:
             stats_active_counts[index]--; // stats can be <0 if clause was shrinked
             pools[index].push_back(clause);
         }
+        else if (index < xxl_pool_max_size) {
+            stats_active_xxl--;
+            xxl_pool.push_back(clause);
+        }
         else {
             stats_active_long--;
             free((void*)clause);
@@ -66,22 +79,37 @@ public:
     // keep statistics intact (although clause now leaks one literal)
     inline void strengthen(uint32_t length) {
         uint16_t index = getPoolIndex(length);
-        stats_active_counts[index]--;
-        stats_active_counts[index-1]++;
+        if (index < number_of_pools) {
+            stats_active_counts[index]--;
+            stats_active_counts[index-1]++;
+        }
+        else if (index < xxl_pool_max_size && index-1 < number_of_pools) {
+            stats_active_xxl--;
+            stats_active_counts[index-1]++;
+        }
+        else if (index-1 < xxl_pool_max_size) {
+            stats_active_long--;
+            stats_active_xxl++;
+        }
     }
 
 private:
-    ClauseAllocator(uint32_t _number_of_pools);
+    ClauseAllocator();
 
-    std::vector<std::vector<void*>> pools;
     std::vector<char*> pages;
 
+    std::vector<std::vector<void*>> pools;
     const uint32_t number_of_pools;
-
-    uint32_t stats_active_long = 0;
     std::vector<uint32_t> stats_active_counts;
 
+    std::vector<void*> xxl_pool;
+    const uint32_t xxl_pool_max_size;
+    uint32_t stats_active_xxl = 0;
+
+    uint32_t stats_active_long = 0;
+
     void refillPool(uint16_t index);
+    void refillXXLPool();
 
     inline uint32_t clauseBytes(uint32_t length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
@@ -94,11 +122,11 @@ private:
         if (index == 1 || index == 2) {
             return 524288;
         }
-        if (index < 150) {
+        if (index < 120) {
             int pow = 1 << (index / 10);
             return 262144 / pow;
         }
-        return 32;
+        return 256;
     }
 
     /*
