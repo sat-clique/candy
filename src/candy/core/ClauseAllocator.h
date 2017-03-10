@@ -18,7 +18,7 @@ namespace Candy {
 class ClauseAllocator {
 
 public:
-    static ClauseAllocator& getInstance() {
+    inline static ClauseAllocator& getInstance() {
         static ClauseAllocator allocator(600, 2000);
         return allocator;
     }
@@ -63,6 +63,13 @@ public:
         }
     }
 
+    // keep statistics intact (although clause now leaks one literal)
+    inline void strengthen(uint32_t length) {
+        uint16_t index = getPoolIndex(length);
+        stats_active_counts[index]--;
+        stats_active_counts[index-1]++;
+    }
+
 private:
     ClauseAllocator(uint32_t _number_of_pools, uint32_t _elements_per_pool);
 
@@ -72,7 +79,6 @@ private:
     uint32_t number_of_pools;
     uint32_t initial_elements_per_pool;
 
-    uint32_t stats_active_total = 0;
     uint32_t stats_active_long = 0;
     std::vector<uint32_t> stats_active_counts;
 

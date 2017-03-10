@@ -30,11 +30,16 @@ ClauseAllocator::~ClauseAllocator() {
 }
 
 void ClauseAllocator::printStatistics() {
-    printf("========= [Pool usage by slot] =========\n");
+    printf("\n========= [Pools usage] =========\n");
     for (size_t i = 0; i < number_of_pools; i++) {
-        printf("%zu: %u / %zu; ", i, stats_active_counts[i], stats_active_counts[i] + pools[i].size());
+        printf("%u;", stats_active_counts[i]);
     }
-    printf("n: %i\n", stats_active_long);
+    printf("\n========= [Pools maximum] =========\n");
+    for (size_t i = 0; i < number_of_pools; i++) {
+        printf("%zu;", stats_active_counts[i] + pools[i].size());
+    }
+    printf("\n========= [Clauses Beyond Pool] =========\n");
+    printf("%u\n", stats_active_long);
 }
 
 void ClauseAllocator::refillPool(uint16_t index) {

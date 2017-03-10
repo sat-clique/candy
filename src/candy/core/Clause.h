@@ -179,12 +179,7 @@ public:
         return ret;
     }
 
-    inline void strengthen(Lit p) {
-        if (std::remove(begin(), end(), p) != end()) {
-            --length;
-        }
-        calcAbstraction();
-    }
+    void strengthen(Lit p);
 
     static void printAlignment() {
         Clause clause({lit_Undef});
