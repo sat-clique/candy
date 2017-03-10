@@ -10,8 +10,6 @@
 
 namespace Candy {
 
-ClauseAllocator* Clause::allocator = new ClauseAllocator(600, 2000);
-
 Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     std::copy(ps.begin(), ps.end(), literals);
     length = ps.size();
@@ -37,11 +35,11 @@ Clause::Clause(std::initializer_list<Lit> list) {
 Clause::~Clause() { }
 
 void* Clause::operator new (std::size_t size, uint16_t length) {
-    return allocator->allocate(length);
+    return ClauseAllocator::getInstance().allocate(length);
 }
 
 void Clause::operator delete (void* p) {
-    allocator->deallocate((Clause*)p);
+    ClauseAllocator::getInstance().deallocate((Clause*)p);
 }
 
 bool Clause::contains(const Lit lit) const {
