@@ -54,20 +54,20 @@ namespace Candy {
      * \ingroup RandomSimulation
      *
      * DFS-traverses the gate structure given by a Gate analyzer. A Collector object
-     * is created, receiving pointers to the gates in order of their visitation
+     * is created, receiving pointers to the gates in order of their traversal
      * rsp. in topological order (backtracking).
      *
      * Collector needs to be a type with the following properties:
      *  - needs to be default-constructible.
-     *  - needs to have a method visit(Gate*).
+     *  - needs to have a method collect(Gate*).
      *  - needs to have a method backtrack(Gate*).
-     *  - needs to have a method visitInput(Var).
+     *  - needs to have a method collectInput(Var).
      *  - needs to have a method init(size_t)
      * Furthermore, Collector should be move-constructible and move-assignable.
      *
-     * Collector.visit() is called whenever a gate is visited the first time,
+     * Collector.collect() is called whenever a gate is visited the first time,
      * while Collector.backtrack() is called whenever a gate is backtracked during
-     * the traversal. Moreover, Collector.visitInput() is called whenever an input
+     * the traversal. Moreover, Collector.collectInput() is called whenever an input
      * variable is encountered the first time.
      * Before performing the DFS, the amount of gates occuring in the gate structure
      * is passed to init().
@@ -76,7 +76,7 @@ namespace Candy {
      *   the traversal.
      */
     template<typename Collector>
-    Collector visitDFS(GateAnalyzer& analyzer) {
+    Collector traverseDFS(GateAnalyzer& analyzer) {
         std::stack<GateDFSMarkedGate> work;
         std::unordered_set<Gate*> visited;
         Collector collector;
@@ -105,7 +105,7 @@ namespace Candy {
                 collector.backtrack(workItem.gate);
             }
             else if (visited.find(workItem.gate) == visited.end()) {
-                collector.visit(workItem.gate);
+                collector.collect(workItem.gate);
                 visited.emplace(workItem.gate);
                 work.push(GateDFSMarkedGate{workItem.gate, true});
                 for (auto input : workItem.gate->getInputs()) {
@@ -115,7 +115,7 @@ namespace Candy {
                     }
                     else if (!g.isDefined() && seenInputs.find(var(input)) == seenInputs.end()) {
                         seenInputs.emplace(var(input));
-                        collector.visitInput(var(input));
+                        collector.collectInput(var(input));
                     }
                 }
             }
@@ -139,11 +139,11 @@ namespace Candy {
             m_backtrackOutputOrder.push_back(var(g->getOutput()));
         }
         
-        void visit(Gate* g) {
+        void collect(Gate* g) {
             (void)g;
         }
         
-        void visitInput(Var var) {
+        void collectInput(Var var) {
             (void)var;
         }
         
@@ -165,7 +165,7 @@ namespace Candy {
      * TODO: documentation
      */
     inline TopologicallyOrderedGates getTopoOrder(GateAnalyzer& analyzer) {
-        return visitDFS<TopologicallyOrderedGates>(analyzer);
+        return traverseDFS<TopologicallyOrderedGates>(analyzer);
     }
 }
 

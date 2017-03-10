@@ -161,7 +161,6 @@ namespace Candy {
         
         bool m_isIncrementalSet;
         bool m_isParsingSet;
-        bool m_isCertifiedUNSATSet;
         
         std::vector<SolverMockEvent> m_eventLog;
     };
