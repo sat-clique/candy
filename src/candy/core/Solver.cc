@@ -984,6 +984,7 @@ lbool Solver::search(int nof_conflicts) {
                     learntsBin.push_back(cr);
                     statistics.incNBBin();
                 } else {
+                    sort(cr->begin()+1, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
                     learnts.push_back(cr);
                 }
                 attachClause(cr);
