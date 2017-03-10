@@ -113,4 +113,12 @@ void Clause::calcAbstraction() {
     data.abs = abstraction;
 }
 
+void Clause::strengthen(Lit p) {
+    if (std::remove(begin(), end(), p) != end()) {
+        ClauseAllocator::getInstance().strengthen(length);
+        --length;
+    }
+    calcAbstraction();
+}
+
 } /* namespace Candy */
