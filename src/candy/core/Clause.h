@@ -9,7 +9,6 @@
 #define SRC_CANDY_CORE_CLAUSE_H_
 
 #include "candy/core/SolverTypes.h"
-#include "candy/core/ClauseAllocator.h"
 #include <iostream>
 
 namespace Candy {
@@ -35,17 +34,12 @@ class Clause {
 
     Lit literals[1];
 
-private:
-    void* operator new (std::size_t size) throw() { assert(size != size); return nullptr; };
-
-protected:
-    static ClauseAllocator* allocator;
-
 public:
     Clause(const std::vector<Lit>& ps, bool learnt);
     Clause(std::initializer_list<Lit> list);
     ~Clause();
 
+    void* operator new (std::size_t size) = delete;
     void* operator new (std::size_t size, uint16_t length);
     void operator delete (void* p);
 

@@ -58,6 +58,7 @@
 
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Certificate.h"
+#include "candy/core/ClauseAllocator.h"
 #include "candy/utils/System.h"
 #include "candy/utils/ParseUtils.h"
 #include "candy/utils/Options.h"
@@ -172,6 +173,7 @@ static void printResult(Solver& S, lbool result, const char* outputFilename = nu
         double cpu_time = Glucose::cpuTime();
         double mem_used = 0; //memUsedPeak();
         solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
+        ClauseAllocator::getInstance().printStatistics();
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
