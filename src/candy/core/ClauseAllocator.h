@@ -41,7 +41,7 @@ public:
             std::vector<void*>& pool = pools[index];
 
             if (pool.size() == 0) {
-                refillPool(index);
+                fillPool(index);
             }
 
             void* clause = pool.back();
@@ -51,14 +51,14 @@ public:
         else if (index < XXL_POOL_ONE_SIZE) {
             stats_active_xxl++;
             if (xxl_pool.size() == 0) {
-                refillXXLPool();
+                fillXXLPool();
             }
             void* clause = xxl_pool.back();
             xxl_pool.pop_back();
             return clause;
         }
         else {
-            stats_active_long++;
+            stats_active_beyond++;
             return malloc(clauseBytes(length));
         }
     }
@@ -74,7 +74,7 @@ public:
             xxl_pool.push_back(clause);
         }
         else {
-            stats_active_long--;
+            stats_active_beyond--;
             free((void*)clause);
         }
     }
@@ -91,7 +91,7 @@ public:
             stats_active_counts[index-1]++;
         }
         else if (index-1 < XXL_POOL_ONE_SIZE) {
-            stats_active_long--;
+            stats_active_beyond--;
             stats_active_xxl++;
         }
     }
@@ -102,46 +102,30 @@ private:
     std::vector<char*> pages;
 
     std::vector<std::vector<void*>> pools;
-    std::vector<uint32_t> stats_active_counts;
-
     std::vector<void*> xxl_pool;
-    uint32_t stats_active_xxl = 0;
 
-    uint32_t stats_active_long = 0;
+    std::vector<uint32_t> stats_active_counts;
+    uint32_t stats_active_xxl;
+    uint32_t stats_active_beyond;
 
-    void refillPool(uint16_t index);
-    void refillXXLPool();
+    void fillPool(uint16_t index);
+    void fillXXLPool();
 
     inline uint32_t clauseBytes(uint32_t length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
     }
 
-    uint32_t initialNumberOfElements(uint32_t index) {
-        if (index == 0) {
-            return 10000;
-        }
-        if (index == 1 || index == 2) {
-            return 524288;
-        }
-        if (index < 120) {
-            int pow = 1 << (index / 10);
-            return 262144 / pow;
-        }
-        return 256;
+    inline uint16_t getPoolIndex(uint32_t size) {
+        return size - 1;
     }
 
-    /*
-     * clause header is 8 bytes
-     * literal size is 4 bytes
-     * index 0: clause of length 1-2 has length 16
-     * index 1: clause of length 3-4 has length 24
-     * index 2: clause of length 5-6 has length 32
-     * ...
-     * index = (length - 1) / 2
-     */
-    inline uint16_t getPoolIndex(uint32_t size) {
-        return size - 1;// go back to pool per size
-        //return (size - 1) / 2;
+    uint32_t initialNumberOfElements(uint32_t index) {
+        if (index > 2 && index < 120) {
+            return 262144 >> (index / 10);
+        } else if (index == 1 || index == 2) {
+            return 524288;
+        }
+        return 256;
     }
 
 };

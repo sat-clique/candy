@@ -12,16 +12,19 @@
 namespace Candy {
 
 ClauseAllocator::ClauseAllocator() :
+    pages(2*NUMBER_OF_POOLS),
     pools(NUMBER_OF_POOLS),
-    stats_active_long(0),
-    stats_active_counts(NUMBER_OF_POOLS, 0),
     xxl_pool(),
-    stats_active_xxl(0)
+    stats_active_counts(NUMBER_OF_POOLS, 0),
+    stats_active_xxl(0),
+    stats_active_beyond(0)
 {
     for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {
-        refillPool(i);
+        pools[i].reserve(initialNumberOfElements(i));
+        fillPool(i);
     }
-    refillXXLPool();
+    xxl_pool.reserve(1024);
+    fillXXLPool();
 }
 
 ClauseAllocator::~ClauseAllocator() {
@@ -42,29 +45,27 @@ void ClauseAllocator::printStatistics() {
     printf("\n========= [Clauses in XXL Pool] =========\n");
     printf("%u\n", stats_active_xxl);
     printf("\n========= [Clauses Beyond Pool] =========\n");
-    printf("%u\n", stats_active_long);
+    printf("%u\n", stats_active_beyond);
 }
 
-void ClauseAllocator::refillPool(uint16_t index) {
-    uint32_t nElem = stats_active_counts[index] + initialNumberOfElements(index);
-    uint16_t nLits = 1 + index;
-    //uint16_t nLits = 2 + index * 2;
-    uint16_t clause_bytes = sizeof(Clause) - sizeof(Lit) + nLits * sizeof(Lit);
-    uint32_t bytes_total = clause_bytes * nElem;
-    char* pool = (char*)malloc(bytes_total + clause_bytes); // one more for alignment
+void ClauseAllocator::fillPool(uint16_t index) {
+    const uint32_t nElem = pools[index].capacity();
+    const uint16_t nLits = 1 + index;
+    const uint16_t clause_bytes = sizeof(Clause) - sizeof(Lit) + nLits * sizeof(Lit);
+    const uint32_t bytes_total = clause_bytes * nElem;
+    char* pool = (char*)malloc(bytes_total);
     pages.push_back(pool);
     for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
         pools[index].push_back(pool + pos);
     }
 }
 
-void ClauseAllocator::refillXXLPool() {
-    uint32_t nElem = stats_active_xxl + 1024;
-    uint16_t nLits = XXL_POOL_ONE_SIZE;
-    //uint16_t nLits = 2 + index * 2;
-    uint16_t clause_bytes = sizeof(Clause) - sizeof(Lit) + nLits * sizeof(Lit);
-    uint32_t bytes_total = clause_bytes * nElem;
-    char* pool = (char*)malloc(bytes_total + clause_bytes); // one more for alignment
+void ClauseAllocator::fillXXLPool() {
+    const uint32_t nElem = xxl_pool.capacity();
+    const uint16_t nLits = XXL_POOL_ONE_SIZE;
+    const uint16_t clause_bytes = sizeof(Clause) - sizeof(Lit) + nLits * sizeof(Lit);
+    const uint32_t bytes_total = clause_bytes * nElem;
+    char* pool = (char*)malloc(bytes_total);
     pages.push_back(pool);
     for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
         xxl_pool.push_back(pool + pos);
