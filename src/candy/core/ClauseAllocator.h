@@ -19,7 +19,7 @@ class ClauseAllocator {
 
 public:
     inline static ClauseAllocator& getInstance() {
-        static ClauseAllocator allocator(600, 2000);
+        static ClauseAllocator allocator(600);
         return allocator;
     }
 
@@ -71,13 +71,12 @@ public:
     }
 
 private:
-    ClauseAllocator(uint32_t _number_of_pools, uint32_t _elements_per_pool);
+    ClauseAllocator(uint32_t _number_of_pools);
 
     std::vector<std::vector<void*>> pools;
     std::vector<char*> pages;
 
-    uint32_t number_of_pools;
-    uint32_t initial_elements_per_pool;
+    const uint32_t number_of_pools;
 
     uint32_t stats_active_long = 0;
     std::vector<uint32_t> stats_active_counts;
@@ -88,6 +87,19 @@ private:
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
     }
 
+    uint32_t initialNumberOfElements(uint32_t index) {
+        if (index == 0) {
+            return 10000;
+        }
+        if (index == 1 || index == 2) {
+            return 524288;
+        }
+        if (index < 150) {
+            int pow = 1 << (index / 10);
+            return 262144 / pow;
+        }
+        return 32;
+    }
 
     /*
      * clause header is 8 bytes

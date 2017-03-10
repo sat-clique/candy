@@ -11,10 +11,9 @@
 
 namespace Candy {
 
-ClauseAllocator::ClauseAllocator(uint32_t _number_of_pools, uint32_t _initial_elements_per_pool) :
+ClauseAllocator::ClauseAllocator(uint32_t _number_of_pools) :
     pools(_number_of_pools),
     number_of_pools(_number_of_pools),
-    initial_elements_per_pool(_initial_elements_per_pool),
     stats_active_long(0),
     stats_active_counts(_number_of_pools, 0)
 {
@@ -43,7 +42,7 @@ void ClauseAllocator::printStatistics() {
 }
 
 void ClauseAllocator::refillPool(uint16_t index) {
-    uint32_t nElem = std::max(stats_active_counts[index], initial_elements_per_pool);
+    uint32_t nElem = stats_active_counts[index] + initialNumberOfElements(index);
     uint16_t nLits = 1 + index;
     //uint16_t nLits = 2 + index * 2;
     uint16_t clause_bytes = sizeof(Clause) - sizeof(Lit) + nLits * sizeof(Lit);
