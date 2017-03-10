@@ -13,6 +13,9 @@
 
 #include <candy/core/Clause.h>
 
+#define NUMBER_OF_POOLS 500
+#define XXL_POOL_ONE_SIZE 1000
+
 namespace Candy {
 
 class ClauseAllocator {
@@ -33,7 +36,7 @@ public:
 
     inline void* allocate(uint32_t length) {
         uint16_t index = getPoolIndex(length);
-        if (index < number_of_pools) {
+        if (index < NUMBER_OF_POOLS) {
             stats_active_counts[index]++;
             std::vector<void*>& pool = pools[index];
 
@@ -45,7 +48,7 @@ public:
             pool.pop_back();
             return clause;
         }
-        else if (index < xxl_pool_max_size) {
+        else if (index < XXL_POOL_ONE_SIZE) {
             stats_active_xxl++;
             if (xxl_pool.size() == 0) {
                 refillXXLPool();
@@ -62,11 +65,11 @@ public:
 
     inline void deallocate(Clause* clause) {
         uint16_t index = getPoolIndex(clause->size());
-        if (index < number_of_pools) {
+        if (index < NUMBER_OF_POOLS) {
             stats_active_counts[index]--; // stats can be <0 if clause was shrinked
             pools[index].push_back(clause);
         }
-        else if (index < xxl_pool_max_size) {
+        else if (index < XXL_POOL_ONE_SIZE) {
             stats_active_xxl--;
             xxl_pool.push_back(clause);
         }
@@ -79,15 +82,15 @@ public:
     // keep statistics intact (although clause now leaks one literal)
     inline void strengthen(uint32_t length) {
         uint16_t index = getPoolIndex(length);
-        if (index < number_of_pools) {
+        if (index < NUMBER_OF_POOLS) {
             stats_active_counts[index]--;
             stats_active_counts[index-1]++;
         }
-        else if (index < xxl_pool_max_size && index-1 < number_of_pools) {
+        else if (index < XXL_POOL_ONE_SIZE && index-1 < NUMBER_OF_POOLS) {
             stats_active_xxl--;
             stats_active_counts[index-1]++;
         }
-        else if (index-1 < xxl_pool_max_size) {
+        else if (index-1 < XXL_POOL_ONE_SIZE) {
             stats_active_long--;
             stats_active_xxl++;
         }
@@ -99,11 +102,9 @@ private:
     std::vector<char*> pages;
 
     std::vector<std::vector<void*>> pools;
-    const uint32_t number_of_pools;
     std::vector<uint32_t> stats_active_counts;
 
     std::vector<void*> xxl_pool;
-    const uint32_t xxl_pool_max_size;
     uint32_t stats_active_xxl = 0;
 
     uint32_t stats_active_long = 0;
