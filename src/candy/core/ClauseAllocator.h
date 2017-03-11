@@ -12,6 +12,7 @@
 #include <cstdint>
 
 #include <candy/core/Clause.h>
+#include <candy/core/Statistics.h>
 
 #define NUMBER_OF_POOLS 500
 #define XXL_POOL_ONE_SIZE 1000
@@ -32,12 +33,10 @@ public:
 
     ~ClauseAllocator();
 
-    void printStatistics();
-
     inline void* allocate(uint32_t length) {
         uint16_t index = getPoolIndex(length);
         if (index < NUMBER_OF_POOLS) {
-            stats_active_counts[index]++;
+            Statistics::getInstance().allocatorPoolAllocdInc(index);
             std::vector<void*>& pool = pools[index];
 
             if (pool.size() == 0) {
@@ -49,7 +48,7 @@ public:
             return clause;
         }
         else if (index < XXL_POOL_ONE_SIZE) {
-            stats_active_xxl++;
+            Statistics::getInstance().allocatorXXLPoolAllocdInc();
             if (xxl_pool.size() == 0) {
                 fillXXLPool();
             }
@@ -58,7 +57,7 @@ public:
             return clause;
         }
         else {
-            stats_active_beyond++;
+            Statistics::getInstance().allocatorBeyondMallocdInc();
             return malloc(clauseBytes(length));
         }
     }
@@ -66,15 +65,15 @@ public:
     inline void deallocate(Clause* clause) {
         uint16_t index = getPoolIndex(clause->size());
         if (index < NUMBER_OF_POOLS) {
-            stats_active_counts[index]--; // stats can be <0 if clause was shrinked
+            Statistics::getInstance().allocatorPoolAllocdDec(index);
             pools[index].push_back(clause);
         }
         else if (index < XXL_POOL_ONE_SIZE) {
-            stats_active_xxl--;
+            Statistics::getInstance().allocatorXXLPoolAllocdDec();
             xxl_pool.push_back(clause);
         }
         else {
-            stats_active_beyond--;
+            Statistics::getInstance().allocatorBeyondMallocdDec();
             free((void*)clause);
         }
     }
@@ -83,16 +82,16 @@ public:
     inline void strengthen(uint32_t length) {
         uint16_t index = getPoolIndex(length);
         if (index < NUMBER_OF_POOLS) {
-            stats_active_counts[index]--;
-            stats_active_counts[index-1]++;
+            Statistics::getInstance().allocatorPoolAllocdDec(index);
+            Statistics::getInstance().allocatorPoolAllocdInc(index-1);
         }
         else if (index < XXL_POOL_ONE_SIZE && index-1 < NUMBER_OF_POOLS) {
-            stats_active_xxl--;
-            stats_active_counts[index-1]++;
+            Statistics::getInstance().allocatorXXLPoolAllocdDec();
+            Statistics::getInstance().allocatorPoolAllocdInc(index-1);
         }
         else if (index-1 < XXL_POOL_ONE_SIZE) {
-            stats_active_beyond--;
-            stats_active_xxl++;
+            Statistics::getInstance().allocatorBeyondMallocdDec();
+            Statistics::getInstance().allocatorXXLPoolAllocdInc();
         }
     }
 
@@ -104,10 +103,6 @@ private:
     std::vector<std::vector<void*>> pools;
     std::vector<void*> xxl_pool;
 
-    std::vector<uint32_t> stats_active_counts;
-    uint32_t stats_active_xxl;
-    uint32_t stats_active_beyond;
-
     void fillPool(uint16_t index);
     void fillXXLPool();
 
@@ -115,7 +110,7 @@ private:
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
     }
 
-    inline uint16_t getPoolIndex(uint32_t size) {
+    inline uint16_t getPoolIndex(uint32_t size) const {
         return size - 1;
     }
 

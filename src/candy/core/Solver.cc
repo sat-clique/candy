@@ -121,7 +121,6 @@ Solver::Solver() :
                 rnd_pol(false),
                 rnd_init_act(opt_rnd_init_act),
                 certificate(nullptr, false),
-                statistics(),
                 nConflicts(0),
                 nPropagations(0),
                 nLiterals(0),
@@ -385,7 +384,7 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
             }
         }
         if (nb > 0) {
-            statistics.incReducedClauses();
+            Statistics::getInstance().solverReducedClausesInc();
             for (unsigned int i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
                 if (permDiff[var(out_learnt[i])] != MYFLAG) {
                     std::swap(out_learnt[i], out_learnt[l]);
@@ -425,7 +424,7 @@ Lit Solver::pickBranchLit() {
     if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
         next = order_heap[irand(random_seed, order_heap.size())];
         if (value(next) == l_Undef && decision[next])
-            statistics.incRndDecisions();
+            Statistics::getInstance().solverRandomDecisionsInc();
     }
 
     // Activity based decision:
@@ -529,7 +528,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
     // Simplify conflict clause:
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
-    statistics.incMaxLiterals(out_learnt.size());
+    Statistics::getInstance().solverMaxLiteralsInc(out_learnt.size());
 
     analyze_toclear.clear();
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
@@ -555,7 +554,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
     assert(out_learnt[0] == ~asslit);
 
-    statistics.incTotLiterals(out_learnt.size());
+    Statistics::getInstance().solverTotLiteralsInc(out_learnt.size());
 
     /* ***************************************
      Minimisation with binary clauses of the asserting clause
@@ -805,7 +804,7 @@ Clause* Solver::propagate() {
  |________________________________________________________________________________________________@*/
 
 void Solver::reduceDB() {
-    statistics.incNBReduceDB();
+    Statistics::getInstance().solverReduceDBInc();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
     if (learntsBin.size() > 0 || learnts.back()->getLBD() <= 2) {
@@ -847,7 +846,7 @@ void Solver::freeMarkedClauses(vector<Clause*>& list) {
                     return false;
                 }
             });
-    statistics.incRemovedClauses(std::distance(new_end, list.end()));
+    Statistics::getInstance().solverRemovedClausesInc(std::distance(new_end, list.end()));
     list.erase(new_end, list.end());
 }
 
@@ -920,7 +919,7 @@ lbool Solver::search(int nof_conflicts) {
     vector<Lit> learnt_clause;
     unsigned int nblevels;
     bool blocked = false;
-    statistics.incStarts();
+    Statistics::getInstance().solverRestartInc();
     for (;;) {
         sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
@@ -931,7 +930,6 @@ lbool Solver::search(int nof_conflicts) {
         if (confl != nullptr) { // CONFLICT
             sonification.conflictLevel(decisionLevel());
 
-            statistics.incSumDecisionLevels(decisionLevel());
             ++nConflicts;
 
             if (nConflicts % 5000 == 0 && var_decay < max_var_decay) {
@@ -939,7 +937,7 @@ lbool Solver::search(int nof_conflicts) {
             }
 
             if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
-                statistics.printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts(), nConflicts, nLiterals);
+                Statistics::getInstance().printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts(), nConflicts, nLiterals);
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -950,10 +948,10 @@ lbool Solver::search(int nof_conflicts) {
             // BLOCK RESTART (CP 2012 paper)
             if (nConflicts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
-                statistics.incNBStopsRestarts();
+                Statistics::getInstance().solverStopsRestartsInc();
                 if (!blocked) {
-                    statistics.saveLastBlockAtRestart();
-                    statistics.incNBStopsRestartsSame();
+                    Statistics::getInstance().solverLastBlockAtRestartSave();
+                    Statistics::getInstance().solverStopsRestartsSameInc();
                     blocked = true;
                 }
             }
@@ -973,16 +971,16 @@ lbool Solver::search(int nof_conflicts) {
 
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
-                statistics.incNBUn();
+                Statistics::getInstance().solverUnariesInc();
             } else {
                 Clause* cr = new (learnt_clause.size()) Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
                 if (nblevels <= 2) {
-                    statistics.incNBDL2();
+                    Statistics::getInstance().solverLBD2Inc();
                 }
                 if (cr->size() == 2) {
                     learntsBin.push_back(cr);
-                    statistics.incNBBin();
+                    Statistics::getInstance().solverBinariesInc();
                 } else {
                     sort(cr->begin()+1, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
                     learnts.push_back(cr);
@@ -1035,7 +1033,7 @@ lbool Solver::search(int nof_conflicts) {
 
             if (next == lit_Undef) {
                 // New variable decision:
-                statistics.incDecisions();
+                Statistics::getInstance().solverDecisionsInc();
                 next = pickBranchLit();
                 if (next == lit_Undef) {
                     // Model found:
@@ -1067,29 +1065,26 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     sonification.start(nVars(), nClauses());
 
-    statistics.incSolves();
-
     status = l_Undef;
     if (!incremental && verbosity >= 1) {
-        printf("c ========================================[ MAGIC CONSTANTS ]==============================================\n");
-        printf("c | Constants are supposed to work well together :-)                                                      |\n");
-        printf("c | however, if you find better choices, please let us known...                                           |\n");
-        printf("c |-------------------------------------------------------------------------------------------------------|\n");
-        printf("c |                                |                                |                                     |\n");
-        printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:               |\n");
-        printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d                     |\n", lbdQueue.maxSize(),
-                nbclausesbeforereduce, lbSizeMinimizingClause);
-        printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d                     |\n", trailQueue.maxSize(), incReduceDB,
+        printf("c ========================================[ MAGIC CONSTANTS ]===================================\n");
+        printf("c | Constants are supposed to work well together :-)                                           |\n");
+        printf("c | however, if you find better choices, please let us known...                                |\n");
+        printf("c |--------------------------------------------------------------------------------------------|\n");
+        printf("c |                                |                                |                          |\n");
+        printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:    |\n");
+        printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d          |\n", lbdQueue.maxSize(), nbclausesbeforereduce, lbSizeMinimizingClause);
+        printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d          |\n", trailQueue.maxSize(), incReduceDB,
                 lbLBDMinimizingClause);
-        printf("c |   * K            : %6.2f      |   * Special   : %6d         |                                     |\n", K, specialIncReduceDB);
-        printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                                     |\n", R, lbLBDFrozenClause);
-        printf("c |                                |                                |                                     |\n");
-        printf("c ==================================[ Search Statistics (every %6d conflicts) ]=========================\n", verbEveryConflicts);
-        printf("c |                                                                                                       |\n");
+        printf("c |   * K            : %6.2f      |   * Special   : %6d         |                          |\n", K, specialIncReduceDB);
+        printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                          |\n", R, lbLBDFrozenClause);
+        printf("c |                                |                                |                          |\n");
+        printf("c ==================================[ Search Statistics (every %6d conflicts) ]==============\n", verbEveryConflicts);
+        printf("c |                                                                                            |\n");
 
-        printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              | Progress |\n");
-        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |          |\n");
-        printf("c =========================================================================================================\n");
+        printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              |\n");
+        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |\n");
+        printf("c ==============================================================================================\n");
     }
 
     // Search:
@@ -1103,7 +1098,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     }
 
     if (!incremental && verbosity >= 1)
-        printf("c =========================================================================================================\n");
+        printf("c ==============================================================================================\n");
 
     if (status == l_False) {
         certificate.proof();
@@ -1122,12 +1117,12 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     double finalTime = cpuTime();
     if (status == l_True) {
-        statistics.incNBSatCalls();
-        statistics.incTotalTime4Sat(finalTime - curTime);
+        Statistics::getInstance().incNBSatCalls();
+        Statistics::getInstance().incTotalTime4Sat(finalTime - curTime);
     }
     if (status == l_False) {
-        statistics.incNBUnsatCalls();
-        statistics.incTotalTime4Unsat(finalTime - curTime);
+        Statistics::getInstance().incNBUnsatCalls();
+        Statistics::getInstance().incTotalTime4Unsat(finalTime - curTime);
     }
 
     sonification.stop(status == l_True ? 1 : status == l_False ? 0 : -1);

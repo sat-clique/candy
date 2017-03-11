@@ -14,10 +14,7 @@ namespace Candy {
 ClauseAllocator::ClauseAllocator() :
     pages(2*NUMBER_OF_POOLS),
     pools(NUMBER_OF_POOLS),
-    xxl_pool(),
-    stats_active_counts(NUMBER_OF_POOLS, 0),
-    stats_active_xxl(0),
-    stats_active_beyond(0)
+    xxl_pool()
 {
     for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {
         pools[i].reserve(initialNumberOfElements(i));
@@ -31,21 +28,6 @@ ClauseAllocator::~ClauseAllocator() {
     for (char* page : pages) {
         delete [] page;
     }
-}
-
-void ClauseAllocator::printStatistics() {
-    printf("\n========= [Pools usage] =========\n");
-    for (size_t i = 0; i < NUMBER_OF_POOLS; i++) {
-        printf("%u;", stats_active_counts[i]);
-    }
-    printf("\n========= [Pools maximum] =========\n");
-    for (size_t i = 0; i < NUMBER_OF_POOLS; i++) {
-        printf("%zu;", stats_active_counts[i] + pools[i].size());
-    }
-    printf("\n========= [Clauses in XXL Pool] =========\n");
-    printf("%u\n", stats_active_xxl);
-    printf("\n========= [Clauses Beyond Pool] =========\n");
-    printf("%u\n", stats_active_beyond);
 }
 
 void ClauseAllocator::fillPool(uint16_t index) {
