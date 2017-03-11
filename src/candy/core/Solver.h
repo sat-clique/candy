@@ -50,6 +50,7 @@
 #ifndef Glucose_Solver_h
 #define Glucose_Solver_h
 
+#include <core/Statistics.h>
 #include "candy/mtl/Heap.h"
 #include "candy/utils/Options.h"
 #include "candy/core/SolverTypes.h"
@@ -58,8 +59,6 @@
 #include <vector>
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
-#include "candy/core/SolverStatistics.h"
-
 #include "CNFProblem.h"
 
 #include "sonification/SolverSonification.h"
@@ -168,7 +167,6 @@ public:
 
     // Certified UNSAT ( Thanks to Marijn Heule)
     Certificate certificate;
-    SolverStatistics statistics;
     // a few stats are used for heuristics control, keep them here:
     uint64_t nConflicts, nPropagations, nLiterals;
 
@@ -449,9 +447,9 @@ inline void Solver::setPolarity(Var v, bool b) {
 }
 inline void Solver::setDecisionVar(Var v, bool b) {
     if (b && !decision[v])
-        statistics.incDecVars();
+        Statistics::getInstance().solverDecisionVariablesInc();
     else if (!b && decision[v])
-        statistics.incDecVars(-1);
+        Statistics::getInstance().solverDecisionVariablesDec();
 
     decision[v] = b;
     insertVarOrder(v);

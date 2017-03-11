@@ -1,8 +1,8 @@
 add_library(core
     Solver.cc
     Solver.h
-    SolverStatistics.cc
-    SolverStatistics.h
+    Statistics.cc
+    Statistics.h
     Utilities.cc
     Clause.cc
     Clause.h

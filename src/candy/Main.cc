@@ -58,6 +58,7 @@
 
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Certificate.h"
+#include "candy/core/Statistics.h"
 #include "candy/core/ClauseAllocator.h"
 #include "candy/utils/System.h"
 #include "candy/utils/ParseUtils.h"
@@ -93,7 +94,7 @@ static void SIGINT_exit(int signum) {
     if (solver->verbosity > 0) {
         double cpu_time = Glucose::cpuTime();
         double mem_used = 0; //memUsedPeak();
-        solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
+        Statistics::getInstance().printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
     }
     _exit(1);
 }
@@ -172,8 +173,8 @@ static void printResult(Solver& S, lbool result, const char* outputFilename = nu
     if (S.verbosity > 0) {
         double cpu_time = Glucose::cpuTime();
         double mem_used = 0; //memUsedPeak();
-        solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
-        ClauseAllocator::getInstance().printStatistics();
+        Statistics::getInstance().printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
+        Statistics::getInstance().printAllocatorStatistics();
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
@@ -259,14 +260,14 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs, const GateRecogn
     auto gates = createGateAnalyzer(dimacs, recognitionArgs);
     gates->analyze();
     recognition_time = Glucose::cpuTime() - recognition_time;
-    printf("c ========================================[ Problem Statistics ]===========================================\n");
-    printf("c |                                                                                                       |\n");
-    printf("c |  Number of gates:        %12d                                                                 |\n", gates->getGateCount());
-    printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
-    printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
-    printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
-    printf("c |                                                                                                       |\n");
-    printf("c =========================================================================================================\n");
+    printf("c ========================================[ Problem Statistics ]================================\n");
+    printf("c |                                                                                            |\n");
+    printf("c |  Number of gates:        %12d                                                      |\n", gates->getGateCount());
+    printf("c |  Number of variables:    %12d                                                      |\n", dimacs.nVars());
+    printf("c |  Number of clauses:      %12d                                                      |\n", dimacs.nClauses());
+    printf("c |  Recognition time (sec): %12.2f                                                      |\n", recognition_time);
+    printf("c |                                                                                            |\n");
+    printf("c ==============================================================================================\n");
     if (recognitionArgs.opt_print_gates) {
         gates->printGates();
     }
@@ -461,7 +462,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 // Main:
 int main(int argc, char** argv) {
     try {
-        std::cout << "This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
+        std::cout << "c This is Candy 0.2 -- made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
 
         Candy::Clause::printAlignment();
 
@@ -522,7 +523,7 @@ int main(int argc, char** argv) {
         return (result == l_True ? 10 : result == l_False ? 20 : 0);
     } catch (std::bad_alloc& ba) {
         //printf("c Bad_Alloc Caught: %s\n", ba.what());
-        printf("c =========================================================================================================\n");
+        printf("c ==============================================================================================\n");
         printf("s INDETERMINATE\n");
         return 0;
     }
