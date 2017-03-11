@@ -252,7 +252,7 @@ namespace Candy {
         }
         
         if (m_clauseOrderStrat.get() == nullptr) {
-            m_clauseOrderStrat = createRecursiveClauseOrder();
+            m_clauseOrderStrat = createNonrecursiveClauseOrder();
         }
         if (m_randomizationStrat.get() == nullptr) {
             m_randomizationStrat = createSimpleRandomization();
