@@ -106,12 +106,17 @@ namespace Candy {
             //   - clear the set of input variables for g to save memory (due to the ordering,
             //     it is not necessary to visit g again)
             // i.e. the input dependency sets are "pushed" through the gate structure.
-            std::unordered_map<Gate*, std::unordered_set<Var>> inputDependencies;
+            std::unordered_map<Gate*, std::unique_ptr<std::unordered_set<Var>>> inputDependencies;
             std::unordered_map<Var, size_t> inputDependencyCount;
             
             for (auto gateOutput : topo.getOutputsOrdered()) {
                 auto& gate = analyzer.getGate(mkLit(gateOutput));
-                auto& inputsViaDependencies = inputDependencies[&gate];
+                inputDependencies[&gate].reset(new std::unordered_set<Var>{});
+            }
+            
+            for (auto gateOutput : topo.getOutputsOrdered()) {
+                auto& gate = analyzer.getGate(mkLit(gateOutput));
+                auto& inputsViaDependencies = *inputDependencies[&gate];
                 
                 for (auto inpLit : gate.getInputs()) {
                     if (!analyzer.getGate(inpLit).isDefined()) {
@@ -123,8 +128,8 @@ namespace Candy {
                 
                 // move the information about input variables to the gates depending on this one
                 for (auto dependent : dependents[&gate]) {
-                    inputDependencies[dependent].insert(inputsViaDependencies.begin(),
-                                                        inputsViaDependencies.end());
+                    inputDependencies[dependent]->insert(inputsViaDependencies.begin(),
+                                                         inputsViaDependencies.end());
                 }
                 inputDependencies.erase(&gate);
             }
