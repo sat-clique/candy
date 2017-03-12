@@ -40,6 +40,7 @@ public:
             std::vector<void*>& pool = pools[index];
 
             if (pool.size() == 0) {
+                pool.resize(pool.capacity()*2);
                 fillPool(index);
             }
 
@@ -50,6 +51,7 @@ public:
         else if (index < XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorXXLPoolAllocdInc();
             if (xxl_pool.size() == 0) {
+                xxl_pool.resize(xxl_pool.capacity()*2);
                 fillXXLPool();
             }
             void* clause = xxl_pool.back();
@@ -75,23 +77,6 @@ public:
         else {
             Statistics::getInstance().allocatorBeyondMallocdDec();
             free((void*)clause);
-        }
-    }
-
-    // keep statistics intact (although clause now leaks one literal)
-    inline void strengthen(uint32_t length) {
-        uint16_t index = getPoolIndex(length);
-        if (index < NUMBER_OF_POOLS) {
-            Statistics::getInstance().allocatorPoolAllocdDec(index);
-            Statistics::getInstance().allocatorPoolAllocdInc(index-1);
-        }
-        else if (index < XXL_POOL_ONE_SIZE && index-1 < NUMBER_OF_POOLS) {
-            Statistics::getInstance().allocatorXXLPoolAllocdDec();
-            Statistics::getInstance().allocatorPoolAllocdInc(index-1);
-        }
-        else if (index-1 < XXL_POOL_ONE_SIZE) {
-            Statistics::getInstance().allocatorBeyondMallocdDec();
-            Statistics::getInstance().allocatorXXLPoolAllocdInc();
         }
     }
 
