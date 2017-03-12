@@ -40,7 +40,7 @@ public:
             std::vector<void*>& pool = pools[index];
 
             if (pool.size() == 0) {
-                pool.resize(pool.capacity()*2);
+                pool.reserve(pool.capacity()*2);
                 fillPool(index);
             }
 
@@ -51,7 +51,7 @@ public:
         else if (index < XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorXXLPoolAllocdInc();
             if (xxl_pool.size() == 0) {
-                xxl_pool.resize(xxl_pool.capacity()*2);
+                xxl_pool.reserve(xxl_pool.capacity()*2);
                 fillXXLPool();
             }
             void* clause = xxl_pool.back();
