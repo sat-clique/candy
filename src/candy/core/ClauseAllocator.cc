@@ -13,7 +13,7 @@ namespace Candy {
 
 ClauseAllocator::ClauseAllocator() :
     pages(2*NUMBER_OF_POOLS),
-    pools(NUMBER_OF_POOLS),
+    pools(),
     xxl_pool()
 {
     for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {

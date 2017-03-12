@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_CLAUSEALLOCATOR_H_
 
 #include <vector>
+#include <array>
 #include <cstdint>
 
 #include <candy/core/Clause.h>
@@ -85,7 +86,7 @@ private:
 
     std::vector<char*> pages;
 
-    std::vector<std::vector<void*>> pools;
+    std::array<std::vector<void*>, NUMBER_OF_POOLS> pools;
     std::vector<void*> xxl_pool;
 
     void fillPool(uint16_t index);
