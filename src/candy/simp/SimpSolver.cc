@@ -78,7 +78,7 @@ static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
 SimpSolver::SimpSolver() :
                 Solver(), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(
                                 opt_simp_garbage_frac), use_asymm(opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(
-                                0), elimorder(1), use_simplification(true), occurs(ClauseDeleted()), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0) {
+                                0), elimorder(1), use_simplification(true), occurs(ClauseDeleted()), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0), strengthend() {
     remove_satisfied = false;
 }
 
@@ -119,8 +119,13 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
         result = lbool(eliminate(turn_off_simp));
     }
 
-    if (result == l_True)
+    if (result == l_True) {
+        // subsumption check finished, use activity
+        for (Clause* c : clauses) {
+            c->activity() = 0;
+        }
         result = Solver::solve_();
+    }
 
     if (result == l_True)
         extendModel();
@@ -193,7 +198,8 @@ bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
     if (cr->size() == 2) {
         removeClause(cr);
         cr->strengthen(l);
-        return enqueue((*cr)[0]) && propagate() == nullptr;
+        Lit other = cr->first() == l ? cr->second() : cr->first();
+        return enqueue(other) && propagate() == nullptr;
     }
     else {
         certificate.removed(cr);
@@ -201,10 +207,13 @@ bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
         detachClause(cr, true);
         cr->strengthen(l);
         attachClause(cr);
+        cr->setLBD(cr->getLBD()+1); //use lbd to store original size
+        strengthend.push_back(cr); //used to cleanup pages in clause-pool
 
         occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
         n_occ[toInt(l)]--;
         updateElimHeap(var(l));
+
         assert(cr->size() > 1);
         return true;
     }
@@ -635,6 +644,23 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
         // Force full cleanup (this is safe and desirable since it only happens once):
         rebuildOrderHeap();
     }
+
+    // cleanup strengthened clauses in pool (original size-offset was stored in lbd value)
+    sort(strengthend.begin(), strengthend.end());
+    strengthend.erase(std::unique(strengthend.begin(), strengthend.end()), strengthend.end());
+    for (Clause* clause : strengthend) {
+        if (!clause->isDeleted()) {
+            // create clause in correct pool
+            Clause* clean = new (clause->size()) Clause(std::vector<Lit>(clause->begin(), clause->end()), clause->isLearnt());
+            clauses.push_back(clean);
+            attachClause(clean);
+        }
+        detachClause(clause);
+        clause->setDeleted();
+        clause->blow(clause->getLBD());//restore original size for freeMarkedClauses
+        clause->setLBD(0);//be paranoid
+    }
+
     occurs.cleanAll();
     watches.cleanAll();
     watchesBin.cleanAll();
