@@ -29,7 +29,7 @@ class Statistics {
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
 #endif// SOLVER_STATS
 #ifdef LEARNTS_STATS
-    uint64_t nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn, nbReduceDB;
+    uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
 #endif// LEARNTS_STATS
 #ifdef INCREMENTAL_STATS
     double totalTime4Sat, totalTime4Unsat;
