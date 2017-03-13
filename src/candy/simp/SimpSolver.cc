@@ -642,7 +642,6 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
     watches.cleanAll();
     watchesBin.cleanAll();
     freeMarkedClauses(clauses);
-    freeMarkedClauses(clausesBin);
     
     if (verbosity >= 0 && elimclauses.size() > 0)
         printf("c |  Eliminated clauses:     %10.2f Mb                                                                |\n", 
