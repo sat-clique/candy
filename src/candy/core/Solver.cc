@@ -707,7 +707,6 @@ Clause* Solver::propagate() {
         return nullptr;
     }
 
-    //TODO: check why callers still make this necessary:
     watchesBin.cleanAll();
     watches.cleanAll();
 
@@ -870,9 +869,6 @@ void Solver::rebuildOrderHeap() {
 bool Solver::simplify() {
     assert(decisionLevel() == 0);
 
-    //TODO: check if this cleanup is necessary:
-    watches.cleanAll();
-    watchesBin.cleanAll();
     if (!ok || propagate() != nullptr) {
         return ok = false;
     }
