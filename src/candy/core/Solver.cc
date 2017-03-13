@@ -827,6 +827,7 @@ void Solver::reduceDB() {
             removeClause(c);
         }
     }
+    freeMarkedClauses(learnts);
     watches.cleanAll();
     for (Clause* c : learnts) { // "unfreeze" remaining clauses
         c->setFrozen(false);
