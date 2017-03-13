@@ -133,6 +133,7 @@ protected:
     vector<char> eliminated;
     int bwdsub_assigns;
     int n_touched;
+    vector<Clause*> strengthend;
 
     // Main internal methods:
     virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);

@@ -22,6 +22,7 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     } else {
         calcAbstraction();
     }
+    assert(std::unique(begin(), end()) == end());
 }
 
 Clause::Clause(std::initializer_list<Lit> list) {
@@ -95,10 +96,6 @@ void Clause::setLBD(uint16_t i) {
 
 float& Clause::activity() {
     return data.act;
-}
-
-uint32_t Clause::abstraction() const {
-    return data.abs;
 }
 
 uint16_t Clause::getHeader() const {

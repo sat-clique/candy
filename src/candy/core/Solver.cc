@@ -54,6 +54,7 @@
 #include "candy/core/Constants.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Certificate.h"
+#include "candy/core/ClauseAllocator.h"
 
 using namespace Glucose;
 using namespace Candy;
@@ -808,6 +809,8 @@ void Solver::reduceDB() {
 
     if (learntsBin.size() > 0 || learnts.back()->getLBD() <= 2) {
         nbclausesbeforereduce += specialIncReduceDB;
+    } else {
+        printf("c skipped special special-inc");
     }
 
     size_t index = (learnts.size() + learntsBin.size()) / 2;
@@ -910,13 +913,14 @@ bool Solver::simplify() {
  |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
  |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
  |________________________________________________________________________________________________@*/
-lbool Solver::search(int nof_conflicts) {
+lbool Solver::search() {
     assert(ok);
     int backtrack_level;
     vector<Lit> learnt_clause;
     unsigned int nblevels;
     bool blocked = false;
     Statistics::getInstance().solverRestartInc();
+    sonification.restart();
     for (;;) {
         sonification.decisionLevel(decisionLevel(), opt_sonification_delay);
 
@@ -979,9 +983,9 @@ lbool Solver::search(int nof_conflicts) {
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
                 } else {
-                    if (cr->size() > 6) {
-                        sort(cr->begin()+1, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
-                    }
+//                    if (cr->size() > 6) {
+//                        sort(cr->begin()+1, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
+//                    }
                     learnts.push_back(cr);
                 }
                 attachClause(cr);
@@ -994,10 +998,37 @@ lbool Solver::search(int nof_conflicts) {
             // Our dynamic restart, see the SAT09 competition compagnion paper
             if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts)))) {
                 lbdQueue.fastclear();
-                int bt = 0;
-                if (incremental) // DO NOT BACKTRACK UNTIL 0.. USELESS
-                    bt = (decisionLevel() < assumptions.size()) ? decisionLevel() : (int) assumptions.size();
-                cancelUntil(bt);
+
+                if (incremental) { // DO NOT BACKTRACK UNTIL 0.. USELESS
+                    size_t bt = (decisionLevel() < assumptions.size()) ? decisionLevel() : assumptions.size();
+                    cancelUntil(bt);
+                } else {
+                    cancelUntil(0);
+                }
+
+//                clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) {
+//                    assert(!locked(c));
+//                    if (c->size() == 3) {
+//                        detachClause(c);
+//                        return true;
+//                    } else { return false; } }), clauses.end());
+//                learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this](Clause* c) {
+//                    assert(!locked(c));
+//                    if (c->size() == 3) {
+//                        detachClause(c);
+//                        return true;
+//                    } else { return false; } }), learnts.end());
+//                watches.cleanAll();
+//                vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages3();
+//                for (Clause* clause : revamped) {
+//                    attachClause(clause);
+//                    if (clause->isLearnt()) {
+//                        learnts.push_back(clause);
+//                    } else {
+//                        clauses.push_back(clause);
+//                    }
+//                }
+
                 return l_Undef;
             }
 
@@ -1064,7 +1095,6 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     sonification.start(nVars(), nClauses());
 
-    status = l_Undef;
     if (!incremental && verbosity >= 1) {
         printf("c ========================================[ MAGIC CONSTANTS ]===================================\n");
         printf("c | Constants are supposed to work well together :-)                                           |\n");
@@ -1087,13 +1117,9 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     }
 
     // Search:
-    int curr_restarts = 0;
-    while (status == l_Undef) {
-        sonification.restart();
-        status = search(0); // the parameter is useless in glucose, kept to allow modifications
-        if (!withinBudget())
-            break;
-        curr_restarts++;
+    status = l_Undef;
+    while (status == l_Undef && withinBudget()) {
+        status = search();
     }
 
     if (!incremental && verbosity >= 1)

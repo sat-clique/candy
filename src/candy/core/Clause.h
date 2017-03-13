@@ -136,7 +136,6 @@ public:
     uint16_t getHeader() const;
 
     float& activity();
-    uint32_t abstraction() const;
 
     /**
      *  subsumes : (other : const Clause&)  ->  Lit
@@ -180,6 +179,9 @@ public:
     }
 
     void strengthen(Lit p);
+    void blow(uint8_t offset) {//use only if you know what you are doing (only to be used after strengthen calls)
+        length += offset;
+    }
 
     static void printAlignment() {
         Clause clause({lit_Undef});

@@ -462,7 +462,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 // Main:
 int main(int argc, char** argv) {
     try {
-        std::cout << "c This is Candy 0.2 -- made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
+        std::cout << "c Candy 0.2 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
 
         Candy::Clause::printAlignment();
 

@@ -80,11 +80,41 @@ public:
             free((void*)clause);
         }
     }
+    std::vector<Clause*> revampPages3() {
+        struct CastHelperClause {
+            uint16_t length;
+            uint16_t header;
+            float act;
+            Lit literals[3];
+        };
+        assert(sizeof(CastHelperClause)-2*sizeof(Lit) == sizeof(Clause));
+        for (size_t i = 0; i < pages3.size(); i++) {
+            CastHelperClause* casted = reinterpret_cast<CastHelperClause*>(pages3[i]);
+            assert(casted->length == 3 || casted->length == 0);
+            std::sort(casted, casted + pages3nelem[i], [](CastHelperClause c1, CastHelperClause c2) { assert(c1.length == 3 || c1.length == 0); assert(c2.length == 3 || c2.length == 0); return c1.act > c2.act; });
+        }
+        std::vector<Clause*> revamped;
+        for (size_t i = 0; i < pages3.size(); i++) {
+            char* page = pages3[i];
+            const uint32_t bytes_total = clauseBytes(3) * pages3nelem[i];
+            for (uint32_t pos = 0; pos < bytes_total; pos += clauseBytes(3)) {
+                Clause* clause = (Clause*)(page + pos);
+                assert(clause->size() == 0 || clause->size() == 3);
+                if (!clause->isDeleted() && clause->size() > 0) {
+                    revamped.push_back(clause);
+                }
+            }
+        }
+        return revamped;
+    }
 
 private:
     ClauseAllocator();
 
     std::vector<char*> pages;
+
+    std::vector<char*> pages3;
+    std::vector<uint32_t> pages3nelem;
 
     std::array<std::vector<void*>, NUMBER_OF_POOLS> pools;
     std::vector<void*> xxl_pool;

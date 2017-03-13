@@ -289,7 +289,7 @@ protected:
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
 	bool seenAny(Clause& clause);
 	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
-	lbool search(int nof_conflicts); // Search for a given number of conflicts.
+	lbool search(); // Search for a given number of conflicts.
 	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
@@ -379,6 +379,8 @@ inline void Solver::claDecayActivity() {
 inline void Solver::claBumpActivity(Clause& c) {
 	if ((c.activity() += cla_inc) > 1e20) {
 		// Rescale:
+        for (Clause* clause : clauses)
+            clause->activity() *= 1e-20;
 		for (Clause* clause : learnts)
 			clause->activity() *= 1e-20;
         for (Clause* clause : learntsBin)
