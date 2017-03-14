@@ -91,9 +91,11 @@ public:
         for (size_t i = 0; i < pages3.size(); i++) {
             CastHelperClause* casted = reinterpret_cast<CastHelperClause*>(pages3[i]);
             assert(casted->length == 3 || casted->length == 0);
-            std::sort(casted, casted + pages3nelem[i], [](CastHelperClause c1, CastHelperClause c2) { assert(c1.length == 3 || c1.length == 0); assert(c2.length == 3 || c2.length == 0); return c1.act > c2.act; });
+            std::sort(casted, casted + pages3nelem[i], [](CastHelperClause c1, CastHelperClause c2) { return c1.act > c2.act; });
         }
         std::vector<Clause*> revamped;
+        size_t old_pool_size = pools[2].size();
+        pools[2].clear();
         for (size_t i = 0; i < pages3.size(); i++) {
             char* page = pages3[i];
             const uint32_t bytes_total = clauseBytes(3) * pages3nelem[i];
@@ -102,9 +104,12 @@ public:
                 assert(clause->size() == 0 || clause->size() == 3);
                 if (!clause->isDeleted() && clause->size() > 0) {
                     revamped.push_back(clause);
+                } else {
+                    pools[2].push_back(clause);
                 }
             }
         }
+        assert(old_pool_size == pools[2].size());
         return revamped;
     }
 
