@@ -24,9 +24,9 @@
 
  */
 
-#include "gates/GateAnalyzer.h"
-#include "core/Solver.h"
-#include "core/Utilities.h"
+#include "candy/gates/GateAnalyzer.h"
+#include "candy/core/Solver.h"
+#include "candy/utils/Utilities.h"
 
 namespace Candy {
 
