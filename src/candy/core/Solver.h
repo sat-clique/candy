@@ -50,16 +50,16 @@
 #ifndef Glucose_Solver_h
 #define Glucose_Solver_h
 
-#include <core/Statistics.h>
+#include <vector>
+
+#include <candy/core/Statistics.h>
 #include "candy/mtl/Heap.h"
 #include "candy/utils/Options.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/core/BoundedQueue.h"
-#include "candy/core/Constants.h"
-#include <vector>
+#include "candy/mtl/BoundedQueue.h"
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
-#include "CNFProblem.h"
+#include "candy/core/CNFProblem.h"
 
 #include "sonification/SolverSonification.h"
 
@@ -137,7 +137,6 @@ public:
     // Mode of operation:
     int verbosity;
     int verbEveryConflicts;
-    int showModel;  // deprecated: can go to main
 
     // Constants For restarts
     double K;

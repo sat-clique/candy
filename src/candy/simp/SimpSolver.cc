@@ -353,8 +353,9 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
         if (cr->isDeleted())
             continue;
 
-        if (verbose && verbosity >= 2 && cnt++ % 1000 == 0)
+        if (verbose && verbosity >= 2 && cnt++ % 1000 == 0) {
             printf("subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", (int) subsumption_queue.size(), subsumed, deleted_literals);
+        }
 
         assert(cr->size() > 1 || value((*cr)[0]) == l_True); // Unit-clauses should have been propagated before this point.
 
@@ -667,9 +668,9 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
     watchesBin.cleanAll();
     freeMarkedClauses(clauses);
     
-    if (verbosity >= 0 && elimclauses.size() > 0)
-        printf("c |  Eliminated clauses:     %10.2f Mb                                                                |\n", 
-               double(elimclauses.size() * sizeof(uint32_t)) / (1024*1024));
+    if (verbosity >= 0 && elimclauses.size() > 0) {
+        printf("c |  Eliminated clauses:     %10.2f Mb                                                     |\n", double(elimclauses.size() * sizeof(uint32_t)) / (1024*1024));
+    }
 
     return ok;
 }

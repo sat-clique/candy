@@ -51,7 +51,6 @@
 
 #include "candy/utils/System.h"
 #include "candy/core/Solver.h"
-#include "candy/core/Constants.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/ClauseAllocator.h"
@@ -102,7 +101,6 @@ static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "m
 Solver::Solver() :
                 verbosity(0),
                 verbEveryConflicts(10000),
-                showModel(0),
                 K(opt_K),
                 R(opt_R),
                 sizeLBDQueue(opt_size_lbd_queue),
@@ -989,7 +987,7 @@ lbool Solver::search() {
             trailQueue.push(trail_size);
 
             // BLOCK RESTART (CP 2012 paper)
-            if (nConflicts > LOWER_BOUND_FOR_BLOCKING_RESTART && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
+            if (nConflicts > 10000 && lbdQueue.isvalid() && trail_size > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
                 Statistics::getInstance().solverStopsRestartsInc();
                 if (!blocked) {
@@ -1121,7 +1119,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     sonification.start(nVars(), nClauses());
 
     if (!incremental && verbosity >= 1) {
-        printf("c ========================================[ MAGIC CONSTANTS ]===================================\n");
+        printf("c =====================================[ MAGIC CONSTANTS ]======================================\n");
         printf("c | Constants are supposed to work well together :-)                                           |\n");
         printf("c | however, if you find better choices, please let us known...                                |\n");
         printf("c |--------------------------------------------------------------------------------------------|\n");
@@ -1133,7 +1131,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
         printf("c |   * K            : %6.2f      |   * Special   : %6d         |                          |\n", K, specialIncReduceDB);
         printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                          |\n", R, lbLBDFrozenClause);
         printf("c |                                |                                |                          |\n");
-        printf("c ==================================[ Search Statistics (every %6d conflicts) ]==============\n", verbEveryConflicts);
+        printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
         printf("c |                                                                                            |\n");
 
         printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              |\n");

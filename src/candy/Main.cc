@@ -145,14 +145,14 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
             result = l_False;
         double simplified_time = Glucose::cpuTime();
         if (S.verbosity > 0) {
-            printf("c |  Simplification time:  %12.2f s                                                                 |\n", simplified_time - parsed_time);
+            printf("c |  Simplification time:  %12.2f s                                                      |\n", simplified_time - parsed_time);
             if (result == l_False) {
-                printf("c =========================================================================================================\n");
+                printf("c ==============================================================================================\n");
                 printf("Solved by simplification\n");
             }
         }
     }
-    printf("c |                                                                                                       |\n");
+    printf("c |                                                                                            |\n");
 
     if (result == l_Undef) {
         vector<Lit> assumptions;
@@ -169,7 +169,7 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
  * If \p outputFilename is non-null, the result also gets written to the file given by
  * \p outputFilename. The target file gets truncated.
  */
-static void printResult(Solver& S, lbool result, const char* outputFilename = nullptr) {
+static void printResult(Solver& S, lbool result, bool showModel, const char* outputFilename = nullptr) {
     if (S.verbosity > 0) {
         double cpu_time = Glucose::cpuTime();
         double mem_used = 0; //memUsedPeak();
@@ -187,7 +187,7 @@ static void printResult(Solver& S, lbool result, const char* outputFilename = nu
         }
         fclose(res);
     } else {
-        if (S.showModel && result == l_True) {
+        if (showModel && result == l_True) {
             printModel(stdout, solver);
         }
     }
@@ -212,12 +212,12 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
  * Prints statistics about the problem to be solved.
  */
 static void printProblemStatistics(Solver& S, double parseTime) {
-    printf("c ========================================[ Problem Statistics ]===========================================\n");
-    printf("c |                                                                                                       |\n");
-    printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
-    printf("c |  Number of clauses:    %12d                                                                   |\n", S.nClauses());
-    printf("c |  Parse time:           %12.2f s                                                                 |\n", parseTime);
-    printf("c |                                                                                                       |\n");
+    printf("c ====================================[ Problem Statistics ]====================================\n");
+    printf("c |                                                                                            |\n");
+    printf("c |  Number of variables:  %12d                                                        |\n", S.nVars());
+    printf("c |  Number of clauses:    %12d                                                        |\n", S.nClauses());
+    printf("c |  Parse time:           %12.2f s                                                      |\n", parseTime);
+    printf("c |                                                                                            |\n");
 }
 
 /**
@@ -225,11 +225,10 @@ static void printProblemStatistics(Solver& S, double parseTime) {
  * 
  * TODO: document parameters
  */
-static void configureSolver(SimpSolver& S, int verbosity, int verbosityEveryConflicts, bool showModel, bool certifiedAllClauses, bool certifiedUNSAT,
+static void configureSolver(SimpSolver& S, int verbosity, int verbosityEveryConflicts, bool certifiedAllClauses, bool certifiedUNSAT,
                 const char* certifiedUNSATfile) {
     S.verbosity = verbosity;
     S.verbEveryConflicts = verbosityEveryConflicts;
-    S.showModel = showModel;
     S.certificate = Certificate(certifiedUNSATfile, certifiedUNSAT);
 }
 
@@ -260,7 +259,7 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs, const GateRecogn
     auto gates = createGateAnalyzer(dimacs, recognitionArgs);
     gates->analyze();
     recognition_time = Glucose::cpuTime() - recognition_time;
-    printf("c ========================================[ Problem Statistics ]================================\n");
+    printf("c =====================================[ Problem Statistics ]===================================\n");
     printf("c |                                                                                            |\n");
     printf("c |  Number of gates:        %12d                                                      |\n", gates->getGateCount());
     printf("c |  Number of variables:    %12d                                                      |\n", dimacs.nVars());
@@ -523,7 +522,6 @@ int main(int argc, char** argv) {
         solver = &S;
         configureSolver(S, args.verb,               // verbosity
                         args.vv,                 // verbosity every vv conflicts
-                        args.mod,                // show model
                         0,                       // certifiedAllClauses
                         args.do_certified,       // certifiedUNSAT
                         args.opt_certified_file);       // certifiedUNSAT output file
@@ -562,7 +560,7 @@ int main(int argc, char** argv) {
         }
 
         const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
-        printResult(S, result, statsFilename);
+        printResult(S, result, args.mod, statsFilename);
 
         return (result == l_True ? 10 : result == l_False ? 20 : 0);
     } catch (std::bad_alloc& ba) {

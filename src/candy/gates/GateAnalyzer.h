@@ -35,11 +35,10 @@
 
 #include <climits>
 
-#include "../core/CNFProblem.h"
-
-#include "core/SolverTypes.h"
-#include "core/Utilities.h"
-#include "core/Solver.h"
+#include "candy/core/CNFProblem.h"
+#include "candy/core/SolverTypes.h"
+#include "candy/core/Solver.h"
+#include "candy/utils//Utilities.h"
 
 namespace Candy {
 
