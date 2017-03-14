@@ -898,6 +898,8 @@ void Solver::revampClausePool() {
 
     assert(old_learnts_size == learnts.size());
     assert(old_clauses_size == clauses.size());
+    (void)(old_learnts_size);
+    (void)(old_clauses_size);
 }
 
 /*_________________________________________________________________________________________________

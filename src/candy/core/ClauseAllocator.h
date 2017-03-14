@@ -71,6 +71,7 @@ public:
         if (index < NUMBER_OF_POOLS) {
             Statistics::getInstance().allocatorPoolAllocdDec(index);
             pools[index].push_back(clause);
+            clause->activity() = 0;
         }
         else if (index < XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorXXLPoolAllocdDec();
@@ -112,6 +113,7 @@ public:
             }
         }
         assert(old_pool_size == pool.size());
+        (void)(old_pool_size);
         return revamped;
     }
 
