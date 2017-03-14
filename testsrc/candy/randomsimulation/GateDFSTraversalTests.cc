@@ -25,7 +25,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <randomsimulation/GateDFSVisitor.h>
+#include <randomsimulation/GateDFSTraversal.h>
 
 #include <testutils/TestGateStructure.h>
 
@@ -41,11 +41,11 @@ namespace Candy {
             backtrackSequence.push_back(g);
         }
         
-        void visit(Gate* g) {
+        void collect(Gate* g) {
             visitSequence.push_back(g);
         }
         
-        void visitInput(Var var) {
+        void collectInput(Var var) {
             (void)var;
         }
         
@@ -92,13 +92,13 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), nExpectedGates);
         
-        TestGateCollector collector = visitDFS<TestGateCollector>(ga);
+        TestGateCollector collector = traverseDFS<TestGateCollector>(ga);
         
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
         EXPECT_EQ(collector.gateCount, static_cast<unsigned long>(ga.getGateCount()));
     }
     
-    TEST(RSGateDFSVisitorTest, visitTinyGateStructure) {
+    TEST(RSGateDFSTraversalTest, visitTinyGateStructure) {
         auto gateBuilder = createGateStructureBuilder();
         gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
@@ -107,7 +107,7 @@ namespace Candy {
         test_visitDFS(*problem, 3);
     }
     
-    TEST(RSGateDFSVisitorTest, visitSmallGateStructure) {
+    TEST(RSGateDFSTraversalTest, visitSmallGateStructure) {
         auto gateBuilder = createGateStructureBuilder();
         gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
