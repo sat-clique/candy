@@ -17,6 +17,7 @@
 
 #define NUMBER_OF_POOLS 500
 #define XXL_POOL_ONE_SIZE 1000
+#define XXL_POOL_INDEX NUMBER_OF_POOLS
 
 namespace Candy {
 
@@ -51,12 +52,12 @@ public:
         }
         else if (index < XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorXXLPoolAllocdInc();
-            if (xxl_pool.size() == 0) {
-                xxl_pool.reserve(xxl_pool.capacity()*2);
-                fillXXLPool();
+            if (pools[XXL_POOL_INDEX].size() == 0) {
+                pools[XXL_POOL_INDEX].reserve(pools[XXL_POOL_INDEX].capacity()*2);
+                fillPool(XXL_POOL_INDEX);
             }
-            void* clause = xxl_pool.back();
-            xxl_pool.pop_back();
+            void* clause = pools[XXL_POOL_INDEX].back();
+            pools[XXL_POOL_INDEX].pop_back();
             return clause;
         }
         else {
@@ -73,59 +74,56 @@ public:
         }
         else if (index < XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorXXLPoolAllocdDec();
-            xxl_pool.push_back(clause);
+            pools[XXL_POOL_INDEX].push_back(clause);
         }
         else {
             Statistics::getInstance().allocatorBeyondMallocdDec();
             free((void*)clause);
         }
     }
-    std::vector<Clause*> revampPages3() {
-        struct CastHelperClause {
-            uint16_t length;
-            uint16_t header;
-            float act;
-            Lit literals[3];
-        };
-        assert(sizeof(CastHelperClause)-2*sizeof(Lit) == sizeof(Clause));
-        for (size_t i = 0; i < pages3.size(); i++) {
-            CastHelperClause* casted = reinterpret_cast<CastHelperClause*>(pages3[i]);
-            assert(casted->length == 3 || casted->length == 0);
-            std::sort(casted, casted + pages3nelem[i], [](CastHelperClause c1, CastHelperClause c2) { return c1.act > c2.act; });
-        }
+
+    template <unsigned int N> struct SortHelperClause {
+        uint16_t length;
+        uint16_t header;
+        float act;
+        Lit literals[N];
+    };
+
+    template <unsigned int N> std::vector<Clause*> revampPages() {
+        uint16_t index = getPoolIndex(N);
+        std::vector<void*>& pool = pools[index];
+        std::vector<char*>& page = pages[index];
+        std::vector<size_t>& nelem = pages_nelem[index];
+        size_t old_pool_size = pool.size();
+        pool.clear();
         std::vector<Clause*> revamped;
-        size_t old_pool_size = pools[2].size();
-        pools[2].clear();
-        for (size_t i = 0; i < pages3.size(); i++) {
-            char* page = pages3[i];
-            const uint32_t bytes_total = clauseBytes(3) * pages3nelem[i];
-            for (uint32_t pos = 0; pos < bytes_total; pos += clauseBytes(3)) {
-                Clause* clause = (Clause*)(page + pos);
-                assert(clause->size() == 0 || clause->size() == 3);
+        for (size_t i = 0; i < page.size(); i++) {
+            SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
+            SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(page[i])  + nelem[i];
+            std::sort(begin, end, [](SortHelperClause<N> c1, SortHelperClause<N> c2) { return c1.act > c2.act; });
+            for (SortHelperClause<N>* iter = begin; iter < end; iter++) {
+                Clause* clause = (Clause*)iter;
+                assert(clause->size() == 0 || clause->size() == N);
                 if (!clause->isDeleted() && clause->size() > 0) {
                     revamped.push_back(clause);
                 } else {
-                    pools[2].push_back(clause);
+                    pool.push_back(clause);
                 }
             }
         }
-        assert(old_pool_size == pools[2].size());
+        assert(old_pool_size == pool.size());
         return revamped;
     }
 
 private:
     ClauseAllocator();
 
-    std::vector<char*> pages;
+    std::array<std::vector<char*>, NUMBER_OF_POOLS+1> pages;
+    std::array<std::vector<size_t>, NUMBER_OF_POOLS+1> pages_nelem;
 
-    std::vector<char*> pages3;
-    std::vector<uint32_t> pages3nelem;
-
-    std::array<std::vector<void*>, NUMBER_OF_POOLS> pools;
-    std::vector<void*> xxl_pool;
+    std::array<std::vector<void*>, NUMBER_OF_POOLS+1> pools;
 
     void fillPool(uint16_t index);
-    void fillXXLPool();
 
     inline uint32_t clauseBytes(uint32_t length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));

@@ -861,6 +861,45 @@ void Solver::rebuildOrderHeap() {
     order_heap.build(vs);
 }
 
+
+void Solver::revampClausePool() {
+    size_t old_clauses_size = clauses.size();
+    size_t old_learnts_size = learnts.size();
+
+    clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) {
+        assert(!locked(c));
+        assert(!c->isDeleted());
+        if (c->size() > 2 && c->size() < 6) {
+            detachClause(c, true);
+            return true;
+        } else { return false; } }), clauses.end());
+
+    learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this](Clause* c) {
+        assert(!locked(c));
+        assert(!c->isDeleted());
+        if (c->size() > 2 && c->size() < 6) {
+            detachClause(c, true);
+            return true;
+        } else { return false; } }), learnts.end());
+
+    vector<Clause*> revamped3 = ClauseAllocator::getInstance().revampPages<3>();
+    vector<Clause*> revamped4 = ClauseAllocator::getInstance().revampPages<4>();
+    vector<Clause*> revamped5 = ClauseAllocator::getInstance().revampPages<5>();
+
+    for (auto revamped : { revamped3, revamped4, revamped5 })
+    for (Clause* clause : revamped) {
+        attachClause(clause);
+        if (clause->isLearnt()) {
+            learnts.push_back(clause);
+        } else {
+            clauses.push_back(clause);
+        }
+    }
+
+    assert(old_learnts_size == learnts.size());
+    assert(old_clauses_size == clauses.size());
+}
+
 /*_________________________________________________________________________________________________
  |
  |  simplify : [void]  ->  [bool]
@@ -919,6 +958,7 @@ lbool Solver::search() {
     vector<Lit> learnt_clause;
     unsigned int nblevels;
     bool blocked = false;
+    bool reduced = false;
     Statistics::getInstance().solverRestartInc();
     sonification.restart();
     for (;;) {
@@ -1006,36 +1046,10 @@ lbool Solver::search() {
                     cancelUntil(0);
                 }
 
-                /**** REVAMP ***
-                size_t old_clauses_size = clauses.size();
-                size_t old_learnts_size = learnts.size();
-                clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) {
-                    assert(!locked(c));
-                    assert(!c->isDeleted());
-                    if (c->size() == 3) {
-                        detachClause(c);
-                        return true;
-                    } else { return false; } }), clauses.end());
-                learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this](Clause* c) {
-                    assert(!locked(c));
-                    assert(!c->isDeleted());
-                    if (c->size() == 3) {
-                        detachClause(c);
-                        return true;
-                    } else { return false; } }), learnts.end());
-                watches.cleanAll();
-                vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages3();
-                for (Clause* clause : revamped) {
-                    attachClause(clause);
-                    if (clause->isLearnt()) {
-                        learnts.push_back(clause);
-                    } else {
-                        clauses.push_back(clause);
-                    }
+                if (reduced) {
+                    revampClausePool();
+                    reduced = false;
                 }
-                assert(old_learnts_size == learnts.size());
-                assert(old_clauses_size == clauses.size());
-                **** ****** ***/
 
                 return l_Undef;
             }
@@ -1049,6 +1063,7 @@ lbool Solver::search() {
                 if (learnts.size() > 0) {
                     curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     reduceDB();
+                    reduced = true;
                     nbclausesbeforereduce += incReduceDB;
                 }
             }
