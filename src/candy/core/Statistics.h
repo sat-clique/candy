@@ -69,8 +69,8 @@ public:
     inline void solverRandomDecisionsInc() { }
     inline void solverDecisionVariablesInc() { }
     inline void solverDecisionVariablesDec() { }
-    inline void solverMaxLiteralsInc(int amount) { }
-    inline void solverTotLiteralsInc(int amount) { }
+    inline void solverMaxLiteralsInc(int amount) { (void)(amount); }
+    inline void solverTotLiteralsInc(int amount) { (void)(amount); }
 #endif// SOLVER_STATS
 
 #ifdef RESTART_STATS
@@ -93,7 +93,7 @@ public:
     inline void solverBinariesInc() { ++nbBin; }
     inline void solverLBD2Inc() { ++nbDL2; }
 #else
-    inline void solverRemovedClausesInc(int amount) { }
+    inline void solverRemovedClausesInc(int amount) { (void)(amount); }
     inline void solverReducedClausesInc() { }
     inline void solverReduceDBInc() { }
     inline void solverUnariesInc() { }
@@ -109,8 +109,8 @@ public:
 #else
     inline void incNBSatCalls() { }
     inline void incNBUnsatCalls() { }
-    inline void incTotalTime4Sat(int amount) { }
-    inline void incTotalTime4Unsat(int amount) { }
+    inline void incTotalTime4Sat(int amount) { (void)(amount); }
+    inline void incTotalTime4Unsat(int amount) { (void)(amount); }
 #endif// INCREMENTAL_STATS
 
 #ifdef ALLOCATOR_STATS
@@ -153,14 +153,14 @@ public:
         }
     }
 #else
-    inline void allocatorNumberOfPoolsSet(uint32_t nPools) { }
-    inline void allocatorPoolAllocdInc(uint32_t index) { }
+    inline void allocatorNumberOfPoolsSet(uint32_t nPools) { (void)(nPools); }
+    inline void allocatorPoolAllocdInc(uint32_t index) { (void)(index); }
     inline void allocatorXXLPoolAllocdInc() { }
     inline void allocatorBeyondMallocdInc() { }
-    inline void allocatorPoolAllocdDec(uint32_t index) { }
+    inline void allocatorPoolAllocdDec(uint32_t index) { (void)(index); }
     inline void allocatorXXLPoolAllocdDec() { }
     inline void allocatorBeyondMallocdDec() { }
-    inline void allocatorStrengthenClause(uint32_t length) { }
+    inline void allocatorStrengthenClause(uint32_t length) { (void)(length); }
 #endif// ALLOCATOR_STATS
 
 };
