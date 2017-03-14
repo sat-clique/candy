@@ -227,7 +227,6 @@ namespace Candy {
     m_lastAssumptionLits(),
     m_isIncrementalSet(false),
     m_isParsingSet(false),
-    m_isCertifiedUNSATSet(false),
     m_eventLog() {
         
     }

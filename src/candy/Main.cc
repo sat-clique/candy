@@ -392,6 +392,8 @@ struct GlucoseArguments {
 
     const char *opt_certified_file;
 
+    const bool wait_for_user;
+
     const GateRecognitionArguments gateRecognitionArgs;
     const RandomSimulationArguments randomSimulationArgs;
     const RSARArguments rsarArgs;
@@ -409,6 +411,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
+    BoolOption wait_for_user("MAIN", "wait", "Wait for user input on startup (for profiling).", false);
 
     BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
     BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
@@ -443,19 +446,56 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
 
     parseOptions(argc, argv, true);
 
-    GateRecognitionArguments gateRecognitionArgs { opt_gr_tries, opt_gr_patterns, opt_gr_semantic, opt_gr_holistic, opt_gr_lookahead, opt_gr_intensify,
-                    opt_gr_lookahead_threshold, opt_print_gates };
+    GateRecognitionArguments gateRecognitionArgs{
+        opt_gr_tries,
+        opt_gr_patterns,
+        opt_gr_semantic,
+        opt_gr_holistic,
+        opt_gr_lookahead,
+        opt_gr_intensify,
+        opt_gr_lookahead_threshold,
+        opt_print_gates
+    };
 
-    RandomSimulationArguments rsArgs { opt_rs_nrounds, opt_rs_abortbyrrat, opt_rs_rrat, opt_rs_filterConjBySize > 0, opt_rs_filterConjBySize,
-                    opt_rs_removeBackboneConj, opt_rs_filterGatesByNonmono };
+    RandomSimulationArguments rsArgs{
+        opt_rs_nrounds,
+        opt_rs_abortbyrrat,
+        opt_rs_rrat,
+        opt_rs_filterConjBySize > 0,
+        opt_rs_filterConjBySize,
+        opt_rs_removeBackboneConj,
+        opt_rs_filterGatesByNonmono
+    };
 
-    RSARArguments rsarArgs { opt_rsar_enable, opt_rsar_maxRefinementSteps, parseSimplificationHandlingMode(std::string { opt_rsar_simpMode }), std::string {
-                    opt_rsar_inputDepCountHeurConf } != "", std::string { opt_rsar_inputDepCountHeurConf } };
+    RSARArguments rsarArgs{
+        opt_rsar_enable,
+        opt_rsar_maxRefinementSteps,
+        parseSimplificationHandlingMode(std::string{opt_rsar_simpMode}),
+        std::string{opt_rsar_inputDepCountHeurConf} != "",
+        std::string{opt_rsar_inputDepCountHeurConf}
+    };
 
-    GlucoseArguments result { verb, mod, vv, cpu_lim, mem_lim, do_solve, do_preprocess, do_certified, do_gaterecognition, opt_certified_file,
-                    gateRecognitionArgs, rsArgs, rsarArgs };
+    return GlucoseArguments{
+        verb,
+        mod,
+        vv,
+        cpu_lim,
+        mem_lim,
+        do_solve,
+        do_preprocess,
+        do_certified,
+        do_gaterecognition,
+        opt_certified_file,
+        wait_for_user,
+        gateRecognitionArgs,
+        rsArgs,
+        rsarArgs
+    };
+}
 
-    return result;
+static void waitForUserInput() {
+    std::cout << "Press enter to continue." << std::endl;
+    std::getchar();
 }
 
 //=================================================================================================
@@ -467,6 +507,10 @@ int main(int argc, char** argv) {
         Candy::Clause::printAlignment();
 
         GlucoseArguments args = parseCommandLineArgs(argc, argv);
+
+        if (args.wait_for_user) {
+            waitForUserInput();
+        }
 
         // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
         installSignalHandlers(false);

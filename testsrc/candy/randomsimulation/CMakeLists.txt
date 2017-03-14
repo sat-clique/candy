@@ -6,7 +6,7 @@ add_executable(randomsimulation_tests
     TestUtils.cc
     TestUtils.h
     RandomSimulatorTests.cc
-    GateDFSVisitorTests.cc
+    GateDFSTraversalTests.cc
     RandomizationTests.cc
     ConjectureFilterTests.cc
     GateFilterTests.cc)

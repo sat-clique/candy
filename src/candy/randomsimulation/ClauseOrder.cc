@@ -27,7 +27,7 @@
 // TODO: documentation
 
 #include "ClauseOrder.h"
-#include "GateDFSVisitor.h"
+#include "GateDFSTraversal.h"
 
 #include <memory>
 #include <vector>
@@ -266,7 +266,7 @@ namespace Candy {
      *
      * \ingroup RandomSimulation
      *
-     * \brief An experimental ClauseOrder implementation using the GateDFSVisitor.
+     * \brief An experimental ClauseOrder implementation using the GateDFSTraversal.
      */
     class NonrecursiveClauseOrder : public ClauseOrderImplBase {
     public:
@@ -300,11 +300,11 @@ namespace Candy {
             backtrackSequence.push_back(g);
         }
         
-        void visit(Gate* g) {
+        void collect(Gate* g) {
             maxVar = std::max(maxVar, var(g->getOutput()));
         }
         
-        void visitInput(Var v) {
+        void collectInput(Var v) {
             maxVar = std::max(maxVar, v);
             inputs.push_back(v);
         }
@@ -315,7 +315,7 @@ namespace Candy {
     };
     
     void NonrecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
-        DFSGateCollector orderedGates = visitDFS<DFSGateCollector>(analyzer);
+        DFSGateCollector orderedGates = traverseDFS<DFSGateCollector>(analyzer);
         m_inputVariables = std::move(orderedGates.inputs);
         m_maxVar = orderedGates.maxVar;
         for (auto gate : orderedGates.backtrackSequence) {
