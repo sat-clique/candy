@@ -293,6 +293,7 @@ protected:
 	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
+    void revampClausePool();
 
 	// Maintaining Variable/Clause activity:
 	void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.

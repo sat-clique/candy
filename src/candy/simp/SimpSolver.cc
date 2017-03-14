@@ -198,6 +198,7 @@ bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
     if (cr->size() == 2) {
         removeClause(cr);
         cr->strengthen(l);
+        cr->setLBD(cr->getLBD()+1); //use lbd to store original size
         Lit other = cr->first() == l ? cr->second() : cr->first();
         return enqueue(other) && propagate() == nullptr;
     }
@@ -654,9 +655,9 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
             Clause* clean = new (clause->size()) Clause(std::vector<Lit>(clause->begin(), clause->end()), clause->isLearnt());
             clauses.push_back(clean);
             attachClause(clean);
+            detachClause(clause, true);
+            clause->setDeleted();
         }
-        detachClause(clause);
-        clause->setDeleted();
         clause->blow(clause->getLBD());//restore original size for freeMarkedClauses
         clause->setLBD(0);//be paranoid
     }
