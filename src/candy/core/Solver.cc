@@ -72,7 +72,7 @@ static IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving avera
 static IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT32_MAX));
 
 static IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 2000, IntRange(0, INT32_MAX));
-static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 300, IntRange(0, INT32_MAX));
+static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT32_MAX));
 static IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 1000, IntRange(0, INT32_MAX));
 static IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30,
         IntRange(0, INT32_MAX));
@@ -575,10 +575,8 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
             if (level(var(out_learnt[i])) > level(var(out_learnt[max_i])))
                 max_i = i;
         // Swap-in this literal at index 1:
-        Lit p = out_learnt[max_i];
-        out_learnt[max_i] = out_learnt[1];
-        out_learnt[1] = p;
-        out_btlevel = level(var(p));
+        out_btlevel = level(var(out_learnt[max_i]));
+        std::swap(out_learnt[max_i], out_learnt[1]);
     }
 
     // Compute LBD
@@ -804,12 +802,6 @@ Clause* Solver::propagate() {
 void Solver::reduceDB() {
     Statistics::getInstance().solverReduceDBInc();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
-
-    if (learntsBin.size() > 0 || learnts.back()->getLBD() <= 2) {
-        nbclausesbeforereduce += specialIncReduceDB;
-    } else {
-        printf("c skipped special special-inc");
-    }
 
     size_t index = (learnts.size() + learntsBin.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
@@ -1061,9 +1053,9 @@ lbool Solver::search() {
             // Perform clause database reduction !
             if (nConflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {
-                    curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     reduceDB();
                     reduced = true;
+                    curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     nbclausesbeforereduce += incReduceDB;
                 }
             }
