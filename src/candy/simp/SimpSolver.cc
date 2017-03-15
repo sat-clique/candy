@@ -64,10 +64,8 @@ static BoolOption opt_use_asymm(_cat, "asymm", "Shrink clauses by asymmetric bra
 static BoolOption opt_use_rcheck(_cat, "rcheck", "Check if a clause is already implied. (costly)", false);
 static BoolOption opt_use_elim(_cat, "elim", "Perform variable elimination.", true);
 static IntOption opt_grow(_cat, "grow", "Allow a variable elimination step to grow by a number of clauses.", 0);
-static IntOption opt_clause_lim(_cat, "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit. -1 means no limit", 20,
-                IntRange(-1, INT32_MAX));
-static IntOption opt_subsumption_lim(_cat, "sub-lim", "Do not check if subsumption against a clause larger than this. -1 means no limit.", 1000,
-                IntRange(-1, INT32_MAX));
+static IntOption opt_clause_lim(_cat, "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, IntRange(0, INT32_MAX));
+static IntOption opt_subsumption_lim(_cat, "sub-lim", "Do not check if subsumption against a clause larger than this.", 1000, IntRange(0, INT32_MAX));
 static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
                 "The fraction of wasted memory allowed before a garbage collection is triggered during simplification.", 0.5,
                 DoubleRange(0, false, HUGE_VAL, false));
@@ -76,9 +74,19 @@ static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
 // Constructor/Destructor:
 
 SimpSolver::SimpSolver() :
-                Solver(), grow(opt_grow), clause_lim(opt_clause_lim), subsumption_lim(opt_subsumption_lim), simp_garbage_frac(
-                                opt_simp_garbage_frac), use_asymm(opt_use_asymm), use_rcheck(opt_use_rcheck), use_elim(opt_use_elim), merges(0), asymm_lits(0), eliminated_vars(
-                                0), elimorder(1), use_simplification(true), occurs(ClauseDeleted()), elim_heap(ElimLt(n_occ)), bwdsub_assigns(0), n_touched(0), strengthend() {
+                Solver(),
+                grow(opt_grow),
+                clause_lim(opt_clause_lim),
+                subsumption_lim(opt_subsumption_lim),
+                use_asymm(opt_use_asymm),
+                use_rcheck(opt_use_rcheck),
+                use_elim(opt_use_elim),
+                use_simplification(true),
+                occurs(ClauseDeleted()),
+                elim_heap(ElimLt(n_occ)),
+                bwdsub_assigns(0),
+                n_touched(0),
+                strengthend() {
     remove_satisfied = false;
 }
 
@@ -224,7 +232,6 @@ bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
 bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause) {
     assert(_ps.contains(v));
     assert(_qs.contains(v));
-    merges++;
     out_clause.clear();
 
     bool ps_smallest = _ps.size() < _qs.size();
@@ -253,10 +260,9 @@ bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>&
 }
 
 // Returns FALSE if clause is always satisfied.
-bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, int& size) {
+bool SimpSolver::merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size) {
     assert(_ps.contains(v));
     assert(_qs.contains(v));
-    merges++;
 
     bool ps_smallest = _ps.size() < _qs.size();
     const Clause& ps = ps_smallest ? _qs : _ps;
@@ -350,20 +356,23 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
         Clause* cr = subsumption_queue.front();
         subsumption_queue.pop_front();
 
-        if (cr->isDeleted())
+        if (cr->isDeleted()) {
             continue;
+        }
 
         if (verbose && verbosity >= 2 && cnt++ % 1000 == 0) {
             printf("subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", (int) subsumption_queue.size(), subsumed, deleted_literals);
         }
 
-        assert(cr->size() > 1 || value((*cr)[0]) == l_True); // Unit-clauses should have been propagated before this point.
+        assert(cr->size() > 1 || value(cr->first()) == l_True); // Unit-clauses should have been propagated before this point.
 
         // Find best variable to scan:
-        Var best = var((*cr)[0]);
-        for (unsigned int i = 1; i < cr->size(); i++)
-            if (occurs[var((*cr)[i])].size() < occurs[best].size())
-                best = var((*cr)[i]);
+        Var best = var(cr->first());
+        for (Lit lit : *cr) {
+            if (occurs[var(lit)].size() < occurs[best].size()) {
+                best = var(lit);
+            }
+        }
 
         // Search all candidates:
         vector<Clause*>& cs = occurs.lookup(best);
@@ -372,7 +381,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
             if (cr->isDeleted()) {
                 break;
             }
-            else if (csi != cr && (subsumption_lim == -1 || (int)csi->size() < subsumption_lim)) {
+            else if (csi != cr && csi->size() < subsumption_lim) {
                 Lit l = cr->subsumes(*csi);
 
                 if (l == lit_Undef) {
@@ -382,12 +391,15 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
                 else if (l != lit_Error) {
                     deleted_literals++;
 
-                    if (!strengthenClause(csi, ~l))
+                    // this might modifiy occurs ...
+                    if (!strengthenClause(csi, ~l)) {
                         return false;
+                    }
 
-                    // Did current candidate get deleted from cs? Then check candidate at index j again:
-                    if (var(l) == best)
+                    // ... occurs modified, so check candidate at index i again:
+                    if (var(l) == best) {
                         i--;
+                    }
                 }
             }
         }
@@ -416,7 +428,6 @@ bool SimpSolver::asymm(Var v, Clause* cr) {
 
     if (propagate() != nullptr) {
         cancelUntil(0);
-        asymm_lits++;
         if (!strengthenClause(cr, l)) {
             return false;
         }
@@ -484,12 +495,12 @@ bool SimpSolver::eliminateVar(Var v) {
     }
 
     // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
-    // clause must exceed the limit on the maximal clause size (if it is set):
-    int cnt = 0;
+    // clause must exceed the limit on the maximal clause size:
+    size_t cnt = 0;
     for (Clause* pc : pos) {
         for (Clause* nc : neg) {
-            int clause_size = 0;
-            if (merge(*pc, *nc, v, clause_size) && (++cnt > (int)cls.size() + grow || (clause_lim != -1 && clause_size > clause_lim))) {
+            size_t clause_size = 0;
+            if (merge(*pc, *nc, v, clause_size) && (++cnt > cls.size() + grow || clause_size > clause_lim)) {
                 return true;
             }
         }
@@ -498,7 +509,6 @@ bool SimpSolver::eliminateVar(Var v) {
     // Delete and store old clauses:
     eliminated[v] = true;
     setDecisionVar(v, false);
-    eliminated_vars++;
 
     if (pos.size() > neg.size()) {
         for (Clause* c : neg)
@@ -510,19 +520,22 @@ bool SimpSolver::eliminateVar(Var v) {
         mkElimClause(elimclauses, ~mkLit(v));
     }
 
-    // Produce clauses in cross product:
+    // produce clauses in cross product
     vector<Lit>& resolvent = add_tmp;
-    for (Clause* pc : pos)
-        for (Clause* nc : neg)
-            if (merge(*pc, *nc, v, resolvent) && !addClause_(resolvent))
+    for (Clause* pc : pos) {
+        for (Clause* nc : neg) {
+            if (merge(*pc, *nc, v, resolvent) && !addClause_(resolvent)) {
                 return false;
+            }
+        }
+    }
 
-    for (Clause* c : cls)
+    for (Clause* c : cls) {
         removeClause(c);
+    }
 
-    // Free occurs list for this variable:
+    // free references to eliminated variable
     occurs[v].clear();
-    // Free watchers lists for this variable:
     watches[mkLit(v)].clear();
     watches[~mkLit(v)].clear();
 
@@ -660,7 +673,6 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
             clause->setDeleted();
         }
         clause->blow(clause->getLBD());//restore original size for freeMarkedClauses
-        clause->setLBD(0);//be paranoid
     }
 
     occurs.cleanAll();
