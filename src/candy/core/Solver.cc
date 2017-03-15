@@ -140,8 +140,6 @@ Solver::Solver() :
                 simpDB_props(0),
                 order_heap(VarOrderLt(activity)),
                 remove_satisfied(true),
-                reduceOnSize(false),
-                reduceOnSizeSize(12),
                 nbclausesbeforereduce(opt_first_reduce_db),
                 sumLBD(0),
                 MYFLAG(0),
@@ -608,13 +606,13 @@ bool Solver::seenAny(Clause& c) {
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
 bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
-    analyze_stack.clear();
+    vector<Lit> analyze_stack;
     analyze_stack.push_back(p);
     int top = analyze_toclear.size();
     while (analyze_stack.size() > 0) {
         assert(reason(var(analyze_stack.back())) != nullptr);
         Clause& c = *reason(var(analyze_stack.back()));
-        analyze_stack.pop_back(); //
+        analyze_stack.pop_back();
         if (c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
             c.swap(0, 1);
