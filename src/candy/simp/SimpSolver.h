@@ -81,19 +81,13 @@ public:
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
 
     // Mode of operation:
-    int grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
-    int clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. -1 means no limit.
-    int subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
-    double simp_garbage_frac; // A different limit for when to issue a GC during simplification (Also see 'garbage_frac').
+    size_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
+    size_t clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. -1 means no limit.
+    size_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
 
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
     bool use_elim;          // Perform variable elimination.
-
-    // Statistics:
-    int merges;
-    int asymm_lits;
-    int eliminated_vars;
 
 protected:
     // Helper structures:
@@ -121,7 +115,6 @@ protected:
     };
 
     // Solver state:
-    int elimorder;
     bool use_simplification;
     vector<uint32_t> elimclauses;
     vector<char> touched;
@@ -142,7 +135,7 @@ protected:
     void updateElimHeap(Var v);
     void gatherTouchedClauses();
     bool merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
-    bool merge(const Clause& _ps, const Clause& _qs, Var v, int& size);
+    bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size);
     bool backwardSubsumptionCheck(bool verbose = false);
     bool eliminateVar(Var v);
     void extendModel();
