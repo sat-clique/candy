@@ -71,7 +71,7 @@ public:
         if (index < NUMBER_OF_POOLS) {
             Statistics::getInstance().allocatorPoolAllocdDec(index);
             pools[index].push_back(clause);
-            clause->activity() = 0;
+//            clause->activity() = 0;
         }
         else if (index < XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorXXLPoolAllocdDec();
@@ -82,6 +82,54 @@ public:
             free((void*)clause);
         }
     }
+
+    std::vector<Clause*> revampPages(size_t i) {
+        switch (i) {
+        case 3: return revampPages<3>();
+        case 4: return revampPages<4>();
+        case 5: return revampPages<5>();
+        case 6: return revampPages<6>();
+        case 7: return revampPages<7>();
+        case 8: return revampPages<8>();
+        case 9: return revampPages<9>();
+        case 10: return revampPages<10>();
+        case 11: return revampPages<11>();
+        case 12: return revampPages<12>();
+        case 13: return revampPages<13>();
+        case 14: return revampPages<14>();
+        default:
+            assert(i > 2); assert(i < 15);
+            return std::vector<Clause*>();
+        }
+    }
+
+private:
+    ClauseAllocator();
+
+    std::array<std::vector<char*>, NUMBER_OF_POOLS+1> pages;
+    std::array<std::vector<size_t>, NUMBER_OF_POOLS+1> pages_nelem;
+
+    std::array<std::vector<void*>, NUMBER_OF_POOLS+1> pools;
+
+    void fillPool(uint16_t index);
+
+    inline uint32_t clauseBytes(uint32_t length) {
+        return (sizeof(Clause) + sizeof(Lit) * (length-1));
+    }
+
+    inline uint16_t getPoolIndex(uint32_t size) const {
+        return size - 1;
+    }
+
+    uint32_t initialNumberOfElements(uint32_t index) {
+        if (index > 2 && index < 120) {
+            return 262144 >> (index / 10);
+        } else if (index == 1 || index == 2) {
+            return 524288;
+        }
+        return 256;
+    }
+
 
     template <unsigned int N> struct SortHelperClause {
         uint16_t length;
@@ -115,33 +163,6 @@ public:
         assert(old_pool_size == pool.size());
         (void)(old_pool_size);
         return revamped;
-    }
-
-private:
-    ClauseAllocator();
-
-    std::array<std::vector<char*>, NUMBER_OF_POOLS+1> pages;
-    std::array<std::vector<size_t>, NUMBER_OF_POOLS+1> pages_nelem;
-
-    std::array<std::vector<void*>, NUMBER_OF_POOLS+1> pools;
-
-    void fillPool(uint16_t index);
-
-    inline uint32_t clauseBytes(uint32_t length) {
-        return (sizeof(Clause) + sizeof(Lit) * (length-1));
-    }
-
-    inline uint16_t getPoolIndex(uint32_t size) const {
-        return size - 1;
-    }
-
-    uint32_t initialNumberOfElements(uint32_t index) {
-        if (index > 2 && index < 120) {
-            return 262144 >> (index / 10);
-        } else if (index == 1 || index == 2) {
-            return 524288;
-        }
-        return 256;
     }
 
 };

@@ -95,6 +95,9 @@ static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted me
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
         IntRange(0, INT32_MAX));
 
+static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, 14));
+static BoolOption opt_revamp_sort_watches("MEMORY LAYOUT", "revamp_sort_watches", "reattach clause in decreasing activity order", false);
+
 //=================================================================================================
 // Constructor/Destructor:
 
@@ -108,6 +111,8 @@ Solver::Solver() :
                 incReduceDB(opt_inc_reduce_db),
                 specialIncReduceDB(opt_spec_inc_reduce_db),
                 lbLBDFrozenClause(opt_lb_lbd_frozen_clause),
+                revamp(opt_revamp),
+                revamp_sort_watches(opt_revamp_sort_watches),
                 lbSizeMinimizingClause(opt_lb_size_minimzing_clause),
                 lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
                 var_decay(opt_var_decay),
@@ -852,37 +857,40 @@ void Solver::rebuildOrderHeap() {
 }
 
 
-void Solver::revampClausePool() {
+void Solver::revampClausePool(size_t upper) {
+    assert(upper < 15); // only clauses up to size 14 can be revamped
+
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
 
-    clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) {
+    clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this,upper](Clause* c) {
         assert(!locked(c));
         assert(!c->isDeleted());
-        if (c->size() > 2 && c->size() < 6) {
+        if (c->size() > 2 && c->size() <= upper) {
             detachClause(c, true);
             return true;
         } else { return false; } }), clauses.end());
 
-    learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this](Clause* c) {
+    learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this,upper](Clause* c) {
         assert(!locked(c));
         assert(!c->isDeleted());
-        if (c->size() > 2 && c->size() < 6) {
+        if (c->size() > 2 && c->size() <= upper) {
             detachClause(c, true);
             return true;
         } else { return false; } }), learnts.end());
 
-    vector<Clause*> revamped3 = ClauseAllocator::getInstance().revampPages<3>();
-    vector<Clause*> revamped4 = ClauseAllocator::getInstance().revampPages<4>();
-    vector<Clause*> revamped5 = ClauseAllocator::getInstance().revampPages<5>();
-
-    for (auto revamped : { revamped3, revamped4, revamped5 })
-    for (Clause* clause : revamped) {
-        attachClause(clause);
-        if (clause->isLearnt()) {
-            learnts.push_back(clause);
-        } else {
-            clauses.push_back(clause);
+    for (size_t k = 3; k <= upper; k++) {
+        vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
+        if (revamp_sort_watches) {
+            sort(revamped.begin(), revamped.end(), [](Clause* c1, Clause* c2) { return c1->activity() > c2->activity(); });
+        }
+        for (Clause* clause : revamped) {
+            attachClause(clause);
+            if (clause->isLearnt()) {
+                learnts.push_back(clause);
+            } else {
+                clauses.push_back(clause);
+            }
         }
     }
 
@@ -1038,8 +1046,8 @@ lbool Solver::search() {
                     cancelUntil(0);
                 }
 
-                if (reduced) {
-                    revampClausePool();
+                if (reduced && revamp > 2) {
+                    revampClausePool(revamp);
                     reduced = false;
                 }
 
