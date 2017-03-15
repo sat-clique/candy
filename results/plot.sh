@@ -45,7 +45,7 @@ echo "replot h(x) lc 27 lt 3 lw 1 notitle"
 echo "replot \"$f\" u (\$${c1}==0?1:\$$c1):(\$${c2}==0?1:\$$c2) title \"$title\" with points lc 1 pt 3"
 
 echo "set term postscript eps enhanced color"
-echo "set output 'result.pdf'"
+echo "set output '$f-$c1-$c2.pdf'"
 echo "replot"
 
 
