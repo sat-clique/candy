@@ -18,6 +18,7 @@
 #define NUMBER_OF_POOLS 500
 #define XXL_POOL_ONE_SIZE 1000
 #define XXL_POOL_INDEX NUMBER_OF_POOLS
+#define REVAMPABLE_PAGES_MAX_SIZE 14
 
 namespace Candy {
 
@@ -84,6 +85,9 @@ public:
     }
 
     std::vector<Clause*> revampPages(size_t i) {
+        assert(i > 2);
+        assert(i <= REVAMPABLE_PAGES_MAX_SIZE);
+
         switch (i) {
         case 3: return revampPages<3>();
         case 4: return revampPages<4>();
@@ -97,19 +101,17 @@ public:
         case 12: return revampPages<12>();
         case 13: return revampPages<13>();
         case 14: return revampPages<14>();
-        default:
-            assert(i > 2); assert(i < 15);
-            return std::vector<Clause*>();
+        default: return std::vector<Clause*>();
         }
     }
 
 private:
     ClauseAllocator();
 
-    std::array<std::vector<char*>, NUMBER_OF_POOLS+1> pages;
-    std::array<std::vector<size_t>, NUMBER_OF_POOLS+1> pages_nelem;
-
     std::array<std::vector<void*>, NUMBER_OF_POOLS+1> pools;
+
+    std::array<std::vector<char*>, REVAMPABLE_PAGES_MAX_SIZE+1> pages;
+    std::array<std::vector<size_t>, REVAMPABLE_PAGES_MAX_SIZE> pages_nelem;
 
     void fillPool(uint16_t index);
 

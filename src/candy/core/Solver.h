@@ -148,8 +148,6 @@ public:
     int incReduceDB;
     int specialIncReduceDB;
     unsigned int lbLBDFrozenClause;
-    int revamp;
-    bool revamp_sort_watches;
 
     // Constant for reducing clause
     int lbSizeMinimizingClause;
@@ -222,24 +220,31 @@ protected:
 
 	OccLists<Lit, Watcher, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
 	OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-    vector<lbool> assigns;          // The current assignments.
-    vector<VarData> vardata;       // Stores reason and level for each variable.
-    vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
-    int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
-    vector<int> trail_lim; // Separator indices for different decision levels in 'trail'.
+
 
 	vector<Clause*> clauses;          // List of problem clauses.
 	vector<Clause*> learnts;          // List of learnt clauses.
 	vector<Clause*> learntsBin;       // List of binary learnt clauses.
 
-	vector<char> polarity;         // The preferred polarity of each variable.
-	vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
+	vector<lbool> assigns;          // The current assignments.
+    vector<char> polarity;         // The preferred polarity of each variable.
+    vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
+
+    vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
+    int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
+    vector<int> trail_lim; // Separator indices for different decision levels in 'trail'.
+    vector<VarData> vardata;       // Stores reason and level for each variable.
+
 	int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
 	int simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
 	int64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
 	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 	Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+
+    // constants for revamping
+    int revamp;
+    bool revamp_sort_watches;
 
 	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
 
