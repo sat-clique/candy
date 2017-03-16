@@ -18,7 +18,7 @@
 #define NUMBER_OF_POOLS 500
 #define XXL_POOL_ONE_SIZE 1000
 #define XXL_POOL_INDEX NUMBER_OF_POOLS
-#define REVAMPABLE_PAGES_MAX_SIZE 14
+#define REVAMPABLE_PAGES_MAX_SIZE 6//14
 
 namespace Candy {
 
@@ -93,14 +93,14 @@ public:
         case 4: return revampPages<4>();
         case 5: return revampPages<5>();
         case 6: return revampPages<6>();
-        case 7: return revampPages<7>();
-        case 8: return revampPages<8>();
-        case 9: return revampPages<9>();
-        case 10: return revampPages<10>();
-        case 11: return revampPages<11>();
-        case 12: return revampPages<12>();
-        case 13: return revampPages<13>();
-        case 14: return revampPages<14>();
+//        case 7: return revampPages<7>();
+//        case 8: return revampPages<8>();
+//        case 9: return revampPages<9>();
+//        case 10: return revampPages<10>();
+//        case 11: return revampPages<11>();
+//        case 12: return revampPages<12>();
+//        case 13: return revampPages<13>();
+//        case 14: return revampPages<14>();
         default: return std::vector<Clause*>();
         }
     }

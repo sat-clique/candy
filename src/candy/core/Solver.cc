@@ -856,29 +856,33 @@ void Solver::rebuildOrderHeap() {
 }
 
 
-void Solver::revampClausePool(size_t upper) {
-    assert(upper < 15); // only clauses up to size 14 can be revamped
+void Solver::revampClausePool(uint8_t upper) {
+    assert(upper < 7); // only clauses up to size 6 can be revamped
 
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
 
-    clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this,upper](Clause* c) {
-        assert(!locked(c));
-        assert(!c->isDeleted());
+    for (Clause* c : clauses) {
         if (c->size() > 2 && c->size() <= upper) {
+            assert(!locked(c)); assert(!c->isDeleted());
             detachClause(c, true);
-            return true;
-        } else { return false; } }), clauses.end());
+        }
+    }
+
+    for (Clause* c : learnts) {
+        if (c->size() > 2 && c->size() <= upper) {
+            assert(!locked(c)); assert(!c->isDeleted());
+            detachClause(c, true);
+        }
+    }
+
+    clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this,upper](Clause* c) {
+        return (c->size() > 2 && c->size() <= upper); } ), clauses.end());
 
     learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this,upper](Clause* c) {
-        assert(!locked(c));
-        assert(!c->isDeleted());
-        if (c->size() > 2 && c->size() <= upper) {
-            detachClause(c, true);
-            return true;
-        } else { return false; } }), learnts.end());
+        return (c->size() > 2 && c->size() <= upper); } ), learnts.end());
 
-    for (size_t k = 3; k <= upper; k++) {
+    for (uint8_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
         for (Clause* clause : revamped) {
             attachClause(clause);
