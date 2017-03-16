@@ -39,8 +39,12 @@ void ClauseAllocator::fillPool(uint16_t index) {
     const uint16_t clause_bytes = clauseBytes(nLits);
     const uint32_t bytes_total = clause_bytes * nElem;
     char* page = (char*)calloc(nElem, clause_bytes);
-    pages[index].push_back(page);
-    pages_nelem[index].push_back(nElem);
+    if (index < REVAMPABLE_PAGES_MAX_SIZE) {
+        pages[index].push_back(page);
+        pages_nelem[index].push_back(nElem);
+    } else {
+        pages[REVAMPABLE_PAGES_MAX_SIZE].push_back(page);
+    }
     for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
         pools[index].push_back(page + pos);
     }

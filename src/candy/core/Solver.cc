@@ -111,8 +111,6 @@ Solver::Solver() :
                 incReduceDB(opt_inc_reduce_db),
                 specialIncReduceDB(opt_spec_inc_reduce_db),
                 lbLBDFrozenClause(opt_lb_lbd_frozen_clause),
-                revamp(opt_revamp),
-                revamp_sort_watches(opt_revamp_sort_watches),
                 lbSizeMinimizingClause(opt_lb_size_minimzing_clause),
                 lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
                 var_decay(opt_var_decay),
@@ -140,6 +138,8 @@ Solver::Solver() :
                 simpDB_props(0),
                 order_heap(VarOrderLt(activity)),
                 remove_satisfied(true),
+                revamp(opt_revamp),
+                revamp_sort_watches(opt_revamp_sort_watches),
                 nbclausesbeforereduce(opt_first_reduce_db),
                 sumLBD(0),
                 MYFLAG(0),
@@ -606,7 +606,8 @@ bool Solver::seenAny(Clause& c) {
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
 bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
-    vector<Lit> analyze_stack;
+    static vector<Lit> analyze_stack;
+    analyze_stack.clear();
     analyze_stack.push_back(p);
     int top = analyze_toclear.size();
     while (analyze_stack.size() > 0) {
@@ -879,9 +880,6 @@ void Solver::revampClausePool(size_t upper) {
 
     for (size_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
-        if (revamp_sort_watches) {
-            sort(revamped.begin(), revamped.end(), [](Clause* c1, Clause* c2) { return c1->activity() > c2->activity(); });
-        }
         for (Clause* clause : revamped) {
             attachClause(clause);
             if (clause->isLearnt()) {
@@ -1045,7 +1043,24 @@ lbool Solver::search() {
                 }
 
                 if (reduced && revamp > 2) {
+                    assert(decisionLevel() == 0);
+
+                    vector<Lit> props(trail.begin(), trail.begin() + trail_size);
+                    for (Lit p : props) {
+                        assigns[var(p)] = l_Undef;
+                        vardata[var(p)] = VarData(nullptr, 0);
+                    }
+                    trail_size = 0;
+
                     revampClausePool(revamp);
+
+                    for (Lit prop : props) {
+                        if (assigns[var(prop)] == l_Undef) {
+                            uncheckedEnqueue(prop);
+                            propagate();
+                        }
+                    }
+
                     reduced = false;
                 }
 
