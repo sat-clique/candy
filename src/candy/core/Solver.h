@@ -243,7 +243,7 @@ protected:
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
     // constants for revamping
-    int revamp;
+	uint8_t revamp;
     bool revamp_sort_watches;
 
 	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
@@ -296,7 +296,7 @@ protected:
 	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
-    void revampClausePool(size_t upper);
+    void revampClausePool(uint8_t upper);
 
 	// Maintaining Variable/Clause activity:
 	void varDecayActivity(); // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.

@@ -12,9 +12,9 @@
 namespace Candy {
 
 ClauseAllocator::ClauseAllocator() :
+    pools(),
     pages(),
-    pages_nelem(),
-    pools()
+    pages_nelem()
 {
     for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {
         pools[i].reserve(initialNumberOfElements(i));
