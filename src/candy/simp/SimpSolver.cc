@@ -669,7 +669,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
             Clause* clean = new (clause->size()) Clause(std::vector<Lit>(clause->begin(), clause->end()), clause->isLearnt());
             clauses.push_back(clean);
             attachClause(clean);
-            detachClause(clause, true);
+            detachClause(clause);
             clause->setDeleted();
         }
         clause->blow(clause->getLBD());//restore original size for freeMarkedClauses

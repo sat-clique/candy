@@ -132,6 +132,7 @@ Solver::Solver() :
                 var_inc(1),
                 watches(WatcherDeleted()),
                 watchesBin(WatcherDeleted()),
+                learntsUnary(),
                 trail_size(0),
                 qhead(0),
                 simpDB_assigns(-1),
@@ -862,26 +863,47 @@ void Solver::revampClausePool(uint8_t upper) {
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
 
+    // detach them
     for (Clause* c : clauses) {
         if (c->size() > 2 && c->size() <= upper) {
             assert(!locked(c)); assert(!c->isDeleted());
-            detachClause(c, true);
+            detachClause(c);
+            c->setDeleted();
         }
     }
 
     for (Clause* c : learnts) {
-        if (c->size() > 2 && c->size() <= upper) {
+        assert(c->size() > 2); // binaries are in learntsBin
+        if (c->size() <= upper) {
             assert(!locked(c)); assert(!c->isDeleted());
-            detachClause(c, true);
+            detachClause(c);
+            c->setDeleted();
         }
     }
 
+    watches.cleanAll();
+
+    for (Clause* c : clauses) {
+        if (c->size() > 2 && c->size() <= upper) {
+            c->unsetDeleted();
+        }
+    }
+
+    for (Clause* c : learnts) {
+        assert(c->size() > 2); // binaries are in learntsBin
+        if (c->size() <= upper) {
+            c->unsetDeleted();
+        }
+    }
+
+    // remove them
     clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this,upper](Clause* c) {
         return (c->size() > 2 && c->size() <= upper); } ), clauses.end());
 
     learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this,upper](Clause* c) {
         return (c->size() > 2 && c->size() <= upper); } ), learnts.end());
 
+    // revamp  and reattach them
     for (uint8_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
         for (Clause* clause : revamped) {
@@ -1012,6 +1034,7 @@ lbool Solver::search() {
 
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
+                learntsUnary.push_back(learnt_clause[0]);
                 Statistics::getInstance().solverUnariesInc();
             } else {
                 Clause* cr = new (learnt_clause.size()) Clause(learnt_clause, true);
@@ -1058,9 +1081,9 @@ lbool Solver::search() {
 
                     revampClausePool(revamp);
 
-                    for (Lit prop : props) {
-                        if (assigns[var(prop)] == l_Undef) {
-                            uncheckedEnqueue(prop);
+                    for (Lit p : props) {
+                        if (assigns[var(p)] == l_Undef) {
+                            uncheckedEnqueue(p);
                             propagate();
                         }
                     }
@@ -1078,9 +1101,9 @@ lbool Solver::search() {
             // Perform clause database reduction !
             if (nConflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {
+                    curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     reduceDB();
                     reduced = true;
-                    curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     nbclausesbeforereduce += incReduceDB;
                 }
             }
