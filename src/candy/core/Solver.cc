@@ -857,7 +857,7 @@ void Solver::rebuildOrderHeap() {
 
 
 void Solver::revampClausePool(uint8_t upper) {
-    assert(upper < 7); // only clauses up to size 6 can be revamped
+    assert(upper <= REVAMPABLE_PAGES_MAX_SIZE);
 
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
