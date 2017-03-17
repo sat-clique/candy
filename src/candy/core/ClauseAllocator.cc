@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include <core/ClauseAllocator.h>
+#include <candy/core/ClauseAllocator.h>
 
 #include <iostream>
 

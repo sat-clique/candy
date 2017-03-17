@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_CLAUSE_H_
 
 #include "candy/core/SolverTypes.h"
+#include <candy/core/Statistics.h>
 #include <iostream>
 
 namespace Candy {
@@ -125,17 +126,60 @@ public:
         literals[pos2] = tmp;
     }
 
-    bool isLearnt() const;
-    void setLearnt(bool learnt);
-    bool isDeleted() const;
-    void setDeleted();
-    bool isFrozen() const;
-    void setFrozen(bool flag);
-    uint16_t getLBD() const;
-    void setLBD(uint16_t i);
-    uint16_t getHeader() const;
+    inline bool isLearnt() const {
+        return (bool)(header & LEARNT_MASK);
+    }
 
-    float& activity();
+    inline void setLearnt(bool learnt) {
+        if (learnt) {
+            header |= LEARNT_MASK;
+        } else {
+            header &= ~LEARNT_MASK;
+        }
+    }
+
+    inline bool isDeleted() const {
+        return (bool)(header & DELETED_MASK);
+    }
+
+    inline void setDeleted() {
+        header |= DELETED_MASK;
+    }
+
+    inline void unsetDeleted() {
+        header &= ~DELETED_MASK;
+    }
+
+    /** Frozen flag is stored inverted so complete header could be used for sorting */
+    inline bool isFrozen() const {
+        return !(bool)(header & UNFROZEN_MASK);
+    }
+
+    inline void setFrozen(bool flag) {
+        if (!flag) {
+            header |= UNFROZEN_MASK;
+        } else {
+            header &= ~UNFROZEN_MASK;
+        }
+    }
+
+    inline uint16_t getLBD() const {
+        return header & LBD_MASK;
+    }
+
+    inline void setLBD(uint16_t i) {
+        uint16_t flags = header & ~LBD_MASK;
+        header = std::min(i, LBD_MASK);
+        header |= flags;
+    }
+
+    inline float& activity() {
+        return data.act;
+    }
+
+    inline uint16_t getHeader() const {
+        return header;
+    }
 
     /**
      *  subsumes : (other : const Clause&)  ->  Lit
@@ -178,7 +222,15 @@ public:
         return ret;
     }
 
-    void strengthen(Lit p);
+
+    inline void strengthen(Lit p) {
+        if (std::remove(begin(), end(), p) != end()) {
+            Statistics::getInstance().allocatorStrengthenClause(length);
+            --length;
+        }
+        calcAbstraction();
+    }
+
     void blow(uint8_t offset) {//use only if you know what you are doing (only to be used after strengthen calls)
         length += offset;
     }

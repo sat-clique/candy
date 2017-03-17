@@ -225,6 +225,7 @@ protected:
 	vector<Clause*> clauses;          // List of problem clauses.
 	vector<Clause*> learnts;          // List of learnt clauses.
 	vector<Clause*> learntsBin;       // List of binary learnt clauses.
+	vector<Lit> learntsUnary;            // List of unary learnt clauses.
 
 	vector<lbool> assigns;          // The current assignments.
     vector<char> polarity;         // The preferred polarity of each variable.
