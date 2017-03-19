@@ -87,7 +87,7 @@ public:
 
 #ifdef LEARNTS_STATS
     inline void solverRemovedClausesInc(int amount) { nbRemovedClauses += amount; }
-    inline void solverReducedClausesInc() { ++nbReducedClauses; }
+    inline void solverReducedClausesInc(int amount) { nbReducedClauses += amount; }
     inline void solverReduceDBInc() { ++nbReduceDB; }
     inline void solverUnariesInc() { ++nbUn; }
     inline void solverBinariesInc() { ++nbBin; }

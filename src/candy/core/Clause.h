@@ -146,10 +146,6 @@ public:
         header |= DELETED_MASK;
     }
 
-    inline void unsetDeleted() {
-        header &= ~DELETED_MASK;
-    }
-
     /** Frozen flag is stored inverted so complete header could be used for sorting */
     inline bool isFrozen() const {
         return !(bool)(header & UNFROZEN_MASK);

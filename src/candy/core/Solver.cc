@@ -195,7 +195,7 @@ Var Solver::newVar(bool sign, bool dvar) {
     watchesBin.init(mkLit(v, false));
     watchesBin.init(mkLit(v, true));
     assigns.push_back(l_Undef);
-    vardata.push_back(VarData());
+    vardata.emplace_back();
     activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     seen.push_back(0);
     permDiff.push_back(0);
@@ -272,46 +272,42 @@ bool Solver::addClause_(vector<Lit>& ps) {
 
 void Solver::attachClause(Clause* cr) {
     assert(cr->size() > 1);
-    Clause& c = *cr;
 
-    if (c.size() == 2) {
-        watchesBin[~c[0]].push_back(Watcher(cr, c[1]));
-        watchesBin[~c[1]].push_back(Watcher(cr, c[0]));
+    nLiterals += cr->size();
+
+    if (cr->size() == 2) {
+        watchesBin[~cr->first()].emplace_back(cr, cr->second());
+        watchesBin[~cr->second()].emplace_back(cr, cr->first());
     } else {
-        watches[~c[0]].push_back(Watcher(cr, c[1]));
-        watches[~c[1]].push_back(Watcher(cr, c[0]));
+        watches[~cr->first()].emplace_back(cr, cr->second());
+        watches[~cr->second()].emplace_back(cr, cr->first());
     }
-
-    nLiterals += c.size();
 }
 
 void Solver::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
-    Clause& c = *cr;
 
-    nLiterals -= c.size();
+    nLiterals -= cr->size();
 
-    if (c.size() == 2) {
+    if (cr->size() == 2) {
         if (strict) {
-            vector<Watcher>& list0 = watchesBin[~c[0]];
-            vector<Watcher>& list1 = watchesBin[~c[1]];
+            vector<Watcher>& list0 = watchesBin[~cr->first()];
+            vector<Watcher>& list1 = watchesBin[~cr->second()];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [cr](Watcher w){ return w.cref == cr; }), list0.end());
             list1.erase(std::remove_if(list1.begin(), list1.end(), [cr](Watcher w){ return w.cref == cr; }), list1.end());
         } else {
-            // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
-            watchesBin.smudge(~c[0]);
-            watchesBin.smudge(~c[1]);
+            watchesBin.smudge(~cr->first());
+            watchesBin.smudge(~cr->second());
         }
     } else {
         if (strict) {
-            vector<Watcher>& list0 = watches[~c[0]];
-            vector<Watcher>& list1 = watches[~c[1]];
+            vector<Watcher>& list0 = watches[~cr->first()];
+            vector<Watcher>& list1 = watches[~cr->second()];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [cr](Watcher w){ return w.cref == cr; }), list0.end());
             list1.erase(std::remove_if(list1.begin(), list1.end(), [cr](Watcher w){ return w.cref == cr; }), list1.end());
         } else {
-            // Lazy detaching: (NOTE! Must clean all watcher lists before garbage collecting this clause)
-            watches.smudge(~c[0]);
-            watches.smudge(~c[1]);
+            watches.smudge(~cr->first());
+            watches.smudge(~cr->second());
         }
     }
 }
@@ -320,8 +316,9 @@ void Solver::removeClause(Clause* cr) {
     certificate.removed(cr);
     detachClause(cr);
     // Don't leave pointers to free'd memory!
-    if (locked(cr))
+    if (locked(cr)) {
         vardata[var(cr->first())].reason = nullptr;
+    }
     cr->setDeleted();
 }
 
@@ -337,7 +334,7 @@ inline unsigned int Solver::computeLBD(Iterator it, Iterator end) {
     int nblevels = 0;
     MYFLAG++;
 
-    if (incremental) { // ----------------- INCREMENTAL MODE
+    if (incremental) { // INCREMENTAL MODE
         for (; it != end; it++) {
             Lit lit = *it;
             if (isSelector(var(lit))) {
@@ -349,7 +346,7 @@ inline unsigned int Solver::computeLBD(Iterator it, Iterator end) {
                 nblevels++;
             }
         }
-    } else { // -------- DEFAULT MODE
+    } else { // DEFAULT MODE
         for (; it != end; it++) {
             Lit lit = *it;
             int l = level(var(lit));
@@ -366,7 +363,7 @@ inline unsigned int Solver::computeLBD(Iterator it, Iterator end) {
 /******************************************************************
  * Minimisation with binary resolution
  ******************************************************************/
-void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
+void Solver::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
     // Find the LBD measure
     unsigned int lbd = computeLBD(out_learnt.begin(), out_learnt.end());
     Lit p = ~out_learnt[0];
@@ -374,21 +371,20 @@ void Solver::minimisationWithBinaryResolution(vector<Lit> &out_learnt) {
     if (lbd <= lbLBDMinimizingClause) {
         MYFLAG++;
 
-        for (unsigned int i = 1; i < out_learnt.size(); i++) {
+        for (size_t i = 1; i < out_learnt.size(); i++) {
             permDiff[var(out_learnt[i])] = MYFLAG;
         }
 
-        vector<Watcher>& wbin = watchesBin[p];
         int nb = 0;
-        for (Watcher& watcher : wbin) {
-            if (permDiff[var(watcher.blocker)] == MYFLAG && value(watcher.blocker) == l_True) {
+        for (Watcher w : watchesBin[p]) {
+            if (permDiff[var(w.blocker)] == MYFLAG && value(w.blocker) == l_True) {
                 nb++;
-                permDiff[var(watcher.blocker)] = MYFLAG - 1;
+                permDiff[var(w.blocker)] = MYFLAG - 1;
             }
         }
         if (nb > 0) {
-            Statistics::getInstance().solverReducedClausesInc();
-            for (unsigned int i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
+            Statistics::getInstance().solverReducedClausesInc(nb);
+            for (size_t i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
                 if (permDiff[var(out_learnt[i])] != MYFLAG) {
                     std::swap(out_learnt[i], out_learnt[l]);
                     l--;
@@ -477,9 +473,9 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
             c.swap(0, 1);
         }
 
-        if (c.isLearnt()) {
-            claBumpActivity(c);
-        }
+        //if (c.isLearnt()) {
+        claBumpActivity(c);
+        //}
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
         if (c.isLearnt() && c.getLBD() > 2) {
@@ -867,8 +863,7 @@ void Solver::revampClausePool(uint8_t upper) {
     for (Clause* c : clauses) {
         if (c->size() > 2 && c->size() <= upper) {
             assert(!locked(c)); assert(!c->isDeleted());
-            detachClause(c);
-            c->setDeleted();
+            detachClause(c, true);
         }
     }
 
@@ -876,23 +871,7 @@ void Solver::revampClausePool(uint8_t upper) {
         assert(c->size() > 2); // binaries are in learntsBin
         if (c->size() <= upper) {
             assert(!locked(c)); assert(!c->isDeleted());
-            detachClause(c);
-            c->setDeleted();
-        }
-    }
-
-    watches.cleanAll();
-
-    for (Clause* c : clauses) {
-        if (c->size() > 2 && c->size() <= upper) {
-            c->unsetDeleted();
-        }
-    }
-
-    for (Clause* c : learnts) {
-        assert(c->size() > 2); // binaries are in learntsBin
-        if (c->size() <= upper) {
-            c->unsetDeleted();
+            detachClause(c, true);
         }
     }
 
