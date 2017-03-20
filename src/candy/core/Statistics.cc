@@ -13,12 +13,16 @@ namespace Candy {
 Statistics::Statistics() :
 #ifdef SOLVER_STATS
     decisions(0), rnd_decisions(0), dec_vars(0), max_literals(0), tot_literals(0),
-#endif// SOLVER_STATS
+#endif
 #ifdef RESTART_STATS
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
 #endif
 #ifdef LEARNTS_STATS
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
+#endif
+#ifdef RUNTIME_STATS
+    runtimes({{RT_INITIALIZATION, 0}, {RT_SOLVER, 0}, {RT_GATOR, 0}, {RT_SIMPLIFIER, 0}}),
+    starttimes({{RT_INITIALIZATION, 0}, {RT_SOLVER, 0}, {RT_GATOR, 0}, {RT_SIMPLIFIER, 0}}),
 #endif
 #ifdef INCREMENTAL_STATS
     totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0),
@@ -26,7 +30,7 @@ Statistics::Statistics() :
 #ifdef ALLOCATOR_STATS
     stats_number_of_pools(0), stats_pool_allocd(), stats_xxl_pool_allocd(0), stats_beyond_mallocd(0),
     stats_pool_hwm(), stats_xxl_pool_hwm(0), stats_beyond_hwm(0),
-#endif// ALLOCATOR_STATS
+#endif
     stats(0)
 {
 }
@@ -68,7 +72,8 @@ void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uin
 #endif
 }
 
-void Statistics::printFinalStats(double cpu_time, double mem_used, uint64_t conflicts, uint64_t propagations) {
+void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
+    double cpu_time = Glucose::cpuTime();
 #ifdef RESTART_STATS
     printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
     printf("c blocked restarts      : %" PRIu64" (multiple: %" PRIu64") \n", nbstopsrestarts, nbstopsrestartssame);
@@ -88,6 +93,7 @@ void Statistics::printFinalStats(double cpu_time, double mem_used, uint64_t conf
     printf("c propagations          : %-12" PRIu64"   (%.0f /sec)\n", propagations, propagations / cpu_time);
     printf("c conflict literals     : %-12" PRIu64"   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals) * 100 / (double) max_literals);
 #endif// SOLVER_STATS
+    double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {
         printf("Memory used           : %.2f MB\n", mem_used);
     }
