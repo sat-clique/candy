@@ -270,17 +270,28 @@ bool Solver::addClause_(vector<Lit>& ps) {
     return true;
 }
 
-void Solver::attachClause(Clause* cr) {
+void Solver::attachClause(Clause* cr, bool front) {
     assert(cr->size() > 1);
 
     nLiterals += cr->size();
 
-    if (cr->size() == 2) {
-        watchesBin[~cr->first()].emplace_back(cr, cr->second());
-        watchesBin[~cr->second()].emplace_back(cr, cr->first());
-    } else {
-        watches[~cr->first()].emplace_back(cr, cr->second());
-        watches[~cr->second()].emplace_back(cr, cr->first());
+    if (!front) {
+        if (cr->size() == 2) {
+            watchesBin[~cr->first()].emplace_back(cr, cr->second());
+            watchesBin[~cr->second()].emplace_back(cr, cr->first());
+        } else {
+            watches[~cr->first()].emplace_back(cr, cr->second());
+            watches[~cr->second()].emplace_back(cr, cr->first());
+        }
+    }
+    else {
+        if (cr->size() == 2) {
+            watchesBin[~cr->first()].emplace(watchesBin[~cr->first()].begin(), cr, cr->second());
+            watchesBin[~cr->second()].emplace(watchesBin[~cr->second()].begin(), cr, cr->first());
+        } else {
+            watches[~cr->first()].emplace(watches[~cr->first()].begin(), cr, cr->second());
+            watches[~cr->second()].emplace(watches[~cr->second()].begin(), cr, cr->first());
+        }
     }
 }
 
@@ -883,10 +894,10 @@ void Solver::revampClausePool(uint8_t upper) {
         return (c->size() > 2 && c->size() <= upper); } ), learnts.end());
 
     // revamp  and reattach them
-    for (uint8_t k = 3; k <= upper; k++) {
+    for (uint8_t k = upper; k >= 3; k--) {
         vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
         for (Clause* clause : revamped) {
-            attachClause(clause);
+            attachClause(clause, true);
             if (clause->isLearnt()) {
                 learnts.push_back(clause);
             } else {

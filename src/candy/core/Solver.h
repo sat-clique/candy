@@ -307,7 +307,7 @@ protected:
 	void claBumpActivity(Clause& c); // Increase a clause with the current 'bump' value.
 
 	// Operations on clauses:
-	void attachClause(Clause* cr); // Attach a clause to watcher lists.
+	void attachClause(Clause* cr, bool front = false); // Attach a clause to watcher lists.
 	void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
 	void removeClause(Clause* cr); // Detach and free a clause.
 	void freeMarkedClauses(vector<Clause*>& list);
