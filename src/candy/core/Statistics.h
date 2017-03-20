@@ -12,10 +12,13 @@
 #include <cstdio>
 #include <cassert>
 #include <vector>
+#include <map>
+#include <candy/utils/System.h>
 
 #define SOLVER_STATS
 #define RESTART_STATS
 #define LEARNTS_STATS
+#define RUNTIME_STATS
 //#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
 
@@ -31,6 +34,14 @@ class Statistics {
 #ifdef LEARNTS_STATS
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
 #endif// LEARNTS_STATS
+#ifdef RUNTIME_STATS
+#define RT_INITIALIZATION   "Runtime Initialization"
+#define RT_SOLVER           "Runtime Solver"
+#define RT_GATOR            "Runtime Gate Analyzer"
+#define RT_SIMPLIFIER       "Runtime Simplifier"
+    std::map<std::string, double> runtimes;
+    std::map<std::string, double> starttimes;
+#endif// RUNTIME_STATS
 #ifdef INCREMENTAL_STATS
     double totalTime4Sat, totalTime4Unsat;
     int nbSatCalls, nbUnsatCalls;
@@ -54,7 +65,7 @@ public:
 
     void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
     void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals);
-    void printFinalStats(double cpu_time, double mem_used, uint64_t conflicts, uint64_t propagations);
+    void printFinalStats(uint64_t conflicts, uint64_t propagations);
     void printAllocatorStatistics();
 
 #ifdef SOLVER_STATS
@@ -112,7 +123,40 @@ public:
     inline void incTotalTime4Sat(int amount) { (void)(amount); }
     inline void incTotalTime4Unsat(int amount) { (void)(amount); }
 #endif// INCREMENTAL_STATS
-
+#ifdef RUNTIME_STATS
+    inline void runtimeReset(std::string key) {
+        if (!starttimes.count(key)) {
+            starttimes.insert({{key, 0}});
+        }
+        if (!runtimes.count(key)) {
+            runtimes.insert({{key, 0}});
+        }
+        starttimes[key] = 0;
+        runtimes[key] = 0;
+    }
+    inline void runtimeStart(std::string key) {
+        if (!starttimes.count(key)) {
+            starttimes.insert({{key, 0}});
+        }
+        starttimes[key] = Glucose::cpuTime();
+    }
+    inline void runtimeStop(std::string key) {
+        if (!starttimes.count(key)) {
+            starttimes.insert({{key, 0}});
+        }
+        if (!runtimes.count(key)) {
+            runtimes.insert({{key, 0}});
+        }
+        runtimes[key] += Glucose::cpuTime() - starttimes[key];
+    }
+    void printRuntime(std::string key) {
+        printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), runtimes[key]);
+    }
+#else
+    inline void runtimeStart(std::string key) { (void)(key); }
+    inline void runtimeStop(std::string key) { (void)(key); }
+    void printRuntime(std::string key) { (void)(key); }
+#endif// RUNTIME_STATS
 #ifdef ALLOCATOR_STATS
     inline void allocatorNumberOfPoolsSet(uint32_t nPools) {
         stats_number_of_pools = nPools;

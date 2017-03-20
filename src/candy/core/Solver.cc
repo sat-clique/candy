@@ -161,6 +161,8 @@ Solver::Solver() :
 }
 
 Solver::~Solver() {
+    Statistics::getInstance().printRuntime("Runtime Revamp");
+    Statistics::getInstance().printRuntime("Runtime Sort Watches");
 }
 
 /****************************************************************
@@ -270,28 +272,17 @@ bool Solver::addClause_(vector<Lit>& ps) {
     return true;
 }
 
-void Solver::attachClause(Clause* cr, bool front) {
+void Solver::attachClause(Clause* cr) {
     assert(cr->size() > 1);
 
     nLiterals += cr->size();
 
-    if (!front) {
-        if (cr->size() == 2) {
-            watchesBin[~cr->first()].emplace_back(cr, cr->second());
-            watchesBin[~cr->second()].emplace_back(cr, cr->first());
-        } else {
-            watches[~cr->first()].emplace_back(cr, cr->second());
-            watches[~cr->second()].emplace_back(cr, cr->first());
-        }
-    }
-    else {
-        if (cr->size() == 2) {
-            watchesBin[~cr->first()].emplace(watchesBin[~cr->first()].begin(), cr, cr->second());
-            watchesBin[~cr->second()].emplace(watchesBin[~cr->second()].begin(), cr, cr->first());
-        } else {
-            watches[~cr->first()].emplace(watches[~cr->first()].begin(), cr, cr->second());
-            watches[~cr->second()].emplace(watches[~cr->second()].begin(), cr, cr->first());
-        }
+    if (cr->size() == 2) {
+        watchesBin[~cr->first()].emplace_back(cr, cr->second());
+        watchesBin[~cr->second()].emplace_back(cr, cr->first());
+    } else {
+        watches[~cr->first()].emplace_back(cr, cr->second());
+        watches[~cr->second()].emplace_back(cr, cr->first());
     }
 }
 
@@ -867,6 +858,8 @@ void Solver::rebuildOrderHeap() {
 void Solver::revampClausePool(uint8_t upper) {
     assert(upper <= REVAMPABLE_PAGES_MAX_SIZE);
 
+    Statistics::getInstance().runtimeStart("Runtime Revamp");
+
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
 
@@ -894,10 +887,10 @@ void Solver::revampClausePool(uint8_t upper) {
         return (c->size() > 2 && c->size() <= upper); } ), learnts.end());
 
     // revamp  and reattach them
-    for (uint8_t k = upper; k >= 3; k--) {
+    for (uint8_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
         for (Clause* clause : revamped) {
-            attachClause(clause, true);
+            attachClause(clause);
             if (clause->isLearnt()) {
                 learnts.push_back(clause);
             } else {
@@ -905,6 +898,16 @@ void Solver::revampClausePool(uint8_t upper) {
             }
         }
     }
+
+    Statistics::getInstance().runtimeStop("Runtime Revamp");
+
+    Statistics::getInstance().runtimeStart("Runtime Sort Watches");
+    for (Var v = 0; v < nVars(); v++) {
+        for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
+            sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) { return w1.cref->activity() > w2.cref->activity(); });
+        }
+    }
+    Statistics::getInstance().runtimeStop("Runtime Sort Watches");
 
     assert(old_learnts_size == learnts.size());
     assert(old_clauses_size == clauses.size());
