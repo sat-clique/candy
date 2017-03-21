@@ -95,7 +95,7 @@ static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted me
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
         IntRange(0, INT32_MAX));
 
-static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, 14));
+static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 4, IntRange(2, 6));
 static BoolOption opt_revamp_sort_watches("MEMORY LAYOUT", "revamp_sort_watches", "reattach clause in decreasing activity order", false);
 
 //=================================================================================================
@@ -904,7 +904,11 @@ void Solver::revampClausePool(uint8_t upper) {
     Statistics::getInstance().runtimeStart("Runtime Sort Watches");
     for (Var v = 0; v < nVars(); v++) {
         for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
-            sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) { return w1.cref->activity() > w2.cref->activity(); });
+            sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
+                Clause& c1 = *w1.cref;
+                Clause& c2 = *w2.cref;
+                return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
+            });
         }
     }
     Statistics::getInstance().runtimeStop("Runtime Sort Watches");
