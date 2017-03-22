@@ -9,7 +9,6 @@ add_library(core
     ClauseAllocator.h
     Certificate.cc
     Certificate.h
-    CNFProblem.h
     SolverTypes.h
 )
 
