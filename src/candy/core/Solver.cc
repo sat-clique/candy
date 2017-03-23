@@ -1033,9 +1033,9 @@ lbool Solver::search() {
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
                 } else {
-//                    if (cr->size() > 6) {
-//                        sort(cr->begin()+2, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
-//                    }
+                    if (sort_learnts && cr->size() > 6) {
+                        sort(cr->begin()+2, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
+                    }
                     learnts.push_back(cr);
                 }
                 attachClause(cr);
