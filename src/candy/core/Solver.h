@@ -59,7 +59,7 @@
 #include "candy/mtl/BoundedQueue.h"
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
-#include "candy/core/CNFProblem.h"
+#include "candy/utils/CNFProblem.h"
 
 #include "sonification/SolverSonification.h"
 

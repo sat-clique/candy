@@ -56,7 +56,7 @@
 #include <stdexcept>
 #include <regex>
 
-#include "candy/core/CNFProblem.h"
+#include <candy/utils/CNFProblem.h>
 #include "candy/core/Certificate.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/ClauseAllocator.h"
