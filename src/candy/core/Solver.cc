@@ -89,15 +89,13 @@ static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random variab
 static IntOption opt_ccmin_mode(_cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange(0, 2));
 static IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
 static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
-static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted memory allowed before a garbage collection is triggered", 0.20,
-        DoubleRange(0, false, HUGE_VAL, false));
 
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
         IntRange(0, INT32_MAX));
 
 static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, 14));
 static BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", true);
-static BoolOption opt_sort_learnts("MEMORY LAYOUT", "sort_sort_learnts", "sort learnts", false);
+static BoolOption opt_sort_learnts("MEMORY LAYOUT", "sort_learnts", "sort learnts", false);
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -1081,6 +1079,11 @@ lbool Solver::search() {
                         Statistics::getInstance().runtimeStart("Runtime Sort Watches");
                         for (Var v = 0; v < nVars(); v++) {
                             for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
+                                sort(watchesBin[l].begin(), watchesBin[l].end(), [](Watcher w1, Watcher w2) {
+                                    Clause& c1 = *w1.cref;
+                                    Clause& c2 = *w2.cref;
+                                    return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
+                                });
                                 sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
                                     Clause& c1 = *w1.cref;
                                     Clause& c2 = *w2.cref;
