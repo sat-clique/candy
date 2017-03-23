@@ -243,9 +243,10 @@ protected:
 	Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
 	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
-    // constants for revamping
+    // constants for memory reorganization
 	uint8_t revamp;
-    bool revamp_sort_watches;
+    bool sort_watches;
+    bool sort_learnts;
 
 	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
 
