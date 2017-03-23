@@ -95,8 +95,9 @@ static DoubleOption opt_garbage_frac(_cat, "gc-frac", "The fraction of wasted me
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
         IntRange(0, INT32_MAX));
 
-static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 4, IntRange(2, 6));
-static BoolOption opt_revamp_sort_watches("MEMORY LAYOUT", "revamp_sort_watches", "reattach clause in decreasing activity order", false);
+static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, 14));
+static BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", true);
+static BoolOption opt_sort_learnts("MEMORY LAYOUT", "sort_sort_learnts", "sort learnts", false);
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -140,7 +141,8 @@ Solver::Solver() :
                 order_heap(VarOrderLt(activity)),
                 remove_satisfied(true),
                 revamp(opt_revamp),
-                revamp_sort_watches(opt_revamp_sort_watches),
+                sort_watches(opt_sort_watches),
+                sort_learnts(opt_sort_learnts),
                 nbclausesbeforereduce(opt_first_reduce_db),
                 sumLBD(0),
                 MYFLAG(0),
@@ -901,18 +903,6 @@ void Solver::revampClausePool(uint8_t upper) {
 
     Statistics::getInstance().runtimeStop("Runtime Revamp");
 
-    Statistics::getInstance().runtimeStart("Runtime Sort Watches");
-    for (Var v = 0; v < nVars(); v++) {
-        for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
-            sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
-                Clause& c1 = *w1.cref;
-                Clause& c2 = *w2.cref;
-                return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
-            });
-        }
-    }
-    Statistics::getInstance().runtimeStop("Runtime Sort Watches");
-
     assert(old_learnts_size == learnts.size());
     assert(old_clauses_size == clauses.size());
     (void)(old_learnts_size);
@@ -1086,6 +1076,20 @@ lbool Solver::search() {
                     }
 
                     reduced = false;
+                }
+
+                if (sort_watches) {
+                    Statistics::getInstance().runtimeStart("Runtime Sort Watches");
+                    for (Var v = 0; v < nVars(); v++) {
+                        for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
+                            sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
+                                Clause& c1 = *w1.cref;
+                                Clause& c2 = *w2.cref;
+                                return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
+                            });
+                        }
+                    }
+                    Statistics::getInstance().runtimeStop("Runtime Sort Watches");
                 }
 
                 return l_Undef;
