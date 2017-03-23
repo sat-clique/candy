@@ -1078,7 +1078,7 @@ lbool Solver::search() {
                     reduced = false;
                 }
 
-                if (sort_watches) {
+                if (reduced && sort_watches) {
                     Statistics::getInstance().runtimeStart("Runtime Sort Watches");
                     for (Var v = 0; v < nVars(); v++) {
                         for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
