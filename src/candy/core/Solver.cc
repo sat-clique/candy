@@ -1056,40 +1056,42 @@ lbool Solver::search() {
                     cancelUntil(0);
                 }
 
-                if (reduced && revamp > 2) {
-                    assert(decisionLevel() == 0);
+                if (reduced) {
+                    if (revamp > 2) {
+                        assert(decisionLevel() == 0);
 
-                    vector<Lit> props(trail.begin(), trail.begin() + trail_size);
-                    for (Lit p : props) {
-                        assigns[var(p)] = l_Undef;
-                        vardata[var(p)] = VarData(nullptr, 0);
-                    }
-                    trail_size = 0;
-
-                    revampClausePool(revamp);
-
-                    for (Lit p : props) {
-                        if (assigns[var(p)] == l_Undef) {
-                            uncheckedEnqueue(p);
-                            propagate();
+                        vector<Lit> props(trail.begin(), trail.begin() + trail_size);
+                        for (Lit p : props) {
+                            assigns[var(p)] = l_Undef;
+                            vardata[var(p)] = VarData(nullptr, 0);
                         }
+                        trail_size = 0;
+
+                        revampClausePool(revamp);
+
+                        for (Lit p : props) {
+                            if (assigns[var(p)] == l_Undef) {
+                                uncheckedEnqueue(p);
+                                propagate();
+                            }
+                        }
+                    }
+
+                    if (sort_watches) {
+                        Statistics::getInstance().runtimeStart("Runtime Sort Watches");
+                        for (Var v = 0; v < nVars(); v++) {
+                            for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
+                                sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
+                                    Clause& c1 = *w1.cref;
+                                    Clause& c2 = *w2.cref;
+                                    return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
+                                });
+                            }
+                        }
+                        Statistics::getInstance().runtimeStop("Runtime Sort Watches");
                     }
 
                     reduced = false;
-                }
-
-                if (reduced && sort_watches) {
-                    Statistics::getInstance().runtimeStart("Runtime Sort Watches");
-                    for (Var v = 0; v < nVars(); v++) {
-                        for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
-                            sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
-                                Clause& c1 = *w1.cref;
-                                Clause& c2 = *w2.cref;
-                                return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
-                            });
-                        }
-                    }
-                    Statistics::getInstance().runtimeStop("Runtime Sort Watches");
                 }
 
                 return l_Undef;
