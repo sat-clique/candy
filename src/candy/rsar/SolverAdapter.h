@@ -27,9 +27,9 @@
 #ifndef X_C53F2B2A_C7F9_4DFF_890B_196A6135FD51_SOLVERADAPTER_H
 #define X_C53F2B2A_C7F9_4DFF_890B_196A6135FD51_SOLVERADAPTER_H
 
-#include <core/SolverTypes.h>
-#include <core/CNFProblem.h>
-#include <simp/SimpSolver.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/utils/CNFProblem.h>
+#include <candy/simp/SimpSolver.h>
 
 #include <vector>
 #include <memory>

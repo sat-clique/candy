@@ -8,6 +8,8 @@ add_library(utils
     ParseUtils.h
     StringUtils.h
     Utilities.cc
-    Utilities.h)
+    Utilities.h
+    CNFProblem.cc
+    CNFProblem.h)
 
 
