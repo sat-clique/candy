@@ -124,8 +124,8 @@ protected:
     deque<Clause*> subsumption_queue;
     vector<char> frozen;
     vector<char> eliminated;
-    int bwdsub_assigns;
-    int n_touched;
+    uint32_t bwdsub_assigns;
+    uint32_t n_touched;
     vector<Clause*> strengthend;
 
     // Main internal methods:

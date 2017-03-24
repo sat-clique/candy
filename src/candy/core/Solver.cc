@@ -68,17 +68,17 @@ static const char* _cm = "CORE -- MINIMIZE";
 
 static DoubleOption opt_K(_cr, "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_R(_cr, "R", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
-static IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT32_MAX));
-static IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT32_MAX));
+static IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT16_MAX));
+static IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
 
-static IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 2000, IntRange(0, INT32_MAX));
-static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT32_MAX));
-static IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 1000, IntRange(0, INT32_MAX));
+static IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 2000, IntRange(0, INT16_MAX));
+static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
+static IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 1000, IntRange(0, INT16_MAX));
 static IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30,
-        IntRange(0, INT32_MAX));
+        IntRange(0, INT16_MAX));
 
-static IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT32_MAX));
-static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The min LBD required to minimize clause", 6, IntRange(3, INT32_MAX));
+static IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT16_MAX));
+static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The min LBD required to minimize clause", 6, IntRange(3, INT16_MAX));
 
 static DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
@@ -91,9 +91,9 @@ static IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of p
 static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
 
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
-        IntRange(0, INT32_MAX));
+        IntRange(0, INT16_MAX));
 
-static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, 14));
+static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
 static BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", true);
 static BoolOption opt_sort_learnts("MEMORY LAYOUT", "sort_learnts", "sort learnts", false);
 
@@ -101,61 +101,70 @@ static BoolOption opt_sort_learnts("MEMORY LAYOUT", "sort_learnts", "sort learnt
 // Constructor/Destructor:
 
 Solver::Solver() :
-                verbosity(0),
-                verbEveryConflicts(10000),
-                K(opt_K),
-                R(opt_R),
-                sizeLBDQueue(opt_size_lbd_queue),
-                sizeTrailQueue(opt_size_trail_queue),
-                incReduceDB(opt_inc_reduce_db),
-                specialIncReduceDB(opt_spec_inc_reduce_db),
-                lbLBDFrozenClause(opt_lb_lbd_frozen_clause),
-                lbSizeMinimizingClause(opt_lb_size_minimzing_clause),
-                lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
-                var_decay(opt_var_decay),
-                max_var_decay(opt_max_var_decay),
-                clause_decay(opt_clause_decay),
-                random_var_freq(opt_random_var_freq),
-                random_seed(opt_random_seed),
-                ccmin_mode(opt_ccmin_mode),
-                phase_saving(opt_phase_saving),
-                rnd_pol(false),
-                rnd_init_act(opt_rnd_init_act),
-                certificate(nullptr, false),
-                nConflicts(0),
-                nPropagations(0),
-                nLiterals(0),
-                curRestart(1),
-                ok(true),
-                cla_inc(1),
-                var_inc(1),
-                watches(WatcherDeleted()),
-                watchesBin(WatcherDeleted()),
-                learntsUnary(),
-                trail_size(0),
-                qhead(0),
-                simpDB_assigns(-1),
-                simpDB_props(0),
-                order_heap(VarOrderLt(activity)),
-                remove_satisfied(true),
-                revamp(opt_revamp),
-                sort_watches(opt_sort_watches),
-                sort_learnts(opt_sort_learnts),
-                nbclausesbeforereduce(opt_first_reduce_db),
-                sumLBD(0),
-                MYFLAG(0),
-                // Resource constraints:
-                //
-                conflict_budget(-1),
-                propagation_budget(-1),
-                asynch_interrupt(false),
-                incremental(false),
-                nbVarsInitialFormula(INT32_MAX),
-                // Added since Candy
-                sonification(),
-                termCallbackState(nullptr),
-                termCallback(nullptr),
-                status(l_Undef) {
+        // unsat certificate
+        certificate(nullptr, false),
+        // stats for heuristic control
+        nConflicts(0), nPropagations(0), nLiterals(0),
+        // verbosity flags
+        verbEveryConflicts(10000), verbosity(0),
+        // results
+        model(), conflict(),
+        // simplify heuristic control
+        simpDB_assigns(UINT64_MAX), simpDB_props(0),
+        // watchers
+        watches(WatcherDeleted()), watchesBin(WatcherDeleted()),
+        // current assignment
+        assigns(), vardata(), trail(), trail_size(0), qhead(0), trail_lim(),
+        // phase saving
+        polarity(),
+        // decision variables
+        decision(),
+        // assumptions
+        assumptions(),
+        // clauses
+        clauses(), learnts(), learntsBin(), learntsUnary(),
+        // variable ordering
+        order_heap(VarOrderLt(activity)),
+        // simpdb
+        remove_satisfied(true),
+        // sonification
+        sonification(),
+        // restarts
+        K(opt_K), R(opt_R),
+        sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
+        trailQueue(), lbdQueue(), sumLBD(0),
+        // constants for heurstics
+        var_decay(opt_var_decay), max_var_decay(opt_max_var_decay),
+        clause_decay(opt_clause_decay),
+        random_var_freq(opt_random_var_freq), random_seed(opt_random_seed),
+        cla_inc(1), var_inc(1),
+        // reduce db heuristic control
+        curRestart(0), nbclausesbeforereduce(opt_first_reduce_db),
+        incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
+        lbLBDFrozenClause(opt_lb_lbd_frozen_clause),
+        // clause reduction
+        lbSizeMinimizingClause(opt_lb_size_minimzing_clause),
+        lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
+        ccmin_mode(opt_ccmin_mode),
+        // phase saving
+        phase_saving(opt_phase_saving),
+        rnd_pol(false), rnd_init_act(opt_rnd_init_act),
+        // variable activity
+        activity(),
+        // memory reorganization
+        revamp(opt_revamp), sort_watches(opt_sort_watches), sort_learnts(opt_sort_learnts),
+        // lbd computation
+        permDiff(), MYFLAG(0),
+        // temporaries
+        seen(), analyze_toclear(), add_tmp(),
+        // resource constraints and other interrupt related
+        conflict_budget(0), propagation_budget(0),
+        termCallbackState(nullptr), termCallback(nullptr),
+        asynch_interrupt(false),
+        // incremental related
+        nbVarsInitialFormula(INT32_MAX), incremental(false),
+        // conflict state
+        ok(true) {
     lbdQueue.initSize(sizeLBDQueue);
     trailQueue.initSize(sizeTrailQueue);
 }
@@ -210,7 +219,7 @@ Var Solver::newVar(bool sign, bool dvar) {
 
 void Solver::addClauses(CNFProblem dimacs) {
     vector<vector<Lit>*>& problem = dimacs.getProblem();
-    if (dimacs.nVars() > nVars()) {
+    if ((size_t)dimacs.nVars() > nVars()) {
         assigns.reserve(dimacs.nVars());
         vardata.reserve(dimacs.nVars());
         activity.reserve(dimacs.nVars());
@@ -402,7 +411,7 @@ void Solver::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
 //
 void Solver::cancelUntil(int level) {
     if ((int)decisionLevel() > level) {
-        for (int c = trail_size - 1; c >= trail_lim[level]; c--) {
+        for (uint32_t c = trail_size - 1; c >= trail_lim[level]; c--) {
             Var x = var(trail[c]);
             assigns[x] = l_Undef;
             if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.back())) {
@@ -461,6 +470,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
     int pathC = 0;
     Lit asslit = lit_Undef;
     vector<Lit> selectors;
+    vector<Lit> lastDecisionLevel; // UPDATEVARACTIVITY trick (see competition'09 companion paper)
 
     // Generate conflict clause:
     out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
@@ -475,9 +485,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
             c.swap(0, 1);
         }
 
-        //if (c.isLearnt()) {
         claBumpActivity(c);
-        //}
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
         if (c.isLearnt() && c.getLBD() > 2) {
@@ -655,7 +663,7 @@ void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
 
     seen[var(p)] = 1;
 
-    for (int i = trail_size - 1; i >= trail_lim[0]; i--) {
+    for (uint32_t i = trail_size - 1; i >= trail_lim[0]; i--) {
         Var x = var(trail[i]);
         if (seen[x]) {
             if (reason(x) == nullptr) {
@@ -848,7 +856,7 @@ void Solver::freeMarkedClauses(vector<Clause*>& list) {
 
 void Solver::rebuildOrderHeap() {
     vector<Var> vs;
-    for (Var v = 0; v < nVars(); v++)
+    for (size_t v = 0; v < nVars(); v++)
         if (decision[v] && value(v) == l_Undef)
             vs.push_back(v);
     order_heap.build(vs);
@@ -961,6 +969,7 @@ bool Solver::simplify() {
  |________________________________________________________________________________________________@*/
 lbool Solver::search() {
     assert(ok);
+
     int backtrack_level;
     vector<Lit> learnt_clause;
     unsigned int nblevels;
@@ -1077,13 +1086,8 @@ lbool Solver::search() {
 
                     if (sort_watches) {
                         Statistics::getInstance().runtimeStart("Runtime Sort Watches");
-                        for (Var v = 0; v < nVars(); v++) {
+                        for (size_t v = 0; v < nVars(); v++) {
                             for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
-                                sort(watchesBin[l].begin(), watchesBin[l].end(), [](Watcher w1, Watcher w2) {
-                                    Clause& c1 = *w1.cref;
-                                    Clause& c2 = *w2.cref;
-                                    return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
-                                });
                                 sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
                                     Clause& c1 = *w1.cref;
                                     Clause& c2 = *w2.cref;
@@ -1105,7 +1109,7 @@ lbool Solver::search() {
                 return l_False;
             }
             // Perform clause database reduction !
-            if (nConflicts >= ((unsigned int) curRestart * nbclausesbeforereduce)) {
+            if (nConflicts >= (curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {
                     curRestart = (nConflicts / nbclausesbeforereduce) + 1;
                     reduceDB();
@@ -1186,7 +1190,7 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
     }
 
     // Search:
-    status = l_Undef;
+    lbool status = l_Undef;
     while (status == l_Undef && withinBudget()) {
         status = search();
     }
@@ -1200,9 +1204,9 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     if (status == l_True) {
         // Extend & copy model:
-        if ((int) model.size() < nVars())
+        if (model.size() < nVars())
             model.resize(nVars());
-        for (int i = 0; i < nVars(); i++)
+        for (size_t i = 0; i < nVars(); i++)
             model[i] = value(i);
     } else if (status == l_False && conflict.size() == 0)
         ok = false;

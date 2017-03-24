@@ -124,9 +124,9 @@ static void setLimits(int cpu_lim, int mem_lim) {
 
 static void printModel(FILE* f, Solver* solver) {
     fprintf(f, "v");
-    for (int i = 0; i < solver->nVars(); i++)
+    for (size_t i = 0; i < solver->nVars(); i++)
         if (solver->model[i] != l_Undef)
-            fprintf(f, " %s%d", (solver->model[i] == l_True) ? "" : "-", i + 1);
+            fprintf(f, " %s%zu", (solver->model[i] == l_True) ? "" : "-", i + 1);
     fprintf(f, " 0\n");
 }
 
@@ -211,8 +211,8 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 static void printProblemStatistics(Solver& S) {
     printf("c ====================================[ Problem Statistics ]====================================\n");
     printf("c |                                                                                            |\n");
-    printf("c |  Number of variables:  %12d                                                        |\n", S.nVars());
-    printf("c |  Number of clauses:    %12d                                                        |\n", S.nClauses());
+    printf("c |  Number of variables:  %12zu                                                        |\n", S.nVars());
+    printf("c |  Number of clauses:    %12zu                                                        |\n", S.nClauses());
 }
 
 /**
