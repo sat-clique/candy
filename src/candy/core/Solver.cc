@@ -83,12 +83,12 @@ static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The
 static DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
 static DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
-static DoubleOption opt_random_var_freq(_cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable", 0,
-        DoubleRange(0, true, 1, true));
-static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random variable selection", 91648253, DoubleRange(0, false, HUGE_VAL, false));
+//static DoubleOption opt_random_var_freq(_cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable", 0,
+//        DoubleRange(0, true, 1, true));
+//static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random variable selection", 91648253, DoubleRange(0, false, HUGE_VAL, false));
 static IntOption opt_ccmin_mode(_cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange(0, 2));
 static IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
-static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
+//static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
 
 static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
         IntRange(0, INT16_MAX));
@@ -119,25 +119,23 @@ Solver::Solver() :
         polarity(),
         // decision variables
         decision(),
+        // for activity based heuristics
+        order_heap(VarOrderLt(activity)),
+        activity(),
+        var_inc(1), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay),
+        cla_inc(1), clause_decay(opt_clause_decay),
         // assumptions
         assumptions(),
         // clauses
         clauses(), learnts(), learntsBin(), learntsUnary(),
-        // variable ordering
-        order_heap(VarOrderLt(activity)),
         // simpdb
         remove_satisfied(true),
         // sonification
         sonification(),
         // restarts
-        K(opt_K), R(opt_R),
         sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
-        trailQueue(), lbdQueue(), sumLBD(0),
-        // constants for heurstics
-        var_decay(opt_var_decay), max_var_decay(opt_max_var_decay),
-        clause_decay(opt_clause_decay),
-        random_var_freq(opt_random_var_freq), random_seed(opt_random_seed),
-        cla_inc(1), var_inc(1),
+        trailQueue(), lbdQueue(),
+        K(opt_K), R(opt_R), sumLBD(0),
         // reduce db heuristic control
         curRestart(0), nbclausesbeforereduce(opt_first_reduce_db),
         incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
@@ -148,9 +146,6 @@ Solver::Solver() :
         ccmin_mode(opt_ccmin_mode),
         // phase saving
         phase_saving(opt_phase_saving),
-        rnd_pol(false), rnd_init_act(opt_rnd_init_act),
-        // variable activity
-        activity(),
         // memory reorganization
         revamp(opt_revamp), sort_watches(opt_sort_watches), sort_learnts(opt_sort_learnts),
         // lbd computation
@@ -207,7 +202,8 @@ Var Solver::newVar(bool sign, bool dvar) {
     watchesBin.init(mkLit(v, true));
     assigns.push_back(l_Undef);
     vardata.emplace_back();
-    activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+//    activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
+    activity.push_back(0);
     seen.push_back(0);
     permDiff.push_back(0);
     polarity.push_back(sign);
@@ -431,11 +427,11 @@ Lit Solver::pickBranchLit() {
     Var next = var_Undef;
 
     // Random decision:
-    if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
-        next = order_heap[irand(random_seed, order_heap.size())];
-        if (value(next) == l_Undef && decision[next])
-            Statistics::getInstance().solverRandomDecisionsInc();
-    }
+//    if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
+//        next = order_heap[irand(random_seed, order_heap.size())];
+//        if (value(next) == l_Undef && decision[next])
+//            Statistics::getInstance().solverRandomDecisionsInc();
+//    }
 
     // Activity based decision:
     while (next == var_Undef || value(next) != l_Undef || !decision[next])
@@ -446,7 +442,8 @@ Lit Solver::pickBranchLit() {
             next = order_heap.removeMin();
         }
 
-    return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
+//    return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
+    return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
 }
 
 /*_________________________________________________________________________________________________

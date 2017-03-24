@@ -220,6 +220,15 @@ protected:
     vector<char> polarity; // The preferred polarity of each variable.
     vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
 
+    // for activity based heuristics
+    Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
+    vector<double> activity; // A heuristic measurement of the activity of a variable.
+    double var_inc; // Amount to bump next variable with.
+    double var_decay;
+    double max_var_decay;
+    double cla_inc; // Amount to bump next clause with.
+    double clause_decay;
+
     vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
     // Clauses
@@ -228,31 +237,19 @@ protected:
     vector<Clause*> learntsBin; // List of binary learnt clauses.
     vector<Lit> learntsUnary; // List of unary learnt clauses.
 
-    Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
     // Sonification
     SolverSonification sonification;
 
     // Constants For restarts
-    double K;
-    double R;
     double sizeLBDQueue;
     double sizeTrailQueue;
     // Bounded queues for restarts
     Glucose::bqueue<uint32_t> trailQueue, lbdQueue;
+    double K;
+    double R;
     float sumLBD = 0; // used to compute the global average of LBD. Restarts...
-
-
-    // Constants for heuristics
-    double var_decay;
-    double max_var_decay;
-    double clause_decay;
-    double random_var_freq;
-    double random_seed;
-
-    double cla_inc; // Amount to bump next clause with.
-    double var_inc; // Amount to bump next variable with.
 
     // used for reduceDB
     uint64_t curRestart;
@@ -267,10 +264,6 @@ protected:
     uint8_t ccmin_mode; // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
 
     uint8_t phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
-    bool rnd_pol; // Use random polarities for branching heuristics.
-    bool rnd_init_act; // Initialize variable activities with a small random value.
-
-	vector<double> activity; // A heuristic measurement of the activity of a variable.
 
     // constants for memory reorganization
 	uint8_t revamp;
