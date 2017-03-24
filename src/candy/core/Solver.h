@@ -235,9 +235,6 @@ protected:
     vector<Clause*> clauses; // List of problem clauses.
     vector<Clause*> learnts; // List of learnt clauses.
     vector<Clause*> learntsBin; // List of binary learnt clauses.
-    vector<Lit> learntsUnary; // List of unary learnt clauses.
-
-    bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
     // Sonification
     SolverSonification sonification;
@@ -269,6 +266,8 @@ protected:
 	uint8_t revamp;
     bool sort_watches;
     bool sort_learnts;
+
+    bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
 	vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     uint32_t MYFLAG;

@@ -127,9 +127,7 @@ Solver::Solver() :
         // assumptions
         assumptions(),
         // clauses
-        clauses(), learnts(), learntsBin(), learntsUnary(),
-        // simpdb
-        remove_satisfied(true),
+        clauses(), learnts(), learntsBin(),
         // sonification
         sonification(),
         // restarts
@@ -148,6 +146,8 @@ Solver::Solver() :
         phase_saving(opt_phase_saving),
         // memory reorganization
         revamp(opt_revamp), sort_watches(opt_sort_watches), sort_learnts(opt_sort_learnts),
+        // simpdb
+        remove_satisfied(true),
         // lbd computation
         permDiff(), MYFLAG(0),
         // temporaries
@@ -1025,7 +1025,6 @@ lbool Solver::search() {
 
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
-                learntsUnary.push_back(learnt_clause[0]);
                 Statistics::getInstance().solverUnariesInc();
             } else {
                 Clause* cr = new (learnt_clause.size()) Clause(learnt_clause, true);

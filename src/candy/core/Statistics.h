@@ -26,7 +26,7 @@ namespace Candy {
 
 class Statistics {
 #ifdef SOLVER_STATS
-    uint64_t decisions, rnd_decisions, dec_vars, max_literals, tot_literals;
+    uint64_t decisions, dec_vars, max_literals, tot_literals;
 #endif// SOLVER_STATS
 #ifdef RESTART_STATS
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
@@ -70,7 +70,6 @@ public:
 
 #ifdef SOLVER_STATS
     inline void solverDecisionsInc() { ++decisions; }
-    inline void solverRandomDecisionsInc() { ++rnd_decisions; }
     inline void solverDecisionVariablesInc() { ++dec_vars; }
     inline void solverDecisionVariablesDec() { --dec_vars; }
     inline void solverMaxLiteralsInc(int amount) { max_literals += amount; }
