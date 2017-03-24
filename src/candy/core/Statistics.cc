@@ -12,7 +12,7 @@ namespace Candy {
 
 Statistics::Statistics() :
 #ifdef SOLVER_STATS
-    decisions(0), rnd_decisions(0), dec_vars(0), max_literals(0), tot_literals(0),
+    decisions(0), dec_vars(0), max_literals(0), tot_literals(0),
 #endif
 #ifdef RESTART_STATS
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
@@ -89,7 +89,7 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
 #endif
 #ifdef SOLVER_STATS
     printf("c conflicts             : %-12" PRIu64"   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
-    printf("c decisions             : %-12" PRIu64"   (%4.2f %% random) (%.0f /sec)\n", decisions, (float) rnd_decisions * 100 / (float) decisions, decisions / cpu_time);
+    printf("c decisions             : %-12" PRIu64"   (%.0f /sec)\n", decisions, decisions / cpu_time);
     printf("c propagations          : %-12" PRIu64"   (%.0f /sec)\n", propagations, propagations / cpu_time);
     printf("c conflict literals     : %-12" PRIu64"   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals) * 100 / (double) max_literals);
 #endif// SOLVER_STATS
