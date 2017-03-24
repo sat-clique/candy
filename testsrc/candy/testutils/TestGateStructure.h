@@ -30,7 +30,7 @@
 #include <memory>
 #include <vector>
 #include <core/SolverTypes.h>
-#include <core/CNFProblem.h>
+#include <utils/CNFProblem.h>
 
 namespace Candy {
     

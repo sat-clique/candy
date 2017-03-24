@@ -85,7 +85,7 @@ namespace Candy {
         }
         
         const std::vector<Lit>& getConflict() override {
-            return m_solver.conflict;
+            return m_solver.getConflict();
         }
         
         Var newVar() override {

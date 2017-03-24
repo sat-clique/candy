@@ -83,9 +83,13 @@ public:
     void addClauses(CNFProblem dimacs);
 
     // use with care (written for solver tests only)
-    Clause& getClause(unsigned int pos) {
+    Clause& getClause(size_t pos) {
         assert(pos < clauses.size());
         return *clauses[pos];
+    }
+
+    vector<Lit>& getConflict() {
+        return conflict;
     }
 
     // Solving:
@@ -104,13 +108,18 @@ public:
     lbool value(Lit p) const;       // The current value of a literal.
     lbool modelValue(Var x) const; // The value of a variable in the last model. The last call to solve must have been satisfiable.
     lbool modelValue(Lit p) const; // The value of a literal in the last model. The last call to solve must have been satisfiable.
-    int nAssigns() const;       // The current number of assigned literals.
-    int nClauses() const;       // The current number of original clauses.
-    int nLearnts() const;       // The current number of learnt clauses.
-    int nVars() const;       // The current number of variables.
 
-    inline char valuePhase(Var v) {
-        return polarity[v];
+    inline size_t nAssigns() const {
+        return trail_size;
+    }
+    inline size_t nClauses() const {
+        return clauses.size();
+    }
+    inline size_t nLearnts() const {
+        return learnts.size() + learntsBin.size();
+    }
+    inline size_t nVars() const {
+        return vardata.size();
     }
 
     // Incremental mode
@@ -118,11 +127,19 @@ public:
     void initNbInitialVars(int nb);
     bool isIncremental();
 
-    // Resource contraints:
-    void setConfBudget(int64_t x);
-    void setPropBudget(int64_t x);
-    void budgetOff();
-    void setInterrupt(bool value = true); // Trigger a (potentially asynchronous) interruption of the solver.
+    // Resource constraints:
+    inline void setConfBudget(uint64_t x) {
+        conflict_budget = nConflicts + x;
+    }
+    inline void setPropBudget(uint64_t x) {
+        propagation_budget = nPropagations + x;
+    }
+    inline void setInterrupt(bool value) {
+        asynch_interrupt = value;
+    }
+    inline void budgetOff() {
+        conflict_budget = propagation_budget = 0;
+    }
 
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void*)) {
@@ -130,52 +147,25 @@ public:
         this->termCallback = termCallback;
     }
 
+    // Certified UNSAT (Thanks to Marijn Heule)
+    Certificate certificate;
+
+    // a few stats are used for heuristics control, keep them here
+    uint64_t nConflicts, nPropagations, nLiterals;
+
+    // Control verbosity
+    uint16_t verbEveryConflicts;
+    uint8_t verbosity;
+
     // Extra results: (read-only member variable)
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
-    // Mode of operation:
-    int verbosity;
-    int verbEveryConflicts;
-
-    // Constants For restarts
-    double K;
-    double R;
-    double sizeLBDQueue;
-    double sizeTrailQueue;
-
-    // Constants for reduce DB
-    int incReduceDB;
-    int specialIncReduceDB;
-    unsigned int lbLBDFrozenClause;
-
-    // Constant for reducing clause
-    int lbSizeMinimizingClause;
-    unsigned int lbLBDMinimizingClause;
-
-    // Constant for heuristic
-    double var_decay;
-    double max_var_decay;
-    double clause_decay;
-    double random_var_freq;
-    double random_seed;
-    int ccmin_mode; // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
-    int phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
-    bool rnd_pol;            // Use random polarities for branching heuristics.
-    bool rnd_init_act; // Initialize variable activities with a small random value.
-
-    // Certified UNSAT ( Thanks to Marijn Heule)
-    Certificate certificate;
-    // a few stats are used for heuristics control, keep them here:
-    uint64_t nConflicts, nPropagations, nLiterals;
-
 protected:
-	long curRestart;
-
 	// Helper structures:
 	struct VarData {
 	    Clause* reason;
-		unsigned int level;
+		uint32_t level;
 		VarData() :
 		    reason(nullptr), level(0) {}
 		VarData(Clause* _reason, unsigned int _level) :
@@ -212,75 +202,102 @@ protected:
 		VarOrderLt(const vector<double>& act) : activity(act) {}
 	};
 
-	// Solver state:
-	bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
-	double cla_inc;          // Amount to bump next clause with.
-	vector<double> activity; // A heuristic measurement of the activity of a variable.
-	double var_inc;          // Amount to bump next variable with.
+    uint64_t simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
+    uint64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
 
-	OccLists<Lit, Watcher, WatcherDeleted> watches; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
-	OccLists<Lit, Watcher, WatcherDeleted> watchesBin; // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+	// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+    OccLists<Lit, Watcher, WatcherDeleted> watches;
+    OccLists<Lit, Watcher, WatcherDeleted> watchesBin;
+
+    vector<lbool> assigns; // The current assignments.
+    vector<VarData> vardata; // Stores reason and level for each variable.
+    vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
+    uint32_t trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
+    uint32_t qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+    vector<uint32_t> trail_lim; // Separator indices for different decision levels in 'trail'.
 
 
-	vector<Clause*> clauses;          // List of problem clauses.
-	vector<Clause*> learnts;          // List of learnt clauses.
-	vector<Clause*> learntsBin;       // List of binary learnt clauses.
-	vector<Lit> learntsUnary;            // List of unary learnt clauses.
-
-	vector<lbool> assigns;          // The current assignments.
-    vector<char> polarity;         // The preferred polarity of each variable.
+    vector<char> polarity; // The preferred polarity of each variable.
     vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
 
-    vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
-    int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
-    vector<int> trail_lim; // Separator indices for different decision levels in 'trail'.
-    vector<VarData> vardata;       // Stores reason and level for each variable.
+    vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
-	int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
-	int simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
-	int64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
-	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-	Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
-	bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+    // Clauses
+    vector<Clause*> clauses; // List of problem clauses.
+    vector<Clause*> learnts; // List of learnt clauses.
+    vector<Clause*> learntsBin; // List of binary learnt clauses.
+    vector<Lit> learntsUnary; // List of unary learnt clauses.
+
+    Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
+    bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+
+    // Sonification
+    SolverSonification sonification;
+
+    // Constants For restarts
+    double K;
+    double R;
+    double sizeLBDQueue;
+    double sizeTrailQueue;
+    // Bounded queues for restarts
+    Glucose::bqueue<uint32_t> trailQueue, lbdQueue;
+    float sumLBD = 0; // used to compute the global average of LBD. Restarts...
+
+
+    // Constants for heuristics
+    double var_decay;
+    double max_var_decay;
+    double clause_decay;
+    double random_var_freq;
+    double random_seed;
+
+    double cla_inc; // Amount to bump next clause with.
+    double var_inc; // Amount to bump next variable with.
+
+    // used for reduceDB
+    uint64_t curRestart;
+    uint32_t nbclausesbeforereduce; // To know when it is time to reduce clause database
+    uint16_t incReduceDB;
+    uint16_t specialIncReduceDB;
+    uint16_t lbLBDFrozenClause;
+
+    // Constant for reducing clause
+    uint16_t lbSizeMinimizingClause;
+    uint16_t lbLBDMinimizingClause;
+    uint8_t ccmin_mode; // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
+
+    uint8_t phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
+    bool rnd_pol; // Use random polarities for branching heuristics.
+    bool rnd_init_act; // Initialize variable activities with a small random value.
+
+	vector<double> activity; // A heuristic measurement of the activity of a variable.
 
     // constants for memory reorganization
 	uint8_t revamp;
     bool sort_watches;
     bool sort_learnts;
 
-	vector<unsigned int> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
-
-	// UPDATEVARACTIVITY trick (see competition'09 companion paper)
-	vector<Lit> lastDecisionLevel;
-
-	int nbclausesbeforereduce; // To know when it is time to reduce clause database
-
-	// Used for restart strategies
-	Glucose::bqueue<unsigned int> trailQueue, lbdQueue; // Bounded queues for restarts.
-	float sumLBD; // used to compute the global average of LBD. Restarts...
+	vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
+    uint32_t MYFLAG;
 
 	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
 	// used, exept 'seen' wich is used in several places.
 	vector<char> seen;
 	vector<Lit> analyze_toclear;
 	vector<Lit> add_tmp;
-	unsigned int MYFLAG;
 
-	// Resource contraints:
-	int64_t conflict_budget;    // -1 means no budget.
-	int64_t propagation_budget; // -1 means no budget.
-	bool asynch_interrupt;
+	// Resource contraints and other interrupts
+	uint64_t conflict_budget;    // 0 means no budget.
+	uint64_t propagation_budget; // 0 means no budget.
+    void* termCallbackState;
+    int (*termCallback)(void* state);
+    bool asynch_interrupt;
 
 	// Variables added for incremental mode
-	int incremental; // Use incremental SAT Solver
-	int nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
-
-	SolverSonification sonification;
-
-	void* termCallbackState;
-	int (*termCallback)(void* state);
-
-	lbool status;
+	uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
+    bool incremental; // Use incremental SAT Solver
+    // Solver state
+    bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
 	// Main internal methods:
 	void insertVarOrder(Var x); // Insert a variable in the decision order priority queue.
@@ -324,9 +341,14 @@ protected:
 	uint32_t abstractLevel(Var x) const; // Used to represent an abstraction of sets of decision levels.
 	Clause* reason(Var x) const;
 	int level(Var x) const;
-	bool withinBudget();
+
+    inline bool withinBudget() {
+        return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
+                && (conflict_budget == 0 || nConflicts < conflict_budget) && (propagation_budget == 0 || nPropagations < propagation_budget);
+    }
+
 	inline bool isSelector(Var v) {
-		return (incremental && v >= nbVarsInitialFormula);
+		return (incremental && (uint32_t)v >= nbVarsInitialFormula);
 	}
 
 	// Static helpers:
@@ -370,7 +392,7 @@ inline void Solver::varBumpActivity(Var v) {
 inline void Solver::varBumpActivity(Var v, double inc) {
     if ((activity[v] += inc) > 1e100) {
         // Rescale:
-        for (int i = 0; i < nVars(); i++)
+        for (size_t i = 0; i < nVars(); i++)
             activity[i] *= 1e-100;
         var_inc *= 1e-100;
     }
@@ -438,18 +460,6 @@ inline lbool Solver::modelValue(Var x) const {
 inline lbool Solver::modelValue(Lit p) const {
     return model[var(p)] ^ sign(p);
 }
-inline int Solver::nAssigns() const {
-    return trail_size;
-}
-inline int Solver::nClauses() const {
-    return clauses.size();
-}
-inline int Solver::nLearnts() const {
-    return learnts.size() + learntsBin.size();
-}
-inline int Solver::nVars() const {
-    return vardata.size();
-}
 inline void Solver::setPolarity(Var v, bool b) {
     polarity[v] = b;
 }
@@ -461,22 +471,6 @@ inline void Solver::setDecisionVar(Var v, bool b) {
 
     decision[v] = b;
     insertVarOrder(v);
-}
-inline void Solver::setConfBudget(int64_t x) {
-    conflict_budget = nConflicts + x;
-}
-inline void Solver::setPropBudget(int64_t x) {
-    propagation_budget = nPropagations + x;
-}
-inline void Solver::setInterrupt(bool value) {
-    asynch_interrupt = value;
-}
-inline void Solver::budgetOff() {
-    conflict_budget = propagation_budget = -1;
-}
-inline bool Solver::withinBudget() {
-    return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
-            && (conflict_budget < 0 || nConflicts < (uint64_t)conflict_budget) && (propagation_budget < 0 || nPropagations < (uint64_t)propagation_budget);
 }
 
 // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a

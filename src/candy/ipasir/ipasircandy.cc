@@ -21,15 +21,15 @@ class IPASIRCandy {
   bool nomodel;
 
   Lit import(int lit) {
-    while(abs(lit) > solver.nVars()) (void)solver.newVar();
+    while((size_t)abs(lit) > solver.nVars()) (void)solver.newVar();
     return mkLit(Var(abs(lit)-1), (lit < 0));
   }
 
   void analyze() {
     fmap = new unsigned char [solver.nVars()];
     memset(fmap, 0, solver.nVars());
-    for (unsigned int i = 0; i < solver.conflict.size(); i++) {
-      fmap[var(solver.conflict[i])] = 1;
+    for (unsigned int i = 0; i < solver.getConflict().size(); i++) {
+      fmap[var(solver.getConflict()[i])] = 1;
     }
   }
 
