@@ -407,10 +407,10 @@ void Solver::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
 //
 void Solver::cancelUntil(int level) {
     if ((int)decisionLevel() > level) {
-        for (uint32_t c = trail_size - 1; c >= trail_lim[level]; c--) {
+        for (int c = trail_size - 1; c >= (int)trail_lim[level]; c--) {
             Var x = var(trail[c]);
             assigns[x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > trail_lim.back())) {
+            if (phase_saving > 1 || ((phase_saving == 1) && c > (int)trail_lim.back())) {
                 polarity[x] = sign(trail[c]);
             }
             insertVarOrder(x);
