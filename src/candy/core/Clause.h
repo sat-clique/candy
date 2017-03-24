@@ -230,20 +230,6 @@ public:
     void blow(uint8_t offset) {//use only if you know what you are doing (only to be used after strengthen calls)
         length += offset;
     }
-
-    static void printAlignment() {
-        Clause clause({lit_Undef});
-        uint64_t start = (uint64_t)&clause;
-        uint64_t header = (uint64_t)&(clause.header);
-        uint64_t data = (uint64_t)&(clause.data);
-        uint64_t length = (uint64_t)&(clause.length);
-        uint64_t literals = (uint64_t)&(clause.literals);
-        std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
-        std::cout << "c Length starts at " << length - start << std::endl;
-        std::cout << "c Header starts at " << header - start << std::endl;
-        std::cout << "c Data-union starts at " << data - start << std::endl;
-        std::cout << "c Literals start at " << literals - start << std::endl;
-    }
 };
 
 } /* namespace Candy */
