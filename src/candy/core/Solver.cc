@@ -202,7 +202,6 @@ Var Solver::newVar(bool sign, bool dvar) {
     watchesBin.init(mkLit(v, true));
     assigns.push_back(l_Undef);
     vardata.emplace_back();
-//    activity.push_back(rnd_init_act ? drand(random_seed) * 0.00001 : 0);
     activity.push_back(0);
     seen.push_back(0);
     permDiff.push_back(0);
@@ -329,10 +328,6 @@ void Solver::removeClause(Clause* cr) {
     cr->setDeleted();
 }
 
-bool Solver::satisfied(const Clause& c) const {
-    return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
-}
-
 /************************************************************
  * Compute LBD functions
  *************************************************************/
@@ -426,23 +421,16 @@ void Solver::cancelUntil(int level) {
 Lit Solver::pickBranchLit() {
     Var next = var_Undef;
 
-    // Random decision:
-//    if (drand(random_seed) < random_var_freq && !order_heap.empty()) {
-//        next = order_heap[irand(random_seed, order_heap.size())];
-//        if (value(next) == l_Undef && decision[next])
-//            Statistics::getInstance().solverRandomDecisionsInc();
-//    }
-
     // Activity based decision:
-    while (next == var_Undef || value(next) != l_Undef || !decision[next])
+    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
         if (order_heap.empty()) {
             next = var_Undef;
             break;
         } else {
             next = order_heap.removeMin();
         }
+    }
 
-//    return next == var_Undef ? lit_Undef : mkLit(next, rnd_pol ? drand(random_seed) < 0.5 : polarity[next]);
     return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
 }
 
