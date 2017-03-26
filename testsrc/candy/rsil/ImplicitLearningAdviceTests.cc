@@ -26,7 +26,7 @@
 
 #include <gtest/gtest.h>
 #include <core/SolverTypes.h>
-#include <rsil/Utils.h>
+#include <rsil/ImplicitLearningAdvice.h>
 #include <utils/FastRand.h>
 
 #include <iostream>
