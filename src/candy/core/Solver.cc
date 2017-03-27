@@ -114,26 +114,22 @@ Solver::Solver() :
         // watchers
         watches(WatcherDeleted()), watchesBin(WatcherDeleted()),
         // current assignment
-        assigns(), vardata(), trail(), trail_size(0), qhead(0), trail_lim(),
-        // phase saving
-        polarity(),
-        // decision variables
-        decision(),
+        assigns(), trail(), trail_size(0), qhead(0),
+        vardata(), trail_lim(),
+        polarity(), decision(),
+        // assumptions
+        assumptions(),
         // for activity based heuristics
         order_heap(VarOrderLt(activity)),
         activity(),
         var_inc(1), var_decay(opt_var_decay), max_var_decay(opt_max_var_decay),
         cla_inc(1), clause_decay(opt_clause_decay),
-        // assumptions
-        assumptions(),
         // clauses
         clauses(), learnts(), learntsBin(),
-        // sonification
-        sonification(),
         // restarts
         sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
-        trailQueue(), lbdQueue(),
-        K(opt_K), R(opt_R), sumLBD(0),
+        K(opt_K), R(opt_R),
+        trailQueue(), lbdQueue(), sumLBD(0),
         // reduce db heuristic control
         curRestart(0), nbclausesbeforereduce(opt_first_reduce_db),
         incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
@@ -148,6 +144,8 @@ Solver::Solver() :
         revamp(opt_revamp), sort_watches(opt_sort_watches), sort_learnts(opt_sort_learnts),
         // simpdb
         remove_satisfied(true),
+        // conflict state
+        ok(true),
         // lbd computation
         permDiff(), MYFLAG(0),
         // temporaries
@@ -158,8 +156,8 @@ Solver::Solver() :
         asynch_interrupt(false),
         // incremental related
         nbVarsInitialFormula(INT32_MAX), incremental(false),
-        // conflict state
-        ok(true) {
+        // sonification
+        sonification() {
     lbdQueue.initSize(sizeLBDQueue);
     trailQueue.initSize(sizeTrailQueue);
 }

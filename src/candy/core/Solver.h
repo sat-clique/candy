@@ -273,21 +273,21 @@ protected:
 	};
 
     uint64_t simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
-    uint64_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
+    int32_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
 
 	// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, Watcher, WatcherDeleted> watches;
     OccLists<Lit, Watcher, WatcherDeleted> watchesBin;
 
     vector<lbool> assigns; // The current assignments.
-    vector<VarData> vardata; // Stores reason and level for each variable.
     vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
     uint32_t trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
     uint32_t qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+    vector<VarData> vardata; // Stores reason and level for each variable.
     vector<uint32_t> trail_lim; // Separator indices for different decision levels in 'trail'.
-
     vector<char> polarity; // The preferred polarity of each variable.
     vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
+    vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
     // for activity based heuristics
     Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
@@ -298,23 +298,18 @@ protected:
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
 
-    vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-
     // Clauses
     vector<Clause*> clauses; // List of problem clauses.
     vector<Clause*> learnts; // List of learnt clauses.
     vector<Clause*> learntsBin; // List of binary learnt clauses.
 
-    // Sonification
-    SolverSonification sonification;
-
     // Constants For restarts
     double sizeLBDQueue;
     double sizeTrailQueue;
-    // Bounded queues for restarts
-    Glucose::bqueue<uint32_t> trailQueue, lbdQueue;
     double K;
     double R;
+    // Bounded queues for restarts
+    Glucose::bqueue<uint32_t> trailQueue, lbdQueue;
     float sumLBD = 0; // used to compute the global average of LBD. Restarts...
 
     // used for reduceDB
@@ -338,6 +333,8 @@ protected:
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
 
+    bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+
 	vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     uint32_t MYFLAG;
 
@@ -357,8 +354,9 @@ protected:
 	// Variables added for incremental mode
 	uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
     bool incremental; // Use incremental SAT Solver
-    // Solver state
-    bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+
+    // Sonification
+    SolverSonification sonification;
 
 	// Main internal methods:
     inline Clause* reason(Var x) const {
