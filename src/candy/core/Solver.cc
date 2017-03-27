@@ -127,9 +127,8 @@ Solver::Solver() :
         // clauses
         clauses(), learnts(), learntsBin(),
         // restarts
-        sizeLBDQueue(opt_size_lbd_queue), sizeTrailQueue(opt_size_trail_queue),
-        K(opt_K), R(opt_R),
-        trailQueue(), lbdQueue(), sumLBD(0),
+        K(opt_K), R(opt_R), sumLBD(0),
+        lbdQueue(opt_size_lbd_queue), trailQueue(opt_size_trail_queue),
         // reduce db heuristic control
         curRestart(0), nbclausesbeforereduce(opt_first_reduce_db),
         incReduceDB(opt_inc_reduce_db), specialIncReduceDB(opt_spec_inc_reduce_db),
@@ -155,12 +154,9 @@ Solver::Solver() :
         termCallbackState(nullptr), termCallback(nullptr),
         asynch_interrupt(false),
         // incremental related
-        nbVarsInitialFormula(INT32_MAX), incremental(false),
+        incremental(false), nbVarsInitialFormula(INT32_MAX),
         // sonification
-        sonification() {
-    lbdQueue.initSize(sizeLBDQueue);
-    trailQueue.initSize(sizeTrailQueue);
-}
+        sonification() { }
 
 Solver::~Solver() {
     Statistics::getInstance().printRuntime("Runtime Revamp");
