@@ -304,13 +304,11 @@ protected:
     vector<Clause*> learntsBin; // List of binary learnt clauses.
 
     // Constants For restarts
-    double sizeLBDQueue;
-    double sizeTrailQueue;
     double K;
     double R;
-    // Bounded queues for restarts
-    Glucose::bqueue<uint32_t> trailQueue, lbdQueue;
     float sumLBD = 0; // used to compute the global average of LBD. Restarts...
+    // Bounded queues for restarts
+    bqueue<uint32_t> lbdQueue, trailQueue;
 
     // used for reduceDB
     uint64_t curRestart;
@@ -345,15 +343,15 @@ protected:
 	vector<Lit> add_tmp;
 
 	// Resource contraints and other interrupts
-	uint64_t conflict_budget;    // 0 means no budget.
-	uint64_t propagation_budget; // 0 means no budget.
+	uint32_t conflict_budget;    // 0 means no budget.
+	uint32_t propagation_budget; // 0 means no budget.
     void* termCallbackState;
     int (*termCallback)(void* state);
     bool asynch_interrupt;
 
 	// Variables added for incremental mode
-	uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
     bool incremental; // Use incremental SAT Solver
+	uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
 
     // Sonification
     SolverSonification sonification;
