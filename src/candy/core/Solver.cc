@@ -1029,17 +1029,17 @@ lbool Solver::search() {
                     cancelUntil(0);
                 }
 
+                if (unary_learnt) {
+                    Statistics::getInstance().runtimeStart("Runtime Simplify");
+                    if (!simplify()) {
+                        return l_False;
+                    }
+                    unary_learnt = false;
+                    Statistics::getInstance().runtimeStop("Runtime Simplify");
+                }
+
                 // every restart after reduce-db
                 if (reduced) {
-                    if (unary_learnt) {
-                        Statistics::getInstance().runtimeStart("Runtime Simplify");
-                        if (!simplify()) {
-                            return l_False;
-                        }
-                        unary_learnt = false;
-                        Statistics::getInstance().runtimeStop("Runtime Simplify");
-                    }
-
                     if (revamp > 2) {
                         assert(decisionLevel() == 0);
 
