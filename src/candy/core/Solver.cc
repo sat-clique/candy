@@ -109,8 +109,6 @@ Solver::Solver() :
         verbEveryConflicts(10000), verbosity(0),
         // results
         model(), conflict(),
-        // simplify heuristic control
-        simpDB_assigns(UINT64_MAX), simpDB_props(0),
         // watchers
         watches(WatcherDeleted()), watchesBin(WatcherDeleted()),
         // current assignment
@@ -143,6 +141,7 @@ Solver::Solver() :
         revamp(opt_revamp), sort_watches(opt_sort_watches), sort_learnts(opt_sort_learnts),
         // simpdb
         remove_satisfied(true),
+        unary_learnt(false),
         // conflict state
         ok(true),
         // lbd computation
@@ -161,6 +160,7 @@ Solver::Solver() :
 Solver::~Solver() {
     Statistics::getInstance().printRuntime("Runtime Revamp");
     Statistics::getInstance().printRuntime("Runtime Sort Watches");
+    Statistics::getInstance().printRuntime("Runtime Simplify");
 }
 
 /****************************************************************
@@ -686,16 +686,10 @@ void Solver::uncheckedEnqueue(Lit p, Clause* from) {
 Clause* Solver::propagate() {
     Clause* confl = nullptr;
 
-    int num_props = trail_size - qhead;
-    if (num_props > 0) {
-        nPropagations += num_props;
-        simpDB_props -= num_props;
-    } else {
-        return nullptr;
-    }
-
-    watchesBin.cleanAll();
     watches.cleanAll();
+    watchesBin.cleanAll();
+
+    nPropagations += trail_size - qhead;
 
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
@@ -909,10 +903,6 @@ bool Solver::simplify() {
         return ok = false;
     }
 
-    if (nAssigns() == simpDB_assigns || (simpDB_props > 0)) {
-        return true;
-    }
-
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
@@ -926,9 +916,6 @@ bool Solver::simplify() {
     freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
-
-    simpDB_assigns = nAssigns();
-    simpDB_props = nLiterals; // (shouldn't depend on stats really, but it will do for now)
 
     return true;
 }
@@ -1007,6 +994,7 @@ lbool Solver::search() {
 
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
+                unary_learnt = true;
                 Statistics::getInstance().solverUnariesInc();
             } else {
                 Clause* cr = new (learnt_clause.size()) Clause(learnt_clause, true);
@@ -1041,7 +1029,17 @@ lbool Solver::search() {
                     cancelUntil(0);
                 }
 
+                // every restart after reduce-db
                 if (reduced) {
+                    if (unary_learnt) {
+                        Statistics::getInstance().runtimeStart("Runtime Simplify");
+                        if (!simplify()) {
+                            return l_False;
+                        }
+                        unary_learnt = false;
+                        Statistics::getInstance().runtimeStop("Runtime Simplify");
+                    }
+
                     if (revamp > 2) {
                         assert(decisionLevel() == 0);
 
@@ -1082,10 +1080,6 @@ lbool Solver::search() {
                 return l_Undef;
             }
 
-            // Simplify the set of problem clauses:
-            if (decisionLevel() == 0 && !simplify()) {
-                return l_False;
-            }
             // Perform clause database reduction !
             if (nConflicts >= (curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {

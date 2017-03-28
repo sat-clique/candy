@@ -272,9 +272,6 @@ protected:
 	    }
 	};
 
-    uint64_t simpDB_assigns; // Number of top-level assignments since last execution of 'simplify()'.
-    int32_t simpDB_props; // Remaining number of propagations that must be made before next execution of 'simplify()'.
-
 	// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, Watcher, WatcherDeleted> watches;
     OccLists<Lit, Watcher, WatcherDeleted> watchesBin;
@@ -330,6 +327,7 @@ protected:
     bool sort_learnts;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
+    bool unary_learnt; // Indicates whether a unary clause was learnt since the last restart
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
