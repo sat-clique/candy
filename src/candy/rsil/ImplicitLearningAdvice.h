@@ -78,14 +78,14 @@ namespace Candy {
         /**
          * \returns the amount of literals stored in this entry.
          */
-        inline unsigned int getSize() const {
+        inline unsigned int getSize() const noexcept {
             return m_size;
         }
         
         /**
          * \returns \p true iff this entry represents a backbone literal.
          */
-        inline unsigned int isBackbone() const {
+        inline unsigned int isBackbone() const noexcept {
             return m_isBackbone;
         }
         
@@ -93,9 +93,30 @@ namespace Candy {
          * \param index   a literal index smaller than the value of getSize().
          * \returns the literal at index \p index .
          */
-        inline Lit getLiteral(unsigned int index) const {
+        inline Lit getLiteral(unsigned int index) const noexcept {
             assert(index < m_size);
             return m_lits[index];
+        }
+        
+        /**
+         * Removes the literal at index i, replacing it with the last literal if
+         * applicable.
+         *
+         * \param index   a literal index smaller than the value of getSize().
+         */
+        inline void removeLiteral(unsigned int index) noexcept {
+            assert(index < m_size);
+            if (m_size > 1 && index+1 != m_size) {
+                m_lits[index] = m_lits[m_size-1];
+            }
+            m_size--;
+        }
+        
+        /**
+         * Removes all literals from the advice entry.
+         */
+        inline void clear() noexcept {
+            m_size = 0;
         }
         
         /**
@@ -103,7 +124,7 @@ namespace Candy {
          *
          * \param literal   a literal to be added to this entry.
          */
-        inline void addLiteral(Lit literal) {
+        inline void addLiteral(Lit literal) noexcept {
             assert((m_size+1) < tMaxAdviceSize);
             m_lits[m_size] = literal;
             ++m_size;
@@ -114,7 +135,7 @@ namespace Candy {
          *
          * \param isBackbone    true iff this entry represents a backbone literal.
          */
-        inline void setBackbone(bool isBackbone) {
+        inline void setBackbone(bool isBackbone) noexcept {
             m_isBackbone = isBackbone;
         }
         
@@ -136,9 +157,75 @@ namespace Candy {
      * may be stored in the AdviceEntry instance and is stored in AdviceEntry::maxSize.
      */
     template<unsigned int tMaxAdviceSize>
-    class BudgetAdviceEntry : public AdviceEntry<tMaxAdviceSize> {
+    class BudgetAdviceEntry {
+        static_assert(tMaxAdviceSize > 1, "max. advice size tMaxAdviceSize must be larger than 1");
+        
     public:
         using AdviceBudgets = std::array<int, tMaxAdviceSize-1>;
+        
+        /** equals the tMaxAdviceSize parameter */
+        static const unsigned int maxSize = tMaxAdviceSize;
+        
+        /**
+         * \returns the amount of literals stored in this entry.
+         */
+        inline unsigned int getSize() const noexcept {
+            return m_advice.getSize();
+        }
+        
+        /**
+         * \returns \p true iff this entry represents a backbone literal.
+         */
+        inline unsigned int isBackbone() const noexcept {
+            return m_advice.isBackbone();
+        }
+        
+        /**
+         * \param index   a literal index smaller than the value of getSize().
+         * \returns the literal at index \p index .
+         */
+        inline Lit getLiteral(unsigned int index) const noexcept {
+            return m_advice.getLiteral(index);
+        }
+        
+        /**
+         * Removes the literal at index i, replacing it with the last literal if
+         * applicable.
+         *
+         * \param index   a literal index smaller than the value of getSize().
+         */
+        inline void removeLiteral(unsigned int index) noexcept {
+            if (getSize() > 1 && index+1 != getSize()) {
+                m_budgets[index] = m_budgets[getSize()-1];
+            }
+            m_advice.removeLiteral(index);
+        }
+        
+        /**
+         * Removes all literals from the advice entry.
+         */
+        inline void clear() noexcept {
+            m_advice.clear();
+        }
+        
+        /**
+         * Adds a literal to the advice entry.
+         *
+         * \param literal   a literal to be added to this entry.
+         */
+        inline void addLiteral(Lit literal) noexcept {
+            m_advice.addLiteral(literal);
+        }
+        
+        /**
+         * Marks the advice entry as a backbone literal representation.
+         *
+         * \param isBackbone    true iff this entry represents a backbone literal.
+         */
+        inline void setBackbone(bool isBackbone) noexcept {
+            m_advice.setBackbone(isBackbone);
+        }
+        
         
         /**
          * Gets the budget for the literal at the given index.
@@ -146,7 +233,7 @@ namespace Candy {
          * \param index     A literal index, smaller than the value of \p getSize() .
          * \returns the budget assigned for the the literal at index \p index .
          */
-        inline int getBudget(unsigned int index) const {
+        inline int getBudget(unsigned int index) const noexcept {
             assert(index < this->getSize());
             return m_budgets[index];
         }
@@ -156,12 +243,13 @@ namespace Candy {
          *
          * \param index     A literal index, smaller than the value of \p getSize() .
          */
-        inline void setBudget(unsigned int index, unsigned int budget) {
+        inline void setBudget(unsigned int index, unsigned int budget) noexcept {
             assert(index+1 < tMaxAdviceSize);
             m_budgets[index] = budget;
         }
         
     private:
+        AdviceEntry<tMaxAdviceSize> m_advice;
         AdviceBudgets m_budgets;
     };
     
@@ -273,7 +361,7 @@ namespace Candy {
     
     template<class AdviceEntryType>
     bool ImplicitLearningAdvice<AdviceEntryType>::hasPotentialAdvice(Var v) const noexcept {
-        assert(v > 0);
+        assert(v >= 0);
         return static_cast<unsigned int>(v) < m_advice.size();
     }
 }
