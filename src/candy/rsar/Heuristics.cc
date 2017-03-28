@@ -41,6 +41,10 @@ namespace Candy {
         
     }
     
+    bool RefinementHeuristic::probe(Var, bool) {
+        return false;
+    }
+    
     namespace {
         /**
          * Adds the given variables to the target's variable removal work queue.
