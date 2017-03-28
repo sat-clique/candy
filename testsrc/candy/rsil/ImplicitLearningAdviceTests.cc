@@ -24,41 +24,16 @@
  
  */
 
+#include "TestUtils.h"
+
 #include <gtest/gtest.h>
 #include <core/SolverTypes.h>
 #include <rsil/ImplicitLearningAdvice.h>
-#include <utils/FastRand.h>
 
 #include <iostream>
 
 namespace Candy {
     namespace {
-        template<class AdviceEntryType>
-        bool isEquivalenceAdvised(ImplicitLearningAdvice<AdviceEntryType>& advice, Lit key, Lit equivalentLiteral) {
-            auto& adviceEntry = advice.getAdvice(var(key));
-            
-            if (adviceEntry.isBackbone()) {
-                return false;
-            }
-            
-            Lit searchedLit = sign(key) ? equivalentLiteral : ~equivalentLiteral;
-            for (size_t i = 0; i < adviceEntry.getSize(); ++i) {
-                if (adviceEntry.getLiteral(i) == searchedLit) {
-                    return true;
-                }
-            }
-            
-            return false;
-        }
-        
-        template<class AdviceEntryType>
-        bool isBackboneAdvised(ImplicitLearningAdvice<AdviceEntryType>& advice, Lit backboneLiteral) {
-            auto& adviceEntry = advice.getAdvice(var(backboneLiteral));
-            return adviceEntry.isBackbone()
-                    && adviceEntry.getSize() == 1
-                    && adviceEntry.getLiteral(0) == backboneLiteral;
-        }
-        
         template<class AdviceEntryType>
         void emptyConjectures_test() {
             static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
@@ -99,7 +74,7 @@ namespace Candy {
             Conjectures testData;
             
             testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-            ImplicitLearningAdvice<AdviceEntry<3>> underTest(testData, 5);
+            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 5);
             
             EXPECT_TRUE(underTest.hasPotentialAdvice(5));
             EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
