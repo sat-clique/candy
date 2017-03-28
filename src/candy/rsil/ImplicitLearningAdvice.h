@@ -40,23 +40,28 @@ namespace Candy {
      */
     
     /**
-     * \class ImplicitLearningAdvice
+     * \class AdviceEntry
      *
      * \ingroup RS_ImplicitLearning
      *
-     * \brief Access-time-optimized equivalence and backbone datastructure for SAT solvers using implicit learning.
+     * \brief Advice for implicit learning heuristics, regarding a single variable.
      *
-     * TODO: more extensive description.
+     * AdviceEntry is responsible for providing advice for implicit learning heuristics,
+     * regarding a single fixed variable \a v. \p m_lits is an array of literals containing
+     * at least \p m_size valid entries. If \p m_isBackbone is false, \p m_lits contains
+     * the literals conjected to be equivalent to the literal \a l with variable \a v and
+     * positive sign. If \p m_isBackbone is true, \p m_lits contains exactly the literal
+     * \a b conjected to belong to the backbone with the variable of \a b being \a v.
      *
-     * The template argument tMaxAdviceSize gives the maximum equivalence conjecture size to be considered;
-     * all conjectures of greater size are simply discarded. The value of tMaxAdvice must be greater than
-     * 1.
+     * The template argument tMaxAdviceSize gives the maximum amount of literals which
+     * may be represented by the AdviceEntry instance and is stored in AdviceEntry::maxSize.
+     * (This includes the literal or variable by which the instance is addressed. Therefore,
+     * at most tMaxAdviceSize-1 literals may be stored directly in the AdviceEntry instance.)
      */
     template<unsigned int tMaxAdviceSize>
-    class ImplicitLearningAdvice {
-        static_assert(tMaxAdviceSize > 1, "max. advice size tMaxAdviceSize must be larger than 1");
-        
+    class AdviceEntry {
     public:
+        static_assert(tMaxAdviceSize > 1, "max. advice size tMaxAdviceSize must be larger than 1");
         
         /**
          * \class AdviceLits
@@ -66,37 +71,123 @@ namespace Candy {
          * \brief AdviceLits stores an array of tMaxAdviceSize-1 literals.
          */
         using AdviceLits = std::array<Lit, tMaxAdviceSize-1>;
-
-        /**
-         * \class AdviceEntry
-         *
-         * \ingroup RS_ImplicitLearning
-         *
-         * \brief Advice for implicit learning heuristics, regarding a single variable.
-         *
-         * AdviceEntry is responsible for providing advice for implicit learning heuristics,
-         * regarding a single fixed variable \a v. \p m_lits is an array of literals containing
-         * at least \p m_size valid entries. If \p m_isBackbone is false, \p m_lits contains
-         * the literals conjected to be equivalent to the literal \a l with variable \a v and
-         * positive sign. If \p m_isBackbone is true, \p m_lits contains exactly the literal
-         * \a b conjected to belong to the backbone with the variable of \a b being \a v.
-         */
-        struct AdviceEntry {
-            unsigned int m_size : 31;
-            unsigned int m_isBackbone : 1;
-            
-            AdviceLits m_lits;
-            
-            void addLiteral(Lit literal) {
-                assert((m_size+1) < tMaxAdviceSize);
-                m_lits[m_size] = literal;
-                ++m_size;
-            }
-        };
+        
+        /** equals the tMaxAdviceSize parameter */
+        static const unsigned int maxSize = tMaxAdviceSize;
         
         /**
-         * \ingroup RS_ImplicitLearning
+         * \returns the amount of literals stored in this entry.
+         */
+        inline unsigned int getSize() const {
+            return m_size;
+        }
+        
+        /**
+         * \returns \p true iff this entry represents a backbone literal.
+         */
+        inline unsigned int isBackbone() const {
+            return m_isBackbone;
+        }
+        
+        /**
+         * \param index   a literal index smaller than the value of getSize().
+         * \returns the literal at index \p index .
+         */
+        inline Lit getLiteral(unsigned int index) const {
+            assert(index < m_size);
+            return m_lits[index];
+        }
+        
+        /**
+         * Adds a literal to the advice entry.
          *
+         * \param literal   a literal to be added to this entry.
+         */
+        inline void addLiteral(Lit literal) {
+            assert((m_size+1) < tMaxAdviceSize);
+            m_lits[m_size] = literal;
+            ++m_size;
+        }
+        
+        /**
+         * Marks the advice entry as a backbone literal representation.
+         *
+         * \param isBackbone    true iff this entry represents a backbone literal.
+         */
+        inline void setBackbone(bool isBackbone) {
+            m_isBackbone = isBackbone;
+        }
+        
+    private:
+        unsigned int m_size : 31;
+        unsigned int m_isBackbone : 1;
+        
+        AdviceLits m_lits;
+    };
+    
+    /**
+     * \class BudgetAdviceEntry
+     *
+     * \ingroup RS_ImplicitLearning
+     *
+     * \brief Extension of AdviceEntry with a budget associated with each literal.
+     *
+     * The template argument tMaxAdviceSize gives the maximum amount of literals which
+     * may be stored in the AdviceEntry instance and is stored in AdviceEntry::maxSize.
+     */
+    template<unsigned int tMaxAdviceSize>
+    class BudgetAdviceEntry : public AdviceEntry<tMaxAdviceSize> {
+    public:
+        using AdviceBudgets = std::array<int, tMaxAdviceSize-1>;
+        
+        /**
+         * Gets the budget for the literal at the given index.
+         *
+         * \param index     A literal index, smaller than the value of \p getSize() .
+         * \returns the budget assigned for the the literal at index \p index .
+         */
+        inline int getBudget(unsigned int index) const {
+            assert(index < this->getSize());
+            return m_budgets[index];
+        }
+        
+        /**
+         * Sets the budget for the literal at the given index.
+         *
+         * \param index     A literal index, smaller than the value of \p getSize() .
+         */
+        inline void setBudget(unsigned int index, unsigned int budget) {
+            assert(index+1 < tMaxAdviceSize);
+            m_budgets[index] = budget;
+        }
+        
+    private:
+        AdviceBudgets m_budgets;
+    };
+    
+    
+    /**
+     * \class ImplicitLearningAdvice
+     *
+     * \ingroup RS_ImplicitLearning
+     *
+     * \brief Access-time-optimized equivalence and backbone datastructure for SAT solvers using implicit learning.
+     *
+     * TODO: more extensive description.
+     *
+     *
+     * AdviceEntryType must be AdviceEntry or a subtype of AdviceEntry.
+     * The value AdviceEntryType::maxSize gives the maximum equivalence conjecture size to be considered;
+     * all conjectures of greater size are simply discarded. The value of tMaxAdvice must be greater than
+     * 1.
+     */
+    template<class AdviceEntryType>
+    class ImplicitLearningAdvice {
+        static_assert(AdviceEntryType::maxSize > 0, "max. advice size must be larger than zero");
+        
+    public:
+        
+        /**
          * Constructs an instance \a i of ImplicitLearningAdvice.
          *
          * \param conjectures   The set of equivalence/backbone conjectures which should
@@ -109,20 +200,18 @@ namespace Candy {
         explicit ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar);
         
         /**
-         * \ingroup RS_ImplicitLearning
-         *
          * Retrieves implicit learning heuristics advice for the variable \p v .
+         *
+         * Note: for the sake of efficient implementation, this method does not return a const reference.
          *
          * \param v             A variable such that \a hasPotentialAdvice(v) evaluates to true.
          */
-        const AdviceEntry& getAdvice(Var v) const noexcept;
+        inline AdviceEntryType& getAdvice(Var v) noexcept;
         
         /**
-         * \ingroup RS_ImplicitLearning
-         *
          * Returns true iff \p getAdvice() may be called for \p v .
          */
-        bool hasPotentialAdvice(Var v) const noexcept;
+        inline bool hasPotentialAdvice(Var v) const noexcept;
         
         ImplicitLearningAdvice(const ImplicitLearningAdvice& other) = delete;
         ImplicitLearningAdvice& operator=(const ImplicitLearningAdvice& other) = delete;
@@ -131,25 +220,25 @@ namespace Candy {
         void addEquivalenceConjecture(const EquivalenceConjecture& conj);
         void addBackboneConjecture(const BackboneConjecture& conj);
         
-        std::vector<AdviceEntry> m_advice;
+        std::vector<AdviceEntryType> m_advice;
     };
     
     //******* ImplicitLearningAdvice implementation *************************************
     
-    template<unsigned int tMaxAdviceSize>
-    inline const typename ImplicitLearningAdvice<tMaxAdviceSize>::AdviceEntry&
-    ImplicitLearningAdvice<tMaxAdviceSize>::getAdvice(Var v) const noexcept {
+    template<class AdviceEntryType>
+    AdviceEntryType&
+    ImplicitLearningAdvice<AdviceEntryType>::getAdvice(Var v) noexcept {
         assert(v < m_advice.size());
         return m_advice[v];
     }
     
-    template<unsigned int tMaxAdviceSize>
-    inline void ImplicitLearningAdvice<tMaxAdviceSize>::addEquivalenceConjecture(const Candy::EquivalenceConjecture &conjecture) {
+    template<class AdviceEntryType>
+    void ImplicitLearningAdvice<AdviceEntryType>::addEquivalenceConjecture(const Candy::EquivalenceConjecture &conjecture) {
         for (auto& keyLiteral : conjecture) {
             Var keyVar = var(keyLiteral);
             bool keySign = sign(keyLiteral);
             
-            m_advice[keyVar].m_isBackbone = false;
+            m_advice[keyVar].setBackbone(false);
             
             for (auto& entryLiteral : conjecture) {
                 if (keyLiteral != entryLiteral) {
@@ -159,20 +248,20 @@ namespace Candy {
         }
     }
     
-    template<unsigned int tMaxAdviceSize>
-    inline void ImplicitLearningAdvice<tMaxAdviceSize>::addBackboneConjecture(const Candy::BackboneConjecture &conjecture) {
+    template<class AdviceEntryType>
+    void ImplicitLearningAdvice<AdviceEntryType>::addBackboneConjecture(const Candy::BackboneConjecture &conjecture) {
         Var key = var(conjecture.getLit());
-        m_advice[key].m_isBackbone = true;
+        m_advice[key].setBackbone(true);
         m_advice[key].addLiteral(conjecture.getLit());
     }
     
     
-    template<unsigned int tMaxAdviceSize>
-    ImplicitLearningAdvice<tMaxAdviceSize>::ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar) {
+    template<class AdviceEntryType>
+    ImplicitLearningAdvice<AdviceEntryType>::ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar) {
         m_advice.resize(maxVar+1);
         
         for (auto& conjecture : conjectures.getEquivalences()) {
-            if (conjecture.size() <= tMaxAdviceSize) {
+            if (conjecture.size() <= AdviceEntryType::maxSize) {
                 addEquivalenceConjecture(conjecture);
             }
         }
@@ -182,8 +271,8 @@ namespace Candy {
         }
     }
     
-    template<unsigned int tMaxAdviceSize>
-    bool ImplicitLearningAdvice<tMaxAdviceSize>::hasPotentialAdvice(Var v) const noexcept {
+    template<class AdviceEntryType>
+    bool ImplicitLearningAdvice<AdviceEntryType>::hasPotentialAdvice(Var v) const noexcept {
         assert(v > 0);
         return static_cast<unsigned int>(v) < m_advice.size();
     }
