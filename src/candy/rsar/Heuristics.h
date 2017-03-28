@@ -27,6 +27,7 @@
 #ifndef X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 #define X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 
+#include <core/SolverTypes.h>
 #include <memory>
 #include <vector>
 
@@ -66,6 +67,15 @@ namespace Candy {
          * representation's variable removal work queue.
          */
         virtual void markRemovals(Backbones& backbones) = 0;
+        
+        /**
+         * Determines whether the heuristic would deactivate implications involving the given
+         * variable regardless of its containing EquivalenceImplications or Backbones object.
+         *
+         * \returns true iff the heuristic would deactivate implications involving the given
+         *               variable.
+         */
+        virtual bool probe(Var v, bool isBackbone);
         
         RefinementHeuristic();
         virtual ~RefinementHeuristic();
