@@ -33,17 +33,17 @@
 
 namespace Candy {
     namespace {
-        template<unsigned int tMaxAdviceSize>
-        bool isEquivalenceAdvised(const ImplicitLearningAdvice<tMaxAdviceSize>& advice, Lit key, Lit equivalentLiteral) {
+        template<class AdviceEntryType>
+        bool isEquivalenceAdvised(ImplicitLearningAdvice<AdviceEntryType>& advice, Lit key, Lit equivalentLiteral) {
             auto& adviceEntry = advice.getAdvice(var(key));
             
-            if (adviceEntry.m_isBackbone) {
+            if (adviceEntry.isBackbone()) {
                 return false;
             }
             
             Lit searchedLit = sign(key) ? equivalentLiteral : ~equivalentLiteral;
-            for (size_t i = 0; i < adviceEntry.m_size; ++i) {
-                if (adviceEntry.m_lits[i] == searchedLit) {
+            for (size_t i = 0; i < adviceEntry.getSize(); ++i) {
+                if (adviceEntry.getLiteral(i) == searchedLit) {
                     return true;
                 }
             }
@@ -51,64 +51,108 @@ namespace Candy {
             return false;
         }
         
-        template<unsigned int tMaxAdviceSize>
-        bool isBackboneAdvised(const ImplicitLearningAdvice<tMaxAdviceSize>& advice, Lit backboneLiteral) {
+        template<class AdviceEntryType>
+        bool isBackboneAdvised(ImplicitLearningAdvice<AdviceEntryType>& advice, Lit backboneLiteral) {
             auto& adviceEntry = advice.getAdvice(var(backboneLiteral));
-            return adviceEntry.m_isBackbone
-                    && adviceEntry.m_size == 1
-                    && adviceEntry.m_lits[0] == backboneLiteral;
+            return adviceEntry.isBackbone()
+                    && adviceEntry.getSize() == 1
+                    && adviceEntry.getLiteral(0) == backboneLiteral;
         }
-    }
-    
-    
-    TEST(RSILImplicitLearningAdviceTests, emptyConjectures) {
-        Conjectures testData;
-        ImplicitLearningAdvice<3> underTest(testData, 9);
         
-        for (Var i = 0; i < 10; ++i) {
-            EXPECT_FALSE(underTest.getAdvice(i).m_isBackbone);
-            EXPECT_EQ(underTest.getAdvice(i).m_size, 0ull);
-        }
-    }
-    
-    TEST(RSILImplicitLearningAdviceTests, singleBackboneConjecture) {
-        Conjectures testData;
-        Lit backboneLit = mkLit(5,0);
-        testData.addBackbone(BackboneConjecture{backboneLit});
-        ImplicitLearningAdvice<3> underTest(testData, 9);
-        
-        for (Var i = 0; i < 10; ++i) {
-            if (i != var(backboneLit)) {
-                EXPECT_FALSE(underTest.getAdvice(i).m_isBackbone);
-                EXPECT_EQ(underTest.getAdvice(i).m_size, 0ull);
+        template<class AdviceEntryType>
+        void emptyConjectures_test() {
+            static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
+            
+            Conjectures testData;
+            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 9);
+            
+            for (Var i = 0; i < 10; ++i) {
+                EXPECT_FALSE(underTest.getAdvice(i).isBackbone());
+                EXPECT_EQ(underTest.getAdvice(i).getSize(), 0ull);
             }
         }
         
-        EXPECT_TRUE(underTest.hasPotentialAdvice(var(backboneLit)));
-        EXPECT_TRUE(isBackboneAdvised(underTest, backboneLit));
+        template<class AdviceEntryType>
+        void singleBackboneConjecture_test() {
+            static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
+            
+            Conjectures testData;
+            Lit backboneLit = mkLit(5,0);
+            testData.addBackbone(BackboneConjecture{backboneLit});
+            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 9);
+            
+            for (Var i = 0; i < 10; ++i) {
+                if (i != var(backboneLit)) {
+                    EXPECT_FALSE(underTest.getAdvice(i).isBackbone());
+                    EXPECT_EQ(underTest.getAdvice(i).getSize(), 0ull);
+                }
+            }
+            
+            EXPECT_TRUE(underTest.hasPotentialAdvice(var(backboneLit)));
+            EXPECT_TRUE(isBackboneAdvised(underTest, backboneLit));
+        }
+        
+        template<class AdviceEntryType>
+        void singleEquivalenceConjecture_test() {
+            static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
+            
+            Conjectures testData;
+            
+            testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
+            ImplicitLearningAdvice<AdviceEntry<3>> underTest(testData, 5);
+            
+            EXPECT_TRUE(underTest.hasPotentialAdvice(5));
+            EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
+            EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,1)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,1)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(4,1)));
+        }
+        
+        template<class AdviceEntryType>
+        void oversizedEquivalenceConjectureIsntAdded_test() {
+            static_assert(AdviceEntryType::maxSize == 2, "This test requires advice entries of size 2");
+            
+            Conjectures testData;
+            
+            testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0), mkLit(2,1)}});
+            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 5);
+            
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));
+        }
+        
     }
     
-    TEST(RSILImplicitLearningAdviceTests, singleEquivalenceConjecture) {
-        Conjectures testData;
- 
-        testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-        ImplicitLearningAdvice<3> underTest(testData, 5);
-        
-        EXPECT_TRUE(underTest.hasPotentialAdvice(5));
-        EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));
-        EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,1)));
-        EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,1)));
-        EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(4,1)));
+    TEST(RSILImplicitLearningAdviceTests, emptyConjectures_AdviceEntry) {
+        emptyConjectures_test<AdviceEntry<3>>();
     }
     
-    TEST(RSILImplicitLearningAdviceTests, oversizedEquivalenceConjectureIsntAdded) {
-        Conjectures testData;
-        
-        testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0), mkLit(2,1)}});
-        ImplicitLearningAdvice<2> underTest(testData, 5);
-        
-        EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
-        EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));
+    TEST(RSILImplicitLearningAdviceTests, emptyConjectures_BudgetAdviceEntry) {
+        emptyConjectures_test<BudgetAdviceEntry<3>>();
+    }
+    
+    TEST(RSILImplicitLearningAdviceTests, singleBackboneConjecture_AdviceEntry) {
+        singleBackboneConjecture_test<AdviceEntry<3>>();
+    }
+    
+    TEST(RSILImplicitLearningAdviceTests, singleBackboneConjecture_BudgetAdviceEntry) {
+        singleBackboneConjecture_test<BudgetAdviceEntry<3>>();
+    }
+    
+    TEST(RSILImplicitLearningAdviceTests, singleEquivalenceConjecture_AdviceEntry) {
+        singleEquivalenceConjecture_test<AdviceEntry<3>>();
+    }
+    
+    TEST(RSILImplicitLearningAdviceTests, singleEquivalenceConjecture_BudgetAdviceEntry) {
+        singleEquivalenceConjecture_test<BudgetAdviceEntry<3>>();
+    }
+    
+    TEST(RSILImplicitLearningAdviceTests, oversizedEquivalenceConjectureIsntAdded_AdviceEntry) {
+        oversizedEquivalenceConjectureIsntAdded_test<AdviceEntry<2>>();
+    }
+    
+    TEST(RSILImplicitLearningAdviceTests, oversizedEquivalenceConjectureIsntAdded_BudgetAdviceEntry) {
+        oversizedEquivalenceConjectureIsntAdded_test<BudgetAdviceEntry<2>>();
     }
 }
