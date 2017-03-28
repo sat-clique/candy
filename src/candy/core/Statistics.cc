@@ -74,6 +74,7 @@ void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uin
 
 void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     double cpu_time = Glucose::cpuTime();
+    printf("c ==============================================================================================\n");
 #ifdef RESTART_STATS
     printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
     printf("c blocked restarts      : %" PRIu64" (multiple: %" PRIu64") \n", nbstopsrestarts, nbstopsrestartssame);

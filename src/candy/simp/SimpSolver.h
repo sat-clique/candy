@@ -66,19 +66,67 @@ public:
     // Problem specification:
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
     virtual bool addClause_(vector<Lit>& ps);
-    bool addClause(const vector<Lit>& ps);
-    bool addClause(std::initializer_list<Lit> lits);
     bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
-
-    // Variable mode:
-    void setFrozen(Var v, bool b); // If a variable is frozen it will not be eliminated.
-    bool isEliminated(Var v) const;
-
-    // Solving:
-    bool solve(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    lbool solveLimited(const vector<Lit>& assumps, bool do_simp = true, bool turn_off_simp = false);
-    bool solve(std::initializer_list<Lit> assumps, bool do_simp = true, bool turn_off_simp = false);
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
+    virtual lbool solve();
+
+    inline void enableSimplification() {
+        use_simplification = true;
+    }
+
+    inline void disableSimplification() {
+        use_simplification = false;
+    }
+
+    inline void cleanupSimplification() {
+        touched.clear();
+        occurs.clear();
+        n_occ.clear();
+        elim_heap.clear();
+        subsumption_queue.clear();
+
+        use_simplification = false;
+        remove_satisfied = true;
+
+        // Force full cleanup (this is safe and desirable since it only happens once):
+        rebuildOrderHeap();
+    }
+
+    inline bool addClause(const vector<Lit>& ps) {
+        add_tmp.clear();
+        add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
+        return addClause_(add_tmp);
+    }
+
+    inline bool addClause(std::initializer_list<Lit> lits) {
+        add_tmp.clear();
+        add_tmp.insert(add_tmp.end(), lits.begin(), lits.end());
+        return addClause_(add_tmp);
+    }
+
+    // If a variable is frozen it will not be eliminated
+    inline void setFrozen(Var v, bool b) {
+        frozen[v] = (char) b;
+        if (use_simplification && !b) {
+            updateElimHeap(v);
+        }
+    }
+
+    inline bool isEliminated(Var v) const {
+        return eliminated[v];
+    }
+
+    inline lbool solve(std::initializer_list<Lit> assumps) {
+        assumptions.clear();
+        assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+        return solve();
+    }
+
+    inline lbool solve(const std::vector<Lit>& assumps) {
+        assumptions.clear();
+        assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
+        return solve();
+    }
 
     // Mode of operation:
     size_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
@@ -88,6 +136,7 @@ public:
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
     bool use_elim;          // Perform variable elimination.
+    bool use_simplification;
 
 protected:
     // Helper structures:
@@ -115,7 +164,6 @@ protected:
     };
 
     // Solver state:
-    bool use_simplification;
     vector<uint32_t> elimclauses;
     vector<char> touched;
     OccLists<Var, Clause*, ClauseDeleted> occurs;
@@ -129,10 +177,16 @@ protected:
     vector<Clause*> strengthend;
 
     // Main internal methods:
-    virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false);
+    inline void updateElimHeap(Var v) {
+        assert(use_simplification);
+        // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
+        if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)) {
+            elim_heap.update(v);
+        }
+    }
+
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
-    void updateElimHeap(Var v);
     void gatherTouchedClauses();
     bool merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
     bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size);
@@ -144,53 +198,6 @@ protected:
     bool strengthenClause(Clause* cr, Lit l);
     bool implied(const vector<Lit>& c);
 };
-
-// Implementation of inline methods:
-inline bool SimpSolver::isEliminated(Var v) const {
-    return eliminated[v];
-}
-inline void SimpSolver::updateElimHeap(Var v) {
-    assert(use_simplification);
-    // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
-    if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef))
-        elim_heap.update(v);
-}
-
-inline bool SimpSolver::addClause(const vector<Lit>& ps) {
-    add_tmp.clear();
-    add_tmp.insert(add_tmp.end(), ps.begin(), ps.end());
-    return addClause_(add_tmp);
-}
-inline bool SimpSolver::addClause(std::initializer_list<Lit> lits) {
-    add_tmp.clear();
-    add_tmp.insert(add_tmp.end(), lits.begin(), lits.end());
-    return addClause_(add_tmp);
-}
-inline void SimpSolver::setFrozen(Var v, bool b) {
-    frozen[v] = (char) b;
-    if (use_simplification && !b) {
-        updateElimHeap(v);
-    }
-}
-
-inline bool SimpSolver::solve(std::initializer_list<Lit> assumps, bool do_simp, bool turn_off_simp) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-    return solve_(do_simp, turn_off_simp) == l_True;
-}
-inline bool SimpSolver::solve(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
-    budgetOff();
-    assumptions.clear();
-    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-    return solve_(do_simp, turn_off_simp) == l_True;
-}
-
-inline lbool SimpSolver::solveLimited(const vector<Lit>& assumps, bool do_simp, bool turn_off_simp) {
-    assumptions.clear();
-    assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-    return solve_(do_simp, turn_off_simp);
-}
 
 }
 

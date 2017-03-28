@@ -66,9 +66,7 @@ static BoolOption opt_use_elim(_cat, "elim", "Perform variable elimination.", tr
 static IntOption opt_grow(_cat, "grow", "Allow a variable elimination step to grow by a number of clauses.", 0);
 static IntOption opt_clause_lim(_cat, "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, IntRange(0, INT32_MAX));
 static IntOption opt_subsumption_lim(_cat, "sub-lim", "Do not check if subsumption against a clause larger than this.", 1000, IntRange(0, INT32_MAX));
-static DoubleOption opt_simp_garbage_frac(_cat, "simp-gc-frac",
-                "The fraction of wasted memory allowed before a garbage collection is triggered during simplification.", 0.5,
-                DoubleRange(0, false, HUGE_VAL, false));
+
 
 //=================================================================================================
 // Constructor/Destructor:
@@ -108,12 +106,11 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
     return v;
 }
 
-lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
+lbool SimpSolver::solve() {
     vector<Var> extra_frozen;
     lbool result = l_True;
-    do_simp &= use_simplification;
 
-    if (do_simp) {
+    if (use_simplification) {
         // Assumptions must be temporarily frozen to run variable elimination:
         for (Lit lit : assumptions) {
             Var v = var(lit);
@@ -124,7 +121,12 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
             }
         }
 
-        result = lbool(eliminate(turn_off_simp));
+        result = lbool(eliminate());
+
+        // Unfreeze the assumptions that were frozen:
+        for (Var v : extra_frozen) {
+            setFrozen(v, false);
+        }
     }
 
     if (result == l_True) {
@@ -132,16 +134,11 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
         for (Clause* c : clauses) {
             c->activity() = 0;
         }
-        result = Solver::solve_();
+        result = Solver::solve();
     }
 
-    if (result == l_True)
+    if (result == l_True) {
         extendModel();
-
-    if (do_simp) { // Unfreeze the assumptions that were frozen:
-        for (Var v : extra_frozen) {
-            setFrozen(v, false);
-        }
     }
 
     return result;
@@ -149,16 +146,19 @@ lbool SimpSolver::solve_(bool do_simp, bool turn_off_simp) {
 
 bool SimpSolver::addClause_(vector<Lit>& ps) {
 #ifndef NDEBUG
-    for (unsigned int i = 0; i < ps.size(); i++)
+    for (unsigned int i = 0; i < ps.size(); i++) {
         assert(!isEliminated(var(ps[i])));
+    }
 #endif
-    unsigned int nclauses = clauses.size();
+    size_t nclauses = clauses.size();
 
-    if (use_rcheck && implied(ps))
+    if (use_rcheck && implied(ps)) {
         return true;
+    }
 
-    if (!Solver::addClause_(ps))
+    if (!Solver::addClause_(ps)) {
         return false;
+    }
 
     if (use_simplification && clauses.size() == nclauses + 1) {
         Clause* cr = clauses.back();
@@ -174,8 +174,9 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
             n_occ[toInt(lit)]++;
             touched[var(lit)] = 1;
             n_touched++;
-            if (elim_heap.inHeap(var(lit)))
+            if (elim_heap.inHeap(var(lit))) {
                 elim_heap.increase(var(lit));
+            }
         }
     }
 
@@ -647,17 +648,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 
     // If no more simplification is needed, free all simplification-related data structures:
     if (turn_off_elim) {
-        touched.clear();
-        occurs.clear();
-        n_occ.clear();
-        elim_heap.clear();
-        subsumption_queue.clear();
-
-        use_simplification = false;
-        remove_satisfied = true;
-
-        // Force full cleanup (this is safe and desirable since it only happens once):
-        rebuildOrderHeap();
+        cleanupSimplification();
     }
 
     // cleanup strengthened clauses in pool (original size-offset was stored in lbd value)

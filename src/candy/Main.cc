@@ -155,7 +155,7 @@ static lbool solve(SimpSolver& S, bool do_preprocess) {
 
     if (result == l_Undef) {
         vector<Lit> assumptions;
-        result = S.solveLimited(assumptions);
+        result = S.solve(assumptions);
     }
 
     return result;

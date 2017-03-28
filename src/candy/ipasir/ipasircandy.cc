@@ -66,7 +66,7 @@ public:
 
   int solve() {
     drop_analysis();
-    lbool res = solver.solveLimited(assumptions);
+    lbool res = solver.solve(assumptions);
     assumptions.clear();
     nomodel = (res != l_True);
     return (res == l_Undef) ? 0 :(res == l_True ? 10 : 20);
