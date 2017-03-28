@@ -1,4 +1,6 @@
 add_executable(rsil_tests
+	TestUtils.h
+	RSARHeuristicsFilterTests.cc
         ImplicitLearningAdviceTests.cc)
 
 candy_executable_customizations(rsil_tests)
@@ -13,5 +15,5 @@ add_test(NAME rsil_module_tests COMMAND rsil_tests)
 target_include_directories(rsil_tests PUBLIC ${CMAKE_PROJECT_ROOT}/lib/googletest/googletest/include
                                              ${CMAKE_PROJECT_ROOT}/lib/googletest/googlemock/include)
 
-target_link_libraries(rsil_tests ${CANDY_LIBS} testutils gtest_main gtest)
+target_link_libraries(rsil_tests ${CANDY_LIBS} testutils gtest_main gtest gmock)
 
