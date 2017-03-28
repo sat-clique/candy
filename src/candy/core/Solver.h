@@ -107,26 +107,18 @@ public:
     // Solving:
     bool simplify(); // Removes already satisfied clauses.
 
-    // FIXME: after the introduction of asynchronous interrruptions the solve-versions that return a
-    // pure bool do not give a safe interface. Either interrupts must be possible to turn off here, or
-    // all calls to solve must return an 'lbool'. I'm not yet sure which I prefer.
-    inline bool solve(std::initializer_list<Lit> assumps) {
-        budgetOff();
+    virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
+
+    inline lbool solve(std::initializer_list<Lit> assumps) {
         assumptions.clear();
         assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-        return solve_() == l_True;
+        return solve();
     }
-    inline bool solve(const vector<Lit>& assumps) {
-        budgetOff();
+
+    inline lbool solve(const vector<Lit>& assumps) {
         assumptions.clear();
         assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-        return solve_() == l_True;
-    }
-    // Search for a model that respects a given set of assumptions.
-    inline lbool solveLimited(const vector<Lit>& assumps) {
-        assumptions.clear();
-        assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-        return solve_();
+        return solve();
     }
 
     // FALSE means solver is in a conflicting state
@@ -369,8 +361,6 @@ protected:
             order_heap.insert(x);
     }
 
-	Lit pickBranchLit(); // Return the next decision variable.
-
 	// Begins a new decision level
     inline void newDecisionLevel() {
         trail_lim.push_back(trail_size);
@@ -404,6 +394,7 @@ protected:
         return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
     }
 
+    Lit pickBranchLit(); // Return the next decision variable.
 	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
 	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
@@ -412,7 +403,6 @@ protected:
 	bool seenAny(Clause& clause);
 	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
 	lbool search(); // Search for a given number of conflicts.
-	virtual lbool solve_(bool do_simp = true, bool turn_off_simp = false); // Main solve method (assumptions given in 'assumptions').
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
     void revampClausePool(uint8_t upper);

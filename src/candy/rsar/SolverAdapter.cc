@@ -42,11 +42,18 @@ namespace Candy {
     class GlucoseAdapter : public SolverAdapter {
     public:
         bool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
-            return m_solver.solve(assumptions, doSimp, turnOffSimp);
+            if (doSimp) {
+                m_solver.eliminate(turnOffSimp);
+                if (!m_solver.okay()) {
+                    return false;
+                }
+            }
+            m_solver.disableSimplification();
+            return l_True == m_solver.solve(assumptions);
         }
         
         bool solve() override {
-            return m_solver.solve({});
+            return l_True == m_solver.solve({});
         }
         
         bool addClause(const Cl &clause) override {
@@ -63,7 +70,7 @@ namespace Candy {
         
         bool simplify() override {
             m_solver.setPropBudget(1);
-            m_solver.solveLimited({});
+            m_solver.solve({});
             m_solver.budgetOff();
             return true;
         }

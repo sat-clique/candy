@@ -75,7 +75,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   }
   solver.addClauses(constraint);
   assumptions.push_back(~alit);
-  bool isRightUnique = !solver.solve(assumptions);
+  bool isRightUnique = solver.solve(assumptions) == l_False;
   assumptions.back() = alit;
   return isRightUnique;
 }

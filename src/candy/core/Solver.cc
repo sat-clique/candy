@@ -544,12 +544,8 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
     Statistics::getInstance().solverTotLiteralsInc(out_learnt.size());
 
-    /* ***************************************
-     Minimisation with binary clauses of the asserting clause
-     First of all : we look for small clauses
-     Then, we reduce clauses with small LBD.
-     Otherwise, this can be useless */
-    if (!incremental && (int)out_learnt.size() <= lbSizeMinimizingClause) {
+    /* Minimisation with binary clauses of the asserting clause */
+    if (!incremental && out_learnt.size() <= lbSizeMinimizingClause) {
         minimisationWithBinaryResolution(out_learnt);
     }
 
@@ -1126,7 +1122,7 @@ lbool Solver::search() {
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
 // Parameters are useless in core but useful for SimpSolver....
-lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
+lbool Solver::solve() {
     if (incremental && certificate.isActive()) {
         printf("Can not use incremental and certified unsat in the same time\n");
         exit(-1);
@@ -1134,8 +1130,10 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
 
     model.clear();
     conflict.clear();
-    if (!ok)
+    if (!ok) {
         return l_False;
+    }
+
     double curTime = cpuTime();
 
     sonification.start(nVars(), nClauses());
@@ -1167,33 +1165,27 @@ lbool Solver::solve_(bool do_simp, bool turn_off_simp) {
         status = search();
     }
 
-    if (!incremental && verbosity >= 1)
-        printf("c ==============================================================================================\n");
-
-    if (status == l_False) {
-        certificate.proof();
-    }
-
-    if (status == l_True) {
-        // Extend & copy model:
-        if (model.size() < nVars())
-            model.resize(nVars());
-        for (size_t i = 0; i < nVars(); i++)
-            model[i] = value(i);
-    } else if (status == l_False && conflict.size() == 0)
-        ok = false;
-
-    cancelUntil(0);
-
     double finalTime = cpuTime();
-    if (status == l_True) {
-        Statistics::getInstance().incNBSatCalls();
-        Statistics::getInstance().incTotalTime4Sat(finalTime - curTime);
-    }
+
     if (status == l_False) {
         Statistics::getInstance().incNBUnsatCalls();
         Statistics::getInstance().incTotalTime4Unsat(finalTime - curTime);
+
+        certificate.proof();
+
+        if (conflict.size() == 0) {
+            ok = false;
+        }
     }
+    else if (status == l_True) {
+        Statistics::getInstance().incNBSatCalls();
+        Statistics::getInstance().incTotalTime4Sat(finalTime - curTime);
+
+        model.clear();
+        model.insert(model.end(), assigns.begin(), assigns.end());
+    }
+
+    cancelUntil(0);
 
     sonification.stop(status == l_True ? 1 : status == l_False ? 0 : -1);
 
