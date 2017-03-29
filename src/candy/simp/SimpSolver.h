@@ -129,9 +129,9 @@ public:
     }
 
     // Mode of operation:
-    size_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
-    size_t clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. -1 means no limit.
-    size_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. -1 means no limit.
+    uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
+    uint8_t clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
+    uint8_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
 
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
