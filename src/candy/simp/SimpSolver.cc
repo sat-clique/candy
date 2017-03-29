@@ -73,9 +73,9 @@ static IntOption opt_subsumption_lim(_cat, "sub-lim", "Do not check if subsumpti
 
 SimpSolver::SimpSolver() :
                 Solver(),
-                grow(opt_grow),
-                clause_lim(opt_clause_lim),
                 subsumption_lim(opt_subsumption_lim),
+                clause_lim(opt_clause_lim),
+                grow(opt_grow),
                 use_asymm(opt_use_asymm),
                 use_rcheck(opt_use_rcheck),
                 use_elim(opt_use_elim),
@@ -382,7 +382,7 @@ bool SimpSolver::backwardSubsumptionCheck(bool verbose) {
             if (cr->isDeleted()) {
                 break;
             }
-            else if (csi != cr && csi->size() < subsumption_lim) {
+            else if (csi != cr && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
                 Lit l = cr->subsumes(*csi);
 
                 if (l == lit_Undef) {
@@ -501,7 +501,7 @@ bool SimpSolver::eliminateVar(Var v) {
     for (Clause* pc : pos) {
         for (Clause* nc : neg) {
             size_t clause_size = 0;
-            if (merge(*pc, *nc, v, clause_size) && (++cnt > cls.size() + grow || clause_size > clause_lim)) {
+            if (merge(*pc, *nc, v, clause_size) && (++cnt > cls.size() + grow || (clause_lim > 0 && clause_size > clause_lim))) {
                 return true;
             }
         }
