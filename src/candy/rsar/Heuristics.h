@@ -88,11 +88,12 @@ namespace Candy {
      *
      * Creates an instance of InputDepCountRefinementHeuristic.
      *
-     * \param analyzer  the gate analyzer providing the gate structure
+     * \param analyzer  the gate analyzer providing the gate structure.
+     *                  (\p analyzer may be destroyed after the function call)
      * \param config    a list i0, ..., iN of natural numbers. In refinement step X (X <= N),
      *                  all variable outputs depending on more than iX input variables are
      *                  marked for removal. For X > N, all remaining variables are marked for
-     *                  removal.
+     *                  removal. (\p analyzer may be destroyed after the function call)
      */
     std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(GateAnalyzer& analyzer,
                                                                                 const std::vector<size_t>& config);

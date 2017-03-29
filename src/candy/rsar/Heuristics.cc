@@ -154,10 +154,9 @@ namespace Candy {
             InputDepCountRefinementHeuristic& operator= (const InputDepCountRefinementHeuristic& other) = delete;
             
         private:
-            void init();
+            void init(GateAnalyzer& m_analyzer, const std::vector<size_t>& config);
+            
             std::vector<std::unordered_set<Var>> m_deactivationsByStep;
-            std::vector<size_t> m_config;
-            GateAnalyzer& m_analyzer;
             int m_step;
         };
         
@@ -165,44 +164,40 @@ namespace Candy {
                                                                            const std::vector<size_t>& config)
         : RefinementHeuristic(),
         m_deactivationsByStep(),
-        m_config(config),
-        m_analyzer(analyzer),
         m_step(0) {
+            init(analyzer, config);
         }
         
         InputDepCountRefinementHeuristic::~InputDepCountRefinementHeuristic() {
         }
 
-        void InputDepCountRefinementHeuristic::init() {
-            auto inputSizes = countInputDependencies(m_analyzer);
+        void InputDepCountRefinementHeuristic::init(GateAnalyzer& analyzer, const std::vector<size_t>& config) {
+            auto inputSizes = countInputDependencies(analyzer);
             
-            // Note: this code is written under the assumption that m_config
+            // Note: this code is written under the assumption that config
             // is a very small vector (about 4 or 5 elements) - for large
             // vectors, this should possibly be rewritten using a predecessor
             // search.
-            m_deactivationsByStep.resize(m_config.size()+1);
+            m_deactivationsByStep.resize(config.size()+1);
             for(auto outputVarAndSize : inputSizes) {
                 Var outputVar = outputVarAndSize.first;
                 size_t size = outputVarAndSize.second;
                 
                 size_t i = 0;
-                for (; i < m_config.size(); ++i) {
-                    if (size > m_config[i]) {
+                for (; i < config.size(); ++i) {
+                    if (size > config[i]) {
                         m_deactivationsByStep[i].insert(outputVar);
                         break;
                     }
                 }
                 
-                if (i == m_config.size()) {
+                if (i == config.size()) {
                     m_deactivationsByStep.back().insert(outputVar);
                 }
             }
         }
         
         void InputDepCountRefinementHeuristic::beginRefinementStep() {
-            if (m_step == 0) {
-                init();
-            }
             ++m_step;
         }
         
