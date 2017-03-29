@@ -32,6 +32,15 @@
 #include <memory>
 
 namespace Candy {
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * Removes all variables from the given \p ImplicitLearningAdvice which
+     * any of the given RSAR heuristics currently mark for removal via \p probe().
+     *
+     * \param heuristics     a vector of RSAR heuristics.
+     * \param advice         the target \p ImplicitLearningAdvice object.
+     */
     template<class AdviceEntryType>
     void filterWithRSARHeuristics(std::vector<RefinementHeuristic>& heuristics,
                                   ImplicitLearningAdvice<AdviceEntryType> advice);
@@ -75,7 +84,6 @@ namespace Candy {
     template<class AdviceEntryType>
     void filterWithRSARHeuristics(const std::vector<RefinementHeuristic*>& heuristics,
                                   ImplicitLearningAdvice<AdviceEntryType>& advice) {
-        
         for (Var v = 0; advice.hasPotentialAdvice(v); ++v) {
             RSARHeuristicsFilterImpl::filterWithRSARHeuristics(heuristics, advice, v);
         }
