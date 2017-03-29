@@ -786,7 +786,11 @@ void Solver::reduceDB() {
     size_t index = (learnts.size() + learntsBin.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
-        nbclausesbeforereduce += specialIncReduceDB;
+        if (specialIncReduceDB == 0) {
+            return;
+        } else {
+            nbclausesbeforereduce += specialIncReduceDB;
+        }
     }
 
     // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
