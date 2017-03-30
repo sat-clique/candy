@@ -79,7 +79,7 @@ SimpSolver::SimpSolver() :
                 use_asymm(opt_use_asymm),
                 use_rcheck(opt_use_rcheck),
                 use_elim(opt_use_elim),
-                use_simplification(true),
+                preprocessing_enabled(true),
                 occurs(ClauseDeleted()),
                 elim_heap(ElimLt(n_occ)),
                 bwdsub_assigns(0),
@@ -96,7 +96,7 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
     frozen.push_back((char) false);
     eliminated.push_back((char) false);
 
-    if (use_simplification) {
+    if (preprocessing_enabled) {
         n_occ.push_back(0);
         n_occ.push_back(0);
         occurs.init(v);
@@ -107,26 +107,10 @@ Var SimpSolver::newVar(bool sign, bool dvar) {
 }
 
 lbool SimpSolver::solve() {
-    vector<Var> extra_frozen;
     lbool result = l_True;
 
-    if (use_simplification) {
-        // Assumptions must be temporarily frozen to run variable elimination:
-        for (Lit lit : assumptions) {
-            Var v = var(lit);
-            assert(!isEliminated(v));
-            if (!frozen[v]) { // Freeze and store.
-                setFrozen(v, true);
-                extra_frozen.push_back(v);
-            }
-        }
-
+    if (preprocessing_enabled) {
         result = lbool(eliminate());
-
-        // Unfreeze the assumptions that were frozen:
-        for (Var v : extra_frozen) {
-            setFrozen(v, false);
-        }
     }
 
     if (result == l_True) {
@@ -160,7 +144,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
         return false;
     }
 
-    if (use_simplification && clauses.size() == nclauses + 1) {
+    if (preprocessing_enabled && clauses.size() == nclauses + 1) {
         Clause* cr = clauses.back();
         // NOTE: the clause is added to the queue immediately and then
         // again during 'gatherTouchedClauses()'. If nothing happens
@@ -184,7 +168,7 @@ bool SimpSolver::addClause_(vector<Lit>& ps) {
 }
 
 void SimpSolver::removeClause(Clause* cr) {
-    if (use_simplification) {
+    if (preprocessing_enabled) {
         for (Lit lit : *cr) {
             n_occ[toInt(lit)]--;
             updateElimHeap(var(lit));
@@ -196,7 +180,7 @@ void SimpSolver::removeClause(Clause* cr) {
 
 bool SimpSolver::strengthenClause(Clause* cr, Lit l) {
     assert(decisionLevel() == 0);
-    assert(use_simplification);
+    assert(preprocessing_enabled);
 
     // FIX: this is too inefficient but would be nice to have (properly implemented)
     // if (!find(subsumption_queue, &c))
@@ -440,7 +424,7 @@ bool SimpSolver::asymm(Var v, Clause* cr) {
 }
 
 bool SimpSolver::asymmVar(Var v) {
-    assert(use_simplification);
+    assert(preprocessing_enabled);
 
     const vector<Clause*>& cls = occurs.lookup(v);
 
@@ -586,17 +570,29 @@ void SimpSolver::extendModel() {
 }
 
 bool SimpSolver::eliminate(bool turn_off_elim) {
+    vector<Var> extra_frozen;
+
     if (!simplify()) {
         ok = false;
         return false;
     }
-    else if (!use_simplification) {
+    else if (!preprocessing_enabled) {
         return true;
     }
 
     if (clauses.size() > 4800000) {
         printf("c Too many clauses... No preprocessing\n");
         goto cleanup;
+    }
+
+    // Assumptions must be temporarily frozen to run variable elimination:
+    for (Lit lit : assumptions) {
+        Var v = var(lit);
+        assert(!isEliminated(v));
+        if (!frozen[v]) { // Freeze and store.
+            setFrozen(v, true);
+            extra_frozen.push_back(v);
+        }
     }
 
     // Main simplification loop:
@@ -644,11 +640,16 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
 
         assert(subsumption_queue.size() == 0);
     }
+
     cleanup:
+    // Unfreeze the assumptions that were frozen:
+    for (Var v : extra_frozen) {
+        setFrozen(v, false);
+    }
 
     // If no more simplification is needed, free all simplification-related data structures:
     if (turn_off_elim) {
-        cleanupSimplification();
+        cleanupPreprocessing();
     }
 
     // cleanup strengthened clauses in pool (original size-offset was stored in lbd value)

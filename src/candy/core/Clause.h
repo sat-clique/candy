@@ -29,8 +29,8 @@ class Clause {
     uint16_t header;
 
     union {
-        float act;
-        uint32_t abs;
+        float activity;
+        uint32_t abstraction;
     } data;
 
     Lit literals[1];
@@ -64,7 +64,7 @@ public:
      * - clauses have the bigger lbd
      */
     bool operator <(Clause& clause2) {
-        return header > clause2.header || (header == clause2.header && data.act < clause2.data.act);
+        return header > clause2.header || (header == clause2.header && data.activity < clause2.data.activity);
     }
 
     bool operator >(Clause& clause2) {
@@ -170,7 +170,7 @@ public:
     }
 
     inline float& activity() {
-        return data.act;
+        return data.activity;
     }
 
     inline uint16_t getHeader() const {
@@ -193,7 +193,7 @@ public:
         assert(!isLearnt());
         assert(!other.isLearnt());
 
-        if (other.size() < size() || (data.abs & ~other.data.abs) != 0) {
+        if (other.size() < size() || (data.abstraction & ~other.data.abstraction) != 0) {
             return lit_Error;
         }
 
