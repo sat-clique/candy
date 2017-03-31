@@ -37,6 +37,7 @@ namespace Candy {
 
     EquivalencyChecker::EquivalencyChecker()
     : m_solver(std::unique_ptr<SimpSolver>(new SimpSolver())), m_maxVar(0) {
+        m_solver->disablePreprocessing();
         m_solver->setIncrementalMode();
     }
     
@@ -111,7 +112,7 @@ namespace Candy {
     }
     
     bool EquivalencyChecker::solve(const std::vector<Lit>& assumptions) {
-        return m_solver->solve(assumptions, false, true);
+        return l_True == m_solver->solve(assumptions);
     }
     
     
