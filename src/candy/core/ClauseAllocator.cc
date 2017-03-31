@@ -11,27 +11,6 @@
 
 namespace Candy {
 
-ClauseAllocator::ClauseAllocator() :
-    pools(),
-    pages(),
-    pages_nelem()
-{
-    for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {
-        pools[i].reserve(initialNumberOfElements(i));
-        fillPool(i);
-    }
-    pools[XXL_POOL_INDEX].reserve(1024);
-    fillPool(XXL_POOL_INDEX);
-}
-
-ClauseAllocator::~ClauseAllocator() {
-    for (auto pages : this->pages) {
-        for (char* page : pages) {
-            free(page);
-        }
-    }
-}
-
 void ClauseAllocator::fillPool(uint16_t index) {
     const uint32_t nElem = pools[index].capacity();
     uint16_t nLits = 1 + index;

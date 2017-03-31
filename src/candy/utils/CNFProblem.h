@@ -38,28 +38,59 @@ class CNFProblem {
 
 public:
 
-  CNFProblem();
+  CNFProblem() {}
 
-  For& getProblem();
-  const For& getProblem() const;
+  inline For& getProblem() {
+      return problem;
+  }
 
-  int nVars() const;
-  int nClauses() const;
+  inline const For& getProblem() const {
+      return problem;
+  }
 
-  int newVar();
+  inline int nVars() const {
+      return maxVars;
+  }
+
+  inline int nClauses() const {
+      return (int)problem.size();
+  }
+
+  inline int newVar() {
+      maxVars++;
+      return maxVars-1;
+  }
 
   bool readDimacsFromStdout();
   bool readDimacsFromFile(const char* filename);
 
-  void readClause(Lit plit);
-  void readClause(Lit plit1, Lit plit2);
-  void readClause(std::initializer_list<Lit> list);
-  void readClause(Cl cl);
+  inline void readClause(Lit plit) {
+      readClause({plit});
+  }
+
+  inline void readClause(Lit plit1, Lit plit2) {
+      readClause({plit1, plit2});
+  }
+
+  inline void readClause(std::initializer_list<Lit> list) {
+      readClause(list.begin(), list.end());
+  }
+
+  inline void readClause(Cl cl) {
+      readClause(cl.begin(), cl.end());
+  }
 
   template <typename Iterator>
-  void readClause(Iterator begin, Iterator end);
+  inline void readClause(Iterator begin, Iterator end) {
+      maxVars = std::max(maxVars, var(*std::max_element(begin, end))+1);
+      problem.push_back(new Cl(begin, end));
+  }
 
-  void readClauses(For& f);
+  inline void readClauses(For& f) {
+      for (Cl* c : f) {
+          readClause(c->begin(), c->end());
+      }
+  }
 
 
 private:

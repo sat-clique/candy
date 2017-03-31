@@ -59,7 +59,8 @@
 #include "candy/mtl/BoundedQueue.h"
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
-#include "candy/utils/CNFProblem.h"
+#include "candy/core/ClauseAllocator.h"
+#include <candy/utils/CNFProblem.h>
 
 #include "sonification/SolverSonification.h"
 
@@ -263,6 +264,8 @@ protected:
 	        return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
 	    }
 	};
+
+	ClauseAllocator allocator;
 
 	// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, Watcher, WatcherDeleted> watches;

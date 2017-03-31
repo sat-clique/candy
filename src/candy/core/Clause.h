@@ -40,9 +40,8 @@ public:
     Clause(std::initializer_list<Lit> list);
     ~Clause();
 
-    void* operator new (std::size_t size) = delete;
-    void* operator new (std::size_t size, uint16_t length);
-    void operator delete (void* p);
+    //void* operator new (std::size_t size) = delete;
+    void operator delete (void* p) = delete;
 
     typedef Lit* iterator;
     typedef const Lit* const_iterator;

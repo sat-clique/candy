@@ -35,14 +35,6 @@ Clause::Clause(std::initializer_list<Lit> list) {
 
 Clause::~Clause() { }
 
-void* Clause::operator new (std::size_t size, uint16_t length) {
-    return ClauseAllocator::getInstance().allocate(length);
-}
-
-void Clause::operator delete (void* p) {
-    ClauseAllocator::getInstance().deallocate((Clause*)p);
-}
-
 bool Clause::contains(const Lit lit) const {
     return std::find(begin(), end(), lit) != end();
 }

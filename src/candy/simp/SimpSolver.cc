@@ -658,7 +658,7 @@ bool SimpSolver::eliminate(bool turn_off_elim) {
     for (Clause* clause : strengthend) {
         if (!clause->isDeleted()) {
             // create clause in correct pool
-            Clause* clean = new (clause->size()) Clause(std::vector<Lit>(clause->begin(), clause->end()), clause->isLearnt());
+            Clause* clean = new (allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()), clause->isLearnt());
             clauses.push_back(clean);
             attachClause(clean);
             detachClause(clause);

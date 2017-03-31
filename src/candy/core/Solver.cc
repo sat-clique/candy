@@ -56,6 +56,7 @@
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/ClauseAllocator.h"
+#include <candy/utils/CNFProblem.h>
 
 using namespace Glucose;
 using namespace Candy;
@@ -104,6 +105,8 @@ Solver::Solver() :
         verbEveryConflicts(10000), verbosity(0),
         // results
         model(), conflict(),
+        // clause allocator
+        allocator(),
         // watchers
         watches(WatcherDeleted()), watchesBin(WatcherDeleted()),
         // current assignment
@@ -155,6 +158,15 @@ Solver::~Solver() {
     Statistics::getInstance().printRuntime("Runtime Revamp");
     Statistics::getInstance().printRuntime("Runtime Sort Watches");
     Statistics::getInstance().printRuntime("Runtime Simplify");
+    for (Clause* c : clauses) {
+        allocator.deallocate(c);
+    }
+    for (Clause* c : learnts) {
+        allocator.deallocate(c);
+    }
+    for (Clause* c : learntsBin) {
+        allocator.deallocate(c);
+    }
 }
 
 /****************************************************************
@@ -256,7 +268,7 @@ bool Solver::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Clause* cr = new (ps.size()) Clause(ps, false);
+        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps, false);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -796,7 +808,7 @@ void Solver::freeMarkedClauses(vector<Clause*>& list) {
     auto new_end = std::remove_if(list.begin(), list.end(),
             [this](Clause* c) {
                 if (c->isDeleted()) {
-                    delete c;
+                    allocator.deallocate(c);
                     return true;
                 } else {
                     return false;
@@ -848,7 +860,7 @@ void Solver::revampClausePool(uint_fast8_t upper) {
 
     // revamp  and reattach them
     for (uint_fast8_t k = 3; k <= upper; k++) {
-        vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
+        vector<Clause*> revamped = allocator.revampPages(k);
         for (Clause* clause : revamped) {
             attachClause(clause);
             if (clause->isLearnt()) {
@@ -861,6 +873,7 @@ void Solver::revampClausePool(uint_fast8_t upper) {
 
     Statistics::getInstance().runtimeStop("Runtime Revamp");
 
+    //printf("learnts-size, old: %i, new: %i\n", old_learnts_size, learnts.size());
     assert(old_learnts_size == learnts.size());
     assert(old_clauses_size == clauses.size());
     (void)(old_learnts_size);
@@ -876,7 +889,7 @@ void Solver::revampClausePool(uint_fast8_t upper) {
  |    thing done here is the removal of satisfied clauses, but more things can be put here.
  |________________________________________________________________________________________________@*/
 bool Solver::simplify() {
-    assert(decisionLevel() == 0);
+    assert(decisionLevel() <= assumptions.size());
 
     if (!ok || propagate() != nullptr) {
         return ok = false;
@@ -885,7 +898,7 @@ bool Solver::simplify() {
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    if (remove_satisfied) { // Can be turned off.
+    if (remove_satisfied && !incremental) { // Can be turned off.
         std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     }
     watches.cleanAll();
@@ -976,7 +989,7 @@ lbool Solver::search() {
                 unary_learnt = true;
                 Statistics::getInstance().solverUnariesInc();
             } else {
-                Clause* cr = new (learnt_clause.size()) Clause(learnt_clause, true);
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, true);
                 cr->setLBD(nblevels);
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
@@ -1020,7 +1033,7 @@ lbool Solver::search() {
                 // every restart after reduce-db
                 if (reduced) {
                     if (revamp > 2) {
-                        //assert(decisionLevel() == 0);
+                        cancelUntil(0);
 
                         vector<Lit> props(trail.begin(), trail.begin() + trail_size);
                         for (Lit p : props) {
