@@ -13,29 +13,6 @@
 
 namespace Candy {
 
-CNFProblem::CNFProblem() { }
-
-For& CNFProblem::getProblem() {
-    return problem;
-}
-
-const For& CNFProblem::getProblem() const {
-    return problem;
-}
-
-int CNFProblem::nVars() const {
-    return maxVars;
-}
-
-int CNFProblem::nClauses() const {
-    return (int)problem.size();
-}
-
-int CNFProblem::newVar() {
-    maxVars++;
-    return maxVars-1;
-}
-
 bool CNFProblem::readDimacsFromStdout() {
     gzFile in = gzdopen(0, "rb");
     if (in == NULL) {
@@ -56,34 +33,6 @@ bool CNFProblem::readDimacsFromFile(const char* filename) {
     parse_DIMACS(in);
     gzclose(in);
     return true;
-}
-
-void CNFProblem::readClause(Lit plit) {
-    readClause({plit});
-}
-
-void CNFProblem::readClause(Lit plit1, Lit plit2) {
-    readClause({plit1, plit2});
-}
-
-void CNFProblem::readClause(std::initializer_list<Lit> list) {
-    readClause(list.begin(), list.end());
-}
-
-void CNFProblem::readClause(Cl cl) {
-    readClause(cl.begin(), cl.end());
-}
-
-template <typename Iterator>
-void CNFProblem::readClause(Iterator begin, Iterator end) {
-    maxVars = std::max(maxVars, var(*std::max_element(begin, end))+1);
-    problem.push_back(new Cl(begin, end));
-}
-
-void CNFProblem::readClauses(For& f) {
-    for (Cl* c : f) {
-        readClause(c->begin(), c->end());
-    }
 }
 
 void CNFProblem::readClause(Glucose::StreamBuffer& in) {

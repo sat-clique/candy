@@ -1,4 +1,6 @@
 add_library(utils
+    CNFProblem.cc
+    CNFProblem.h
     Options.cc
     Options.h
     System.cc
@@ -8,8 +10,6 @@ add_library(utils
     ParseUtils.h
     StringUtils.h
     Utilities.cc
-    Utilities.h
-    CNFProblem.cc
-    CNFProblem.h)
+    Utilities.h)
 
 

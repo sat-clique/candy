@@ -25,16 +25,29 @@ namespace Candy {
 class ClauseAllocator {
 
 public:
-    inline static ClauseAllocator& getInstance() {
-        static ClauseAllocator allocator;
-        return allocator;
+    ClauseAllocator() :
+        pools(),
+        pages(),
+        pages_nelem()
+    {
+        for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {
+            pools[i].reserve(initialNumberOfElements(i));
+            fillPool(i);
+        }
+        pools[XXL_POOL_INDEX].reserve(1024);
+        fillPool(XXL_POOL_INDEX);
     }
 
+    ~ClauseAllocator() {
+        for (auto pages : this->pages) {
+            for (char* page : pages) {
+                free(page);
+            }
+        }
+    }
 
     ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&)  = delete;
-
-    ~ClauseAllocator();
 
     inline void* allocate(uint32_t length) {
         uint16_t index = getPoolIndex(length);
@@ -106,8 +119,6 @@ public:
     }
 
 private:
-    ClauseAllocator();
-
     std::array<std::vector<void*>, NUMBER_OF_POOLS+1> pools;
 
     std::array<std::vector<char*>, REVAMPABLE_PAGES_MAX_SIZE+1> pages;
@@ -140,7 +151,7 @@ private:
         Lit literals[N];
     };
 
-    template <unsigned int N> std::vector<Clause*> revampPages() {
+    template <unsigned int N> inline std::vector<Clause*> revampPages() {
         uint16_t index = getPoolIndex(N);
         std::vector<void*>& pool = pools[index];
         std::vector<char*>& page = pages[index];
