@@ -70,22 +70,22 @@ public:
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
     virtual lbool solve();
 
-    inline void enableSimplification() {
-        use_simplification = true;
+    inline void enablePreprocessing() {
+        preprocessing_enabled = true;
     }
 
-    inline void disableSimplification() {
-        use_simplification = false;
+    inline void disablePreprocessing() {
+        preprocessing_enabled = false;
     }
 
-    inline void cleanupSimplification() {
+    inline void cleanupPreprocessing() {
         touched.clear();
         occurs.clear();
         n_occ.clear();
         elim_heap.clear();
         subsumption_queue.clear();
 
-        use_simplification = false;
+        preprocessing_enabled = false;
         remove_satisfied = true;
 
         // Force full cleanup (this is safe and desirable since it only happens once):
@@ -107,7 +107,7 @@ public:
     // If a variable is frozen it will not be eliminated
     inline void setFrozen(Var v, bool b) {
         frozen[v] = (char) b;
-        if (use_simplification && !b) {
+        if (preprocessing_enabled && !b) {
             updateElimHeap(v);
         }
     }
@@ -136,7 +136,7 @@ public:
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
     bool use_elim;          // Perform variable elimination.
-    bool use_simplification;
+    bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
 
 protected:
     // Helper structures:
@@ -178,7 +178,7 @@ protected:
 
     // Main internal methods:
     inline void updateElimHeap(Var v) {
-        assert(use_simplification);
+        assert(preprocessing_enabled);
         // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
         if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)) {
             elim_heap.update(v);

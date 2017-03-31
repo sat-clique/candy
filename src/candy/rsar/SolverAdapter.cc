@@ -48,7 +48,7 @@ namespace Candy {
                     return false;
                 }
             }
-            m_solver.disableSimplification();
+            m_solver.disablePreprocessing();
             return l_True == m_solver.solve(assumptions);
         }
         

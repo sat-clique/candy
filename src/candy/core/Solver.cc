@@ -49,6 +49,8 @@
 
 #include <math.h>
 
+#include <string>
+
 #include "candy/utils/System.h"
 #include "candy/core/Solver.h"
 #include "candy/core/SolverTypes.h"
@@ -72,10 +74,9 @@ static IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving avera
 static IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
 
 static IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 2000, IntRange(0, INT16_MAX));
-static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
-static IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 1000, IntRange(0, INT16_MAX));
-static IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30,
-        IntRange(0, INT16_MAX));
+static IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1000, IntRange(0, INT16_MAX));
+static IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 700, IntRange(0, INT16_MAX));
+static IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30, IntRange(0, INT16_MAX));
 
 static IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT16_MAX));
 static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The min LBD required to minimize clause", 6, IntRange(3, INT16_MAX));
@@ -83,15 +84,9 @@ static IntOption opt_lb_lbd_minimzing_clause(_cm, "minLBDMinimizingClause", "The
 static DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 static DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
 static DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
-//static DoubleOption opt_random_var_freq(_cat, "rnd-freq", "The frequency with which the decision heuristic tries to choose a random variable", 0,
-//        DoubleRange(0, true, 1, true));
-//static DoubleOption opt_random_seed(_cat, "rnd-seed", "Used by the random variable selection", 91648253, DoubleRange(0, false, HUGE_VAL, false));
-static IntOption opt_ccmin_mode(_cat, "ccmin-mode", "Controls conflict clause minimization (0=none, 1=basic, 2=deep)", 2, IntRange(0, 2));
 static IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of phase saving (0=none, 1=limited, 2=full)", 2, IntRange(0, 2));
-//static BoolOption opt_rnd_init_act(_cat, "rnd-init", "Randomize the initial activity", false);
 
-static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0,
-        IntRange(0, INT16_MAX));
+static IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
 
 static IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
 static BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", true);
@@ -134,7 +129,6 @@ Solver::Solver() :
         // clause reduction
         lbSizeMinimizingClause(opt_lb_size_minimzing_clause),
         lbLBDMinimizingClause(opt_lb_lbd_minimzing_clause),
-        ccmin_mode(opt_ccmin_mode),
         // phase saving
         phase_saving(opt_phase_saving),
         // memory reorganization
@@ -240,7 +234,7 @@ bool Solver::addClause_(vector<Lit>& ps) {
     }
 
     Lit p;
-    unsigned int i, j;
+    uint_fast16_t i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
         if (value(ps[i]) == l_True || ps[i] == ~p) {
             return true;
@@ -326,8 +320,8 @@ void Solver::removeClause(Clause* cr) {
  * Compute LBD functions
  *************************************************************/
 template <typename Iterator>
-inline unsigned int Solver::computeLBD(Iterator it, Iterator end) {
-    int nblevels = 0;
+inline uint_fast16_t Solver::computeLBD(Iterator it, Iterator end) {
+    uint_fast16_t nblevels = 0;
     MYFLAG++;
 
     if (incremental) { // INCREMENTAL MODE
@@ -360,19 +354,17 @@ inline unsigned int Solver::computeLBD(Iterator it, Iterator end) {
  * Minimisation with binary resolution
  ******************************************************************/
 void Solver::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
-    // Find the LBD measure
-    unsigned int lbd = computeLBD(out_learnt.begin(), out_learnt.end());
-    Lit p = ~out_learnt[0];
+    uint_fast16_t lbd = computeLBD(out_learnt.begin(), out_learnt.end());
 
     if (lbd <= lbLBDMinimizingClause) {
         MYFLAG++;
 
-        for (size_t i = 1; i < out_learnt.size(); i++) {
-            permDiff[var(out_learnt[i])] = MYFLAG;
+        for (auto it = out_learnt.begin() + 1; it != out_learnt.end(); it++) {
+            permDiff[var(*it)] = MYFLAG;
         }
 
-        int nb = 0;
-        for (Watcher w : watchesBin[p]) {
+        uint_fast16_t nb = 0;
+        for (Watcher w : watchesBin[~out_learnt[0]]) {
             if (permDiff[var(w.blocker)] == MYFLAG && value(w.blocker) == l_True) {
                 nb++;
                 permDiff[var(w.blocker)] = MYFLAG - 1;
@@ -380,7 +372,7 @@ void Solver::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
         }
         if (nb > 0) {
             Statistics::getInstance().solverReducedClausesInc(nb);
-            for (size_t i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
+            for (uint_fast16_t i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
                 if (permDiff[var(out_learnt[i])] != MYFLAG) {
                     std::swap(out_learnt[i], out_learnt[l]);
                     l--;
@@ -393,7 +385,6 @@ void Solver::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
 }
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
-//
 void Solver::cancelUntil(int level) {
     if ((int)decisionLevel() > level) {
         for (int c = trail_size - 1; c >= (int)trail_lim[level]; c--) {
@@ -445,7 +436,7 @@ Lit Solver::pickBranchLit() {
  |        rest of literals. There may be others from the same level though.
  |
  |________________________________________________________________________________________________@*/
-void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, unsigned int &lbd) {
+void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &lbd) {
     int pathC = 0;
     Lit asslit = lit_Undef;
     vector<Lit> selectors;
@@ -468,7 +459,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
 
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
         if (c.isLearnt() && c.getLBD() > 2) {
-            unsigned int nblevels = computeLBD(c.begin(), c.end());
+            uint_fast16_t nblevels = computeLBD(c.begin(), c.end());
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
                     c.setFrozen(true);
@@ -478,7 +469,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
             }
         }
 
-        for (unsigned int j = (asslit == lit_Undef) ? 0 : 1; j < c.size(); j++) {
+        for (uint_fast16_t j = (asslit == lit_Undef) ? 0 : 1; j < c.size(); j++) {
             Lit lit = c[j];
 
             if (!seen[var(lit)] && level(var(lit)) != 0) {
@@ -521,24 +512,16 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
     analyze_toclear.clear();
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
 
-    if (ccmin_mode == 2) {
-        uint32_t abstract_level = 0;
-        for (unsigned int i = 1; i < out_learnt.size(); i++)
-            abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
-
-        auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
-                [this, abstract_level] (Lit lit) {
-                    return reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
-                });
-        out_learnt.erase(end, out_learnt.end());
+    // minimize clause
+    uint64_t abstract_level = 0;
+    for (uint_fast16_t i = 1; i < out_learnt.size(); i++) {
+        abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
     }
-    else if (ccmin_mode == 1) {
-        auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
-                [this] (Lit lit) {
-                    return reason(var(lit)) != nullptr && seenAny(*reason(var(lit)));
-                });
-        out_learnt.erase(end, out_learnt.end());
-    }
+    auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
+            [this, abstract_level] (Lit lit) {
+                return reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
+            });
+    out_learnt.erase(end, out_learnt.end());
 
     assert(out_learnt[0] == ~asslit);
 
@@ -556,7 +539,7 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
     else {
         int max_i = 1;
         // Find the first literal assigned at the next-highest level:
-        for (unsigned int i = 2; i < out_learnt.size(); i++)
+        for (uint_fast16_t i = 2; i < out_learnt.size(); i++)
             if (level(var(out_learnt[i])) > level(var(out_learnt[max_i])))
                 max_i = i;
         // Swap-in this literal at index 1:
@@ -580,14 +563,9 @@ void Solver::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, u
     for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
 }
 
-bool Solver::seenAny(Clause& c) {
-    Clause::iterator begin = (c.size() == 2) ? c.begin() : c.begin() + 1;
-    return std::none_of(begin, c.end(), [this] (Lit clit) { return !seen[var(clit)] && level(var(clit)) > 0; });
-}
-
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
-bool Solver::litRedundant(Lit p, uint32_t abstract_levels) {
+bool Solver::litRedundant(Lit p, uint64_t abstract_levels) {
     static vector<Lit> analyze_stack;
     analyze_stack.clear();
     analyze_stack.push_back(p);
@@ -649,7 +627,7 @@ void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
                 //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
                 // Bug in case of assumptions due to special data structures for Binary.
                 // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
-                for (unsigned int j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
+                for (uint_fast16_t j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
                     if (level(var(c[j])) > 0)
                         seen[var(c[j])] = 1;
             }
@@ -728,7 +706,7 @@ Clause* Solver::propagate() {
 
             if (incremental) { // INCREMENTAL MODE
                 Clause& c = *cr;
-                for (unsigned int k = 2; k < c.size(); k++) {
+                for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         if (decisionLevel() > assumptions.size() || value(c[k]) == l_True || !isSelector(var(c[k]))) {
                             c.swap(1, k);
@@ -740,7 +718,7 @@ Clause* Solver::propagate() {
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)
                 Clause& c = *cr;
-                for (unsigned int k = 2; k < c.size(); k++) {
+                for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         c.swap(1, k);
                         watches[~c[1]].push_back(w);
@@ -837,7 +815,7 @@ void Solver::rebuildOrderHeap() {
 }
 
 
-void Solver::revampClausePool(uint8_t upper) {
+void Solver::revampClausePool(uint_fast8_t upper) {
     assert(upper <= REVAMPABLE_PAGES_MAX_SIZE);
 
     Statistics::getInstance().runtimeStart("Runtime Revamp");
@@ -869,7 +847,7 @@ void Solver::revampClausePool(uint8_t upper) {
         return (c->size() > 2 && c->size() <= upper); } ), learnts.end());
 
     // revamp  and reattach them
-    for (uint8_t k = 3; k <= upper; k++) {
+    for (uint_fast8_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = ClauseAllocator::getInstance().revampPages(k);
         for (Clause* clause : revamped) {
             attachClause(clause);
@@ -939,7 +917,7 @@ lbool Solver::search() {
 
     int backtrack_level;
     vector<Lit> learnt_clause;
-    unsigned int nblevels;
+    uint_fast16_t nblevels;
     bool blocked = false;
     bool reduced = false;
     Statistics::getInstance().solverRestartInc();
