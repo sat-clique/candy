@@ -49,6 +49,8 @@
 
 #include <math.h>
 
+#include <string>
+
 #include "candy/utils/System.h"
 #include "candy/core/Solver.h"
 #include "candy/core/SolverTypes.h"
@@ -614,7 +616,7 @@ void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
 
     seen[var(p)] = 1;
 
-    for (uint32_t i = trail_size - 1; i >= trail_lim[0]; i--) {
+    for (int64_t i = trail_size - 1; i >= trail_lim[0]; i--) {
         Var x = var(trail[i]);
         if (seen[x]) {
             if (reason(x) == nullptr) {

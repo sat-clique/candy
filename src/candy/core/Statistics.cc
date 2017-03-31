@@ -65,7 +65,7 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
 void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals) {
 #if defined SOLVER_STATS && defined RESTART_STATS && defined LEARNTS_STATS
-    printf("c | %8lu   %7lu    %5lu | %7d %8d %8lu | %5lu %8d   %6lu %8lu |\n",
+    printf("c | %8llu   %7llu    %5llu | %7d %8d %8llu | %5llu %8d   %6llu %8llu |\n",
             starts, nbstopsrestarts, (conflicts / starts),
             (int)dec_vars - trail, clauses, literals,
             nbReduceDB, learnts, nbDL2, nbRemovedClauses);

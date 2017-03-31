@@ -24,8 +24,8 @@ namespace Candy {
             underTest.addClause(clause);
         }
                             
-        EXPECT_TRUE(underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
-        EXPECT_TRUE(underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
+        EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
+        EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
     }
     
     
