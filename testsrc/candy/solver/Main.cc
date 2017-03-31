@@ -5,10 +5,10 @@
 #include <fstream>
 #include <streambuf>
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 
-#include "core/CNFProblem.h"
-#include "core/Solver.h"
+#include <candy/utils/CNFProblem.h>
+#include <candy/core/Solver.h>
 
 using namespace Candy;
 using namespace Glucose;

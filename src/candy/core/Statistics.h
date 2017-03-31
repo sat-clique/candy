@@ -13,6 +13,7 @@
 #include <cassert>
 #include <vector>
 #include <map>
+#include <string>
 #include <candy/utils/System.h>
 
 #define SOLVER_STATS
