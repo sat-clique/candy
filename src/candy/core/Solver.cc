@@ -638,7 +638,7 @@ void Solver::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
 
     seen[var(p)] = 1;
 
-    for (uint32_t i = trail_size - 1; i >= trail_lim[0]; i--) {
+    for (int i = trail_size - 1; i >= (int)trail_lim[0]; i--) {
         Var x = var(trail[i]);
         if (seen[x]) {
             if (reason(x) == nullptr) {
@@ -785,6 +785,7 @@ void Solver::reduceDB() {
 
     size_t index = (learnts.size() + learntsBin.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
+        printf("c reduceDB special increment\n");
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
         if (specialIncReduceDB == 0) {
             return;
@@ -1041,7 +1042,7 @@ lbool Solver::search() {
                 // every restart after reduce-db
                 if (reduced) {
                     if (revamp > 2) {
-                        assert(decisionLevel() == 0);
+                        //assert(decisionLevel() == 0);
 
                         vector<Lit> props(trail.begin(), trail.begin() + trail_size);
                         for (Lit p : props) {
