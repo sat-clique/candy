@@ -213,10 +213,10 @@ protected:
 	// Helper structures:
 	struct VarData {
 	    Clause* reason;
-		uint32_t level;
+		uint_fast32_t level;
 		VarData() :
 		    reason(nullptr), level(0) {}
-		VarData(Clause* _reason, unsigned int _level) :
+		VarData(Clause* _reason, uint_fast32_t _level) :
 		    reason(_reason), level(_level) {}
 	};
 
@@ -309,7 +309,6 @@ protected:
     // Constant for reducing clause
     uint16_t lbSizeMinimizingClause;
     uint16_t lbLBDMinimizingClause;
-    uint8_t ccmin_mode; // Controls conflict clause minimization (0=none, 1=basic, 2=deep).
 
     uint8_t phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
 
@@ -355,6 +354,10 @@ protected:
         return vardata[x].level;
     }
 
+    inline uint64_t abstractLevel(Var x) const {
+        return 1 << (level(x) & 63);
+    }
+
     // Insert a variable in the decision order priority queue.
     inline void insertVarOrder(Var x) {
         if (!order_heap.inHeap(x) && decision[x])
@@ -385,7 +388,7 @@ protected:
     void freeMarkedClauses(vector<Clause*>& list);
 
     template <typename Iterator>
-    unsigned int computeLBD(Iterator it, Iterator end);
+    uint_fast16_t computeLBD(Iterator it, Iterator end);
     void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
     // Test if fact 'p' contradicts current state, enqueue otherwise.
@@ -398,10 +401,9 @@ protected:
 	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
 	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
-	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, unsigned int &nblevels); // (bt = backtrack)
+	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-	bool seenAny(Clause& clause);
-	bool litRedundant(Lit p, uint32_t abstract_levels); // (helper method for 'analyze()')
+	bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
 	lbool search(); // Search for a given number of conflicts.
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
@@ -450,11 +452,6 @@ protected:
 	// Gives the current decisionlevel.
 	inline uint32_t decisionLevel() const {
 	    return trail_lim.size();
-	}
-
-	// Used to represent an abstraction of sets of decision levels.
-	inline uint32_t abstractLevel(Var x) const {
-	    return 1 << (level(x) & 31);
 	}
 
     inline bool withinBudget() {

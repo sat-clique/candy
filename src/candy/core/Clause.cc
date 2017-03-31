@@ -18,7 +18,7 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     setFrozen(false);
 
     if (learnt) {
-        data.act = 0;
+        data.activity = 0;
     } else {
         calcAbstraction();
     }
@@ -56,7 +56,7 @@ void Clause::calcAbstraction() {
     for (Lit lit : *this) {
         abstraction |= 1 << (var(lit) & 31);
     }
-    data.abs = abstraction;
+    data.abstraction = abstraction;
 }
 
 } /* namespace Candy */
