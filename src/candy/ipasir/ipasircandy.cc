@@ -12,7 +12,7 @@ using namespace Glucose;
 
 class IPASIRCandy {
 
-  Solver solver;
+  Solver<> solver;
 
   vector<Lit> assumptions;
   vector<Lit> clause;
