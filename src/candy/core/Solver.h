@@ -95,6 +95,7 @@ public:
  *    - PickBranchLitT must have a constructor taking a single argument of type
  *        const Parameters& params.
  *    - PickBranchLitT must be move-assignable.
+ *    - PickBranchLitT must be move-constructible.
  *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
  */
 template<class PickBranchLitT = DefaultPickBranchLit>
@@ -106,6 +107,8 @@ class Solver {
                   "PickBranchLitT must have a constructor without arguments");
     static_assert(std::is_move_assignable<PickBranchLitT>::value,
                   "PickBranchLitT must be move-assignable");
+    static_assert(std::is_move_constructible<PickBranchLitT>::value,
+                  "PickBranchLitT must be move-constructible");
 
     friend class SolverConfiguration;
 
