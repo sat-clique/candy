@@ -29,6 +29,7 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <memory>
 
 #include <vector>
 #include <set>
@@ -36,17 +37,17 @@
 #include <climits>
 
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Solver.h"
 #include "candy/utils/Utilities.h"
 #include <candy/utils/CNFProblem.h>
 
 namespace Candy {
+class DefaultSolver;
 
 typedef struct Gate {
   Lit out = lit_Undef;
   For fwd, bwd;
   bool notMono = false;
-  vector<Lit> inp;
+  std::vector<Lit> inp;
 
   inline bool isDefined() { return out != lit_Undef; }
 
@@ -54,7 +55,7 @@ typedef struct Gate {
   inline Lit getOutput() { return out; }
   inline For& getForwardClauses() { return fwd; }
   inline For& getBackwardClauses() { return bwd; }
-  inline vector<Lit>& getInputs() { return inp; }
+  inline std::vector<Lit>& getInputs() { return inp; }
   inline bool hasNonMonotonousParent() { return notMono; }
   // End of compatibility functions
 } Gate;
@@ -65,6 +66,7 @@ class GateAnalyzer {
 public:
   GateAnalyzer(CNFProblem& dimacs, int tries = 0,
       bool patterns = true, bool semantic = true, bool holistic = false, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10);
+  ~GateAnalyzer();
 
   // main analysis routine
   void analyze();
@@ -75,8 +77,8 @@ public:
 
 
   void printGates() {
-    vector<Lit> outputs;
-    vector<bool> done(problem.nVars());
+    std::vector<Lit> outputs;
+    std::vector<bool> done(problem.nVars());
     for (Cl* root : roots) {
       outputs.insert(outputs.end(), root->begin(), root->end());
     }
@@ -95,19 +97,19 @@ public:
     }
   }
 
-  const vector<Cl*> getRoots() const {
+  const std::vector<Cl*> getRoots() const {
     return roots;
   }
 
 private:
   // problem to analyze:
   CNFProblem problem;
-  Candy::Solver solver;
-  vector<Lit> assumptions;
+  std::unique_ptr<DefaultSolver> solver;
+  std::vector<Lit> assumptions;
 
   // control structures:
-  vector<For> index; // occurrence lists
-  vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
+  std::vector<For> index; // occurrence lists
+  std::vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
 
   // heuristic configuration:
   int maxTries = 0;
@@ -119,8 +121,8 @@ private:
   int lookaheadThreshold = 10;
 
   // analyzer output:
-  vector<Cl*> roots; // top-level clauses
-  vector<Gate>* gates; // stores gate-struct for every output
+  std::vector<Cl*> roots; // top-level clauses
+  std::vector<Gate>* gates; // stores gate-struct for every output
   int nGates = 0;
 
   void printLit(Lit l) {
@@ -137,14 +139,14 @@ private:
   }
 
   // main analysis routines
-  void analyze(vector<Lit>& candidates);
-  vector<Lit> analyze(vector<Lit>& candidates, bool pat, bool sem, bool dec);
+  void analyze(std::vector<Lit>& candidates);
+  std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
 
   // clause selection heuristic
-  Lit getRarestLiteral(vector<For>& index);
+  Lit getRarestLiteral(std::vector<For>& index);
 
   // clause patterns of full encoding
-  bool patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inputs);
+  bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
   bool semanticCheck(Var o, For& fwd, For& bwd);
 
   // work in progress:
@@ -171,22 +173,22 @@ private:
     return true;
   }
 
-  void removeFromIndex(vector<For>& index, Cl* clause) {
+  void removeFromIndex(std::vector<For>& index, Cl* clause) {
     for (Lit l : *clause) {
       For& h = index[l];
       h.erase(remove(h.begin(), h.end(), clause), h.end());
     }
   }
 
-  void removeFromIndex(vector<For>& index, For& clauses) {
+  void removeFromIndex(std::vector<For>& index, For& clauses) {
     For copy(clauses.begin(), clauses.end());
     for (Cl* c : copy) {
       removeFromIndex(index, c);
     }
   }
 
-  vector<For> buildIndexFromClauses(For& f) {
-    vector<For> index(2 * problem.nVars());
+  std::vector<For> buildIndexFromClauses(For& f) {
+    std::vector<For> index(2 * problem.nVars());
     for (Cl* c : f) for (Lit l : *c) {
       index[l].push_back(c);
     }

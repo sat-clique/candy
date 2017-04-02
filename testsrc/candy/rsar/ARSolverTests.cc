@@ -279,59 +279,59 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         
         solverAndMock.glucoseMock->mockctrl_callOnSolve([&solverAndMock](int round) {
-            EquivalencyChecker checker;
+            auto checker = createEquivalencyChecker();
             
             auto maxNonAssumVar = solverAndMock.glucoseMock->mockctrl_getNonAssumptionVars().second;
             auto maxVar = solverAndMock.glucoseMock->mockctrl_getAssumptionVars().second;
             ASSERT_TRUE(maxNonAssumVar != -1);
             ASSERT_TRUE(maxVar != -1);
             
-            checker.createVariables(maxNonAssumVar);
-            checker.finishedAddingRegularVariables();
-            checker.createVariables(maxVar);
+            checker->createVariables(maxNonAssumVar);
+            checker->finishedAddingRegularVariables();
+            checker->createVariables(maxVar);
             
-            checker.addClauses(solverAndMock.glucoseMock->mockctrl_getAddedClauses());
+            checker->addClauses(solverAndMock.glucoseMock->mockctrl_getAddedClauses());
             
             if (round == 0) {
                 // see createDefaultTestSetup() for initial conjectures and mock heuristic
                 // configuration
-                EXPECT_TRUE(checker.isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                     {mkLit(2, 1),
                                                         mkLit(3, 0),
                                                         mkLit(0, 1)}));
-                EXPECT_TRUE(checker.isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                     {mkLit(4, 0),
                                                         mkLit(5, 1)}));
                 
                 // var. 1 should be removed before the first call to solve
-                EXPECT_FALSE(checker.isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                  mkLit(2, 1),
                                                  mkLit(1, 0)));
                 
                 // the two "equivalency groups" should not be equivalent
-                EXPECT_FALSE(checker.isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                   mkLit(2, 1),
                                                   mkLit(4, 0)));
             }
             else if (round == 1) {
-                EXPECT_TRUE(checker.isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                     {mkLit(2, 1),
                                                         mkLit(3, 0),
                                                         mkLit(0, 1)}));
 
                 
                 // var. 1 should be removed before the first call to solve
-                EXPECT_FALSE(checker.isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                   mkLit(2, 1),
                                                   mkLit(1, 0)));
                 
                 // the two "equivalency groups" should not be equivalent
-                EXPECT_FALSE(checker.isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                   mkLit(2, 1),
                                                   mkLit(4, 0)));
                 
                 // the smaller "equivalency group" should not exist anymore
-                EXPECT_FALSE(checker.isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                EXPECT_FALSE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
                                                     {mkLit(4, 0),
                                                         mkLit(5, 1)}));
             }
