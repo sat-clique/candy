@@ -47,9 +47,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "candy/simp/SimpSolver.h"
-#include "candy/utils/System.h"
-#include "candy/core/Clause.h"
+#include <candy/simp/SimpSolver.h>
+#include <candy/utils/System.h>
 
 using namespace Candy;
 using namespace Glucose;

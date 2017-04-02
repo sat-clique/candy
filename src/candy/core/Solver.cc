@@ -48,15 +48,9 @@
  **************************************************************************************************/
 
 #include <math.h>
-
 #include <string>
-
-#include "candy/utils/System.h"
-#include "candy/core/Solver.h"
-#include "candy/core/SolverTypes.h"
-#include "candy/core/Certificate.h"
-#include "candy/core/ClauseAllocator.h"
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/Solver.h>
+#include <candy/utils/System.h>
 
 using namespace Glucose;
 using namespace Candy;
