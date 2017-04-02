@@ -133,7 +133,7 @@ static void printModel(FILE* f, Solver<>* solver) {
 /**
  * Runs the SAT solver, performing simplification if \p do_preprocess is true.
  */
-static lbool solve(SimpSolver<>& S, bool do_preprocess) {
+static lbool solve(DefaultSimpSolver& S, bool do_preprocess) {
     lbool result = l_Undef;
 
     if (do_preprocess) {
@@ -220,7 +220,7 @@ static void printProblemStatistics(Solver<>& S) {
  * 
  * TODO: document parameters
  */
-static void configureSolver(SimpSolver<>& S, int verbosity, int verbosityEveryConflicts, bool certifiedUNSAT,
+static void configureSolver(DefaultSimpSolver& S, int verbosity, int verbosityEveryConflicts, bool certifiedUNSAT,
                 const char* certifiedUNSATfile) {
     S.verbosity = verbosity;
     S.verbEveryConflicts = verbosityEveryConflicts;
@@ -344,7 +344,7 @@ std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsS
     return limits;
 }
 
-std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, SimpSolver<>& satSolver, std::unique_ptr<Candy::Conjectures> conjectures,
+std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, DefaultSimpSolver& satSolver, std::unique_ptr<Candy::Conjectures> conjectures,
                 const RSARArguments& rsarArguments) {
     auto arSolverBuilder = Candy::createARSolverBuilder();
     arSolverBuilder->withConjectures(std::move(conjectures));
@@ -360,7 +360,7 @@ std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, S
     return arSolverBuilder->build();
 }
 
-static lbool solveWithRSAR(SimpSolver<>& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
+static lbool solveWithRSAR(DefaultSimpSolver& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
                 const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
@@ -511,7 +511,7 @@ int main(int argc, char** argv) {
 
         Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
 
-        SimpSolver<> S;
+        DefaultSimpSolver S;
         solver = &S;
         configureSolver(S, args.verb,            // verbosity
                         args.vv,                 // verbosity every vv conflicts

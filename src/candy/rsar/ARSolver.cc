@@ -25,7 +25,6 @@
  */
 
 #include "ARSolver.h"
-#include <simp/SimpSolver.h>
 
 #include <randomsimulation/Conjectures.h>
 #include <utils/MemUtils.h>

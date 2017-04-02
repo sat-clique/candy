@@ -218,7 +218,9 @@ protected:
     bool implied(const vector<Lit>& c);
 };
 
+class DefaultSimpSolver : public SimpSolver<> {
 
+};
 
 
 
