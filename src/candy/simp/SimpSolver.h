@@ -628,29 +628,8 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
 
 namespace SimpSolverImpl {
 
-inline void mkElimClause(vector<uint32_t>& elimclauses, Lit x) {
-    elimclauses.push_back(toInt(x));
-    elimclauses.push_back(1);
-}
-
-inline void mkElimClause(vector<uint32_t>& elimclauses, Var v, Clause& c) {
-    assert(c.contains(v));
-    uint32_t first = elimclauses.size();
-    
-    // Copy clause to elimclauses-vector
-    for (Lit lit : c) {
-        if (var(lit) != v || first == elimclauses.size()) {
-            elimclauses.push_back(lit);
-        } else {
-            // Swap such that 'v' will occur first in the clause:
-            elimclauses.push_back(elimclauses[first]);
-            elimclauses[first] = lit;
-        }
-    }
-    
-    // Store the length of the clause last:
-    elimclauses.push_back(c.size());
-}
+void mkElimClause(vector<uint32_t>& elimclauses, Lit x);
+void mkElimClause(vector<uint32_t>& elimclauses, Var v, Clause& c);
 
 }
 
