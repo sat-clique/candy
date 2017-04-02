@@ -29,7 +29,6 @@
 
 #include <candy/core/SolverTypes.h>
 #include <candy/utils/CNFProblem.h>
-#include <candy/simp/SimpSolver.h>
 
 #include <vector>
 #include <memory>

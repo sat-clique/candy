@@ -7,7 +7,7 @@
 // instead of replacing the vector of assumption literals
 namespace Candy {
     TEST(SimpSolverTests, basicIncrementalSimpSolver) {
-        SimpSolver underTest;
+        SimpSolver<> underTest;
         underTest.setIncrementalMode();
         
         Var var1 = underTest.newVar();
@@ -31,7 +31,7 @@ namespace Candy {
     
     // TODO: this test should be moved into the "core" test module.
     TEST(SimpSolverTests, basicIncrementalSolver) {
-        Solver underTest;
+        Solver<> underTest;
         underTest.setIncrementalMode();
         
         Var var1 = underTest.newVar();
