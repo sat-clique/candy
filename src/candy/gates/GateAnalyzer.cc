@@ -28,20 +28,24 @@
 #include "candy/core/Solver.h"
 #include "candy/utils/Utilities.h"
 #include <candy/utils/CNFProblem.h>
+#include <candy/utils/MemUtils.h>
 
 namespace Candy {
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify, int lookahead_threshold) :
-    problem (dimacs), solver (),
+    problem (dimacs), solver (backported_std::make_unique<DefaultSolver>()),
     maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
     useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify), lookaheadThreshold(lookahead_threshold)
 {
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
   index = buildIndexFromClauses(problem.getProblem());
-  if (useHolistic) solver.addClauses(problem);
-  solver.setIncrementalMode();
-  solver.initNbInitialVars(problem.nVars());
+  if (useHolistic) solver->addClauses(problem);
+  solver->setIncrementalMode();
+  solver->initNbInitialVars(problem.nVars());
+}
+    
+GateAnalyzer::~GateAnalyzer() {
 }
 
 // heuristically select clauses
@@ -74,9 +78,9 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
 #endif
     clause.clear();
   }
-  solver.addClauses(constraint);
+  solver->addClauses(constraint);
   assumptions.push_back(~alit);
-  bool isRightUnique = solver.solve(assumptions) == l_False;
+  bool isRightUnique = solver->solve(assumptions) == l_False;
   assumptions.back() = alit;
   return isRightUnique;
 }

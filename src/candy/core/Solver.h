@@ -510,7 +510,12 @@ protected:
 	}
 };
 
+/**
+ * \brief A readily forward-declarable Solver<>
+ */
+class DefaultSolver : public Solver<> {
 
+};
 
 
 
