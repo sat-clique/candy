@@ -59,6 +59,18 @@ using namespace std;
 
 namespace Candy {
 
+/**
+ * \tparam PickBranchLitT   the PickBranchLit type used to choose a
+ *   strategy for determining decision (ie. branching) literals.
+ *   PickBranchLitT must satisfy the following conditions:
+ *    - PickBranchLitT must be a class type.
+ *    - PickBranchLitT::Parameters must be a class type.
+ *    - PickBranchLitT must have a zero-argument constructor.
+ *    - PickBranchLitT must have a constructor taking a single argument of type
+ *        const Parameters& params.
+ *    - PickBranchLitT must be move-assignable.
+ *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
+ */
 template<class PickBranchLitT=DefaultPickBranchLit>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:

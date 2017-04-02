@@ -53,6 +53,7 @@
 #include <vector>
 #include <math.h>
 #include <string>
+#include <type_traits>
 
 #include <candy/core/Statistics.h>
 #include "candy/mtl/Heap.h"
@@ -69,21 +70,52 @@
 
 namespace Candy {
 
-using namespace std;
-    
 class DefaultPickBranchLit {
+public:
+    class Parameters {
         
+    };
+    
+    DefaultPickBranchLit() noexcept {
+        
+    }
+    
+    explicit DefaultPickBranchLit(const Parameters& params) noexcept {
+        (void)params;
+    }
 };
 
+/**
+ * \tparam PickBranchLitT   the PickBranchLit type used to choose a
+ *   strategy for determining decision (ie. branching) literals.
+ *   PickBranchLitT must satisfy the following conditions:
+ *    - PickBranchLitT must be a class type.
+ *    - PickBranchLitT::Parameters must be a class type.
+ *    - PickBranchLitT must have a zero-argument constructor.
+ *    - PickBranchLitT must have a constructor taking a single argument of type
+ *        const Parameters& params.
+ *    - PickBranchLitT must be move-assignable.
+ *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
+ */
 template<class PickBranchLitT = DefaultPickBranchLit>
 class Solver {
+    static_assert(std::is_class<PickBranchLitT>::value, "PickBranchLitT must be a class");
+    static_assert(std::is_class<typename PickBranchLitT::Parameters>::value,
+                  "PickBranchLitT::Parameters must be a class");
+    static_assert(std::is_constructible<PickBranchLitT>::value,
+                  "PickBranchLitT must have a constructor without arguments");
+    static_assert(std::is_move_assignable<PickBranchLitT>::value,
+                  "PickBranchLitT must be move-assignable");
 
     friend class SolverConfiguration;
 
 public:
     Solver();
     virtual ~Solver();
-
+    
+    /// Reinitializes the decision literal picking strategy using the given parameters.
+    void initializePickBranchLit(const typename PickBranchLitT::Parameters& params);
+    
     // Add a new variable with parameters specifying variable mode.
     virtual Var newVar(bool polarity = true, bool dvar = true);
 
@@ -355,6 +387,9 @@ protected:
 
     // Sonification
     SolverSonification sonification;
+    
+    // Variables for decisions
+    PickBranchLitT pickBranchLitData;
 
 	// Main internal methods:
     inline Clause* reason(Var x) const {
@@ -574,7 +609,8 @@ Solver<PickBranchLitT>::Solver() :
     // incremental related
     incremental(false), nbVarsInitialFormula(INT32_MAX),
     // sonification
-    sonification() { }
+    sonification(),
+    pickBranchLitData() { }
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::~Solver() {
@@ -590,6 +626,11 @@ Solver<PickBranchLitT>::~Solver() {
     for (Clause* c : learntsBin) {
         allocator.deallocate(c);
     }
+}
+
+template<class PickBranchLitT>
+void Solver<PickBranchLitT>::initializePickBranchLit(const typename PickBranchLitT::Parameters& params) {
+    pickBranchLitData = PickBranchLitT(params);
 }
 
 /****************************************************************
@@ -850,8 +891,8 @@ void Solver<PickBranchLitT>::cancelUntil(int level) {
 
 //=================================================================================================
 // Major methods:
-template <class PickBranchLitT>
-Lit Solver<PickBranchLitT>::pickBranchLit() {
+template <>
+inline Lit Solver<DefaultPickBranchLit>::pickBranchLit() {
     Var next = var_Undef;
     
     // Activity based decision:
