@@ -404,7 +404,7 @@ protected:
     }
 
     inline uint64_t abstractLevel(Var x) const {
-        return 1 << (level(x) & 63);
+        return 1ull << (level(x) & 63);
     }
 
     // Insert a variable in the decision order priority queue.
