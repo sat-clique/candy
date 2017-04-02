@@ -93,7 +93,7 @@ namespace Candy {
     private:
         bool solve(const std::vector<Lit>& assumptions);
         
-        std::unique_ptr<SimpSolver> m_solver;
+        std::unique_ptr<SimpSolver<>> m_solver;
         Var m_maxVar;
     };
     

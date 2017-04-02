@@ -102,7 +102,7 @@ public:
 private:
   // problem to analyze:
   CNFProblem problem;
-  Candy::Solver solver;
+  Candy::Solver<> solver;
   vector<Lit> assumptions;
 
   // control structures:
