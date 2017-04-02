@@ -218,6 +218,9 @@ protected:
     bool implied(const vector<Lit>& c);
 };
 
+/**
+  * \brief A readily forward-declarable SimpSolver<>
+  */
 class DefaultSimpSolver : public SimpSolver<> {
 
 };
