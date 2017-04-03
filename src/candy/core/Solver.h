@@ -361,7 +361,7 @@ protected:
     // constants for memory reorganization
 	uint8_t revamp;
     bool sort_watches;
-    bool sort_learnts;
+    uint8_t sort_learnts_max;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool unary_learnt; // Indicates whether a unary clause was learnt since the last restart
@@ -557,7 +557,7 @@ namespace SolverOptions {
     
     extern IntOption opt_revamp;
     extern BoolOption opt_sort_watches;
-    extern BoolOption opt_sort_learnts;
+    extern IntOption opt_sort_learnts_max;
 }
 
 template<class PickBranchLitT>
@@ -600,7 +600,7 @@ Solver<PickBranchLitT>::Solver() :
     // phase saving
     phase_saving(SolverOptions::opt_phase_saving),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches), sort_learnts(SolverOptions::opt_sort_learnts),
+    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches), sort_learnts_max(SolverOptions::opt_sort_learnts_max),
     // simpdb
     remove_satisfied(true),
     unary_learnt(false),
@@ -1494,13 +1494,13 @@ lbool Solver<PickBranchLitT>::search() {
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
                 } else {
-                    if (sort_learnts && cr->size() > 6) {
+                    if (cr->size() < sort_learnts_max && cr->size() > 6) {
                         sort(cr->begin()+2, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
                     }
                     learnts.push_back(cr);
                 }
                 attachClause(cr);
-                uncheckedEnqueue(learnt_clause[0], cr);
+                uncheckedEnqueue(cr->first(), cr);
                 claBumpActivity(*cr);
             }
             varDecayActivity();

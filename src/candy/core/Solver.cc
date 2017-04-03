@@ -88,7 +88,7 @@ IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay
 
 IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
 BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", true);
-BoolOption opt_sort_learnts("MEMORY LAYOUT", "sort_learnts", "sort learnts", false);
+IntOption opt_sort_learnts_max("MEMORY LAYOUT", "sort_learnts_max", "sort learnts (max learnts size for sort to be applied)", 0, IntRange(0, UINT8_MAX));
     
 }
 
