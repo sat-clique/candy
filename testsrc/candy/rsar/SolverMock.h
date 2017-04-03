@@ -27,9 +27,9 @@
 #ifndef X_0816BDE6_14E6_49C2_84A9_47B3DA198C9D_SOLVERMOCK_H
 #define X_0816BDE6_14E6_49C2_84A9_47B3DA198C9D_SOLVERMOCK_H
 
-#include <rsar/SolverAdapter.h>
-#include <core/CNFProblem.h>
-#include <core/SolverTypes.h>
+#include <candy/rsar/SolverAdapter.h>
+#include <candy/utils/CNFProblem.h>
+#include <candy/core/SolverTypes.h>
 
 #include <memory>
 #include <vector>

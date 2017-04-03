@@ -58,44 +58,46 @@ namespace Candy {
     class EquivalencyChecker {
     public:
         EquivalencyChecker();
+        virtual ~EquivalencyChecker();
         
         /** Adds the given clauses to the SAT problem which is regarded when checking
          * equivalencies/backbones. */
-        void addClauses(const std::vector<Cl>& clauses);
+        virtual void addClauses(const std::vector<Cl>& clauses) = 0;
         
         /** Creates a variable which can be used in in the clauses passed to addClauses()
          * and equivalency/backbone queries. */
-        Var createVariable();
+        virtual Var createVariable() = 0;
         
         /** Creates all variables up to the given maximum. */
-        void createVariables(Var max);
+        virtual void createVariables(Var max) = 0;
         
         /** This method needs to be called between adding the "regular" variables and those
          * used in the assumption literals. */
-        void finishedAddingRegularVariables();
+        virtual void finishedAddingRegularVariables() = 0;
         
         /** Returns true iff the literals a and b are equivalent wrt. the SAT problem instance
          * given via addClauses(...), with the literals contained in the given collection of
          * assumptions assumed to have the value true.
          */
-        bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b);
+        virtual bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) = 0;
         
         /** Returns true iff all pairs of literals given in equivalentLits are equivalent wrt. the
          * SAT problem instance given via addClauses(...), with the literals contained in the
          * given collection of assumptions assumed to have the value true. */
-        bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits);
+        virtual bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits) = 0;
         
         /** Returns true iff each of the literals given in backboneLits belongs to the backbone
          * of the SAT problem instance given via addClauses(...), with the literals contained in
          * the given collection of assumptions assumed to have the value true. */
-        bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits);
-        
-    private:
-        bool solve(const std::vector<Lit>& assumptions);
-        
-        std::unique_ptr<SimpSolver> m_solver;
-        Var m_maxVar;
+        virtual bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) = 0;
     };
+    
+    /**
+     * \ingroup RS_AbstractionRefinement_Tests
+     *
+     * Creates an EquivalencyChecker instance.
+     */
+    std::unique_ptr<EquivalencyChecker> createEquivalencyChecker();
     
     
     /** 

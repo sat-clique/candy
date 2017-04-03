@@ -166,16 +166,16 @@ namespace Candy {
         testData.addBackbone(bbc);
         
         
-        EquivalencyChecker checker;
-        checker.createVariables(5);
-        checker.finishedAddingRegularVariables();
+        auto checker = createEquivalencyChecker();
+        checker->createVariables(5);
+        checker->finishedAddingRegularVariables();
         
         
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
         heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
         heuristics->push_back(std::move(mock));
         
-        std::function<Var()> newVarFn = [&checker](){ return checker.createVariable(); };
+        std::function<Var()> newVarFn = [&checker](){ return checker->createVariable(); };
         
         auto underTest = createDefaultRefinementStrategy(testData,
                                                          std::move(heuristics),
@@ -187,12 +187,12 @@ namespace Candy {
         EXPECT_EQ(initDelta->countEnabledClauses(), 6ull);
         
         // all equivalencies should be present
-        checker.addClauses(initDelta->getNewClauses());
-        EXPECT_TRUE(checker.isAllEquivalent(initDelta->getAssumptionLiterals(),
+        checker->addClauses(initDelta->getNewClauses());
+        EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(1, 0), mkLit(2, 0)}));
-        EXPECT_TRUE(checker.isAllEquivalent(initDelta->getAssumptionLiterals(),
+        EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
                                             {mkLit(3, 1), mkLit(4, 0)}));
-        EXPECT_FALSE(checker.isEquivalent(initDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(),
                                           mkLit(0, 1), mkLit(4, 0)));
         
      
@@ -202,12 +202,12 @@ namespace Candy {
         EXPECT_EQ(sndDelta->countEnabledClauses(), 6ull);
         
         // all equivalencies should remain present
-        checker.addClauses(sndDelta->getNewClauses());
-        EXPECT_TRUE(checker.isAllEquivalent(sndDelta->getAssumptionLiterals(),
+        checker->addClauses(sndDelta->getNewClauses());
+        EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(1, 0), mkLit(2, 0)}));
-        EXPECT_TRUE(checker.isAllEquivalent(sndDelta->getAssumptionLiterals(),
+        EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
                                             {mkLit(3, 1), mkLit(4, 0)}));
-        EXPECT_FALSE(checker.isEquivalent(sndDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isEquivalent(sndDelta->getAssumptionLiterals(),
                                           mkLit(0, 1), mkLit(4, 0)));
     }
     
@@ -238,9 +238,9 @@ namespace Candy {
         testData.addEquivalence(eqc2);
         
         
-        EquivalencyChecker checker;
-        checker.createVariables(4);
-        checker.finishedAddingRegularVariables();
+        auto checker = createEquivalencyChecker();
+        checker->createVariables(4);
+        checker->finishedAddingRegularVariables();
         
         
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
@@ -248,7 +248,7 @@ namespace Candy {
         heuristics->push_back(std::move(mock));
         heuristics->push_back(std::move(fake));
         
-        std::function<Var()> newVarFn = [&checker](){ return checker.createVariable(); };
+        std::function<Var()> newVarFn = [&checker](){ return checker->createVariable(); };
         
         auto underTest = createDefaultRefinementStrategy(testData,
                                                          std::move(heuristics),
@@ -259,12 +259,12 @@ namespace Candy {
         EXPECT_EQ(initDelta->getAssumptionLiterals().size(), 5ull);
         EXPECT_EQ(initDelta->countEnabledClauses(), 5ull);
         
-        checker.addClauses(initDelta->getNewClauses());
-        EXPECT_TRUE(checker.isAllEquivalent(initDelta->getAssumptionLiterals(),
+        checker->addClauses(initDelta->getNewClauses());
+        EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(1, 0), mkLit(2, 0)}));
-        EXPECT_TRUE(checker.isAllEquivalent(initDelta->getAssumptionLiterals(),
+        EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
                                             {mkLit(3, 1), mkLit(4, 0)}));
-        EXPECT_FALSE(checker.isEquivalent(initDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(),
                                           mkLit(0, 1), mkLit(4, 0)));
         
         // Variable 1 removed
@@ -273,17 +273,17 @@ namespace Candy {
         EXPECT_EQ(sndDelta->getAssumptionLiterals().size(), 6ull);
         EXPECT_EQ(sndDelta->countEnabledClauses(), 4ull);
         
-        checker.addClauses(sndDelta->getNewClauses());
-        EXPECT_TRUE(checker.isAllEquivalent(sndDelta->getAssumptionLiterals(),
+        checker->addClauses(sndDelta->getNewClauses());
+        EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(2, 0)}));
         
-        EXPECT_FALSE(checker.isAllEquivalent(sndDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(1, 0)}));
         
         
-        EXPECT_TRUE(checker.isAllEquivalent(sndDelta->getAssumptionLiterals(),
+        EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
                                             {mkLit(3, 1), mkLit(4, 0)}));
-        EXPECT_FALSE(checker.isEquivalent(sndDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isEquivalent(sndDelta->getAssumptionLiterals(),
                                           mkLit(0, 1), mkLit(4, 0)));
         
         
@@ -294,17 +294,17 @@ namespace Candy {
         EXPECT_EQ(thirdDelta->getAssumptionLiterals().size(), 6ull);
         EXPECT_EQ(thirdDelta->countEnabledClauses(), 2ull);
         
-        checker.addClauses(thirdDelta->getNewClauses());
-        EXPECT_TRUE(checker.isAllEquivalent(thirdDelta->getAssumptionLiterals(),
+        checker->addClauses(thirdDelta->getNewClauses());
+        EXPECT_TRUE(checker->isAllEquivalent(thirdDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(2, 0)}));
         
-        EXPECT_FALSE(checker.isAllEquivalent(thirdDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isAllEquivalent(thirdDelta->getAssumptionLiterals(),
                                              {mkLit(0, 1), mkLit(1, 0)}));
         
         
-        EXPECT_FALSE(checker.isAllEquivalent(thirdDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isAllEquivalent(thirdDelta->getAssumptionLiterals(),
                                             {mkLit(3, 1), mkLit(4, 0)}));
-        EXPECT_FALSE(checker.isEquivalent(thirdDelta->getAssumptionLiterals(),
+        EXPECT_FALSE(checker->isEquivalent(thirdDelta->getAssumptionLiterals(),
                                           mkLit(0, 1), mkLit(4, 0)));
         
         // Variable 0 removed
@@ -338,9 +338,9 @@ namespace Candy {
         testData.addBackbone(bbc1);
         
         
-        EquivalencyChecker checker;
-        checker.createVariables(4);
-        checker.finishedAddingRegularVariables();
+        auto checker = createEquivalencyChecker();
+        checker->createVariables(4);
+        checker->finishedAddingRegularVariables();
         
         
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
@@ -348,7 +348,7 @@ namespace Candy {
         heuristics->push_back(std::move(mock));
         heuristics->push_back(std::move(fake));
         
-        std::function<Var()> newVarFn = [&checker](){ return checker.createVariable(); };
+        std::function<Var()> newVarFn = [&checker](){ return checker->createVariable(); };
         
         auto underTest = createDefaultRefinementStrategy(testData,
                                                          std::move(heuristics),
@@ -361,11 +361,11 @@ namespace Candy {
         
         
         // Variable 1 removed
-        checker.addClauses(initDelta->getNewClauses());
-        EXPECT_TRUE(checker.isAllEquivalent(initDelta->getAssumptionLiterals(),
+        checker->addClauses(initDelta->getNewClauses());
+        EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
                                             {mkLit(0, 1), mkLit(2, 0)}));
-        EXPECT_TRUE(checker.isBackbones(initDelta->getAssumptionLiterals(), {mkLit(3,0)}));
-        EXPECT_FALSE(checker.isEquivalent(initDelta->getAssumptionLiterals(),
+        EXPECT_TRUE(checker->isBackbones(initDelta->getAssumptionLiterals(), {mkLit(3,0)}));
+        EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(),
                                           mkLit(0, 1), mkLit(1, 0)));
         
         
@@ -375,8 +375,8 @@ namespace Candy {
         EXPECT_EQ(sndDelta->getAssumptionLiterals().size(), 3ull);
         EXPECT_EQ(sndDelta->countEnabledClauses(), 2ull);
         
-        checker.addClauses(sndDelta->getNewClauses());
-        EXPECT_FALSE(checker.isBackbones(initDelta->getAssumptionLiterals(), {mkLit(3,0)}));
+        checker->addClauses(sndDelta->getNewClauses());
+        EXPECT_FALSE(checker->isBackbones(initDelta->getAssumptionLiterals(), {mkLit(3,0)}));
         
     }
 }

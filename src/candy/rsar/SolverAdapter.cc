@@ -42,11 +42,18 @@ namespace Candy {
     class GlucoseAdapter : public SolverAdapter {
     public:
         bool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
-            return m_solver.solve(assumptions, doSimp, turnOffSimp);
+            if (doSimp) {
+                m_solver.eliminate(turnOffSimp);
+                if (!m_solver.okay()) {
+                    return false;
+                }
+            }
+            m_solver.disablePreprocessing();
+            return l_True == m_solver.solve(assumptions);
         }
         
         bool solve() override {
-            return m_solver.solve({});
+            return l_True == m_solver.solve({});
         }
         
         bool addClause(const Cl &clause) override {
@@ -63,7 +70,7 @@ namespace Candy {
         
         bool simplify() override {
             m_solver.setPropBudget(1);
-            m_solver.solveLimited({});
+            m_solver.solve({});
             m_solver.budgetOff();
             return true;
         }
@@ -85,7 +92,7 @@ namespace Candy {
         }
         
         const std::vector<Lit>& getConflict() override {
-            return m_solver.conflict;
+            return m_solver.getConflict();
         }
         
         Var newVar() override {
@@ -107,11 +114,11 @@ namespace Candy {
         
         GlucoseAdapter()
         : SolverAdapter(),
-        m_ownedSolver(backported_std::make_unique<SimpSolver>()),
+        m_ownedSolver(backported_std::make_unique<DefaultSimpSolver>()),
         m_solver(*m_ownedSolver) {
         }
         
-        explicit GlucoseAdapter(SimpSolver& solver)
+        explicit GlucoseAdapter(DefaultSimpSolver& solver)
         : SolverAdapter(),
         m_ownedSolver(nullptr),
         m_solver(solver) {
@@ -121,15 +128,15 @@ namespace Candy {
         GlucoseAdapter& operator= (const GlucoseAdapter& other) = delete;
         
     private:
-        std::unique_ptr<SimpSolver> m_ownedSolver;
-        SimpSolver& m_solver;
+        std::unique_ptr<DefaultSimpSolver> m_ownedSolver;
+        DefaultSimpSolver& m_solver;
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter() {
         return backported_std::make_unique<GlucoseAdapter>();
     }
     
-    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(SimpSolver& solver) {
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(DefaultSimpSolver& solver) {
         return backported_std::make_unique<GlucoseAdapter>(solver);
     }
 
