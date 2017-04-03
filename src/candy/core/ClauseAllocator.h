@@ -57,7 +57,7 @@ public:
             std::vector<void*>& pool = pools[index];
 
             if (pool.size() == 0) {
-                pool.reserve(std::max(pool.capacity()*2, (size_t)PAGE_MAX_ELEMENTS));
+                pool.reserve(std::min(pool.capacity()*2, (size_t)PAGE_MAX_ELEMENTS));
                 fillPool(index);
             }
 
