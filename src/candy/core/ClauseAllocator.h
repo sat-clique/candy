@@ -11,6 +11,7 @@
 #include <vector>
 #include <array>
 #include <cstdint>
+#include <cstring>
 
 #include <candy/core/Clause.h>
 #include <candy/core/Statistics.h>
@@ -20,6 +21,7 @@
 #define XXL_POOL_INDEX NUMBER_OF_POOLS
 #define REVAMPABLE_PAGES_MAX_SIZE 6
 #define PAGE_MAX_ELEMENTS 524288
+#define REALLOC_ON_REVAMP
 
 namespace Candy {
 
@@ -103,18 +105,17 @@ public:
         assert(i <= REVAMPABLE_PAGES_MAX_SIZE);
 
         switch (i) {
+#ifdef REALLOC_ON_REVAMP
+        case 3: return revampPages2<3>();
+        case 4: return revampPages2<4>();
+        case 5: return revampPages2<5>();
+        case 6: return revampPages2<6>();
+#else
         case 3: return revampPages<3>();
         case 4: return revampPages<4>();
         case 5: return revampPages<5>();
         case 6: return revampPages<6>();
-//        case 7: return revampPages<7>();
-//        case 8: return revampPages<8>();
-//        case 9: return revampPages<9>();
-//        case 10: return revampPages<10>();
-//        case 11: return revampPages<11>();
-//        case 12: return revampPages<12>();
-//        case 13: return revampPages<13>();
-//        case 14: return revampPages<14>();
+#endif
         default: return std::vector<Clause*>();
         }
     }
@@ -159,11 +160,15 @@ private:
         std::vector<size_t>& nelem = pages_nelem[index];
         size_t old_pool_size = pool.size();
         pool.clear();
-        std::vector<Clause*> revamped;
         for (size_t i = 0; i < page.size(); i++) {
             SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
             SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(page[i])  + nelem[i];
             std::sort(begin, end, [](SortHelperClause<N> c1, SortHelperClause<N> c2) { return c1.act > c2.act; });
+        }
+        std::vector<Clause*> revamped;
+        for (size_t i = 0; i < page.size(); i++) {
+            SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
+            SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(page[i])  + nelem[i];
             for (SortHelperClause<N>* iter = begin; iter < end; iter++) {
                 Clause* clause = (Clause*)iter;
                 assert(clause->size() == 0 || clause->size() == N);
@@ -174,6 +179,51 @@ private:
                 }
             }
         }
+        assert(old_pool_size == pool.size());
+        (void)(old_pool_size);
+        return revamped;
+    }
+
+    template <unsigned int N> inline std::vector<Clause*> revampPages2() {
+        uint16_t index = getPoolIndex(N);
+        std::vector<void*>& pool = pools[index];
+        std::vector<char*>& page = pages[index];
+        std::vector<size_t>& nelem = pages_nelem[index];
+        size_t old_pool_size = pool.size();
+        pool.clear();
+
+        size_t total_nelems = std::accumulate(nelem.begin(), nelem.end(), (size_t)0);
+        char* new_page = (char*)calloc(total_nelems, sizeof(SortHelperClause<N>));
+        SortHelperClause<N>* pos = reinterpret_cast<SortHelperClause<N>*>(new_page);
+        for (size_t i = 0; i < page.size(); i++) {
+            SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
+            memcpy(pos, begin, nelem[i] * sizeof(SortHelperClause<N>));
+            pos += nelem[i];
+        }
+
+        for (size_t i = 0; i < page.size(); i++) {
+            delete page[i];
+        }
+        page.clear();
+        nelem.clear();
+        page.push_back(new_page);
+        nelem.push_back(total_nelems);
+
+        SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(new_page);
+        SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(new_page)  + total_nelems;
+        std::sort(begin, end, [](SortHelperClause<N> c1, SortHelperClause<N> c2) { return c1.act > c2.act; });
+
+        std::vector<Clause*> revamped;
+        for (SortHelperClause<N>* iter = begin; iter < end; iter++) {
+            Clause* clause = (Clause*)iter;
+            assert(clause->size() == 0 || clause->size() == N);
+            if (!clause->isDeleted() && clause->size() > 0) {
+                revamped.push_back(clause);
+            } else {
+                pool.push_back(clause);
+            }
+        }
+
         assert(old_pool_size == pool.size());
         (void)(old_pool_size);
         return revamped;
