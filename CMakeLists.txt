@@ -181,7 +181,7 @@ endif()
 
 add_subdirectory(src)
 
-set(CANDY_LIBS utils core simp gates randomsimulation rsar sonification ipasir ${ZLIB_LIBRARIES})
+set(CANDY_LIBS utils gates randomsimulation rsar sonification ipasir core simp ${ZLIB_LIBRARIES})
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
