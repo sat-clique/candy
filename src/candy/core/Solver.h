@@ -622,9 +622,6 @@ Solver<PickBranchLitT>::Solver() :
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::~Solver() {
-    Statistics::getInstance().printRuntime("Runtime Revamp");
-    Statistics::getInstance().printRuntime("Runtime Sort Watches");
-    Statistics::getInstance().printRuntime("Runtime Simplify");
     for (Clause* c : clauses) {
         allocator.deallocate(c);
     }
