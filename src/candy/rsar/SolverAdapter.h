@@ -27,14 +27,15 @@
 #ifndef X_C53F2B2A_C7F9_4DFF_890B_196A6135FD51_SOLVERADAPTER_H
 #define X_C53F2B2A_C7F9_4DFF_890B_196A6135FD51_SOLVERADAPTER_H
 
-#include <core/SolverTypes.h>
-#include <core/CNFProblem.h>
-#include <simp/SimpSolver.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/utils/CNFProblem.h>
 
 #include <vector>
 #include <memory>
 
 namespace Candy {
+    class DefaultSimpSolver;
+    
     /**
      * \class SolverAdapter
      *
@@ -74,7 +75,7 @@ namespace Candy {
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter();
-    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(SimpSolver& solver);
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(DefaultSimpSolver& solver);
 }
 
 #endif

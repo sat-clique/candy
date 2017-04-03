@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include "core/Utilities.h"
+#include "candy/utils/Utilities.h"
 
 using namespace Candy;
 

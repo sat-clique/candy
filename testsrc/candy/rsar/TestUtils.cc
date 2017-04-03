@@ -27,6 +27,7 @@
 #include <gtest/gtest.h>
 #include <simp/SimpSolver.h>
 #include <utils/FastRand.h>
+#include <utils/MemUtils.h>
 
 #include "TestUtils.h"
 #include "HeuristicsMock.h"
@@ -34,13 +35,45 @@
 #include <iostream>
 
 namespace Candy {
+    
+    EquivalencyChecker::EquivalencyChecker() {
+    }
+    
+    EquivalencyChecker::~EquivalencyChecker() {
+    }
+    
+    class EquivalencyCheckerImpl : public EquivalencyChecker {
+    public:
+        EquivalencyCheckerImpl();
+        virtual ~EquivalencyCheckerImpl();
+        
+        void addClauses(const std::vector<Cl>& clauses) override;
+        Var createVariable() override;
+        void createVariables(Var max) override;
+        void finishedAddingRegularVariables() override;
+        bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) override;
+        bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits) override;
+        bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) override;
+        
+    private:
+        bool solve(const std::vector<Lit>& assumptions);
+        
+        std::unique_ptr<SimpSolver<>> m_solver;
+        Var m_maxVar;
+    };
 
-    EquivalencyChecker::EquivalencyChecker()
-    : m_solver(std::unique_ptr<SimpSolver>(new SimpSolver())), m_maxVar(0) {
+    
+    
+    EquivalencyCheckerImpl::EquivalencyCheckerImpl()
+    : EquivalencyChecker(), m_solver(std::unique_ptr<SimpSolver<>>(new SimpSolver<>())), m_maxVar(0) {
+        m_solver->disablePreprocessing();
         m_solver->setIncrementalMode();
     }
     
-    void EquivalencyChecker::addClauses(const std::vector<Cl>& clauses) {
+    EquivalencyCheckerImpl::~EquivalencyCheckerImpl() {
+    }
+    
+    void EquivalencyCheckerImpl::addClauses(const std::vector<Cl>& clauses) {
         for (auto& clause : clauses) {
             for (auto lit : clause) {
                 ASSERT_TRUE(var(lit) <= m_maxVar);
@@ -49,22 +82,22 @@ namespace Candy {
         }
     }
     
-    Var EquivalencyChecker::createVariable() {
+    Var EquivalencyCheckerImpl::createVariable() {
         m_maxVar = m_solver->newVar();
         return m_maxVar;
     }
     
-    void EquivalencyChecker::createVariables(Var max) {
+    void EquivalencyCheckerImpl::createVariables(Var max) {
         while (m_maxVar < max) {
             createVariable();
         }
     }
     
-    void EquivalencyChecker::finishedAddingRegularVariables() {
+    void EquivalencyCheckerImpl::finishedAddingRegularVariables() {
         m_solver->initNbInitialVars(m_maxVar+1);
     }
     
-    bool EquivalencyChecker::isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) {
+    bool EquivalencyCheckerImpl::isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) {
         std::vector<Lit> extendedAssumptions {assumptions};
         
         Lit assumption1 = mkLit(createVariable(), 1);
@@ -86,7 +119,7 @@ namespace Candy {
         }
     }
     
-    bool EquivalencyChecker::isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits) {
+    bool EquivalencyCheckerImpl::isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits) {
         assert(equivalentLits.size() > 1);
         
         bool allEquiv = true;
@@ -98,7 +131,7 @@ namespace Candy {
         return allEquiv;
     }
     
-    bool EquivalencyChecker::isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) {
+    bool EquivalencyCheckerImpl::isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) {
         bool allBackbone = true;
         for (auto lit : backboneLits) {
             Lit assumption = mkLit(createVariable(), 1);
@@ -110,42 +143,46 @@ namespace Candy {
         return allBackbone;
     }
     
-    bool EquivalencyChecker::solve(const std::vector<Lit>& assumptions) {
-        return m_solver->solve(assumptions, false, true);
+    bool EquivalencyCheckerImpl::solve(const std::vector<Lit>& assumptions) {
+        return l_True == m_solver->solve(assumptions);
+    }
+    
+    std::unique_ptr<EquivalencyChecker> createEquivalencyChecker() {
+        return backported_std::make_unique<EquivalencyCheckerImpl>();
     }
     
     
     TEST(RSARTestUtils, EquivalencyChecker_checkEquivalences) {
-        EquivalencyChecker checker;
+        auto checker = createEquivalencyChecker();
         
-        checker.createVariables(3);
+        checker->createVariables(3);
         
-        checker.finishedAddingRegularVariables();
+        checker->finishedAddingRegularVariables();
         
-        checker.addClauses({{mkLit(0, 0), mkLit(1, 1)},
+        checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
             {mkLit(1, 0), mkLit(0, 1)},
             {mkLit(2, 0), mkLit(3, 1)}});
         
-        EXPECT_FALSE(checker.isEquivalent({}, mkLit(2, 1), mkLit(3,1)));
-        EXPECT_TRUE(checker.isEquivalent({}, mkLit(0, 1), mkLit(1,1)));
-        EXPECT_FALSE(checker.isEquivalent({}, mkLit(0, 0), mkLit(1,1)));
+        EXPECT_FALSE(checker->isEquivalent({}, mkLit(2, 1), mkLit(3,1)));
+        EXPECT_TRUE(checker->isEquivalent({}, mkLit(0, 1), mkLit(1,1)));
+        EXPECT_FALSE(checker->isEquivalent({}, mkLit(0, 0), mkLit(1,1)));
     }
     
     TEST(RSARTestUtils, EquivalencyChecker_checkBackbones) {
-        EquivalencyChecker checker;
+        auto checker = createEquivalencyChecker();
         
-        checker.createVariables(2);
-        checker.finishedAddingRegularVariables();
-        checker.createVariables(3);
+        checker->createVariables(2);
+        checker->finishedAddingRegularVariables();
+        checker->createVariables(3);
 
-        checker.addClauses({
+        checker->addClauses({
             {mkLit(0, 0), mkLit(1, 1)},
             {mkLit(3, 0), mkLit(0, 1)},
             {mkLit(2, 0), mkLit(3, 1)}});
         
         
-        EXPECT_TRUE(checker.isBackbones({mkLit(3, 1)}, {mkLit(0, 1)}));
-        EXPECT_FALSE(checker.isBackbones({mkLit(3, 1)}, {mkLit(2, 0)}));
+        EXPECT_TRUE(checker->isBackbones({mkLit(3, 1)}, {mkLit(0, 1)}));
+        EXPECT_FALSE(checker->isBackbones({mkLit(3, 1)}, {mkLit(2, 0)}));
     }
     
     

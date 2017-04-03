@@ -7,7 +7,7 @@
 // instead of replacing the vector of assumption literals
 namespace Candy {
     TEST(SimpSolverTests, basicIncrementalSimpSolver) {
-        SimpSolver underTest;
+        SimpSolver<> underTest;
         underTest.setIncrementalMode();
         
         Var var1 = underTest.newVar();
@@ -24,14 +24,14 @@ namespace Candy {
             underTest.addClause(clause);
         }
                             
-        EXPECT_TRUE(underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
-        EXPECT_TRUE(underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
+        EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
+        EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
     }
     
     
     // TODO: this test should be moved into the "core" test module.
     TEST(SimpSolverTests, basicIncrementalSolver) {
-        Solver underTest;
+        Solver<> underTest;
         underTest.setIncrementalMode();
         
         Var var1 = underTest.newVar();
@@ -48,7 +48,7 @@ namespace Candy {
             underTest.addClause(clause);
         }
         
-        EXPECT_TRUE(underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
-        EXPECT_TRUE(underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
+        EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
+        EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
     }
 }

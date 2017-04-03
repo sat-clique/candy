@@ -27,7 +27,7 @@
 #include <gtest/gtest.h>
 
 #include <core/SolverTypes.h>
-#include <core/CNFProblem.h>
+#include <utils/CNFProblem.h>
 
 
 #include <gates/GateAnalyzer.h>

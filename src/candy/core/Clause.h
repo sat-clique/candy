@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_CLAUSE_H_
 
 #include "candy/core/SolverTypes.h"
+#include <candy/core/Statistics.h>
 #include <iostream>
 
 namespace Candy {
@@ -28,8 +29,8 @@ class Clause {
     uint16_t header;
 
     union {
-        float act;
-        uint32_t abs;
+        float activity;
+        uint32_t abstraction;
     } data;
 
     Lit literals[1];
@@ -39,9 +40,8 @@ public:
     Clause(std::initializer_list<Lit> list);
     ~Clause();
 
-    void* operator new (std::size_t size) = delete;
-    void* operator new (std::size_t size, uint16_t length);
-    void operator delete (void* p);
+    //void* operator new (std::size_t size) = delete;
+    void operator delete (void* p) = delete;
 
     typedef Lit* iterator;
     typedef const Lit* const_iterator;
@@ -63,7 +63,7 @@ public:
      * - clauses have the bigger lbd
      */
     bool operator <(Clause& clause2) {
-        return header > clause2.header || (header == clause2.header && data.act < clause2.data.act);
+        return header > clause2.header || (header == clause2.header && data.activity < clause2.data.activity);
     }
 
     bool operator >(Clause& clause2) {
@@ -125,18 +125,56 @@ public:
         literals[pos2] = tmp;
     }
 
-    bool isLearnt() const;
-    void setLearnt(bool learnt);
-    bool isDeleted() const;
-    void setDeleted();
-    bool isFrozen() const;
-    void setFrozen(bool flag);
-    uint16_t getLBD() const;
-    void setLBD(uint16_t i);
-    uint16_t getHeader() const;
+    inline bool isLearnt() const {
+        return (bool)(header & LEARNT_MASK);
+    }
 
-    float& activity();
-    uint32_t abstraction() const;
+    inline void setLearnt(bool learnt) {
+        if (learnt) {
+            header |= LEARNT_MASK;
+        } else {
+            header &= ~LEARNT_MASK;
+        }
+    }
+
+    inline bool isDeleted() const {
+        return (bool)(header & DELETED_MASK);
+    }
+
+    inline void setDeleted() {
+        header |= DELETED_MASK;
+    }
+
+    /** Frozen flag is stored inverted so complete header could be used for sorting */
+    inline bool isFrozen() const {
+        return !(bool)(header & UNFROZEN_MASK);
+    }
+
+    inline void setFrozen(bool flag) {
+        if (!flag) {
+            header |= UNFROZEN_MASK;
+        } else {
+            header &= ~UNFROZEN_MASK;
+        }
+    }
+
+    inline uint16_t getLBD() const {
+        return header & LBD_MASK;
+    }
+
+    inline void setLBD(uint16_t i) {
+        uint16_t flags = header & ~LBD_MASK;
+        header = std::min(i, LBD_MASK);
+        header |= flags;
+    }
+
+    inline float& activity() {
+        return data.activity;
+    }
+
+    inline uint16_t getHeader() const {
+        return header;
+    }
 
     /**
      *  subsumes : (other : const Clause&)  ->  Lit
@@ -154,7 +192,7 @@ public:
         assert(!isLearnt());
         assert(!other.isLearnt());
 
-        if (other.size() < size() || (data.abs & ~other.data.abs) != 0) {
+        if (other.size() < size() || (data.abstraction & ~other.data.abstraction) != 0) {
             return lit_Error;
         }
 
@@ -179,20 +217,17 @@ public:
         return ret;
     }
 
-    void strengthen(Lit p);
 
-    static void printAlignment() {
-        Clause clause({lit_Undef});
-        uint64_t start = (uint64_t)&clause;
-        uint64_t header = (uint64_t)&(clause.header);
-        uint64_t data = (uint64_t)&(clause.data);
-        uint64_t length = (uint64_t)&(clause.length);
-        uint64_t literals = (uint64_t)&(clause.literals);
-        std::cout << "c Size of Clause: " << sizeof(Candy::Clause) << std::endl;
-        std::cout << "c Length starts at " << length - start << std::endl;
-        std::cout << "c Header starts at " << header - start << std::endl;
-        std::cout << "c Data-union starts at " << data - start << std::endl;
-        std::cout << "c Literals start at " << literals - start << std::endl;
+    inline void strengthen(Lit p) {
+        if (std::remove(begin(), end(), p) != end()) {
+            Statistics::getInstance().allocatorStrengthenClause(length);
+            --length;
+        }
+        calcAbstraction();
+    }
+
+    void blow(uint8_t offset) {//use only if you know what you are doing (only to be used after strengthen calls)
+        length += offset;
     }
 };
 

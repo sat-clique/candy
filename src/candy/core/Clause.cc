@@ -18,10 +18,11 @@ Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
     setFrozen(false);
 
     if (learnt) {
-        data.act = 0;
+        data.activity = 0;
     } else {
         calcAbstraction();
     }
+    assert(std::unique(begin(), end()) == end());
 }
 
 Clause::Clause(std::initializer_list<Lit> list) {
@@ -34,14 +35,6 @@ Clause::Clause(std::initializer_list<Lit> list) {
 
 Clause::~Clause() { }
 
-void* Clause::operator new (std::size_t size, uint16_t length) {
-    return ClauseAllocator::getInstance().allocate(length);
-}
-
-void Clause::operator delete (void* p) {
-    ClauseAllocator::getInstance().deallocate((Clause*)p);
-}
-
 bool Clause::contains(const Lit lit) const {
     return std::find(begin(), end(), lit) != end();
 }
@@ -50,75 +43,12 @@ bool Clause::contains(const Var v) const {
     return std::find_if(begin(), end(), [v](Lit lit) { return var(lit) == v; }) != end();
 }
 
-bool Clause::isLearnt() const {
-    return (bool)(header & LEARNT_MASK);
-}
-
-void Clause::setLearnt(bool learnt) {
-    if (learnt) {
-        header |= LEARNT_MASK;
-    } else {
-        header &= ~LEARNT_MASK;
-    }
-}
-
-bool Clause::isDeleted() const {
-    return (bool)(header & DELETED_MASK);
-}
-
-void Clause::setDeleted() {
-    header |= DELETED_MASK;
-}
-
-/** Frozen flag is stored inverted so complete header could be used for sorting */
-bool Clause::isFrozen() const {
-    return !(bool)(header & UNFROZEN_MASK);
-}
-
-void Clause::setFrozen(bool flag) {
-    if (!flag) {
-        header |= UNFROZEN_MASK;
-    } else {
-        header &= ~UNFROZEN_MASK;
-    }
-}
-
-uint16_t Clause::getLBD() const {
-    return header & LBD_MASK;
-}
-
-void Clause::setLBD(uint16_t i) {
-    uint16_t flags = header & ~LBD_MASK;
-    header = std::min(i, LBD_MASK);
-    header |= flags;
-}
-
-float& Clause::activity() {
-    return data.act;
-}
-
-uint32_t Clause::abstraction() const {
-    return data.abs;
-}
-
-uint16_t Clause::getHeader() const {
-    return header;
-}
-
 void Clause::calcAbstraction() {
     uint32_t abstraction = 0;
     for (Lit lit : *this) {
         abstraction |= 1 << (var(lit) & 31);
     }
-    data.abs = abstraction;
-}
-
-void Clause::strengthen(Lit p) {
-    if (std::remove(begin(), end(), p) != end()) {
-        ClauseAllocator::getInstance().strengthen(length);
-        --length;
-    }
-    calcAbstraction();
+    data.abstraction = abstraction;
 }
 
 } /* namespace Candy */

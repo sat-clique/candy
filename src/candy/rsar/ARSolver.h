@@ -27,9 +27,8 @@
 #ifndef X_27915A76_7E30_4C34_8C0C_FD65894E0A42_ARSOLVER_H
 #define X_27915A76_7E30_4C34_8C0C_FD65894E0A42_ARSOLVER_H
 
-#include <core/SolverTypes.h>
-#include <core/CNFProblem.h>
-#include <simp/SimpSolver.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/utils/CNFProblem.h>
 
 #include <vector>
 #include <memory>

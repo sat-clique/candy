@@ -199,10 +199,8 @@ class OccLists {
 	Deleted deleted;
 
 public:
-	OccLists() {
-	}
-	OccLists(const Deleted& d) : deleted(d) {
-	}
+	OccLists() { }
+	OccLists(const Deleted& d) : deleted(d) { }
 
 	void init(const Idx& idx) {
 		if ((int) occs.size() < toInt(idx) + 1)
@@ -216,8 +214,9 @@ public:
 	}
 
 	std::vector<Elem>& lookup(const Idx& idx) {
-		if (dirty[toInt(idx)])
+		if (dirty[toInt(idx)]) {
 			clean(idx);
+		}
 		return occs[toInt(idx)];
 	}
 
@@ -229,8 +228,9 @@ public:
 	}
 
 	void cleanAll() {
-		for (Idx dirty : dirties)
+		for (Idx dirty : dirties) {
 			clean(dirty);
+		}
 		dirties.clear();
 	}
 
@@ -242,8 +242,9 @@ public:
 	}
 
 	void clear() {
-		for (std::vector<Elem>& v : occs)
+		for (auto& v : occs) {
 			v.clear();
+		}
 		occs.clear();
 		dirty.clear();
 		dirties.clear();

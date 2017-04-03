@@ -56,8 +56,9 @@
 #include <stdexcept>
 #include <regex>
 
-#include "candy/core/CNFProblem.h"
+#include <candy/utils/CNFProblem.h>
 #include "candy/core/Certificate.h"
+#include "candy/core/Statistics.h"
 #include "candy/core/ClauseAllocator.h"
 #include "candy/utils/System.h"
 #include "candy/utils/ParseUtils.h"
@@ -77,7 +78,7 @@
 
 using namespace Candy;
 
-static Solver* solver;
+static Solver<>* solver;
 
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
@@ -91,9 +92,7 @@ static void SIGINT_interrupt(int signum) {
 static void SIGINT_exit(int signum) {
     printf("\n*** INTERRUPTED ***\n");
     if (solver->verbosity > 0) {
-        double cpu_time = Glucose::cpuTime();
-        double mem_used = 0; //memUsedPeak();
-        solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
+        Statistics::getInstance().printFinalStats(solver->nConflicts, solver->nPropagations);
     }
     _exit(1);
 }
@@ -123,39 +122,40 @@ static void setLimits(int cpu_lim, int mem_lim) {
     }
 }
 
-static void printModel(FILE* f, Solver* solver) {
+static void printModel(FILE* f, Solver<>* solver) {
     fprintf(f, "v");
-    for (int i = 0; i < solver->nVars(); i++)
+    for (size_t i = 0; i < solver->nVars(); i++)
         if (solver->model[i] != l_Undef)
-            fprintf(f, " %s%d", (solver->model[i] == l_True) ? "" : "-", i + 1);
+            fprintf(f, " %s%zu", (solver->model[i] == l_True) ? "" : "-", i + 1);
     fprintf(f, " 0\n");
 }
 
 /**
  * Runs the SAT solver, performing simplification if \p do_preprocess is true.
  */
-static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
+static lbool solve(DefaultSimpSolver& S, bool do_preprocess) {
     lbool result = l_Undef;
 
-    if (do_preprocess/* && !S.isIncremental()*/) {
-        printf("c | Preprocesing is fully done\n");
+    if (do_preprocess) {
+        Statistics::getInstance().runtimeStart(RT_SIMPLIFIER);
         S.eliminate(true);
-        if (!S.okay())
+        Statistics::getInstance().runtimeStop(RT_SIMPLIFIER);
+        if (!S.okay()) {
             result = l_False;
-        double simplified_time = Glucose::cpuTime();
+        }
         if (S.verbosity > 0) {
-            printf("c |  Simplification time:  %12.2f s                                                                 |\n", simplified_time - parsed_time);
+            Statistics::getInstance().printRuntime(RT_SIMPLIFIER);
             if (result == l_False) {
-                printf("c =========================================================================================================\n");
+                printf("c ==============================================================================================\n");
                 printf("Solved by simplification\n");
             }
         }
     }
-    printf("c |                                                                                                       |\n");
+    printf("c |                                                                                            |\n");
 
     if (result == l_Undef) {
         vector<Lit> assumptions;
-        result = S.solveLimited(assumptions);
+        result = S.solve(assumptions);
     }
 
     return result;
@@ -168,12 +168,13 @@ static lbool solve(SimpSolver& S, bool do_preprocess, double parsed_time) {
  * If \p outputFilename is non-null, the result also gets written to the file given by
  * \p outputFilename. The target file gets truncated.
  */
-static void printResult(Solver& S, lbool result, const char* outputFilename = nullptr) {
+static void printResult(Solver<>& S, lbool result, bool showModel, const char* outputFilename = nullptr) {
     if (S.verbosity > 0) {
-        double cpu_time = Glucose::cpuTime();
-        double mem_used = 0; //memUsedPeak();
-        solver->statistics.printFinalStats(cpu_time, mem_used, solver->nConflicts, solver->nPropagations);
-        ClauseAllocator::getInstance().printStatistics();
+        Statistics::getInstance().printFinalStats(S.nConflicts, S.nPropagations);
+        Statistics::getInstance().printAllocatorStatistics();
+        Statistics::getInstance().printRuntime("Runtime Revamp");
+        Statistics::getInstance().printRuntime("Runtime Sort Watches");
+        Statistics::getInstance().printRuntime("Runtime Simplify");
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
@@ -182,12 +183,12 @@ static void printResult(Solver& S, lbool result, const char* outputFilename = nu
     if (res != NULL) {
         fprintf(res, result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
         if (result == l_True) {
-            printModel(res, solver);
+            printModel(res, &S);
         }
         fclose(res);
     } else {
-        if (S.showModel && result == l_True) {
-            printModel(stdout, solver);
+        if (showModel && result == l_True) {
+            printModel(stdout, &S);
         }
     }
 }
@@ -210,13 +211,11 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 /**
  * Prints statistics about the problem to be solved.
  */
-static void printProblemStatistics(Solver& S, double parseTime) {
-    printf("c ========================================[ Problem Statistics ]===========================================\n");
-    printf("c |                                                                                                       |\n");
-    printf("c |  Number of variables:  %12d                                                                   |\n", S.nVars());
-    printf("c |  Number of clauses:    %12d                                                                   |\n", S.nClauses());
-    printf("c |  Parse time:           %12.2f s                                                                 |\n", parseTime);
-    printf("c |                                                                                                       |\n");
+static void printProblemStatistics(Solver<>& S) {
+    printf("c ====================================[ Problem Statistics ]====================================\n");
+    printf("c |                                                                                            |\n");
+    printf("c |  Number of variables:  %12zu                                                        |\n", S.nVars());
+    printf("c |  Number of clauses:    %12zu                                                        |\n", S.nClauses());
 }
 
 /**
@@ -224,11 +223,10 @@ static void printProblemStatistics(Solver& S, double parseTime) {
  * 
  * TODO: document parameters
  */
-static void configureSolver(SimpSolver& S, int verbosity, int verbosityEveryConflicts, bool showModel, bool certifiedAllClauses, bool certifiedUNSAT,
+static void configureSolver(DefaultSimpSolver& S, int verbosity, int verbosityEveryConflicts, bool certifiedUNSAT,
                 const char* certifiedUNSATfile) {
     S.verbosity = verbosity;
     S.verbEveryConflicts = verbosityEveryConflicts;
-    S.showModel = showModel;
     S.certificate = Certificate(certifiedUNSATfile, certifiedUNSAT);
 }
 
@@ -255,18 +253,18 @@ static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem
  * TODO: document parameters
  */
 static void benchmarkGateRecognition(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {
-    double recognition_time = Glucose::cpuTime();
+    Statistics::getInstance().runtimeStart(RT_GATOR);
     auto gates = createGateAnalyzer(dimacs, recognitionArgs);
     gates->analyze();
-    recognition_time = Glucose::cpuTime() - recognition_time;
-    printf("c ========================================[ Problem Statistics ]===========================================\n");
-    printf("c |                                                                                                       |\n");
-    printf("c |  Number of gates:        %12d                                                                 |\n", gates->getGateCount());
-    printf("c |  Number of variables:    %12d                                                                 |\n", dimacs.nVars());
-    printf("c |  Number of clauses:      %12d                                                                 |\n", dimacs.nClauses());
-    printf("c |  Recognition time (sec): %12.2f                                                                 |\n", recognition_time);
-    printf("c |                                                                                                       |\n");
-    printf("c =========================================================================================================\n");
+    Statistics::getInstance().runtimeStop(RT_GATOR);
+    printf("c =====================================[ Problem Statistics ]===================================\n");
+    printf("c |                                                                                            |\n");
+    printf("c |  Number of gates:        %12d                                                      |\n", gates->getGateCount());
+    printf("c |  Number of variables:    %12d                                                      |\n", dimacs.nVars());
+    printf("c |  Number of clauses:      %12d                                                      |\n", dimacs.nClauses());
+    Statistics::getInstance().printRuntime(RT_GATOR);
+    printf("c |                                                                                            |\n");
+    printf("c ==============================================================================================\n");
     if (recognitionArgs.opt_print_gates) {
         gates->printGates();
     }
@@ -349,7 +347,7 @@ std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsS
     return limits;
 }
 
-std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, SimpSolver& satSolver, std::unique_ptr<Candy::Conjectures> conjectures,
+std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, DefaultSimpSolver& satSolver, std::unique_ptr<Candy::Conjectures> conjectures,
                 const RSARArguments& rsarArguments) {
     auto arSolverBuilder = Candy::createARSolverBuilder();
     arSolverBuilder->withConjectures(std::move(conjectures));
@@ -365,7 +363,7 @@ std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, S
     return arSolverBuilder->build();
 }
 
-static lbool solveWithRSAR(SimpSolver& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
+static lbool solveWithRSAR(DefaultSimpSolver& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
                 const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
@@ -501,9 +499,7 @@ static void waitForUserInput() {
 // Main:
 int main(int argc, char** argv) {
     try {
-        std::cout << "This is Candy 0.1 -- based on Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
-
-        Candy::Clause::printAlignment();
+        std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
 
         GlucoseArguments args = parseCommandLineArgs(argc, argv);
 
@@ -516,16 +512,14 @@ int main(int argc, char** argv) {
 
         setLimits(args.cpu_lim, args.mem_lim);
 
-        double initial_time = Glucose::cpuTime();
+        Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
 
-        SimpSolver S;
+        DefaultSimpSolver S;
         solver = &S;
-        configureSolver(S, args.verb,               // verbosity
+        configureSolver(S, args.verb,            // verbosity
                         args.vv,                 // verbosity every vv conflicts
-                        args.mod,                // show model
-                        0,                       // certifiedAllClauses
                         args.do_certified,       // certifiedUNSAT
-                        args.opt_certified_file);       // certifiedUNSAT output file
+                        args.opt_certified_file);// certifiedUNSAT output file
 
         Candy::CNFProblem dimacs;
         if (argc == 1) {
@@ -537,17 +531,21 @@ int main(int argc, char** argv) {
                 return 1;
         }
 
+        Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
+
         if (args.do_gaterecognition) {
             benchmarkGateRecognition(dimacs, args.gateRecognitionArgs);
             return 0;
         }
 
+        Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
         S.addClauses(dimacs);
-
-        double parsed_time = Glucose::cpuTime();
+        Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
 
         if (S.verbosity > 0) {
-            printProblemStatistics(S, parsed_time - initial_time);
+            printProblemStatistics(S);
+            Statistics::getInstance().printRuntime(RT_INITIALIZATION);
+            printf("c |                                                                                            |\n");
         }
 
         // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
@@ -555,18 +553,19 @@ int main(int argc, char** argv) {
 
         lbool result;
         if (!args.rsarArgs.useRSAR) {
-            result = solve(S, args.do_preprocess, parsed_time);
+            result = solve(S, args.do_preprocess);
         } else {
             result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
         }
 
         const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
-        printResult(S, result, statsFilename);
+        printResult(S, result, args.mod, statsFilename);
 
+        exit((result == l_True ? 10 : result == l_False ? 20 : 0));
         return (result == l_True ? 10 : result == l_False ? 20 : 0);
     } catch (std::bad_alloc& ba) {
         //printf("c Bad_Alloc Caught: %s\n", ba.what());
-        printf("c =========================================================================================================\n");
+        printf("c ==============================================================================================\n");
         printf("s INDETERMINATE\n");
         return 0;
     }
