@@ -19,6 +19,7 @@
 #define XXL_POOL_ONE_SIZE 1000
 #define XXL_POOL_INDEX NUMBER_OF_POOLS
 #define REVAMPABLE_PAGES_MAX_SIZE 6
+#define PAGE_MAX_ELEMENTS 524288
 
 namespace Candy {
 
@@ -56,7 +57,7 @@ public:
             std::vector<void*>& pool = pools[index];
 
             if (pool.size() == 0) {
-                pool.reserve(pool.capacity()*2);
+                pool.reserve(std::max(pool.capacity()*2, (size_t)PAGE_MAX_ELEMENTS));
                 fillPool(index);
             }
 
@@ -138,7 +139,7 @@ private:
         if (index > 2 && index < 120) {
             return 262144 >> (index / 10);
         } else if (index == 1 || index == 2) {
-            return 524288;
+            return PAGE_MAX_ELEMENTS;
         }
         return 256;
     }
