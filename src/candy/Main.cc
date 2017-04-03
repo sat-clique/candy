@@ -558,6 +558,7 @@ int main(int argc, char** argv) {
         const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
         printResult(S, result, args.mod, statsFilename);
 
+        exit((result == l_True ? 10 : result == l_False ? 20 : 0));
         return (result == l_True ? 10 : result == l_False ? 20 : 0);
     } catch (std::bad_alloc& ba) {
         //printf("c Bad_Alloc Caught: %s\n", ba.what());
