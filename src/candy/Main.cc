@@ -172,6 +172,9 @@ static void printResult(Solver<>& S, lbool result, bool showModel, const char* o
     if (S.verbosity > 0) {
         Statistics::getInstance().printFinalStats(S.nConflicts, S.nPropagations);
         Statistics::getInstance().printAllocatorStatistics();
+        Statistics::getInstance().printRuntime("Runtime Revamp");
+        Statistics::getInstance().printRuntime("Runtime Sort Watches");
+        Statistics::getInstance().printRuntime("Runtime Simplify");
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
