@@ -1310,6 +1310,14 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
     
+    // save trail of unary propagations
+    vector<Lit> props(trail.begin(), trail.begin() + trail_size);
+    for (Lit p : props) {
+        assigns[var(p)] = l_Undef;
+        vardata[var(p)] = VarData(nullptr, 0);
+    }
+    trail_size = 0;
+
     // detach them
     for (Clause* c : clauses) {
         if (c->size() > 2 && c->size() <= upper) {
@@ -1346,9 +1354,16 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
         }
     }
     
+    // restore trail of unary propagation
+    for (Lit p : props) {
+        if (assigns[var(p)] == l_Undef) {
+            uncheckedEnqueue(p);
+            propagate();
+        }
+    }
+
     Statistics::getInstance().runtimeStop("Runtime Revamp");
     
-    //printf("learnts-size, old: %i, new: %i\n", old_learnts_size, learnts.size());
     assert(old_learnts_size == learnts.size());
     assert(old_clauses_size == clauses.size());
     (void)(old_learnts_size);
@@ -1371,6 +1386,8 @@ bool Solver<PickBranchLitT>::simplify() {
         return ok = false;
     }
     
+    Statistics::getInstance().runtimeStart("Runtime Simplify");
+
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
@@ -1385,6 +1402,8 @@ bool Solver<PickBranchLitT>::simplify() {
     
     rebuildOrderHeap();
     
+    Statistics::getInstance().runtimeStop("Runtime Simplify");
+
     return true;
 }
 
@@ -1499,34 +1518,18 @@ lbool Solver<PickBranchLitT>::search() {
                 }
                 
                 if (unary_learnt) {
-                    Statistics::getInstance().runtimeStart("Runtime Simplify");
+                    cancelUntil(0);
                     if (!simplify()) {
                         return l_False;
                     }
                     unary_learnt = false;
-                    Statistics::getInstance().runtimeStop("Runtime Simplify");
                 }
                 
                 // every restart after reduce-db
                 if (reduced) {
                     if (revamp > 2) {
                         cancelUntil(0);
-                        
-                        vector<Lit> props(trail.begin(), trail.begin() + trail_size);
-                        for (Lit p : props) {
-                            assigns[var(p)] = l_Undef;
-                            vardata[var(p)] = VarData(nullptr, 0);
-                        }
-                        trail_size = 0;
-                        
                         revampClausePool(revamp);
-                        
-                        for (Lit p : props) {
-                            if (assigns[var(p)] == l_Undef) {
-                                uncheckedEnqueue(p);
-                                propagate();
-                            }
-                        }
                     }
                     
                     if (sort_watches) {
@@ -1650,6 +1653,8 @@ lbool Solver<PickBranchLitT>::solve() {
         if (conflict.size() == 0) {
             ok = false;
         }
+
+        sonification.stop(1);
     }
     else if (status == l_True) {
         Statistics::getInstance().incNBSatCalls();
@@ -1657,11 +1662,14 @@ lbool Solver<PickBranchLitT>::solve() {
         
         model.clear();
         model.insert(model.end(), assigns.begin(), assigns.end());
+
+        sonification.stop(0);
+    }
+    else {
+        sonification.stop(-1);
     }
     
     cancelUntil(0);
-    
-    sonification.stop(status == l_True ? 1 : status == l_False ? 0 : -1);
     
     return status;
 }
