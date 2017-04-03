@@ -660,12 +660,10 @@ bool Solver<PickBranchLitT>::isIncremental() {
     return incremental;
 }
 
-//=================================================================================================
-// Minor methods:
-
-// Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
-// used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
-//
+/***
+ * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
+ * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
+ ***/
 template<class PickBranchLitT>
 Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar) {
     int v = nVars();
@@ -894,27 +892,23 @@ void Solver<PickBranchLitT>::cancelUntil(int level) {
     }
 }
 
-//=================================================================================================
-// Major methods:
-
-
-/*_________________________________________________________________________________________________
- |
- |  analyze : (confl : Clause*) (out_learnt : vector<Lit>&) (out_btlevel : int&)  ->  [void]
- |
- |  Description:
- |    Analyze conflict and produce a reason clause.
- |
- |    Pre-conditions:
- |      * 'out_learnt' is assumed to be cleared.
- |      * Current decision level must be greater than root level.
- |
- |    Post-conditions:
- |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
- |      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
- |        rest of literals. There may be others from the same level though.
- |
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  analyze : (confl : Clause*) (out_learnt : vector<Lit>&) (out_btlevel : int&)  ->  [void]
+ *
+ *  Description:
+ *    Analyze conflict and produce a reason clause.
+ *
+ *    Pre-conditions:
+ *      - 'out_learnt' is assumed to be cleared.
+ *      - Current decision level must be greater than root level.
+ *
+ *    Post-conditions:
+ *      - 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
+ *      - If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
+ *        rest of literals. There may be others from the same level though.
+ *
+ ***************************************************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &lbd) {
     int pathC = 0;
@@ -1079,15 +1073,15 @@ bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
     return true;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  analyzeFinal : (p : Lit)  ->  [void]
- |
- |  Description:
- |    Specialized analysis procedure to express the final conflict in terms of assumptions.
- |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
- |    stores the result in 'out_conflict'.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  analyzeFinal : (p : Lit)  ->  [void]
+ *
+ *  Description:
+ *    Specialized analysis procedure to express the final conflict in terms of assumptions.
+ *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
+ *    stores the result in 'out_conflict'.
+ |*************************************************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
     out_conflict.clear();
@@ -1129,17 +1123,17 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
     trail[trail_size++] = p;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  propagate : [void]  ->  [Clause*]
- |
- |  Description:
- |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
- |    otherwise CRef_Undef.
- |
- |    Post-conditions:
- |      * the propagation queue is empty, even if there was a conflict.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  propagate : [void]  ->  [Clause*]
+ *
+ *  Description:
+ *    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+ *    otherwise CRef_Undef.
+ *
+ *    Post-conditions:
+ *      * the propagation queue is empty, even if there was a conflict.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
     Clause* confl = nullptr;
@@ -1232,15 +1226,14 @@ Clause* Solver<PickBranchLitT>::propagate() {
     return confl;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  reduceDB : ()  ->  [void]
- |
- |  Description:
- |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
- |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
- |________________________________________________________________________________________________@*/
-
+/**************************************************************************************************
+ *
+ *  reduceDB : ()  ->  [void]
+ *
+ *  Description:
+ *    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
+ *    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::reduceDB() {
     Statistics::getInstance().solverReduceDBInc();
@@ -1370,14 +1363,14 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     (void)(old_clauses_size);
 }
 
-/*_________________________________________________________________________________________________
- |
- |  simplify : [void]  ->  [bool]
- |
- |  Description:
- |    Simplify the clause database according to the current top-level assignment. Currently, the only
- |    thing done here is the removal of satisfied clauses, but more things can be put here.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  simplify : [void]  ->  [bool]
+ *
+ *  Description:
+ *    Simplify the clause database according to the current top-level assignment. Currently, the only
+ *    thing done here is the removal of satisfied clauses, but more things can be put here.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::simplify() {
     assert(decisionLevel() <= assumptions.size());
@@ -1407,19 +1400,19 @@ bool Solver<PickBranchLitT>::simplify() {
     return true;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
- |
- |  Description:
- |    Search for a model the specified number of conflicts.
- |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
- |
- |  Output:
- |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
- |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
- |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  search : (nof*conflicts : int) (params : const SearchParams&)  ->  [lbool]
+ *
+ *  Description:
+ *    Search for a model the specified number of conflicts.
+ *    NOTE! Use negative value for 'nof*conflicts' indicate infinity.
+ *
+ *  Output:
+ *    'l*True' if a partial assigment that is consistent with respect to the clauseset is found. If
+ *    all variables are decision variables, this means that the clause set is satisfiable. 'l*False'
+ *    if the clause set is unsatisfiable. 'l*Undef' if the bound on number of conflicts is reached.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::search() {
     assert(ok);
