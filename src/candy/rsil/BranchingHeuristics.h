@@ -30,8 +30,23 @@
 #include <candy/core/SolverTypes.h>
 
 namespace Candy {
+    
+    /**
+     * \defgroup RS_ImplicitLearning
+     */
+    
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A PickBranchLitT type (see candy/core/Solver.h) for plain random-simulation-based
+     * implicit learning solvers. A pickBranchLit implementation is provided for the
+     * RSILBranchingHeuristic PickBranchLitT type.
+     */
     class RSILBranchingHeuristic {
     public:
+        /**
+         * RSILBranchingHeuristic parameters.
+         */
         class Parameters {
         };
         

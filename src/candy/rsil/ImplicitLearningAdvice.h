@@ -36,10 +36,6 @@
 namespace Candy {
     
     /**
-     * \defgroup RS_ImplicitLearning
-     */
-    
-    /**
      * \class AdviceEntry
      *
      * \ingroup RS_ImplicitLearning
