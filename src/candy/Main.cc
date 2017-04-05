@@ -234,6 +234,7 @@ struct GateRecognitionArguments {
     const int opt_gr_tries;
     const bool opt_gr_patterns;
     const bool opt_gr_semantic;
+    const unsigned int opt_gr_semantic_budget;
     const bool opt_gr_holistic;
     const bool opt_gr_lookahead;
     const bool opt_gr_intensify;
@@ -244,7 +245,7 @@ struct GateRecognitionArguments {
 static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {
     return backported_std::make_unique<Candy::GateAnalyzer>(dimacs, recognitionArgs.opt_gr_tries, recognitionArgs.opt_gr_patterns,
                     recognitionArgs.opt_gr_semantic, recognitionArgs.opt_gr_holistic, recognitionArgs.opt_gr_lookahead, recognitionArgs.opt_gr_intensify,
-                    recognitionArgs.opt_gr_lookahead_threshold);
+                    recognitionArgs.opt_gr_lookahead_threshold, recognitionArgs.opt_gr_semantic_budget);
 }
 
 /**
@@ -421,6 +422,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
+    IntOption opt_gr_semantic_budget("GATE RECOGNITION", "gate-semantic-budget", "Enable Semantic Gate Detection Conflict Budget", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
     IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
@@ -447,6 +449,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_gr_tries,
         opt_gr_patterns,
         opt_gr_semantic,
+        opt_gr_semantic_budget,
         opt_gr_holistic,
         opt_gr_lookahead,
         opt_gr_intensify,

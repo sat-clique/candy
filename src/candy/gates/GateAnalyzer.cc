@@ -32,10 +32,10 @@
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify, int lookahead_threshold) :
+GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget) :
     problem (dimacs), solver (backported_std::make_unique<DefaultSolver>()),
     maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
-    useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify), lookaheadThreshold(lookahead_threshold)
+    useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify), lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget)
 {
   gates = new vector<Gate>(problem.nVars());
   inputs.resize(2 * problem.nVars(), false);
@@ -63,15 +63,16 @@ Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
   CNFProblem constraint;
   Lit alit = mkLit(problem.nVars()+assumptions.size(), false);
+  assumptions.push_back(~alit);
   Cl clause;
   for (const For& f : { fwd, bwd })
   for (Cl* cl : f) {
-    clause.push_back(alit);
     for (Lit l : *cl) {
       if (var(l) != o) {
         clause.push_back(l);
       }
     }
+    clause.push_back(alit);
     constraint.readClause(clause);
 #ifdef GADebug
     printClause(&clause, true);
@@ -79,7 +80,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     clause.clear();
   }
   solver->addClauses(constraint);
-  assumptions.push_back(~alit);
+  solver->setConfBudget(semanticConflictBudget);
   bool isRightUnique = solver->solve(assumptions) == l_False;
   assumptions.back() = alit;
   return isRightUnique;
