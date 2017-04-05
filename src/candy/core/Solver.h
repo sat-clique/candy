@@ -1203,7 +1203,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
             if (incremental) { // INCREMENTAL MODE
                 Clause& c = *cr;
 #ifdef EXPENSIVE_CLAUSE_ACTIVITY
-                claBumpActivity(c);
+                if (c.size() <= REVAMPABLE_PAGES_MAX_SIZE) claBumpActivity(c);
 #endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
@@ -1218,7 +1218,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
             else { // DEFAULT MODE (NOT INCREMENTAL)
                 Clause& c = *cr;
 #ifdef EXPENSIVE_CLAUSE_ACTIVITY
-                claBumpActivity(c);
+                if (c.size() <= REVAMPABLE_PAGES_MAX_SIZE) claBumpActivity(c);
 #endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
