@@ -192,11 +192,13 @@ private:
         size_t old_pool_size = pool.size();
         pool.clear();
 
+        printf("Revamp %u\n", N);
         char* new_page = page[0];
         size_t total_nelems = nelem[0];
         if (page.size() > 1) {
-            size_t total_nelems = std::accumulate(nelem.begin(), nelem.end(), (size_t)0);
-            char* new_page = (char*)calloc(total_nelems, sizeof(SortHelperClause<N>));
+            printf("Revamp %u merge %zu\n", N, page.size());
+            total_nelems = std::accumulate(nelem.begin(), nelem.end(), (size_t)0);
+            new_page = (char*)calloc(total_nelems, sizeof(SortHelperClause<N>));
             SortHelperClause<N>* pos = reinterpret_cast<SortHelperClause<N>*>(new_page);
             for (size_t i = 0; i < page.size(); i++) {
                 SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
