@@ -461,7 +461,7 @@ protected:
 #ifdef ABSTRACT_LEVELS_64
 	bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
 #else 
-        bool litRedundant(Lit p, uint32_t abstract_levels);
+    bool litRedundant(Lit p, uint32_t abstract_levels);
 #endif
 	lbool search(); // Search for a given number of conflicts.
 	virtual void reduceDB(); // Reduce the set of learnt clauses.

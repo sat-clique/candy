@@ -65,7 +65,7 @@ class GateAnalyzer {
 
 public:
   GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-      bool patterns = true, bool semantic = true, bool holistic = false, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10);
+      bool patterns = true, bool semantic = true, bool holistic = false, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10, unsigned int conflict_budget = 0);
   ~GateAnalyzer();
 
   // main analysis routine
@@ -119,6 +119,7 @@ private:
   bool useLookahead = false;
   bool useIntensification = false;
   int lookaheadThreshold = 10;
+  unsigned int semanticConflictBudget = 0;
 
   // analyzer output:
   std::vector<Cl*> roots; // top-level clauses

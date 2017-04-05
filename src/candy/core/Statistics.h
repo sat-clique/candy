@@ -29,12 +29,15 @@ class Statistics {
 #ifdef SOLVER_STATS
     uint64_t decisions, dec_vars, max_literals, tot_literals;
 #endif// SOLVER_STATS
+
 #ifdef RESTART_STATS
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
-#endif// SOLVER_STATS
+#endif// RESTART_STATS
+
 #ifdef LEARNTS_STATS
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
 #endif// LEARNTS_STATS
+
 #ifdef RUNTIME_STATS
 #define RT_INITIALIZATION   "Runtime Initialization"
 #define RT_SOLVER           "Runtime Solver"
@@ -43,10 +46,12 @@ class Statistics {
     std::map<std::string, double> runtimes;
     std::map<std::string, double> starttimes;
 #endif// RUNTIME_STATS
+
 #ifdef INCREMENTAL_STATS
     double totalTime4Sat, totalTime4Unsat;
     int nbSatCalls, nbUnsatCalls;
 #endif// INCREMENTAL_STATS
+
 #ifdef ALLOCATOR_STATS
     std::vector<uint32_t> stats_pool_allocd, stats_pool_hwm;
     uint32_t stats_number_of_pools, stats_xxl_pool_allocd, stats_beyond_mallocd;
