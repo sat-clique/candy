@@ -69,7 +69,7 @@
 #include "sonification/SolverSonification.h"
 
 #define ABSTRACT_LEVELS_64
-//#define EXPENSIVE_CLAUSE_ACTIVITY
+#define EXPENSIVE_CLAUSE_ACTIVITY
 
 namespace Candy {
 
@@ -364,10 +364,11 @@ protected:
     // constants for memory reorganization
 	uint8_t revamp;
     bool sort_watches;
-    uint8_t sort_learnts_max;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool unary_learnt; // Indicates whether a unary clause was learnt since the last restart
+    bool pending_rescale_var; // Indicates whether variable activity should be rescaled soon
+    bool pending_rescale_cla; // Indicates whether clause activity should be rescaled soon
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
@@ -484,32 +485,35 @@ protected:
 	}
 
 	inline void varBumpActivity(Var v, double inc) {
-	    if ((activity[v] += inc) > 1e100) {
-	        for (size_t i = 0; i < nVars(); i++) {
-	            activity[i] *= 1e-100; // rescale
-	        }
-	        var_inc *= 1e-100;
-	    }
+	    pending_rescale_var |= (activity[v] += inc) > 1e100;
 	    if (order_heap.inHeap(v)) {
 	        order_heap.decrease(v); // update order-heap
 	    }
 	}
+
+	inline void varRescaleActivity() {
+        for (size_t i = 0; i < nVars(); i++) {
+            activity[i] *= 1e-100;
+        }
+        var_inc *= 1e-100;
+    }
 
 	inline void claDecayActivity() {
 	    cla_inc *= (1 / clause_decay);
 	}
 
 	inline void claBumpActivity(Clause& c) {
-	    if ((c.activity() += cla_inc) > 1e20) {
-	        for (Clause* clause : clauses)
-	            clause->activity() *= 1e-20;
-	        for (Clause* clause : learnts)
-	            clause->activity() *= 1e-20;
-	        for (Clause* clause : learntsBin)
-	            clause->activity() *= 1e-20;
-	        cla_inc *= 1e-20;
-	    }
+	    pending_rescale_cla |= (c.activity() += cla_inc) > 1e20;
 	}
+
+	inline void claRescaleActivity() {
+	    for (auto container : { clauses, learnts }) { //, learntsBin }) {
+	        for (Clause* clause : container) {
+	            clause->activity() *= 1e-20;
+	        }
+	    }
+        cla_inc *= 1e-20;
+    }
 
 	// Gives the current decisionlevel.
 	inline uint32_t decisionLevel() const {
@@ -613,10 +617,12 @@ Solver<PickBranchLitT>::Solver() :
     // phase saving
     phase_saving(SolverOptions::opt_phase_saving),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches), sort_learnts_max(SolverOptions::opt_sort_learnts_max),
+    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches),
     // simpdb
     remove_satisfied(true),
     unary_learnt(false),
+    pending_rescale_var(false),
+    pending_rescale_cla(false),
     // conflict state
     ok(true),
     // lbd computation
@@ -1049,7 +1055,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
         }
         lastDecisionLevel.clear();
     }
-    
+
     // clear seen[]
     for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
 }
@@ -1268,7 +1274,6 @@ void Solver<PickBranchLitT>::reduceDB() {
     
     size_t index = (learnts.size() + learntsBin.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
-        printf("c reduceDB special increment\n");
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
         if (specialIncReduceDB == 0) {
             return;
@@ -1504,28 +1509,33 @@ lbool Solver<PickBranchLitT>::search() {
                 uncheckedEnqueue(learnt_clause[0]);
                 unary_learnt = true;
                 Statistics::getInstance().solverUnariesInc();
-            } else {
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, true);
-                cr->setLBD(nblevels);
+            }
+            else {
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels);
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
                 }
                 if (cr->size() == 2) {
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
-                } else {
-                    if (cr->size() < sort_learnts_max && cr->size() > 6) {
-                        sort(cr->begin()+2, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
-                    }
+                }
+                else {
                     learnts.push_back(cr);
+                    claBumpActivity(*cr);
                 }
                 attachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
-                claBumpActivity(*cr);
             }
             varDecayActivity();
+            if (pending_rescale_var) {
+                varRescaleActivity();
+            }
             claDecayActivity();
-        } else {
+            if (pending_rescale_cla) {
+                claRescaleActivity();
+            }
+        }
+        else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
             if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts)))) {
                 lbdQueue.fastclear();
