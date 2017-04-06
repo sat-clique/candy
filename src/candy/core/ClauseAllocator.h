@@ -53,10 +53,19 @@ public:
     void operator=(ClauseAllocator const&)  = delete;
 
     inline void* allocate(uint32_t length) {
-        uint16_t index = getPoolIndex(length);
-        if (index < NUMBER_OF_POOLS) {
-            Statistics::getInstance().allocatorPoolAllocdInc(index);
+        if (length > XXL_POOL_ONE_SIZE) {
+            Statistics::getInstance().allocatorBeyondMallocdInc();
+            return malloc(clauseBytes(length));
+        }
+        else {
+            uint16_t index = getPoolIndex(length);
             std::vector<void*>& pool = pools[index];
+
+            if (index < NUMBER_OF_POOLS) {
+                Statistics::getInstance().allocatorPoolAllocdInc(index);
+            } else {
+                Statistics::getInstance().allocatorXXLPoolAllocdInc();
+            }
 
             if (pool.size() == 0) {
                 pool.reserve(std::min(pool.capacity()*2, (size_t)PAGE_MAX_ELEMENTS));
@@ -67,36 +76,23 @@ public:
             pool.pop_back();
             return clause;
         }
-        else if (index < XXL_POOL_ONE_SIZE) {
-            Statistics::getInstance().allocatorXXLPoolAllocdInc();
-            if (pools[XXL_POOL_INDEX].size() == 0) {
-                pools[XXL_POOL_INDEX].reserve(pools[XXL_POOL_INDEX].capacity()*2);
-                fillPool(XXL_POOL_INDEX);
-            }
-            void* clause = pools[XXL_POOL_INDEX].back();
-            pools[XXL_POOL_INDEX].pop_back();
-            return clause;
-        }
-        else {
-            Statistics::getInstance().allocatorBeyondMallocdInc();
-            return malloc(clauseBytes(length));
-        }
     }
 
     inline void deallocate(Clause* clause) {
-        uint16_t index = getPoolIndex(clause->size());
-        if (index < NUMBER_OF_POOLS) {
-            Statistics::getInstance().allocatorPoolAllocdDec(index);
-            pools[index].push_back(clause);
-            clause->activity() = 0;
-        }
-        else if (index < XXL_POOL_ONE_SIZE) {
-            Statistics::getInstance().allocatorXXLPoolAllocdDec();
-            pools[XXL_POOL_INDEX].push_back(clause);
-        }
-        else {
+        if (clause->size() > XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorBeyondMallocdDec();
             free((void*)clause);
+        }
+        else {
+            uint16_t index = getPoolIndex(clause->size());
+            clause->activity() = 0;
+            pools[index].push_back(clause);
+
+            if (index < NUMBER_OF_POOLS) {
+                Statistics::getInstance().allocatorPoolAllocdDec(index);
+            } else {
+                Statistics::getInstance().allocatorXXLPoolAllocdDec();
+            }
         }
     }
 
@@ -149,7 +145,7 @@ private:
     }
 
     inline uint16_t getPoolIndex(uint32_t size) const {
-        return size - 1;
+        return std::min(size-1, (uint32_t)XXL_POOL_INDEX);
     }
 
     uint32_t initialNumberOfElements(uint32_t index) {
