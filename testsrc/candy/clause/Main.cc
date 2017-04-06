@@ -104,25 +104,6 @@ TEST (CandyClauseHeaderTestPatterns, setDeletedAndLBD) {
     ASSERT_TRUE(clause->isDeleted());
 }
 
-TEST (CandyClauseHeaderTestPatterns, clauseLTwithLBD) {
-    ClauseAllocator allocator;
-    Clause* clause1 = new (allocator.allocate(1)) Clause({lit_Undef});
-    Clause* clause2 = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause1->setLBD(1024);
-    clause2->setLBD(256);
-    ASSERT_TRUE(*clause1 < *clause2);
-}
-
-TEST (CandyClauseHeaderTestPatterns, clauseLTwithLBDAndFrozen) {
-    ClauseAllocator allocator;
-    Clause* clause1 = new (allocator.allocate(1)) Clause({lit_Undef});
-    Clause* clause2 = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause1->setLBD(1024);
-    clause2->setLBD(256);
-    clause1->setFrozen(true);
-    ASSERT_FALSE(*clause1 < *clause2);
-}
-
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
