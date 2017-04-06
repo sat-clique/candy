@@ -68,6 +68,9 @@
 
 #include "sonification/SolverSonification.h"
 
+#define ABSTRACT_LEVELS_64
+//#define EXPENSIVE_CLAUSE_ACTIVITY
+
 namespace Candy {
 
 class DefaultPickBranchLit {
