@@ -496,6 +496,7 @@ protected:
             activity[i] *= 1e-100;
         }
         var_inc *= 1e-100;
+        pending_rescale_var = false;
     }
 
 	inline void claDecayActivity() {
@@ -513,6 +514,7 @@ protected:
 	        }
 	    }
         cla_inc *= 1e-20;
+        pending_rescale_cla = false;
     }
 
 	// Gives the current decisionlevel.
