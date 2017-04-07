@@ -509,7 +509,7 @@ protected:
 	}
 
 	void claRescaleActivity() {
-	    for (auto container : { clauses, learnts }) { //, learntsBin }) {
+	    for (auto container : { clauses, learnts, learntsBin }) {
 	        for (Clause* clause : container) {
 	            clause->activity() *= 1e-20;
 	        }
@@ -1521,8 +1521,8 @@ lbool Solver<PickBranchLitT>::search() {
                 }
                 else {
                     learnts.push_back(cr);
-                    claBumpActivity(*cr);
                 }
+                claBumpActivity(*cr);
                 attachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
             }
