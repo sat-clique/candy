@@ -69,7 +69,7 @@
 #include "sonification/SolverSonification.h"
 
 #define ABSTRACT_LEVELS_64
-#define EXPENSIVE_CLAUSE_ACTIVITY
+//#define EXPENSIVE_CLAUSE_ACTIVITY
 
 namespace Candy {
 
@@ -367,8 +367,6 @@ protected:
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool unary_learnt; // Indicates whether a unary clause was learnt since the last restart
-    bool pending_rescale_var; // Indicates whether variable activity should be rescaled soon
-    bool pending_rescale_cla; // Indicates whether clause activity should be rescaled soon
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
@@ -485,18 +483,19 @@ protected:
 	}
 
 	inline void varBumpActivity(Var v, double inc) {
-	    pending_rescale_var |= (activity[v] += inc) > 1e100;
+	    if ((activity[v] += inc) > 1e100) {
+	        varRescaleActivity();
+	    }
 	    if (order_heap.inHeap(v)) {
 	        order_heap.decrease(v); // update order-heap
 	    }
 	}
 
-	inline void varRescaleActivity() {
+	void varRescaleActivity() {
         for (size_t i = 0; i < nVars(); i++) {
             activity[i] *= 1e-100;
         }
         var_inc *= 1e-100;
-        pending_rescale_var = false;
     }
 
 	inline void claDecayActivity() {
@@ -504,17 +503,18 @@ protected:
 	}
 
 	inline void claBumpActivity(Clause& c) {
-	    pending_rescale_cla |= (c.activity() += cla_inc) > 1e20;
+	    if ((c.activity() += cla_inc) > 1e20) {
+	        claRescaleActivity();
+	    }
 	}
 
-	inline void claRescaleActivity() {
+	void claRescaleActivity() {
 	    for (auto container : { clauses, learnts }) { //, learntsBin }) {
 	        for (Clause* clause : container) {
 	            clause->activity() *= 1e-20;
 	        }
 	    }
         cla_inc *= 1e-20;
-        pending_rescale_cla = false;
     }
 
 	// Gives the current decisionlevel.
@@ -623,8 +623,6 @@ Solver<PickBranchLitT>::Solver() :
     // simpdb
     remove_satisfied(true),
     unary_learnt(false),
-    pending_rescale_var(false),
-    pending_rescale_cla(false),
     // conflict state
     ok(true),
     // lbd computation
@@ -762,7 +760,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps, false);
+        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -1214,7 +1212,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
             if (incremental) { // INCREMENTAL MODE
                 Clause& c = *cr;
 #ifdef EXPENSIVE_CLAUSE_ACTIVITY
-                if (c.size() <= REVAMPABLE_PAGES_MAX_SIZE) claBumpActivity(c);
+                if (c.size() <= revamp) claBumpActivity(c);
 #endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
@@ -1229,7 +1227,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
             else { // DEFAULT MODE (NOT INCREMENTAL)
                 Clause& c = *cr;
 #ifdef EXPENSIVE_CLAUSE_ACTIVITY
-                if (c.size() <= REVAMPABLE_PAGES_MAX_SIZE) claBumpActivity(c);
+                if (c.size() <= revamp) claBumpActivity(c);
 #endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
@@ -1529,13 +1527,7 @@ lbool Solver<PickBranchLitT>::search() {
                 uncheckedEnqueue(cr->first(), cr);
             }
             varDecayActivity();
-            if (pending_rescale_var) {
-                varRescaleActivity();
-            }
             claDecayActivity();
-            if (pending_rescale_cla) {
-                claRescaleActivity();
-            }
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
