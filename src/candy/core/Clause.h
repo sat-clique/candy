@@ -15,9 +15,9 @@
 namespace Candy {
 
 // bits 0..12
-//#define BITS_LBD 13
-//#define LBD_MASK (static_cast<uint16_t>(8191))
-#define LBD_MASK (static_cast<uint16_t>(4095))
+#define BITS_LBD 13
+#define LBD_MASK (static_cast<uint16_t>(8191))
+//#define LBD_MASK (static_cast<uint16_t>(4095))
 // bit 13
 #define LEARNT_MASK (static_cast<uint16_t>(8192))
 // bit 14
@@ -37,8 +37,30 @@ class Clause {
     Lit literals[1];
 
 public:
-    Clause(const std::vector<Lit>& ps, uint16_t lbd);
-    Clause(std::initializer_list<Lit> list);
+    Clause(const std::vector<Lit>& list, uint16_t lbd) {
+        std::copy(list.begin(), list.end(), literals);
+        length = list.size();
+        header = 0;
+        setLearnt(true); // only learnts have lbd
+        setLBD(lbd);
+        data.activity = 0;
+        assert(std::unique(begin(), end()) == end());
+    }
+
+    Clause(std::initializer_list<Lit> list) {
+        std::copy(list.begin(), list.end(), literals);
+        length = list.size();
+        header = 0; // not frozen, not deleted and not learnt; lbd=0
+        calcAbstraction();
+    }
+
+    Clause(const std::vector<Lit>& list) {
+        std::copy(list.begin(), list.end(), literals);
+        length = list.size();
+        header = 0; // not frozen, not deleted and not learnt; lbd=0
+        calcAbstraction();
+    }
+
     ~Clause();
 
     //void* operator new (std::size_t size) = delete;
