@@ -284,6 +284,11 @@ namespace Candy {
         explicit ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar);
         
         /**
+         * Constructs an empty instance of ImplicitLearningAdvice.
+         */
+        ImplicitLearningAdvice();
+        
+        /**
          * Retrieves implicit learning heuristics advice for the variable \p v .
          *
          * Note: for the sake of efficient implementation, this method does not return a const reference.
@@ -296,6 +301,9 @@ namespace Candy {
          * Returns true iff \p getAdvice() may be called for \p v .
          */
         inline bool hasPotentialAdvice(Var v) const noexcept;
+        
+        ImplicitLearningAdvice(ImplicitLearningAdvice&& other) = default;
+        ImplicitLearningAdvice& operator=(ImplicitLearningAdvice&& other) = default;
         
         ImplicitLearningAdvice(const ImplicitLearningAdvice& other) = delete;
         ImplicitLearningAdvice& operator=(const ImplicitLearningAdvice& other) = delete;
@@ -353,6 +361,10 @@ namespace Candy {
         for (auto& conjecture : conjectures.getBackbones()) {
             addBackboneConjecture(conjecture);
         }
+    }
+    
+    template<class AdviceEntryType>
+    ImplicitLearningAdvice<AdviceEntryType>::ImplicitLearningAdvice() : m_advice() {
     }
     
     template<class AdviceEntryType>
