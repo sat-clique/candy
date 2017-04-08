@@ -28,9 +28,11 @@
 #define X_66055FCA_E0CE_46B3_9E4C_7F093C37330B_BRANCHINGHEURISTICS_H
 
 #include <candy/core/SolverTypes.h>
+#include <candy/rsil/ImplicitLearningAdvice.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/utils/FastRand.h>
 
 namespace Candy {
-    
     /**
      * \defgroup RS_ImplicitLearning
      */
@@ -42,19 +44,112 @@ namespace Candy {
      * implicit learning solvers. A pickBranchLit implementation is provided for the
      * RSILBranchingHeuristic PickBranchLitT type.
      */
+    template<unsigned int tAdviceSize>
     class RSILBranchingHeuristic {
     public:
+        using TrailType = std::vector<Lit>;
+        using TrailLimType = std::vector<uint32_t>;
+        using DecisionType = std::vector<char>;
+        using AssignsType = std::vector<lbool>;
+        
         /**
          * RSILBranchingHeuristic parameters.
          */
         class Parameters {
+        public:
+            const Conjectures& conjectures;
         };
         
         RSILBranchingHeuristic();
         explicit RSILBranchingHeuristic(const Parameters& params);
+        RSILBranchingHeuristic(RSILBranchingHeuristic&& other) = default;
+        RSILBranchingHeuristic& operator=(RSILBranchingHeuristic&& other) = default;
         
         Lit pickBranchLit();
+        
+        inline Lit getAdvice(const TrailType& trail,
+                             const TrailLimType& trailLimits,
+                             const AssignsType& assigns,
+                             const DecisionType& decision);
+        
+        
+        
+    private:
+        ImplicitLearningAdvice<AdviceEntry<tAdviceSize>> m_advice;
+        FastRandomNumberGenerator m_rng;
     };
+    
+    
+    class RSILBranchingHeuristic3 : public RSILBranchingHeuristic<3> {
+    public:
+        RSILBranchingHeuristic3() = default;
+        explicit RSILBranchingHeuristic3(const Parameters& params);
+    };
+    
+    namespace BranchingHeuristicsImpl {
+        Var getMaxVar(const Conjectures& conj) {
+            Var result = 0;
+            for (auto& c : conj.getBackbones()) {
+                result = std::max(result, var(c.getLit()));
+            }
+            for (auto& c : conj.getEquivalences()) {
+                for (auto literal : c) {
+                    result = std::max(result, var(literal));
+                }
+            }
+            return result;
+        }
+    }
+    
+    template<unsigned int tAdviceSize>
+    RSILBranchingHeuristic<tAdviceSize>::RSILBranchingHeuristic() : m_advice(), m_rng(0xFFFF) {
+    }
+    
+    template<unsigned int tAdviceSize>
+    RSILBranchingHeuristic<tAdviceSize>::RSILBranchingHeuristic(const RSILBranchingHeuristic::Parameters& params)
+    : m_advice(params.conjectures,
+               BranchingHeuristicsImpl::getMaxVar(params.conjectures)),
+    m_rng(0xFFFF) {
+    }
+    
+    template<unsigned int tAdviceSize>
+    inline Lit RSILBranchingHeuristic<tAdviceSize>::getAdvice(const TrailType& trail,
+                                                              const TrailLimType& trailLimits,
+                                                              const AssignsType& assigns,
+                                                              const DecisionType& decision) {
+        assert(trailLimits.size() > 0);
+        
+        auto randomNumber = m_rng();
+        auto trailStart = trailLimits.back();
+        auto trailSize = trail.size();
+        auto scanLen = trailSize - trailStart;
+        auto rnd = randomNumber & 0xFFFFFFFF;
+        
+        for (decltype(scanLen) j = 0; j < scanLen; ++j) {
+            auto i = trailStart + ((j + rnd) % scanLen);
+            
+            Lit cursor = trail[i];
+            Var variable = var(cursor);
+            
+            if (!m_advice.hasPotentialAdvice(variable)) {
+                continue;
+            }
+            
+            auto& advice = m_advice.getAdvice(variable);
+            
+            for (decltype(advice.getSize()) a = 0; a < advice.getSize(); ++a) {
+                size_t idx = (a + rnd) % advice.getSize();
+                
+                auto advisedLit = advice.getLiteral(idx);
+                if (assigns[var(advisedLit)] == l_Undef && decision[var(advisedLit)]) {
+                    auto result = sign(cursor) ? ~advisedLit : advisedLit;
+                    return result;
+                }
+            }
+        }
+        
+        return lit_Undef;
+    }
 }
 
 #endif

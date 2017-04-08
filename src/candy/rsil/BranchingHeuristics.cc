@@ -27,37 +27,18 @@
 #include "BranchingHeuristics.h"
 #include <candy/core/Solver.h>
 
+#include <algorithm>
+
 namespace Candy {
-    RSILBranchingHeuristic::RSILBranchingHeuristic() {
-    }
-    
-    RSILBranchingHeuristic::RSILBranchingHeuristic(const RSILBranchingHeuristic::Parameters& params) {
-        (void) params;
-    }
-    
-    Lit RSILBranchingHeuristic::pickBranchLit() {
-        return mkLit(0); // TODO: implementation
-    }
+    RSILBranchingHeuristic3::RSILBranchingHeuristic3(const Parameters& params) : RSILBranchingHeuristic<3>(params){
+    };
     
     template <>
-    Lit Solver<RSILBranchingHeuristic>::pickBranchLit() {
-        
-        // TODO: the following is a duplication of the default pickBranchLit.
-        // Having been introduced to minimize the merging overhead, it will be
-        // replaced just before the next pull request.
-        
-        Var next = var_Undef;
-        
-        // Activity based decision:
-        while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
-            if (order_heap.empty()) {
-                next = var_Undef;
-                break;
-            } else {
-                next = order_heap.removeMin();
-            }
+    Lit Solver<RSILBranchingHeuristic3>::pickBranchLit() {
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
+        if (rsilAdvice != lit_Undef) {
+            return rsilAdvice;
         }
-        
-        return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+        return defaultPickBranchLit();
     }
 }
