@@ -447,6 +447,7 @@ protected:
     }
 
     Lit pickBranchLit(); // Return the next decision variable.
+    Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
 	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
 	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
@@ -1674,6 +1675,22 @@ lbool Solver<PickBranchLitT>::solve() {
     return status;
 }
 
+template <class PickBranchLitT>
+Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
+    Var next = var_Undef;
+    
+    // Activity based decision:
+    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
+        if (order_heap.empty()) {
+            next = var_Undef;
+            break;
+        } else {
+            next = order_heap.removeMin();
+        }
+    }
+    
+    return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+}
 
 }
 
