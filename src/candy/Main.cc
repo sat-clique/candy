@@ -374,6 +374,34 @@ static lbool solveWithRSAR(DefaultSimpSolver& solver, Candy::CNFProblem& problem
     return lbool(result);
 }
 
+enum class RSILMode {
+    UNRESTRICTED,
+    VANISHING,
+    IMPLICATIONBUDGETED
+};
+
+static RSILMode getRSILMode(const std::string& mode) {
+    if (mode == "unrestricted") {
+        return RSILMode::UNRESTRICTED;
+    }
+    else if (mode == "vanishing") {
+        return RSILMode::VANISHING;
+    }
+    else if (mode == "implicationbudgeted") {
+        return RSILMode::IMPLICATIONBUDGETED;
+    }
+    else {
+        throw std::invalid_argument("Error: unknown RSIL mode " + mode);
+    }
+}
+
+struct RSILArguments {
+    const bool useRSIL;
+    const RSILMode mode;
+    const uint64_t vanishing_probabilityHalfLife;
+    const uint64_t impbudget_initialBudget;
+};
+
 struct GlucoseArguments {
     const int verb;
     const bool mod;
@@ -394,6 +422,7 @@ struct GlucoseArguments {
     const GateRecognitionArguments gateRecognitionArgs;
     const RandomSimulationArguments randomSimulationArgs;
     const RSARArguments rsarArgs;
+    const RSILArguments rsilArgs;
 };
 
 static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
@@ -440,6 +469,13 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     IntOption opt_rsar_maxRefinementSteps("RSAR", "rsar-max-refinements", "Max. refinement steps", 10, IntRange(1, INT32_MAX));
     StringOption opt_rsar_simpMode("RSAR", "rsar-simpmode", "Simplification handling mode", "RESTRICT");
     StringOption opt_rsar_inputDepCountHeurConf("RSAR", "rsar-heur-idc", "Input dependency count heuristic configuration", "");
+    
+    BoolOption opt_rsil_enable("RSIL", "rsil-enable", "Enable random-simulation-based implicit learning heuristics", false);
+    StringOption opt_rsil_mode("RSIL", "rsil-mode", "Set RSIL mode to unrestricted, vanishing or implicationbudgeted", "unrestricted");
+    IntOption opt_rsil_vanHalfLife("RSIL", "rsil-van-halflife", "Set the probability half-life (in decisions) for vanishing mode",
+                                   1 << 24, IntRange(1, INT32_MAX));
+    IntOption opt_rsil_impBudgets("RSIL", "rsil-imp-budgets", "Set the initial budgets for implicationbudgeted mode",
+                                  1 << 20, IntRange(1, INT32_MAX));
 
     parseOptions(argc, argv, true);
 
@@ -471,6 +507,13 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         std::string{opt_rsar_inputDepCountHeurConf} != "",
         std::string{opt_rsar_inputDepCountHeurConf}
     };
+    
+    RSILArguments rsilArgs{
+        opt_rsil_enable,
+        getRSILMode(std::string{opt_rsil_mode}),
+        static_cast<uint64_t>(opt_rsil_vanHalfLife),
+        static_cast<uint64_t>(opt_rsil_impBudgets)
+    };
 
     return GlucoseArguments{
         verb,
@@ -486,7 +529,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         wait_for_user,
         gateRecognitionArgs,
         rsArgs,
-        rsarArgs
+        rsarArgs,
+        rsilArgs
     };
 }
 
