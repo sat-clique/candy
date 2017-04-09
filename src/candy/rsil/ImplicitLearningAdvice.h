@@ -59,6 +59,10 @@ namespace Candy {
     public:
         static_assert(tMaxAdviceSize > 1, "max. advice size tMaxAdviceSize must be larger than 1");
         
+        /** This type can be used for specialization with SFINAE (AdviceEntry<n>::BasicType is the same
+         * for all admissible values of n). */
+        using BasicType = AdviceEntry<2>;
+        
         /**
          * \class AdviceLits
          *
@@ -157,6 +161,10 @@ namespace Candy {
         static_assert(tMaxAdviceSize > 1, "max. advice size tMaxAdviceSize must be larger than 1");
         
     public:
+        /** This type can be used for specialization with SFINAE (BudgetAdviceEntry<n>::BasicType is the same
+         * for all admissible values of n). */
+        using BasicType = BudgetAdviceEntry<2>;
+        
         using AdviceBudgets = std::array<int, tMaxAdviceSize-1>;
         
         /** equals the tMaxAdviceSize parameter */
@@ -280,6 +288,8 @@ namespace Candy {
          *
          * \param maxVar        A variable at least as great as the greatest variable occuring
          *                      in \p conjectures.
+         *
+         * \param advicePrototype   TODO: document prototype
          */
         explicit ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar);
         
@@ -349,7 +359,8 @@ namespace Candy {
     
     
     template<class AdviceEntryType>
-    ImplicitLearningAdvice<AdviceEntryType>::ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar) {
+    ImplicitLearningAdvice<AdviceEntryType>::ImplicitLearningAdvice(const Conjectures& conjectures,
+                                                                    Var maxVar) {
         m_advice.resize(maxVar+1);
         
         for (auto& conjecture : conjectures.getEquivalences()) {

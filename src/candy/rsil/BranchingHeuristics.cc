@@ -47,4 +47,13 @@ namespace Candy {
         }
         return defaultPickBranchLit();
     }
+    
+    template <>
+    Lit Solver<RSILBudgetBranchingHeuristic3>::pickBranchLit() {
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
+        if (rsilAdvice != lit_Undef) {
+            return rsilAdvice;
+        }
+        return defaultPickBranchLit();
+    }
 }
