@@ -56,6 +56,8 @@ namespace Candy {
         using DecisionType = std::vector<char>;
         using AssignsType = std::vector<lbool>;
         
+        using BasicType = RSILBranchingHeuristic<AdviceEntry<3>>;
+        
         /**
          * RSILBranchingHeuristic parameters.
          */
@@ -105,6 +107,9 @@ namespace Candy {
     class RSILBudgetBranchingHeuristic : public RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>> {
         static_assert(tAdviceSize > 1, "advice size must be >= 2");
     public:
+        
+        using BasicType = RSILBudgetBranchingHeuristic<3>;
+        
         /**
          * RSILBudgetBranchingHeuristic parameters.
          */
@@ -149,6 +154,9 @@ namespace Candy {
         using DecisionType = typename RSILBranchingHeuristic<AdviceType>::DecisionType;
         using AssignsType = typename RSILBranchingHeuristic<AdviceType>::AssignsType;
         
+        
+        using BasicType = RSILVanishingBranchingHeuristic<AdviceEntry<3>>;
+        
         /**
          * RSILVanishingBranchingHeuristic parameters.
          */
@@ -161,8 +169,14 @@ namespace Candy {
             uint64_t probHalfLife;
             
             Parameters() = default;
+            
             Parameters(const Conjectures& conjectures) : rsilParameters({conjectures}), probHalfLife(100ull) {
             }
+            
+            Parameters(const Conjectures& conjectures, uint64_t probHalfLife)
+            : rsilParameters({conjectures}),
+            probHalfLife(probHalfLife) {}
+            
             Parameters(const typename RSILBranchingHeuristic<AdviceType>::Parameters& parameters,
                        uint64_t probHalfLife) : rsilParameters(parameters), probHalfLife(probHalfLife) {
             }
@@ -287,6 +301,11 @@ namespace Candy {
         auto randomNumber = m_rng();
         auto trailStart = trailLimits.back();
         auto trailSize = trail.size();
+        
+        if (trailSize - trailStart > 16) {
+            trailStart = trailSize - 16;
+        }
+        
         auto scanLen = trailSize - trailStart;
         auto rnd = randomNumber & 0xFFFFFFFF;
         

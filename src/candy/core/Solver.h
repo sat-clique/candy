@@ -113,6 +113,8 @@ class Solver {
     friend class SolverConfiguration;
 
 public:
+    using PickBranchLitType = PickBranchLitT;
+    
     Solver();
     virtual ~Solver();
     
