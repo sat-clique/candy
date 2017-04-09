@@ -18,3 +18,9 @@ target_include_directories(rsil_tests PUBLIC ${CMAKE_PROJECT_ROOT}/lib/googletes
 
 target_link_libraries(rsil_tests ${CANDY_LIBS} testutils gtest_main gtest gmock)
 
+file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "problems/*.cnf")
+message("Test CNF files: ${TEST_CNF_PROBLEMS}")
+
+foreach(CNF_PROBLEM ${TEST_CNF_PROBLEMS})
+configure_file(${CNF_PROBLEM} ${CNF_PROBLEM} COPYONLY)
+endforeach()
