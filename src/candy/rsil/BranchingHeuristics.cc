@@ -30,11 +30,25 @@
 #include <algorithm>
 
 namespace Candy {
-    RSILBranchingHeuristic3::RSILBranchingHeuristic3(const Parameters& params) : RSILBranchingHeuristic<3>(params){
+    RSILBranchingHeuristic3::RSILBranchingHeuristic3(const Parameters& params)
+    : RSILBranchingHeuristic<3>(params) {
     };
     
     template <>
     Lit Solver<RSILBranchingHeuristic3>::pickBranchLit() {
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
+        if (rsilAdvice != lit_Undef) {
+            return rsilAdvice;
+        }
+        return defaultPickBranchLit();
+    }
+    
+    RSILVanishingBranchingHeuristic3::RSILVanishingBranchingHeuristic3(const Parameters& params)
+    : RSILVanishingBranchingHeuristic<3>(params) {
+    };
+    
+    template <>
+    Lit Solver<RSILVanishingBranchingHeuristic3>::pickBranchLit() {
         Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;

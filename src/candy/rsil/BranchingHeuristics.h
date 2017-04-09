@@ -57,6 +57,7 @@ namespace Candy {
          */
         class Parameters {
         public:
+            /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
             const Conjectures& conjectures;
         };
         
@@ -65,14 +66,12 @@ namespace Candy {
         RSILBranchingHeuristic(RSILBranchingHeuristic&& other) = default;
         RSILBranchingHeuristic& operator=(RSILBranchingHeuristic&& other) = default;
         
-        Lit pickBranchLit();
+        Lit getAdvice(const TrailType& trail,
+                      const TrailLimType& trailLimits,
+                      const AssignsType& assigns,
+                      const DecisionType& decision) noexcept;
         
-        inline Lit getAdvice(const TrailType& trail,
-                             const TrailLimType& trailLimits,
-                             const AssignsType& assigns,
-                             const DecisionType& decision);
-        
-        
+        FastRandomNumberGenerator& getRandomNumberGenerator() noexcept;
         
     private:
         ImplicitLearningAdvice<AdviceEntry<tAdviceSize>> m_advice;
@@ -80,14 +79,85 @@ namespace Candy {
     };
     
     
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A specialization of RSILBranchingHeuristic<n> with n=3.
+     */
     class RSILBranchingHeuristic3 : public RSILBranchingHeuristic<3> {
     public:
         RSILBranchingHeuristic3() = default;
         explicit RSILBranchingHeuristic3(const Parameters& params);
     };
     
+    
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A PickBranchLitT type (see candy/core/Solver.h) for plain random-simulation-based
+     * implicit learning solvers. This heuristic produces results with decreased probability,
+     * configured via the parameter \p probHalfLife : every \p probHalfLife decisions, the
+     * probability of possibly overriding the solver's internal decision heuristic is halved.
+     *
+     * A pickBranchLit implementation is provided for the RSILVanishingBranchingHeuristic
+     * PickBranchLitT type.
+     */
+    template<unsigned int tAdviceSize>
+    class RSILVanishingBranchingHeuristic {
+    public:
+        /**
+         * RSILVanishingBranchingHeuristic parameters.
+         */
+        class Parameters {
+        public:
+            /// The parameters for the underlying RSILBranchingHeuristic.
+            typename RSILBranchingHeuristic<tAdviceSize>::Parameters rsilParameters;
+            
+            /// The intervention probability half-life.
+            uint64_t probHalfLife;
+        };
+        
+        RSILVanishingBranchingHeuristic();
+        explicit RSILVanishingBranchingHeuristic(const Parameters& params);
+        RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
+        RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
+        
+        Lit getAdvice(const typename RSILBranchingHeuristic<tAdviceSize>::TrailType& trail,
+                      const typename RSILBranchingHeuristic<tAdviceSize>::TrailLimType& trailLimits,
+                      const typename RSILBranchingHeuristic<tAdviceSize>::AssignsType& assigns,
+                      const typename RSILBranchingHeuristic<tAdviceSize>::DecisionType& decision) noexcept;
+        
+        
+        
+    private:
+        bool isRSILEnabled() noexcept;
+        void updateCallCounter() noexcept;
+        
+        uint64_t m_callCounter;
+        fastnextrand_state_t m_mask;
+        uint64_t m_probHalfLife;
+        RSILBranchingHeuristic<tAdviceSize> m_rsilHeuristic;
+    };
+    
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A specialization of RSILVanishingBranchingHeuristic<n> with n=3.
+     */
+    class RSILVanishingBranchingHeuristic3 : public RSILVanishingBranchingHeuristic<3> {
+    public:
+        RSILVanishingBranchingHeuristic3() = default;
+        explicit RSILVanishingBranchingHeuristic3(const Parameters& params);
+    };
+    
+    
+    
+    
+    
+    //******* Implementation ************************************************************
+     
     namespace BranchingHeuristicsImpl {
-        Var getMaxVar(const Conjectures& conj) {
+        static inline Var getMaxVar(const Conjectures& conj) {
             Var result = 0;
             for (auto& c : conj.getBackbones()) {
                 result = std::max(result, var(c.getLit()));
@@ -113,10 +183,16 @@ namespace Candy {
     }
     
     template<unsigned int tAdviceSize>
+    inline FastRandomNumberGenerator& RSILBranchingHeuristic<tAdviceSize>::getRandomNumberGenerator() noexcept {
+        return m_rng;
+    }
+    
+    template<unsigned int tAdviceSize>
+    __attribute__((always_inline))
     inline Lit RSILBranchingHeuristic<tAdviceSize>::getAdvice(const TrailType& trail,
                                                               const TrailLimType& trailLimits,
                                                               const AssignsType& assigns,
-                                                              const DecisionType& decision) {
+                                                              const DecisionType& decision) noexcept {
         assert(trailLimits.size() > 0);
         
         auto randomNumber = m_rng();
@@ -149,6 +225,53 @@ namespace Candy {
         }
         
         return lit_Undef;
+    }
+    
+    
+    
+    
+    template<unsigned int tAdviceSize>
+    RSILVanishingBranchingHeuristic<tAdviceSize>::RSILVanishingBranchingHeuristic()
+    : m_callCounter(1ull),
+    m_mask(0ull),
+    m_probHalfLife(1ull),
+    m_rsilHeuristic(){
+    }
+    
+    template<unsigned int tAdviceSize>
+    RSILVanishingBranchingHeuristic<tAdviceSize>::RSILVanishingBranchingHeuristic(const RSILVanishingBranchingHeuristic::Parameters& params)
+    : m_callCounter(params.probHalfLife),
+    m_mask(0ull),
+    m_probHalfLife(params.probHalfLife),
+    m_rsilHeuristic(params.rsilParameters) {
+        assert(m_probHalfLife > 0);
+    }
+    
+    template<unsigned int tAdviceSize>
+    inline bool RSILVanishingBranchingHeuristic<tAdviceSize>::isRSILEnabled() noexcept {
+        auto randomNumber = m_rsilHeuristic.getRandomNumberGenerator()();
+        return (randomNumber & m_mask) == 0ull;
+    }
+    
+    template<unsigned int tAdviceSize>
+    inline void RSILVanishingBranchingHeuristic<tAdviceSize>::updateCallCounter() noexcept {
+        assert(m_callCounter > 0);
+        --m_callCounter;
+        if (m_callCounter == 0) {
+            m_mask = (m_mask << 1) | 1ull;
+            m_callCounter = m_probHalfLife;
+        }
+    }
+    
+    template<unsigned int tAdviceSize>
+    __attribute__((always_inline))
+    inline Lit RSILVanishingBranchingHeuristic<tAdviceSize>::getAdvice(const typename RSILBranchingHeuristic<tAdviceSize>::TrailType& trail,
+                                                                       const typename RSILBranchingHeuristic<tAdviceSize>::TrailLimType& trailLimits,
+                                                                       const typename RSILBranchingHeuristic<tAdviceSize>::AssignsType& assigns,
+                                                                       const typename RSILBranchingHeuristic<tAdviceSize>::DecisionType& decision) noexcept {
+        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailLimits, assigns, decision) : lit_Undef;
+        updateCallCounter();
+        return result;
     }
 }
 
