@@ -196,7 +196,9 @@ namespace Candy {
                                                               const TrailLimType& trailLimits,
                                                               const AssignsType& assigns,
                                                               const DecisionType& decision) noexcept {
-        assert(trailLimits.size() > 0);
+        if (trailLimits.size() == 0) {
+            return lit_Undef;
+        }
         
         auto randomNumber = m_rng();
         auto trailStart = trailLimits.back();
