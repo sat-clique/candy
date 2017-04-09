@@ -344,6 +344,7 @@ namespace Candy {
         ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
         
         GateAnalyzer gateAnalyzer {problem};
+        gateAnalyzer.analyze();
         auto randomSimulator = createDefaultRandomSimulator(gateAnalyzer);
         auto conjectures = randomSimulator->run(1ull << 16);
         
