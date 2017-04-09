@@ -42,10 +42,25 @@ namespace Candy {
          */
         fastnextrand_state_t operator ()() noexcept;
         
+        /**
+         * Gets the current pseudorandom number.
+         *
+         * \returns the current pseudorandom number.
+         */
+        fastnextrand_state_t currentNumber() const noexcept;
+        
     private:
         fastnextrand_state_t m_state;
     };
     
+    inline fastnextrand_state_t FastRandomNumberGenerator::operator ()() noexcept {
+        m_state = fastNextRand(m_state);
+        return m_state;
+    }
+    
+    inline fastnextrand_state_t FastRandomNumberGenerator::currentNumber() const noexcept {
+        return m_state;
+    }
 }
 
 #endif
