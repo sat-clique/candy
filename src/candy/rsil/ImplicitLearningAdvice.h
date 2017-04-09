@@ -125,7 +125,7 @@ namespace Candy {
          * \param literal   a literal to be added to this entry.
          */
         inline void addLiteral(Lit literal) noexcept {
-            assert((m_size+1) < tMaxAdviceSize);
+            assert(static_cast<unsigned int>(m_size+1) < tMaxAdviceSize);
             m_lits[m_size] = literal;
             ++m_size;
         }
@@ -330,7 +330,7 @@ namespace Candy {
     template<class AdviceEntryType>
     AdviceEntryType&
     ImplicitLearningAdvice<AdviceEntryType>::getAdvice(Var v) noexcept {
-        assert(v < m_advice.size());
+        assert(v < static_cast<Var>(m_advice.size()));
         return m_advice[v];
     }
     
