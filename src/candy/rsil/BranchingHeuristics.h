@@ -84,12 +84,7 @@ namespace Candy {
      *
      * A specialization of RSILBranchingHeuristic<n> with n=3.
      */
-    class RSILBranchingHeuristic3 : public RSILBranchingHeuristic<3> {
-    public:
-        RSILBranchingHeuristic3() = default;
-        explicit RSILBranchingHeuristic3(const Parameters& params);
-    };
-    
+    using RSILBranchingHeuristic3 = RSILBranchingHeuristic<3>;
     
     /**
      * \ingroup RS_ImplicitLearning
@@ -105,6 +100,11 @@ namespace Candy {
     template<unsigned int tAdviceSize>
     class RSILVanishingBranchingHeuristic {
     public:
+        using TrailType = typename RSILBranchingHeuristic<tAdviceSize>::TrailType;
+        using TrailLimType = typename RSILBranchingHeuristic<tAdviceSize>::TrailLimType;
+        using DecisionType = typename RSILBranchingHeuristic<tAdviceSize>::DecisionType;
+        using AssignsType = typename RSILBranchingHeuristic<tAdviceSize>::AssignsType;
+        
         /**
          * RSILVanishingBranchingHeuristic parameters.
          */
@@ -115,6 +115,13 @@ namespace Candy {
             
             /// The intervention probability half-life.
             uint64_t probHalfLife;
+            
+            Parameters() = default;
+            Parameters(const Conjectures& conjectures) : rsilParameters({conjectures}), probHalfLife(100ull) {
+            }
+            Parameters(const typename RSILBranchingHeuristic<tAdviceSize>::Parameters& parameters,
+                       uint64_t probHalfLife) : rsilParameters(parameters), probHalfLife(probHalfLife) {
+            }
         };
         
         RSILVanishingBranchingHeuristic();
@@ -122,10 +129,10 @@ namespace Candy {
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
         
-        Lit getAdvice(const typename RSILBranchingHeuristic<tAdviceSize>::TrailType& trail,
-                      const typename RSILBranchingHeuristic<tAdviceSize>::TrailLimType& trailLimits,
-                      const typename RSILBranchingHeuristic<tAdviceSize>::AssignsType& assigns,
-                      const typename RSILBranchingHeuristic<tAdviceSize>::DecisionType& decision) noexcept;
+        Lit getAdvice(const TrailType& trail,
+                      const TrailLimType& trailLimits,
+                      const AssignsType& assigns,
+                      const DecisionType& decision) noexcept;
         
         
         
@@ -144,11 +151,7 @@ namespace Candy {
      *
      * A specialization of RSILVanishingBranchingHeuristic<n> with n=3.
      */
-    class RSILVanishingBranchingHeuristic3 : public RSILVanishingBranchingHeuristic<3> {
-    public:
-        RSILVanishingBranchingHeuristic3() = default;
-        explicit RSILVanishingBranchingHeuristic3(const Parameters& params);
-    };
+    using RSILVanishingBranchingHeuristic3 = RSILVanishingBranchingHeuristic<3>;
     
     
     
@@ -265,10 +268,10 @@ namespace Candy {
     
     template<unsigned int tAdviceSize>
     __attribute__((always_inline))
-    inline Lit RSILVanishingBranchingHeuristic<tAdviceSize>::getAdvice(const typename RSILBranchingHeuristic<tAdviceSize>::TrailType& trail,
-                                                                       const typename RSILBranchingHeuristic<tAdviceSize>::TrailLimType& trailLimits,
-                                                                       const typename RSILBranchingHeuristic<tAdviceSize>::AssignsType& assigns,
-                                                                       const typename RSILBranchingHeuristic<tAdviceSize>::DecisionType& decision) noexcept {
+    inline Lit RSILVanishingBranchingHeuristic<tAdviceSize>::getAdvice(const TrailType& trail,
+                                                                       const TrailLimType& trailLimits,
+                                                                       const AssignsType& assigns,
+                                                                       const DecisionType& decision) noexcept {
         auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailLimits, assigns, decision) : lit_Undef;
         updateCallCounter();
         return result;
