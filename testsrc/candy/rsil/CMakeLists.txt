@@ -1,8 +1,8 @@
 add_executable(rsil_tests
-	TestUtils.h
-        BranchingHeuristicsTests.cc
-	RSARHeuristicsFilterTests.cc
-        ImplicitLearningAdviceTests.cc)
+    TestUtils.h
+    BranchingHeuristicsTests.cc
+    RSARHeuristicsFilterTests.cc
+    ImplicitLearningAdviceTests.cc)
 
 candy_executable_customizations(rsil_tests)
 
