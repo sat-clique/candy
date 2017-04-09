@@ -35,6 +35,7 @@ namespace Candy {
     
     using TestedRSILBranchingHeuristic = RSILBranchingHeuristic3;
     using TestedRSILVanishingBranchingHeuristic = RSILVanishingBranchingHeuristic3;
+    using TestedRSILBudgetBranchingHeuristic = RSILBudgetBranchingHeuristic3;
     
     template<class Heuristic>
     static void test_uninitializedHeuristicReturnsUndefForMinInput() {
@@ -51,9 +52,14 @@ namespace Candy {
         test_uninitializedHeuristicReturnsUndefForMinInput<TestedRSILVanishingBranchingHeuristic>();
     }
     
+    TEST(RSILBudgetBranchingHeuristicsTests, uninitializedHeuristicReturnsUndefForMinInput) {
+        test_uninitializedHeuristicReturnsUndefForMinInput<TestedRSILBudgetBranchingHeuristic>();
+    }
+    
     template<class Heuristic>
     static void test_emptyInitializedHeuristicReturnsUndefForMinInput() {
-        typename Heuristic::Parameters params{{}};
+        Conjectures empty{};
+        typename Heuristic::Parameters params{empty};
         Heuristic underTest{params};
         
         auto result = underTest.getAdvice({mkLit(0)}, {0}, {}, {0});
@@ -66,6 +72,10 @@ namespace Candy {
     
     TEST(RSILVanishingBranchingHeuristicsTests, emptyInitializedHeuristicReturnsUndefForMinInput) {
         test_emptyInitializedHeuristicReturnsUndefForMinInput<TestedRSILBranchingHeuristic>();
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, emptyInitializedHeuristicReturnsUndefForMinInput) {
+        test_emptyInitializedHeuristicReturnsUndefForMinInput<TestedRSILBudgetBranchingHeuristic>();
     }
     
     template<class Heuristic>
@@ -93,6 +103,10 @@ namespace Candy {
         test_givesAdviceForSingleEquivalence<TestedRSILVanishingBranchingHeuristic>();
     }
     
+    TEST(RSILBudgetBranchingHeuristicsTests, givesAdviceForSingleEquivalence) {
+        test_givesAdviceForSingleEquivalence<TestedRSILBudgetBranchingHeuristic>();
+    }
+    
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned() {
         Conjectures testData;
@@ -115,6 +129,10 @@ namespace Candy {
     
     TEST(RSILVanishingBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfAssigned) {
         test_givesNoAdviceForSingleEquivalenceIfAssigned<TestedRSILVanishingBranchingHeuristic>();
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfAssigned) {
+        test_givesNoAdviceForSingleEquivalenceIfAssigned<TestedRSILBudgetBranchingHeuristic>();
     }
     
     template<class Heuristic>
@@ -141,6 +159,10 @@ namespace Candy {
         test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision<TestedRSILVanishingBranchingHeuristic>();
     }
     
+    TEST(RSILBudgetBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision) {
+        test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision<TestedRSILBudgetBranchingHeuristic>();
+    }
+    
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant() {
         Conjectures testData;
@@ -163,6 +185,10 @@ namespace Candy {
     
     TEST(RSILVanishingBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfIrrelevant) {
         test_givesNoAdviceForSingleEquivalenceIfIrrelevant<TestedRSILVanishingBranchingHeuristic>();
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfIrrelevant) {
+        test_givesNoAdviceForSingleEquivalenceIfIrrelevant<TestedRSILBudgetBranchingHeuristic>();
     }
     
     template<class Heuristic>
@@ -191,21 +217,38 @@ namespace Candy {
         test_givesAdviceForSingleEquivalenceSize3<TestedRSILVanishingBranchingHeuristic>();
     }
     
-    TEST(RSILBranchingHeuristicsTests, travelsUpTrail) {
+    TEST(RSILBudgetBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
+        test_givesAdviceForSingleEquivalenceSize3<TestedRSILBudgetBranchingHeuristic>();
+    }
+    
+    template<class Heuristic>
+    static void test_travelsUpTrail() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-        TestedRSILBranchingHeuristic::Parameters params{testData};
-        TestedRSILBranchingHeuristic underTest{params};
+        typename Heuristic::Parameters params{testData};
+        Heuristic underTest{params};
         
-        TestedRSILBranchingHeuristic::TrailType testTrail {mkLit(3,0), mkLit(4,0)};
-        TestedRSILBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        TestedRSILBranchingHeuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False};
+        typename Heuristic::TrailType testTrail {mkLit(3,0), mkLit(4,0)};
+        typename Heuristic::TrailLimType testTrailLim {0};
+        typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        typename Heuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False};
         
         auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
         
         EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
+    }
+    
+    TEST(RSILBranchingHeuristicsTests, travelsUpTrail) {
+        test_travelsUpTrail<TestedRSILBranchingHeuristic>();
+    }
+    
+    TEST(RSILVanishingBranchingHeuristicsTests, travelsUpTrail) {
+        test_travelsUpTrail<TestedRSILVanishingBranchingHeuristic>();
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, travelsUpTrail) {
+        test_travelsUpTrail<TestedRSILBudgetBranchingHeuristic>();
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
@@ -216,10 +259,10 @@ namespace Candy {
         params.probHalfLife = 100ull;
         TestedRSILVanishingBranchingHeuristic underTest{params};
         
-        TestedRSILBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
-        TestedRSILBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        TestedRSILBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        TestedRSILVanishingBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
+        TestedRSILVanishingBranchingHeuristic::TrailLimType testTrailLim {0};
+        TestedRSILVanishingBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        TestedRSILVanishingBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         int calls = 0;
         for (int i = 0; i < 100; ++i) {
@@ -240,10 +283,10 @@ namespace Candy {
         params.probHalfLife = halfLife;
         TestedRSILVanishingBranchingHeuristic underTest{params};
         
-        TestedRSILBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
-        TestedRSILBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        TestedRSILBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        TestedRSILVanishingBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
+        TestedRSILVanishingBranchingHeuristic::TrailLimType testTrailLim {0};
+        TestedRSILVanishingBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        TestedRSILVanishingBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         std::unordered_map<uint8_t, double> distribution;
         std::unordered_map<uint8_t, double> referenceDistribution;
@@ -261,6 +304,36 @@ namespace Candy {
         // simple Kolomogorov-Smirnov test
         double maxAbsDiff = getMaxAbsDifference(distribution, referenceDistribution);
         EXPECT_LE(maxAbsDiff, 0.05f);
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, producesUndefWhenBudgetIsDepleted) {
+        const uint64_t budget = 4ull;
+        
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        TestedRSILBudgetBranchingHeuristic::Parameters params{testData, budget};
+        TestedRSILBudgetBranchingHeuristic underTest{params};
+        
+        TestedRSILBudgetBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
+        TestedRSILBudgetBranchingHeuristic::TrailLimType testTrailLim {0};
+        TestedRSILBudgetBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        TestedRSILBudgetBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        
+        for (uint64_t i = 0; i <= budget+2; ++i) {
+            Lit result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+            if (i < budget) {
+                ASSERT_NE(result, lit_Undef) << "Budgets should not have been depleted in round " << i+1;
+            }
+            else {
+                ASSERT_EQ(result, lit_Undef) << "Budgets should have been depleted in round " << i+1;
+            }
+        }
+        
+        testTrail[0] = mkLit(2, 0);
+        testAssigns[1] = l_Undef;
+        testAssigns[2] = l_False;
+        Lit result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        ASSERT_NE(result, lit_Undef) << "The back implication's budget should not be depleted in this test";
     }
     
     template<class Heuristic>
@@ -287,5 +360,9 @@ namespace Candy {
     
     TEST(RSILVanishingBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
         test_acceptanceTest<RSILVanishingBranchingHeuristic3>("problems/6s33.cnf", false);
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
+        test_acceptanceTest<RSILBudgetBranchingHeuristic3>("problems/6s33.cnf", false);
     }
 }
