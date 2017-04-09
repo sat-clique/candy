@@ -27,6 +27,9 @@
 #include <gtest/gtest.h>
 #include <candy/rsil/BranchingHeuristics.h>
 #include <candy/testutils/TestUtils.h>
+#include <candy/core/Solver.h>
+#include <candy/randomsimulation/RandomSimulator.h>
+#include <candy/gates/GateAnalyzer.h>
 
 namespace Candy {
     
@@ -258,5 +261,31 @@ namespace Candy {
         // simple Kolomogorov-Smirnov test
         double maxAbsDiff = getMaxAbsDifference(distribution, referenceDistribution);
         EXPECT_LE(maxAbsDiff, 0.05f);
+    }
+    
+    template<class Heuristic>
+    static void test_acceptanceTest(std::string filename,
+                                    bool expectedResult) {
+        CNFProblem problem;
+        problem.readDimacsFromFile(filename.c_str());
+        ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
+        
+        GateAnalyzer gateAnalyzer {problem};
+        auto randomSimulator = createDefaultRandomSimulator(gateAnalyzer);
+        auto conjectures = randomSimulator->run(1ull << 16);
+        
+        typename Heuristic::Parameters rsilParameters{conjectures};
+        Solver<Heuristic> solver;
+        solver.addClauses(problem);
+        solver.initializePickBranchLit(rsilParameters);
+        EXPECT_TRUE((expectedResult ? l_True : l_False) == solver.solve());
+    }
+    
+    TEST(RSILBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
+        test_acceptanceTest<RSILBranchingHeuristic3>("problems/6s33.cnf", false);
+    }
+    
+    TEST(RSILVanishingBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
+        test_acceptanceTest<RSILVanishingBranchingHeuristic3>("problems/6s33.cnf", false);
     }
 }
