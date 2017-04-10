@@ -246,19 +246,6 @@ static void printProblemStatistics(SolverType& S) {
     printf("c |  Number of clauses:    %12zu                                                        |\n", S.nClauses());
 }
 
-/**
- * Configures the SAT solver \p S.
- * 
- * TODO: document parameters
- */
-template<class SolverType>
-static void configureSolver(SolverType& S, int verbosity, int verbosityEveryConflicts, bool certifiedUNSAT,
-                const char* certifiedUNSATfile) {
-    S.verbosity = verbosity;
-    S.verbEveryConflicts = verbosityEveryConflicts;
-    S.certificate = Certificate(certifiedUNSATfile, certifiedUNSAT);
-}
-
 struct GateRecognitionArguments {
     const int opt_gr_tries;
     const bool opt_gr_patterns;
@@ -663,6 +650,18 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     };
 }
 
+/**
+ * Configures the SAT solver \p S.
+ *
+ * TODO: document parameters
+ */
+template<class SolverType>
+static void configureSolver(SolverType& S, const GlucoseArguments& args) {
+    S.verbosity = args.verb;
+    S.verbEveryConflicts = args.vv;
+    S.certificate = Certificate(args.opt_certified_file, args.do_certified);
+}
+
 static void waitForUserInput() {
     std::cout << "Press enter to continue." << std::endl;
     std::getchar();
@@ -711,11 +710,8 @@ int solve(const GlucoseArguments& args,
 
         Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
 
-        SolverType S;
-        configureSolver(S, args.verb,            // verbosity
-                        args.vv,                 // verbosity every vv conflicts
-                        args.do_certified,       // certifiedUNSAT
-                        args.opt_certified_file);// certifiedUNSAT output file
+        auto S = backported_std::make_unique<SolverType>();
+        configureSolver(*S, args);
 
         Candy::CNFProblem dimacs;
         if (args.read_from_stdin) {
@@ -726,6 +722,22 @@ int solve(const GlucoseArguments& args,
             if (!dimacs.readDimacsFromFile(args.input_filename))
                 return 1;
         }
+        
+        bool fallBackToUnmodifiedCandy = false;
+        std::unique_ptr<DefaultSimpSolver> fallbackSolver{};
+        
+        if (preprocessingHook) {
+            try {
+                preprocessingHook(*S, dimacs);
+            }
+            catch(UnsuitableProblemException& e) {
+                std::cout << "Falling back to unmodified Candy" << std::endl;
+                fallBackToUnmodifiedCandy = true;
+                S.reset(nullptr);
+                fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
+                configureSolver(*fallbackSolver, args);
+            }
+        }
 
         Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
 
@@ -734,23 +746,12 @@ int solve(const GlucoseArguments& args,
             return 0;
         }
         
-        if (preprocessingHook) {
-            try {
-                preprocessingHook(S, dimacs);
-            }
-            catch(UnsuitableProblemException& e) {
-                std::cout << "Falling back to the original solver" << std::endl;
-                DefaultSimpSolver defaultS;
-                configureSolver(defaultS, args.verb,            // verbosity
-                                args.vv,                 // verbosity every vv conflicts
-                                args.do_certified,       // certifiedUNSAT
-                                args.opt_certified_file);// certifiedUNSAT output file
-                return executeSolver(args, defaultS, dimacs);
-            }
+        if (!fallBackToUnmodifiedCandy) {
+            return executeSolver(args, *S, dimacs);
         }
-        
-
-        return executeSolver(args, S, dimacs);
+        else {
+            return executeSolver(args, *fallbackSolver, dimacs);
+        }
         
     } catch (std::bad_alloc& ba) {
         //printf("c Bad_Alloc Caught: %s\n", ba.what());
