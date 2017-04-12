@@ -139,6 +139,8 @@ namespace Candy {
             m_isBackbone = isBackbone;
         }
         
+        AdviceEntry() = default;
+        
     private:
         unsigned int m_size : 31;
         unsigned int m_isBackbone : 1;
@@ -251,6 +253,8 @@ namespace Candy {
             assert(index+1 < tMaxAdviceSize);
             m_budgets[index] = budget;
         }
+        
+        BudgetAdviceEntry() = default;
         
     private:
         AdviceEntry<tMaxAdviceSize> m_advice;

@@ -122,8 +122,8 @@ namespace Candy {
             uint64_t initialBudget;
             
             Parameters() = default;
-            Parameters(const Conjectures& conjectures, uint64_t initialBudget = 10000ul)
-            : rsilParameters({conjectures}), initialBudget(initialBudget) {
+            Parameters(const Conjectures& conjectures_, uint64_t initialBudget_ = 10000ul)
+            : rsilParameters({conjectures_}), initialBudget(initialBudget_) {
             }
         };
         
@@ -170,12 +170,13 @@ namespace Candy {
             
             Parameters() = default;
             
-            Parameters(const Conjectures& conjectures) : rsilParameters({conjectures}), probHalfLife(100ull) {
+            explicit Parameters(const Conjectures& conjectures_)
+            : rsilParameters({conjectures_}), probHalfLife(100ull) {
             }
             
-            Parameters(const Conjectures& conjectures, uint64_t probHalfLife)
-            : rsilParameters({conjectures}),
-            probHalfLife(probHalfLife) {}
+            Parameters(const Conjectures& conjectures_, uint64_t probHalfLife_)
+            : rsilParameters({conjectures_}),
+            probHalfLife(probHalfLife_) {}
             
             Parameters(const typename RSILBranchingHeuristic<AdviceType>::Parameters& parameters,
                        uint64_t probHalfLife) : rsilParameters(parameters), probHalfLife(probHalfLife) {

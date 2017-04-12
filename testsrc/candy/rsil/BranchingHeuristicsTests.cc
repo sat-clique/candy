@@ -255,7 +255,7 @@ namespace Candy {
         Conjectures testData;
         
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        TestedRSILVanishingBranchingHeuristic::Parameters params{{testData}};
+        TestedRSILVanishingBranchingHeuristic::Parameters params{testData};
         params.probHalfLife = 100ull;
         TestedRSILVanishingBranchingHeuristic underTest{params};
         
@@ -279,7 +279,7 @@ namespace Candy {
         const int stages = 20;
         
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        TestedRSILVanishingBranchingHeuristic::Parameters params{{testData}};
+        TestedRSILVanishingBranchingHeuristic::Parameters params{testData};
         params.probHalfLife = halfLife;
         TestedRSILVanishingBranchingHeuristic underTest{params};
         
