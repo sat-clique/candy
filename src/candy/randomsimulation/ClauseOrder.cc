@@ -354,7 +354,7 @@ namespace Candy {
     public:
         std::unordered_set<Glucose::Var> getEnabledOutputVars() override;
         
-        NonmonotonousGateFilter(GateAnalyzer &analyzer);
+        explicit NonmonotonousGateFilter(GateAnalyzer &analyzer);
         virtual ~NonmonotonousGateFilter();
         NonmonotonousGateFilter(const NonmonotonousGateFilter& other) = delete;
         NonmonotonousGateFilter& operator=(const NonmonotonousGateFilter& other) = delete;
