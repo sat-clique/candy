@@ -255,7 +255,12 @@ namespace Candy {
             m_clauseOrderStrat = createNonrecursiveClauseOrder();
         }
         if (m_randomizationStrat.get() == nullptr) {
-            m_randomizationStrat = createSimpleRandomization();
+            auto positiveBiased = createRandomizationCyclicallyBiasedToTrue(1, 5, 1);
+            auto negativeBiased = createRandomizationCyclicallyBiasedToFalse(1, 5, 1);
+            m_randomizationStrat = alternateRandomizations(std::move(positiveBiased),
+                                                           std::move(negativeBiased),
+                                                           5);
+            
         }
         if (m_partitionStrat.get() == nullptr) {
             m_partitionStrat = createDefaultPartition();
