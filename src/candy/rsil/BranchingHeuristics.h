@@ -33,6 +33,7 @@
 #include <candy/utils/FastRand.h>
 
 #include <type_traits>
+#include <iostream>
 
 namespace Candy {
     /**
@@ -73,6 +74,7 @@ namespace Candy {
         RSILBranchingHeuristic& operator=(RSILBranchingHeuristic&& other) = default;
         
         Lit getAdvice(const TrailType& trail,
+                      uint64_t trailSize,
                       const TrailLimType& trailLimits,
                       const AssignsType& assigns,
                       const DecisionType& decision) noexcept;
@@ -93,6 +95,7 @@ namespace Candy {
      * A specialization of RSILBranchingHeuristic<n> with n=3.
      */
     using RSILBranchingHeuristic3 = RSILBranchingHeuristic<AdviceEntry<3>>;
+    using RSILBranchingHeuristic2 = RSILBranchingHeuristic<AdviceEntry<2>>;
     
     
     /**
@@ -134,6 +137,7 @@ namespace Candy {
     };
     
     using RSILBudgetBranchingHeuristic3 = RSILBudgetBranchingHeuristic<3>;
+    using RSILBudgetBranchingHeuristic2 = RSILBudgetBranchingHeuristic<2>;
     
     /**
      * \ingroup RS_ImplicitLearning
@@ -189,6 +193,7 @@ namespace Candy {
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
         
         Lit getAdvice(const TrailType& trail,
+                      uint64_t trailSize,
                       const TrailLimType& trailLimits,
                       const AssignsType& assigns,
                       const DecisionType& decision) noexcept;
@@ -211,6 +216,7 @@ namespace Candy {
      * A specialization of RSILVanishingBranchingHeuristic<n> with n=3.
      */
     using RSILVanishingBranchingHeuristic3 = RSILVanishingBranchingHeuristic<AdviceEntry<3>>;
+    using RSILVanishingBranchingHeuristic2 = RSILVanishingBranchingHeuristic<AdviceEntry<2>>;
     
     
     
@@ -292,26 +298,24 @@ namespace Candy {
     template<class AdviceType>
     __attribute__((always_inline))
     inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice(const TrailType& trail,
-                                                              const TrailLimType& trailLimits,
-                                                              const AssignsType& assigns,
-                                                              const DecisionType& decision) noexcept {
+                                                             uint64_t trailSize,
+                                                             const TrailLimType& trailLimits,
+                                                             const AssignsType& assigns,
+                                                             const DecisionType& decision) noexcept {
         if (trailLimits.size() == 0) {
             return lit_Undef;
         }
         
-        auto randomNumber = m_rng();
         auto trailStart = trailLimits.back();
-        auto trailSize = trail.size();
         
-        if (trailSize - trailStart > 16) {
-            trailStart = trailSize - 16;
+        if (trailSize - trailStart > 32) {
+            trailStart = trailSize - 32;
         }
         
         auto scanLen = trailSize - trailStart;
-        auto rnd = randomNumber & 0xFFFFFFFF;
         
         for (decltype(scanLen) j = 0; j < scanLen; ++j) {
-            auto i = trailStart + ((j + rnd) % scanLen);
+            auto i = trailStart + j;
             
             Lit cursor = trail[i];
             Var variable = var(cursor);
@@ -322,8 +326,13 @@ namespace Candy {
             
             auto& advice = m_advice.getAdvice(variable);
             
+            if (advice.isBackbone()) {
+                continue;
+            }
+            
             for (decltype(advice.getSize()) a = 0; a < advice.getSize(); ++a) {
-                size_t idx = (a + rnd) % advice.getSize();
+                size_t idx = a;
+                
                 
                 auto advisedLit = advice.getLiteral(idx);
                 if (assigns[var(advisedLit)] == l_Undef
@@ -404,10 +413,11 @@ namespace Candy {
     template<class AdviceType>
     __attribute__((always_inline))
     inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice(const TrailType& trail,
-                                                                       const TrailLimType& trailLimits,
-                                                                       const AssignsType& assigns,
-                                                                       const DecisionType& decision) noexcept {
-        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailLimits, assigns, decision) : lit_Undef;
+                                                                      uint64_t trailSize,
+                                                                      const TrailLimType& trailLimits,
+                                                                      const AssignsType& assigns,
+                                                                      const DecisionType& decision) noexcept {
+        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailSize, trailLimits, assigns, decision) : lit_Undef;
         updateCallCounter();
         return result;
     }

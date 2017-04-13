@@ -139,7 +139,9 @@ namespace Candy {
             m_isBackbone = isBackbone;
         }
         
-        AdviceEntry() = default;
+        AdviceEntry() : m_size(0),
+                        m_isBackbone(false) {
+        }
         
     private:
         unsigned int m_size : 31;
@@ -254,7 +256,9 @@ namespace Candy {
             m_budgets[index] = budget;
         }
         
-        BudgetAdviceEntry() = default;
+        BudgetAdviceEntry() : m_advice(),
+                              m_budgets() {
+        }
         
     private:
         AdviceEntry<tMaxAdviceSize> m_advice;
@@ -344,6 +348,12 @@ namespace Candy {
             Var keyVar = var(keyLiteral);
             bool keySign = sign(keyLiteral);
             
+            assert(keyVar < m_advice.size());
+            
+            // advice entries hold maxSize-1 elements (the size is given including the key)
+            assert(m_advice[keyVar].getSize() < (AdviceEntryType::maxSize - 1));
+            assert(!m_advice[keyVar].isBackbone());
+            
             m_advice[keyVar].setBackbone(false);
             
             for (auto& entryLiteral : conjecture) {
@@ -357,10 +367,11 @@ namespace Candy {
     template<class AdviceEntryType>
     void ImplicitLearningAdvice<AdviceEntryType>::addBackboneConjecture(const Candy::BackboneConjecture &conjecture) {
         Var key = var(conjecture.getLit());
+        assert (key < m_advice.size());
+        assert (m_advice[key].getSize() == 0);
         m_advice[key].setBackbone(true);
         m_advice[key].addLiteral(conjecture.getLit());
     }
-    
     
     template<class AdviceEntryType>
     ImplicitLearningAdvice<AdviceEntryType>::ImplicitLearningAdvice(const Conjectures& conjectures,

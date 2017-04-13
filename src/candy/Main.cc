@@ -320,6 +320,7 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
     throw std::invalid_argument(str + ": Unknown simplification handling mode");
 }
 
+
 static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer, const RandomSimulationArguments& rsArguments) {
     auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
     simulatorBuilder->withGateAnalyzer(analyzer);
@@ -430,9 +431,9 @@ static RSILMode getRSILMode(const std::string& mode) {
     }
 }
 
-using RSILSolver = SimpSolver<RSILBranchingHeuristic3>;
-using RSILVanishingSolver = SimpSolver<RSILVanishingBranchingHeuristic3>;
-using RSILBugetSolver = SimpSolver<RSILBudgetBranchingHeuristic3>;
+using RSILSolver = SimpSolver<RSILBranchingHeuristic2>;
+using RSILVanishingSolver = SimpSolver<RSILVanishingBranchingHeuristic2>;
+using RSILBugetSolver = SimpSolver<RSILBudgetBranchingHeuristic2>;
 
 
 // getRSILHeuristicParameters is implemented using SFINAE.
@@ -767,12 +768,12 @@ static int solveWithRSIL(const GlucoseArguments& args) {
         return solve<RSILSolver>(args, preprocessor);
     }
     
-    if (args.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
+    if (args.rsilArgs.mode == RSILMode::VANISHING) {
         auto preprocessor = createRSILPreprocessingHook<RSILVanishingSolver>(args.randomSimulationArgs, args.rsilArgs);
         return solve<RSILVanishingSolver>(args, preprocessor);
     }
     
-    if (args.rsilArgs.mode == RSILMode::VANISHING) {
+    if (args.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
         auto preprocessor = createRSILPreprocessingHook<RSILBugetSolver>(args.randomSimulationArgs, args.rsilArgs);
         return solve<RSILBugetSolver>(args, preprocessor);
     }
