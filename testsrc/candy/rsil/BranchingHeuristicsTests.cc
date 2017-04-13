@@ -40,7 +40,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_uninitializedHeuristicReturnsUndefForMinInput() {
         Heuristic underTest;
-        auto result = underTest.getAdvice({mkLit(0)}, {0}, {}, {0});
+        auto result = underTest.getAdvice({mkLit(0)}, 1ull, {0}, {}, {0});
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -62,7 +62,7 @@ namespace Candy {
         typename Heuristic::Parameters params{empty};
         Heuristic underTest{params};
         
-        auto result = underTest.getAdvice({mkLit(0)}, {0}, {}, {0});
+        auto result = underTest.getAdvice({mkLit(0)}, 1ull, {0}, {}, {0});
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -90,7 +90,7 @@ namespace Candy {
         typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
         typename Heuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
-        auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
         EXPECT_EQ(result, mkLit(2, 0));
     }
@@ -119,7 +119,7 @@ namespace Candy {
         typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
         typename Heuristic::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
         
-        auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -147,7 +147,7 @@ namespace Candy {
         typename Heuristic::DecisionType testDecisionVars {1, 1, 0, 1, 1};
         typename Heuristic::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
         
-        auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -175,7 +175,7 @@ namespace Candy {
         typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
         typename Heuristic::AssignsType testAssigns {l_True, l_True, l_Undef, l_Undef, l_False};
         
-        auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -203,7 +203,7 @@ namespace Candy {
         typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
         typename Heuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_Undef};
         
-        auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
         
         EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
@@ -233,7 +233,7 @@ namespace Candy {
         typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
         typename Heuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False};
         
-        auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
         
         EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
@@ -266,7 +266,7 @@ namespace Candy {
         
         int calls = 0;
         for (int i = 0; i < 100; ++i) {
-            auto result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+            auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
             ++calls;
             EXPECT_NE(result, lit_Undef) << "Unexpected undef at call " << calls;
         }
@@ -294,7 +294,7 @@ namespace Candy {
         for (int stage = 0; stage < stages; ++stage) {
             uint32_t definedResultCounter = 0;
             for (auto i = decltype(halfLife){0}; i < halfLife; ++i) {
-                Lit result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+                Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
                 definedResultCounter += (result == lit_Undef) ? 0 : 1;
             }
             distribution[stage] = static_cast<double>(definedResultCounter) / static_cast<double>(halfLife);
@@ -320,7 +320,7 @@ namespace Candy {
         TestedRSILBudgetBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         for (uint64_t i = 0; i <= budget+2; ++i) {
-            Lit result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+            Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
             if (i < budget) {
                 ASSERT_NE(result, lit_Undef) << "Budgets should not have been depleted in round " << i+1;
             }
@@ -332,7 +332,7 @@ namespace Candy {
         testTrail[0] = mkLit(2, 0);
         testAssigns[1] = l_Undef;
         testAssigns[2] = l_False;
-        Lit result = underTest.getAdvice(testTrail, testTrailLim, testAssigns, testDecisionVars);
+        Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef) << "The back implication's budget should not be depleted in this test";
     }
     

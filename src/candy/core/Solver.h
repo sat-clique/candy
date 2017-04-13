@@ -1603,6 +1603,8 @@ lbool Solver<PickBranchLitT>::search() {
 // Parameters are useless in core but useful for SimpSolver....
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
+    Statistics::getInstance().runtimeStart(RT_SOLVER);
+    
     if (incremental && certificate.isActive()) {
         printf("Can not use incremental and certified unsat in the same time\n");
         exit(-1);
@@ -1611,6 +1613,7 @@ lbool Solver<PickBranchLitT>::solve() {
     model.clear();
     conflict.clear();
     if (!ok) {
+        Statistics::getInstance().runtimeStop(RT_SOLVER);
         return l_False;
     }
     
@@ -1674,11 +1677,13 @@ lbool Solver<PickBranchLitT>::solve() {
     
     cancelUntil(0);
     
+    Statistics::getInstance().runtimeStop(RT_SOLVER);
     return status;
 }
 
 template <class PickBranchLitT>
-Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
+__attribute__((always_inline))
+inline Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
     Var next = var_Undef;
     
     // Activity based decision:

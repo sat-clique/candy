@@ -32,7 +32,7 @@
 namespace Candy {
     template <>
     Lit Solver<RSILBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_size, trail_lim, assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -41,7 +41,7 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILVanishingBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_size, trail_lim, assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -50,7 +50,34 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBudgetBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_lim, assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_size, trail_lim, assigns, decision);
+        if (rsilAdvice != lit_Undef) {
+            return rsilAdvice;
+        }
+        return defaultPickBranchLit();
+    }
+    
+    template <>
+    Lit Solver<RSILBranchingHeuristic2>::pickBranchLit() {
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_size, trail_lim, assigns, decision);
+        if (rsilAdvice != lit_Undef) {
+            return rsilAdvice;
+        }
+        return defaultPickBranchLit();
+    }
+    
+    template <>
+    Lit Solver<RSILVanishingBranchingHeuristic2>::pickBranchLit() {
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_size, trail_lim, assigns, decision);
+        if (rsilAdvice != lit_Undef) {
+            return rsilAdvice;
+        }
+        return defaultPickBranchLit();
+    }
+    
+    template <>
+    Lit Solver<RSILBudgetBranchingHeuristic2>::pickBranchLit() {
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail, trail_size, trail_lim, assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
