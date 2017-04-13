@@ -16,9 +16,9 @@
 #include <string>
 #include <candy/utils/System.h>
 
-#define SOLVER_STATS
-#define RESTART_STATS
-#define LEARNTS_STATS
+//#define SOLVER_STATS
+//#define RESTART_STATS
+//#define LEARNTS_STATS
 #define RUNTIME_STATS
 //#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
@@ -105,7 +105,7 @@ public:
     inline void solverLBD2Inc() { ++nbDL2; }
 #else
     inline void solverRemovedClausesInc(int amount) { (void)(amount); }
-    inline void solverReducedClausesInc() { }
+    inline void solverReducedClausesInc(int amount) { (void)(amount); }
     inline void solverReduceDBInc() { }
     inline void solverUnariesInc() { }
     inline void solverBinariesInc() { }
