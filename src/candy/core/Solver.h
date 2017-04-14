@@ -68,6 +68,9 @@
 
 #include "sonification/SolverSonification.h"
 
+#define ABSTRACT_LEVELS_64
+//#define EXPENSIVE_CLAUSE_ACTIVITY
+
 namespace Candy {
 
 class DefaultPickBranchLit {
@@ -363,7 +366,6 @@ protected:
     // constants for memory reorganization
 	uint8_t revamp;
     bool sort_watches;
-    uint8_t sort_learnts_max;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool unary_learnt; // Indicates whether a unary clause was learnt since the last restart
@@ -405,9 +407,15 @@ protected:
         return vardata[x].level;
     }
 
+#ifdef ABSTRACT_LEVELS_64
     inline uint64_t abstractLevel(Var x) const {
         return 1ull << (level(x) & 63);
     }
+#else
+    inline uint32_t abstractLevel(Var x) const {
+        return 1 << (level(x) & 32);
+    }
+#endif
 
     // Insert a variable in the decision order priority queue.
     inline void insertVarOrder(Var x) {
@@ -455,7 +463,11 @@ protected:
 	void cancelUntil(int level); // Backtrack until a certain level.
 	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+#ifdef ABSTRACT_LEVELS_64
 	bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
+#else 
+    bool litRedundant(Lit p, uint32_t abstract_levels);
+#endif
 	lbool search(); // Search for a given number of conflicts.
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
@@ -475,15 +487,19 @@ protected:
 
 	inline void varBumpActivity(Var v, double inc) {
 	    if ((activity[v] += inc) > 1e100) {
-	        for (size_t i = 0; i < nVars(); i++) {
-	            activity[i] *= 1e-100; // rescale
-	        }
-	        var_inc *= 1e-100;
+	        varRescaleActivity();
 	    }
 	    if (order_heap.inHeap(v)) {
 	        order_heap.decrease(v); // update order-heap
 	    }
 	}
+
+	void varRescaleActivity() {
+        for (size_t i = 0; i < nVars(); i++) {
+            activity[i] *= 1e-100;
+        }
+        var_inc *= 1e-100;
+    }
 
 	inline void claDecayActivity() {
 	    cla_inc *= (1 / clause_decay);
@@ -491,15 +507,18 @@ protected:
 
 	inline void claBumpActivity(Clause& c) {
 	    if ((c.activity() += cla_inc) > 1e20) {
-	        for (Clause* clause : clauses)
-	            clause->activity() *= 1e-20;
-	        for (Clause* clause : learnts)
-	            clause->activity() *= 1e-20;
-	        for (Clause* clause : learntsBin)
-	            clause->activity() *= 1e-20;
-	        cla_inc *= 1e-20;
+	        claRescaleActivity();
 	    }
 	}
+
+	void claRescaleActivity() {
+	    for (auto container : { clauses, learnts }) { //, learntsBin }) {
+	        for (Clause* clause : container) {
+	            clause->activity() *= 1e-20;
+	        }
+	    }
+        cla_inc *= 1e-20;
+    }
 
 	// Gives the current decisionlevel.
 	inline uint32_t decisionLevel() const {
@@ -603,7 +622,7 @@ Solver<PickBranchLitT>::Solver() :
     // phase saving
     phase_saving(SolverOptions::opt_phase_saving),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches), sort_learnts_max(SolverOptions::opt_sort_learnts_max),
+    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches),
     // simpdb
     remove_satisfied(true),
     unary_learnt(false),
@@ -663,12 +682,10 @@ bool Solver<PickBranchLitT>::isIncremental() {
     return incremental;
 }
 
-//=================================================================================================
-// Minor methods:
-
-// Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
-// used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
-//
+/***
+ * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
+ * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
+ ***/
 template<class PickBranchLitT>
 Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar) {
     int v = nVars();
@@ -746,7 +763,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps, false);
+        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -897,27 +914,23 @@ void Solver<PickBranchLitT>::cancelUntil(int level) {
     }
 }
 
-//=================================================================================================
-// Major methods:
-
-
-/*_________________________________________________________________________________________________
- |
- |  analyze : (confl : Clause*) (out_learnt : vector<Lit>&) (out_btlevel : int&)  ->  [void]
- |
- |  Description:
- |    Analyze conflict and produce a reason clause.
- |
- |    Pre-conditions:
- |      * 'out_learnt' is assumed to be cleared.
- |      * Current decision level must be greater than root level.
- |
- |    Post-conditions:
- |      * 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
- |      * If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
- |        rest of literals. There may be others from the same level though.
- |
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  analyze : (confl : Clause*) (out_learnt : vector<Lit>&) (out_btlevel : int&)  ->  [void]
+ *
+ *  Description:
+ *    Analyze conflict and produce a reason clause.
+ *
+ *    Pre-conditions:
+ *      - 'out_learnt' is assumed to be cleared.
+ *      - Current decision level must be greater than root level.
+ *
+ *    Post-conditions:
+ *      - 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
+ *      - If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
+ *        rest of literals. There may be others from the same level though.
+ *
+ ***************************************************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &lbd) {
     int pathC = 0;
@@ -996,7 +1009,11 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
     
     // minimize clause
+#ifdef ABSTRACT_LEVELS_64
     uint64_t abstract_level = 0;
+#else 
+    uint32_t abstract_level = 0;
+#endif
     for (uint_fast16_t i = 1; i < out_learnt.size(); i++) {
         abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
     }
@@ -1041,7 +1058,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
         }
         lastDecisionLevel.clear();
     }
-    
+
     // clear seen[]
     for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
 }
@@ -1049,7 +1066,11 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
 template <class PickBranchLitT>
+#ifdef ABSTRACT_LEVELS_64
 bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
+#else
+bool Solver<PickBranchLitT>::litRedundant(Lit p, uint32_t abstract_levels) {
+#endif
     static vector<Lit> analyze_stack;
     analyze_stack.clear();
     analyze_stack.push_back(p);
@@ -1082,15 +1103,15 @@ bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
     return true;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  analyzeFinal : (p : Lit)  ->  [void]
- |
- |  Description:
- |    Specialized analysis procedure to express the final conflict in terms of assumptions.
- |    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
- |    stores the result in 'out_conflict'.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  analyzeFinal : (p : Lit)  ->  [void]
+ *
+ *  Description:
+ *    Specialized analysis procedure to express the final conflict in terms of assumptions.
+ *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
+ *    stores the result in 'out_conflict'.
+ |*************************************************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
     out_conflict.clear();
@@ -1132,17 +1153,17 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
     trail[trail_size++] = p;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  propagate : [void]  ->  [Clause*]
- |
- |  Description:
- |    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
- |    otherwise CRef_Undef.
- |
- |    Post-conditions:
- |      * the propagation queue is empty, even if there was a conflict.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  propagate : [void]  ->  [Clause*]
+ *
+ *  Description:
+ *    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
+ *    otherwise CRef_Undef.
+ *
+ *    Post-conditions:
+ *      * the propagation queue is empty, even if there was a conflict.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
     Clause* confl = nullptr;
@@ -1193,6 +1214,9 @@ Clause* Solver<PickBranchLitT>::propagate() {
             
             if (incremental) { // INCREMENTAL MODE
                 Clause& c = *cr;
+#ifdef EXPENSIVE_CLAUSE_ACTIVITY
+                if (c.size() <= revamp) claBumpActivity(c);
+#endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         if (decisionLevel() > assumptions.size() || value(c[k]) == l_True || !isSelector(var(c[k]))) {
@@ -1205,6 +1229,9 @@ Clause* Solver<PickBranchLitT>::propagate() {
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)
                 Clause& c = *cr;
+#ifdef EXPENSIVE_CLAUSE_ACTIVITY
+                if (c.size() <= revamp) claBumpActivity(c);
+#endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         c.swap(1, k);
@@ -1235,15 +1262,14 @@ Clause* Solver<PickBranchLitT>::propagate() {
     return confl;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  reduceDB : ()  ->  [void]
- |
- |  Description:
- |    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
- |    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
- |________________________________________________________________________________________________@*/
-
+/**************************************************************************************************
+ *
+ *  reduceDB : ()  ->  [void]
+ *
+ *  Description:
+ *    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
+ *    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::reduceDB() {
     Statistics::getInstance().solverReduceDBInc();
@@ -1251,7 +1277,6 @@ void Solver<PickBranchLitT>::reduceDB() {
     
     size_t index = (learnts.size() + learntsBin.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
-        printf("c reduceDB special increment\n");
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
         if (specialIncReduceDB == 0) {
             return;
@@ -1373,14 +1398,14 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     (void)(old_clauses_size);
 }
 
-/*_________________________________________________________________________________________________
- |
- |  simplify : [void]  ->  [bool]
- |
- |  Description:
- |    Simplify the clause database according to the current top-level assignment. Currently, the only
- |    thing done here is the removal of satisfied clauses, but more things can be put here.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  simplify : [void]  ->  [bool]
+ *
+ *  Description:
+ *    Simplify the clause database according to the current top-level assignment. Currently, the only
+ *    thing done here is the removal of satisfied clauses, but more things can be put here.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::simplify() {
     assert(decisionLevel() <= assumptions.size());
@@ -1410,19 +1435,19 @@ bool Solver<PickBranchLitT>::simplify() {
     return true;
 }
 
-/*_________________________________________________________________________________________________
- |
- |  search : (nof_conflicts : int) (params : const SearchParams&)  ->  [lbool]
- |
- |  Description:
- |    Search for a model the specified number of conflicts.
- |    NOTE! Use negative value for 'nof_conflicts' indicate infinity.
- |
- |  Output:
- |    'l_True' if a partial assigment that is consistent with respect to the clauseset is found. If
- |    all variables are decision variables, this means that the clause set is satisfiable. 'l_False'
- |    if the clause set is unsatisfiable. 'l_Undef' if the bound on number of conflicts is reached.
- |________________________________________________________________________________________________@*/
+/**************************************************************************************************
+ *
+ *  search : (nof*conflicts : int) (params : const SearchParams&)  ->  [lbool]
+ *
+ *  Description:
+ *    Search for a model the specified number of conflicts.
+ *    NOTE! Use negative value for 'nof*conflicts' indicate infinity.
+ *
+ *  Output:
+ *    'l*True' if a partial assigment that is consistent with respect to the clauseset is found. If
+ *    all variables are decision variables, this means that the clause set is satisfiable. 'l*False'
+ *    if the clause set is unsatisfiable. 'l*Undef' if the bound on number of conflicts is reached.
+ **************************************************************************************************/
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::search() {
     assert(ok);
@@ -1487,28 +1512,27 @@ lbool Solver<PickBranchLitT>::search() {
                 uncheckedEnqueue(learnt_clause[0]);
                 unary_learnt = true;
                 Statistics::getInstance().solverUnariesInc();
-            } else {
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, true);
-                cr->setLBD(nblevels);
+            }
+            else {
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels);
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
                 }
                 if (cr->size() == 2) {
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
-                } else {
-                    if (cr->size() < sort_learnts_max && cr->size() > 6) {
-                        sort(cr->begin()+2, cr->end(), [this](Lit lit1, Lit lit2){ return activity[var(lit1)] < activity[var(lit2)]; });
-                    }
+                }
+                else {
                     learnts.push_back(cr);
+                    claBumpActivity(*cr);
                 }
                 attachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
-                claBumpActivity(*cr);
             }
             varDecayActivity();
             claDecayActivity();
-        } else {
+        }
+        else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
             if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts)))) {
                 lbdQueue.fastclear();

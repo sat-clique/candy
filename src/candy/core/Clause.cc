@@ -10,29 +10,6 @@
 
 namespace Candy {
 
-Clause::Clause(const std::vector<Lit>& ps, bool learnt) {
-    std::copy(ps.begin(), ps.end(), literals);
-    length = ps.size();
-    header = 0;
-    setLearnt(learnt);
-    setFrozen(false);
-
-    if (learnt) {
-        data.activity = 0;
-    } else {
-        calcAbstraction();
-    }
-    assert(std::unique(begin(), end()) == end());
-}
-
-Clause::Clause(std::initializer_list<Lit> list) {
-    std::copy(list.begin(), list.end(), literals);
-    length = list.size();
-    header = 0;
-    setFrozen(false);
-    calcAbstraction();
-}
-
 Clause::~Clause() { }
 
 bool Clause::contains(const Lit lit) const {

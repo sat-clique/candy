@@ -17,12 +17,13 @@ namespace Candy {
 // bits 0..12
 #define BITS_LBD 13
 #define LBD_MASK (static_cast<uint16_t>(8191))
+//#define LBD_MASK (static_cast<uint16_t>(4095))
 // bit 13
 #define LEARNT_MASK (static_cast<uint16_t>(8192))
 // bit 14
 #define DELETED_MASK (static_cast<uint16_t>(16384))
 // bit 15
-#define UNFROZEN_MASK (static_cast<uint16_t>(32768))
+#define FROZEN_MASK (static_cast<uint16_t>(32768))
 
 class Clause {
     uint16_t length;
@@ -36,8 +37,30 @@ class Clause {
     Lit literals[1];
 
 public:
-    Clause(const std::vector<Lit>& ps, bool learnt);
-    Clause(std::initializer_list<Lit> list);
+    Clause(const std::vector<Lit>& list, uint16_t lbd) {
+        std::copy(list.begin(), list.end(), literals);
+        length = list.size();
+        header = 0;
+        setLearnt(true); // only learnts have lbd
+        setLBD(lbd);
+        data.activity = 0;
+        assert(std::unique(begin(), end()) == end());
+    }
+
+    Clause(std::initializer_list<Lit> list) {
+        std::copy(list.begin(), list.end(), literals);
+        length = list.size();
+        header = 0; // not frozen, not deleted and not learnt; lbd=0
+        calcAbstraction();
+    }
+
+    Clause(const std::vector<Lit>& list) {
+        std::copy(list.begin(), list.end(), literals);
+        length = list.size();
+        header = 0; // not frozen, not deleted and not learnt; lbd=0
+        calcAbstraction();
+    }
+
     ~Clause();
 
     //void* operator new (std::size_t size) = delete;
@@ -52,33 +75,6 @@ public:
 
     inline const Lit operator [](int i) const {
         return literals[i];
-    }
-
-    /**
-     * clauses are smaller if header is bigger or (if header is equal) activity is smaller
-     * header is bigger if
-     * - clauses are not frozen
-     * - clauses are already marked as deleted
-     * - clauses are learnt
-     * - clauses have the bigger lbd
-     */
-    bool operator <(Clause& clause2) {
-        return header > clause2.header || (header == clause2.header && data.activity < clause2.data.activity);
-    }
-
-    bool operator >(Clause& clause2) {
-        Clause& clause1 = *this;
-        return clause2 < clause1;
-    }
-
-    bool operator <=(Clause& clause2) {
-        Clause& clause1 = *this;
-        return !(clause1 > clause2);
-    }
-
-    bool operator >=(Clause& clause2) {
-        Clause& clause1 = *this;
-        return !(clause1 < clause2);
     }
 
     inline const_iterator begin() const {
@@ -137,25 +133,24 @@ public:
         }
     }
 
+    inline bool isFrozen() const {
+        return (bool)(header & FROZEN_MASK);
+    }
+
+    inline void setFrozen(bool learnt) {
+        if (learnt) {
+            header |= FROZEN_MASK;
+        } else {
+            header &= ~FROZEN_MASK;
+        }
+    }
+
     inline bool isDeleted() const {
         return (bool)(header & DELETED_MASK);
     }
 
     inline void setDeleted() {
         header |= DELETED_MASK;
-    }
-
-    /** Frozen flag is stored inverted so complete header could be used for sorting */
-    inline bool isFrozen() const {
-        return !(bool)(header & UNFROZEN_MASK);
-    }
-
-    inline void setFrozen(bool flag) {
-        if (!flag) {
-            header |= UNFROZEN_MASK;
-        } else {
-            header &= ~UNFROZEN_MASK;
-        }
     }
 
     inline uint16_t getLBD() const {
