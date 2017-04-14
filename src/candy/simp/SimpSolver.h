@@ -225,10 +225,6 @@ class DefaultSimpSolver : public SimpSolver<> {
 
 };
 
-
-
-
-
 //******************************************************************************
 // SimpSolver<PickBranchLitT> implementation
 //******************************************************************************
@@ -838,7 +834,7 @@ cleanup:
     for (Clause* clause : strengthend) {
         if (!clause->isDeleted()) {
             // create clause in correct pool
-            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()), clause->isLearnt());
+            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()));
             this->clauses.push_back(clean);
             this->attachClause(clean);
             this->detachClause(clause);
