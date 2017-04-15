@@ -36,7 +36,13 @@ namespace Candy {
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
-        return defaultPickBranchLit();
+        
+        Lit candidate = defaultPickBranchLit();
+        
+        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
+            return candidate;
+        }
+        return pickBranchLitData.getSignAdvice(candidate);
     }
     
     template <>
@@ -45,7 +51,13 @@ namespace Candy {
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
-        return defaultPickBranchLit();
+        
+        Lit candidate = defaultPickBranchLit();
+        
+        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
+            return candidate;
+        }
+        return pickBranchLitData.getSignAdvice(candidate);
     }
     
     template <>
@@ -54,7 +66,13 @@ namespace Candy {
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
-        return defaultPickBranchLit();
+        
+        Lit candidate = defaultPickBranchLit();
+        
+        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
+            return candidate;
+        }
+        return pickBranchLitData.getSignAdvice(candidate);
     }
     
     template <>
@@ -63,7 +81,13 @@ namespace Candy {
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
-        return defaultPickBranchLit();
+        
+        Lit candidate = defaultPickBranchLit();
+        
+        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
+            return candidate;
+        }
+        return pickBranchLitData.getSignAdvice(candidate);
     }
     
     template <>
@@ -72,7 +96,13 @@ namespace Candy {
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
-        return defaultPickBranchLit();
+        
+        Lit candidate = defaultPickBranchLit();
+        
+        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
+            return candidate;
+        }
+        return pickBranchLitData.getSignAdvice(candidate);
     }
     
     template <>
@@ -81,6 +111,12 @@ namespace Candy {
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
-        return defaultPickBranchLit();
+        
+        Lit candidate = defaultPickBranchLit();
+        
+        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
+            return candidate;
+        }
+        return pickBranchLitData.getSignAdvice(candidate);
     }
 }

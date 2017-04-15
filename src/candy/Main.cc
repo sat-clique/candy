@@ -256,9 +256,6 @@ struct GateRecognitionArguments {
     const bool opt_gr_intensify;
     const int opt_gr_lookahead_threshold;
     const bool opt_print_gates;
-    
-    const int opt_min_useful_absolute;
-    const double opt_min_useful_relative;
 };
 
 static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {

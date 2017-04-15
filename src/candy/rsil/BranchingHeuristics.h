@@ -35,6 +35,7 @@
 #include "RSARHeuristicsFilter.h"
 
 #include <type_traits>
+#include <iostream>
 
 namespace Candy {
     /**
@@ -72,11 +73,11 @@ namespace Candy {
             std::shared_ptr<RefinementHeuristic> RSARHeuristic;
             const bool filterOnlyBackbones;
             
-            explicit Parameters(const Conjectures& conjectures_,
-                                bool backbonesEnabled_ = false,
-                                bool filterByRSARHeuristic_ = false,
-                                std::shared_ptr<RefinementHeuristic> RSARHeuristic_ = nullptr,
-                                bool filterOnlyBackbones_ = false)
+            Parameters(const Conjectures& conjectures_,
+                       bool backbonesEnabled_ = false,
+                       bool filterByRSARHeuristic_ = false,
+                       std::shared_ptr<RefinementHeuristic> RSARHeuristic_ = nullptr,
+                       bool filterOnlyBackbones_ = false)
             : conjectures(conjectures_),
             backbonesEnabled(backbonesEnabled_),
             filterByRSARHeuristic(filterByRSARHeuristic_),
@@ -98,6 +99,8 @@ namespace Candy {
                       const AssignsType& assigns,
                       const DecisionType& decision) noexcept;
         
+        Lit getSignAdvice(Lit literal) noexcept;
+        
         FastRandomNumberGenerator& getRandomNumberGenerator() noexcept;
         
     protected:
@@ -105,6 +108,7 @@ namespace Candy {
         
     private:
         FastRandomNumberGenerator m_rng;
+        bool m_backbonesEnabled;
     };
     
     
@@ -146,14 +150,14 @@ namespace Candy {
             
             Parameters() = default;
             Parameters(const typename UnderlyingHeuristicType::Parameters& rsilParameters_,
-                       uint64_t initialBudget_ = 10000ul)
+                       uint64_t initialBudget_ = 10000ull)
             : rsilParameters(rsilParameters_),
             initialBudget(initialBudget_) {
             }
             
-            explicit Parameters(const Conjectures& conjectures_,
-                                uint64_t initialBudget_ = 10000ul)
-            : rsilParameters({conjectures_}),
+            Parameters(const Conjectures& conjectures_,
+                                uint64_t initialBudget_ = 10000ull)
+            : rsilParameters(typename UnderlyingHeuristicType::Parameters{conjectures_}),
             initialBudget(initialBudget_) {
             }
         };
@@ -205,11 +209,11 @@ namespace Candy {
             Parameters() = default;
             
             explicit Parameters(const Conjectures& conjectures_)
-            : rsilParameters({conjectures_}), probHalfLife(100ull) {
+            : rsilParameters(typename UnderlyingHeuristicType::Parameters{conjectures_}), probHalfLife(100ull) {
             }
             
             Parameters(const Conjectures& conjectures_, uint64_t probHalfLife_)
-            : rsilParameters({conjectures_}),
+            : rsilParameters(typename UnderlyingHeuristicType::Parameters{conjectures_}),
             probHalfLife(probHalfLife_) {}
             
             Parameters(const typename UnderlyingHeuristicType::Parameters& rsilParameters_,
@@ -230,6 +234,7 @@ namespace Candy {
                       const AssignsType& assigns,
                       const DecisionType& decision) noexcept;
         
+        Lit getSignAdvice(Lit literal) noexcept;
         
         
     private:
@@ -312,14 +317,18 @@ namespace Candy {
     
     
     template<class AdviceType>
-    RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic() : m_advice(), m_rng(0xFFFF) {
+    RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic()
+    : m_advice(),
+    m_rng(0xFFFF),
+    m_backbonesEnabled(false) {
     }
     
     template<class AdviceType>
     RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic(const RSILBranchingHeuristic::Parameters& params)
     : m_advice(params.conjectures,
                BranchingHeuristicsImpl::getMaxVar(params.conjectures)),
-    m_rng(0xFFFF) {
+    m_rng(0xFFFF),
+    m_backbonesEnabled(params.backbonesEnabled) {
         if (params.filterByRSARHeuristic) {
             assert (params.RSARHeuristic.get() != nullptr);
             std::vector<RefinementHeuristic*> heuristics;
@@ -381,6 +390,25 @@ namespace Candy {
         return lit_Undef;
     }
     
+    template<class AdviceType>
+    __attribute__((always_inline))
+    inline Lit RSILBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
+        if (m_backbonesEnabled) {
+            Var decisionVariable = var(literal);
+            if (m_advice.hasPotentialAdvice(decisionVariable)) {
+                auto& advice = m_advice.getAdvice(decisionVariable);
+                
+                if (advice.isBackbone()
+                    && BranchingHeuristicsImpl::canUseAdvice(advice, 0)
+                    && advice.getSize() == 1) {
+                    assert(advice.getLiteral(0) != lit_Undef);
+                    BranchingHeuristicsImpl::usedAdvice(advice, 0);
+                    return ~(advice.getLiteral(0));
+                }
+            }
+        }
+        return literal;
+    }
     
     
     template<unsigned int tAdviceSize>
@@ -398,6 +426,7 @@ namespace Candy {
             }
         }
     }
+    
     
     // Note: The RSILBudgetBranchingHeuristic implementation itself is not concerned with
     // actually updating the AdviceEntry objects, and does not directly alter the behaviour
@@ -451,6 +480,14 @@ namespace Candy {
                                                                       const AssignsType& assigns,
                                                                       const DecisionType& decision) noexcept {
         auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailSize, trailLimits, assigns, decision) : lit_Undef;
+        updateCallCounter();
+        return result;
+    }
+    
+    template<class AdviceType>
+    __attribute__((always_inline))
+    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
+        auto result = isRSILEnabled() ? m_rsilHeuristic.getSignAdvice(literal) : literal;
         updateCallCounter();
         return result;
     }
