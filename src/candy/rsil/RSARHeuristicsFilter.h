@@ -38,12 +38,14 @@ namespace Candy {
      * Removes all variables from the given \p ImplicitLearningAdvice which
      * any of the given RSAR heuristics currently mark for removal via \p probe().
      *
-     * \param heuristics     a vector of RSAR heuristics.
-     * \param advice         the target \p ImplicitLearningAdvice object.
+     * \param heuristics         a vector of RSAR heuristics.
+     * \param advice             the target \p ImplicitLearningAdvice object.
+     * \param filterOnlyBackbone remove only backbone variables.
      */
-    template<class AdviceEntryType>
-    void filterWithRSARHeuristics(std::vector<RefinementHeuristic>& heuristics,
-                                  ImplicitLearningAdvice<AdviceEntryType> advice);
+    template<class ImplicitLearningAdviceT>
+    void filterWithRSARHeuristics(const std::vector<RefinementHeuristic*>& heuristics,
+                                  ImplicitLearningAdviceT& advice,
+                                  bool filterOnlyBackbone);
 
     //******* implementation ***********************************************************
     
@@ -57,11 +59,11 @@ namespace Candy {
             return false;
         }
         
-        template<class AdviceEntryType>
+        template<class ImplicitLearningAdviceT>
         inline void filterWithRSARHeuristics(const std::vector<RefinementHeuristic*>& heuristics,
-                                      ImplicitLearningAdvice<AdviceEntryType>& advice,
+                                      ImplicitLearningAdviceT& advice,
                                       Var variable) {
-            AdviceEntryType& adviceEntry = advice.getAdvice(variable);
+            auto& adviceEntry = advice.getAdvice(variable);
             if (adviceEntry.getSize() == 0) {
                 return;
             }
@@ -81,11 +83,14 @@ namespace Candy {
         }
     }
     
-    template<class AdviceEntryType>
+    template<class ImplicitLearningAdviceT>
     void filterWithRSARHeuristics(const std::vector<RefinementHeuristic*>& heuristics,
-                                  ImplicitLearningAdvice<AdviceEntryType>& advice) {
+                                  ImplicitLearningAdviceT& advice,
+                                  bool filterOnlyBackbone) {
         for (Var v = 0; advice.hasPotentialAdvice(v); ++v) {
-            RSARHeuristicsFilterImpl::filterWithRSARHeuristics(heuristics, advice, v);
+            if (!filterOnlyBackbone || advice.getAdvice(v).isBackbone()) {
+                RSARHeuristicsFilterImpl::filterWithRSARHeuristics(heuristics, advice, v);
+            }
         }
     }
 }

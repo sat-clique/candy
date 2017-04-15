@@ -46,24 +46,32 @@ namespace Candy {
             void markRemovals(Backbones&) {};
             MOCK_METHOD2(probe, bool(Var, bool));
         };
+        
+        void test_noRemovalWithNullHeuristic(bool filterBackbone) {
+            Conjectures testDataSrc;
+            testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
+            testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+            ImplicitLearningAdvice<AdviceEntry<3>> testData(testDataSrc, 5);
+            
+            MockHeuristic nullHeuristic;
+            EXPECT_CALL(nullHeuristic, probe(testing::_,testing::_)).WillRepeatedly(testing::Return(false));
+            
+            filterWithRSARHeuristics({&nullHeuristic}, testData, filterBackbone);
+            
+            EXPECT_TRUE(testData.hasPotentialAdvice(5));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+        }
     }
     
     TEST(RSILRSARHeuristicsFilterTests, noRemovalWithNullHeuristic) {
-        Conjectures testDataSrc;
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
-        ImplicitLearningAdvice<AdviceEntry<3>> testData(testDataSrc, 5);
-        
-        MockHeuristic nullHeuristic;
-        EXPECT_CALL(nullHeuristic, probe(testing::_,testing::_)).WillRepeatedly(testing::Return(false));
-        
-        filterWithRSARHeuristics({&nullHeuristic}, testData);
-        
-        EXPECT_TRUE(testData.hasPotentialAdvice(5));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+        test_noRemovalWithNullHeuristic(false);
+    }
+    
+    TEST(RSILRSARHeuristicsFilterTests, noRemovalWithNullHeuristic_onlyBackbones) {
+        test_noRemovalWithNullHeuristic(true);
     }
     
     TEST(RSILRSARHeuristicsFilterTests, allRemovedWithProbePositiveHeuristic) {
@@ -75,7 +83,7 @@ namespace Candy {
         MockHeuristic nullHeuristic;
         EXPECT_CALL(nullHeuristic, probe(testing::_,testing::_)).WillRepeatedly(testing::Return(true));
         
-        filterWithRSARHeuristics({&nullHeuristic}, testData);
+        filterWithRSARHeuristics({&nullHeuristic}, testData, false);
         
         EXPECT_TRUE(testData.hasPotentialAdvice(5));
         EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
@@ -95,11 +103,55 @@ namespace Candy {
         EXPECT_CALL(nullHeuristic, probe(5, testing::_)).WillRepeatedly(testing::Return(true));
         EXPECT_CALL(nullHeuristic, probe(testing::Lt(5), testing::_)).WillRepeatedly(testing::Return(false));
         
-        filterWithRSARHeuristics({&nullHeuristic}, testData);
+        filterWithRSARHeuristics({&nullHeuristic}, testData, false);
         
         EXPECT_TRUE(testData.hasPotentialAdvice(5));
         EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
         EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+    }
+    
+    TEST(RSILRSARHeuristicsFilterTests, equivalenceDoesNotGetRemovedWithOnlyBackbone) {
+        Conjectures testDataSrc;
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+        ImplicitLearningAdvice<AdviceEntry<3>> testData(testDataSrc, 5);
+        
+        MockHeuristic nullHeuristic;
+        
+        EXPECT_CALL(nullHeuristic, probe(5, testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(testing::Lt(5), testing::_)).WillRepeatedly(testing::Return(false));
+        
+        filterWithRSARHeuristics({&nullHeuristic}, testData, true);
+        
+        EXPECT_TRUE(testData.hasPotentialAdvice(5));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+    }
+    
+    TEST(RSILRSARHeuristicsFilterTests, backboneGetsRemovedWithOnlyBackbone) {
+        Conjectures testDataSrc;
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+        testDataSrc.addBackbone(BackboneConjecture{mkLit(6,1)});
+        ImplicitLearningAdvice<AdviceEntry<3>> testData(testDataSrc, 6);
+        
+        MockHeuristic nullHeuristic;
+        
+        EXPECT_CALL(nullHeuristic, probe(5, testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(6, testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(testing::Lt(5), testing::_)).WillRepeatedly(testing::Return(false));
+        
+        filterWithRSARHeuristics({&nullHeuristic}, testData, true);
+        
+        EXPECT_TRUE(testData.hasPotentialAdvice(5));
+        EXPECT_TRUE(testData.hasPotentialAdvice(6));
+        EXPECT_EQ(testData.getAdvice(6).getSize(), 0ull);
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
         EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
         EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
     }

@@ -256,6 +256,9 @@ struct GateRecognitionArguments {
     const bool opt_gr_intensify;
     const int opt_gr_lookahead_threshold;
     const bool opt_print_gates;
+    
+    const int opt_min_useful_absolute;
+    const double opt_min_useful_relative;
 };
 
 static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {
@@ -415,6 +418,10 @@ struct RSILArguments {
     const RSILMode mode;
     const uint64_t vanishing_probabilityHalfLife;
     const uint64_t impbudget_initialBudget;
+    
+    const bool filterByInputDependencies;
+    const int filterByInputDependenciesMax;
+    const bool filterOnlyBackbones;
 };
 
 static RSILMode getRSILMode(const std::string& mode) {
@@ -459,22 +466,43 @@ using RSILBugetSolver = SimpSolver<RSILBudgetBranchingHeuristic2>;
 template<class PickBranchLitType> static
 typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILBranchingHeuristic3::BasicType>::value,
 typename PickBranchLitType::Parameters>::type
-getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs) {
-    return {conjectures};
+getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    
+    bool useBackbones = !conjectures.getBackbones().empty();
+    std::shared_ptr<RefinementHeuristic> filterHeuristic = nullptr;
+    
+    if (rsilArgs.filterByInputDependencies) {
+        auto maxInputs = static_cast<unsigned long>(rsilArgs.filterByInputDependenciesMax);
+        auto heuristic = createInputDepCountRefinementHeuristic(analyzer, {maxInputs, 0});
+        heuristic->beginRefinementStep();
+        filterHeuristic = shared_ptr<RefinementHeuristic>(heuristic.release());
+    }
+    
+    return typename PickBranchLitType::Parameters{conjectures,
+                                                  useBackbones,
+                                                  rsilArgs.filterByInputDependencies,
+                                                  filterHeuristic,
+                                                  rsilArgs.filterOnlyBackbones};
 }
 
 template<class PickBranchLitType> static
 typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILVanishingBranchingHeuristic3::BasicType>::value,
 typename PickBranchLitType::Parameters>::type
-getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs) {
-    return {conjectures, rsilArgs.vanishing_probabilityHalfLife};
+getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    auto conf = getRSILHeuristicParameters<typename PickBranchLitType::UnderlyingHeuristicType>(conjectures,
+                                                                                                rsilArgs,
+                                                                                                analyzer);
+    return {conf, rsilArgs.vanishing_probabilityHalfLife};
 }
 
 template<class PickBranchLitType> static
 typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILBudgetBranchingHeuristic3::BasicType>::value,
 typename PickBranchLitType::Parameters>::type
-getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs) {
-    return {conjectures, rsilArgs.impbudget_initialBudget};
+getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    auto conf = getRSILHeuristicParameters<typename PickBranchLitType::UnderlyingHeuristicType>(conjectures,
+                                                                                                rsilArgs,
+                                                                                                analyzer);
+    return {conf, rsilArgs.impbudget_initialBudget};
 }
 
 
@@ -498,7 +526,8 @@ createRSILPreprocessingHook(const RandomSimulationArguments& randomSimulationArg
         }
         
         auto heuristicParameters = getRSILHeuristicParameters<typename SolverType::PickBranchLitType>(*conjectures,
-                                                                                                      rsilArgs);
+                                                                                                      rsilArgs,
+                                                                                                      analyzer);
         solver.initializePickBranchLit(heuristicParameters);
     };
 }
@@ -588,6 +617,14 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
                                    1 << 24, IntRange(1, INT32_MAX));
     IntOption opt_rsil_impBudgets("RSIL", "rsil-imp-budgets", "Set the initial budgets for implicationbudgeted mode",
                                   1 << 20, IntRange(1, INT32_MAX));
+    
+    IntOption opt_rsil_filterByInputDeps("RSIL", "rsil-filter-by-input-dependencies",
+                                         "Disregard variables dependending on more than N inputs. N=0 (default) disables this filter.",
+                                         0,
+                                         IntRange(0, INT32_MAX));
+    BoolOption opt_rsil_filterOnlyBackbone("RSIL", "rsil-filter-only-backbone",
+                                           "Filter only the backbone of the problem via rsil-filter-by-input-dependencies",
+                                           false);
 
     parseOptions(argc, argv, true);
 
@@ -595,7 +632,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_gr_tries,
         opt_gr_patterns,
         opt_gr_semantic,
-        opt_gr_semantic_budget,
+        static_cast<unsigned int>(opt_gr_semantic_budget),
         opt_gr_holistic,
         opt_gr_lookahead,
         opt_gr_intensify,
@@ -618,14 +655,17 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rsar_maxRefinementSteps,
         parseSimplificationHandlingMode(std::string{opt_rsar_simpMode}),
         std::string{opt_rsar_inputDepCountHeurConf} != "",
-        std::string{opt_rsar_inputDepCountHeurConf}
+        std::string{opt_rsar_inputDepCountHeurConf},
     };
     
     RSILArguments rsilArgs{
         opt_rsil_enable,
         getRSILMode(std::string{opt_rsil_mode}),
         static_cast<uint64_t>(opt_rsil_vanHalfLife),
-        static_cast<uint64_t>(opt_rsil_impBudgets)
+        static_cast<uint64_t>(opt_rsil_impBudgets),
+        opt_rsil_filterByInputDeps != 0,
+        opt_rsil_filterByInputDeps,
+        opt_rsil_filterOnlyBackbone
     };
 
     const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
