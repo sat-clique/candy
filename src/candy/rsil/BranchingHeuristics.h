@@ -345,11 +345,6 @@ namespace Candy {
         }
         
         auto trailStart = trailLimits.back();
-        
-        if (trailSize - trailStart > 32) {
-            trailStart = trailSize - 32;
-        }
-        
         auto scanLen = trailSize - trailStart;
         
         for (decltype(scanLen) j = 0; j < scanLen; ++j) {
