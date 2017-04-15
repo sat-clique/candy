@@ -98,7 +98,7 @@ namespace Candy {
          * Given a gate analyzer, countInputDependencies computes for each gate output variable v
          * the amount of inputs on which the value of v depends.
          */
-        std::unordered_map<Var, size_t> countInputDependencies(GateAnalyzer& analyzer) {
+        std::unordered_map<Var, size_t> countInputDependencies(GateAnalyzer& analyzer, size_t maxInputs) {
             // for each gate, get the set of gates which depend on the output
             auto topo = getTopoOrder(analyzer);
             auto dependents = getDirectlyNestedGates(analyzer, topo.getOutputsOrdered());
@@ -113,6 +113,8 @@ namespace Candy {
             std::unordered_map<Gate*, std::unique_ptr<std::unordered_set<Var>>> inputDependencies;
             std::unordered_map<Var, size_t> inputDependencyCount;
             
+            const size_t exceedingMax = std::numeric_limits<size_t>::max();
+            
             for (auto gateOutput : topo.getOutputsOrdered()) {
                 auto& gate = analyzer.getGate(mkLit(gateOutput));
                 inputDependencies[&gate].reset(new std::unordered_set<Var>{});
@@ -122,19 +124,43 @@ namespace Candy {
                 auto& gate = analyzer.getGate(mkLit(gateOutput));
                 auto& inputsViaDependencies = *inputDependencies[&gate];
                 
-                for (auto inpLit : gate.getInputs()) {
-                    if (!analyzer.getGate(inpLit).isDefined()) {
-                        auto inpVar = var(inpLit);
-                        inputsViaDependencies.insert(inpVar);
+                bool detectedExceedingMax =  (inputDependencyCount.find(gateOutput) != inputDependencyCount.end()
+                                              && inputDependencyCount[gateOutput] == exceedingMax);
+                
+                if (!detectedExceedingMax) {
+                    // update input dependencies with inputs which are not outputs of other gates
+                    for (auto inpLit : gate.getInputs()) {
+                        if (!analyzer.getGate(inpLit).isDefined()) {
+                            auto inpVar = var(inpLit);
+                            inputsViaDependencies.insert(inpVar);
+                            detectedExceedingMax |= inputsViaDependencies.size() > maxInputs;
+                            if (detectedExceedingMax) {
+                                // the values of inputsViaDependencies are discarded when detectedExceedingMax
+                                // ==> it's okay to quit the loop here
+                                break;
+                            }
+                        }
                     }
                 }
-                inputDependencyCount[var(gate.getOutput())] = inputsViaDependencies.size();
                 
-                // move the information about input variables to the gates depending on this one
-                for (auto dependent : dependents[&gate]) {
-                    inputDependencies[dependent]->insert(inputsViaDependencies.begin(),
-                                                         inputsViaDependencies.end());
+                if (!detectedExceedingMax) {
+                    inputDependencyCount[var(gate.getOutput())] = inputsViaDependencies.size();
+                    
+                    // move the information about input variables to the gates depending on this one
+                    for (auto dependent : dependents[&gate]) {
+                        inputDependencies[dependent]->insert(inputsViaDependencies.begin(),
+                                                             inputsViaDependencies.end());
+                    }
                 }
+                else {
+                    // propagate the excess to the gates depending on this one
+                    
+                    inputDependencyCount[var(gate.getOutput())] = exceedingMax;
+                    for (auto dependent : dependents[&gate]) {
+                        inputDependencyCount[var(dependent->getOutput())] = exceedingMax;
+                    }
+                }
+
                 inputDependencies.erase(&gate);
             }
             
@@ -173,7 +199,8 @@ namespace Candy {
         }
 
         void InputDepCountRefinementHeuristic::init(GateAnalyzer& analyzer, const std::vector<size_t>& config) {
-            auto inputSizes = countInputDependencies(analyzer);
+            auto maxInput = (config.empty() ? 0 : config[0]);
+            auto inputSizes = countInputDependencies(analyzer, maxInput);
             
             // Note: this code is written under the assumption that config
             // is a very small vector (about 4 or 5 elements) - for large
