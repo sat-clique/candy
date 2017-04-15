@@ -25,11 +25,14 @@
  */
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
+
 #include <candy/rsil/BranchingHeuristics.h>
 #include <candy/testutils/TestUtils.h>
 #include <candy/core/Solver.h>
 #include <candy/randomsimulation/RandomSimulator.h>
 #include <candy/gates/GateAnalyzer.h>
+#include <candy/rsar/Heuristics.h>
 
 namespace Candy {
     
@@ -249,6 +252,48 @@ namespace Candy {
     
     TEST(RSILBudgetBranchingHeuristicsTests, travelsUpTrail) {
         test_travelsUpTrail<TestedRSILBudgetBranchingHeuristic>();
+    }
+    
+    namespace {
+        class MockRSARHeuristic : public RefinementHeuristic {
+        public:
+            void beginRefinementStep() {} ;
+            void markRemovals(EquivalenceImplications&) {};
+            void markRemovals(Backbones&) {};
+            MOCK_METHOD2(probe, bool(Var, bool));
+        };
+    }
+    
+    TEST(RSILBranchingHeuristicsTests, givesNoAdviceForFilteredVariable) {
+        MockRSARHeuristic* mockRSARHeuristic = new MockRSARHeuristic;
+        
+        EXPECT_CALL(*mockRSARHeuristic, probe(testing::Ge(4), testing::_)).WillRepeatedly(testing::Return(false));
+        EXPECT_CALL(*mockRSARHeuristic, probe(testing::Le(3), testing::_)).WillRepeatedly(testing::Return(true));
+        
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(4, 0), mkLit(5,1)}});
+        
+        std::shared_ptr<RefinementHeuristic> mockRSARHeuristicPtr;
+        mockRSARHeuristicPtr.reset(mockRSARHeuristic);
+        TestedRSILBranchingHeuristic::Parameters params{testData, true, true, mockRSARHeuristicPtr, false};
+        TestedRSILBranchingHeuristic underTest{params};
+        
+        
+        TestedRSILBranchingHeuristic::TrailType testTrail {mkLit(3,0)};
+        TestedRSILBranchingHeuristic::TrailLimType testTrailLim {0};
+        TestedRSILBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1, 1};
+        TestedRSILBranchingHeuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False, l_Undef};
+        
+        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        
+        ASSERT_EQ(result, lit_Undef);
+        
+        testTrail = {mkLit(4,0)};
+        
+        result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        
+        ASSERT_EQ(result, mkLit(5,0));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {

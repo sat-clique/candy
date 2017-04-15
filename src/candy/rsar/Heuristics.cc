@@ -147,6 +147,7 @@ namespace Candy {
             void beginRefinementStep() override;
             void markRemovals(EquivalenceImplications& equivalence) override;
             void markRemovals(Backbones& backbones) override;
+            bool probe(Var v, bool isBackbone) override;
             
             InputDepCountRefinementHeuristic(GateAnalyzer& analyzer, const std::vector<size_t>& config);
             virtual ~InputDepCountRefinementHeuristic();
@@ -203,6 +204,11 @@ namespace Candy {
         
         void InputDepCountRefinementHeuristic::markRemovals(EquivalenceImplications& equivalence) {
             assert(m_step > 0);
+            
+            if (static_cast<unsigned int>(m_step) > m_deactivationsByStep.size()) {
+                return;
+            }
+            
             genericMarkRemovals<EquivalenceImplications, Implication>(equivalence,
                                                                       [](Implication litPair) {
                                                                           return var(litPair.first);
@@ -212,11 +218,26 @@ namespace Candy {
         
         void InputDepCountRefinementHeuristic::markRemovals(Backbones& backbones) {
             assert(m_step > 0);
+            
+            if (static_cast<unsigned int>(m_step) > m_deactivationsByStep.size()) {
+                return;
+            }
+            
             genericMarkRemovals<Backbones, Lit> (backbones,
                                                  [](Lit lit) {
                                                      return var(lit);
                                                  },
                                                  m_deactivationsByStep[m_step-1]);
+        }
+        
+        bool InputDepCountRefinementHeuristic::probe(Var v, bool isBackbone) {
+            (void)isBackbone;
+            
+            if (static_cast<unsigned int>(m_step) > m_deactivationsByStep.size()) {
+                return false;
+            }
+            
+            return m_deactivationsByStep[m_step-1].find(v) != m_deactivationsByStep[m_step-1].end();
         }
     }
     

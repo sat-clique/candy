@@ -31,9 +31,10 @@
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/FastRand.h>
+#include <candy/rsar/Heuristics.h>
+#include "RSARHeuristicsFilter.h"
 
 #include <type_traits>
-#include <iostream>
 
 namespace Candy {
     /**
@@ -66,6 +67,24 @@ namespace Candy {
         public:
             /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
             const Conjectures& conjectures;
+            const bool backbonesEnabled;
+            const bool filterByRSARHeuristic;
+            std::shared_ptr<RefinementHeuristic> RSARHeuristic;
+            const bool filterOnlyBackbones;
+            
+            explicit Parameters(const Conjectures& conjectures_,
+                                bool backbonesEnabled_ = false,
+                                bool filterByRSARHeuristic_ = false,
+                                std::shared_ptr<RefinementHeuristic> RSARHeuristic_ = nullptr,
+                                bool filterOnlyBackbones_ = false)
+            : conjectures(conjectures_),
+            backbonesEnabled(backbonesEnabled_),
+            filterByRSARHeuristic(filterByRSARHeuristic_),
+            RSARHeuristic(RSARHeuristic_),
+            filterOnlyBackbones(filterOnlyBackbones_) {
+            }
+            
+            Parameters() = default;
         };
         
         RSILBranchingHeuristic();
@@ -112,6 +131,7 @@ namespace Candy {
     public:
         
         using BasicType = RSILBudgetBranchingHeuristic<3>;
+        using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
         /**
          * RSILBudgetBranchingHeuristic parameters.
@@ -125,8 +145,16 @@ namespace Candy {
             uint64_t initialBudget;
             
             Parameters() = default;
-            Parameters(const Conjectures& conjectures_, uint64_t initialBudget_ = 10000ul)
-            : rsilParameters({conjectures_}), initialBudget(initialBudget_) {
+            Parameters(const typename UnderlyingHeuristicType::Parameters& rsilParameters_,
+                       uint64_t initialBudget_ = 10000ul)
+            : rsilParameters(rsilParameters_),
+            initialBudget(initialBudget_) {
+            }
+            
+            explicit Parameters(const Conjectures& conjectures_,
+                                uint64_t initialBudget_ = 10000ul)
+            : rsilParameters({conjectures_}),
+            initialBudget(initialBudget_) {
             }
         };
         
@@ -161,6 +189,8 @@ namespace Candy {
         
         using BasicType = RSILVanishingBranchingHeuristic<AdviceEntry<3>>;
         
+        using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
+        
         /**
          * RSILVanishingBranchingHeuristic parameters.
          */
@@ -182,8 +212,10 @@ namespace Candy {
             : rsilParameters({conjectures_}),
             probHalfLife(probHalfLife_) {}
             
-            Parameters(const typename RSILBranchingHeuristic<AdviceType>::Parameters& parameters,
-                       uint64_t probHalfLife) : rsilParameters(parameters), probHalfLife(probHalfLife) {
+            Parameters(const typename UnderlyingHeuristicType::Parameters& rsilParameters_,
+                       uint64_t probHalfLife_)
+            : rsilParameters(rsilParameters_),
+            probHalfLife(probHalfLife_) {
             }
         };
         
@@ -288,6 +320,12 @@ namespace Candy {
     : m_advice(params.conjectures,
                BranchingHeuristicsImpl::getMaxVar(params.conjectures)),
     m_rng(0xFFFF) {
+        if (params.filterByRSARHeuristic) {
+            assert (params.RSARHeuristic.get() != nullptr);
+            std::vector<RefinementHeuristic*> heuristics;
+            heuristics.push_back(params.RSARHeuristic.get());
+            filterWithRSARHeuristics(heuristics, m_advice, params.filterOnlyBackbones);
+        }
     }
     
     template<class AdviceType>
