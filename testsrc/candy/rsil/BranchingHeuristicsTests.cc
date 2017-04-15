@@ -296,12 +296,43 @@ namespace Candy {
         ASSERT_EQ(result, mkLit(5,0));
     }
     
+    TEST(RSILBranchingHeuristicsTests, givesNoBackboneAdviceWhenBackbonesDeactivated) {
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
+        testData.addBackbone(BackboneConjecture {mkLit(3,0)});
+        testData.addBackbone(BackboneConjecture {mkLit(4,1)});
+        
+        TestedRSILBranchingHeuristic::Parameters params{testData, false, false, nullptr, false};
+        TestedRSILBranchingHeuristic underTest{params};
+        
+        // backbone used here if backbone-usage would be activated:
+        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,0));
+        
+        EXPECT_EQ(underTest.getSignAdvice(mkLit(1,0)), mkLit(1,0));
+        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,1)), mkLit(3,1));
+    }
+    
+    TEST(RSILBranchingHeuristicsTests, givesBackboneAdviceWhenBackbonesActivated) {
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
+        testData.addBackbone(BackboneConjecture {mkLit(3,0)});
+        testData.addBackbone(BackboneConjecture {mkLit(4,1)});
+        
+        TestedRSILBranchingHeuristic::Parameters params{testData, true, false, nullptr, false};
+        TestedRSILBranchingHeuristic underTest{params};
+        
+        // backbone used here:
+        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,1));
+        
+        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,1)), mkLit(3,1));
+        EXPECT_EQ(underTest.getSignAdvice(mkLit(1,0)), mkLit(1,0));
+    }
+    
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
         Conjectures testData;
         
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        TestedRSILVanishingBranchingHeuristic::Parameters params{testData};
-        params.probHalfLife = 100ull;
+        TestedRSILVanishingBranchingHeuristic::Parameters params{testData, 100ull};
         TestedRSILVanishingBranchingHeuristic underTest{params};
         
         TestedRSILVanishingBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
