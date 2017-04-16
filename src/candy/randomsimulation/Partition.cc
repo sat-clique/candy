@@ -110,7 +110,7 @@ namespace Candy {
     }
     
     bool LogCompressionScheduleStrategy::shouldCompress(unsigned int round) {
-        return (round && !(round & (round - 1))) == 0;
+        return round == 0 || !(round & (round - 1));
     }
     
     
