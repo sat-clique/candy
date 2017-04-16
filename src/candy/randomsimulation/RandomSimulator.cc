@@ -133,7 +133,7 @@ namespace Candy {
     
     bool BitparallelRandomSimulator::isFurtherSimulationWorthwile() {
         return m_abortThreshold < 0.0f
-               || m_partitionStrat->getPartitionReductionRate() <= m_abortThreshold;
+               || m_partitionStrat->getPartitionReductionRate() > m_abortThreshold;
     }
     
     Conjectures BitparallelRandomSimulator::run() {
