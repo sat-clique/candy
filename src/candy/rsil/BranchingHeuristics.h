@@ -355,6 +355,7 @@ namespace Candy {
         
         auto trailStart = trailLimits.back();
         auto scanLen = trailSize - trailStart;
+        auto randomNumber = trailLimits.size(); // decision level "randomness" suffices here
         
         for (decltype(scanLen) j = 0; j < scanLen; ++j) {
             auto i = trailStart + j;
@@ -372,9 +373,9 @@ namespace Candy {
                 continue;
             }
             
-            for (decltype(advice.getSize()) a = 0; a < advice.getSize(); ++a) {
-                size_t idx = a;
-                
+            size_t adviceSize = advice.getSize();
+            for (decltype(adviceSize) a = 0; a < adviceSize; ++a) {
+                auto idx = (randomNumber + a) % adviceSize;
                 
                 auto advisedLit = advice.getLiteral(idx);
                 if (assigns[var(advisedLit)] == l_Undef
