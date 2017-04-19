@@ -87,10 +87,11 @@ namespace Candy {
         
     protected:
         void backtrack(GateAnalyzer& analyzer, Gate &gate);
+        std::vector<const Cl*> &createClauseStorage(Glucose::Var variable);
         
         std::vector<Glucose::Var> m_inputVariables;
         std::vector<Glucose::Lit> m_outputLitsOrdered;
-        std::unordered_map<Glucose::Var, std::vector<const Cl*>> m_clausesByOutput;
+        std::vector<std::unique_ptr<std::vector<const Cl*>>> m_clausesByOutput;
         Glucose::Var m_maxVar;
         
         std::unique_ptr<GateFilter> m_gateFilter;
@@ -99,8 +100,9 @@ namespace Candy {
     };
     
     ClauseOrderImplBase::ClauseOrderImplBase() : ClauseOrder(), m_inputVariables({}),
-    m_outputLitsOrdered({}), m_clausesByOutput({}), m_maxVar(-1), m_gateFilter(nullptr),
+    m_outputLitsOrdered({}), m_clausesByOutput(), m_maxVar(-1), m_gateFilter(nullptr),
     m_enabledOutputs({}), m_filteringEnabled(false) {
+        m_clausesByOutput.resize(65536);
     }
     
     ClauseOrderImplBase::~ClauseOrderImplBase() {
@@ -119,10 +121,23 @@ namespace Candy {
         return m_outputLitsOrdered;
     }
     
+    std::vector<const Cl*>& ClauseOrderImplBase::createClauseStorage(Glucose::Var variable) {
+        assert(variable >= 0);
+        if(static_cast<size_t>(variable) >= m_clausesByOutput.size()) {
+            m_clausesByOutput.resize(2*variable + 1);
+        }
+        assert(m_clausesByOutput[variable] == nullptr);
+        
+        m_clausesByOutput[variable].reset(new std::vector<const Cl*>{});
+        
+        return *m_clausesByOutput[variable];
+    }
+    
     const std::vector<const Cl*>& ClauseOrderImplBase::getClauses(Glucose::Var variable) const {
-        auto resultIter = m_clausesByOutput.find(variable);
-        assert(resultIter != m_clausesByOutput.end());
-        return resultIter->second;
+        assert(variable >= 0);
+        assert(static_cast<size_t>(variable) < m_clausesByOutput.size());
+        assert(m_clausesByOutput[variable] != nullptr);
+        return *m_clausesByOutput[variable];
     }
     
     unsigned int ClauseOrderImplBase::getAmountOfVars() const {
@@ -163,7 +178,7 @@ namespace Candy {
         }
         
         m_outputLitsOrdered.push_back(usedOutput);
-        auto &clausesTarget = m_clausesByOutput[var(usedOutput)];
+        auto &clausesTarget = createClauseStorage(var(usedOutput));
         assert (clausesTarget.empty());
         clausesTarget.insert(clausesTarget.begin(), usedGateClauses->begin(), usedGateClauses->end());
     }
@@ -339,7 +354,7 @@ namespace Candy {
     public:
         std::unordered_set<Glucose::Var> getEnabledOutputVars() override;
         
-        NonmonotonousGateFilter(GateAnalyzer &analyzer);
+        explicit NonmonotonousGateFilter(GateAnalyzer &analyzer);
         virtual ~NonmonotonousGateFilter();
         NonmonotonousGateFilter(const NonmonotonousGateFilter& other) = delete;
         NonmonotonousGateFilter& operator=(const NonmonotonousGateFilter& other) = delete;

@@ -216,13 +216,56 @@ namespace Candy {
     
     
     
+    class AlternatingRandomization : public Randomization {
+    public:
+        AlternatingRandomization(std::unique_ptr<Randomization> randomizationA,
+                                 std::unique_ptr<Randomization> randomizationB,
+                                 unsigned int period) noexcept;
+        
+        void randomize(SimulationVectors &simVectors,
+                       const std::vector<SimulationVectors::index_t>& indices) override;
+        
+        virtual ~AlternatingRandomization();
+        
+        AlternatingRandomization(const AlternatingRandomization &other) = delete;
+        AlternatingRandomization& operator=(const AlternatingRandomization& other) = delete;
+        
+    private:
+        std::unique_ptr<Randomization> m_randomizationA;
+        std::unique_ptr<Randomization> m_randomizationB;
+        const unsigned int m_period;
+        unsigned int m_invocations;
+    };
+    
+    AlternatingRandomization::AlternatingRandomization(std::unique_ptr<Randomization> randomizationA,
+                                                       std::unique_ptr<Randomization> randomizationB,
+                                                       unsigned int period) noexcept
+    : Randomization(),
+    m_randomizationA(std::move(randomizationA)),
+    m_randomizationB(std::move(randomizationB)),
+    m_period(period),
+    m_invocations(0) {
+    }
+    
+    AlternatingRandomization::~AlternatingRandomization() {
+    }
+    
+    void AlternatingRandomization::randomize(Candy::SimulationVectors &simVectors,
+                                             const std::vector<SimulationVectors::index_t> &indices) {
+        if ((m_invocations / m_period) % 2 == 0) {
+            m_randomizationA->randomize(simVectors, indices);
+        }
+        else {
+            m_randomizationB->randomize(simVectors, indices);
+        }
+    }
+    
+    
     std::unique_ptr<Randomization> alternateRandomizations(std::unique_ptr<Randomization> rand1,
                                                            std::unique_ptr<Randomization> rand2,
                                                            unsigned int period) {
-        (void)rand1;
-        (void)rand2;
-        (void)period;
-        assert(false); /* remains to be implemented */
-        return std::unique_ptr<Randomization>{};
+        return backported_std::make_unique<AlternatingRandomization>(std::move(rand1),
+                                                                     std::move(rand2),
+                                                                     period);
     }
 }

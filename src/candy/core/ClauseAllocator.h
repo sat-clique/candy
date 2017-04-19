@@ -12,6 +12,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <numeric>
 
 #include <candy/core/Clause.h>
 #include <candy/core/Statistics.h>
