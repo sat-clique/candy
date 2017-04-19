@@ -159,7 +159,10 @@ namespace Candy {
             m_propagationStrat->propagate(m_simulationVectors, *m_clauseOrderStrat);
             m_partitionStrat->update(m_simulationVectors);
             
-            if (!isFurtherSimulationWorthwile()) {
+            // Perform a minimum amount of simulation steps to let the randomization
+            // work with different biases. TODO: ask the randomization object about
+            // the concrete minimum of steps.
+            if (step > 10 && !isFurtherSimulationWorthwile()) {
                 break;
             }
         }
