@@ -68,9 +68,6 @@
 
 #include "sonification/SolverSonification.h"
 
-#define ABSTRACT_LEVELS_64
-//#define EXPENSIVE_CLAUSE_ACTIVITY
-
 namespace Candy {
 
 class DefaultPickBranchLit {
@@ -405,15 +402,9 @@ protected:
         return vardata[x].level;
     }
 
-#ifdef ABSTRACT_LEVELS_64
     inline uint64_t abstractLevel(Var x) const {
         return 1ull << (level(x) & 63);
     }
-#else
-    inline uint32_t abstractLevel(Var x) const {
-        return 1 << (level(x) & 32);
-    }
-#endif
 
     // Insert a variable in the decision order priority queue.
     inline void insertVarOrder(Var x) {
@@ -460,11 +451,7 @@ protected:
 	void cancelUntil(int level); // Backtrack until a certain level.
 	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
 	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-#ifdef ABSTRACT_LEVELS_64
 	bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
-#else 
-    bool litRedundant(Lit p, uint32_t abstract_levels);
-#endif
 	lbool search(); // Search for a given number of conflicts.
 	virtual void reduceDB(); // Reduce the set of learnt clauses.
 	void rebuildOrderHeap();
@@ -576,7 +563,6 @@ namespace SolverOptions {
     
     extern IntOption opt_revamp;
     extern BoolOption opt_sort_watches;
-    extern IntOption opt_sort_learnts_max;
 }
 
 template<class PickBranchLitT>
@@ -1006,11 +992,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
     
     // minimize clause
-#ifdef ABSTRACT_LEVELS_64
     uint64_t abstract_level = 0;
-#else 
-    uint32_t abstract_level = 0;
-#endif
     for (uint_fast16_t i = 1; i < out_learnt.size(); i++) {
         abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
     }
@@ -1063,11 +1045,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
 template <class PickBranchLitT>
-#ifdef ABSTRACT_LEVELS_64
 bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
-#else
-bool Solver<PickBranchLitT>::litRedundant(Lit p, uint32_t abstract_levels) {
-#endif
     static vector<Lit> analyze_stack;
     analyze_stack.clear();
     analyze_stack.push_back(p);
@@ -1211,9 +1189,6 @@ Clause* Solver<PickBranchLitT>::propagate() {
             
             if (incremental) { // INCREMENTAL MODE
                 Clause& c = *cr;
-#ifdef EXPENSIVE_CLAUSE_ACTIVITY
-                if (c.size() <= revamp) claBumpActivity(c);
-#endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         if (decisionLevel() > assumptions.size() || value(c[k]) == l_True || !isSelector(var(c[k]))) {
@@ -1226,9 +1201,6 @@ Clause* Solver<PickBranchLitT>::propagate() {
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)
                 Clause& c = *cr;
-#ifdef EXPENSIVE_CLAUSE_ACTIVITY
-                if (c.size() <= revamp) claBumpActivity(c);
-#endif
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         c.swap(1, k);
