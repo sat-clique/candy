@@ -29,6 +29,7 @@
 
 #include <core/SolverTypes.h>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 
@@ -83,6 +84,15 @@ namespace Candy {
      * Returns true iff the given formula contains the given clause.
      */
     bool containsClause(const For& formula, const Cl& clause);
+    
+    /** 
+     * \ingroup TestUtils
+     *
+     * Gets the maximum value of |x - y| where x rsp. y are values of sample1 rsp. sample2 having
+     * the same key.
+     */
+    double getMaxAbsDifference(const std::unordered_map<std::uint8_t, double>& sample1,
+                               const std::unordered_map<std::uint8_t, double>& sample2);
 }
 
 #endif

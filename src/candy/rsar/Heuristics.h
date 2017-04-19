@@ -27,6 +27,7 @@
 #ifndef X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 #define X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 
+#include <core/SolverTypes.h>
 #include <memory>
 #include <vector>
 
@@ -67,6 +68,15 @@ namespace Candy {
          */
         virtual void markRemovals(Backbones& backbones) = 0;
         
+        /**
+         * Determines whether the heuristic would deactivate implications involving the given
+         * variable regardless of its containing EquivalenceImplications or Backbones object.
+         *
+         * \returns true iff the heuristic would deactivate implications involving the given
+         *               variable.
+         */
+        virtual bool probe(Var v, bool isBackbone);
+        
         RefinementHeuristic();
         virtual ~RefinementHeuristic();
         RefinementHeuristic(const RefinementHeuristic &other) = delete;
@@ -78,11 +88,12 @@ namespace Candy {
      *
      * Creates an instance of InputDepCountRefinementHeuristic.
      *
-     * \param analyzer  the gate analyzer providing the gate structure
+     * \param analyzer  the gate analyzer providing the gate structure.
+     *                  (\p analyzer may be destroyed after the function call)
      * \param config    a list i0, ..., iN of natural numbers. In refinement step X (X <= N),
      *                  all variable outputs depending on more than iX input variables are
      *                  marked for removal. For X > N, all remaining variables are marked for
-     *                  removal.
+     *                  removal. (\p analyzer may be destroyed after the function call)
      */
     std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(GateAnalyzer& analyzer,
                                                                                 const std::vector<size_t>& config);

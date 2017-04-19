@@ -133,7 +133,7 @@ namespace Candy {
     
     bool BitparallelRandomSimulator::isFurtherSimulationWorthwile() {
         return m_abortThreshold < 0.0f
-               || m_partitionStrat->getPartitionReductionRate() <= m_abortThreshold;
+               || m_partitionStrat->getPartitionReductionRate() > m_abortThreshold;
     }
     
     Conjectures BitparallelRandomSimulator::run() {
@@ -252,10 +252,15 @@ namespace Candy {
         }
         
         if (m_clauseOrderStrat.get() == nullptr) {
-            m_clauseOrderStrat = createRecursiveClauseOrder();
+            m_clauseOrderStrat = createNonrecursiveClauseOrder();
         }
         if (m_randomizationStrat.get() == nullptr) {
-            m_randomizationStrat = createSimpleRandomization();
+            auto positiveBiased = createRandomizationCyclicallyBiasedToTrue(1, 5, 1);
+            auto negativeBiased = createRandomizationCyclicallyBiasedToFalse(1, 5, 1);
+            m_randomizationStrat = alternateRandomizations(std::move(positiveBiased),
+                                                           std::move(negativeBiased),
+                                                           5);
+            
         }
         if (m_partitionStrat.get() == nullptr) {
             m_partitionStrat = createDefaultPartition();

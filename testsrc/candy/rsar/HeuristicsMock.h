@@ -45,7 +45,8 @@ namespace Candy {
     public:
         MOCK_METHOD0(beginRefinementStep, void ());
         MOCK_METHOD1(markRemovals, void(EquivalenceImplications&));
-        MOCK_METHOD1(markRemovals, void(Backbones& backbones) noexcept);
+        MOCK_METHOD1(markRemovals, void(Backbones& backbones));
+        MOCK_METHOD2(probe, bool(Var, bool));
     };
     
     /**

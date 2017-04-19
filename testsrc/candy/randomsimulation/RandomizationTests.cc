@@ -33,6 +33,7 @@
 
 #include <randomsimulation/Randomization.h>
 #include <randomsimulation/SimulationVector.h>
+#include <testutils/TestUtils.h>
 
 namespace Candy {
     // TODO: improve documentation
@@ -81,17 +82,7 @@ namespace Candy {
         return result;
     }
     
-    /** Gets the maximum value of |x - y| where x rsp. y are values of sample1 rsp. sample2 having
-     * the same key. */
-    static double getMaxAbsDifference(const std::unordered_map<std::uint8_t, double>& sample1,
-                                      const std::unordered_map<std::uint8_t, double>& sample2) {
-        double diff = 0.0f;
-        for (std::uint8_t i = 0; i < 16; ++i) {
-            double localDiff = std::abs(sample1.at(i) - sample2.at(i));
-            diff = std::max(diff, localDiff);
-        }
-        return diff;
-    }
+
     
     /**
      * Gets the reference empirical cumulative distribution function for 4-bit samples and
