@@ -55,6 +55,8 @@
 #include <string>
 #include <stdexcept>
 #include <regex>
+#include <functional>
+#include <type_traits>
 
 #include <candy/utils/CNFProblem.h>
 #include "candy/core/Certificate.h"
@@ -76,14 +78,20 @@
 #include "candy/randomsimulation/ClauseOrder.h"
 #include "candy/randomsimulation/SimulationVector.h"
 
+#include "candy/rsil/BranchingHeuristics.h"
+
 using namespace Candy;
 
-static Solver<>* solver;
+static std::function<void()> solverSetInterrupt;
+static std::function<bool()> solverIsVerbose;
+static std::function<std::pair<uint64_t, uint64_t>()> solverGetNConflictsAndProps;
 
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
 static void SIGINT_interrupt(int signum) {
-    solver->setInterrupt(true);
+    //solver->setInterrupt(true);
+    assert(solverSetInterrupt);
+    solverSetInterrupt();
 }
 
 // Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
@@ -91,8 +99,11 @@ static void SIGINT_interrupt(int signum) {
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
     printf("\n*** INTERRUPTED ***\n");
-    if (solver->verbosity > 0) {
-        Statistics::getInstance().printFinalStats(solver->nConflicts, solver->nPropagations);
+    if (solverIsVerbose && solverIsVerbose()) {
+        assert(solverGetNConflictsAndProps);
+        auto statistics = solverGetNConflictsAndProps();
+        Statistics::getInstance().printFinalStats(statistics.first /* conflicts */,
+                                                  statistics.second /* propagations */);
     }
     _exit(1);
 }
@@ -122,7 +133,8 @@ static void setLimits(int cpu_lim, int mem_lim) {
     }
 }
 
-static void printModel(FILE* f, Solver<>* solver) {
+template<class SolverType>
+static void printModel(FILE* f, SolverType* solver) {
     fprintf(f, "v");
     for (size_t i = 0; i < solver->nVars(); i++)
         if (solver->model[i] != l_Undef)
@@ -133,7 +145,8 @@ static void printModel(FILE* f, Solver<>* solver) {
 /**
  * Runs the SAT solver, performing simplification if \p do_preprocess is true.
  */
-static lbool solve(DefaultSimpSolver& S, bool do_preprocess) {
+template<class SolverType>
+static lbool solve(SolverType& S, bool do_preprocess) {
     lbool result = l_Undef;
 
     if (do_preprocess) {
@@ -168,7 +181,8 @@ static lbool solve(DefaultSimpSolver& S, bool do_preprocess) {
  * If \p outputFilename is non-null, the result also gets written to the file given by
  * \p outputFilename. The target file gets truncated.
  */
-static void printResult(Solver<>& S, lbool result, bool showModel, const char* outputFilename = nullptr) {
+template<class SolverType>
+static void printResult(SolverType& S, lbool result, bool showModel, const char* outputFilename = nullptr) {
     if (S.verbosity > 0) {
         Statistics::getInstance().printFinalStats(S.nConflicts, S.nPropagations);
         Statistics::getInstance().printAllocatorStatistics();
@@ -198,8 +212,21 @@ static void printResult(Solver<>& S, lbool result, bool showModel, const char* o
  * If \p handleInterruptsBySolver is true, the interrupts are handled by SIGINT_interrupt();
  * otherwise, they are set up to be handled by SIGINT_exit().
  */
-static void installSignalHandlers(bool handleInterruptsBySolver) {
+template<class SolverType>
+static void installSignalHandlers(bool handleInterruptsBySolver, SolverType* solver) {
     if (handleInterruptsBySolver) {
+        solverIsVerbose = [solver]() {
+            return solver->verbosity > 0;
+        };
+        
+        solverSetInterrupt = [solver]() {
+            solver->setInterrupt(true);
+        };
+        
+        solverGetNConflictsAndProps = [solver]() {
+            return std::pair<uint64_t, uint64_t>(solver->nConflicts, solver->nPropagations);
+        };
+        
         signal(SIGINT, SIGINT_interrupt);
         signal(SIGXCPU, SIGINT_interrupt);
     } else {
@@ -211,23 +238,12 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 /**
  * Prints statistics about the problem to be solved.
  */
-static void printProblemStatistics(Solver<>& S) {
+template<class SolverType>
+static void printProblemStatistics(SolverType& S) {
     printf("c ====================================[ Problem Statistics ]====================================\n");
     printf("c |                                                                                            |\n");
     printf("c |  Number of variables:  %12zu                                                        |\n", S.nVars());
     printf("c |  Number of clauses:    %12zu                                                        |\n", S.nClauses());
-}
-
-/**
- * Configures the SAT solver \p S.
- * 
- * TODO: document parameters
- */
-static void configureSolver(DefaultSimpSolver& S, int verbosity, int verbosityEveryConflicts, bool certifiedUNSAT,
-                const char* certifiedUNSATfile) {
-    S.verbosity = verbosity;
-    S.verbEveryConflicts = verbosityEveryConflicts;
-    S.certificate = Certificate(certifiedUNSATfile, certifiedUNSAT);
 }
 
 struct GateRecognitionArguments {
@@ -241,6 +257,20 @@ struct GateRecognitionArguments {
     const int opt_gr_lookahead_threshold;
     const bool opt_print_gates;
 };
+
+std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& arguments) {
+    stream << "Gate recognition arguments: " << std::endl
+    << "  Max tries: " << arguments.opt_gr_tries << std::endl
+    << "  Patterns: " << arguments.opt_gr_patterns << std::endl
+    << "  Semantic: " << arguments.opt_gr_semantic << std::endl
+    << "  Semantic budget: " << arguments.opt_gr_semantic_budget << std::endl
+    << "  Holistic: " << arguments.opt_gr_holistic << std::endl
+    << "  Lookahead: " << arguments.opt_gr_lookahead << std::endl
+    << "  Intensify: " << arguments.opt_gr_intensify << std::endl
+    << "  Lookahead threshold: " << arguments.opt_gr_lookahead_threshold << std::endl
+    << "  Print gates: " << arguments.opt_print_gates << std::endl;
+    return stream;
+}
 
 static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {
     return backported_std::make_unique<Candy::GateAnalyzer>(dimacs, recognitionArgs.opt_gr_tries, recognitionArgs.opt_gr_patterns,
@@ -281,6 +311,19 @@ struct RandomSimulationArguments {
     const bool filterGatesByNonmono;
 };
 
+std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments) {
+    stream << "Random simulation arguments: " << std::endl
+    << "  Rounds: " << arguments.nRounds << std::endl
+    << "  RRAT abort heuristic enabled: " << arguments.abortByRRAT << std::endl
+    << "  RRAT: " << arguments.rrat << std::endl
+    << "  Filtering by conjecture size enabled: " << arguments.filterConjecturesBySize << std::endl
+    << "  Max. conjecture size: " << arguments.maxConjectureSize << std::endl
+    << "  Remove backbone conjectures: " << arguments.removeBackboneConjectures << std::endl
+    << "  Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl;
+    
+    return stream;
+}
+
 struct RSARArguments {
     const bool useRSAR;
     const int maxRefinementSteps;
@@ -288,6 +331,19 @@ struct RSARArguments {
     const bool withInputDepCountHeuristic;
     const std::string inputDepCountHeuristicConfiguration;
 };
+
+std::ostream& operator <<(std::ostream& stream, const RSARArguments& arguments) {
+    stream << "RSAR arguments: " << std::endl
+    << "  RSAR enabled: " << arguments.useRSAR << std::endl;
+    if (arguments.useRSAR) {
+        stream << "  Max. refinement steps: " << arguments.maxRefinementSteps << std::endl
+        << "  Simplification handling mode: " << static_cast<int>(arguments.simplificationHandlingMode) << std::endl
+        << "  Use input dependency size heuristic: " << arguments.withInputDepCountHeuristic << std::endl
+        << "  Input dependency size heuristic configuration: " << arguments.inputDepCountHeuristicConfiguration << std::endl;
+    }
+    
+    return stream;
+}
 
 static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str) {
     if (str == "DISABLE") {
@@ -304,6 +360,7 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
     }
     throw std::invalid_argument(str + ": Unknown simplification handling mode");
 }
+
 
 static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer, const RandomSimulationArguments& rsArguments) {
     auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
@@ -364,7 +421,9 @@ std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, D
     return arSolverBuilder->build();
 }
 
-static lbool solveWithRSAR(DefaultSimpSolver& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
+template<class SolverType> static
+typename std::enable_if<std::is_same<SolverType, DefaultSimpSolver>::value, lbool>::type
+solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
                 const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
@@ -374,6 +433,158 @@ static lbool solveWithRSAR(DefaultSimpSolver& solver, Candy::CNFProblem& problem
 
     return lbool(result);
 }
+
+template<class SolverType> static
+typename std::enable_if<!std::is_same<SolverType, DefaultSimpSolver>::value, lbool>::type
+solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
+              const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
+    throw std::logic_error("solveWithRSAR may only be called with SolverType == DefaultSimpSolver");
+}
+
+class UnsuitableProblemException {
+};
+
+enum class RSILMode {
+    UNRESTRICTED,
+    VANISHING,
+    IMPLICATIONBUDGETED
+};
+
+struct RSILArguments {
+    const bool useRSIL;
+    const RSILMode mode;
+    const uint64_t vanishing_probabilityHalfLife;
+    const uint64_t impbudget_initialBudget;
+    
+    const bool filterByInputDependencies;
+    const int filterByInputDependenciesMax;
+    const bool filterOnlyBackbones;
+};
+
+std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
+    stream << "RSIL arguments: " << std::endl
+    << "  RSIL enabled: " << arguments.useRSIL << std::endl;
+    if (arguments.useRSIL) {
+        stream << "  RSIL mode: " << static_cast<int>(arguments.mode) << std::endl
+        << "  Vanishing mode half-life: " << arguments.vanishing_probabilityHalfLife << std::endl
+        << "  Implication budget mode initial budgets: " << arguments.impbudget_initialBudget << std::endl
+        << "  Filter by input dependency count enabled: " << arguments.filterByInputDependencies << std::endl
+        << "  Max. input depdencency count: " << arguments.filterByInputDependenciesMax << std::endl
+        << "  Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl;
+    }
+    
+    return stream;
+}
+
+static RSILMode getRSILMode(const std::string& mode) {
+    if (mode == "unrestricted") {
+        return RSILMode::UNRESTRICTED;
+    }
+    else if (mode == "vanishing") {
+        return RSILMode::VANISHING;
+    }
+    else if (mode == "implicationbudgeted") {
+        return RSILMode::IMPLICATIONBUDGETED;
+    }
+    else {
+        throw std::invalid_argument("Error: unknown RSIL mode " + mode);
+    }
+}
+
+using RSILSolver = SimpSolver<RSILBranchingHeuristic2>;
+using RSILVanishingSolver = SimpSolver<RSILVanishingBranchingHeuristic2>;
+using RSILBugetSolver = SimpSolver<RSILBudgetBranchingHeuristic2>;
+
+
+// getRSILHeuristicParameters is implemented using SFINAE.
+//
+// Solver<PickBranchLitType> exports the PickBranchLitType template argument as
+// Solver::PickBranchLitType, which in case of RSIL has a nested type
+// PickBranchLitType::BasicType (making life easier due to further template
+// arguments, such as the advice entry type. For each RSIL branching heuristic
+// type HEUR<T>, there is a type HEUR<T>::BasicType which is independent of T.
+// For example, we have
+// RSILBudgetBranchingHeuristic<3>::BasicType == RSILBudgetBranchingHeuristic<300>::BasicType
+//
+// As getRSILHeuristicParameters is independent of the heuristic template parameters,
+// getRSILHeuristicParameters is effectively specialized for the BasicType subtypes.
+// This is achieved via a common SFINAE pattern using std::enable_if and std::is_same:
+// if the std::is_same expression holds (i.e. std::is_same<...>::value is true), the
+// type std::enable_if<std::is_same<...>::value, T>::type is T, and otherwise
+// std::enable_if<std::is_same<...>::value, T>::type does not exist. (In this
+// case, T is the function's return value type.) The compiler uses the specialization
+// where std::enable_if<...>::type is defined.
+
+template<class PickBranchLitType> static
+typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILBranchingHeuristic3::BasicType>::value,
+typename PickBranchLitType::Parameters>::type
+getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    
+    bool useBackbones = !conjectures.getBackbones().empty();
+    std::shared_ptr<RefinementHeuristic> filterHeuristic = nullptr;
+    
+    if (rsilArgs.filterByInputDependencies) {
+        auto maxInputs = static_cast<unsigned long>(rsilArgs.filterByInputDependenciesMax);
+        auto heuristic = createInputDepCountRefinementHeuristic(analyzer, {maxInputs, 0});
+        heuristic->beginRefinementStep();
+        filterHeuristic = shared_ptr<RefinementHeuristic>(heuristic.release());
+    }
+    
+    return typename PickBranchLitType::Parameters{conjectures,
+                                                  useBackbones,
+                                                  rsilArgs.filterByInputDependencies,
+                                                  filterHeuristic,
+                                                  rsilArgs.filterOnlyBackbones};
+}
+
+template<class PickBranchLitType> static
+typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILVanishingBranchingHeuristic3::BasicType>::value,
+typename PickBranchLitType::Parameters>::type
+getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    auto conf = getRSILHeuristicParameters<typename PickBranchLitType::UnderlyingHeuristicType>(conjectures,
+                                                                                                rsilArgs,
+                                                                                                analyzer);
+    return {conf, rsilArgs.vanishing_probabilityHalfLife};
+}
+
+template<class PickBranchLitType> static
+typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILBudgetBranchingHeuristic3::BasicType>::value,
+typename PickBranchLitType::Parameters>::type
+getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    auto conf = getRSILHeuristicParameters<typename PickBranchLitType::UnderlyingHeuristicType>(conjectures,
+                                                                                                rsilArgs,
+                                                                                                analyzer);
+    return {conf, rsilArgs.impbudget_initialBudget};
+}
+
+
+template<class SolverType> static
+std::function<void(SolverType&, CNFProblem&)>
+createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
+                            const RandomSimulationArguments& randomSimulationArgs,
+                            const RSILArguments& rsilArgs) {
+    return [gateRecognitionArgs, randomSimulationArgs, rsilArgs](SolverType& solver, CNFProblem& problem) {
+        auto analyzer = createGateAnalyzer(problem, gateRecognitionArgs);
+        analyzer->analyze();
+        
+        if (analyzer->getGateCount() < 10) {
+            std::cerr << "Insufficient gate count " << analyzer->getGateCount() << "." << std::endl;
+            throw UnsuitableProblemException{};
+        }
+        
+        auto conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
+        if (conjectures->getEquivalences().empty()) {
+            std::cerr << "No equivalence conjectures found." << std::endl;
+            throw UnsuitableProblemException{};
+        }
+        
+        auto heuristicParameters = getRSILHeuristicParameters<typename SolverType::PickBranchLitType>(*conjectures,
+                                                                                                      rsilArgs,
+                                                                                                      *analyzer);
+        solver.initializePickBranchLit(heuristicParameters);
+    };
+}
+
 
 struct GlucoseArguments {
     const int verb;
@@ -391,11 +602,49 @@ struct GlucoseArguments {
     const char *opt_certified_file;
 
     const bool wait_for_user;
+    
+    const bool read_from_stdin;
+    const char *input_filename;
+    const char *output_filename;
 
     const GateRecognitionArguments gateRecognitionArgs;
     const RandomSimulationArguments randomSimulationArgs;
     const RSARArguments rsarArgs;
+    const RSILArguments rsilArgs;
 };
+
+std::ostream& operator <<(std::ostream& stream, const GlucoseArguments& arguments) {
+    stream << "Glucose arguments: " << std::endl
+    << "  Verbosity: " << arguments.verb << std::endl
+    << "  Show model: " << arguments.mod << std::endl
+    << "  Verboisty every conflicts: " << arguments.vv << std::endl
+    << "  CPU time limit: " << arguments.cpu_lim << std::endl
+    << "  Memory limit: " << arguments.mem_lim << std::endl
+    << "  Solve: " << arguments.do_solve << std::endl
+    << "  Preprocess: " << arguments.do_preprocess << std::endl
+    << "  Certified UNSAT: " << arguments.do_certified << std::endl
+    << "  Benchmark gate recognition: " << arguments.do_gaterecognition << std::endl
+    << "  Certified UNSAT output: " << (arguments.opt_certified_file == nullptr ?
+                                        "(none)" : arguments.opt_certified_file) << std::endl
+    << "  Wait for user: " << arguments.wait_for_user << std::endl
+    << "  Read problem from stdin: " << arguments.read_from_stdin << std::endl
+    << "  Input filename: " << (arguments.input_filename == nullptr ?
+                                "(none)" : arguments.input_filename) << std::endl
+    << "  Output filename: "<< (arguments.output_filename == nullptr ?
+                                "(none)" : arguments.output_filename) << std::endl;
+    
+    stream << arguments.gateRecognitionArgs;
+    stream << arguments.randomSimulationArgs;
+    stream << arguments.rsarArgs;
+    stream << arguments.rsilArgs;
+    
+    return stream;
+}
+
+
+
+
+
 
 static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     using namespace Glucose;
@@ -417,16 +666,16 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
 
     StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
-
+    
     BoolOption opt_print_gates("GATE RECOGNITION", "print-gates", "print gates.", false);
     IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX));
-    BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", false);
-    BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", false);
+    BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", true);
+    BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", true);
     IntOption opt_gr_semantic_budget("GATE RECOGNITION", "gate-semantic-budget", "Enable Semantic Gate Detection Conflict Budget", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
     IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
-    BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", false);
+    BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", true);
 
     IntOption opt_rs_nrounds("RANDOMSIMULATION", "rs-rounds", "Amount of random simulation rounds (gets rounded up to the next multiple of 2048)", 1048576,
                     IntRange(1, INT32_MAX));
@@ -442,6 +691,21 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     IntOption opt_rsar_maxRefinementSteps("RSAR", "rsar-max-refinements", "Max. refinement steps", 10, IntRange(1, INT32_MAX));
     StringOption opt_rsar_simpMode("RSAR", "rsar-simpmode", "Simplification handling mode", "RESTRICT");
     StringOption opt_rsar_inputDepCountHeurConf("RSAR", "rsar-heur-idc", "Input dependency count heuristic configuration", "");
+    
+    BoolOption opt_rsil_enable("RSIL", "rsil-enable", "Enable random-simulation-based implicit learning heuristics", false);
+    StringOption opt_rsil_mode("RSIL", "rsil-mode", "Set RSIL mode to unrestricted, vanishing or implicationbudgeted", "unrestricted");
+    IntOption opt_rsil_vanHalfLife("RSIL", "rsil-van-halflife", "Set the probability half-life (in decisions) for vanishing mode",
+                                   1 << 24, IntRange(1, INT32_MAX));
+    IntOption opt_rsil_impBudgets("RSIL", "rsil-imp-budgets", "Set the initial budgets for implicationbudgeted mode",
+                                  1 << 20, IntRange(1, INT32_MAX));
+    
+    IntOption opt_rsil_filterByInputDeps("RSIL", "rsil-filter-by-input-dependencies",
+                                         "Disregard variables dependending on more than N inputs. N=0 (default) disables this filter.",
+                                         0,
+                                         IntRange(0, INT32_MAX));
+    BoolOption opt_rsil_filterOnlyBackbone("RSIL", "rsil-filter-only-backbone",
+                                           "Filter only the backbone of the problem via rsil-filter-by-input-dependencies",
+                                           false);
 
     parseOptions(argc, argv, true);
 
@@ -449,7 +713,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_gr_tries,
         opt_gr_patterns,
         opt_gr_semantic,
-        opt_gr_semantic_budget,
+        static_cast<unsigned int>(opt_gr_semantic_budget),
         opt_gr_holistic,
         opt_gr_lookahead,
         opt_gr_intensify,
@@ -472,9 +736,23 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rsar_maxRefinementSteps,
         parseSimplificationHandlingMode(std::string{opt_rsar_simpMode}),
         std::string{opt_rsar_inputDepCountHeurConf} != "",
-        std::string{opt_rsar_inputDepCountHeurConf}
+        std::string{opt_rsar_inputDepCountHeurConf},
+    };
+    
+    RSILArguments rsilArgs{
+        opt_rsil_enable,
+        getRSILMode(std::string{opt_rsil_mode}),
+        static_cast<uint64_t>(opt_rsil_vanHalfLife),
+        static_cast<uint64_t>(opt_rsil_impBudgets),
+        opt_rsil_filterByInputDeps != 0,
+        opt_rsil_filterByInputDeps,
+        opt_rsil_filterOnlyBackbone
     };
 
+    const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
+    bool readFromStdIn = (argc == 1);
+    const char* inputFilename = (!readFromStdIn ? argv[1] : nullptr);
+    
     return GlucoseArguments{
         verb,
         mod,
@@ -487,10 +765,26 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         do_gaterecognition,
         opt_certified_file,
         wait_for_user,
+        readFromStdIn,
+        inputFilename,
+        outputFilename,
         gateRecognitionArgs,
         rsArgs,
-        rsarArgs
+        rsarArgs,
+        rsilArgs
     };
+}
+
+/**
+ * Configures the SAT solver \p S.
+ *
+ * TODO: document parameters
+ */
+template<class SolverType>
+static void configureSolver(SolverType& S, const GlucoseArguments& args) {
+    S.verbosity = args.verb;
+    S.verbEveryConflicts = args.vv;
+    S.certificate = Certificate(args.opt_certified_file, args.do_certified);
 }
 
 static void waitForUserInput() {
@@ -498,40 +792,76 @@ static void waitForUserInput() {
     std::getchar();
 }
 
-//=================================================================================================
-// Main:
-int main(int argc, char** argv) {
+
+template<class SolverType = DefaultSimpSolver>
+int executeSolver(const GlucoseArguments& args,
+                  SolverType& S,
+                  CNFProblem& dimacs) {
+    Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
+    S.addClauses(dimacs);
+    Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
+    
+    if (S.verbosity > 0) {
+        printProblemStatistics(S);
+        Statistics::getInstance().printRuntime(RT_INITIALIZATION);
+        printf("c |                                                                                            |\n");
+    }
+    
+    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+    installSignalHandlers(true, &S);
+    
+    lbool result;
+    if (!args.rsarArgs.useRSAR) {
+        result = solve(S, args.do_preprocess);
+    } else {
+        result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
+    }
+    
+    const char* statsFilename = args.output_filename;
+    printResult(S, result, args.mod, statsFilename);
+    
+    exit((result == l_True ? 10 : result == l_False ? 20 : 0));
+    return (result == l_True ? 10 : result == l_False ? 20 : 0);
+}
+
+template<class SolverType = DefaultSimpSolver>
+int solve(const GlucoseArguments& args,
+          std::function<void(SolverType&, CNFProblem&)> preprocessingHook = {}) {
     try {
-        std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
-
-        GlucoseArguments args = parseCommandLineArgs(argc, argv);
-
-        if (args.wait_for_user) {
-            waitForUserInput();
-        }
-
         // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
-        installSignalHandlers(false);
+        installSignalHandlers<SolverType>(false, nullptr);
 
         setLimits(args.cpu_lim, args.mem_lim);
 
         Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
 
-        DefaultSimpSolver S;
-        solver = &S;
-        configureSolver(S, args.verb,            // verbosity
-                        args.vv,                 // verbosity every vv conflicts
-                        args.do_certified,       // certifiedUNSAT
-                        args.opt_certified_file);// certifiedUNSAT output file
+        auto S = backported_std::make_unique<SolverType>();
+        configureSolver(*S, args);
 
         Candy::CNFProblem dimacs;
-        if (argc == 1) {
+        if (args.read_from_stdin) {
             printf("c Reading from standard input... Use '--help' for help.\n");
             if (!dimacs.readDimacsFromStdout())
                 return 1;
         } else {
-            if (!dimacs.readDimacsFromFile(argv[1]))
+            if (!dimacs.readDimacsFromFile(args.input_filename))
                 return 1;
+        }
+        
+        bool fallBackToUnmodifiedCandy = false;
+        std::unique_ptr<DefaultSimpSolver> fallbackSolver{};
+        
+        if (preprocessingHook) {
+            try {
+                preprocessingHook(*S, dimacs);
+            }
+            catch(UnsuitableProblemException& e) {
+                std::cout << "Falling back to unmodified Candy" << std::endl;
+                fallBackToUnmodifiedCandy = true;
+                S.reset(nullptr);
+                fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
+                configureSolver(*fallbackSolver, args);
+            }
         }
 
         Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
@@ -540,32 +870,14 @@ int main(int argc, char** argv) {
             benchmarkGateRecognition(dimacs, args.gateRecognitionArgs);
             return 0;
         }
-
-        Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
-        S.addClauses(dimacs);
-        Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
-
-        if (S.verbosity > 0) {
-            printProblemStatistics(S);
-            Statistics::getInstance().printRuntime(RT_INITIALIZATION);
-            printf("c |                                                                                            |\n");
+        
+        if (!fallBackToUnmodifiedCandy) {
+            return executeSolver(args, *S, dimacs);
         }
-
-        // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-        installSignalHandlers(true);
-
-        lbool result;
-        if (!args.rsarArgs.useRSAR) {
-            result = solve(S, args.do_preprocess);
-        } else {
-            result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
+        else {
+            return executeSolver(args, *fallbackSolver, dimacs);
         }
-
-        const char* statsFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
-        printResult(S, result, args.mod, statsFilename);
-
-        exit((result == l_True ? 10 : result == l_False ? 20 : 0));
-        return (result == l_True ? 10 : result == l_False ? 20 : 0);
+        
     } catch (std::bad_alloc& ba) {
         //printf("c Bad_Alloc Caught: %s\n", ba.what());
         printf("c ==============================================================================================\n");
@@ -573,3 +885,55 @@ int main(int argc, char** argv) {
         return 0;
     }
 }
+
+static int solveWithRSIL(const GlucoseArguments& args) {
+    if(args.rsilArgs.mode == RSILMode::UNRESTRICTED) {
+        auto preprocessor = createRSILPreprocessingHook<RSILSolver>(args.gateRecognitionArgs,
+                                                                    args.randomSimulationArgs,
+                                                                    args.rsilArgs);
+        return solve<RSILSolver>(args, preprocessor);
+    }
+    
+    if (args.rsilArgs.mode == RSILMode::VANISHING) {
+        auto preprocessor = createRSILPreprocessingHook<RSILVanishingSolver>(args.gateRecognitionArgs,
+                                                                             args.randomSimulationArgs,
+                                                                             args.rsilArgs);
+        return solve<RSILVanishingSolver>(args, preprocessor);
+    }
+    
+    if (args.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
+        auto preprocessor = createRSILPreprocessingHook<RSILBugetSolver>(args.gateRecognitionArgs,
+                                                                         args.randomSimulationArgs,
+                                                                         args.rsilArgs);
+        return solve<RSILBugetSolver>(args, preprocessor);
+    }
+    
+    throw std::invalid_argument{"RSIL mode not implemented"};
+}
+
+//=================================================================================================
+// Main:
+int main(int argc, char** argv) {
+    std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
+    
+    GlucoseArguments args = parseCommandLineArgs(argc, argv);
+    
+    std::cout << args << std::endl;
+    
+    
+    if (args.rsilArgs.useRSIL && args.rsarArgs.useRSAR) {
+        throw std::invalid_argument("Usign RSAR with RSIL is not yet supported");
+    }
+    
+    if (args.wait_for_user) {
+        waitForUserInput();
+    }
+    
+    if (args.rsilArgs.useRSIL) {
+        solveWithRSIL(args);
+    }
+    else {
+        return solve<>(args);
+    }
+}
+

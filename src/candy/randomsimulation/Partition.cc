@@ -110,7 +110,7 @@ namespace Candy {
     }
     
     bool LogCompressionScheduleStrategy::shouldCompress(unsigned int round) {
-        return (round && !(round & (round - 1))) == 0;
+        return round == 0 || !(round & (round - 1));
     }
     
     
@@ -450,12 +450,14 @@ namespace Candy {
          negative polarity.) */
         bool hasPosPEForSeenVar = false;
         bool hasPosPE = false;
+        bool hasBackbone = false;
         for (PartitionEntry &pe : partition) {
             hasPosPEForSeenVar |= (pe.polarity == 0 && seenVariables[pe.varId]);
             hasPosPE |= pe.polarity;
             seenVariables[pe.varId] = seenVariables[pe.varId] | pe.polarity;
+            hasBackbone |= pe.backbone;
         }
-        if (hasPosPEForSeenVar || !hasPosPE) {
+        if (hasPosPEForSeenVar || !hasPosPE || hasBackbone) {
             return true;
         }
         

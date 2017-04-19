@@ -113,6 +113,8 @@ class Solver {
     friend class SolverConfiguration;
 
 public:
+    using PickBranchLitType = PickBranchLitT;
+    
     Solver();
     virtual ~Solver();
     
@@ -446,6 +448,7 @@ protected:
     }
 
     Lit pickBranchLit(); // Return the next decision variable.
+    Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
 	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
 	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
 	void cancelUntil(int level); // Backtrack until a certain level.
@@ -1596,6 +1599,8 @@ lbool Solver<PickBranchLitT>::search() {
 // Parameters are useless in core but useful for SimpSolver....
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
+    Statistics::getInstance().runtimeStart(RT_SOLVER);
+    
     if (incremental && certificate.isActive()) {
         printf("Can not use incremental and certified unsat in the same time\n");
         exit(-1);
@@ -1604,6 +1609,7 @@ lbool Solver<PickBranchLitT>::solve() {
     model.clear();
     conflict.clear();
     if (!ok) {
+        Statistics::getInstance().runtimeStop(RT_SOLVER);
         return l_False;
     }
     
@@ -1667,9 +1673,27 @@ lbool Solver<PickBranchLitT>::solve() {
     
     cancelUntil(0);
     
+    Statistics::getInstance().runtimeStop(RT_SOLVER);
     return status;
 }
 
+template <class PickBranchLitT>
+__attribute__((always_inline))
+inline Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
+    Var next = var_Undef;
+    
+    // Activity based decision:
+    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
+        if (order_heap.empty()) {
+            next = var_Undef;
+            break;
+        } else {
+            next = order_heap.removeMin();
+        }
+    }
+    
+    return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+}
 
 }
 
