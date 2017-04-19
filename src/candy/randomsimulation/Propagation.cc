@@ -73,14 +73,16 @@ namespace Candy {
     
     void InputToOutputPropagation::propagate(SimulationVectors &assignment,
                                              ClauseOrder &clauseOrder) {
+        auto onesVector = createVarSimVector(true);
+        auto zeroesVector = createVarSimVector(false);
         
         for (auto outputLit : clauseOrder.getGateOutputsOrdered()) {
-            AlignedSimVector allSat = createVarSimVector(true);
+            AlignedSimVector allSat = onesVector;
             auto outputVar = var(outputLit);
             auto& gateClauses = clauseOrder.getClauses(outputVar);
 
             for (auto clause : gateClauses) {
-                AlignedSimVector satAssgn = createVarSimVector(false);
+                AlignedSimVector satAssgn = zeroesVector;
                 for (auto literal : *clause) {
                     if (var(literal) == outputVar) {
                         continue;

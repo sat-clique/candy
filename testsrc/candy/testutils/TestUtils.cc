@@ -71,4 +71,17 @@ namespace Candy {
         }
         return found;
     }
+    
+    double getMaxAbsDifference(const std::unordered_map<std::uint8_t, double>& sample1,
+                               const std::unordered_map<std::uint8_t, double>& sample2) {
+        double diff = 0.0f;
+        
+        assert (sample1.size() == sample2.size());
+        for (auto kv : sample1) {
+            std::uint8_t i = kv.first;
+            double localDiff = std::abs(sample1.at(i) - sample2.at(i));
+            diff = std::max(diff, localDiff);
+        }
+        return diff;
+    }
 }

@@ -351,7 +351,7 @@ namespace Candy {
                                     bool addHeuristics = true) {
         CNFProblem problem;
         problem.readDimacsFromFile(filename.c_str());
-        ASSERT_FALSE(problem.getProblem().empty());
+        ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
         
         // Create random conjectures and a random deactivation sequence, "faking" the
         // results of random simulation. The resulting approximations are almost certainly unsatisfiable.

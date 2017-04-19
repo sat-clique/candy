@@ -93,19 +93,7 @@ BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", tru
 
 template <>
 Lit Solver<DefaultPickBranchLit>::pickBranchLit() {
-    Var next = var_Undef;
-    
-    // Activity based decision:
-    while (next == var_Undef || value(next) != l_Undef || !decision[next]) {
-        if (order_heap.empty()) {
-            next = var_Undef;
-            break;
-        } else {
-            next = order_heap.removeMin();
-        }
-    }
-    
-    return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+    return defaultPickBranchLit();
 }
 }
 
