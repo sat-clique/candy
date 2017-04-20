@@ -107,27 +107,11 @@ public:
         case 4: return revampPages2<4>();
         case 5: return revampPages2<5>();
         case 6: return revampPages2<6>();
-        case 7: return revampPages2<7>();
-        case 8: return revampPages2<8>();
-        case 9: return revampPages2<9>();
-        case 10: return revampPages2<10>();
-        case 11: return revampPages2<11>();
-        case 12: return revampPages2<12>();
-        case 13: return revampPages2<13>();
-        case 14: return revampPages2<14>();
 #else
         case 3: return revampPages<3>();
         case 4: return revampPages<4>();
         case 5: return revampPages<5>();
         case 6: return revampPages<6>();
-        case 7: return revampPages<7>();
-        case 8: return revampPages<8>();
-        case 9: return revampPages<9>();
-        case 10: return revampPages<10>();
-        case 11: return revampPages<11>();
-        case 12: return revampPages<12>();
-        case 13: return revampPages<13>();
-        case 14: return revampPages<14>();
 #endif
         default: return std::vector<Clause*>();
         }
@@ -167,7 +151,6 @@ private:
     };
 
     template <unsigned int N> inline std::vector<Clause*> revampPages() {
-#if REVAMPABLE_PAGES_MAX_SIZE >= N
         uint16_t index = getPoolIndex(N);
         std::vector<void*>& pool = pools[index];
         std::vector<char*>& page = pages[index];
@@ -196,13 +179,9 @@ private:
         assert(old_pool_size == pool.size());
         (void)(old_pool_size);
         return revamped;
-#else
-        return std::vector<Clause*>();
-#endif
     }
 
     template <unsigned int N> inline std::vector<Clause*> revampPages2() {
-#if REVAMPABLE_PAGES_MAX_SIZE >= N
         uint16_t index = getPoolIndex(N);
         std::vector<void*>& pool = pools[index];
         std::vector<char*>& page = pages[index];
@@ -249,9 +228,6 @@ private:
         assert(old_pool_size == pool.size());
         (void)(old_pool_size);
         return revamped;
-#else
-        return std::vector<Clause*>();
-#endif
     }
 
 };
