@@ -392,12 +392,22 @@ static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAn
 }
 
 std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString) {
+    
+    /* TODO: user input validation is currently broken.
+    
     std::regex unsignedIntRegex { "^(\\s*[0-9]+\\s*)+$" };
     if (!std::regex_match(limitsString, unsignedIntRegex)) {
         throw std::invalid_argument(limitsString + ": invalid limits");
     }
+    */
 
     std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
+    
+    std::cout << "Input dependency count heuristic limits: ";
+    for (auto limit : limits) {
+        std::cout << limit << " ";
+    }
+    std::cout << std::endl;
 
     if (limits.size() == 0) {
         throw std::invalid_argument(limitsString + ": invalid limits");
@@ -836,9 +846,7 @@ int executeSolver(const GlucoseArguments& args,
     lbool result;
     if (!args.rsarArgs.useRSAR) {
         result = solve(S, args.do_preprocess);
-    }
-    
-    if (result == l_Undef) {
+    } else {
         result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
     }
     
