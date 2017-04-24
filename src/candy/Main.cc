@@ -330,16 +330,17 @@ struct RSARArguments {
     const Candy::SimplificationHandlingMode simplificationHandlingMode;
     const bool withInputDepCountHeuristic;
     const std::string inputDepCountHeuristicConfiguration;
+    const int minGateCount;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSARArguments& arguments) {
-    stream << "RSAR arguments: " << std::endl
-    << "  RSAR enabled: " << arguments.useRSAR << std::endl;
+    stream << "RSAR arguments: " << std::endl << "  RSAR enabled: " << arguments.useRSAR << std::endl;
     if (arguments.useRSAR) {
         stream << "  Max. refinement steps: " << arguments.maxRefinementSteps << std::endl
         << "  Simplification handling mode: " << static_cast<int>(arguments.simplificationHandlingMode) << std::endl
         << "  Use input dependency size heuristic: " << arguments.withInputDepCountHeuristic << std::endl
-        << "  Input dependency size heuristic configuration: " << arguments.inputDepCountHeuristicConfiguration << std::endl;
+        << "  Input dependency size heuristic configuration: " << arguments.inputDepCountHeuristicConfiguration << std::endl
+        << "  Min. gate count: " << arguments.minGateCount << std::endl;
     }
     
     return stream;
@@ -391,12 +392,22 @@ static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAn
 }
 
 std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString) {
+    
+    /* TODO: user input validation is currently broken.
+    
     std::regex unsignedIntRegex { "^(\\s*[0-9]+\\s*)+$" };
     if (!std::regex_match(limitsString, unsignedIntRegex)) {
         throw std::invalid_argument(limitsString + ": invalid limits");
     }
+    */
 
     std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
+    
+    std::cout << "Input dependency count heuristic limits: ";
+    for (auto limit : limits) {
+        std::cout << limit << " ";
+    }
+    std::cout << std::endl;
 
     if (limits.size() == 0) {
         throw std::invalid_argument(limitsString + ": invalid limits");
@@ -427,7 +438,18 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
                 const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
+    
+    if (gateAnalyzer->getGateCount() < rsarArguments.minGateCount) {
+        std::cerr << "Aborting RSAR: insufficient gate count " << gateAnalyzer->getGateCount() << "." << std::endl;
+        return l_Undef;
+    }
+    
     auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments);
+    if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
+        std::cerr << "Aborting RSAR: no conjectures found." << std::endl;
+        return l_Undef;
+    }
+    
     auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
     auto result = arSolver->solve();
 
@@ -459,18 +481,19 @@ struct RSILArguments {
     const bool filterByInputDependencies;
     const int filterByInputDependenciesMax;
     const bool filterOnlyBackbones;
+    const double minGateOutputFraction;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
-    stream << "RSIL arguments: " << std::endl
-    << "  RSIL enabled: " << arguments.useRSIL << std::endl;
+    stream << "RSIL arguments: " << std::endl << "  RSIL enabled: " << arguments.useRSIL << std::endl;
     if (arguments.useRSIL) {
         stream << "  RSIL mode: " << static_cast<int>(arguments.mode) << std::endl
         << "  Vanishing mode half-life: " << arguments.vanishing_probabilityHalfLife << std::endl
         << "  Implication budget mode initial budgets: " << arguments.impbudget_initialBudget << std::endl
         << "  Filter by input dependency count enabled: " << arguments.filterByInputDependencies << std::endl
         << "  Max. input depdencency count: " << arguments.filterByInputDependenciesMax << std::endl
-        << "  Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl;
+        << "  Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl
+        << "  Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl;
     }
     
     return stream;
@@ -567,14 +590,18 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
         auto analyzer = createGateAnalyzer(problem, gateRecognitionArgs);
         analyzer->analyze();
         
-        if (analyzer->getGateCount() < 10) {
-            std::cerr << "Insufficient gate count " << analyzer->getGateCount() << "." << std::endl;
+        double problemVars = solver.nVars();
+        double gateOutputs = analyzer->getGateCount();
+        
+        if (problemVars == 0 || (gateOutputs/problemVars) < rsilArgs.minGateOutputFraction) {
+            std::cerr << "Aborting RSIL: insufficient gate count " << analyzer->getGateCount()
+            << "/" << solver.nVars() << "." << std::endl;
             throw UnsuitableProblemException{};
         }
         
         auto conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
-        if (conjectures->getEquivalences().empty()) {
-            std::cerr << "No equivalence conjectures found." << std::endl;
+        if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
+            std::cerr << "Aborting RSIL: no conjectures found." << std::endl;
             throw UnsuitableProblemException{};
         }
         
@@ -681,7 +708,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
                     IntRange(1, INT32_MAX));
     BoolOption opt_rs_abortbyrrat("RANDOMSIMULATION", "rs-abort-by-rrat", "Abort random simulation when the reduction rate falls below the RRAT threshold",
                     false);
-    DoubleOption opt_rs_rrat("RANDOMSIMULATION", "rs-rrat", "Reduction rate abort threshold", 0.01, DoubleRange(0.0f, true, 1.0f, false));
+    DoubleOption opt_rs_rrat("RANDOMSIMULATION", "rs-rrat", "Reduction rate abort threshold", 0.01, DoubleRange(0.0, true, 1.0, false));
     IntOption opt_rs_filterConjBySize("RANDOMSIMULATION", "rs-max-conj-size", "Max. allowed literal equivalence conjecture size (0: disable filtering by size)",
                     0, IntRange(0, INT32_MAX));
     BoolOption opt_rs_removeBackboneConj("RANDOMSIMULATION", "rs-remove-backbone-conj", "Filter out conjectures about the problem's backbone", false);
@@ -691,6 +718,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     IntOption opt_rsar_maxRefinementSteps("RSAR", "rsar-max-refinements", "Max. refinement steps", 10, IntRange(1, INT32_MAX));
     StringOption opt_rsar_simpMode("RSAR", "rsar-simpmode", "Simplification handling mode", "RESTRICT");
     StringOption opt_rsar_inputDepCountHeurConf("RSAR", "rsar-heur-idc", "Input dependency count heuristic configuration", "");
+    IntOption opt_rsar_minGateCount("RSAR", "rsar-min-gatecount", "Minimum amount of recognized gates for RSAR to be enabled",
+                                    100, IntRange(1, std::numeric_limits<int>::max()));
     
     BoolOption opt_rsil_enable("RSIL", "rsil-enable", "Enable random-simulation-based implicit learning heuristics", false);
     StringOption opt_rsil_mode("RSIL", "rsil-mode", "Set RSIL mode to unrestricted, vanishing or implicationbudgeted", "unrestricted");
@@ -706,6 +735,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption opt_rsil_filterOnlyBackbone("RSIL", "rsil-filter-only-backbone",
                                            "Filter only the backbone of the problem via rsil-filter-by-input-dependencies",
                                            false);
+    DoubleOption opt_rsil_minGateFraction("RSIL", "rsil-min-gate-frac", "Enable RSIL only when at least this fraction of the variables"\
+                                          " consists of gate outputs", 0.1, DoubleRange(0.0, true, 1.0, true));
 
     parseOptions(argc, argv, true);
 
@@ -737,6 +768,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         parseSimplificationHandlingMode(std::string{opt_rsar_simpMode}),
         std::string{opt_rsar_inputDepCountHeurConf} != "",
         std::string{opt_rsar_inputDepCountHeurConf},
+        opt_rsar_minGateCount
     };
     
     RSILArguments rsilArgs{
@@ -746,7 +778,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         static_cast<uint64_t>(opt_rsil_impBudgets),
         opt_rsil_filterByInputDeps != 0,
         opt_rsil_filterByInputDeps,
-        opt_rsil_filterOnlyBackbone
+        opt_rsil_filterOnlyBackbone,
+        opt_rsil_minGateFraction
     };
 
     const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
