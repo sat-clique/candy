@@ -41,27 +41,27 @@ namespace Candy {
     
     class GlucoseAdapter : public SolverAdapter {
     public:
-        bool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
+        lbool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
             if (!m_solver.okay()) {
-                return false;
+                return l_False;
             }
             
             if (doSimp) {
                 m_solver.eliminate(turnOffSimp);
                 if (!m_solver.okay()) {
-                    return false;
+                    return l_False;
                 }
             }
             m_solver.disablePreprocessing();
-            return l_True == m_solver.solve(assumptions);
+            return m_solver.solve(assumptions);
         }
         
-        bool solve() override {
+        lbool solve() override {
             if (!m_solver.okay()) {
-                return false;
+                return l_False;
             }
             
-            return l_True == m_solver.solve({});
+            return m_solver.solve({});
         }
         
         bool addClause(const Cl &clause) override {

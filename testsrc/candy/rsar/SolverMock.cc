@@ -33,7 +33,7 @@
 namespace Candy {
     
 
-    bool SolverMock::solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) {
+    lbool SolverMock::solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) {
         /*for (auto lit : assumptions) {
             std::cout << var(lit) << std::endl;
         }*/
@@ -45,7 +45,7 @@ namespace Candy {
         return solve();
     }
     
-    bool SolverMock::solve() {
+    lbool SolverMock::solve() {
         // TODO: clear assumption lits if appropriate
         m_nClausesAddedSinceLastSolve = 0;
         bool result = m_defaultSolveResult;
@@ -61,7 +61,7 @@ namespace Candy {
         
         ++m_nInvocations;
         
-        return result;
+        return lbool(result);
     }
     
     bool SolverMock::addClause(const Cl &clause) {
