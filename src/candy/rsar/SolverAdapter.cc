@@ -42,13 +42,13 @@ namespace Candy {
     class GlucoseAdapter : public SolverAdapter {
     public:
         lbool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
-            if (!m_solver.okay()) {
+            if (isInConflictingState()) {
                 return l_False;
             }
             
             if (doSimp) {
                 m_solver.eliminate(turnOffSimp);
-                if (!m_solver.okay()) {
+                if (isInConflictingState()) {
                     return l_False;
                 }
             }
@@ -57,7 +57,7 @@ namespace Candy {
         }
         
         lbool solve() override {
-            if (!m_solver.okay()) {
+            if (isInConflictingState()) {
                 return l_False;
             }
             
@@ -81,7 +81,7 @@ namespace Candy {
         }
         
         bool simplify() override {
-            if (!m_solver.okay()) {
+            if (isInConflictingState()) {
                 return true;
             }
             
@@ -116,7 +116,7 @@ namespace Candy {
         }
         
         bool isInConflictingState() const override {
-            return !m_solver.okay();
+            return m_solver.isInConflictingState();
         }
         
         virtual ~GlucoseAdapter() {
