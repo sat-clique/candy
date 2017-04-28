@@ -237,9 +237,9 @@ namespace Candy {
         
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         
-        bool result = solverAndMock.arSolver->solve(solverAndMock.minProblem);
+        lbool result = solverAndMock.arSolver->solve(solverAndMock.minProblem);
         
-        EXPECT_EQ(result, false);
+        EXPECT_EQ(result, l_False);
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 3);
         test_allAddedClausesDeactivated(*solverAndMock.glucoseMock);
     }
@@ -250,9 +250,9 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         solverAndMock.glucoseMock->mockctrl_setResultInInvocation(1, true);
         
-        bool result = solverAndMock.arSolver->solve(solverAndMock.minProblem);
+        lbool result = solverAndMock.arSolver->solve(solverAndMock.minProblem);
         
-        EXPECT_EQ(result, true);
+        EXPECT_EQ(result, l_True);
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 2);
     }
     
@@ -369,7 +369,7 @@ namespace Candy {
         
         auto solver = solverBuilder->build();
         auto result = solver->solve(problem);
-        EXPECT_EQ(result, expectedResult);
+        EXPECT_EQ(result, lbool(expectedResult));
     }
     
     static void test_acceptanceTest_problem_flat200(int n, SimplificationHandlingMode simpMode,

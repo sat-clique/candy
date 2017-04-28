@@ -62,8 +62,8 @@ namespace Candy {
      */
     class SolverMock : public SolverAdapter {
     public:
-        bool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override;
-        bool solve() override;
+        lbool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override;
+        lbool solve() override;
         bool addClause(const Cl &clause) override;
         void insertClauses(const CNFProblem &problem) override;
         void setFrozen(Var variable, bool frozen) override;

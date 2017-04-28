@@ -184,8 +184,8 @@ namespace Candy {
     
     class ARSolverImpl : public ARSolver {
     public:
-        bool solve(CNFProblem &problem) override;
-        bool solve() override;
+        lbool solve(CNFProblem &problem) override;
+        lbool solve() override;
         
         ARSolverImpl(std::unique_ptr<Conjectures> conjectures,
                      std::unique_ptr<SolverAdapter> solver,
@@ -220,7 +220,7 @@ namespace Candy {
         void addApproximationClauses(EncodedApproximationDelta& delta);
         
         /** Calls the underlying SAT solver using the given assumption literals. */
-        bool underlyingSolve(const std::vector<Lit>& assumptions);
+        lbool underlyingSolve(const std::vector<Lit>& assumptions);
         
         /**
          * Creates a function returning the set of literals contained in clauses
@@ -262,7 +262,7 @@ namespace Candy {
     ARSolverImpl::~ARSolverImpl() {
     }
     
-    bool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
+    lbool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
         assert(!m_solver->isInConflictingState());
         return m_solver->solve(assumptions, false, true);
     }
@@ -409,24 +409,25 @@ namespace Candy {
     }
 
     
-    bool ARSolverImpl::solve(Candy::CNFProblem &problem) {
+    lbool ARSolverImpl::solve(Candy::CNFProblem &problem) {
         m_solver->insertClauses(problem);
         return solve();
     }
     
-    bool ARSolverImpl::solve() {
+    lbool ARSolverImpl::solve() {
         if (m_maxRefinementSteps == 0) {
             // no refinement allowed -> use plain sat solving
             return m_solver->solve();
         }
         
         if (m_solver->isInConflictingState()) {
-            return false;
+            return l_False;
         }
         
         init();
         
-        bool sat = false, abort = false;
+        lbool sat = l_False;
+        bool abort = false;
         int i = 0;
         std::unique_ptr<EncodedApproximationDelta> currentDelta;
         do {
@@ -444,12 +445,12 @@ namespace Candy {
                 // can perform another step after this one => use the approximation clauses.
                 assert(currentDelta.get() != nullptr);
                 
-                sat |= underlyingSolve(currentDelta->getAssumptionLiterals());
+                sat = underlyingSolve(currentDelta->getAssumptionLiterals());
                 
                 // the underlying solver may enter a conflicting state e.g. after
                 // learning unary clauses.
                 abort |= m_solver->isInConflictingState();
-                assert(!m_solver->isInConflictingState() || !sat);
+                assert(!m_solver->isInConflictingState() || sat != l_True);
                 
                 // the loop can safely be exited if no approximation clauses were used during solve
                 abort |= (currentDelta->countEnabledClauses() == 0);
@@ -458,12 +459,12 @@ namespace Candy {
                 // no further steps after this one => deactivate the approximation clauses completely.
                 assert(currentDelta.get() != nullptr);
                 auto assumptions = deactivatedAssumptions(*currentDelta);
-                sat |= underlyingSolve(assumptions);
+                sat = underlyingSolve(assumptions);
                 abort = true;
             }
             
             ++i;
-        } while(!abort && !sat);
+        } while(!abort && (sat == l_False));
         return sat;
     }
     
