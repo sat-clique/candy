@@ -73,8 +73,7 @@ namespace Candy {
         void setIncrementalMode() override;
         void initNbInitialVars(int n) override;
         int getNVars() const override;
-        
-        void setParsing(bool parsing) override;
+        bool isInConflictingState() const override;
         
         const std::vector<Lit>& getConflict() override;
         Var newVar() override;

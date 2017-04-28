@@ -62,11 +62,11 @@ namespace Candy {
         virtual void setIncrementalMode() = 0;
         virtual void initNbInitialVars(int n) = 0;
         
-        virtual void setParsing(bool parsing) = 0;
         virtual int getNVars() const = 0;
         
         virtual const std::vector<Lit>& getConflict() = 0;
         virtual Var newVar() = 0;
+        virtual bool isInConflictingState() const = 0;
         
         SolverAdapter() noexcept;
         virtual ~SolverAdapter();
