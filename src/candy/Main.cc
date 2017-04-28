@@ -153,7 +153,7 @@ static lbool solve(SolverType& S, bool do_preprocess) {
         Statistics::getInstance().runtimeStart(RT_SIMPLIFIER);
         S.eliminate(true);
         Statistics::getInstance().runtimeStop(RT_SIMPLIFIER);
-        if (!S.okay()) {
+        if (S.isInConflictingState()) {
             result = l_False;
         }
         if (S.verbosity > 0) {
@@ -301,6 +301,21 @@ static void benchmarkGateRecognition(Candy::CNFProblem &dimacs, const GateRecogn
     }
 }
 
+class UnsuitableProblemException {
+public:
+    
+    explicit UnsuitableProblemException(const std::string& what)
+    : m_what(what) {
+    }
+    
+    const std::string& what() const noexcept {
+        return m_what;
+    }
+    
+private:
+    std::string m_what;
+};
+
 struct RandomSimulationArguments {
     const int nRounds;
     const bool abortByRRAT;
@@ -432,6 +447,7 @@ std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, D
     return arSolverBuilder->build();
 }
 
+
 template<class SolverType> static
 typename std::enable_if<std::is_same<SolverType, DefaultSimpSolver>::value, lbool>::type
 solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
@@ -439,21 +455,28 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
     
-    if (gateAnalyzer->getGateCount() < rsarArguments.minGateCount) {
-        std::cerr << "Aborting RSAR: insufficient gate count " << gateAnalyzer->getGateCount() << "." << std::endl;
-        return l_Undef;
-    }
+    try {
+        if (gateAnalyzer->getGateCount() < rsarArguments.minGateCount) {
+            throw UnsuitableProblemException{std::string{"Insufficient gate count "}
+                + std::to_string(gateAnalyzer->getGateCount())};
+        }
     
-    auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments);
-    if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
-        std::cerr << "Aborting RSAR: no conjectures found." << std::endl;
-        return l_Undef;
-    }
+        auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments);
+        if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
+            throw UnsuitableProblemException{"No conjectures found."};
+        }
     
-    auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
-    auto result = arSolver->solve();
+        auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
+        auto result = arSolver->solve();
 
-    return lbool(result);
+        return lbool(result);
+    }
+    catch (UnsuitableProblemException& e) {
+        std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
+        std::cerr << "c Falling back to unmodified Candy." << std::endl;
+        gateAnalyzer.reset();
+        return solve(solver, true); // TODO: use the do_preprocess parameter here.
+    }
 }
 
 template<class SolverType> static
@@ -463,8 +486,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
     throw std::logic_error("solveWithRSAR may only be called with SolverType == DefaultSimpSolver");
 }
 
-class UnsuitableProblemException {
-};
+
 
 enum class RSILMode {
     UNRESTRICTED,
@@ -594,15 +616,14 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
         double gateOutputs = analyzer->getGateCount();
         
         if (problemVars == 0 || (gateOutputs/problemVars) < rsilArgs.minGateOutputFraction) {
-            std::cerr << "Aborting RSIL: insufficient gate count " << analyzer->getGateCount()
-            << "/" << solver.nVars() << "." << std::endl;
-            throw UnsuitableProblemException{};
+            std::string errorMessage = std::string{"insufficient gate count "} + std::to_string(analyzer->getGateCount())
+            + std::string{"/"} + std::to_string(solver.nVars()) + std::string{"."};
+            throw UnsuitableProblemException{errorMessage};
         }
         
         auto conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
         if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
-            std::cerr << "Aborting RSIL: no conjectures found." << std::endl;
-            throw UnsuitableProblemException{};
+            throw UnsuitableProblemException{"no conjectures found."};
         }
         
         auto heuristicParameters = getRSILHeuristicParameters<typename SolverType::PickBranchLitType>(*conjectures,
@@ -889,7 +910,8 @@ int solve(const GlucoseArguments& args,
                 preprocessingHook(*S, dimacs);
             }
             catch(UnsuitableProblemException& e) {
-                std::cout << "Falling back to unmodified Candy" << std::endl;
+                std::cout << "c Aborting RSIL: " << e.what() << std::endl;
+                std::cout << "c Falling back to unmodified Candy" << std::endl;
                 fallBackToUnmodifiedCandy = true;
                 S.reset(nullptr);
                 fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
