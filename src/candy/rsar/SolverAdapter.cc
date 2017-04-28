@@ -65,10 +65,12 @@ namespace Candy {
         }
         
         bool addClause(const Cl &clause) override {
+#if !defined(NDEBUG)
             for (auto lit : clause) {
                 assert(var(lit) < m_solver.nVars());
                 assert(!m_solver.isEliminated(var(lit)));
             }
+#endif
             return m_solver.addClause(clause);
         }
         
