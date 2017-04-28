@@ -114,22 +114,21 @@ namespace Candy {
         m_minAssumptionVar = n;
     }
     
-    void SolverMock::setParsing(bool parsing) {
-        m_isParsingSet = parsing;
-    }
-        
     const std::vector<Lit>& SolverMock::getConflict() {
         return m_conflictLits;
     }
     
     Var SolverMock::newVar() {
-        //std::cout << "newv " << m_maxCreatedVar+1 << std::endl;
         return ++m_maxCreatedVar;
     }
     
     int SolverMock::getNVars() const {
         return m_maxCreatedVar+1;
     }
+    
+    bool SolverMock::isInConflictingState() const {
+        return false;
+    };
     
     void SolverMock::mockctrl_setConflictLits(const std::vector<Lit> & conflictLits) {
         m_conflictLits = conflictLits;
