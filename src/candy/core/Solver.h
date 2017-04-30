@@ -167,9 +167,9 @@ public:
         return solve();
     }
 
-    // FALSE means solver is in a conflicting state
-    inline bool okay() const {
-        return ok;
+    // true means solver is in a conflicting state
+    inline bool isInConflictingState() const {
+        return !ok;
     }
 
     // Declare if a variable should be eligible for selection in the decision heuristic.

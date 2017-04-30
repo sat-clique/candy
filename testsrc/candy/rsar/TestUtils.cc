@@ -124,7 +124,7 @@ namespace Candy {
         
         bool allEquiv = true;
         for (size_t i = 0; i < equivalentLits.size()-1 && allEquiv; ++i) {
-            assert(equivalentLits[i] <= m_maxVar && equivalentLits[i+1] <= m_maxVar);
+            assert(var(equivalentLits[i]) <= m_maxVar && var(equivalentLits[i+1]) <= m_maxVar);
             allEquiv &= isEquivalent(assumptions, equivalentLits[i], equivalentLits[i+1]);
         }
         
