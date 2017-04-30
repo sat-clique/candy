@@ -28,6 +28,7 @@
 
 #include <randomsimulation/Conjectures.h>
 #include <utils/MemUtils.h>
+#include <utils/System.h>
 
 #include "Heuristics.h"
 #include "Refinement.h"
@@ -264,6 +265,8 @@ namespace Candy {
     
     lbool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
         assert(!m_solver->isInConflictingState());
+        double cpuTime = Glucose::cpuTime();
+        std::cout << "c ARSAT: invoking the underlying solver, elapsed CPU time: " << cpuTime << std::endl;
         return m_solver->solve(assumptions, false, true);
     }
     
