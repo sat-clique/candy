@@ -33,7 +33,7 @@
 namespace Candy {
     
 
-    bool SolverMock::solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) {
+    lbool SolverMock::solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) {
         /*for (auto lit : assumptions) {
             std::cout << var(lit) << std::endl;
         }*/
@@ -45,7 +45,7 @@ namespace Candy {
         return solve();
     }
     
-    bool SolverMock::solve() {
+    lbool SolverMock::solve() {
         // TODO: clear assumption lits if appropriate
         m_nClausesAddedSinceLastSolve = 0;
         bool result = m_defaultSolveResult;
@@ -61,7 +61,7 @@ namespace Candy {
         
         ++m_nInvocations;
         
-        return result;
+        return lbool(result);
     }
     
     bool SolverMock::addClause(const Cl &clause) {
@@ -114,22 +114,21 @@ namespace Candy {
         m_minAssumptionVar = n;
     }
     
-    void SolverMock::setParsing(bool parsing) {
-        m_isParsingSet = parsing;
-    }
-        
     const std::vector<Lit>& SolverMock::getConflict() {
         return m_conflictLits;
     }
     
     Var SolverMock::newVar() {
-        //std::cout << "newv " << m_maxCreatedVar+1 << std::endl;
         return ++m_maxCreatedVar;
     }
     
     int SolverMock::getNVars() const {
         return m_maxCreatedVar+1;
     }
+    
+    bool SolverMock::isInConflictingState() const {
+        return false;
+    };
     
     void SolverMock::mockctrl_setConflictLits(const std::vector<Lit> & conflictLits) {
         m_conflictLits = conflictLits;

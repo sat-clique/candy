@@ -167,9 +167,9 @@ public:
         return solve();
     }
 
-    // FALSE means solver is in a conflicting state
-    inline bool okay() const {
-        return ok;
+    // true means solver is in a conflicting state
+    inline bool isInConflictingState() const {
+        return !ok;
     }
 
     // Declare if a variable should be eligible for selection in the decision heuristic.
@@ -1192,14 +1192,20 @@ Clause* Solver<PickBranchLitT>::propagate() {
             
             if (incremental) { // INCREMENTAL MODE
                 Clause& c = *cr;
+                int watchesUpdateLiteralIndex = -1;
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
+                        watchesUpdateLiteralIndex = k;
                         if (decisionLevel() > assumptions.size() || value(c[k]) == l_True || !isSelector(var(c[k]))) {
-                            c.swap(1, k);
-                            watches[~c[1]].push_back(w);
-                            goto NextClause;
+                            break;
                         }
                     }
+                }
+                
+                if (watchesUpdateLiteralIndex != -1) {
+                    c.swap(1, watchesUpdateLiteralIndex);
+                    watches[~c[1]].push_back(w);
+                    goto NextClause;
                 }
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)

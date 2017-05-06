@@ -41,22 +41,36 @@ namespace Candy {
     
     class GlucoseAdapter : public SolverAdapter {
     public:
-        bool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
+        lbool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override {
+            if (isInConflictingState()) {
+                return l_False;
+            }
+            
             if (doSimp) {
                 m_solver.eliminate(turnOffSimp);
-                if (!m_solver.okay()) {
-                    return false;
+                if (isInConflictingState()) {
+                    return l_False;
                 }
             }
             m_solver.disablePreprocessing();
-            return l_True == m_solver.solve(assumptions);
+            return m_solver.solve(assumptions);
         }
         
-        bool solve() override {
-            return l_True == m_solver.solve({});
+        lbool solve() override {
+            if (isInConflictingState()) {
+                return l_False;
+            }
+            
+            return m_solver.solve({});
         }
         
         bool addClause(const Cl &clause) override {
+#if !defined(NDEBUG)
+            for (auto lit : clause) {
+                assert(var(lit) < m_solver.nVars());
+                assert(!m_solver.isEliminated(var(lit)));
+            }
+#endif
             return m_solver.addClause(clause);
         }
         
@@ -69,6 +83,10 @@ namespace Candy {
         }
         
         bool simplify() override {
+            if (isInConflictingState()) {
+                return true;
+            }
+            
             m_solver.setPropBudget(1);
             m_solver.solve({});
             m_solver.budgetOff();
@@ -86,10 +104,6 @@ namespace Candy {
         void initNbInitialVars(int n) override {
             m_solver.initNbInitialVars(n);
         }
-
-        void setParsing(bool parsing) override {
-	  // TODO: m_solver.parsing = parsing;
-        }
         
         const std::vector<Lit>& getConflict() override {
             return m_solver.getConflict();
@@ -103,9 +117,9 @@ namespace Candy {
             return m_solver.nVars();
         }
         
-        /*const Glucose::SimpSolver& getSolver() override {
-            return m_solver;
-        }*/
+        bool isInConflictingState() const override {
+            return m_solver.isInConflictingState();
+        }
         
         virtual ~GlucoseAdapter() {
             
