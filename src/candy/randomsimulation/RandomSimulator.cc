@@ -29,6 +29,7 @@
 #include <cassert>
 
 #include <utils/MemUtils.h>
+#include <utils/System.h>
 
 #include "ClauseOrder.h"
 #include "Partition.h"
@@ -69,6 +70,7 @@ namespace Candy {
                                    float reductionRateAbortThreshold);
         
         Conjectures run(unsigned int nSteps) override;
+        Conjectures run(unsigned int nSteps, int timeLimit) override;
         Conjectures run() override;
         
         void ensureInitialized();
@@ -81,7 +83,7 @@ namespace Candy {
     private:
         bool isFurtherSimulationWorthwile();
         
-        Conjectures runImpl(bool boundedRun, unsigned int nSteps);
+        Conjectures runImpl(bool boundedRun, unsigned int nSteps, int timeLimit);
         
         std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
         std::unique_ptr<Partition> m_partitionStrat;
@@ -138,21 +140,29 @@ namespace Candy {
     
     Conjectures BitparallelRandomSimulator::run() {
         assert (m_abortThreshold >= 0.0f);
-        return runImpl(false, 0);
+        return runImpl(false, 0, -1);
     }
     
     Conjectures BitparallelRandomSimulator::run(unsigned int nSteps) {
         assert (nSteps > 0);
-        return runImpl(true, nSteps);
+        return runImpl(true, nSteps, -1);
     }
     
-    Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps) {
+    Conjectures BitparallelRandomSimulator::run(unsigned int nSteps, int timeLimit) {
+        assert (nSteps > 0);
+        assert (timeLimit >= -1);
+        return runImpl(true, nSteps, timeLimit);
+    }
+    
+    Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps, int timeLimit) {
         ensureInitialized();
         
         unsigned int realSteps = nSteps / (SimulationVector::VARSIMVECVARS);
         realSteps += (nSteps % SimulationVector::VARSIMVECVARS == 0 ? 0 : 1);
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
+        
+        double startCPUTime = Glucose::cpuTime();
         
         for (unsigned int step = 0; !boundedRun || step < realSteps; ++step) {
             m_randomizationStrat->randomize(m_simulationVectors, inputVars);
@@ -164,6 +174,13 @@ namespace Candy {
             // the concrete minimum of steps.
             if (step > 10 && !isFurtherSimulationWorthwile()) {
                 break;
+            }
+            
+            if (timeLimit > 0) {
+                double currentCPUTime = Glucose::cpuTime();
+                if ((currentCPUTime - startCPUTime) > static_cast<double>(timeLimit)) {
+                    throw OutOfTimeException{};
+                }
             }
         }
         
