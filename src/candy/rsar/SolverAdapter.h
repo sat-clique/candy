@@ -51,8 +51,8 @@ namespace Candy {
      */
     class SolverAdapter {
     public:
-        virtual bool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) = 0;
-        virtual bool solve() = 0;
+        virtual lbool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) = 0;
+        virtual lbool solve() = 0;
         virtual bool addClause(const Cl &clause) = 0;
         virtual void insertClauses(const CNFProblem &problem) = 0;
         virtual void setFrozen(Var variable, bool frozen) = 0;
@@ -62,11 +62,11 @@ namespace Candy {
         virtual void setIncrementalMode() = 0;
         virtual void initNbInitialVars(int n) = 0;
         
-        virtual void setParsing(bool parsing) = 0;
         virtual int getNVars() const = 0;
         
         virtual const std::vector<Lit>& getConflict() = 0;
         virtual Var newVar() = 0;
+        virtual bool isInConflictingState() const = 0;
         
         SolverAdapter() noexcept;
         virtual ~SolverAdapter();

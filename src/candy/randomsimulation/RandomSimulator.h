@@ -46,6 +46,9 @@ namespace Candy {
      * \defgroup RandomSimulation
      */
     
+    class OutOfTimeException {
+    };
+    
     /**
      * \class RandomSimulator
      *
@@ -77,6 +80,23 @@ namespace Candy {
          *   perform more (up to a compile-time defined constant) rounds than given by nRounds.
          */
         virtual Conjectures run(unsigned int nRounds) = 0;
+        
+        /**
+         * Performs random simulation using a maximum amount of variable assignment rounds, aborting
+         * random simulation if the given time limit has been exceeded.
+         *
+         * This method throws an OutOfTimeException if the time limit has been exceeded.
+         *
+         * \param nSteps The nonzero maximum amount of variable assignment rounds. Note that depending
+         *   on the random simulator's configuration, fewer than the maximum amount of
+         *   rounds may actually be performed due to heuristic decisions. (This heuristic is
+         *   disabled by default.)
+         *   Implementations of RandomSimulator may (e.g. due to alignment requirements) actually
+         *   perform more (up to a compile-time defined constant) rounds than given by nRounds.
+         *
+         * \param timeLimit CPU time limit in seconds. If timeLimit == -1, no time limit is used.
+         */
+        virtual Conjectures run(unsigned int nRounds, int timeLimit) = 0;
         
         /**
          * Performs random simulation until the random simulator heuristically determines

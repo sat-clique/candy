@@ -28,6 +28,7 @@
 
 #include <randomsimulation/Conjectures.h>
 #include <utils/MemUtils.h>
+#include <utils/System.h>
 
 #include "Heuristics.h"
 #include "Refinement.h"
@@ -35,6 +36,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <iostream>
 
 namespace Candy {
     ARSolver::ARSolver() noexcept {
@@ -183,8 +185,8 @@ namespace Candy {
     
     class ARSolverImpl : public ARSolver {
     public:
-        bool solve(CNFProblem &problem) override;
-        bool solve() override;
+        lbool solve(CNFProblem &problem) override;
+        lbool solve() override;
         
         ARSolverImpl(std::unique_ptr<Conjectures> conjectures,
                      std::unique_ptr<SolverAdapter> solver,
@@ -219,7 +221,7 @@ namespace Candy {
         void addApproximationClauses(EncodedApproximationDelta& delta);
         
         /** Calls the underlying SAT solver using the given assumption literals. */
-        bool underlyingSolve(const std::vector<Lit>& assumptions);
+        lbool underlyingSolve(const std::vector<Lit>& assumptions);
         
         /**
          * Creates a function returning the set of literals contained in clauses
@@ -261,13 +263,15 @@ namespace Candy {
     ARSolverImpl::~ARSolverImpl() {
     }
     
-    bool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
-        // TODO: add options to further simplify between underlying solver invocations
-        // if applicable
+    lbool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
+        assert(!m_solver->isInConflictingState());
+        double cpuTime = Glucose::cpuTime();
+        std::cout << "c ARSAT: invoking the underlying solver, elapsed CPU time: " << cpuTime << std::endl;
         return m_solver->solve(assumptions, false, true);
     }
     
     void ARSolverImpl::addApproximationClauses(EncodedApproximationDelta& delta) {
+        assert(!m_solver->isInConflictingState());
         for (auto&& clause : delta.getNewClauses()) {
             auto assumptionLit = getAssumptionLit(clause);
             auto otherLits = getNonAssumptionLits(clause);
@@ -275,7 +279,19 @@ namespace Candy {
             
             bool success = m_solver->addClause(clause);
             (void)success; // prevents release-mode compiler from warning about unused variable success
-            assert(success);
+            
+#if !defined(NDEBUG)
+            if (!success) {
+                assert(!m_solver->isInConflictingState());
+                
+                // The clause must not have contained eliminated variables
+                Var assumptionVar = var(getAssumptionLit(clause));
+                assert(!m_solver->isEliminated(assumptionVar));
+                auto conjectureLiterals = getNonAssumptionLits(clause);
+                assert(!m_solver->isEliminated(var(conjectureLiterals.first)));
+                assert(!m_solver->isEliminated(var(conjectureLiterals.second)));
+            }
+#endif
         }
     }
     
@@ -284,9 +300,9 @@ namespace Candy {
             // freeze the variables occuring in the delta, so that they won't be eliminated
             // due to simplification.
             for (auto&& clause : delta.getNewClauses()) {
-                for (auto lit : clause) {
-                    m_solver->setFrozen(var(lit), true);
-                }
+                auto lits = getNonAssumptionLits(clause);
+                m_solver->setFrozen(var(lits.first), true);
+                m_solver->setFrozen(var(lits.second), true);
             }
         }
         
@@ -297,6 +313,14 @@ namespace Candy {
         if (m_simpHandlingMode == SimplificationHandlingMode::RESTRICT
             || m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
             simplify();
+        }
+        
+        if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
+            for (auto&& clause : delta.getNewClauses()) {
+                auto lits = getNonAssumptionLits(clause);
+                m_solver->setFrozen(var(lits.first), false);
+                m_solver->setFrozen(var(lits.second), false);
+            }
         }
     }
 
@@ -343,8 +367,8 @@ namespace Candy {
             for (auto lit : m_solver->getConflict()) {
                 assert(this->m_approxLitsByAssumption.find(lit) != this->m_approxLitsByAssumption.end());
                 auto lits = this->m_approxLitsByAssumption[lit];
-                result->insert(lits.first);
-                result->insert(lits.second);
+                result->insert(var(lits.first));
+                result->insert(var(lits.second));
             }
             
             return result;
@@ -355,7 +379,6 @@ namespace Candy {
         // Set up the underlying SAT solver
         m_solver->setIncrementalMode();
         m_solver->initNbInitialVars(m_solver->getNVars());
-        m_solver->setParsing(false);
         
         // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
         // approximation computation system.
@@ -384,26 +407,30 @@ namespace Candy {
                                                                std::move(m_heuristics),
                                                                [solverPtr]() {
                                                                    auto newVar = solverPtr->newVar();
-                                                                   solverPtr->setFrozen(newVar, true);
                                                                    return newVar;
                                                                });
     }
 
     
-    bool ARSolverImpl::solve(Candy::CNFProblem &problem) {
+    lbool ARSolverImpl::solve(Candy::CNFProblem &problem) {
         m_solver->insertClauses(problem);
         return solve();
     }
     
-    bool ARSolverImpl::solve() {
+    lbool ARSolverImpl::solve() {
         if (m_maxRefinementSteps == 0) {
             // no refinement allowed -> use plain sat solving
             return m_solver->solve();
         }
         
+        if (m_solver->isInConflictingState()) {
+            return l_False;
+        }
+        
         init();
         
-        bool sat = false, abort = false;
+        lbool sat = l_False;
+        bool abort = false;
         int i = 0;
         std::unique_ptr<EncodedApproximationDelta> currentDelta;
         do {
@@ -420,7 +447,14 @@ namespace Candy {
             if (m_maxRefinementSteps < 0 || i < m_maxRefinementSteps) {
                 // can perform another step after this one => use the approximation clauses.
                 assert(currentDelta.get() != nullptr);
-                sat |= underlyingSolve(currentDelta->getAssumptionLiterals());
+                
+                sat = underlyingSolve(currentDelta->getAssumptionLiterals());
+                
+                // the underlying solver may enter a conflicting state e.g. after
+                // learning unary clauses.
+                abort |= m_solver->isInConflictingState();
+                assert(!m_solver->isInConflictingState() || sat != l_True);
+                
                 // the loop can safely be exited if no approximation clauses were used during solve
                 abort |= (currentDelta->countEnabledClauses() == 0);
             }
@@ -428,12 +462,12 @@ namespace Candy {
                 // no further steps after this one => deactivate the approximation clauses completely.
                 assert(currentDelta.get() != nullptr);
                 auto assumptions = deactivatedAssumptions(*currentDelta);
-                sat |= underlyingSolve(assumptions);
+                sat = underlyingSolve(assumptions);
                 abort = true;
             }
             
             ++i;
-        } while(!abort && !sat);
+        } while(!abort && (sat == l_False));
         return sat;
     }
     

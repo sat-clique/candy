@@ -107,11 +107,11 @@ namespace Candy {
         underTest.mockctrl_setResultInInvocation(1, false);
         underTest.mockctrl_setResultInInvocation(2, false);
         
-        EXPECT_EQ(underTest.solve(), false);
-        EXPECT_EQ(underTest.solve(), false);
-        EXPECT_EQ(underTest.solve(), false);
-        EXPECT_EQ(underTest.solve(), true);
-        EXPECT_EQ(underTest.solve(), true);
+        EXPECT_EQ(underTest.solve(), l_False);
+        EXPECT_EQ(underTest.solve(), l_False);
+        EXPECT_EQ(underTest.solve(), l_False);
+        EXPECT_EQ(underTest.solve(), l_True);
+        EXPECT_EQ(underTest.solve(), l_True);
     }
     
     TEST(RSARTestUtils, SolverMock_solveResultSettingSimp) {
@@ -121,10 +121,10 @@ namespace Candy {
         underTest.mockctrl_setResultInInvocation(1, false);
         underTest.mockctrl_setResultInInvocation(2, false);
         
-        EXPECT_EQ(underTest.solve({}, true, false), false);
-        EXPECT_EQ(underTest.solve({}, true, false), false);
-        EXPECT_EQ(underTest.solve({}, true, false), false);
-        EXPECT_EQ(underTest.solve({}, true, false), true);
-        EXPECT_EQ(underTest.solve({}, true, false), true);
+        EXPECT_EQ(underTest.solve({}, true, false), l_False);
+        EXPECT_EQ(underTest.solve({}, true, false), l_False);
+        EXPECT_EQ(underTest.solve({}, true, false), l_False);
+        EXPECT_EQ(underTest.solve({}, true, false), l_True);
+        EXPECT_EQ(underTest.solve({}, true, false), l_True);
     }
 }
