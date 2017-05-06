@@ -308,11 +308,10 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 
 template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
-#ifndef NDEBUG
     for (unsigned int i = 0; i < ps.size(); i++) {
         assert(!isEliminated(var(ps[i])));
     }
-#endif
+
     size_t nclauses = this->clauses.size();
     
     if (use_rcheck && implied(ps)) {
@@ -762,12 +761,22 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool turn_off_elim) {
     }
     
     // Assumptions must be temporarily frozen to run variable elimination:
-    for (Lit lit : this->assumptions) {
-        Var v = var(lit);
-        assert(!isEliminated(v));
-        if (!frozen[v]) { // Freeze and store.
-            setFrozen(v, true);
-            extra_frozen.push_back(v);
+//    for (Lit lit : this->assumptions) {
+//        Var v = var(lit);
+//        assert(!isEliminated(v));
+//        if (!frozen[v]) { // Freeze and store.
+//            setFrozen(v, true);
+//            extra_frozen.push_back(v);
+//        }
+//    }
+
+    if (this->isIncremental()) {
+        for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < Solver<PickBranchLitT>::nVars(); v++) {
+            assert(!isEliminated(v));
+            if (!frozen[v]) { // Freeze and store.
+                setFrozen(v, true);
+                extra_frozen.push_back(v);
+            }
         }
     }
     
