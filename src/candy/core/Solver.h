@@ -1386,7 +1386,7 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
  **************************************************************************************************/
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::simplify() {
-    assert(decisionLevel() <= assumptions.size());
+    assert(decisionLevel() == 0);
     
     if (!ok || propagate() != nullptr) {
         return ok = false;
@@ -1397,7 +1397,7 @@ bool Solver<PickBranchLitT>::simplify() {
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    if (remove_satisfied && !incremental) { // Can be turned off.
+    if (remove_satisfied) { // Can be turned off.
         std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
     }
     watches.cleanAll();
