@@ -324,6 +324,7 @@ struct RandomSimulationArguments {
     const int maxConjectureSize;
     const bool removeBackboneConjectures;
     const bool filterGatesByNonmono;
+    const int preprocessingTimeLimit;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments) {
@@ -334,7 +335,8 @@ std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments&
     << "  Filtering by conjecture size enabled: " << arguments.filterConjecturesBySize << std::endl
     << "  Max. conjecture size: " << arguments.maxConjectureSize << std::endl
     << "  Remove backbone conjectures: " << arguments.removeBackboneConjectures << std::endl
-    << "  Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl;
+    << "  Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl
+    << "  Preprocessing time limit: " << arguments.preprocessingTimeLimit << std::endl;
     
     return stream;
 }
@@ -378,7 +380,9 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
 }
 
 
-static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer, const RandomSimulationArguments& rsArguments) {
+static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
+                                                                   const RandomSimulationArguments& rsArguments,
+                                                                   int timeLimit = -1) {
     auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
     simulatorBuilder->withGateAnalyzer(analyzer);
 
@@ -391,7 +395,8 @@ static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAn
     }
 
     auto randomSimulator = simulatorBuilder->build();
-    auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds));
+    // TODO: time limit
+    auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds), timeLimit);
 
     if (rsArguments.filterConjecturesBySize) {
         auto sizeFilter = Candy::createSizeConjectureFilter(rsArguments.maxConjectureSize);
@@ -452,24 +457,55 @@ template<class SolverType> static
 typename std::enable_if<std::is_same<SolverType, DefaultSimpSolver>::value, lbool>::type
 solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
                 const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
+    // TODO: the CPU time code was inserted in quite a hurry and
+    // needs to be refactored.
+    
+    double startCPUTime = Glucose::cpuTime();
+    
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
     
+    double gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
+    std::cout << "c Gate recognition time: " << gateAnalyzerTime << std::endl;
+    
     try {
+        if (rsArguments.preprocessingTimeLimit >= 0
+            && static_cast<double>(gateAnalyzerTime) > rsArguments.preprocessingTimeLimit) {
+            throw UnsuitableProblemException{"Gate recognition exceeded the time limit."};
+        }
+        
+        
         if (gateAnalyzer->getGateCount() < rsarArguments.minGateCount) {
             throw UnsuitableProblemException{std::string{"Insufficient gate count "}
                 + std::to_string(gateAnalyzer->getGateCount())};
         }
-    
-        auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments);
-        if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
-            throw UnsuitableProblemException{"No conjectures found."};
+        
+        int rsTimeLimit = -1;
+        if (rsArguments.preprocessingTimeLimit >= 0) {
+            rsTimeLimit = rsArguments.preprocessingTimeLimit - static_cast<int>(gateAnalyzerTime);
         }
+        
+        try {
+            auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments, rsTimeLimit);
+            if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
+                throw UnsuitableProblemException{"No conjectures found."};
+            }
+            
+            double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            std::cout << "c Random simulation time: " << randomSimulationTime << std::endl;
+            
     
-        auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
-        auto result = arSolver->solve();
+            auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
+            auto result = arSolver->solve();
 
-        return lbool(result);
+            return lbool(result);
+        }
+        catch (OutOfTimeException& e) {
+            double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            std::cout << "c Random simulation time: " << randomSimulationTime << std::endl;
+            
+            throw UnsuitableProblemException{"Random simulation exceeded the time limit."};
+        }
     }
     catch (UnsuitableProblemException& e) {
         std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
@@ -734,6 +770,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
                     0, IntRange(0, INT32_MAX));
     BoolOption opt_rs_removeBackboneConj("RANDOMSIMULATION", "rs-remove-backbone-conj", "Filter out conjectures about the problem's backbone", false);
     BoolOption opt_rs_filterGatesByNonmono("RANDOMSIMULATION", "rs-only-nonmono-gates", "Use only nonmonotonously nested gates for random simulation", false);
+    IntOption opt_rs_ppTimeLimit("RANDOMSIMULATION", "rs-time-limit", "Time limit for preprocessing (gate recognition + rs; -1 to disable; default: disabled)", -1, IntRange(-1, INT32_MAX));
 
     BoolOption opt_rsar_enable("RSAR", "rsar-enable", "Enable random-simulation-based abstraction refinement SAT solving", false);
     IntOption opt_rsar_maxRefinementSteps("RSAR", "rsar-max-refinements", "Max. refinement steps", 10, IntRange(1, INT32_MAX));
@@ -780,7 +817,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rs_filterConjBySize > 0,
         opt_rs_filterConjBySize,
         opt_rs_removeBackboneConj,
-        opt_rs_filterGatesByNonmono
+        opt_rs_filterGatesByNonmono,
+        opt_rs_ppTimeLimit
     };
 
     RSARArguments rsarArgs{
