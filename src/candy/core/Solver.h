@@ -1392,7 +1392,7 @@ bool Solver<PickBranchLitT>::simplify() {
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     if (remove_satisfied && !incremental) { // Can be turned off.
-        std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
+        std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
     }
     watches.cleanAll();
     watchesBin.cleanAll();
