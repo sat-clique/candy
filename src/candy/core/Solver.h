@@ -1145,11 +1145,10 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
     Clause* confl = nullptr;
+    uint32_t old_qhead = qhead;
     
     watches.cleanAll();
     watchesBin.cleanAll();
-    
-    nPropagations += trail_size - qhead;
     
     while (qhead < trail_size) {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
@@ -1237,6 +1236,8 @@ Clause* Solver<PickBranchLitT>::propagate() {
         ws.erase(keep, ws.end());
     }
     
+    nPropagations += qhead - old_qhead;
+
     return confl;
 }
 
