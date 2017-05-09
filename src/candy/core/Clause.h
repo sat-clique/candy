@@ -15,9 +15,12 @@
 namespace Candy {
 
 // bits 0..12
-#define BITS_LBD 13
-#define LBD_MASK (static_cast<uint16_t>(8191))
+#define BITS_LBD 9
+//#define LBD_MASK (static_cast<uint16_t>(8191))
 //#define LBD_MASK (static_cast<uint16_t>(4095))
+//#define LBD_MASK (static_cast<uint16_t>(2047))
+//#define LBD_MASK (static_cast<uint16_t>(1023))
+#define LBD_MASK (static_cast<uint16_t>(511))
 // bit 13
 #define LEARNT_MASK (static_cast<uint16_t>(8192))
 // bit 14

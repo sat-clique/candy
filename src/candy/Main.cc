@@ -259,16 +259,16 @@ struct GateRecognitionArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& arguments) {
-    stream << "Gate recognition arguments: " << std::endl
-    << "  Max tries: " << arguments.opt_gr_tries << std::endl
-    << "  Patterns: " << arguments.opt_gr_patterns << std::endl
-    << "  Semantic: " << arguments.opt_gr_semantic << std::endl
-    << "  Semantic budget: " << arguments.opt_gr_semantic_budget << std::endl
-    << "  Holistic: " << arguments.opt_gr_holistic << std::endl
-    << "  Lookahead: " << arguments.opt_gr_lookahead << std::endl
-    << "  Intensify: " << arguments.opt_gr_intensify << std::endl
-    << "  Lookahead threshold: " << arguments.opt_gr_lookahead_threshold << std::endl
-    << "  Print gates: " << arguments.opt_print_gates << std::endl;
+    stream << "c Gate recognition arguments: " << std::endl
+    << "c   Max tries: " << arguments.opt_gr_tries << std::endl
+    << "c   Patterns: " << arguments.opt_gr_patterns << std::endl
+    << "c   Semantic: " << arguments.opt_gr_semantic << std::endl
+    << "c   Semantic budget: " << arguments.opt_gr_semantic_budget << std::endl
+    << "c   Holistic: " << arguments.opt_gr_holistic << std::endl
+    << "c   Lookahead: " << arguments.opt_gr_lookahead << std::endl
+    << "c   Intensify: " << arguments.opt_gr_intensify << std::endl
+    << "c   Lookahead threshold: " << arguments.opt_gr_lookahead_threshold << std::endl
+    << "c   Print gates: " << arguments.opt_print_gates << std::endl;
     return stream;
 }
 
@@ -328,15 +328,15 @@ struct RandomSimulationArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments) {
-    stream << "Random simulation arguments: " << std::endl
-    << "  Rounds: " << arguments.nRounds << std::endl
-    << "  RRAT abort heuristic enabled: " << arguments.abortByRRAT << std::endl
-    << "  RRAT: " << arguments.rrat << std::endl
-    << "  Filtering by conjecture size enabled: " << arguments.filterConjecturesBySize << std::endl
-    << "  Max. conjecture size: " << arguments.maxConjectureSize << std::endl
-    << "  Remove backbone conjectures: " << arguments.removeBackboneConjectures << std::endl
-    << "  Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl
-    << "  Preprocessing time limit: " << arguments.preprocessingTimeLimit << std::endl;
+    stream << "c Random simulation arguments: " << std::endl
+    << "c   Rounds: " << arguments.nRounds << std::endl
+    << "c   RRAT abort heuristic enabled: " << arguments.abortByRRAT << std::endl
+    << "c   RRAT: " << arguments.rrat << std::endl
+    << "c   Filtering by conjecture size enabled: " << arguments.filterConjecturesBySize << std::endl
+    << "c   Max. conjecture size: " << arguments.maxConjectureSize << std::endl
+    << "c   Remove backbone conjectures: " << arguments.removeBackboneConjectures << std::endl
+    << "c   Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl
+    << "c   Preprocessing time limit: " << arguments.preprocessingTimeLimit << std::endl;
     
     return stream;
 }
@@ -351,13 +351,13 @@ struct RSARArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSARArguments& arguments) {
-    stream << "RSAR arguments: " << std::endl << "  RSAR enabled: " << arguments.useRSAR << std::endl;
+    stream << "c RSAR arguments: " << std::endl << "  RSAR enabled: " << arguments.useRSAR << std::endl;
     if (arguments.useRSAR) {
-        stream << "  Max. refinement steps: " << arguments.maxRefinementSteps << std::endl
-        << "  Simplification handling mode: " << static_cast<int>(arguments.simplificationHandlingMode) << std::endl
-        << "  Use input dependency size heuristic: " << arguments.withInputDepCountHeuristic << std::endl
-        << "  Input dependency size heuristic configuration: " << arguments.inputDepCountHeuristicConfiguration << std::endl
-        << "  Min. gate count: " << arguments.minGateCount << std::endl;
+        stream << "c   Max. refinement steps: " << arguments.maxRefinementSteps << std::endl
+        << "c   Simplification handling mode: " << static_cast<int>(arguments.simplificationHandlingMode) << std::endl
+        << "c   Use input dependency size heuristic: " << arguments.withInputDepCountHeuristic << std::endl
+        << "c   Input dependency size heuristic configuration: " << arguments.inputDepCountHeuristicConfiguration << std::endl
+        << "c   Min. gate count: " << arguments.minGateCount << std::endl;
     }
     
     return stream;
@@ -423,7 +423,7 @@ std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsS
 
     std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
     
-    std::cout << "Input dependency count heuristic limits: ";
+    std::cout << "c Input dependency count heuristic limits: ";
     for (auto limit : limits) {
         std::cout << limit << " ";
     }
@@ -543,15 +543,15 @@ struct RSILArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
-    stream << "RSIL arguments: " << std::endl << "  RSIL enabled: " << arguments.useRSIL << std::endl;
+    stream << "c RSIL arguments: " << std::endl << "  RSIL enabled: " << arguments.useRSIL << std::endl;
     if (arguments.useRSIL) {
-        stream << "  RSIL mode: " << static_cast<int>(arguments.mode) << std::endl
-        << "  Vanishing mode half-life: " << arguments.vanishing_probabilityHalfLife << std::endl
-        << "  Implication budget mode initial budgets: " << arguments.impbudget_initialBudget << std::endl
-        << "  Filter by input dependency count enabled: " << arguments.filterByInputDependencies << std::endl
-        << "  Max. input depdencency count: " << arguments.filterByInputDependenciesMax << std::endl
-        << "  Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl
-        << "  Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl;
+        stream << "c   RSIL mode: " << static_cast<int>(arguments.mode) << std::endl
+        << "c   Vanishing mode half-life: " << arguments.vanishing_probabilityHalfLife << std::endl
+        << "c   Implication budget mode initial budgets: " << arguments.impbudget_initialBudget << std::endl
+        << "c   Filter by input dependency count enabled: " << arguments.filterByInputDependencies << std::endl
+        << "c   Max. input depdencency count: " << arguments.filterByInputDependenciesMax << std::endl
+        << "c   Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl
+        << "c   Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl;
     }
     
     return stream;
@@ -682,6 +682,7 @@ struct GlucoseArguments {
     const bool do_preprocess;
     const bool do_certified;
     const bool do_gaterecognition;
+    const bool do_simp_out;
 
     const char *opt_certified_file;
 
@@ -698,23 +699,24 @@ struct GlucoseArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const GlucoseArguments& arguments) {
-    stream << "Glucose arguments: " << std::endl
-    << "  Verbosity: " << arguments.verb << std::endl
-    << "  Show model: " << arguments.mod << std::endl
-    << "  Verboisty every conflicts: " << arguments.vv << std::endl
-    << "  CPU time limit: " << arguments.cpu_lim << std::endl
-    << "  Memory limit: " << arguments.mem_lim << std::endl
-    << "  Solve: " << arguments.do_solve << std::endl
-    << "  Preprocess: " << arguments.do_preprocess << std::endl
-    << "  Certified UNSAT: " << arguments.do_certified << std::endl
-    << "  Benchmark gate recognition: " << arguments.do_gaterecognition << std::endl
-    << "  Certified UNSAT output: " << (arguments.opt_certified_file == nullptr ?
+    stream << "c Glucose arguments: " << std::endl
+    << "c   Verbosity: " << arguments.verb << std::endl
+    << "c   Show model: " << arguments.mod << std::endl
+    << "c   Verboisty every conflicts: " << arguments.vv << std::endl
+    << "c   CPU time limit: " << arguments.cpu_lim << std::endl
+    << "c   Memory limit: " << arguments.mem_lim << std::endl
+    << "c   Solve: " << arguments.do_solve << std::endl
+    << "c   Preprocess: " << arguments.do_preprocess << std::endl
+    << "c   Certified UNSAT: " << arguments.do_certified << std::endl
+    << "c   Output Simplified Dimacs: " << arguments.do_simp_out << std::endl
+    << "c   Benchmark gate recognition: " << arguments.do_gaterecognition << std::endl
+    << "c   Certified UNSAT output: " << (arguments.opt_certified_file == nullptr ?
                                         "(none)" : arguments.opt_certified_file) << std::endl
-    << "  Wait for user: " << arguments.wait_for_user << std::endl
-    << "  Read problem from stdin: " << arguments.read_from_stdin << std::endl
-    << "  Input filename: " << (arguments.input_filename == nullptr ?
+    << "c   Wait for user: " << arguments.wait_for_user << std::endl
+    << "c   Read problem from stdin: " << arguments.read_from_stdin << std::endl
+    << "c   Input filename: " << (arguments.input_filename == nullptr ?
                                 "(none)" : arguments.input_filename) << std::endl
-    << "  Output filename: "<< (arguments.output_filename == nullptr ?
+    << "c   Output filename: "<< (arguments.output_filename == nullptr ?
                                 "(none)" : arguments.output_filename) << std::endl;
     
     stream << arguments.gateRecognitionArgs;
@@ -748,6 +750,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
     BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
+    BoolOption do_simp_out("METHOD", "simp_out", "Simplify only and output dimacs.", false);
 
     StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
     
@@ -855,6 +858,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         do_preprocess,
         do_certified,
         do_gaterecognition,
+        do_simp_out,
         opt_certified_file,
         wait_for_user,
         readFromStdIn,

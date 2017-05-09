@@ -65,6 +65,7 @@
 #include "candy/core/ClauseAllocator.h"
 #include <candy/utils/CNFProblem.h>
 #include "candy/utils/System.h"
+#include "candy/utils/Utilities.h"
 
 #include "sonification/SolverSonification.h"
 
@@ -136,6 +137,10 @@ public:
         add_tmp.clear();
         add_tmp.insert(add_tmp.end(), lits.begin(), lits.end());
         return addClause_(add_tmp);
+    }
+
+    inline void printProblem() {
+        printProblem(clauses);
     }
 
     void addClauses(CNFProblem dimacs);
