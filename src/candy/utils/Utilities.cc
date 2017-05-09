@@ -31,6 +31,15 @@ void printClause(Clause& c, std::vector<lbool> values) {
         printLiteral(lit, values);
         printf(" ");
     }
+    printf("0\n");
+}
+
+void printClause(Clause& c) {
+    for (Lit lit : c) {
+        printLiteral(lit);
+        printf(" ");
+    }
+    printf("0\n");
 }
 
 void printClauses(For& formula) {
@@ -42,6 +51,13 @@ void printClauses(For& formula) {
 void printProblem(std::vector<Clause*> clauses, std::vector<lbool> values) {
     for (auto clause : clauses) {
         printClause(*clause, values);
+        printf("\n");
+    }
+}
+
+void printProblem(std::vector<Clause*> clauses) {
+    for (auto clause : clauses) {
+        printClause(*clause);
         printf("\n");
     }
 }
