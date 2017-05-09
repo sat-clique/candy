@@ -44,157 +44,157 @@ namespace Candy {
 class DefaultSolver;
 
 typedef struct Gate {
-  Lit out = lit_Undef;
-  For fwd, bwd;
-  bool notMono = false;
-  std::vector<Lit> inp;
+    Lit out = lit_Undef;
+    For fwd, bwd;
+    bool notMono = false;
+    std::vector<Lit> inp;
 
-  inline bool isDefined() { return out != lit_Undef; }
+    inline bool isDefined() { return out != lit_Undef; }
 
-  // Compatibility functions
-  inline Lit getOutput() { return out; }
-  inline For& getForwardClauses() { return fwd; }
-  inline For& getBackwardClauses() { return bwd; }
-  inline std::vector<Lit>& getInputs() { return inp; }
-  inline bool hasNonMonotonousParent() { return notMono; }
-  // End of compatibility functions
+    // Compatibility functions
+    inline Lit getOutput() { return out; }
+    inline For& getForwardClauses() { return fwd; }
+    inline For& getBackwardClauses() { return bwd; }
+    inline std::vector<Lit>& getInputs() { return inp; }
+    inline bool hasNonMonotonousParent() { return notMono; }
+    // End of compatibility functions
 } Gate;
 
 
 class GateAnalyzer {
 
 public:
-  GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-      bool patterns = true, bool semantic = true, bool holistic = false, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10, unsigned int conflict_budget = 0);
-  ~GateAnalyzer();
+    GateAnalyzer(CNFProblem& dimacs, int tries = 0,
+            bool patterns = true, bool semantic = true, bool holistic = false, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10, unsigned int conflict_budget = 0);
+    ~GateAnalyzer();
 
-  // main analysis routine
-  void analyze();
+    // main analysis routine
+    void analyze();
 
-  // public getters
-  int getGateCount() { return nGates; }
-  Gate& getGate(Lit output) { return (*gates)[var(output)]; }
+    // public getters
+    int getGateCount() { return nGates; }
+    Gate& getGate(Lit output) { return (*gates)[var(output)]; }
 
 
-  void printGates() {
-    std::vector<Lit> outputs;
-    std::vector<bool> done(problem.nVars());
-    for (Cl* root : roots) {
-      outputs.insert(outputs.end(), root->begin(), root->end());
+    void printGates() {
+        std::vector<Lit> outputs;
+        std::vector<bool> done(problem.nVars());
+        for (Cl* root : roots) {
+            outputs.insert(outputs.end(), root->begin(), root->end());
+        }
+        for (size_t i = 0; i < outputs.size(); i++) {
+            Gate& gate = getGate(outputs[i]);
+
+            if (gate.isDefined() && !done[var(outputs[i])]) {
+                done[var(outputs[i])] = true;
+                printf("Gate with output ");
+                printLit(gate.getOutput());
+                printf("Is defined by clauses ");
+                printFormula(gate.getForwardClauses(), false);
+                printFormula(gate.getBackwardClauses(), true);
+                outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
+            }
+        }
     }
-    for (size_t i = 0; i < outputs.size(); i++) {
-      Gate& gate = getGate(outputs[i]);
 
-      if (gate.isDefined() && !done[var(outputs[i])]) {
-        done[var(outputs[i])] = true;
-        printf("Gate with output ");
-        printLit(gate.getOutput());
-        printf("Is defined by clauses ");
-        printFormula(gate.getForwardClauses(), false);
-        printFormula(gate.getBackwardClauses(), true);
-        outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
-      }
+    const std::vector<Cl*> getRoots() const {
+        return roots;
     }
-  }
-
-  const std::vector<Cl*> getRoots() const {
-    return roots;
-  }
 
 private:
-  // problem to analyze:
-  CNFProblem problem;
-  std::unique_ptr<DefaultSolver> solver;
-  std::vector<Lit> assumptions;
+    // problem to analyze:
+    CNFProblem problem;
+    std::unique_ptr<DefaultSolver> solver;
+    std::vector<Lit> assumptions;
 
-  // control structures:
-  std::vector<For> index; // occurrence lists
-  std::vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
+    // control structures:
+    std::vector<For> index; // occurrence lists
+    std::vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
 
-  // heuristic configuration:
-  int maxTries = 0;
-  bool usePatterns = false;
-  bool useSemantic = false;
-  bool useHolistic = false;
-  bool useLookahead = false;
-  bool useIntensification = false;
-  int lookaheadThreshold = 10;
-  unsigned int semanticConflictBudget = 0;
+    // heuristic configuration:
+    int maxTries = 0;
+    bool usePatterns = false;
+    bool useSemantic = false;
+    bool useHolistic = false;
+    bool useLookahead = false;
+    bool useIntensification = false;
+    int lookaheadThreshold = 10;
+    unsigned int semanticConflictBudget = 0;
 
-  // analyzer output:
-  std::vector<Cl*> roots; // top-level clauses
-  std::vector<Gate>* gates; // stores gate-struct for every output
-  int nGates = 0;
+    // analyzer output:
+    std::vector<Cl*> roots; // top-level clauses
+    std::vector<Gate>* gates; // stores gate-struct for every output
+    int nGates = 0;
 
-  void printLit(Lit l) {
-    printf("%s%i ", sign(l)?"-":"", var(l)+1);
-  }
-  void printClause(Cl* c, bool nl = false) {
-    for (Lit l : *c) printLit(l);
-    printf("; ");
-    if (nl) printf("\n");
-  }
-  void printFormula(For& f, bool nl = false) {
-    for (Cl* c : f) printClause(c, false);
-    if (nl) printf("\n");
-  }
-
-  // main analysis routines
-  void analyze(std::vector<Lit>& candidates);
-  std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
-
-  // clause selection heuristic
-  Lit getRarestLiteral(std::vector<For>& index);
-
-  // clause patterns of full encoding
-  bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
-  bool semanticCheck(Var o, For& fwd, For& bwd);
-
-  // work in progress:
-  bool isBlockedAfterVE(Lit o, For& f, For& g);
-
-  // some helpers:
-  bool isBlocked(Lit o, Cl& a, Cl& b) { // assert ~o \in a and o \in b
-    for (Lit c : a) for (Lit d : b) if (c != ~o && c == ~d) return true;
-    return false;
-  }
-
-  bool isBlocked(Lit o, For& f, For& g) { // assert ~o \in f[i] and o \in g[j]
-    for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
-    return true;
-  }
-
-  bool isBlocked(Lit o, Cl* c, For& f) { // assert ~o \in c and o \in f[i]
-    for (Cl* a : f) if (!isBlocked(o, *c, *a)) return false;
-    return true;
-  }
-
-  bool fixedClauseSize(For& f, unsigned int n) {
-    for (Cl* c : f) if (c->size() != n) return false;
-    return true;
-  }
-
-  void removeFromIndex(std::vector<For>& index, Cl* clause) {
-    for (Lit l : *clause) {
-      For& h = index[l];
-      h.erase(remove(h.begin(), h.end(), clause), h.end());
+    void printLit(Lit l) {
+        printf("%s%i ", sign(l)?"-":"", var(l)+1);
     }
-  }
-
-  void removeFromIndex(std::vector<For>& index, For& clauses) {
-    For copy(clauses.begin(), clauses.end());
-    for (Cl* c : copy) {
-      removeFromIndex(index, c);
+    void printClause(Cl* c, bool nl = false) {
+        for (Lit l : *c) printLit(l);
+        printf("; ");
+        if (nl) printf("\n");
     }
-  }
-
-  std::vector<For> buildIndexFromClauses(For& f) {
-    std::vector<For> index(2 * problem.nVars());
-    for (Cl* c : f) for (Lit l : *c) {
-      index[l].push_back(c);
+    void printFormula(For& f, bool nl = false) {
+        for (Cl* c : f) printClause(c, false);
+        if (nl) printf("\n");
     }
-    return index;
-  }
+
+    // main analysis routines
+    void analyze(std::vector<Lit>& candidates);
+    std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
+
+    // clause selection heuristic
+    Var getRarestVariable(std::vector<For>& index);
+
+    // clause patterns of full encoding
+    bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
+    bool semanticCheck(Var o, For& fwd, For& bwd);
+
+    // work in progress:
+    bool isBlockedAfterVE(Lit o, For& f, For& g);
+
+    // some helpers:
+    bool isBlocked(Lit o, Cl& a, Cl& b) { // assert ~o \in a and o \in b
+        for (Lit c : a) for (Lit d : b) if (c != ~o && c == ~d) return true;
+        return false;
+    }
+
+    bool isBlocked(Lit o, For& f, For& g) { // assert ~o \in f[i] and o \in g[j]
+        for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
+        return true;
+    }
+
+    bool isBlocked(Lit o, Cl* c, For& f) { // assert ~o \in c and o \in f[i]
+        for (Cl* a : f) if (!isBlocked(o, *c, *a)) return false;
+        return true;
+    }
+
+    bool fixedClauseSize(For& f, unsigned int n) {
+        for (Cl* c : f) if (c->size() != n) return false;
+        return true;
+    }
+
+    void removeFromIndex(std::vector<For>& index, Cl* clause) {
+        for (Lit l : *clause) {
+            For& h = index[l];
+            h.erase(remove(h.begin(), h.end(), clause), h.end());
+        }
+    }
+
+    void removeFromIndex(std::vector<For>& index, For& clauses) {
+        For copy(clauses.begin(), clauses.end());
+        for (Cl* c : copy) {
+            removeFromIndex(index, c);
+        }
+    }
+
+    std::vector<For> buildIndexFromClauses(For& f) {
+        std::vector<For> index(2 * problem.nVars());
+        for (Cl* c : f) for (Lit l : *c) {
+            index[l].push_back(c);
+        }
+        return index;
+    }
 
 };
 

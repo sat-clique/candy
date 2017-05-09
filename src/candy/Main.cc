@@ -759,7 +759,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
     IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
-    BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Local Blocked Elimination", true);
+    BoolOption opt_gr_intensify("GATE RECOGNITION", "gate-intensification", "Enable Intensification", true);
 
     IntOption opt_rs_nrounds("RANDOMSIMULATION", "rs-rounds", "Amount of random simulation rounds (gets rounded up to the next multiple of 2048)", 1048576,
                     IntRange(1, INT32_MAX));
