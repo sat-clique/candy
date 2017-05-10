@@ -221,6 +221,10 @@ public:
         return vardata.size();
     }
 
+    inline bool isSelector(Var v) {
+        return (incremental && (uint32_t)v >= nbVarsInitialFormula);
+    }
+
     // Incremental mode
     void setIncrementalMode();
     void initNbInitialVars(int nb);
@@ -521,10 +525,6 @@ protected:
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
                 && (conflict_budget == 0 || nConflicts < conflict_budget) && (propagation_budget == 0 || nPropagations < propagation_budget);
     }
-
-	inline bool isSelector(Var v) {
-		return (incremental && (uint32_t)v >= nbVarsInitialFormula);
-	}
 };
 
 /**
@@ -733,6 +733,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
     
     Lit p;
     uint_fast16_t i, j;
+    bool hasSelector = false;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
         if (value(ps[i]) == l_True || ps[i] == ~p) {
             return true;
@@ -740,6 +741,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         else if (value(ps[i]) != l_False && ps[i] != p) {
             ps[j++] = p = ps[i];
         }
+        hasSelector |= isSelector(ps[i]);
     }
     ps.resize(j);
     
@@ -754,7 +756,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps);
+        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps, hasSelector);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -1498,7 +1500,8 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels);
+                bool selectable = find_if(learnt_clause.begin(), learnt_clause.end(), [this](Lit lit) { return isSelector(var(lit)); } ) != learnt_clause.end();
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, selectable);
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
                 }
