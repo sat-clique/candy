@@ -14,13 +14,11 @@
 
 namespace Candy {
 
-// bits 0..12
-#define BITS_LBD 9
-//#define LBD_MASK (static_cast<uint16_t>(8191))
-//#define LBD_MASK (static_cast<uint16_t>(4095))
-//#define LBD_MASK (static_cast<uint16_t>(2047))
-//#define LBD_MASK (static_cast<uint16_t>(1023))
-#define LBD_MASK (static_cast<uint16_t>(511))
+// bits 0..11
+#define BITS_LBD 12
+#define LBD_MASK (static_cast<uint16_t>(4095))
+// bit 12
+#define SELECTABLE_MASK (static_cast<uint16_t>(4096))
 // bit 13
 #define LEARNT_MASK (static_cast<uint16_t>(8192))
 // bit 14
@@ -133,6 +131,18 @@ public:
             header |= LEARNT_MASK;
         } else {
             header &= ~LEARNT_MASK;
+        }
+    }
+
+    inline bool isSelectable() const {
+        return (bool)(header & SELECTABLE_MASK);
+    }
+
+    inline void setSelectable(bool hasAssumptions) {
+        if (hasAssumptions) {
+            header |= SELECTABLE_MASK;
+        } else {
+            header &= ~SELECTABLE_MASK;
         }
     }
 
