@@ -505,7 +505,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool verbose) {
     int cnt = 0;
     int subsumed = 0;
     int deleted_literals = 0;
-    Clause bwdsub_tmpunit({ lit_Undef });
+    Clause bwdsub_tmpunit({ lit_Undef }, false);
     assert(this->decisionLevel() == 0);
     
     while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
@@ -843,7 +843,8 @@ cleanup:
     for (Clause* clause : strengthend) {
         if (!clause->isDeleted()) {
             // create clause in correct pool
-            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()));
+            bool selectable = find_if(clause->begin(), clause->end(), [this](Lit lit) { return Solver<PickBranchLitT>::isSelector(var(lit)); } ) != clause->end();
+            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()), selectable);
             this->clauses.push_back(clean);
             this->attachClause(clean);
             this->detachClause(clause);
