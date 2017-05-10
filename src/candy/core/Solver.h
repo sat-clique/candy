@@ -828,26 +828,15 @@ inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator en
     uint_fast16_t nblevels = 0;
     MYFLAG++;
     
-    if (incremental) { // INCREMENTAL MODE
-        for (; it != end; it++) {
-            Lit lit = *it;
-            if (isSelector(var(lit))) {
-                continue;
-            }
-            int l = level(var(lit));
-            if (permDiff[l] != MYFLAG) {
-                permDiff[l] = MYFLAG;
-                nblevels++;
-            }
+    for (; it != end; it++) {
+        Lit lit = *it;
+        if (isSelector(var(lit))) {
+            continue;
         }
-    } else { // DEFAULT MODE
-        for (; it != end; it++) {
-            Lit lit = *it;
-            int l = level(var(lit));
-            if (permDiff[l] != MYFLAG) {
-                permDiff[l] = MYFLAG;
-                nblevels++;
-            }
+        int l = level(var(lit));
+        if (permDiff[l] != MYFLAG) {
+            permDiff[l] = MYFLAG;
+            nblevels++;
         }
     }
     
@@ -1196,7 +1185,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 continue;
             }
             
-            if (incremental) { // INCREMENTAL MODE
+            if (cr->isSelectable()) { // INCREMENTAL MODE
                 Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
