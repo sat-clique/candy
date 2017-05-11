@@ -1185,13 +1185,13 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 continue;
             }
             
-            if (cr->isSelectable()) { // INCREMENTAL MODE
+            if (decisionLevel() <= assumptions.size() && cr->isSelectable()) { // INCREMENTAL MODE
                 Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
                     if (value(c[k]) != l_False) {
                         watchesUpdateLiteralIndex = k;
-                        if (decisionLevel() > assumptions.size() || value(c[k]) == l_True || !isSelector(var(c[k]))) {
+                        if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
                             break;
                         }
                     }
