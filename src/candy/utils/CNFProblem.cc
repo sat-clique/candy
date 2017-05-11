@@ -55,7 +55,7 @@ void CNFProblem::parse_DIMACS(gzFile input_stream) {
                 problem.reserve(headerClauses);
             }
             else {
-                printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+                printf("PARSE ERROR! Expected 'p cnf' but got unexpected char: %c\n", *in), exit(3);
             }
         }
         else if (*in == 'c' || *in == 'p') {

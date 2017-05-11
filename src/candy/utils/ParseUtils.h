@@ -112,17 +112,17 @@ static double parseDouble(B& in) { // only in the form X.XXXXXe-XX
   else if (*in == '+')
     ++in;
   if (*in < '1' || *in > '9')
-    printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    printf("PARSE ERROR! Expected number but got unexpected char: %c\n", *in), exit(3);
   accu = (double) (*in - '0');
   ++in;
   if (*in != '.')
-    printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    printf("PARSE ERROR! Expected '.' but got unexpected char: %c\n", *in), exit(3);
   ++in; // skip dot
   currentExponent = 0.1;
   while (*in >= '0' && *in <= '9')
     accu = accu + currentExponent * ((double) (*in - '0')), currentExponent /= 10, ++in;
   if (*in != 'e')
-    printf("PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    printf("PARSE ERROR! Expected 'e' but got unexpected char: %c\n", *in), exit(3);
   ++in; // skip dot
   exponent = parseInt(in); // read exponent
   accu *= pow(10, exponent);
@@ -139,7 +139,7 @@ static int parseInt(B& in) {
   else if (*in == '+')
     ++in;
   if (*in < '0' || *in > '9')
-    fprintf(stderr, "PARSE ERROR! Unexpected char: %c\n", *in), exit(3);
+    fprintf(stderr, "PARSE ERROR! Expected integer but got unexpected char: %c\n", *in), exit(3);
   while (*in >= '0' && *in <= '9')
     val = val * 10 + (*in - '0'), ++in;
   return neg ? -val : val;
