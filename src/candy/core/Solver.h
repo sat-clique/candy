@@ -1489,8 +1489,7 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
-                bool selectable = find_if(learnt_clause.begin(), learnt_clause.end(), [this](Lit lit) { return isSelector(var(lit)); } ) != learnt_clause.end();
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, selectable);
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, isSelector(learnt_clause.back()));
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
                 }
