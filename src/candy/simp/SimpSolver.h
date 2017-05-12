@@ -858,7 +858,7 @@ cleanup:
     this->watchesBin.cleanAll();
     this->freeMarkedClauses(this->clauses);
     
-    if (this->verbosity >= 0 && elimclauses.size() > 0) {
+    if (this->verbosity > 0 && elimclauses.size() > 0) {
         printf("c |  Eliminated clauses:     %10.2f Mb                                                     |\n", double(elimclauses.size() * sizeof(uint32_t)) / (1024*1024));
     }
     

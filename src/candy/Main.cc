@@ -164,7 +164,9 @@ static lbool solve(SolverType& S, bool do_preprocess) {
             }
         }
     }
-    printf("c |                                                                                            |\n");
+    if (S.verbosity > 0) {
+        printf("c |                                                                                            |\n");
+    }
 
     if (result == l_Undef) {
         vector<Lit> assumptions;
@@ -351,7 +353,7 @@ struct RSARArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSARArguments& arguments) {
-    stream << "c RSAR arguments: " << std::endl << "  RSAR enabled: " << arguments.useRSAR << std::endl;
+    stream << "c RSAR arguments: " << std::endl << "c   RSAR enabled: " << arguments.useRSAR << std::endl;
     if (arguments.useRSAR) {
         stream << "c   Max. refinement steps: " << arguments.maxRefinementSteps << std::endl
         << "c   Simplification handling mode: " << static_cast<int>(arguments.simplificationHandlingMode) << std::endl
@@ -543,7 +545,7 @@ struct RSILArguments {
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
-    stream << "c RSIL arguments: " << std::endl << "  RSIL enabled: " << arguments.useRSIL << std::endl;
+    stream << "c RSIL arguments: " << std::endl << "c   RSIL enabled: " << arguments.useRSIL << std::endl;
     if (arguments.useRSIL) {
         stream << "c   RSIL mode: " << static_cast<int>(arguments.mode) << std::endl
         << "c   Vanishing mode half-life: " << arguments.vanishing_probabilityHalfLife << std::endl
@@ -750,7 +752,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
     BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
-    BoolOption do_simp_out("METHOD", "simp_out", "Simplify only and output dimacs.", false);
+    BoolOption do_simp_out("METHOD", "simp-out", "Simplify only and output dimacs.", false);
 
     StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
     
@@ -889,6 +891,24 @@ static void waitForUserInput() {
 }
 
 
+/**
+ * Run Propagate and Simplify, then output the simplified CNF Problem
+ */
+template<class SolverType>
+static lbool simplifyAndPrintProblem(SolverType& S) {
+    lbool result = l_Undef;
+
+    S.setPropBudget(1);
+
+    vector<Lit> assumptions;
+    result = S.solve(assumptions);
+    S.simplify();
+    S.printCNF();
+
+    return result;
+}
+
+
 template<class SolverType = DefaultSimpSolver>
 int executeSolver(const GlucoseArguments& args,
                   SolverType& S,
@@ -907,14 +927,18 @@ int executeSolver(const GlucoseArguments& args,
     installSignalHandlers(true, &S);
     
     lbool result;
-    if (!args.rsarArgs.useRSAR) {
+    if (args.do_simp_out) {
+        result = simplifyAndPrintProblem(S);
+    } else if (!args.rsarArgs.useRSAR) {
         result = solve(S, args.do_preprocess);
     } else {
         result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
     }
     
-    const char* statsFilename = args.output_filename;
-    printResult(S, result, args.mod, statsFilename);
+    if (!args.do_simp_out) {
+        const char* statsFilename = args.output_filename;
+        printResult(S, result, args.mod, statsFilename);
+    }
     
     exit((result == l_True ? 10 : result == l_False ? 20 : 0));
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
@@ -1015,9 +1039,10 @@ int main(int argc, char** argv) {
     
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
     
-    std::cout << args << std::endl;
-    
-    
+    if (args.verb > 0) {
+        std::cout << args << std::endl;
+    }
+
     if (args.rsilArgs.useRSIL && args.rsarArgs.useRSAR) {
         throw std::invalid_argument("Usign RSAR with RSIL is not yet supported");
     }
