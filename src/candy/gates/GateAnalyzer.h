@@ -145,6 +145,7 @@ private:
 
     // clause selection heuristic
     Var getRarestVariable(std::vector<For>& index);
+    Lit getRarestLiteral(std::vector<For>& index);
 
     // clause patterns of full encoding
     bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);

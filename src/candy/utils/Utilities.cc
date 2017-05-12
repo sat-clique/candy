@@ -6,6 +6,8 @@
  */
 
 #include "candy/utils/Utilities.h"
+#include "candy/core/SolverTypes.h"
+#include "candy/core/Clause.h"
 
 using namespace Candy;
 
@@ -56,8 +58,16 @@ void printProblem(std::vector<Clause*> clauses, std::vector<lbool> values) {
 }
 
 void printProblem(std::vector<Clause*> clauses) {
+    int maxVar = 0;
+    for (auto clause : clauses) {
+        for (Lit lit : *clause) {
+            if (var(lit) > maxVar) {
+                maxVar = var(lit);
+            }
+        }
+    }
+    printf("p cnf %i %i\n", maxVar, clauses.size());
     for (auto clause : clauses) {
         printClause(*clause);
-        printf("\n");
     }
 }

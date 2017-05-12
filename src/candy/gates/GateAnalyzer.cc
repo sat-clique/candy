@@ -65,6 +65,16 @@ Var GateAnalyzer::getRarestVariable(vector<For>& index) {
     return min;
 }
 
+Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
+    Lit min; min.x = INT_MAX;
+    for (size_t l = 0; l < index.size(); l++) {
+        if (index[l].size() > 0 && (min.x == INT_MAX || index[l].size() < index[min.x].size())) {
+            min.x = l;
+        }
+    }
+    return min;
+}
+
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     CNFProblem constraint;
     Lit alit = mkLit(problem.nVars()+assumptions.size(), false);
@@ -228,15 +238,19 @@ void GateAnalyzer::analyze() {
     // clause selection loop
     for (int k = 0; k < maxTries; k++) {
         next.clear();
-        Var var = getRarestVariable(index);
-        if (var == -1) break; // index is empty
-        Lit lit1 = mkLit(var, false);
-        Lit lit2 = mkLit(var, true);
+//        Var var = getRarestVariable(index);
+//        if (var == -1) break; // index is empty
+//        Lit lit1 = mkLit(var, false);
+//        Lit lit2 = mkLit(var, true);
+        Lit lit = getRarestLiteral(index);
+        if (lit.x == INT_MAX) break; // index is empty
         vector<Cl*> clauses;
-        clauses.insert(clauses.end(), index[lit1].begin(), index[lit1].end());
-        clauses.insert(clauses.end(), index[lit2].begin(), index[lit2].end());
-        index[lit1].clear();
-        index[lit2].clear();
+        clauses.insert(clauses.end(), index[lit].begin(), index[lit].end());
+        index[lit].clear();
+//        clauses.insert(clauses.end(), index[lit1].begin(), index[lit1].end());
+//        clauses.insert(clauses.end(), index[lit2].begin(), index[lit2].end());
+//        index[lit1].clear();
+//        index[lit2].clear();
         removeFromIndex(index, clauses);
         roots.insert(roots.end(), clauses.begin(), clauses.end());
         for (Cl* c : clauses) {

@@ -139,7 +139,7 @@ public:
         return addClause_(add_tmp);
     }
 
-    inline void printProblem() {
+    inline void printCNF() {
         printProblem(clauses);
     }
 
