@@ -843,7 +843,11 @@ cleanup:
     for (Clause* clause : strengthend) {
         if (!clause->isDeleted()) {
             // create clause in correct pool
+#ifdef USE_SELECTABLE_FLAG
             bool selectable = find_if(clause->begin(), clause->end(), [this](Lit lit) { return Solver<PickBranchLitT>::isSelector(var(lit)); } ) != clause->end();
+#else
+            bool selectable = false;
+#endif
             Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()), selectable);
             this->clauses.push_back(clean);
             this->attachClause(clean);

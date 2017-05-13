@@ -69,6 +69,8 @@
 
 #include "sonification/SolverSonification.h"
 
+#define USE_SELECTABLE_FLAG
+
 namespace Candy {
 
 class DefaultPickBranchLit {
@@ -741,7 +743,9 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         else if (value(ps[i]) != l_False && ps[i] != p) {
             ps[j++] = p = ps[i];
         }
+#ifdef USE_SELECTABLE_FLAG
         hasSelector |= isSelector(ps[i]);
+#endif
     }
     ps.resize(j);
     
@@ -1184,8 +1188,12 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 *keep++ = w;
                 continue;
             }
-            
+
+#ifdef USE_SELECTABLE_FLAG
             if (decisionLevel() <= assumptions.size() && cr->isSelectable()) { // INCREMENTAL MODE
+#else
+            if (incremental) {
+#endif
                 Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
@@ -1489,7 +1497,11 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
+#ifdef USE_SELECTABLE_FLAG
                 Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, isSelector(learnt_clause.back()));
+#else
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, false);
+#endif
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
                 }
