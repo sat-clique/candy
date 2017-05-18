@@ -13,12 +13,12 @@
 # the test output only when it fails) or ctest --verbose
 #
 #
-# To build the documentation, run 
+# To build the documentation, run
 #   make doxygen
 # or
 #   cmake --build . --target doxygen
 #
-# The documentation is generated in doc/ within your build directory. 
+# The documentation is generated in doc/ within your build directory.
 #
 # II. Invoking cmake
 #
@@ -103,9 +103,15 @@ add_subdirectory(doc)
 
 ### Compiler flags
 
-set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "-std=c++11 /W3 /D __STDC_LIMIT_MACROS /D __STDC_FORMAT_MACROS /EHsc")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D NDEBUG /Ox")
+else()
+    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+endif()
 
 if(CANDY_ENABLE_LLVM_SANITIZER)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address,undefined")
@@ -191,5 +197,3 @@ add_subdirectory(testsrc)
 add_executable(candy src/candy/Main.cc)
 candy_executable_customizations(candy)
 target_link_libraries(candy ${CANDY_LIBS})
-
-
