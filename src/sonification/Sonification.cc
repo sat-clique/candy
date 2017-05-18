@@ -6,9 +6,11 @@
  */
 
 #include <sonification/Sonification.h>
+#ifdef SONIFICATION
 #include <unistd.h>
 #include <chrono>
 #include <thread>
+#endif
 
 #ifdef SONIFICATION
 Sonification::Sonification() :
