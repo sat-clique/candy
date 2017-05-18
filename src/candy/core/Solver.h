@@ -1284,7 +1284,7 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
     auto new_end = std::remove_if(list.begin(), list.end(),
                                   [this](Clause* c) {
                                       if (c->isDeleted()) {
-                                          allocator.deallocate(c);
+                                          this->allocator.deallocate(c);
                                           return true;
                                       } else {
                                           return false;
