@@ -28,6 +28,7 @@
 #include <simp/SimpSolver.h>
 #include <utils/FastRand.h>
 #include <utils/MemUtils.h>
+#include <rsar/ApproximationState.h>
 
 #include "TestUtils.h"
 #include "HeuristicsMock.h"

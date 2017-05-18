@@ -63,7 +63,7 @@ namespace Candy {
     
     TEST(RSAREquivalenceImplications, createEmpty) {
         EquivalenceConjecture testData;
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         EXPECT_TRUE(underTest->empty());
     }
@@ -73,7 +73,7 @@ namespace Candy {
         EquivalenceConjecture testData;
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         EXPECT_EQ(underTest->size(), 2ull);
         EXPECT_TRUE(containsEquivalence(*underTest, mkLit(0, 1), mkLit(10, 0)));
@@ -85,7 +85,7 @@ namespace Candy {
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         EXPECT_EQ(underTest->size(), 3ull);
         EXPECT_TRUE(containsEquivalence(*underTest, mkLit(0, 1), mkLit(100, 0)));
@@ -95,7 +95,7 @@ namespace Candy {
     
     TEST(RSAREquivalenceImplications, removeInEmpty) {
         EquivalenceConjecture testData;
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(1000);
         auto commitResult = test_commitWorkQueue(*underTest);
@@ -110,7 +110,7 @@ namespace Candy {
         EquivalenceConjecture testData;
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(0);
         underTest->addVariableRemovalToWorkQueue(10);
@@ -129,7 +129,7 @@ namespace Candy {
         EquivalenceConjecture testData;
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(0);
         auto commitResult = test_commitWorkQueue(*underTest);
@@ -148,7 +148,7 @@ namespace Candy {
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
         auto commitResult = test_commitWorkQueue(*underTest);
@@ -172,7 +172,7 @@ namespace Candy {
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
         underTest->addVariableRemovalToWorkQueue(0);
@@ -192,7 +192,7 @@ namespace Candy {
         testData.addLit(mkLit(0, 1));
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
         underTest->addVariableRemovalToWorkQueue(0);
@@ -228,7 +228,7 @@ namespace Candy {
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
         
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         ASSERT_EQ(underTest->size(), 6ull);
         
@@ -273,7 +273,7 @@ namespace Candy {
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
         
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         ASSERT_EQ(underTest->size(), 6ull);
         
@@ -321,7 +321,7 @@ namespace Candy {
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
         
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         ASSERT_EQ(underTest->size(), 6ull);
         
@@ -367,7 +367,7 @@ namespace Candy {
         testData.addLit(mkLit(10, 0));
         testData.addLit(mkLit(100, 0));
         
-        auto underTest = createEquivalenceImplications(testData);
+        auto underTest = test_createEquivalenceImplications(testData);
         
         ASSERT_EQ(underTest->size(), 6ull);
         
@@ -416,7 +416,7 @@ namespace Candy {
     
     TEST(RSARBackbones, createEmpty) {
         std::vector<BackboneConjecture> testData;
-        auto underTest = createBackbones(testData);
+        auto underTest = test_createBackbones(testData);
         
         EXPECT_TRUE(underTest->empty());
     }
@@ -425,7 +425,7 @@ namespace Candy {
     TEST(RSARBackbones, createSingle) {
         std::vector<BackboneConjecture> testData;
         testData.push_back(BackboneConjecture(mkLit(1,0)));
-        auto underTest = createBackbones(testData);
+        auto underTest = test_createBackbones(testData);
         
         EXPECT_EQ(underTest->size(), 1ull);
         EXPECT_TRUE(contains(*underTest, mkLit(1,0)));
@@ -436,7 +436,7 @@ namespace Candy {
         testData.push_back(BackboneConjecture(mkLit(1,0)));
         testData.push_back(BackboneConjecture(mkLit(2,0)));
         testData.push_back(BackboneConjecture(mkLit(3,0)));
-        auto underTest = createBackbones(testData);
+        auto underTest = test_createBackbones(testData);
         
         EXPECT_EQ(underTest->size(), 3ull);
         EXPECT_TRUE(contains(*underTest, mkLit(1,0)));
@@ -446,7 +446,7 @@ namespace Candy {
     
     static void test_Backbones_removeInEmpty(bool withGenDelta) {
         std::vector<BackboneConjecture> testData;
-        auto underTest = createBackbones(testData);
+        auto underTest = test_createBackbones(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
@@ -473,7 +473,7 @@ namespace Candy {
         testData.push_back(BackboneConjecture(mkLit(2,0)));
         testData.push_back(BackboneConjecture(mkLit(3,0)));
         
-        auto underTest = createBackbones(testData);
+        auto underTest = test_createBackbones(testData);
         
         underTest->addVariableRemovalToWorkQueue(1);
         underTest->addVariableRemovalToWorkQueue(2);
@@ -505,7 +505,7 @@ namespace Candy {
         testData.push_back(BackboneConjecture(mkLit(2,0)));
         testData.push_back(BackboneConjecture(mkLit(3,0)));
         
-        auto underTest = createBackbones(testData);
+        auto underTest = test_createBackbones(testData);
         
         underTest->addVariableRemovalToWorkQueue(1);
         underTest->addVariableRemovalToWorkQueue(2);
