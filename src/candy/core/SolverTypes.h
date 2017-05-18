@@ -52,7 +52,6 @@
 
 #include <assert.h>
 #include <stdint.h>
-#include <pthread.h>
 
 #include <vector>
 #include <algorithm>
@@ -132,7 +131,7 @@ const Lit lit_Error = { -1 };  // }
 // Lifted booleans:
 //
 // NOTE: this implementation is optimized for the case when comparisons between values are mostly
-//       between one variable and one constant. Some care had to be taken to make sure that gcc 
+//       between one variable and one constant. Some care had to be taken to make sure that gcc
 //       does enough constant propagation to produce sensible code, and this appears to be somewhat
 //       fragile unfortunately.
 
