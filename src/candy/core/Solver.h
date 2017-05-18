@@ -54,6 +54,7 @@
 #include <math.h>
 #include <string>
 #include <type_traits>
+#include <memory>
 
 #include <candy/core/Statistics.h>
 #include "candy/mtl/Heap.h"
@@ -252,7 +253,7 @@ public:
     }
 
     // Certified UNSAT (Thanks to Marijn Heule)
-    Certificate certificate;
+    std::unique_ptr<Certificate> certificate;
 
     // a few stats are used for heuristics control, keep them here
     uint64_t nConflicts, nPropagations, nLiterals;
@@ -577,7 +578,7 @@ namespace SolverOptions {
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :
     // unsat certificate
-    certificate(nullptr, false),
+    certificate(new Certificate(nullptr, false)),
     // stats for heuristic control
     nConflicts(0), nPropagations(0), nLiterals(0),
     // verbosity flags
@@ -726,11 +727,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
     
     std::sort(ps.begin(), ps.end());
     
-    vector<Lit> oc;
-    if (certificate.isActive()) {
-        auto pos = find_if(ps.begin(), ps.end(), [this](Lit lit) { return value(lit) == l_True || value(lit) == l_False; });
-        if (pos != ps.end()) oc.insert(oc.end(), ps.begin(), ps.end());
-    }
+    vector<Lit> oc(ps.begin(), ps.end());
     
     Lit p;
     uint_fast16_t i, j;
@@ -743,10 +740,10 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         }
     }
     ps.resize(j);
-    
-    if (oc.size() > 0) {
-        certificate.learnt(ps);
-        certificate.removed(oc);
+
+    if (ps.size() < oc.size()) {
+        certificate->added(ps.begin(), ps.end());
+        certificate->removed(oc.begin(), oc.end());
     }
     
     if (ps.size() == 0) {
@@ -809,7 +806,7 @@ void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
 
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::removeClause(Clause* cr) {
-    certificate.removed(cr);
+    certificate->removed(cr->begin(), cr->end());
     detachClause(cr);
     // Don't leave pointers to free'd memory!
     if (locked(cr)) {
@@ -1480,7 +1477,7 @@ lbool Solver<PickBranchLitT>::search() {
             
             cancelUntil(backtrack_level);
             
-            certificate.learnt(learnt_clause);
+            certificate->added(learnt_clause.begin(), learnt_clause.end());
             
             if (learnt_clause.size() == 1) {
                 uncheckedEnqueue(learnt_clause[0]);
@@ -1604,7 +1601,7 @@ template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
     Statistics::getInstance().runtimeStart(RT_SOLVER);
     
-    if (incremental && certificate.isActive()) {
+    if (incremental && certificate->isActive()) {
         printf("Can not use incremental and certified unsat in the same time\n");
         exit(-1);
     }
@@ -1653,7 +1650,7 @@ lbool Solver<PickBranchLitT>::solve() {
         Statistics::getInstance().incNBUnsatCalls();
         Statistics::getInstance().incTotalTime4Unsat(finalTime - curTime);
         
-        certificate.proof();
+        certificate->proof();
         
         if (conflict.size() == 0) {
             ok = false;
