@@ -51,7 +51,6 @@
 #include <iostream>
 #include <signal.h>
 #include <zlib.h>
-#include <sys/resource.h>
 #include <string>
 #include <stdexcept>
 #include <regex>
@@ -79,6 +78,10 @@
 #include "candy/randomsimulation/SimulationVector.h"
 
 #include "candy/rsil/BranchingHeuristics.h"
+
+#if !defined(WIN32)
+#include <sys/resource.h>
+#endif
 
 using namespace Candy;
 
@@ -109,6 +112,13 @@ static void SIGINT_exit(int signum) {
 }
 
 static void setLimits(int cpu_lim, int mem_lim) {
+#if defined(WIN32) && !defined(CYGWIN)
+  #if defined(_MSC_VER)
+    #pragma message ("Warning: setting limits not yet implemented for Win32")
+  #else
+    #warning "setting limits not yet implemented for Win32"
+  #endif
+#else
     // Set limit on CPU-time:
     if (cpu_lim != INT32_MAX) {
         rlimit rl;
@@ -131,6 +141,7 @@ static void setLimits(int cpu_lim, int mem_lim) {
                 printf("c WARNING! Could not set resource limit: Virtual memory.\n");
         }
     }
+#endif
 }
 
 template<class SolverType>
@@ -216,6 +227,13 @@ static void printResult(SolverType& S, lbool result, bool showModel, const char*
  */
 template<class SolverType>
 static void installSignalHandlers(bool handleInterruptsBySolver, SolverType* solver) {
+#if defined(WIN32) && !defined(CYGWIN)
+#if defined(_MSC_VER)
+#pragma message ("Warning: setting signal handlers not yet implemented for Win32")
+#else
+#warning "setting signal handlers not yet implemented for Win32"
+#endif
+#else
     if (handleInterruptsBySolver) {
         solverIsVerbose = [solver]() {
             return solver->verbosity > 0;
@@ -235,6 +253,7 @@ static void installSignalHandlers(bool handleInterruptsBySolver, SolverType* sol
         signal(SIGINT, SIGINT_exit);
         signal(SIGXCPU, SIGINT_exit);
     }
+#endif
 }
 
 /**
