@@ -51,7 +51,8 @@ namespace Candy {
      */
     template<class AdviceType>
     class RSILBranchingHeuristic {
-        static_assert(std::is_class<typename AdviceType::BasicType>(), "AdviceType must have an inner type BasicType");
+        static_assert(std::is_class<typename AdviceType::BasicType>::value,
+          "AdviceType must have an inner type BasicType");
         
     public:
         using TrailType = std::vector<Lit>;
