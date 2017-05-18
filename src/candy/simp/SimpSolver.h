@@ -366,29 +366,30 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     // if (!find(subsumption_queue, &c))
     subsumption_queue.push_back(cr);
     
-    this->certificate.learntExcept(cr, l);
+    this->detachClause(cr, true);
+    cr->strengthen(l);
+    cr->setLBD(cr->getLBD()+1); //use lbd to store original size
+    strengthend.push_back(cr); //used to cleanup pages in clause-pool
+
+    // detach
+    occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
+    n_occ[toInt(l)]--;
+    updateElimHeap(var(l));
+
+    this->certificate->added(cr->begin(), cr->end());
     
-    if (cr->size() == 2) {
-        removeClause(cr);
-        cr->strengthen(l);
-        cr->setLBD(cr->getLBD()+1); //use lbd to store original size
-        Lit other = cr->first() == l ? cr->second() : cr->first();
-        return this->enqueue(other)
-            && this->propagate() == nullptr;
+    if (cr->size() == 1) {
+        cr->setDeleted();
+
+        occurs[var(cr->first())].erase(std::remove(occurs[var(cr->first())].begin(), occurs[var(cr->first())].end(), cr), occurs[var(cr->first())].end());
+        n_occ[toInt(cr->first())]--;
+        updateElimHeap(var(cr->first()));
+
+        return this->enqueue(cr->first()) && this->propagate() == nullptr;
     }
     else {
-        this->certificate.removed(cr);
-        
-        this->detachClause(cr, true);
-        cr->strengthen(l);
         this->attachClause(cr);
-        cr->setLBD(cr->getLBD()+1); //use lbd to store original size
-        strengthend.push_back(cr); //used to cleanup pages in clause-pool
-        
-        occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
-        n_occ[toInt(l)]--;
-        updateElimHeap(var(l));
-        
+
         assert(cr->size() > 1);
         return true;
     }
@@ -683,6 +684,8 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent) && !addClause_(resolvent)) {
                 return false;
+            } else {
+                this->certificate->added(resolvent.begin(), resolvent.end());
             }
         }
     }
@@ -720,6 +723,8 @@ bool SimpSolver<PickBranchLitT>::substitute(Var v, Lit x) {
         }
         if (!addClause_(this->add_tmp)) {
             return this->ok = false;
+        } else {
+            this->certificate->added(this->add_tmp.begin(), this->add_tmp.end());
         }
         removeClause(c);
     }
