@@ -15,4 +15,6 @@ add_library(randomsimulation
     Conjectures.h
     GateDFSTraversal.h)
 
-target_compile_options(randomsimulation PRIVATE -Wextra)
+if (NOT MSVC)
+  target_compile_options(randomsimulation PRIVATE -Wextra)
+endif()
