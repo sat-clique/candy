@@ -66,6 +66,7 @@
 #include <candy/utils/CNFProblem.h>
 #include "candy/utils/System.h"
 #include "candy/utils/Utilities.h"
+#include "candy/utils/Attributes.h"
 
 #include "sonification/SolverSonification.h"
 
@@ -1680,7 +1681,7 @@ lbool Solver<PickBranchLitT>::solve() {
 }
 
 template <class PickBranchLitT>
-__attribute__((always_inline))
+ATTR_ALWAYSINLINE
 inline Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
     Var next = var_Undef;
     
