@@ -166,12 +166,13 @@ static lbool solve(SolverType& S, bool do_preprocess) {
         Statistics::getInstance().runtimeStop(RT_SIMPLIFIER);
         if (S.isInConflictingState()) {
             result = l_False;
+            S.certificate->proof();
         }
         if (S.verbosity > 0) {
             Statistics::getInstance().printRuntime(RT_SIMPLIFIER);
             if (result == l_False) {
                 printf("c ==============================================================================================\n");
-                printf("Solved by simplification\n");
+                printf("c Solved by simplification\n");
             }
         }
     }
@@ -905,7 +906,7 @@ template<class SolverType>
 static void configureSolver(SolverType& S, const GlucoseArguments& args) {
     S.verbosity = args.verb;
     S.verbEveryConflicts = args.vv;
-    S.certificate = Certificate(args.opt_certified_file, args.do_certified);
+    S.certificate = std::unique_ptr<Certificate>(new Certificate(args.opt_certified_file, args.do_certified));
 }
 
 static void waitForUserInput() {
