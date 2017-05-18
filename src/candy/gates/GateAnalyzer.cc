@@ -27,15 +27,17 @@
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/core/Solver.h"
 #include "candy/utils/Utilities.h"
-#include <candy/utils/CNFProblem.h>
-#include <candy/utils/MemUtils.h>
+#include "candy/utils/CNFProblem.h"
+#include "candy/utils/MemUtils.h"
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic, bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget) :
+GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic,
+        bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget, unsigned int timeout) :
             problem (dimacs), solver (backported_std::make_unique<DefaultSolver>()),
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
-            useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify), lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget)
+            useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
+            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)
 {
     gates = new vector<Gate>(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
@@ -179,7 +181,7 @@ void GateAnalyzer::analyze(vector<Lit>& candidates) {
     if (useIntensification) {
         vector<Lit> remainder;
         bool patterns, semantic, lookahead, restart = false;
-        for (int level = 0; level < 3; restart ? level = 0 : level++) {
+        for (int level = 0; level < 3 && !runtime.hasTimeout(); restart ? level = 0 : level++) {
 #ifdef GADebug
             printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
 #endif
@@ -200,7 +202,7 @@ void GateAnalyzer::analyze(vector<Lit>& candidates) {
             candidates.insert(candidates.end(), remainder.begin(), remainder.end());
             remainder.clear();
 
-            while (candidates.size()) {
+            while (candidates.size() && !runtime.hasTimeout()) {
                 vector<Lit> frontier = analyze(candidates, patterns, semantic, lookahead);
                 if (level > 0 && frontier.size() > 0) restart = true;
                 remainder.insert(remainder.end(), candidates.begin(), candidates.end());
@@ -213,7 +215,7 @@ void GateAnalyzer::analyze(vector<Lit>& candidates) {
         }
     }
     else {
-        while (candidates.size()) {
+        while (candidates.size() && !runtime.hasTimeout()) {
             vector<Lit> frontier = analyze(candidates, usePatterns, useSemantic, useLookahead);
             candidates.swap(frontier);
         }
@@ -222,6 +224,8 @@ void GateAnalyzer::analyze(vector<Lit>& candidates) {
 
 void GateAnalyzer::analyze() {
     vector<Lit> next;
+
+    runtime.start();
 
     // start recognition with unit literals
     for (Cl* c : problem.getProblem()) {
@@ -236,21 +240,13 @@ void GateAnalyzer::analyze() {
     analyze(next);
 
     // clause selection loop
-    for (int k = 0; k < maxTries; k++) {
+    for (int k = 0; k < maxTries && !runtime.hasTimeout(); k++) {
         next.clear();
-//        Var var = getRarestVariable(index);
-//        if (var == -1) break; // index is empty
-//        Lit lit1 = mkLit(var, false);
-//        Lit lit2 = mkLit(var, true);
         Lit lit = getRarestLiteral(index);
         if (lit.x == INT_MAX) break; // index is empty
         vector<Cl*> clauses;
         clauses.insert(clauses.end(), index[lit].begin(), index[lit].end());
         index[lit].clear();
-//        clauses.insert(clauses.end(), index[lit1].begin(), index[lit1].end());
-//        clauses.insert(clauses.end(), index[lit2].begin(), index[lit2].end());
-//        index[lit1].clear();
-//        index[lit2].clear();
         removeFromIndex(index, clauses);
         roots.insert(roots.end(), clauses.begin(), clauses.end());
         for (Cl* c : clauses) {
@@ -259,6 +255,8 @@ void GateAnalyzer::analyze() {
         }
         analyze(next);
     }
+
+    runtime.stop();
 }
 
 // precondition: ~o \in f[i] and o \in g[j]

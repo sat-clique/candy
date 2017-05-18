@@ -38,7 +38,8 @@
 
 #include "candy/core/SolverTypes.h"
 #include "candy/utils/Utilities.h"
-#include <candy/utils/CNFProblem.h>
+#include "candy/utils/Runtime.h"
+#include "candy/utils/CNFProblem.h"
 
 namespace Candy {
 class DefaultSolver;
@@ -65,7 +66,9 @@ class GateAnalyzer {
 
 public:
     GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-            bool patterns = true, bool semantic = true, bool holistic = false, bool lookahead = false, bool intensify = true, int lookahead_threshold = 10, unsigned int conflict_budget = 0);
+            bool patterns = true, bool semantic = true, bool holistic = false,
+            bool lookahead = false, bool intensify = true, int lookahead_threshold = 10,
+            unsigned int conflict_budget = 0, unsigned int timeout = 0);
     ~GateAnalyzer();
 
     // main analysis routine
@@ -120,6 +123,7 @@ private:
     bool useIntensification = false;
     int lookaheadThreshold = 10;
     unsigned int semanticConflictBudget = 0;
+    Runtime runtime;
 
     // analyzer output:
     std::vector<Cl*> roots; // top-level clauses

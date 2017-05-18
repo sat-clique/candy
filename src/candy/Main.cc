@@ -253,6 +253,7 @@ struct GateRecognitionArguments {
     const bool opt_gr_patterns;
     const bool opt_gr_semantic;
     const unsigned int opt_gr_semantic_budget;
+    const unsigned int opt_gr_timeout;
     const bool opt_gr_holistic;
     const bool opt_gr_lookahead;
     const bool opt_gr_intensify;
@@ -266,6 +267,7 @@ std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& 
     << "c   Patterns: " << arguments.opt_gr_patterns << std::endl
     << "c   Semantic: " << arguments.opt_gr_semantic << std::endl
     << "c   Semantic budget: " << arguments.opt_gr_semantic_budget << std::endl
+    << "c   Timeout: " << arguments.opt_gr_timeout << std::endl
     << "c   Holistic: " << arguments.opt_gr_holistic << std::endl
     << "c   Lookahead: " << arguments.opt_gr_lookahead << std::endl
     << "c   Intensify: " << arguments.opt_gr_intensify << std::endl
@@ -277,7 +279,7 @@ std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& 
 static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {
     return backported_std::make_unique<Candy::GateAnalyzer>(dimacs, recognitionArgs.opt_gr_tries, recognitionArgs.opt_gr_patterns,
                     recognitionArgs.opt_gr_semantic, recognitionArgs.opt_gr_holistic, recognitionArgs.opt_gr_lookahead, recognitionArgs.opt_gr_intensify,
-                    recognitionArgs.opt_gr_lookahead_threshold, recognitionArgs.opt_gr_semantic_budget);
+                    recognitionArgs.opt_gr_lookahead_threshold, recognitionArgs.opt_gr_semantic_budget, recognitionArgs.opt_gr_timeout);
 }
 
 /**
@@ -761,6 +763,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", true);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", true);
     IntOption opt_gr_semantic_budget("GATE RECOGNITION", "gate-semantic-budget", "Enable Semantic Gate Detection Conflict Budget", 0, IntRange(0, INT32_MAX));
+    IntOption opt_gr_timeout("GATE RECOGNITION", "gate-timeout", "Enable Gate Detection Timeout", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
     IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
@@ -808,6 +811,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_gr_patterns,
         opt_gr_semantic,
         static_cast<unsigned int>(opt_gr_semantic_budget),
+        static_cast<unsigned int>(opt_gr_timeout),
         opt_gr_holistic,
         opt_gr_lookahead,
         opt_gr_intensify,
