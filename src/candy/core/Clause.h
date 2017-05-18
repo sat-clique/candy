@@ -38,30 +38,27 @@ class Clause {
     Lit literals[1];
 
 public:
-    Clause(const std::vector<Lit>& list, uint16_t lbd, bool selectable = false) {
+    Clause(const std::vector<Lit>& list, uint16_t lbd) {
         std::copy(list.begin(), list.end(), literals);
         length = list.size();
         header = 0;
-        setSelectable(selectable);
         setLearnt(true); // only learnts have lbd
         setLBD(lbd);
         data.activity = 0;
         assert(std::unique(begin(), end()) == end());
     }
 
-    Clause(std::initializer_list<Lit> list, bool selectable = false) {
+    Clause(std::initializer_list<Lit> list) {
         std::copy(list.begin(), list.end(), literals);
         length = list.size();
-        header = 0; // not frozen, not deleted and not learnt; lbd=0
-        setSelectable(selectable);
+        header = 0; // all flags false; lbd=0
         calcAbstraction();
     }
 
-    Clause(const std::vector<Lit>& list, bool selectable = false) {
+    Clause(const std::vector<Lit>& list) {
         std::copy(list.begin(), list.end(), literals);
         length = list.size();
         header = 0; // not frozen, not deleted and not learnt; lbd=0
-        setSelectable(selectable);
         calcAbstraction();
     }
 
