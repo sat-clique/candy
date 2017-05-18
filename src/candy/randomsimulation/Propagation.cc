@@ -90,8 +90,14 @@ namespace Candy {
                     
                     AlignedSimVector* varAssgn = &(assignment.get(var(literal)));
                     
+#if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
                     varAssgn = reinterpret_cast<AlignedSimVector*>(
                                 __builtin_assume_aligned(varAssgn, RANDSIM_ALIGNMENT));
+#elif defined(_MSC_VER)
+#pragma message ( "Warning: auto-vectorization not supported yet" )
+#else
+#error Unsupported compiler.
+#endif
                     
                     if (sign(literal) == true) {
                         satAssgn |= *varAssgn;
@@ -104,8 +110,15 @@ namespace Candy {
             }
             
             AlignedSimVector* outputAssgn = &(assignment.get(outputVar));
+            
+#if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
             outputAssgn = reinterpret_cast<AlignedSimVector*>(
                             __builtin_assume_aligned(outputAssgn, RANDSIM_ALIGNMENT));
+#elif defined(_MSC_VER)
+#pragma message ( "Warning: auto-vectorization not supported yet" )
+#else
+#error Unsupported compiler.
+#endif
 
             if (sign(outputLit) == true) {
                 *outputAssgn = ~allSat;

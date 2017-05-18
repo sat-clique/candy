@@ -197,7 +197,7 @@ namespace Candy {
         SimulationVectors& operator=(SimulationVectors& other) = delete;
         
     private:
-        AlignedSimVector *__restrict__ m_simulationVectors;
+        AlignedSimVector *ATTR_RESTRICT m_simulationVectors;
         unsigned int m_size;
         char* m_rawMemory;
         bool m_isInitialized;
