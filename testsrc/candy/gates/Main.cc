@@ -1,5 +1,4 @@
 #include <zlib.h>
-#include <sys/resource.h>
 
 #include <string>
 #include <fstream>
