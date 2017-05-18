@@ -155,8 +155,8 @@ public:
 	}
 
 	bool operator ==(lbool b) const {
-		return ((b.value & 2) & (value & 2))
-				| (!(b.value & 2) & (value == b.value));
+		return (((b.value & 2) & (value & 2))
+				| (!(b.value & 2) & (value == b.value))) != 0;
 	}
 	bool operator !=(lbool b) const {
 		return !(*this == b);
