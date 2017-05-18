@@ -69,8 +69,6 @@
 
 #include "sonification/SolverSonification.h"
 
-#define USE_SELECTABLE_FLAG
-
 namespace Candy {
 
 class DefaultPickBranchLit {
@@ -735,7 +733,6 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
     
     Lit p;
     uint_fast16_t i, j;
-    bool hasSelector = false;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
         if (value(ps[i]) == l_True || ps[i] == ~p) {
             return true;
@@ -743,9 +740,6 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         else if (value(ps[i]) != l_False && ps[i] != p) {
             ps[j++] = p = ps[i];
         }
-#ifdef USE_SELECTABLE_FLAG
-        hasSelector |= isSelector(ps[i]);
-#endif
     }
     ps.resize(j);
     
@@ -760,7 +754,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps, hasSelector);
+        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -1189,11 +1183,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 continue;
             }
 
-#ifdef USE_SELECTABLE_FLAG
-            if (decisionLevel() <= assumptions.size() && cr->isSelectable()) { // INCREMENTAL MODE
-#else
-            if (incremental) {
-#endif
+            if (decisionLevel() <= assumptions.size()) { // INCREMENTAL MODE
                 Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
@@ -1497,11 +1487,8 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
-#ifdef USE_SELECTABLE_FLAG
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, isSelector(learnt_clause.back()));
-#else
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels, false);
-#endif
+                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels);
+
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
                 }
