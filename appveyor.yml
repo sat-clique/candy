@@ -29,6 +29,8 @@ build_script:
   - cmake --build . --config %CONFIGURATION%
   - cmake --build . --config %CONFIGURATION% --target install
 
+  - set PATH=%PATH%;%INSTALLATION_DIR%\bin;%INSTALLATION_DIR%\lib
+
   # Build and test candy-kingdom
   - cd %REPO_DIR%\candy-kingdom
   - git submodule init
