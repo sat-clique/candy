@@ -66,7 +66,6 @@
 #include "candy/core/ClauseAllocator.h"
 #include <candy/utils/CNFProblem.h>
 #include "candy/utils/System.h"
-#include "candy/utils/Utilities.h"
 #include "candy/utils/Attributes.h"
 
 #include "sonification/SolverSonification.h"
@@ -141,8 +140,11 @@ public:
         return addClause_(add_tmp);
     }
 
-    inline void printCNF() {
-        printProblem(clauses);
+    inline void printDIMACS() {
+        printf("p cnf %i %i\n", nVars(), clauses.size());
+        for (auto clause : clauses) {
+            clause->print();
+        }
     }
 
     void addClauses(CNFProblem dimacs);
