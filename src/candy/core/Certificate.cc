@@ -9,10 +9,11 @@
 
 namespace Candy {
 
-Certificate::Certificate(const char* _out, const bool _active) : active(_out != nullptr && _active)
+Certificate::Certificate(const char* _out, const bool _active) :
+                active(_out != nullptr && _active),
+                out(_out, std::ofstream::out)
 {
-    if (active) {
-        out = std::ofstream(_out, std::ofstream::out);
+    if (active) {;
         if (!out.is_open()) {
             active = false;
         }
