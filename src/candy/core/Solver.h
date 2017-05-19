@@ -66,6 +66,7 @@
 #include "candy/core/ClauseAllocator.h"
 #include <candy/utils/CNFProblem.h>
 #include "candy/utils/System.h"
+#include "candy/utils/Attributes.h"
 
 #include "sonification/SolverSonification.h"
 
@@ -682,7 +683,7 @@ bool Solver<PickBranchLitT>::isIncremental() {
  ***/
 template<class PickBranchLitT>
 Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar) {
-    int v = nVars();
+    int v = static_cast<int>(nVars());
     watches.init(mkLit(v, false));
     watches.init(mkLit(v, true));
     watchesBin.init(mkLit(v, false));
@@ -1282,7 +1283,7 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
     auto new_end = std::remove_if(list.begin(), list.end(),
                                   [this](Clause* c) {
                                       if (c->isDeleted()) {
-                                          allocator.deallocate(c);
+                                          this->allocator.deallocate(c);
                                           return true;
                                       } else {
                                           return false;
@@ -1679,7 +1680,7 @@ lbool Solver<PickBranchLitT>::solve() {
 }
 
 template <class PickBranchLitT>
-__attribute__((always_inline))
+ATTR_ALWAYSINLINE
 inline Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
     Var next = var_Undef;
     

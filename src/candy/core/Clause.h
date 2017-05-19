@@ -40,7 +40,7 @@ class Clause {
 public:
     Clause(const std::vector<Lit>& list, uint16_t lbd) {
         std::copy(list.begin(), list.end(), literals);
-        length = list.size();
+        length = static_cast<decltype(length)>(list.size());
         header = 0;
         setLearnt(true); // only learnts have lbd
         setLBD(lbd);
@@ -50,14 +50,14 @@ public:
 
     Clause(std::initializer_list<Lit> list) {
         std::copy(list.begin(), list.end(), literals);
-        length = list.size();
+        length = static_cast<decltype(length)>(list.size());
         header = 0; // all flags false; lbd=0
         calcAbstraction();
     }
 
     Clause(const std::vector<Lit>& list) {
         std::copy(list.begin(), list.end(), literals);
-        length = list.size();
+        length = static_cast<decltype(length)>(list.size());
         header = 0; // not frozen, not deleted and not learnt; lbd=0
         calcAbstraction();
     }
@@ -126,7 +126,7 @@ public:
     }
 
     inline bool isLearnt() const {
-        return (bool)(header & LEARNT_MASK);
+        return (header & LEARNT_MASK) != 0;
     }
 
     inline void setLearnt(bool learnt) {
@@ -138,7 +138,7 @@ public:
     }
 
     inline bool isSelectable() const {
-        return (bool)(header & SELECTABLE_MASK);
+        return (header & SELECTABLE_MASK) != 0;
     }
 
     inline void setSelectable(bool hasAssumptions) {
@@ -150,7 +150,7 @@ public:
     }
 
     inline bool isFrozen() const {
-        return (bool)(header & FROZEN_MASK);
+        return (header & FROZEN_MASK) != 0;
     }
 
     inline void setFrozen(bool learnt) {
@@ -162,7 +162,7 @@ public:
     }
 
     inline bool isDeleted() const {
-        return (bool)(header & DELETED_MASK);
+        return (header & DELETED_MASK) != 0;
     }
 
     inline void setDeleted() {

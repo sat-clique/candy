@@ -8,7 +8,6 @@
 
 using namespace std;
 using namespace Candy;
-using namespace Glucose;
 
 class IPASIRCandy {
 

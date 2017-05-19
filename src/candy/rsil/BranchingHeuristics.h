@@ -31,6 +31,7 @@
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/FastRand.h>
+#include <candy/utils/Attributes.h>
 #include <candy/rsar/Heuristics.h>
 #include "RSARHeuristicsFilter.h"
 
@@ -51,7 +52,8 @@ namespace Candy {
      */
     template<class AdviceType>
     class RSILBranchingHeuristic {
-        static_assert(std::is_class<typename AdviceType::BasicType>(), "AdviceType must have an inner type BasicType");
+        static_assert(std::is_class<typename AdviceType::BasicType>::value,
+          "AdviceType must have an inner type BasicType");
         
     public:
         using TrailType = std::vector<Lit>;
@@ -324,7 +326,7 @@ namespace Candy {
     }
     
     template<class AdviceType>
-    RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic(const RSILBranchingHeuristic::Parameters& params)
+    RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic(const Parameters& params)
     : m_advice(params.conjectures,
                BranchingHeuristicsImpl::getMaxVar(params.conjectures)),
     m_rng(0xFFFF),
@@ -343,7 +345,7 @@ namespace Candy {
     }
     
     template<class AdviceType>
-    __attribute__((always_inline))
+    ATTR_ALWAYSINLINE
     inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice(const TrailType& trail,
                                                              uint64_t trailSize,
                                                              const TrailLimType& trailLimits,
@@ -392,7 +394,7 @@ namespace Candy {
     }
     
     template<class AdviceType>
-    __attribute__((always_inline))
+    ATTR_ALWAYSINLINE
     inline Lit RSILBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
         if (m_backbonesEnabled) {
             Var decisionVariable = var(literal);
@@ -449,7 +451,7 @@ namespace Candy {
     }
     
     template<class AdviceType>
-    RSILVanishingBranchingHeuristic<AdviceType>::RSILVanishingBranchingHeuristic(const RSILVanishingBranchingHeuristic::Parameters& params)
+    RSILVanishingBranchingHeuristic<AdviceType>::RSILVanishingBranchingHeuristic(const Parameters& params)
     : m_callCounter(params.probHalfLife),
     m_mask(0ull),
     m_probHalfLife(params.probHalfLife),
@@ -474,7 +476,7 @@ namespace Candy {
     }
     
     template<class AdviceType>
-    __attribute__((always_inline))
+    ATTR_ALWAYSINLINE
     inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice(const TrailType& trail,
                                                                       uint64_t trailSize,
                                                                       const TrailLimType& trailLimits,
@@ -486,7 +488,7 @@ namespace Candy {
     }
     
     template<class AdviceType>
-    __attribute__((always_inline))
+    ATTR_ALWAYSINLINE
     inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
         auto result = isRSILEnabled() ? m_rsilHeuristic.getSignAdvice(literal) : literal;
         updateCallCounter();
