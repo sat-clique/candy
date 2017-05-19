@@ -21,8 +21,8 @@
 #ifndef CNFProblem_h
 #define CNFProblem_h
 
-#include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
+#include "candy/utils/ParseUtils.h"
+#include "candy/core/SolverTypes.h"
 
 #include <vector>
 
@@ -40,13 +40,8 @@ public:
 
   CNFProblem() {}
 
-  inline For& getProblem() {
-      return problem;
-  }
-
-  inline const For& getProblem() const {
-      return problem;
-  }
+  For& getProblem();
+  const For& getProblem() const;
 
   inline int nVars() const {
       return maxVars;
@@ -80,16 +75,16 @@ public:
       readClause(cl.begin(), cl.end());
   }
 
-  template <typename Iterator>
-  inline void readClause(Iterator begin, Iterator end) {
-      maxVars = std::max(maxVars, var(*std::max_element(begin, end))+1);
-      problem.push_back(new Cl(begin, end));
-  }
-
   inline void readClauses(For& f) {
       for (Cl* c : f) {
           readClause(c->begin(), c->end());
       }
+  }
+
+  template <typename Iterator>
+  inline void readClause(Iterator begin, Iterator end) {
+      maxVars = std::max(maxVars, var(*std::max_element(begin, end))+1);
+      problem.push_back(new Cl(begin, end));
   }
 
 
