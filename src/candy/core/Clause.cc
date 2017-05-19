@@ -28,4 +28,20 @@ void Clause::calcAbstraction() {
     data.abstraction = abstraction;
 }
 
+void Clause::print() const {
+  for (Lit it : *this) {
+    printLiteral(it);
+    printf(" ");
+  }
+  printf("0\n");
+}
+
+void Clause::print(std::vector<lbool> values) const {
+    for (Lit it : *this) {
+        printLiteral(it, values);
+        printf(" ");
+    }
+    printf("0\n");
+}
+
 } /* namespace Candy */
