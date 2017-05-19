@@ -24,6 +24,7 @@
  
  */
 
+#define CANDY_EXPOSE_TESTING_INTERFACE
 #include "ApproximationState.h"
 #include <randomsimulation/Conjectures.h>
 #include <utils/MemUtils.h>
@@ -255,6 +256,10 @@ namespace Candy {
     
     std::unique_ptr<BackbonesImpl> createBackbones(const std::vector<BackboneConjecture>& conjectures) {
         return backported_std::make_unique<BackbonesImpl>(conjectures);
+    }
+    
+    std::unique_ptr<Backbones> test_createBackbones(const std::vector<BackboneConjecture>& conjectures) {
+        return createBackbones(conjectures);
     }
     
     BackbonesImpl::~BackbonesImpl() {
@@ -491,6 +496,10 @@ namespace Candy {
 
     std::unique_ptr<EquivalenceImplicationsImpl> createEquivalenceImplications(const EquivalenceConjecture& conj) {
         return std::unique_ptr<EquivalenceImplicationsImpl>(new EquivalenceImplicationsImpl(conj));
+    }
+    
+    std::unique_ptr<EquivalenceImplications> test_createEquivalenceImplications(const EquivalenceConjecture& conj) {
+        return createEquivalenceImplications(conj);
     }
     
     EquivalenceImplicationsImpl::~EquivalenceImplicationsImpl() {

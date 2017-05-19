@@ -31,7 +31,8 @@
 #include <cassert>
 #include <memory>
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/utils/Attributes.h>
 
 // Compiler option RANDSIM_VARSIMVECSIZE - the simulation vector siz in multiples
 // of 64 single-variable assignments. By default, RANDSIM_VARSIMVECSIZE
@@ -146,7 +147,7 @@ namespace Candy {
      * \brief A SimulationVector aligned to RANDSIM_ALIGNMENT bytes.
      *
      */
-    typedef SimulationVector AlignedSimVector __attribute__((__aligned__(RANDSIM_ALIGNMENT)));
+    typedef SimulationVector AlignedSimVector ATTR_ALIGNED(RANDSIM_ALIGNMENT);
     
     
     /**
@@ -196,7 +197,7 @@ namespace Candy {
         SimulationVectors& operator=(SimulationVectors& other) = delete;
         
     private:
-        AlignedSimVector *__restrict__ m_simulationVectors;
+        AlignedSimVector *ATTR_RESTRICT m_simulationVectors;
         unsigned int m_size;
         char* m_rawMemory;
         bool m_isInitialized;
