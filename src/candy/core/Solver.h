@@ -141,7 +141,7 @@ public:
     }
 
     inline void printDIMACS() {
-        printf("p cnf %i %i\n", nVars(), clauses.size());
+        printf("p cnf %zu %zu\n", nVars(), clauses.size());
         for (auto clause : clauses) {
             clause->print();
         }
