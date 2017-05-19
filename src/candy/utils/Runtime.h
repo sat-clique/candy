@@ -8,7 +8,7 @@
 #ifndef SRC_CANDY_UTILS_RUNTIME_H_
 #define SRC_CANDY_UTILS_RUNTIME_H_
 
-#include <utils/System.h>
+#include <candy/utils/System.h>
 
 class Runtime {
 private:
@@ -45,7 +45,7 @@ public:
         return timeout > 0 && getRuntime() > timeout;
     }
 
-    bool setTimeout(unsigned int timeout) {
+    void setTimeout(unsigned int timeout) {
         this->timeout = timeout;
     }
 

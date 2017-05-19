@@ -7,11 +7,17 @@
 
 #include "candy/utils/CNFProblem.h"
 
-#include "utils/ParseUtils.h"
-#include "core/SolverTypes.h"
 #include <vector>
 
 namespace Candy {
+
+For& CNFProblem::getProblem() {
+    return problem;
+}
+
+const For& CNFProblem::getProblem() const {
+    return problem;
+}
 
 bool CNFProblem::readDimacsFromStdout() {
     gzFile in = gzdopen(0, "rb");
