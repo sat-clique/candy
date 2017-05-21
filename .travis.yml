@@ -31,7 +31,7 @@ script:
   - mkdir -p ../build
   - cd ../build
   - cmake -DCMAKE_BUILD_TYPE=Release $TRAVIS_BUILD_DIR
-  - cmake --build . --config Release
+  - cmake --build . --config Release -- -j2
   - ctest
 
 install:
