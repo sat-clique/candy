@@ -39,7 +39,7 @@ class Clause {
 
 public:
     Clause(const std::vector<Lit>& list, uint16_t lbd) {
-        std::copy(list.begin(), list.end(), literals);
+        copyLiterals(list.begin(), list.end(), literals);
         length = static_cast<decltype(length)>(list.size());
         header = 0;
         setLearnt(true); // only learnts have lbd
@@ -49,14 +49,14 @@ public:
     }
 
     Clause(std::initializer_list<Lit> list) {
-        std::copy(list.begin(), list.end(), literals);
+        copyLiterals(list.begin(), list.end(), literals);
         length = static_cast<decltype(length)>(list.size());
         header = 0; // all flags false; lbd=0
         calcAbstraction();
     }
 
     Clause(const std::vector<Lit>& list) {
-        std::copy(list.begin(), list.end(), literals);
+        copyLiterals(list.begin(), list.end(), literals);
         length = static_cast<decltype(length)>(list.size());
         header = 0; // not frozen, not deleted and not learnt; lbd=0
         calcAbstraction();
@@ -239,6 +239,15 @@ public:
 
     void blow(uint8_t offset) {//use only if you know what you are doing (only to be used after strengthen calls)
         length += offset;
+    }
+
+private:
+    template<typename InputIterator>
+    inline void copyLiterals(InputIterator srcBegin, InputIterator srcEnd, Lit* target) {
+        for(InputIterator srcIter = srcBegin; srcIter != srcEnd; ++srcIter) {
+            *target = *srcIter;
+            ++target;
+        }
     }
 };
 
