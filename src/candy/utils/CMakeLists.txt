@@ -10,8 +10,6 @@ add_library(utils
     FastRand.cc
     MemUtils.h
     ParseUtils.h
-    StringUtils.h
-    Utilities.cc
-    Utilities.h)
+    StringUtils.h)
 
 

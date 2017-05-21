@@ -37,7 +37,6 @@
 #include <climits>
 
 #include "candy/core/SolverTypes.h"
-#include "candy/utils/Utilities.h"
 #include "candy/utils/Runtime.h"
 #include "candy/utils/CNFProblem.h"
 
@@ -91,7 +90,7 @@ public:
             if (gate.isDefined() && !done[var(outputs[i])]) {
                 done[var(outputs[i])] = true;
                 printf("Gate with output ");
-                printLit(gate.getOutput());
+                printLiteral(gate.getOutput());
                 printf("Is defined by clauses ");
                 printFormula(gate.getForwardClauses(), false);
                 printFormula(gate.getBackwardClauses(), true);
@@ -130,17 +129,17 @@ private:
     std::vector<Gate>* gates; // stores gate-struct for every output
     int nGates = 0;
 
-    void printLit(Lit l) {
-        printf("%s%i ", sign(l)?"-":"", var(l)+1);
-    }
-    void printClause(Cl* c, bool nl = false) {
-        for (Lit l : *c) printLit(l);
-        printf("; ");
-        if (nl) printf("\n");
-    }
     void printFormula(For& f, bool nl = false) {
-        for (Cl* c : f) printClause(c, false);
+        for (Cl* c : f) printClause(*c);
         if (nl) printf("\n");
+    }
+
+    void printClause(Cl& c) {
+        for (Lit it : c) {
+          printLiteral(it);
+          printf(" ");
+        }
+        printf("0\n");
     }
 
     // main analysis routines
