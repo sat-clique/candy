@@ -55,6 +55,7 @@
 #include <string>
 #include <type_traits>
 #include <memory>
+#include <limits>
 
 #include <candy/core/Statistics.h>
 #include "candy/mtl/Heap.h"
@@ -67,6 +68,7 @@
 #include <candy/utils/CNFProblem.h>
 #include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
+#include "candy/utils/CheckedCast.h"
 
 #include "sonification/SolverSonification.h"
 
@@ -183,7 +185,7 @@ public:
 
     // Declare if a variable should be eligible for selection in the decision heuristic.
     inline void setDecisionVar(Var v, bool b) {
-        if (decision[v] != b) {
+        if (decision[v] != static_cast<char>(b)) {
             decision[v] = b;
             if (b) {
                 insertVarOrder(v);
@@ -269,63 +271,63 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-	// Helper structures:
-	struct VarData {
-	    Clause* reason;
-		uint_fast32_t level;
-		VarData() :
-		    reason(nullptr), level(0) {}
-		VarData(Clause* _reason, uint_fast32_t _level) :
-		    reason(_reason), level(_level) {}
-	};
+    // Helper structures:
+    struct VarData {
+        Clause* reason;
+        uint_fast32_t level;
+        VarData() :
+            reason(nullptr), level(0) {}
+        VarData(Clause* _reason, uint_fast32_t _level) :
+            reason(_reason), level(_level) {}
+    };
 
-	struct Watcher {
-	    Clause* cref;
-		Lit blocker;
-		Watcher() :
-			cref(nullptr), blocker(lit_Undef) {}
-		Watcher(Clause* cr, Lit p) :
-			cref(cr), blocker(p) {}
-		bool operator==(const Watcher& w) const {
-			return cref == w.cref;
-		}
-		bool operator!=(const Watcher& w) const {
-			return cref != w.cref;
-		}
-	};
+    struct Watcher {
+        Clause* cref;
+        Lit blocker;
+        Watcher() :
+            cref(nullptr), blocker(lit_Undef) {}
+        Watcher(Clause* cr, Lit p) :
+            cref(cr), blocker(p) {}
+        bool operator==(const Watcher& w) const {
+            return cref == w.cref;
+        }
+        bool operator!=(const Watcher& w) const {
+            return cref != w.cref;
+        }
+    };
 
-	struct WatcherDeleted {
-		WatcherDeleted() { }
-		inline bool operator()(const Watcher& w) const {
-			return w.cref->isDeleted() == 1;
-		}
-	};
+    struct WatcherDeleted {
+        WatcherDeleted() { }
+        inline bool operator()(const Watcher& w) const {
+            return w.cref->isDeleted() == 1;
+        }
+    };
 
-	struct VarOrderLt {
-		const vector<double>& activity;
-		bool operator()(Var x, Var y) const {
-			return activity[x] > activity[y];
-		}
-		VarOrderLt(const vector<double>& act) : activity(act) {}
-	};
+    struct VarOrderLt {
+        const vector<double>& activity;
+        bool operator()(Var x, Var y) const {
+            return activity[x] > activity[y];
+        }
+        VarOrderLt(const vector<double>& act) : activity(act) {}
+    };
 
-	struct reduceDB_lt {
-	    reduceDB_lt() {
-	    }
+    struct reduceDB_lt {
+        reduceDB_lt() {
+        }
 
-	    bool operator()(Clause* x, Clause* y) {
-	//        // XMiniSat paper, alternate ordering
-	//        const uint8_t reduceOnSizeSize = 12;
-	//        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
-	//        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
-	//        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
-	        return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
-	    }
-	};
+        bool operator()(Clause* x, Clause* y) {
+    //        // XMiniSat paper, alternate ordering
+    //        const uint8_t reduceOnSizeSize = 12;
+    //        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
+    //        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
+    //        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
+            return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
+        }
+    };
 
-	ClauseAllocator allocator;
+    ClauseAllocator allocator;
 
-	// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+    // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, Watcher, WatcherDeleted> watches;
     OccLists<Lit, Watcher, WatcherDeleted> watchesBin;
 
@@ -374,7 +376,7 @@ protected:
     uint8_t phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
 
     // constants for memory reorganization
-	uint8_t revamp;
+    uint8_t revamp;
     bool sort_watches;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -382,25 +384,25 @@ protected:
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
-	vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
+    vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     uint32_t MYFLAG;
 
-	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-	// used, exept 'seen' wich is used in several places.
-	vector<char> seen;
-	vector<Lit> analyze_toclear;
-	vector<Lit> add_tmp;
+    // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
+    // used, exept 'seen' wich is used in several places.
+    vector<char> seen;
+    vector<Lit> analyze_toclear;
+    vector<Lit> add_tmp;
 
-	// Resource contraints and other interrupts
-	uint32_t conflict_budget;    // 0 means no budget.
-	uint32_t propagation_budget; // 0 means no budget.
+    // Resource contraints and other interrupts
+    uint32_t conflict_budget;    // 0 means no budget.
+    uint32_t propagation_budget; // 0 means no budget.
     void* termCallbackState;
     int (*termCallback)(void* state);
     bool asynch_interrupt;
 
-	// Variables added for incremental mode
+    // Variables added for incremental mode
     bool incremental; // Use incremental SAT Solver
-	uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
+    uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
 
     // Sonification
     SolverSonification sonification;
@@ -408,7 +410,7 @@ protected:
     // Variables for decisions
     PickBranchLitT pickBranchLitData;
 
-	// Main internal methods:
+    // Main internal methods:
     inline Clause* reason(Var x) const {
         return vardata[x].reason;
     }
@@ -427,7 +429,7 @@ protected:
             order_heap.insert(x);
     }
 
-	// Begins a new decision level
+    // Begins a new decision level
     inline void newDecisionLevel() {
         trail_lim.push_back(trail_size);
     }
@@ -462,68 +464,68 @@ protected:
 
     Lit pickBranchLit(); // Return the next decision variable.
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
-	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
-	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-	void cancelUntil(int level); // Backtrack until a certain level.
-	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
-	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-	bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
-	lbool search(); // Search for a given number of conflicts.
-	virtual void reduceDB(); // Reduce the set of learnt clauses.
-	void rebuildOrderHeap();
+    void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
+    Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+    void cancelUntil(int level); // Backtrack until a certain level.
+    void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
+    void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+    bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
+    lbool search(); // Search for a given number of conflicts.
+    virtual void reduceDB(); // Reduce the set of learnt clauses.
+    void rebuildOrderHeap();
     void revampClausePool(uint8_t upper);
 
-	// Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-	inline void varDecayActivity() {
-	    var_inc *= (1 / var_decay);
-	}
+    // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+    inline void varDecayActivity() {
+        var_inc *= (1 / var_decay);
+    }
 
-	// Increase a variable with the current 'bump' value.
-	inline void varBumpActivity(Var v) {
-	    if (!isSelector(v)) {
-	        varBumpActivity(v, var_inc);
-	    }
-	}
+    // Increase a variable with the current 'bump' value.
+    inline void varBumpActivity(Var v) {
+        if (!isSelector(v)) {
+            varBumpActivity(v, var_inc);
+        }
+    }
 
-	inline void varBumpActivity(Var v, double inc) {
-	    if ((activity[v] += inc) > 1e100) {
-	        varRescaleActivity();
-	    }
-	    if (order_heap.inHeap(v)) {
-	        order_heap.decrease(v); // update order-heap
-	    }
-	}
+    inline void varBumpActivity(Var v, double inc) {
+        if ((activity[v] += inc) > 1e100) {
+            varRescaleActivity();
+        }
+        if (order_heap.inHeap(v)) {
+            order_heap.decrease(v); // update order-heap
+        }
+    }
 
-	void varRescaleActivity() {
+    void varRescaleActivity() {
         for (size_t i = 0; i < nVars(); i++) {
             activity[i] *= 1e-100;
         }
         var_inc *= 1e-100;
     }
 
-	inline void claDecayActivity() {
-	    cla_inc *= (1 / clause_decay);
-	}
+    inline void claDecayActivity() {
+        cla_inc *= (1 / clause_decay);
+    }
 
-	inline void claBumpActivity(Clause& c) {
-	    if ((c.activity() += cla_inc) > 1e20) {
-	        claRescaleActivity();
-	    }
-	}
+    inline void claBumpActivity(Clause& c) {
+        if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
+            claRescaleActivity();
+        }
+    }
 
-	void claRescaleActivity() {
-	    for (auto container : { clauses, learnts, learntsBin }) {
-	        for (Clause* clause : container) {
-	            clause->activity() *= 1e-20;
-	        }
-	    }
+    void claRescaleActivity() {
+        for (auto container : { clauses, learnts, learntsBin }) {
+            for (Clause* clause : container) {
+                clause->activity() *= 1e-20f;
+            }
+        }
         cla_inc *= 1e-20;
     }
 
-	// Gives the current decisionlevel.
-	inline uint32_t decisionLevel() const {
-	    return trail_lim.size();
-	}
+    // Gives the current decisionlevel.
+    inline uint32_t decisionLevel() const {
+        return checked_unsigned_cast<size_t, uint32_t>(trail_lim.size());
+    }
 
     inline bool withinBudget() {
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
@@ -754,7 +756,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         uncheckedEnqueue(ps[0]);
         return ok = (propagate() == nullptr);
     } else {
-        Clause* cr = new (allocator.allocate(ps.size())) Clause(ps);
+        Clause* cr = new (allocator.allocate(checked_unsigned_cast<std::remove_reference<decltype(ps)>::type::size_type, uint32_t>(ps.size()))) Clause(ps);
         clauses.push_back(cr);
         attachClause(cr);
     }
@@ -864,7 +866,8 @@ void Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_l
         }
         if (nb > 0) {
             Statistics::getInstance().solverReducedClausesInc(nb);
-            for (uint_fast16_t i = 1, l = out_learnt.size()-1; i < out_learnt.size() - nb; i++) {
+            uint_fast16_t l = checked_unsigned_cast<size_t, uint_fast16_t>(out_learnt.size() - 1);
+            for (uint_fast16_t i = 1; i < out_learnt.size() - nb; i++) {
                 if (permDiff[var(out_learnt[i])] != MYFLAG) {
                     std::swap(out_learnt[i], out_learnt[l]);
                     l--;
@@ -983,7 +986,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
     
     // Simplify conflict clause:
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
-    Statistics::getInstance().solverMaxLiteralsInc(out_learnt.size());
+    Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
     
     analyze_toclear.clear();
     analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
@@ -1001,7 +1004,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
     
     assert(out_learnt[0] == ~asslit);
     
-    Statistics::getInstance().solverTotLiteralsInc(out_learnt.size());
+    Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
     
     /* Minimisation with binary clauses of the asserting clause */
     if (!incremental && out_learnt.size() <= lbSizeMinimizingClause) {
@@ -1046,7 +1049,7 @@ bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
     static vector<Lit> analyze_stack;
     analyze_stack.clear();
     analyze_stack.push_back(p);
-    int top = analyze_toclear.size();
+    auto top = analyze_toclear.size();
     while (analyze_stack.size() > 0) {
         assert(reason(var(analyze_stack.back())) != nullptr);
         Clause& c = *reason(var(analyze_stack.back()));
@@ -1063,7 +1066,7 @@ bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
                     analyze_stack.push_back(p);
                     analyze_toclear.push_back(p);
                 } else {
-                    for (unsigned int j = top; j < analyze_toclear.size(); j++)
+                    for (auto j = top; j < analyze_toclear.size(); j++)
                         seen[var(analyze_toclear[j])] = 0;
                     analyze_toclear.resize(top);
                     return false;
@@ -1296,9 +1299,11 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::rebuildOrderHeap() {
     vector<Var> vs;
-    for (size_t v = 0; v < nVars(); v++)
-        if (decision[v] && value(v) == l_Undef)
-            vs.push_back(v);
+    for (size_t v = 0; v < nVars(); v++) {
+        if (decision[v] && value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
+            vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
+        }
+    }
     order_heap.build(vs);
 }
 
@@ -1437,7 +1442,7 @@ lbool Solver<PickBranchLitT>::search() {
         
         Clause* confl = propagate();
         
-        sonification.assignmentLevel(nAssigns());
+        sonification.assignmentLevel(static_cast<int>(nAssigns()));
         
         if (confl != nullptr) { // CONFLICT
             sonification.conflictLevel(decisionLevel());
@@ -1449,7 +1454,11 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
-                Statistics::getInstance().printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]), nClauses(), nLearnts(), nConflicts, nLiterals);
+                Statistics::getInstance().printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]),
+                    static_cast<int>(nClauses()),
+                    static_cast<int>(nLearnts()),
+                    static_cast<int>(nConflicts),
+                    static_cast<int>(nLiterals));
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -1472,7 +1481,7 @@ lbool Solver<PickBranchLitT>::search() {
             
             analyze(confl, learnt_clause, backtrack_level, nblevels);
             
-            sonification.learntSize(learnt_clause.size());
+            sonification.learntSize(static_cast<int>(learnt_clause.size()));
             
             lbdQueue.push(nblevels);
             sumLBD += nblevels;
@@ -1487,7 +1496,8 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
-                Clause* cr = new ((allocator.allocate(learnt_clause.size()))) Clause(learnt_clause, nblevels);
+                uint32_t clauseLength = checked_unsigned_cast<decltype(learnt_clause)::size_type, uint32_t>(learnt_clause.size());
+                Clause* cr = new ((allocator.allocate(clauseLength))) Clause(learnt_clause, nblevels);
 
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
@@ -1513,7 +1523,7 @@ lbool Solver<PickBranchLitT>::search() {
                 
                 if (incremental) { // DO NOT BACKTRACK UNTIL 0.. USELESS
                     size_t bt = (decisionLevel() < assumptions.size()) ? decisionLevel() : assumptions.size();
-                    cancelUntil(bt);
+                    cancelUntil(checked_unsignedtosigned_cast<size_t, int>(bt));
                 } else {
                     cancelUntil(0);
                 }
@@ -1536,7 +1546,8 @@ lbool Solver<PickBranchLitT>::search() {
                     if (sort_watches) {
                         Statistics::getInstance().runtimeStart("Runtime Sort Watches");
                         for (size_t v = 0; v < nVars(); v++) {
-                            for (Lit l : { mkLit(v, false), mkLit(v, true) }) {
+                            Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
+                            for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
                                 sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
                                     Clause& c1 = *w1.cref;
                                     Clause& c2 = *w2.cref;
@@ -1617,7 +1628,7 @@ lbool Solver<PickBranchLitT>::solve() {
     
     double curTime = Glucose::cpuTime();
     
-    sonification.start(nVars(), nClauses());
+    sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
     if (!incremental && verbosity >= 1) {
         printf("c =====================================[ MAGIC CONSTANTS ]======================================\n");
@@ -1650,7 +1661,7 @@ lbool Solver<PickBranchLitT>::solve() {
     
     if (status == l_False) {
         Statistics::getInstance().incNBUnsatCalls();
-        Statistics::getInstance().incTotalTime4Unsat(finalTime - curTime);
+        Statistics::getInstance().incTotalTime4Unsat(static_cast<unsigned int>(finalTime - curTime));
         
         certificate->proof();
         
@@ -1662,7 +1673,7 @@ lbool Solver<PickBranchLitT>::solve() {
     }
     else if (status == l_True) {
         Statistics::getInstance().incNBSatCalls();
-        Statistics::getInstance().incTotalTime4Sat(finalTime - curTime);
+        Statistics::getInstance().incTotalTime4Sat(static_cast<unsigned int>(finalTime - curTime));
         
         model.clear();
         model.insert(model.end(), assigns.begin(), assigns.end());

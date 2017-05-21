@@ -80,6 +80,9 @@ option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 # Enable Static Linking
 option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 
+# Enable checked casts in debug mode
+option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
+
 # Disable RTTI and defines CANDY_HAS_NO_RTTI.
 # WARNING: Enable this only AFTER having thoroughly tested the code. In some places
 # RTTI is needed for testing (and only in places where it is also safe to use a
@@ -97,6 +100,15 @@ option(CANDY_DISABLE_RTTI OFF "Disable RTTI and defines CANDY_HAS_NO_RTTI. Use w
 
 enable_testing()
 
+### Platform feature checks
+INCLUDE(CheckFunctionExists)
+CHECK_FUNCTION_EXISTS(getrlimit HAVE_GETRLIMIT)
+CHECK_FUNCTION_EXISTS(setrlimit HAVE_SETRLIMIT)
+
+if(HAVE_GETRLIMIT AND HAVE_SETRLIMIT)
+  add_definitions(-D CANDY_HAVE_RLIMIT)
+endif()
+
 
 ### Add doxygen targets
 add_subdirectory(doc)
@@ -104,46 +116,74 @@ add_subdirectory(doc)
 ### Compiler flags
 
 if(MSVC)
-    set(CMAKE_CXX_FLAGS "/W3 /D __STDC_LIMIT_MACROS /D __STDC_FORMAT_MACROS /EHsc")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D NDEBUG /Ox")
+  set(CMAKE_CXX_FLAGS "/W3 /D __STDC_LIMIT_MACROS /D __STDC_FORMAT_MACROS /EHsc /F 134217728")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /D NDEBUG /Ox")
 else()
-    set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+  set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
+  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+endif()
+
+if(CANDY_ENABLE_DEBUG_CHECKEDCASTS)
+  add_definitions(-D DEBUG_CHECK_CASTS)
 endif()
 
 if(CANDY_ENABLE_LLVM_SANITIZER)
+  if(MSVC)
+    message(FATAL_ERROR "CANDY_ENABLE_LLVM_SANITIZER is not yet supported for MSVC")
+  endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address,undefined")
 endif()
 
 if(CANDY_ENABLE_LLVM_SANITIZER_FULL)
+  if(MSVC)
+    message(FATAL_ERROR "CANDY_ENABLE_LLVM_SANITIZER_FULL is not yet supported for MSVC")
+  endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address,memory,undefined")
 endif()
 
 if(CANDY_DISABLE_RTTI)
   message("WARNING: Use CANDY_DISABLE_RTTI only for the most optimized builds, since the test system relies on it")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti -DCANDY_HAS_NO_RTTI")
+  add_definitions(-DCANDY_HAS_NO_RTTI)
+  if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /GR-")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-rtti")
+  endif()
 endif()
 
 if(CANDY_ENABLE_STATIC_LINKING)
   message("Static linking is enabled.")
-  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   SET(BUILD_SHARED_LIBRARIES OFF)
-  SET(CMAKE_EXE_LINKER_FLAGS "-static")
+
+  if (NOT MSVC)
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+    SET(CMAKE_EXE_LINKER_FLAGS "-static")
+  endif()
 endif()
 
 if (CANDY_ENABLE_NATIVEARCH)
   message("Compiling for the processor architecture of this machine.")
+  if(MSVC)
+    message(FATAL_ERROR "CANDY_ENABLE_NATIVEARCH is not yet supported for MSVC")
+  endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
 else ()
   message("Compiling for processors supporting at least SSE 4.1.")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+  if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
+  endif()
 endif ()
 
 ### Additional Preprocessor Defintions
 
 if(CANDY_ENABLE_SONIFICATION)
+  if (MSVC)
+    message(FATAL_ERROR "CANDY_ENABLE_SONIFICATION is not yet supported for MSVC")
+  endif()
   add_definitions(-DSONIFICATION)
 endif()
 
@@ -153,7 +193,7 @@ find_package(ZLIB)
 if (${ZLIB_FOUND})
    include_directories(${ZLIB_INCLUDE_DIRS})
 else (${ZLIB_FOUND})
-   message("Could not find zlib.")
+   message(FATAL_ERROR "Could not find zlib.")
 endif (${ZLIB_FOUND})
 
 

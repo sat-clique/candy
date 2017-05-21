@@ -1,0 +1,47 @@
+os: Visual Studio 2015
+
+init:
+  - git config --global core.autocrlf input
+
+clone_folder: C:\projects\repos\candy-kingdom
+
+platform:
+  - x64
+
+environment:
+  global:
+    ZLIB_ROOT: C:\projects\stp\zlib\myinstall
+    REPO_DIR: C:\projects\repos
+    INSTALLATION_DIR: C:\projects\installation
+
+configuration:
+  - Release
+
+build_script:
+  # Build and install zlib in INSTALLATION_DIR
+  - cd %REPO_DIR%
+  - git clone https://github.com/madler/zlib
+  - cd zlib
+  - git checkout v1.2.8
+  - mkdir build
+  - cd build
+  - cmake -G "Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=%INSTALLATION_DIR% ..
+  - cmake --build . --config %CONFIGURATION%
+  - cmake --build . --config %CONFIGURATION% --target install
+
+  - set PATH=%PATH%;%INSTALLATION_DIR%\bin;%INSTALLATION_DIR%\lib
+
+  # Build and test candy-kingdom
+  - cd %REPO_DIR%\candy-kingdom
+  - git submodule init
+  - git submodule update
+  - mkdir ..\build
+  - cd ..\build
+  - cmake -G "Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=%INSTALLATION_DIR% -DCMAKE_PREFIX_PATH=%INSTALLATION_DIR% ..\candy-kingdom
+  - cmake --build . --config %CONFIGURATION%
+  - ctest -V -C %CONFIGURATION%
+
+build:
+  verbosity: minimal
+
+test: off
