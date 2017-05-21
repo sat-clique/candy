@@ -271,63 +271,63 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-	// Helper structures:
-	struct VarData {
-	    Clause* reason;
-		uint_fast32_t level;
-		VarData() :
-		    reason(nullptr), level(0) {}
-		VarData(Clause* _reason, uint_fast32_t _level) :
-		    reason(_reason), level(_level) {}
-	};
+    // Helper structures:
+    struct VarData {
+        Clause* reason;
+        uint_fast32_t level;
+        VarData() :
+            reason(nullptr), level(0) {}
+        VarData(Clause* _reason, uint_fast32_t _level) :
+            reason(_reason), level(_level) {}
+    };
 
-	struct Watcher {
-	    Clause* cref;
-		Lit blocker;
-		Watcher() :
-			cref(nullptr), blocker(lit_Undef) {}
-		Watcher(Clause* cr, Lit p) :
-			cref(cr), blocker(p) {}
-		bool operator==(const Watcher& w) const {
-			return cref == w.cref;
-		}
-		bool operator!=(const Watcher& w) const {
-			return cref != w.cref;
-		}
-	};
+    struct Watcher {
+        Clause* cref;
+        Lit blocker;
+        Watcher() :
+            cref(nullptr), blocker(lit_Undef) {}
+        Watcher(Clause* cr, Lit p) :
+            cref(cr), blocker(p) {}
+        bool operator==(const Watcher& w) const {
+            return cref == w.cref;
+        }
+        bool operator!=(const Watcher& w) const {
+            return cref != w.cref;
+        }
+    };
 
-	struct WatcherDeleted {
-		WatcherDeleted() { }
-		inline bool operator()(const Watcher& w) const {
-			return w.cref->isDeleted() == 1;
-		}
-	};
+    struct WatcherDeleted {
+        WatcherDeleted() { }
+        inline bool operator()(const Watcher& w) const {
+            return w.cref->isDeleted() == 1;
+        }
+    };
 
-	struct VarOrderLt {
-		const vector<double>& activity;
-		bool operator()(Var x, Var y) const {
-			return activity[x] > activity[y];
-		}
-		VarOrderLt(const vector<double>& act) : activity(act) {}
-	};
+    struct VarOrderLt {
+        const vector<double>& activity;
+        bool operator()(Var x, Var y) const {
+            return activity[x] > activity[y];
+        }
+        VarOrderLt(const vector<double>& act) : activity(act) {}
+    };
 
-	struct reduceDB_lt {
-	    reduceDB_lt() {
-	    }
+    struct reduceDB_lt {
+        reduceDB_lt() {
+        }
 
-	    bool operator()(Clause* x, Clause* y) {
-	//        // XMiniSat paper, alternate ordering
-	//        const uint8_t reduceOnSizeSize = 12;
-	//        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
-	//        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
-	//        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
-	        return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
-	    }
-	};
+        bool operator()(Clause* x, Clause* y) {
+    //        // XMiniSat paper, alternate ordering
+    //        const uint8_t reduceOnSizeSize = 12;
+    //        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
+    //        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
+    //        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
+            return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
+        }
+    };
 
-	ClauseAllocator allocator;
+    ClauseAllocator allocator;
 
-	// 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
+    // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, Watcher, WatcherDeleted> watches;
     OccLists<Lit, Watcher, WatcherDeleted> watchesBin;
 
@@ -376,7 +376,7 @@ protected:
     uint8_t phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
 
     // constants for memory reorganization
-	uint8_t revamp;
+    uint8_t revamp;
     bool sort_watches;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
@@ -384,25 +384,25 @@ protected:
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
-	vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
+    vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     uint32_t MYFLAG;
 
-	// Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-	// used, exept 'seen' wich is used in several places.
-	vector<char> seen;
-	vector<Lit> analyze_toclear;
-	vector<Lit> add_tmp;
+    // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
+    // used, exept 'seen' wich is used in several places.
+    vector<char> seen;
+    vector<Lit> analyze_toclear;
+    vector<Lit> add_tmp;
 
-	// Resource contraints and other interrupts
-	uint32_t conflict_budget;    // 0 means no budget.
-	uint32_t propagation_budget; // 0 means no budget.
+    // Resource contraints and other interrupts
+    uint32_t conflict_budget;    // 0 means no budget.
+    uint32_t propagation_budget; // 0 means no budget.
     void* termCallbackState;
     int (*termCallback)(void* state);
     bool asynch_interrupt;
 
-	// Variables added for incremental mode
+    // Variables added for incremental mode
     bool incremental; // Use incremental SAT Solver
-	uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
+    uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
 
     // Sonification
     SolverSonification sonification;
@@ -410,7 +410,7 @@ protected:
     // Variables for decisions
     PickBranchLitT pickBranchLitData;
 
-	// Main internal methods:
+    // Main internal methods:
     inline Clause* reason(Var x) const {
         return vardata[x].reason;
     }
@@ -429,7 +429,7 @@ protected:
             order_heap.insert(x);
     }
 
-	// Begins a new decision level
+    // Begins a new decision level
     inline void newDecisionLevel() {
         trail_lim.push_back(trail_size);
     }
@@ -464,65 +464,65 @@ protected:
 
     Lit pickBranchLit(); // Return the next decision variable.
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
-	void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
-	Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-	void cancelUntil(int level); // Backtrack until a certain level.
-	void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
-	void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-	bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
-	lbool search(); // Search for a given number of conflicts.
-	virtual void reduceDB(); // Reduce the set of learnt clauses.
-	void rebuildOrderHeap();
+    void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
+    Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+    void cancelUntil(int level); // Backtrack until a certain level.
+    void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
+    void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
+    bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
+    lbool search(); // Search for a given number of conflicts.
+    virtual void reduceDB(); // Reduce the set of learnt clauses.
+    void rebuildOrderHeap();
     void revampClausePool(uint8_t upper);
 
-	// Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-	inline void varDecayActivity() {
-	    var_inc *= (1 / var_decay);
-	}
+    // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+    inline void varDecayActivity() {
+        var_inc *= (1 / var_decay);
+    }
 
-	// Increase a variable with the current 'bump' value.
-	inline void varBumpActivity(Var v) {
-	    if (!isSelector(v)) {
-	        varBumpActivity(v, var_inc);
-	    }
-	}
+    // Increase a variable with the current 'bump' value.
+    inline void varBumpActivity(Var v) {
+        if (!isSelector(v)) {
+            varBumpActivity(v, var_inc);
+        }
+    }
 
-	inline void varBumpActivity(Var v, double inc) {
-	    if ((activity[v] += inc) > 1e100) {
-	        varRescaleActivity();
-	    }
-	    if (order_heap.inHeap(v)) {
-	        order_heap.decrease(v); // update order-heap
-	    }
-	}
+    inline void varBumpActivity(Var v, double inc) {
+        if ((activity[v] += inc) > 1e100) {
+            varRescaleActivity();
+        }
+        if (order_heap.inHeap(v)) {
+            order_heap.decrease(v); // update order-heap
+        }
+    }
 
-	void varRescaleActivity() {
+    void varRescaleActivity() {
         for (size_t i = 0; i < nVars(); i++) {
             activity[i] *= 1e-100;
         }
         var_inc *= 1e-100;
     }
 
-	inline void claDecayActivity() {
-	    cla_inc *= (1 / clause_decay);
-	}
+    inline void claDecayActivity() {
+        cla_inc *= (1 / clause_decay);
+    }
 
-	inline void claBumpActivity(Clause& c) {
-	    if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
-	        claRescaleActivity();
-	    }
-	}
+    inline void claBumpActivity(Clause& c) {
+        if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
+            claRescaleActivity();
+        }
+    }
 
-	void claRescaleActivity() {
-	    for (auto container : { clauses, learnts, learntsBin }) {
-	        for (Clause* clause : container) {
-	            clause->activity() *= 1e-20f;
-	        }
-	    }
+    void claRescaleActivity() {
+        for (auto container : { clauses, learnts, learntsBin }) {
+            for (Clause* clause : container) {
+                clause->activity() *= 1e-20f;
+            }
+        }
         cla_inc *= 1e-20;
     }
 
-	// Gives the current decisionlevel.
+    // Gives the current decisionlevel.
     inline uint32_t decisionLevel() const {
         return checked_unsigned_cast<size_t, uint32_t>(trail_lim.size());
     }
