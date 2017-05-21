@@ -112,7 +112,7 @@ static void SIGINT_exit(int signum) {
 }
 
 static void setLimits(int cpu_lim, int mem_lim) {
-#if !defined(HAVE_GETRLIMIT) || !defined(HAVE_SETRLIMIT)
+#if !defined(CANDY_HAVE_RLIMIT)
   #if defined(_MSC_VER)
     #pragma message ("Warning: setting limits not yet implemented for non-POSIX platforms")
   #else

@@ -523,9 +523,9 @@ protected:
     }
 
 	// Gives the current decisionlevel.
-	inline uint32_t decisionLevel() const {
-	    return checked_unsigned_cast<decltype(trail_lim)::size_type, uint32_t>(trail_lim.size());
-	}
+    inline uint32_t decisionLevel() const {
+        return checked_unsigned_cast<size_t, uint32_t>(trail_lim.size());
+    }
 
     inline bool withinBudget() {
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
