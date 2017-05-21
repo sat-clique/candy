@@ -100,6 +100,11 @@ option(CANDY_DISABLE_RTTI OFF "Disable RTTI and defines CANDY_HAS_NO_RTTI. Use w
 
 enable_testing()
 
+### Platform feature checks
+INCLUDE(CheckFunctionExists)
+CHECK_FUNCTION_EXISTS(getrlimit HAVE_GETRLIMIT)
+CHECK_FUNCTION_EXISTS(setrlimit HAVE_SETRLIMIT)
+
 
 ### Add doxygen targets
 add_subdirectory(doc)

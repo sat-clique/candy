@@ -112,11 +112,11 @@ static void SIGINT_exit(int signum) {
 }
 
 static void setLimits(int cpu_lim, int mem_lim) {
-#if defined(WIN32) && !defined(CYGWIN)
+#if !defined(HAVE_GETRLIMIT) || !defined(HAVE_SETRLIMIT)
   #if defined(_MSC_VER)
-    #pragma message ("Warning: setting limits not yet implemented for Win32")
+    #pragma message ("Warning: setting limits not yet implemented for non-POSIX platforms")
   #else
-    #warning "setting limits not yet implemented for Win32"
+    #warning "setting limits not yet implemented for non-POSIX platforms"
   #endif
 #else
     // Set limit on CPU-time:
