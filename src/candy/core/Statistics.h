@@ -78,15 +78,15 @@ public:
     inline void solverDecisionsInc() { ++decisions; }
     inline void solverDecisionVariablesInc() { ++dec_vars; }
     inline void solverDecisionVariablesDec() { --dec_vars; }
-    inline void solverMaxLiteralsInc(int amount) { max_literals += amount; }
-    inline void solverTotLiteralsInc(int amount) { tot_literals += amount; }
+    inline void solverMaxLiteralsInc(unsigned int amount) { max_literals += amount; }
+    inline void solverTotLiteralsInc(unsigned int amount) { tot_literals += amount; }
 #else
     inline void solverDecisionsInc() { }
     inline void solverRandomDecisionsInc() { }
     inline void solverDecisionVariablesInc() { }
     inline void solverDecisionVariablesDec() { }
-    inline void solverMaxLiteralsInc(int amount) { (void)(amount); }
-    inline void solverTotLiteralsInc(int amount) { (void)(amount); }
+    inline void solverMaxLiteralsInc(unsigned int amount) { (void)(amount); }
+    inline void solverTotLiteralsInc(unsigned int amount) { (void)(amount); }
 #endif// SOLVER_STATS
 
 #ifdef RESTART_STATS
@@ -102,15 +102,15 @@ public:
 #endif// RESTART_STATS
 
 #ifdef LEARNTS_STATS
-    inline void solverRemovedClausesInc(int amount) { nbRemovedClauses += amount; }
-    inline void solverReducedClausesInc(int amount) { nbReducedClauses += amount; }
+    inline void solverRemovedClausesInc(unsigned int amount) { nbRemovedClauses += amount; }
+    inline void solverReducedClausesInc(unsigned int amount) { nbReducedClauses += amount; }
     inline void solverReduceDBInc() { ++nbReduceDB; }
     inline void solverUnariesInc() { ++nbUn; }
     inline void solverBinariesInc() { ++nbBin; }
     inline void solverLBD2Inc() { ++nbDL2; }
 #else
-    inline void solverRemovedClausesInc(int amount) { (void)(amount); }
-    inline void solverReducedClausesInc(int amount) { (void)(amount); }
+    inline void solverRemovedClausesInc(unsigned int amount) { (void)(amount); }
+    inline void solverReducedClausesInc(unsigned int amount) { (void)(amount); }
     inline void solverReduceDBInc() { }
     inline void solverUnariesInc() { }
     inline void solverBinariesInc() { }
@@ -125,8 +125,8 @@ public:
 #else
     inline void incNBSatCalls() { }
     inline void incNBUnsatCalls() { }
-    inline void incTotalTime4Sat(int amount) { (void)(amount); }
-    inline void incTotalTime4Unsat(int amount) { (void)(amount); }
+    inline void incTotalTime4Sat(unsigned int amount) { (void)(amount); }
+    inline void incTotalTime4Unsat(unsigned int amount) { (void)(amount); }
 #endif// INCREMENTAL_STATS
 #ifdef RUNTIME_STATS
     inline void runtimeReset(std::string key) {
