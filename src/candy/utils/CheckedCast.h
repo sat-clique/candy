@@ -3,7 +3,7 @@
 
 #include <limits>
 
-#define DEBUG_CHECK_CASTS
+namespace Candy {
 
 template<typename FromType, typename ToType>
 inline ToType checked_unsignedtosigned_cast(FromType value) {
@@ -19,6 +19,8 @@ inline ToType checked_unsigned_cast(FromType value) {
     assert(value <= std::numeric_limits<ToType>::max());
 #endif
     return static_cast<ToType>(value);
+}
+
 }
 
 #endif

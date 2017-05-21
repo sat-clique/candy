@@ -80,6 +80,9 @@ option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 # Enable Static Linking
 option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 
+# Enable checked casts in debug mode
+option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
+
 # Disable RTTI and defines CANDY_HAS_NO_RTTI.
 # WARNING: Enable this only AFTER having thoroughly tested the code. In some places
 # RTTI is needed for testing (and only in places where it is also safe to use a
@@ -121,6 +124,10 @@ else()
     set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+endif()
+
+if(CANDY_ENABLE_DEBUG_CHECKEDCASTS)
+  add_definitions(-D DEBUG_CHECK_CASTS)
 endif()
 
 if(CANDY_ENABLE_LLVM_SANITIZER)
