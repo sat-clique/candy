@@ -927,7 +927,7 @@ static lbool simplifyAndPrintProblem(SolverType& S) {
     vector<Lit> assumptions;
     result = S.solve(assumptions);
     S.simplify();
-    S.printCNF();
+    S.printDIMACS();
 
     return result;
 }
