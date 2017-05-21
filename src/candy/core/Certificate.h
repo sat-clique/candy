@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Clause.h"
 #include "candy/core/SolverTypes.h"
@@ -22,14 +23,14 @@ class Clause;
 class Certificate {
 private:
     bool active;
-    std::ofstream out;
+    std::unique_ptr<std::ofstream> out;
 
     template<typename Iterator>
     void printLiterals(Iterator it, Iterator end) {
         for(; it != end; it++) {
-            out << (var(*it) + 1) * (sign(*it) ? -1 : 1) << " ";
+            *out << (var(*it) + 1) * (sign(*it) ? -1 : 1) << " ";
         }
-        out << "0\n";
+        *out << "0\n";
     }
 
 public:
@@ -42,7 +43,7 @@ public:
 
     void proof() {
         if (active) {
-            out << "0" << std::endl;
+            *out << "0" << std::endl;
         }
     }
 
@@ -56,7 +57,7 @@ public:
     template<typename Iterator>
     void removed(Iterator it, Iterator end) {
         if (active) {
-            out << "d ";
+            *out << "d ";
             printLiterals(it, end);
         }
     }
