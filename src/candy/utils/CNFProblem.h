@@ -23,6 +23,7 @@
 
 #include "candy/utils/ParseUtils.h"
 #include "candy/core/SolverTypes.h"
+#include "candy/core/Certificate.h"
 
 #include <vector>
 
@@ -31,14 +32,21 @@ namespace Candy {
 class CNFProblem {
 
   For problem;
+
+  Certificate* certificate;
+
   int maxVars = 0;
 
   int headerVars = 0;
   int headerClauses = 0;
 
 public:
+  CNFProblem() {
+      certificate = new Certificate(nullptr, false);
+  }
 
-  CNFProblem() {}
+  CNFProblem(Certificate* _certificate) : certificate(_certificate) {
+  }
 
   For& getProblem();
   const For& getProblem() const;
@@ -83,8 +91,32 @@ public:
 
   template <typename Iterator>
   inline void readClause(Iterator begin, Iterator end) {
-      maxVars = std::max(maxVars, var(*std::max_element(begin, end))+1);
-      problem.push_back(new Cl(begin, end));
+      Cl* clause = new Cl(begin, end);
+      std::sort(clause->begin(), clause->end());
+      Lit prev = lit_Undef;
+      auto insertion_point = clause->begin();
+      for (Lit lit : *clause) {
+          if (lit == ~prev) {
+              delete clause;
+              certificate->removed(begin, end);
+              return; // reject tautological clauses
+          }
+          else if (lit != prev) {
+              maxVars = std::max(maxVars, var(lit)+1);
+              prev = lit;
+              *insertion_point = lit;
+              insertion_point++;
+          }
+          else {
+              // skip redundant literals
+          }
+      }
+      if (insertion_point != clause->end()) {
+          certificate->added(clause->begin(), insertion_point);
+          certificate->removed(begin, end);
+          clause->erase(insertion_point, clause->end());
+      }
+      problem.push_back(clause);
   }
 
 
