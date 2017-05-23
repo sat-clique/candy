@@ -66,8 +66,12 @@ namespace Candy {
 
     bool containsClause(const For& formula, const Cl& clause) {
         bool found = false;
+        Cl clause1(clause.begin(), clause.end());
+        std::sort(clause1.begin(), clause1.end());
         for (auto fcl : formula) {
-            found |= (*fcl == clause); // TODO: make this independent of literal positions
+            Cl clause2(fcl->begin(), fcl->end());
+            std::sort(clause2.begin(), clause2.end());
+            found |= (clause1 == clause2);
         }
         return found;
     }
