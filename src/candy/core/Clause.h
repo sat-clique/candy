@@ -62,6 +62,14 @@ public:
         calcAbstraction();
     }
 
+    template<typename Iterator>
+    Clause(Iterator begin, Iterator end) {
+        copyLiterals(begin, end, literals);
+        length = static_cast<decltype(length)>(std::distance(begin, end));
+        header = 0; // not frozen, not deleted and not learnt; lbd=0
+        data.abstraction = 0;
+    }
+
     ~Clause();
 
     //void* operator new (std::size_t size) = delete;

@@ -51,6 +51,7 @@
 #define Glucose_Solver_h
 
 #include <vector>
+#include <unordered_map>
 #include <math.h>
 #include <string>
 #include <type_traits>
@@ -1407,12 +1408,51 @@ bool Solver<PickBranchLitT>::simplify() {
     if (remove_satisfied) { // Can be turned off.
         std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
     }
+    
+    // Remove false literals:
+//    std::unordered_map<Clause*, size_t> shrink_list;
+//    for (auto list : { clauses, learnts, learntsBin }) {
+//        for (Clause* clause : list) {
+//            auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+//            size_t size = std::distance(clause->begin(), end);
+//            if (size < clause->size()) {
+//                shrink_list[clause] = size;
+//            }
+//        }
+//    }
+//    for (auto pair : shrink_list) {
+//        Clause* clause = pair.first;
+//        size_t size = pair.second;
+//        certificate->added(clause->begin(), clause->begin() + size);
+//        removeClause(clause);
+//
+//        if (size > 1) {
+//            Clause* cr = new ((allocator.allocate(size))) Clause(clause->begin(), clause->begin() + size);
+//            cr->activity() = clause->activity();
+//            cr->setFrozen(clause->isFrozen());
+//            cr->setLearnt(clause->isLearnt());
+//            cr->setLBD(clause->getLBD());
+//            if (cr->isLearnt()) {
+//                if (cr->size() == 2) {
+//                    learntsBin.push_back(cr);
+//                } else {
+//                    learnts.push_back(cr);
+//                }
+//            } else {
+//                clauses.push_back(cr);
+//            }
+//        } else {
+//            uncheckedEnqueue(clause->first());
+//        }
+//    }
+
+    // Cleanup:
     watches.cleanAll();
     watchesBin.cleanAll();
     freeMarkedClauses(learnts);
     freeMarkedClauses(learntsBin);
     freeMarkedClauses(clauses);
-    
+
     rebuildOrderHeap();
     
     Statistics::getInstance().runtimeStop("Runtime Simplify");
