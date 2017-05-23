@@ -733,13 +733,13 @@ void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
 }
 
 template<class PickBranchLitT>
-bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
+bool Solver<PickBranchLitT>::addClause_(vector<Lit>& clause) {
     assert(decisionLevel() == 0);
     if (!ok) {
         return false;
     }
 
-    vector<Lit> oc(ps.begin(), ps.end());
+    vector<Lit> ps(clause.begin(), clause.end());
 
     uint_fast16_t i, j;
     for (i = j = 0; i < ps.size(); i++) {
@@ -752,9 +752,9 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
     }
     ps.resize(j);
 
-    if (ps.size() < oc.size()) {
+    if (ps.size() < clause.size()) {
         certificate->added(ps.begin(), ps.end());
-        certificate->removed(oc.begin(), oc.end());
+        certificate->removed(clause.begin(), clause.end());
     }
 
     if (ps.size() == 0) {
