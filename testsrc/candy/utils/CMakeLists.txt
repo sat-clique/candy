@@ -1,5 +1,6 @@
 add_executable(utils_tests
     StringUtilsTests.cc
+    CNFProblemTests.cc
 )
 
 target_include_directories(utils_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
