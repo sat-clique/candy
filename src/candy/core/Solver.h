@@ -256,15 +256,24 @@ public:
         this->termCallback = termCallback;
     }
 
+    void setCertificate(Certificate* certificate) {
+        this->certificate = certificate;
+    }
+
+    void setVerbosities(int verbEveryConflicts, int verbosity) {
+        this->verbEveryConflicts = verbEveryConflicts;
+        this->verbosity = verbosity;
+    }
+
     // Certified UNSAT (Thanks to Marijn Heule)
-    std::unique_ptr<Certificate> certificate;
+    Certificate* certificate;
 
     // a few stats are used for heuristics control, keep them here
     uint64_t nConflicts, nPropagations, nLiterals;
 
     // Control verbosity
-    uint16_t verbEveryConflicts;
-    uint8_t verbosity;
+    int verbEveryConflicts;
+    int verbosity;
 
     // Extra results: (read-only member variable)
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
@@ -720,19 +729,52 @@ void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
     }
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
+//        if (!ok) {
+//            return;
+//        }
+//
+//        vector<Lit> ps(clause->begin(), clause->end());
+//
+//        uint_fast16_t i, j;
+//        for (i = j = 0; i < ps.size(); i++) {
+//            if (value(ps[i]) == l_True) {
+//                return;
+//            }
+//            else if (value(ps[i]) != l_False) {
+//                ps[j++] = ps[i];
+//            }
+//        }
+//        ps.resize(j);
+//
+//        if (ps.size() < clause->size()) {
+//            certificate->added(ps.begin(), ps.end());
+//            certificate->removed(clause->begin(), clause->end());
+//        }
+//
+//        if (ps.size() == 0) {
+//            ok = false;
+//        } else if (ps.size() == 1) {
+//            uncheckedEnqueue(ps[0]);
+//            ok = (propagate() == nullptr);
+//        } else {
+//            Clause* cr = new (allocator.allocate(checked_unsigned_cast<std::remove_reference<decltype(ps)>::type::size_type, uint32_t>(ps.size()))) Clause(ps);
+//            clauses.push_back(cr);
+//            attachClause(cr);
+//        }
     }
 }
 
 template<class PickBranchLitT>
 bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
     assert(decisionLevel() == 0);
-    if (!ok)
+    if (!ok) {
         return false;
+    }
     
     std::sort(ps.begin(), ps.end());
-    
+
     vector<Lit> oc(ps.begin(), ps.end());
-    
+
     Lit p;
     uint_fast16_t i, j;
     for (i = j = 0, p = lit_Undef; i < ps.size(); i++) {
@@ -749,7 +791,7 @@ bool Solver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
         certificate->added(ps.begin(), ps.end());
         certificate->removed(oc.begin(), oc.end());
     }
-    
+
     if (ps.size() == 0) {
         return ok = false;
     } else if (ps.size() == 1) {

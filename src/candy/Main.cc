@@ -897,18 +897,6 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     };
 }
 
-/**
- * Configures the SAT solver \p S.
- *
- * TODO: document parameters
- */
-template<class SolverType>
-static void configureSolver(SolverType& S, const GlucoseArguments& args) {
-    S.verbosity = args.verb;
-    S.verbEveryConflicts = args.vv;
-    S.certificate = std::unique_ptr<Certificate>(new Certificate(args.opt_certified_file, args.do_certified));
-}
-
 static void waitForUserInput() {
     std::cout << "Press enter to continue." << std::endl;
     std::getchar();
@@ -936,9 +924,9 @@ static lbool simplifyAndPrintProblem(SolverType& S) {
 template<class SolverType = DefaultSimpSolver>
 int executeSolver(const GlucoseArguments& args,
                   SolverType& S,
-                  CNFProblem& dimacs) {
+                  CNFProblem& problem) {
     Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
-    S.addClauses(dimacs);
+    S.addClauses(problem);
     Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
     
     if (S.verbosity > 0) {
@@ -956,7 +944,7 @@ int executeSolver(const GlucoseArguments& args,
     } else if (!args.rsarArgs.useRSAR) {
         result = solve(S, args.do_preprocess);
     } else {
-        result = solveWithRSAR(S, dimacs, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
+        result = solveWithRSAR(S, problem, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
     }
     
     if (!args.do_simp_out) {
@@ -979,25 +967,30 @@ int solve(const GlucoseArguments& args,
 
         Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
 
-        auto S = backported_std::make_unique<SolverType>();
-        configureSolver(*S, args);
+        Certificate* certificate = new Certificate(args.opt_certified_file, args.do_certified);
 
-        Candy::CNFProblem dimacs;
+        Candy::CNFProblem problem(certificate);
         if (args.read_from_stdin) {
             printf("c Reading from standard input... Use '--help' for help.\n");
-            if (!dimacs.readDimacsFromStdout())
+            if (!problem.readDimacsFromStdout()) {
                 return 1;
+            }
         } else {
-            if (!dimacs.readDimacsFromFile(args.input_filename))
+            if (!problem.readDimacsFromFile(args.input_filename)) {
                 return 1;
+            }
         }
+
+        auto S = backported_std::make_unique<SolverType>();
+        S->setVerbosities(args.verb, args.vv);
+        S->setCertificate(certificate);
         
         bool fallBackToUnmodifiedCandy = false;
         std::unique_ptr<DefaultSimpSolver> fallbackSolver{};
         
         if (preprocessingHook) {
             try {
-                preprocessingHook(*S, dimacs);
+                preprocessingHook(*S, problem);
             }
             catch(UnsuitableProblemException& e) {
                 std::cout << "c Aborting RSIL: " << e.what() << std::endl;
@@ -1005,22 +998,23 @@ int solve(const GlucoseArguments& args,
                 fallBackToUnmodifiedCandy = true;
                 S.reset(nullptr);
                 fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
-                configureSolver(*fallbackSolver, args);
+                fallbackSolver->setVerbosities(args.verb, args.vv);
+                fallbackSolver->setCertificate(certificate);
             }
         }
 
         Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
 
         if (args.do_gaterecognition) {
-            benchmarkGateRecognition(dimacs, args.gateRecognitionArgs);
+            benchmarkGateRecognition(problem, args.gateRecognitionArgs);
             return 0;
         }
         
         if (!fallBackToUnmodifiedCandy) {
-            return executeSolver(args, *S, dimacs);
+            return executeSolver(args, *S, problem);
         }
         else {
-            return executeSolver(args, *fallbackSolver, dimacs);
+            return executeSolver(args, *fallbackSolver, problem);
         }
         
     } catch (std::bad_alloc& ba) {
