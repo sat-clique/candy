@@ -63,7 +63,7 @@ cmake_minimum_required(VERSION 3.5)
 ### Options
 
 # Enable LLVM coverage
-option(CANDY_ENABLE_LLVM_COVERAGE "Enable coverage analysis" OFF)
+option(CANDY_ENABLE_COVERAGE "Enable coverage analysis" OFF)
 
 # Enable LLVM address sanitizer
 option(CANDY_ENABLE_LLVM_SANITIZER "Enable LLVM address sanitizer" OFF)
@@ -127,6 +127,15 @@ endif()
 
 if(CANDY_ENABLE_DEBUG_CHECKEDCASTS)
   add_definitions(-D DEBUG_CHECK_CASTS)
+endif()
+
+if(CANDY_ENABLE_COVERAGE)
+  if(MSVC)
+    message(FATAL_ERROR "Coverage not supported for MSVC.")
+  endif()
+  SET(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
+  SET(CMAKE_EXE_LINKER_FLAGS_COVERAGE "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
+  SET(CMAKE_SHARED_LINKER_FLAGS_COVERAGE "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} --coverage")
 endif()
 
 if(CANDY_ENABLE_LLVM_SANITIZER)
