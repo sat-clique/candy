@@ -79,7 +79,7 @@ public:
 
     // Problem specification:
     virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
-    virtual bool addClause_(vector<Lit>& ps);
+
     bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
     virtual lbool solve();
@@ -106,20 +106,6 @@ public:
         this->rebuildOrderHeap();
     }
 
-    inline bool addClause(const vector<Lit>& ps) {
-        this->add_tmp.clear();
-        this->add_tmp.insert(this->add_tmp.end(),
-                                               ps.begin(), ps.end());
-        return addClause_(this->add_tmp);
-    }
-
-    inline bool addClause(std::initializer_list<Lit> lits) {
-        this->add_tmp.clear();
-        this->add_tmp.insert(this->add_tmp.end(),
-                                               lits.begin(), lits.end());
-        return addClause_(this->add_tmp);
-    }
-
     // If a variable is frozen it will not be eliminated
     inline void setFrozen(Var v, bool b) {
         frozen[v] = (char) b;
@@ -134,15 +120,13 @@ public:
 
     inline lbool solve(std::initializer_list<Lit> assumps) {
         this->assumptions.clear();
-        this->assumptions.insert(this->assumptions.end(),
-                                                   assumps.begin(), assumps.end());
+        this->assumptions.insert(this->assumptions.end(), assumps.begin(), assumps.end());
         return solve();
     }
 
     inline lbool solve(const std::vector<Lit>& assumps) {
         this->assumptions.clear();
-        this->assumptions.insert(this->assumptions.end(),
-                                                   assumps.begin(), assumps.end());
+        this->assumptions.insert(this->assumptions.end(), assumps.begin(), assumps.end());
         return solve();
     }
 
@@ -204,6 +188,9 @@ protected:
         }
     }
 
+    virtual void attachClause(Clause* cr); // Attach a clause to watcher lists.
+    virtual void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
+
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
     void gatherTouchedClauses();
@@ -213,7 +200,6 @@ protected:
     bool eliminateVar(Var v);
     void extendModel();
 
-    void removeClause(Clause* cr);
     bool strengthenClause(Clause* cr, Lit l);
     bool implied(const vector<Lit>& c);
 };
@@ -307,29 +293,12 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 }
 
 template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
-    for (unsigned int i = 0; i < ps.size(); i++) {
-        assert(!isEliminated(var(ps[i])));
+void SimpSolver<PickBranchLitT>::attachClause(Clause* cr) {
+    for (Lit lit : *cr) {
+        assert(!isEliminated(var(lit)));
     }
 
-    size_t nclauses = this->clauses.size();
-    
-    if (use_rcheck && implied(ps)) {
-        return true;
-    }
-    
-    if (!Solver<PickBranchLitT>::addClause_(ps)) {
-        return false;
-    }
-    
-    if (preprocessing_enabled && this->clauses.size() == nclauses + 1) {
-        Clause* cr = this->clauses.back();
-        // NOTE: the clause is added to the queue immediately and then
-        // again during 'gatherTouchedClauses()'. If nothing happens
-        // in between, it will only be checked once. Otherwise, it may
-        // be checked twice unnecessarily. This is an unfortunate
-        // consequence of how backward subsumption is used to mimic
-        // forward subsumption.
+    if (preprocessing_enabled) {
         subsumption_queue.push_back(cr);
         for (Lit lit : *cr) {
             occurs[var(lit)].push_back(cr);
@@ -341,12 +310,12 @@ bool SimpSolver<PickBranchLitT>::addClause_(vector<Lit>& ps) {
             }
         }
     }
-    
-    return true;
+
+    Solver<PickBranchLitT>::attachClause(cr);
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::removeClause(Clause* cr) {
+void SimpSolver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
     if (preprocessing_enabled) {
         for (Lit lit : *cr) {
             n_occ[toInt(lit)]--;
@@ -354,7 +323,7 @@ void SimpSolver<PickBranchLitT>::removeClause(Clause* cr) {
             occurs.smudge(var(lit));
         }
     }
-    Solver<PickBranchLitT>::removeClause(cr);
+    Solver<PickBranchLitT>::detachClause(cr, strict);
 }
 
 template<class PickBranchLitT>
@@ -558,7 +527,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool verbose) {
                 
                 if (l == lit_Undef) {
                     subsumed++;
-                    removeClause(csi);
+                    this->removeClause(csi);
                 }
                 else if (l != lit_Error) {
                     deleted_literals++;
@@ -682,7 +651,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     std::vector<Lit>& resolvent = this->add_tmp;
     for (Clause* pc : pos) {
         for (Clause* nc : neg) {
-            if (merge(*pc, *nc, v, resolvent) && !addClause_(resolvent)) {
+            if (merge(*pc, *nc, v, resolvent) && !this->addClause(resolvent)) {
                 return false;
             } else {
                 this->certificate->added(resolvent.begin(), resolvent.end());
@@ -691,7 +660,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     }
     
     for (Clause* c : cls) {
-        removeClause(c);
+        this->removeClause(c);
     }
     
     // free references to eliminated variable
@@ -721,12 +690,12 @@ bool SimpSolver<PickBranchLitT>::substitute(Var v, Lit x) {
         for (Lit lit : *c) {
             this->add_tmp.push_back(var(lit) == v ? x ^ sign(lit) : lit);
         }
-        if (!addClause_(this->add_tmp)) {
+        if (!addClause(this->add_tmp)) {
             return this->ok = false;
         } else {
             this->certificate->added(this->add_tmp.begin(), this->add_tmp.end());
         }
-        removeClause(c);
+        this->removeClause(c);
     }
     
     return true;
@@ -759,22 +728,15 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool turn_off_elim) {
     else if (!preprocessing_enabled) {
         return true;
     }
-    
+
+    occurs.cleanAll();
+
     if (this->clauses.size() > 4800000) {
         printf("c Too many clauses... No preprocessing\n");
         goto cleanup;
     }
     
     // Assumptions must be temporarily frozen to run variable elimination:
-//    for (Lit lit : this->assumptions) {
-//        Var v = var(lit);
-//        assert(!isEliminated(v));
-//        if (!frozen[v]) { // Freeze and store.
-//            setFrozen(v, true);
-//            extra_frozen.push_back(v);
-//        }
-//    }
-
     if (this->isIncremental()) {
         for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < Solver<PickBranchLitT>::nVars(); v++) {
             assert(!isEliminated(v));
