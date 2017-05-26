@@ -1580,15 +1580,9 @@ lbool Solver<PickBranchLitT>::search() {
             if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts)))) {
                 lbdQueue.fastclear();
                 
-                if (incremental) { // DO NOT BACKTRACK UNTIL 0.. USELESS
-                    size_t bt = (decisionLevel() < assumptions.size()) ? decisionLevel() : assumptions.size();
-                    cancelUntil(checked_unsignedtosigned_cast<size_t, int>(bt));
-                } else {
-                    cancelUntil(0);
-                }
+                cancelUntil(0);
                 
                 if (new_unary) {
-                    cancelUntil(0);
                     if (!simplify()) {
                         return l_False;
                     }
@@ -1598,7 +1592,6 @@ lbool Solver<PickBranchLitT>::search() {
                 // every restart after reduce-db
                 if (reduced) {
                     if (revamp > 2) {
-                        cancelUntil(0);
                         revampClausePool(revamp);
                     }
                     

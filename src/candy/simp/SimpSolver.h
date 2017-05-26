@@ -294,9 +294,11 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::attachClause(Clause* cr) {
+#ifndef NDEBUG
     for (Lit lit : *cr) {
         assert(!isEliminated(var(lit)));
     }
+#endif
 
     if (preprocessing_enabled) {
         subsumption_queue.push_back(cr);
