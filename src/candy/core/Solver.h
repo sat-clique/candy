@@ -1421,6 +1421,18 @@ bool Solver<PickBranchLitT>::simplify() {
                 if (size > 1) {
                     shrink_list[clause] = size;
                 }
+                else {
+                    Lit p = clause->first();
+                    if (value(p) == l_True) {
+                        assert(vardata[var(p)].reason == nullptr);
+                        assert(vardata[var(p)].level == 0);
+                    }
+                    else {
+                        assert(value(p) == l_Undef);
+                        uncheckedEnqueue(p);
+//                        propagate();
+                    }
+                }
             }
         }
     }
@@ -1457,7 +1469,7 @@ bool Solver<PickBranchLitT>::simplify() {
     
     Statistics::getInstance().runtimeStop("Runtime Simplify");
 
-    return true;
+    return ok = (propagate() == nullptr);
 }
 
 /**************************************************************************************************
