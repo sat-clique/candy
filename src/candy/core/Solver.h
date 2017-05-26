@@ -464,7 +464,7 @@ protected:
 
     template <typename Iterator>
     uint_fast16_t computeLBD(Iterator it, Iterator end);
-    void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
+    bool minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
     // Test if fact 'p' contradicts current state, enqueue otherwise.
     // NOTE: enqueue does not set the ok flag! (only public methods do)
@@ -477,7 +477,7 @@ protected:
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
     Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
     void cancelUntil(int level); // Backtrack until a certain level.
-    void analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &nblevels); // (bt = backtrack)
+    void analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &nblevels);
     void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
     lbool search(); // Search for a given number of conflicts.
@@ -861,57 +861,31 @@ inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator en
 }
 
 /******************************************************************
- * Minimisation with binary resolution
+ * Minimisation with binary clauses of the asserting clause
  ******************************************************************/
 template <class PickBranchLitT>
-void Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
-    uint_fast16_t lbd = computeLBD(out_learnt.begin(), out_learnt.end());
-    
-    if (lbd <= lbLBDMinimizingClause) {
-        MYFLAG++;
-        
-        for (auto it = out_learnt.begin() + 1; it != out_learnt.end(); it++) {
-            permDiff[var(*it)] = MYFLAG;
-        }
-        
-        uint_fast16_t nb = 0;
-        for (Watcher w : watchesBin[~out_learnt[0]]) {
-            if (permDiff[var(w.blocker)] == MYFLAG && value(w.blocker) == l_True) {
-                nb++;
-                permDiff[var(w.blocker)] = MYFLAG - 1;
-            }
-        }
-        if (nb > 0) {
-            Statistics::getInstance().solverReducedClausesInc(nb);
-            uint_fast16_t l = checked_unsigned_cast<size_t, uint_fast16_t>(out_learnt.size() - 1);
-            for (uint_fast16_t i = 1; i < out_learnt.size() - nb; i++) {
-                if (permDiff[var(out_learnt[i])] != MYFLAG) {
-                    std::swap(out_learnt[i], out_learnt[l]);
-                    l--;
-                    i--;
-                }
-            }
-            out_learnt.resize(out_learnt.size() - nb);
-        }
-    }
-}
+bool Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
+    MYFLAG++;
 
-// Revert to the state at given level (keeping all assignment at 'level' but not beyond).
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::cancelUntil(int level) {
-    if ((int)decisionLevel() > level) {
-        for (int c = trail_size - 1; c >= (int)trail_lim[level]; c--) {
-            Var x = var(trail[c]);
-            assigns[x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > (int)trail_lim.back())) {
-                polarity[x] = sign(trail[c]);
-            }
-            insertVarOrder(x);
-        }
-        qhead = trail_lim[level];
-        trail_size = trail_lim[level];
-        trail_lim.resize(level);
+    for (auto it = out_learnt.begin()+1; it != out_learnt.end(); it++) {
+        permDiff[var(*it)] = MYFLAG;
     }
+    
+    bool minimize = false;
+    for (Watcher w : watchesBin[~out_learnt[0]]) {
+        if (permDiff[var(w.blocker)] == MYFLAG && value(w.blocker) == l_True) {
+            minimize = true;
+            permDiff[var(w.blocker)] = MYFLAG - 1;
+        }
+    }
+
+    if (minimize) {
+        auto end = std::remove_if(out_learnt.begin()+1, out_learnt.end(), [this] (Lit lit) { return permDiff[var(lit)] != MYFLAG; } );
+        Statistics::getInstance().solverReducedClausesInc(std::distance(end, out_learnt.end()));
+        out_learnt.erase(end, out_learnt.end());
+    }
+
+    return minimize;
 }
 
 /**************************************************************************************************
@@ -932,7 +906,7 @@ void Solver<PickBranchLitT>::cancelUntil(int level) {
  *
  ***************************************************************************************************/
 template <class PickBranchLitT>
-void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int& out_btlevel, uint_fast16_t &lbd) {
+void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &lbd) {
     int pathC = 0;
     Lit asslit = lit_Undef;
     vector<Lit> selectors;
@@ -958,10 +932,10 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
             uint_fast16_t nblevels = computeLBD(c.begin(), c.end());
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
+                    // seems to be interesting : keep it for the next round
                     c.setFrozen(true);
                 }
-                // seems to be interesting : keep it for the next round
-                c.setLBD(nblevels); // Update it
+                c.setLBD(nblevels);
             }
         }
         
@@ -1018,34 +992,22 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
                              return reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
                          });
     out_learnt.erase(end, out_learnt.end());
+
+    // clear seen[]
+    for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
     
     assert(out_learnt[0] == ~asslit);
+
+    lbd = computeLBD(out_learnt.begin(), out_learnt.end() - selectors.size());
+    if (lbd <= lbLBDMinimizingClause && out_learnt.size() <= lbSizeMinimizingClause) {
+        bool minimized = minimisationWithBinaryResolution(out_learnt);
+        if (minimized) {
+            lbd = computeLBD(out_learnt.begin(), out_learnt.end() - selectors.size());
+        }
+    }
     
     Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
-    
-    /* Minimisation with binary clauses of the asserting clause */
-    if (!incremental && out_learnt.size() <= lbSizeMinimizingClause) {
-        minimisationWithBinaryResolution(out_learnt);
-    }
-    
-    // Find correct backtrack level:
-    if (out_learnt.size() == 1) {
-        out_btlevel = 0;
-    }
-    else {
-        int max_i = 1;
-        // Find the first literal assigned at the next-highest level:
-        for (uint_fast16_t i = 2; i < out_learnt.size(); i++)
-            if (level(var(out_learnt[i])) > level(var(out_learnt[max_i])))
-                max_i = i;
-        // Swap-in this literal at index 1:
-        out_btlevel = level(var(out_learnt[max_i]));
-        std::swap(out_learnt[max_i], out_learnt[1]);
-    }
-    
-    // Compute LBD
-    lbd = computeLBD(out_learnt.begin(), out_learnt.end() - selectors.size());
-    
+
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
     if (lastDecisionLevel.size() > 0) {
         for (Lit lit : lastDecisionLevel) {
@@ -1054,9 +1016,6 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, int
         }
         lastDecisionLevel.clear();
     }
-
-    // clear seen[]
-    for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
 }
 
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
@@ -1135,6 +1094,24 @@ void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
     }
     
     seen[var(p)] = 0;
+}
+
+// Revert to the state at given level (keeping all assignment at 'level' but not beyond).
+template <class PickBranchLitT>
+void Solver<PickBranchLitT>::cancelUntil(int level) {
+    if ((int)decisionLevel() > level) {
+        for (int c = trail_size - 1; c >= (int)trail_lim[level]; c--) {
+            Var x = var(trail[c]);
+            assigns[x] = l_Undef;
+            if (phase_saving > 1 || ((phase_saving == 1) && c > (int)trail_lim.back())) {
+                polarity[x] = sign(trail[c]);
+            }
+            insertVarOrder(x);
+        }
+        qhead = trail_lim[level];
+        trail_size = trail_lim[level];
+        trail_lim.resize(level);
+    }
 }
 
 template <class PickBranchLitT>
@@ -1489,7 +1466,6 @@ template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::search() {
     assert(ok);
     
-    int backtrack_level;
     vector<Lit> learnt_clause;
     uint_fast16_t nblevels;
     bool blocked = false;
@@ -1538,25 +1514,37 @@ lbool Solver<PickBranchLitT>::search() {
             
             learnt_clause.clear();
             
-            analyze(confl, learnt_clause, backtrack_level, nblevels);
+            analyze(confl, learnt_clause, nblevels);
             
             sonification.learntSize(static_cast<int>(learnt_clause.size()));
-            
+
+            if (!isSelector(learnt_clause.back())) {
+                certificate->added(learnt_clause.begin(), learnt_clause.end());
+            }
+
             lbdQueue.push(nblevels);
             sumLBD += nblevels;
-            
-            cancelUntil(backtrack_level);
-            
-            certificate->added(learnt_clause.begin(), learnt_clause.end());
-            
+
             if (learnt_clause.size() == 1) {
+                cancelUntil(0);
                 uncheckedEnqueue(learnt_clause[0]);
                 new_unary = true;
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
+                // Find correct backtrack level:
+                int max_i = 1;
+                // Find the first literal assigned at the next-highest level:
+                for (uint_fast16_t i = 2; i < learnt_clause.size(); i++)
+                    if (level(var(learnt_clause[i])) > level(var(learnt_clause[max_i])))
+                        max_i = i;
+                // Swap-in this literal at index 1:
+                std::swap(learnt_clause[max_i], learnt_clause[1]);
+
+                cancelUntil(level(var(learnt_clause[1])));
+
                 uint32_t clauseLength = checked_unsigned_cast<decltype(learnt_clause)::size_type, uint32_t>(learnt_clause.size());
-                Clause* cr = new ((allocator.allocate(clauseLength))) Clause(learnt_clause, nblevels);
+                Clause* cr = new (allocator.allocate(clauseLength)) Clause(learnt_clause, nblevels);
 
                 if (nblevels <= 2) {
                     Statistics::getInstance().solverLBD2Inc();
@@ -1715,7 +1703,18 @@ lbool Solver<PickBranchLitT>::solve() {
         Statistics::getInstance().incNBUnsatCalls();
         Statistics::getInstance().incTotalTime4Unsat(static_cast<unsigned int>(finalTime - curTime));
         
-        certificate->proof();
+        if (!incremental) {
+            certificate->proof();
+        }
+        else {
+            // check if selectors are used in final conflict
+            vector<Lit> finalConflict;
+            analyzeFinal(trail[trail_size-1], finalConflict);
+            auto pos = find_if(finalConflict.begin(), finalConflict.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
+            if (pos == finalConflict.end()) {
+                certificate->proof();
+            }
+        }
         
         if (conflict.size() == 0) {
             ok = false;
