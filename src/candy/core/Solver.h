@@ -161,7 +161,7 @@ public:
     }
 
     // Solving:
-    bool simplify(); // Removes already satisfied clauses.
+    bool simplify(); // Removes already satisfied clauses and false literals
 
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
 
@@ -1388,11 +1388,12 @@ bool Solver<PickBranchLitT>::simplify() {
     std::unordered_map<Clause*, size_t> shrink_list;
     for (auto list : { clauses, learnts, learntsBin }) {
         for (Clause* clause : list) if (!clause->isDeleted()) {
-            auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
-            size_t size = std::distance(clause->begin(), end);
-            if (size < clause->size()) {
-                certificate->added(clause->begin(), clause->begin() + size);
+            auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+            if (pos != clause->end()) {
                 this->removeClause(clause);
+                auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+                certificate->added(clause->begin(), end);
+                size_t size = std::distance(clause->begin(), end);
                 if (size > 1) {
                     shrink_list[clause] = size;
                 }
