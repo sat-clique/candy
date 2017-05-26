@@ -1430,11 +1430,13 @@ bool Solver<PickBranchLitT>::simplify() {
                     else {
                         assert(value(p) == l_Undef);
                         uncheckedEnqueue(p);
-//                        propagate();
+                        ok = (propagate() == nullptr);
                     }
                 }
             }
+            if (!ok) break;
         }
+        if (!ok) break;
     }
 
     for (auto pair : shrink_list) {
@@ -1469,7 +1471,7 @@ bool Solver<PickBranchLitT>::simplify() {
     
     Statistics::getInstance().runtimeStop("Runtime Simplify");
 
-    return ok = (propagate() == nullptr);
+    return ok;
 }
 
 /**************************************************************************************************
