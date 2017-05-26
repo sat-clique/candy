@@ -750,8 +750,17 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
     }
     else if (size == 1) {
         new_unary = true;
-        uncheckedEnqueue(*begin);
-        return ok = (propagate() == nullptr);
+        if (value(*begin) == l_Undef) {
+            uncheckedEnqueue(*begin);
+            return ok = (propagate() == nullptr);
+        }
+        else if (value(*begin) == l_True) {
+            vardata[var(*begin)].reason = nullptr;
+            return true;
+        }
+        else {
+            return ok = false;
+        }
     }
     else {
         Clause* cr = new (allocator.allocate(size)) Clause(begin, end);
@@ -1332,30 +1341,19 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     }
     trail_size = 0;
 
-    // detach them
-    for (Clause* c : clauses) {
-        if (c->size() > 2 && c->size() <= upper) {
-            assert(!locked(c)); assert(!c->isDeleted());
-            coreDetach(c, true);
+    // detach and remove clauses
+    for (auto list : { &clauses, &learnts }) {
+        for (Clause* c : *list) {
+            if (c->size() > 2 && c->size() <= upper) {
+                assert(!locked(c)); assert(!c->isDeleted());
+                coreDetach(c, true);
+            }
         }
+        list->erase(std::remove_if(list->begin(), list->end(), [this,upper](Clause* c) {
+                return (c->size() > 2 && c->size() <= upper); } ), list->end());
     }
     
-    for (Clause* c : learnts) {
-        assert(c->size() > 2); // binaries are in learntsBin
-        if (c->size() <= upper) {
-            assert(!locked(c)); assert(!c->isDeleted());
-            coreDetach(c, true);
-        }
-    }
-    
-    // remove them
-    clauses.erase(std::remove_if(clauses.begin(), clauses.end(), [this,upper](Clause* c) {
-        return (c->size() > 2 && c->size() <= upper); } ), clauses.end());
-    
-    learnts.erase(std::remove_if(learnts.begin(), learnts.end(), [this,upper](Clause* c) {
-        return (c->size() > 2 && c->size() <= upper); } ), learnts.end());
-    
-    // revamp  and reattach them
+    // revamp and re-attach clauses
     for (uint_fast8_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = allocator.revampPages(k);
         for (Clause* clause : revamped) {
@@ -1424,8 +1422,8 @@ bool Solver<PickBranchLitT>::simplify() {
                 else {
                     Lit p = clause->first();
                     if (value(p) == l_True) {
-                        assert(vardata[var(p)].reason == nullptr);
-                        assert(vardata[var(p)].level == 0);
+                        vardata[var(p)].reason = nullptr;
+                        vardata[var(p)].level = 0;
                     }
                     else {
                         assert(value(p) == l_Undef);
