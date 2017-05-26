@@ -1194,7 +1194,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 continue;
             }
 
-            if (decisionLevel() <= assumptions.size()) { // INCREMENTAL MODE
+            if (decisionLevel() < assumptions.size()) { // INCREMENTAL MODE
                 Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
                 for (uint_fast16_t k = 2; k < c.size(); k++) {
