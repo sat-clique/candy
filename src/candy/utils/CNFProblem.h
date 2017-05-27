@@ -64,6 +64,8 @@ public:
       return maxVars-1;
   }
 
+  std::vector<double> getLiteralRelativeOccurrences();
+
   bool readDimacsFromStdout();
   bool readDimacsFromFile(const char* filename);
 

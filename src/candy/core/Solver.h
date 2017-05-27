@@ -127,7 +127,7 @@ public:
     void initializePickBranchLit(const typename PickBranchLitT::Parameters& params);
     
     // Add a new variable with parameters specifying variable mode.
-    virtual Var newVar(bool polarity = true, bool dvar = true);
+    virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0);
 
     // Add clauses to the solver
     void addClauses(CNFProblem dimacs);
@@ -386,6 +386,7 @@ protected:
     // constants for memory reorganization
     uint8_t revamp;
     bool sort_watches;
+    bool sort_variables;
 
     bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
@@ -587,6 +588,7 @@ namespace SolverOptions {
     
     extern IntOption opt_revamp;
     extern BoolOption opt_sort_watches;
+    extern BoolOption opt_sort_variables;
 }
 
 template<class PickBranchLitT>
@@ -629,7 +631,9 @@ Solver<PickBranchLitT>::Solver() :
     // phase saving
     phase_saving(SolverOptions::opt_phase_saving),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp), sort_watches(SolverOptions::opt_sort_watches),
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
     // simpdb
     remove_satisfied(true),
     new_unary(false),
@@ -694,7 +698,7 @@ bool Solver<PickBranchLitT>::isIncremental() {
  * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
  ***/
 template<class PickBranchLitT>
-Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar) {
+Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     int v = static_cast<int>(nVars());
     watches.init(mkLit(v, false));
     watches.init(mkLit(v, true));
@@ -702,7 +706,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar) {
     watchesBin.init(mkLit(v, true));
     assigns.push_back(l_Undef);
     vardata.emplace_back();
-    activity.push_back(0);
+    activity.push_back(act);
     seen.push_back(0);
     permDiff.push_back(0);
     polarity.push_back(sign);
@@ -715,6 +719,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
     vector<vector<Lit>*>& problem = dimacs.getProblem();
+    vector<double> occ = dimacs.getLiteralRelativeOccurrences();
     if ((size_t)dimacs.nVars() > nVars()) {
         assigns.reserve(dimacs.nVars());
         vardata.reserve(dimacs.nVars());
@@ -725,7 +730,11 @@ void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
         decision.reserve(dimacs.nVars());
         trail.resize(dimacs.nVars());
         for (int i = nVars(); i < dimacs.nVars(); i++) {
-            newVar();
+            if (sort_variables) {
+                newVar(occ[mkLit(i, true)] > occ[mkLit(i, false)], true, occ[mkLit(i, true)] + occ[mkLit(i, false)]);
+            } else {
+                newVar();
+            }
         }
     }
     for (vector<Lit>* clause : problem) {
