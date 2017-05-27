@@ -35,6 +35,7 @@
 #include <set>
 
 #include <climits>
+#include <chrono>
 
 #include "candy/core/SolverTypes.h"
 #include "candy/utils/Runtime.h"
@@ -72,7 +73,8 @@ public:
     GateAnalyzer(CNFProblem& dimacs, int tries = 0,
             bool patterns = true, bool semantic = true, bool holistic = false,
             bool lookahead = false, bool intensify = true, int lookahead_threshold = 10,
-            unsigned int conflict_budget = 0, unsigned int timeout = 0);
+            unsigned int conflict_budget = 0,
+            std::chrono::milliseconds timeout = std::chrono::milliseconds{0});
     ~GateAnalyzer();
 
     // main analysis routine

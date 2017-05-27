@@ -28,6 +28,7 @@
 #define X_E8029478_2FCD_4B07_9B47_58F51AA1C2FE_RANDOMSIMULATOR_H
 
 #include <memory>
+#include <chrono>
 
 #include "Conjectures.h"
 
@@ -96,7 +97,7 @@ namespace Candy {
          *
          * \param timeLimit CPU time limit in seconds. If timeLimit == -1, no time limit is used.
          */
-        virtual Conjectures run(unsigned int nRounds, int timeLimit) = 0;
+        virtual Conjectures run(unsigned int nRounds, std::chrono::milliseconds timeLimit) = 0;
         
         /**
          * Performs random simulation until the random simulator heuristically determines

@@ -1676,7 +1676,7 @@ lbool Solver<PickBranchLitT>::solve() {
         return l_False;
     }
     
-    double curTime = Glucose::cpuTime();
+    auto curTime = Glucose::cpuTime();
     
     sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
@@ -1707,11 +1707,11 @@ lbool Solver<PickBranchLitT>::solve() {
         status = search();
     }
     
-    double finalTime = Glucose::cpuTime();
+    auto finalTime = Glucose::cpuTime();
     
     if (status == l_False) {
         Statistics::getInstance().incNBUnsatCalls();
-        Statistics::getInstance().incTotalTime4Unsat(static_cast<unsigned int>(finalTime - curTime));
+        Statistics::getInstance().incTotalTime4Unsat(finalTime - curTime);
         
         if (!incremental) {
             certificate->proof();
@@ -1734,7 +1734,7 @@ lbool Solver<PickBranchLitT>::solve() {
     }
     else if (status == l_True) {
         Statistics::getInstance().incNBSatCalls();
-        Statistics::getInstance().incTotalTime4Sat(static_cast<unsigned int>(finalTime - curTime));
+        Statistics::getInstance().incTotalTime4Sat(finalTime - curTime);
         
         model.clear();
         model.insert(model.end(), assigns.begin(), assigns.end());

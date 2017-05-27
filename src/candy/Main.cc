@@ -56,6 +56,7 @@
 #include <regex>
 #include <functional>
 #include <type_traits>
+#include <chrono>
 
 #include <candy/utils/CNFProblem.h>
 #include "candy/core/Certificate.h"
@@ -274,7 +275,7 @@ struct GateRecognitionArguments {
     const bool opt_gr_patterns;
     const bool opt_gr_semantic;
     const unsigned int opt_gr_semantic_budget;
-    const unsigned int opt_gr_timeout;
+    const std::chrono::milliseconds opt_gr_timeout;
     const bool opt_gr_holistic;
     const bool opt_gr_lookahead;
     const bool opt_gr_intensify;
@@ -288,7 +289,7 @@ std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& 
     << "c   Patterns: " << arguments.opt_gr_patterns << std::endl
     << "c   Semantic: " << arguments.opt_gr_semantic << std::endl
     << "c   Semantic budget: " << arguments.opt_gr_semantic_budget << std::endl
-    << "c   Timeout: " << arguments.opt_gr_timeout << std::endl
+    << "c   Timeout: " << arguments.opt_gr_timeout.count() << " ms" << std::endl
     << "c   Holistic: " << arguments.opt_gr_holistic << std::endl
     << "c   Lookahead: " << arguments.opt_gr_lookahead << std::endl
     << "c   Intensify: " << arguments.opt_gr_intensify << std::endl
@@ -349,7 +350,7 @@ struct RandomSimulationArguments {
     const int maxConjectureSize;
     const bool removeBackboneConjectures;
     const bool filterGatesByNonmono;
-    const int preprocessingTimeLimit;
+    std::chrono::milliseconds preprocessingTimeLimit;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments) {
@@ -361,7 +362,7 @@ std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments&
     << "c   Max. conjecture size: " << arguments.maxConjectureSize << std::endl
     << "c   Remove backbone conjectures: " << arguments.removeBackboneConjectures << std::endl
     << "c   Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl
-    << "c   Preprocessing time limit: " << arguments.preprocessingTimeLimit << std::endl;
+    << "c   Preprocessing time limit: " << arguments.preprocessingTimeLimit.count() << " ms" << std::endl;
     
     return stream;
 }
@@ -407,7 +408,7 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
 
 static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
                                                                    const RandomSimulationArguments& rsArguments,
-                                                                   int timeLimit = -1) {
+                                                                   std::chrono::milliseconds timeLimit = std::chrono::milliseconds{-1}) {
     auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
     simulatorBuilder->withGateAnalyzer(analyzer);
 
@@ -421,7 +422,8 @@ static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAn
 
     auto randomSimulator = simulatorBuilder->build();
     // TODO: time limit
-    auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds), timeLimit);
+    auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds),
+                                            std::chrono::duration_cast<std::chrono::seconds>(timeLimit));
 
     if (rsArguments.filterConjecturesBySize) {
         auto sizeFilter = Candy::createSizeConjectureFilter(rsArguments.maxConjectureSize);
@@ -479,17 +481,18 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
     // TODO: the CPU time code was inserted in quite a hurry and
     // needs to be refactored.
     
-    double startCPUTime = Glucose::cpuTime();
+    std::chrono::milliseconds startCPUTime = Glucose::cpuTime();
     
     auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
     gateAnalyzer->analyze();
     
-    double gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
-    std::cerr << "c Gate recognition time: " << gateAnalyzerTime << std::endl;
+    std::chrono::milliseconds gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
+    double gateAnalyzerTimeSec = static_cast<double>(gateAnalyzerTime.count())/1000.0f;
+    std::cerr << "c Gate recognition time: " << gateAnalyzerTimeSec << std::endl;
     
     try {
-        if (rsArguments.preprocessingTimeLimit >= 0
-            && static_cast<double>(gateAnalyzerTime) > rsArguments.preprocessingTimeLimit) {
+        if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}
+            && gateAnalyzerTime > rsArguments.preprocessingTimeLimit) {
             throw UnsuitableProblemException{"Gate recognition exceeded the time limit."};
         }
         
@@ -499,9 +502,9 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
                 + std::to_string(gateAnalyzer->getGateCount())};
         }
         
-        int rsTimeLimit = -1;
-        if (rsArguments.preprocessingTimeLimit >= 0) {
-            rsTimeLimit = rsArguments.preprocessingTimeLimit - static_cast<int>(gateAnalyzerTime);
+        std::chrono::milliseconds rsTimeLimit = std::chrono::milliseconds{-1};
+        if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
+            rsTimeLimit = rsArguments.preprocessingTimeLimit - gateAnalyzerTime;
         }
         
         try {
@@ -510,8 +513,9 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
                 throw UnsuitableProblemException{"No conjectures found."};
             }
             
-            double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cerr << "c Random simulation time: " << randomSimulationTime << std::endl;
+            auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            double randomSimulationTimeSec = static_cast<double>(randomSimulationTime.count())/1000.0f;
+            std::cerr << "c Random simulation time: " << randomSimulationTimeSec << std::endl;
             
     
             auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
@@ -520,8 +524,9 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
             return lbool(result);
         }
         catch (OutOfTimeException& e) {
-            double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cerr << "c Random simulation time: " << randomSimulationTime << std::endl;
+            auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            double randomSimulationTimeSec = static_cast<double>(randomSimulationTime.count())/1000.0f;
+            std::cerr << "c Random simulation time: " << randomSimulationTimeSec << std::endl;
             
             throw UnsuitableProblemException{"Random simulation exceeded the time limit."};
         }
@@ -837,7 +842,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_gr_patterns,
         opt_gr_semantic,
         static_cast<unsigned int>(opt_gr_semantic_budget),
-        static_cast<unsigned int>(opt_gr_timeout),
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{opt_gr_timeout}),
         opt_gr_holistic,
         opt_gr_lookahead,
         opt_gr_intensify,
@@ -853,7 +858,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rs_filterConjBySize,
         opt_rs_removeBackboneConj,
         opt_rs_filterGatesByNonmono,
-        opt_rs_ppTimeLimit
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{opt_rs_ppTimeLimit})
     };
 
     RSARArguments rsarArgs{

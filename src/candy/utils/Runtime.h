@@ -9,24 +9,28 @@
 #define SRC_CANDY_UTILS_RUNTIME_H_
 
 #include <candy/utils/System.h>
+#include <chrono>
+#include <iostream>
+
+namespace Candy {
 
 class Runtime {
 private:
-    double startTime;
-    double totalRuntime;
-    unsigned int timeout;
+    std::chrono::milliseconds startTime;
+    std::chrono::milliseconds totalRuntime;
+    std::chrono::milliseconds timeout;
 
 public:
-    Runtime(unsigned int timeout = 0) {
+    Runtime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
         this->timeout = timeout;
-        this->startTime = 0;
-        this->totalRuntime = 0;
+        this->startTime = std::chrono::milliseconds{0};
+        this->totalRuntime = std::chrono::milliseconds{0};
 
     }
     ~Runtime() {}
 
     bool start() {
-        if (startTime != 0.0) {
+        if (startTime != std::chrono::milliseconds{0}) {
             return false;
         }
         startTime = Glucose::cpuTime();
@@ -34,7 +38,7 @@ public:
     }
 
     bool stop() {
-        if (startTime == 0.0) {
+        if (startTime == std::chrono::milliseconds{0}) {
             return false;
         }
         totalRuntime += Glucose::cpuTime() - this->startTime;
@@ -42,16 +46,21 @@ public:
     }
 
     bool hasTimeout() {
-        return timeout > 0 && getRuntime() > timeout;
+        return timeout > std::chrono::milliseconds{0} && getRuntime() > timeout;
     }
 
-    void setTimeout(unsigned int timeout) {
+    void setTimeout(std::chrono::milliseconds timeout) {
         this->timeout = timeout;
     }
 
-    double getRuntime() {
-        return totalRuntime + this->startTime > 0 ? Glucose::cpuTime() - this->startTime : 0.0;
+    std::chrono::milliseconds getRuntime() {
+        if (this->startTime > std::chrono::milliseconds{0}) {
+            return Glucose::cpuTime() - this->startTime;
+        }
+        return std::chrono::milliseconds{-1};
     }
 };
+
+}
 
 #endif /* SRC_CANDY_UTILS_RUNTIME_H_ */

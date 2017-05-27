@@ -70,7 +70,7 @@ namespace Candy {
                                    float reductionRateAbortThreshold);
         
         Conjectures run(unsigned int nSteps) override;
-        Conjectures run(unsigned int nSteps, int timeLimit) override;
+        Conjectures run(unsigned int nSteps, std::chrono::milliseconds timeLimit) override;
         Conjectures run() override;
         
         void ensureInitialized();
@@ -83,7 +83,7 @@ namespace Candy {
     private:
         bool isFurtherSimulationWorthwile();
         
-        Conjectures runImpl(bool boundedRun, unsigned int nSteps, int timeLimit);
+        Conjectures runImpl(bool boundedRun, unsigned int nSteps, std::chrono::milliseconds timeLimit);
         
         std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
         std::unique_ptr<Partition> m_partitionStrat;
@@ -140,21 +140,21 @@ namespace Candy {
     
     Conjectures BitparallelRandomSimulator::run() {
         assert (m_abortThreshold >= 0.0f);
-        return runImpl(false, 0, -1);
+        return runImpl(false, 0, std::chrono::milliseconds{-1});
     }
     
     Conjectures BitparallelRandomSimulator::run(unsigned int nSteps) {
         assert (nSteps > 0);
-        return runImpl(true, nSteps, -1);
+        return runImpl(true, nSteps, std::chrono::milliseconds{-1});
     }
     
-    Conjectures BitparallelRandomSimulator::run(unsigned int nSteps, int timeLimit) {
+    Conjectures BitparallelRandomSimulator::run(unsigned int nSteps, std::chrono::milliseconds timeLimit) {
         assert (nSteps > 0);
-        assert (timeLimit >= -1);
+        assert (timeLimit >= std::chrono::milliseconds{-1});
         return runImpl(true, nSteps, timeLimit);
     }
     
-    Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps, int timeLimit) {
+    Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps, std::chrono::milliseconds timeLimit) {
         ensureInitialized();
         
         unsigned int realSteps = nSteps / (SimulationVector::VARSIMVECVARS);
@@ -162,7 +162,7 @@ namespace Candy {
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
         
-        double startCPUTime = Glucose::cpuTime();
+        auto startCPUTime = Glucose::cpuTime();
         
         for (unsigned int step = 0; !boundedRun || step < realSteps; ++step) {
             m_randomizationStrat->randomize(m_simulationVectors, inputVars);
@@ -176,9 +176,9 @@ namespace Candy {
                 break;
             }
             
-            if (timeLimit > 0) {
-                double currentCPUTime = Glucose::cpuTime();
-                if ((currentCPUTime - startCPUTime) > static_cast<double>(timeLimit)) {
+            if (timeLimit > std::chrono::milliseconds{0}) {
+                auto currentCPUTime = Glucose::cpuTime();
+                if ((currentCPUTime - startCPUTime) > timeLimit) {
                     throw OutOfTimeException{};
                 }
             }
