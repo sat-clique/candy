@@ -69,6 +69,7 @@
 #include "candy/simp/SimpSolver.h"
 
 #include "candy/gates/GateAnalyzer.h"
+#include "candy/gates/MiterDetector.h"
 #include "candy/rsar/ARSolver.h"
 #include "candy/rsar/SolverAdapter.h"
 #include "candy/rsar/Heuristics.h"
@@ -446,12 +447,6 @@ std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsS
     */
 
     std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
-    
-    std::cout << "c Input dependency count heuristic limits: ";
-    for (auto limit : limits) {
-        std::cout << limit << " ";
-    }
-    std::cout << std::endl;
 
     if (limits.size() == 0) {
         throw std::invalid_argument(limitsString + ": invalid limits");
@@ -490,7 +485,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
     gateAnalyzer->analyze();
     
     double gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
-    std::cout << "c Gate recognition time: " << gateAnalyzerTime << std::endl;
+    std::cerr << "c Gate recognition time: " << gateAnalyzerTime << std::endl;
     
     try {
         if (rsArguments.preprocessingTimeLimit >= 0
@@ -516,7 +511,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
             }
             
             double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cout << "c Random simulation time: " << randomSimulationTime << std::endl;
+            std::cerr << "c Random simulation time: " << randomSimulationTime << std::endl;
             
     
             auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
@@ -526,7 +521,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
         }
         catch (OutOfTimeException& e) {
             double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cout << "c Random simulation time: " << randomSimulationTime << std::endl;
+            std::cerr << "c Random simulation time: " << randomSimulationTime << std::endl;
             
             throw UnsuitableProblemException{"Random simulation exceeded the time limit."};
         }
@@ -564,6 +559,8 @@ struct RSILArguments {
     const int filterByInputDependenciesMax;
     const bool filterOnlyBackbones;
     const double minGateOutputFraction;
+
+    const bool useRSILOnlyForMiters;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
@@ -575,7 +572,8 @@ std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) 
         << "c   Filter by input dependency count enabled: " << arguments.filterByInputDependencies << std::endl
         << "c   Max. input depdencency count: " << arguments.filterByInputDependenciesMax << std::endl
         << "c   Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl
-        << "c   Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl;
+        << "c   Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl
+        << "c   RSIL restricted to miters?: " << arguments.useRSILOnlyForMiters << std::endl;
     }
     
     return stream;
@@ -672,15 +670,22 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
         auto analyzer = createGateAnalyzer(problem, gateRecognitionArgs);
         analyzer->analyze();
         
-        double problemVars = solver.nVars();
+        double problemVars = problem.nVars();
         double gateOutputs = analyzer->getGateCount();
         
         if (problemVars == 0 || (gateOutputs/problemVars) < rsilArgs.minGateOutputFraction) {
             std::string errorMessage = std::string{"insufficient gate count "} + std::to_string(analyzer->getGateCount())
-            + std::string{"/"} + std::to_string(solver.nVars()) + std::string{"."};
+            + std::string{"/"} + std::to_string(problem.nVars()) + std::string{"."};
             throw UnsuitableProblemException{errorMessage};
         }
         
+        if (rsilArgs.useRSILOnlyForMiters) {
+            bool isMiter = hasPossiblyMiterStructure(*analyzer);
+            if (!isMiter) {
+                throw UnsuitableProblemException{"problem heuristically determined not to be a miter problem."};
+            }
+        }
+
         auto conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
         if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
             throw UnsuitableProblemException{"no conjectures found."};
@@ -823,6 +828,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
                                            false);
     DoubleOption opt_rsil_minGateFraction("RSIL", "rsil-min-gate-frac", "Enable RSIL only when at least this fraction of the variables"\
                                           " consists of gate outputs", 0.1, DoubleRange(0.0, true, 1.0, true));
+    BoolOption opt_rsil_onlyMiters("RSIL", "rsil-only-miters", "Enable RSIL only for miter problems (heuristic detection)", false);
 
     parseOptions(argc, argv, true);
 
@@ -867,7 +873,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rsil_filterByInputDeps != 0,
         opt_rsil_filterByInputDeps,
         opt_rsil_filterOnlyBackbone,
-        opt_rsil_minGateFraction
+        opt_rsil_minGateFraction,
+        opt_rsil_onlyMiters
     };
 
     const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
@@ -993,8 +1000,8 @@ int solve(const GlucoseArguments& args,
                 preprocessingHook(*S, problem);
             }
             catch(UnsuitableProblemException& e) {
-                std::cout << "c Aborting RSIL: " << e.what() << std::endl;
-                std::cout << "c Falling back to unmodified Candy" << std::endl;
+                std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
+                std::cerr << "c Falling back to unmodified Candy" << std::endl;
                 fallBackToUnmodifiedCandy = true;
                 S.reset(nullptr);
                 fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
