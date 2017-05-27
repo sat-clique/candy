@@ -64,6 +64,7 @@ namespace Candy {
      *  - needs to have a method collectInput(Var).
      *  - needs to have a method init(size_t)
      *  - needs to have a method pruneAt(Gate&) -> bool
+     *  - needs to have a method finished()
      * Furthermore, Collector should be move-constructible and move-assignable.
      *
      * Collector.collect() is called whenever a gate is visited the first time,
@@ -71,7 +72,10 @@ namespace Candy {
      * the traversal. Moreover, Collector.collectInput() is called whenever an input
      * variable is encountered the first time.
      * Before performing the DFS, the amount of gates occuring in the gate structure
-     * is passed to init().
+     * is passed to init(). When the search is completed, finished() is called.
+     *
+     * A gate g is only visited if pruneAt(g) evaluates to false. 
+     *
      *
      * \returns the Collector object having received the gates encountered during
      *   the traversal.
@@ -128,6 +132,7 @@ namespace Candy {
             }
         }
         
+        collector.finished();
         return collector;
     }
     
@@ -165,6 +170,9 @@ namespace Candy {
         bool pruneAt(Gate& g) {
             (void)g;
             return false;
+        }
+        
+        void finished() {
         }
         
     private:

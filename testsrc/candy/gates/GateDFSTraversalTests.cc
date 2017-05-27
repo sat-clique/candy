@@ -37,6 +37,7 @@ namespace Candy {
         std::vector<Gate*> backtrackSequence {};
         std::vector<Gate*> visitSequence {};
         size_t gateCount = 0;
+        bool finishedCalled = false;
         
         void backtrack(Gate* g) {
             backtrackSequence.push_back(g);
@@ -56,6 +57,10 @@ namespace Candy {
         
         bool pruneAt(Gate& g) {
             return false;
+        }
+        
+        void finished() {
+            finishedCalled = true;
         }
     };
     
@@ -101,6 +106,7 @@ namespace Candy {
         
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
         EXPECT_EQ(collector.gateCount, static_cast<unsigned long>(ga.getGateCount()));
+        EXPECT_TRUE(collector.finishedCalled);
     }
     
     TEST(RSGateDFSTraversalTest, visitTinyGateStructure) {
@@ -149,6 +155,10 @@ namespace Candy {
         
         bool pruneAt(Gate& g) {
             return g.hasNonMonotonousParent();
+        }
+        
+        void finished() {
+            
         }
     };
     
