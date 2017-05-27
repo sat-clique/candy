@@ -41,6 +41,11 @@
 #include "candy/utils/CNFProblem.h"
 
 namespace Candy {
+    
+/**
+ * \defgroup Gates
+ */
+    
 class DefaultSolver;
 
 typedef struct Gate {
