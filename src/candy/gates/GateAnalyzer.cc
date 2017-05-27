@@ -372,4 +372,8 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     return false;
 }
 
+bool GateAnalyzer::hasTimeout() const {
+    return runtime.hasTimeout();
+}
+
 }

@@ -109,6 +109,8 @@ public:
     const std::vector<Cl*> getRoots() const {
         return roots;
     }
+    
+    bool hasTimeout() const;
 
 private:
     // problem to analyze:
