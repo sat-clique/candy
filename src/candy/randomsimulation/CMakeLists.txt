@@ -12,8 +12,7 @@ add_library(randomsimulation
     Propagation.cc
     Propagation.h
     Conjectures.cc
-    Conjectures.h
-    GateDFSTraversal.h)
+    Conjectures.h)
 
 if (NOT MSVC)
   target_compile_options(randomsimulation PRIVATE -Wextra)

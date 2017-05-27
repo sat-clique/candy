@@ -25,7 +25,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <randomsimulation/GateDFSTraversal.h>
+#include <candy/gates/GateDFSTraversal.h>
 
 #include <testutils/TestGateStructure.h>
 

@@ -27,7 +27,6 @@
 // TODO: documentation
 
 #include "ClauseOrder.h"
-#include "GateDFSTraversal.h"
 
 #include <memory>
 #include <vector>
@@ -35,10 +34,11 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include <gates/GateAnalyzer.h>
-#include <core/SolverTypes.h>
+#include <candy/gates/GateAnalyzer.h>
+#include <candy/gates/GateDFSTraversal.h>
+#include <candy/core/SolverTypes.h>
 
-#include <utils/MemUtils.h>
+#include <candy/utils/MemUtils.h>
 
 #include <iostream>
 
