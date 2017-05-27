@@ -329,6 +329,9 @@ namespace Candy {
             return false;
         }
         
+        void finished() {
+        }
+        
         DFSGateCollector() = default;
         DFSGateCollector(DFSGateCollector&& other) = default;
         DFSGateCollector& operator=(DFSGateCollector&& other) = default;
