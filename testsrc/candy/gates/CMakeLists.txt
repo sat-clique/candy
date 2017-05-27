@@ -16,7 +16,7 @@ add_test(NAME gates_module_tests COMMAND gates_tests WORKING_DIRECTORY ${CMAKE_C
 
 
 # Make sure that the test CNF problems are copied to the build directory
-file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.cnf")
+file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "problems/*.cnf")
 message("Test CNF files: ${TEST_CNF_PROBLEMS}")
 
 foreach(CNF_PROBLEM ${TEST_CNF_PROBLEMS})
