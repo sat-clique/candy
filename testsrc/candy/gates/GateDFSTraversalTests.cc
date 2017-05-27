@@ -25,11 +25,12 @@
  */
 
 #include <gtest/gtest.h>
-#include <candy/gates/GateDFSTraversal.h>
 
-#include <testutils/TestGateStructure.h>
+#include <candy/gates/GateDFSTraversal.h>
+#include <candy/testutils/TestGateStructure.h>
 
 #include <iostream>
+#include <algorithm>
 
 namespace Candy {
     struct TestGateCollector {
@@ -51,6 +52,10 @@ namespace Candy {
         
         void init(size_t n) {
             gateCount = n;
+        }
+        
+        bool pruneAt(Gate& g) {
+            return false;
         }
     };
     
@@ -119,5 +124,75 @@ namespace Candy {
         
         auto problem = gateBuilder->build();
         test_visitDFS(*problem, 7);
+    }
+    
+    struct NonmonotonicPruningTestGateCollector {
+        std::vector<Gate*> backtrackSequence {};
+        std::vector<Gate*> visitSequence {};
+        size_t gateCount = 0;
+        
+        void backtrack(Gate* g) {
+            backtrackSequence.push_back(g);
+        }
+        
+        void collect(Gate* g) {
+            visitSequence.push_back(g);
+        }
+        
+        void collectInput(Var var) {
+            (void)var;
+        }
+        
+        void init(size_t n) {
+            gateCount = n;
+        }
+        
+        bool pruneAt(Gate& g) {
+            return g.hasNonMonotonousParent();
+        }
+    };
+    
+    namespace {
+        bool containsGateWithOutput(std::vector<Gate*>& gates, Var output) {
+            return std::find_if(gates.begin(), gates.end(), [output](Gate*& g) {
+                return var(g->getOutput()) == output;
+            }) != gates.end();
+        }
+    }
+    
+    TEST(RSGateDFSTraversalTest, pruneNestedNonmonotonic) {
+        auto gateBuilder = createGateStructureBuilder();
+        
+        // gates nested monotonic
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
+        gateBuilder->withOr({mkLit(3, 1), mkLit(5, 1)}, mkLit(2,1));
+        
+        gateBuilder->withXor({mkLit(6, 1), mkLit(7,1)}, mkLit(3,1));
+        gateBuilder->withXor({mkLit(7, 1), mkLit(8,1)}, mkLit(4,1));
+        gateBuilder->withXor({mkLit(9, 1), mkLit(10,1)}, mkLit(5,1));
+        
+        // gates nested nonmonotonic
+        gateBuilder->withAnd({mkLit(11, 1), mkLit(12, 1)}, mkLit(7,1));
+        gateBuilder->withAnd({mkLit(13, 1), mkLit(14, 1)}, mkLit(8,1));
+        gateBuilder->withAnd({mkLit(13, 1), mkLit(14, 1)}, mkLit(11,1));
+        
+        auto problem = gateBuilder->build();
+        
+        GateAnalyzer ga(*problem);
+        ga.analyze();
+        ASSERT_EQ(ga.getGateCount(), 9);
+        NonmonotonicPruningTestGateCollector collector = traverseDFS<NonmonotonicPruningTestGateCollector>(ga);
+        EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
+        EXPECT_EQ(collector.visitSequence.size(), 6ull);
+        EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 0));
+        EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 1));
+        EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 2));
+        EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 3));
+        EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 4));
+        EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 5));
+        EXPECT_FALSE(containsGateWithOutput(collector.visitSequence, 7));
+        EXPECT_FALSE(containsGateWithOutput(collector.visitSequence, 8));
+        EXPECT_FALSE(containsGateWithOutput(collector.visitSequence, 11));
     }
 }
