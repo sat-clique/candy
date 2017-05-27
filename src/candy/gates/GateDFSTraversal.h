@@ -27,7 +27,7 @@
 #ifndef X_EC6785CA_AF27_4D6B_97AB_C774E27E926E_GATEDFSVISITOR_H
 #define X_EC6785CA_AF27_4D6B_97AB_C774E27E926E_GATEDFSVISITOR_H
 
-#include <gates/GateAnalyzer.h>
+#include <candy/gates/GateAnalyzer.h>
 
 #include <vector>
 #include <stack>
