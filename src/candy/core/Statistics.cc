@@ -42,6 +42,7 @@ Statistics::Statistics() :
 #endif
     stats(0)
 {
+    (void)stats;
 }
 
 Statistics::~Statistics() { }
