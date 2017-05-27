@@ -21,7 +21,7 @@
 #define XXL_POOL_ONE_SIZE 1000
 #define XXL_POOL_INDEX NUMBER_OF_POOLS
 #define REVAMPABLE_PAGES_MAX_SIZE 6
-#define PAGE_MAX_ELEMENTS 524288
+#define PAGE_MAX_ELEMENTS 262144
 #define REALLOC_ON_REVAMP
 
 namespace Candy {
@@ -134,10 +134,8 @@ private:
     }
 
     uint32_t initialNumberOfElements(uint32_t index) {
-        if (index > 2 && index < 120) {
-            return 262144 >> (index / 10);
-        } else if (index == 1 || index == 2) {
-            return PAGE_MAX_ELEMENTS;
+        if (index < 100) {
+            return PAGE_MAX_ELEMENTS >> (index / 10);
         }
         return 256;
     }
@@ -186,14 +184,18 @@ private:
         std::vector<void*>& pool = pools[index];
         std::vector<char*>& page = pages[index];
         std::vector<size_t>& nelem = pages_nelem[index];
-        size_t old_pool_size = pool.size();
         pool.clear();
 
         char* new_page = page[0];
         size_t total_nelems = nelem[0];
+        size_t new_page_nelems = nelem[0];
         if (page.size() > 1) {
             total_nelems = std::accumulate(nelem.begin(), nelem.end(), (size_t)0);
-            new_page = (char*)calloc(total_nelems, sizeof(SortHelperClause<N>));
+            new_page_nelems = initialNumberOfElements(N);
+            while (new_page_nelems < total_nelems) { // find next power of 2
+                new_page_nelems *= 2;
+            }
+            new_page = (char*)calloc(new_page_nelems, sizeof(SortHelperClause<N>));
             SortHelperClause<N>* pos = reinterpret_cast<SortHelperClause<N>*>(new_page);
             for (size_t i = 0; i < page.size(); i++) {
                 SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
@@ -207,11 +209,12 @@ private:
             page.clear();
             nelem.clear();
             page.push_back(new_page);
-            nelem.push_back(total_nelems);
+            nelem.push_back(new_page_nelems);
         }
 
         SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(new_page);
-        SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(new_page)  + total_nelems;
+        SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(new_page) + total_nelems;
+        SortHelperClause<N>* page_end = reinterpret_cast<SortHelperClause<N>*>(new_page) + new_page_nelems;
         std::sort(begin, end, [](SortHelperClause<N> c1, SortHelperClause<N> c2) { return c1.act > c2.act; });
 
         std::vector<Clause*> revamped;
@@ -225,8 +228,12 @@ private:
             }
         }
 
-        assert(old_pool_size == pool.size());
-        (void)(old_pool_size);
+        for (SortHelperClause<N>* iter = end; iter < page_end; iter++) {
+            Clause* clause = (Clause*)iter;
+            assert(clause->size() == 0);
+            pool.push_back(clause);
+        }
+
         return revamped;
     }
 
