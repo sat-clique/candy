@@ -672,11 +672,21 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
                             const RandomSimulationArguments& randomSimulationArgs,
                             const RSILArguments& rsilArgs) {
     return [gateRecognitionArgs, randomSimulationArgs, rsilArgs](SolverType& solver, CNFProblem& problem) {
+        Runtime runtime;
+        runtime.setTimeout(randomSimulationArgs.preprocessingTimeLimit);
+        runtime.start();
+        
         auto analyzer = createGateAnalyzer(problem, gateRecognitionArgs);
         analyzer->analyze();
         
         double problemVars = problem.nVars();
         double gateOutputs = analyzer->getGateCount();
+        
+        if (analyzer->hasTimeout() || runtime.hasTimeout()) {
+            // Abort RSIL, since the probability is too high that this run
+            // is not reproducible if we continue
+            throw UnsuitableProblemException{"gate analysis exceeded the preprocessing time limit."};
+        }
         
         if (problemVars == 0 || (gateOutputs/problemVars) < rsilArgs.minGateOutputFraction) {
             std::string errorMessage = std::string{"insufficient gate count "} + std::to_string(analyzer->getGateCount())
@@ -691,7 +701,15 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
             }
         }
 
-        auto conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
+        std::unique_ptr<Conjectures> conjectures;
+        auto remainingTime = runtime.getRuntime() - randomSimulationArgs.preprocessingTimeLimit;
+        try {
+            conjectures = performRandomSimulation(*analyzer, randomSimulationArgs, remainingTime);
+        }
+        catch(OutOfTimeException& exception) {
+            throw UnsuitableProblemException{"random simulation exceeded the preprocessing time limit."};
+        }
+        
         if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
             throw UnsuitableProblemException{"no conjectures found."};
         }
