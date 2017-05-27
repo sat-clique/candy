@@ -76,7 +76,7 @@ namespace Candy {
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
-    TEST(GateMiterDetectorTests, rejectsNearMiter) {
+    TEST(GateMiterDetectorTests, rejectsNearMiter_nonAllXOR) {
         auto gateBuilder = createGateStructureBuilder();
         // miter "base" structure
         gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
@@ -85,7 +85,38 @@ namespace Candy {
         gateBuilder->withXor({mkLit(7, 1), mkLit(8, 1)}, mkLit(3, 1));
         gateBuilder->withXor({mkLit(9, 1), mkLit(10, 1)}, mkLit(4, 1));
         gateBuilder->withXor({mkLit(11, 1), mkLit(12,1)}, mkLit(5, 1));
-        gateBuilder->withAnd({mkLit(13, 1), mkLit(14,1)}, mkLit(6, 1));
+        gateBuilder->withAnd({mkLit(13, 1), mkLit(14,1)}, mkLit(6, 1)); // "bad" gate
+        
+        // circuit 1
+        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(7, 1));
+        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(8, 1));
+        
+        // circuit 2
+        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(9, 0));
+        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(10, 0));
+        
+        // circuit 3
+        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(11, 0));
+        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(12, 0));
+        
+        auto problem = gateBuilder->build();
+        
+        GateAnalyzer analyzer {*problem};
+        analyzer.analyze();
+        ASSERT_EQ(analyzer.getGateCount(), 13);
+        EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
+    }
+    
+    TEST(GateMiterDetectorTests, rejectsNearMiter_sharedInputs) {
+        auto gateBuilder = createGateStructureBuilder();
+        // miter "base" structure
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
+        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
+        gateBuilder->withOr({mkLit(5, 1), mkLit(6, 1)}, mkLit(2, 1));
+        gateBuilder->withXor({mkLit(7, 1), mkLit(8, 1)}, mkLit(3, 1));
+        gateBuilder->withXor({mkLit(9, 1), mkLit(10, 1)}, mkLit(4, 1));
+        gateBuilder->withXor({mkLit(11, 1), mkLit(12,1)}, mkLit(5, 1));
+        gateBuilder->withXor({mkLit(12, 1), mkLit(14,1)}, mkLit(6, 1)); // "bad" gate
         
         // circuit 1
         gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(7, 1));
@@ -183,6 +214,36 @@ namespace Candy {
         analyzer.analyze();
         ASSERT_EQ(analyzer.getGateCount(), 13);
         EXPECT_TRUE(hasPossiblyMiterStructure(analyzer));
+    }
+    
+    TEST(GateMiterDetectorTests, rejectsNearAIGMiter) {
+        auto gateBuilder = createGateStructureBuilder();
+        // miter "base" structure
+        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
+        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
+        
+        addAIGXOR(*gateBuilder,
+                  mkLit(7, 1), mkLit(8, 1),
+                  mkLit(9, 1), mkLit(10, 1),
+                  mkLit(2, 1));
+        
+        addAIGXOR(*gateBuilder,
+                  mkLit(11, 1), mkLit(12, 1),
+                  mkLit(13, 1), mkLit(14, 1),
+                  mkLit(3, 1));
+        
+        gateBuilder->withAnd({mkLit(17, 1), mkLit(18, 1)}, mkLit(4, 1)); // "bad" gate
+        
+        // add at least one nonmonotonously nested gate
+        gateBuilder->withAnd({mkLit(19, 1), mkLit(20, 1)}, mkLit(11, 1));
+        gateBuilder->withAnd({mkLit(19, 1), mkLit(20, 1)}, mkLit(12, 1));
+        
+        auto problem = gateBuilder->build();
+        
+        GateAnalyzer analyzer {*problem};
+        analyzer.analyze();
+        ASSERT_EQ(analyzer.getGateCount(), 11);
+        EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
     namespace {
