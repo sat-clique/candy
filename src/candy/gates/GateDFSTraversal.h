@@ -63,6 +63,7 @@ namespace Candy {
      *  - needs to have a method backtrack(Gate*).
      *  - needs to have a method collectInput(Var).
      *  - needs to have a method init(size_t)
+     *  - needs to have a method pruneAt(Gate&) -> bool
      * Furthermore, Collector should be move-constructible and move-assignable.
      *
      * Collector.collect() is called whenever a gate is visited the first time,
@@ -88,7 +89,7 @@ namespace Candy {
         for (auto&& clause : analyzer.getRoots()) {
             for (auto lit : *clause) {
                 Gate& g = analyzer.getGate(lit);
-                if (g.isDefined()) {
+                if (g.isDefined() && !collector.pruneAt(g)) {
                     work.push(GateDFSMarkedGate{&g, false});
                 }
             }
@@ -107,10 +108,16 @@ namespace Candy {
             else if (visited.find(workItem.gate) == visited.end()) {
                 collector.collect(workItem.gate);
                 visited.emplace(workItem.gate);
+                
+                // Put the gate back on the stack, marking it so that next
+                // time it is popped, it gets backtracked.
                 work.push(GateDFSMarkedGate{workItem.gate, true});
+                
                 for (auto input : workItem.gate->getInputs()) {
                     Gate& g = analyzer.getGate(input);
-                    if (g.isDefined() && visited.find(&g) == visited.end()) {
+                    if (g.isDefined()
+                        && visited.find(&g) == visited.end()
+                        && !collector.pruneAt(g)) {
                         work.push(GateDFSMarkedGate{&g, false});
                     }
                     else if (!g.isDefined() && seenInputs.find(var(input)) == seenInputs.end()) {
@@ -153,6 +160,11 @@ namespace Candy {
         
         const std::vector<Var>& getOutputsOrdered() {
             return m_backtrackOutputOrder;
+        }
+        
+        bool pruneAt(Gate& g) {
+            (void)g;
+            return false;
         }
         
     private:

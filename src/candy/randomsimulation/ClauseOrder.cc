@@ -324,6 +324,11 @@ namespace Candy {
             inputs.push_back(v);
         }
         
+        bool pruneAt(Gate& g) {
+            (void)g;
+            return false;
+        }
+        
         DFSGateCollector() = default;
         DFSGateCollector(DFSGateCollector&& other) = default;
         DFSGateCollector& operator=(DFSGateCollector&& other) = default;
