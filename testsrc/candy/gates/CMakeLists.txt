@@ -1,5 +1,6 @@
 add_executable(gates_tests
-    GateDFSTraversalTests.cc)
+    GateDFSTraversalTests.cc
+    MiterDetectorTests.cc)
 candy_executable_customizations(gates_tests)
 
 target_include_directories(gates_tests PUBLIC ${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include
