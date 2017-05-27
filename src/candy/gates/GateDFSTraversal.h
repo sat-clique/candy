@@ -40,7 +40,7 @@ namespace Candy {
     /**
      * \class GateDFSMarkedGate
      *
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * \brief Helper data structure used by visitDFS() for marking gates for
      *   backtracking.
@@ -51,7 +51,7 @@ namespace Candy {
     };
     
     /**
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * DFS-traverses the gate structure given by a Gate analyzer. A Collector object
      * is created, receiving pointers to the gates in order of their traversal
@@ -125,7 +125,7 @@ namespace Candy {
     }
     
     /*
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * TODO: documentation
      */
@@ -160,7 +160,7 @@ namespace Candy {
     };
 
     /*
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * TODO: documentation
      */
