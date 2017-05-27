@@ -21,7 +21,7 @@ private:
     std::chrono::milliseconds timeout;
 
 public:
-    Runtime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
+    explicit Runtime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
         this->timeout = timeout;
         this->startTime = std::chrono::milliseconds{0};
         this->totalRuntime = std::chrono::milliseconds{0};
@@ -29,7 +29,7 @@ public:
     }
     ~Runtime() {}
 
-    bool start() {
+    bool start() noexcept {
         if (startTime != std::chrono::milliseconds{0}) {
             return false;
         }
@@ -37,7 +37,7 @@ public:
         return true;
     }
 
-    bool stop() {
+    bool stop() noexcept {
         if (startTime == std::chrono::milliseconds{0}) {
             return false;
         }
@@ -45,7 +45,7 @@ public:
         return true;
     }
 
-    bool hasTimeout() {
+    bool hasTimeout() const noexcept {
         return timeout > std::chrono::milliseconds{0} && getRuntime() > timeout;
     }
 
@@ -53,7 +53,7 @@ public:
         this->timeout = timeout;
     }
 
-    std::chrono::milliseconds getRuntime() {
+    std::chrono::milliseconds getRuntime() const noexcept {
         if (this->startTime > std::chrono::milliseconds{0}) {
             return Glucose::cpuTime() - this->startTime;
         }
