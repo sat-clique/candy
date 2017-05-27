@@ -78,7 +78,7 @@ public:
     ~SimpSolver();
 
     // Problem specification:
-    virtual Var newVar(bool polarity = true, bool dvar = true); // Add a new variable with parameters specifying variable mode.
+    virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0); // Add a new variable with parameters specifying variable mode.
 
     bool substitute(Var v, Lit x);  // Replace all occurences of v with x (may cause a contradiction).
     bool eliminate(bool turn_off_elim = false);  // Perform variable elimination based simplification.
@@ -254,8 +254,8 @@ SimpSolver<PickBranchLitT>::~SimpSolver() {
 }
 
 template<class PickBranchLitT>
-Var SimpSolver<PickBranchLitT>::newVar(bool sign, bool dvar) {
-    Var v = Solver<PickBranchLitT>::newVar(sign, dvar);
+Var SimpSolver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
+    Var v = Solver<PickBranchLitT>::newVar(sign, dvar, act);
     frozen.push_back((char) false);
     eliminated.push_back((char) false);
     

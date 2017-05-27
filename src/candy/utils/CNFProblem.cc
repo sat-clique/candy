@@ -11,6 +11,20 @@
 
 namespace Candy {
 
+std::vector<double> CNFProblem::getLiteralRelativeOccurrences() {
+    std::vector<double> literalOccurrence(maxVars*2, 0.0);
+    for (auto c : problem) {
+        for (Lit lit : *c) {
+            literalOccurrence[lit] += 1.0 / c->size();
+        }
+    }
+    double max = *std::max_element(literalOccurrence.begin(), literalOccurrence.end());
+    for (double& occ : literalOccurrence) {
+        occ = occ / max;
+    }
+    return literalOccurrence;
+}
+
 For& CNFProblem::getProblem() {
     return problem;
 }

@@ -87,7 +87,8 @@ IntOption opt_phase_saving(_cat, "phase-saving", "Controls the level of phase sa
 IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
 
 IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
-BoolOption opt_sort_watches("MEMORY LAYOUT", "sort_watches", "sort watches", true);
+BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
+BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", false);
     
 }
 
