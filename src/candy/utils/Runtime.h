@@ -10,7 +10,6 @@
 
 #include <candy/utils/System.h>
 #include <chrono>
-#include <iostream>
 
 namespace Candy {
 
@@ -19,13 +18,14 @@ private:
     std::chrono::milliseconds startTime;
     std::chrono::milliseconds totalRuntime;
     std::chrono::milliseconds timeout;
+    std::chrono::milliseconds lastLap;
 
 public:
     explicit Runtime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
         this->timeout = timeout;
         this->startTime = std::chrono::milliseconds{0};
         this->totalRuntime = std::chrono::milliseconds{0};
-
+        this->lastLap = std::chrono::milliseconds{0};
     }
     ~Runtime() {}
 
@@ -41,6 +41,7 @@ public:
         if (startTime == std::chrono::milliseconds{0}) {
             return false;
         }
+        startTime = std::chrono::milliseconds{0};
         totalRuntime += Glucose::cpuTime() - this->startTime;
         return true;
     }
@@ -55,9 +56,16 @@ public:
 
     std::chrono::milliseconds getRuntime() const noexcept {
         if (this->startTime > std::chrono::milliseconds{0}) {
-            return Glucose::cpuTime() - this->startTime;
+            return totalRuntime + (Glucose::cpuTime() - this->startTime);
         }
         return std::chrono::milliseconds{-1};
+    }
+
+    std::chrono::milliseconds lap() noexcept {
+        auto currentTime = getRuntime();
+        auto result = currentTime - this->lastLap;
+        this->lastLap = currentTime;
+        return result;
     }
 };
 
