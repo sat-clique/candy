@@ -260,6 +260,7 @@ public:
     }
 
     void setVerbosities(int verbEveryConflicts, int verbosity) {
+        assert(verbosity == 0 || verbEveryConflicts > 0);
         this->verbEveryConflicts = verbEveryConflicts;
         this->verbosity = verbosity;
     }
