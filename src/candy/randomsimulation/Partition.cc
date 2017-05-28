@@ -30,7 +30,6 @@
 
 #include <memory>
 #include <unordered_map>
-#include <iostream>
 #include <cstdint>
 
 #include <utils/FastRand.h>
@@ -202,11 +201,6 @@ namespace Candy {
         void addToConjectures(std::vector<PartitionEntry> &partition,
                               Conjectures &target);
         void addBackbonesToConjectures(Conjectures &target);
- 
-        
-        
-        void dbg_print_partition_entry(PartitionEntry& pe);
-        void dbg_print();
         
         unsigned int m_round;
         std::vector<PartitionEntry> m_partitioningPos;
@@ -307,26 +301,6 @@ namespace Candy {
         
         updatePartitioningPos(assignment, true);
         updatePartitioningNeg(assignment, true);
-    }
-    
-    void DefaultPartition::dbg_print_partition_entry(PartitionEntry &pe) {
-        std::cout << "Var ID:  " << pe.varId << std::endl;
-        std::cout << "  Group ID: " << pe.groupId << std::endl;
-        std::cout << "  Backbone: " << pe.backbone << std::endl;
-        std::cout << "  Backbone val: " << pe.backboneVal << std::endl;
-        std::cout << "  Pol: " << pe.polarity << std::endl;
-    }
-    
-    void DefaultPartition::dbg_print() {
-        std::cout << std::endl << std::endl << "PARTITION TABLE DUMP:" << std::endl;
-        std::cout << "Positive PEs:" << std::endl;
-        for (auto &pe : m_partitioningPos) {
-            dbg_print_partition_entry(pe);
-        }
-        std::cout << "Negative PEs:" << std::endl;
-        for (auto &pe : m_partitioningNeg) {
-            dbg_print_partition_entry(pe);
-        }
     }
     
     void DefaultPartition::update(const SimulationVectors &assignment) {
