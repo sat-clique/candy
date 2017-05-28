@@ -39,12 +39,14 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
             lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)
 {
+    runtime.start();
     gates = new vector<Gate>(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     index = buildIndexFromClauses(problem.getProblem());
     if (useHolistic) solver->addClauses(problem);
     solver->setIncrementalMode();
     solver->initNbInitialVars(problem.nVars());
+    runtime.stop();
 }
 
 GateAnalyzer::~GateAnalyzer() {
