@@ -34,6 +34,7 @@ public:
             return false;
         }
         startTime = Glucose::cpuTime();
+        lastLap = totalRuntime;
         return true;
     }
 
@@ -41,8 +42,8 @@ public:
         if (startTime == std::chrono::milliseconds{0}) {
             return false;
         }
-        startTime = std::chrono::milliseconds{0};
         totalRuntime += Glucose::cpuTime() - this->startTime;
+        startTime = std::chrono::milliseconds{0};
         return true;
     }
 
@@ -58,7 +59,9 @@ public:
         if (this->startTime > std::chrono::milliseconds{0}) {
             return totalRuntime + (Glucose::cpuTime() - this->startTime);
         }
-        return std::chrono::milliseconds{-1};
+        else {
+            return totalRuntime;
+        }
     }
 
     std::chrono::milliseconds lap() noexcept {
