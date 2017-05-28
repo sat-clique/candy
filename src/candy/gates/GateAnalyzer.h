@@ -126,7 +126,7 @@ public:
 
 private:
     // problem to analyze:
-    CNFProblem problem;
+    CNFProblem& problem;
     std::unique_ptr<DefaultSolver> solver;
     std::vector<Lit> assumptions;
 

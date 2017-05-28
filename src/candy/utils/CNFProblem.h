@@ -45,7 +45,13 @@ public:
   CNFProblem() : certificate(nullptr) {
   }
 
-  CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
+  explicit CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
+  }
+    
+  ~CNFProblem() {
+      for (Cl* clause : problem) {
+          delete clause;
+      }
   }
 
   For& getProblem();
@@ -64,7 +70,7 @@ public:
       return maxVars-1;
   }
 
-  std::vector<double> getLiteralRelativeOccurrences();
+  std::vector<double> getLiteralRelativeOccurrences() const;
 
   bool readDimacsFromStdout();
   bool readDimacsFromFile(const char* filename);
@@ -125,6 +131,11 @@ public:
       problem.push_back(clause);
   }
 
+  // CNFProblem can only be moved, not copied
+  CNFProblem(const CNFProblem& other) = delete;
+  CNFProblem& operator=(const CNFProblem& other) = delete;
+  CNFProblem& operator=(CNFProblem&& other) = default;
+  CNFProblem(CNFProblem&& other) = default;
 
 private:
 

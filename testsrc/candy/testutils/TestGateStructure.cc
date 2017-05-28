@@ -48,7 +48,7 @@ namespace Candy {
         GateStructureBuilderImpl& withAnd(const std::vector<Lit>& inputs, Lit output) override;
         GateStructureBuilderImpl& withOr(const std::vector<Lit>& inputs, Lit output) override;
         GateStructureBuilderImpl& withXor(const std::vector<Lit>& inputs, Lit output) override;
-        std::unique_ptr<CNFProblem, void(*)(CNFProblem*)> build() override;
+        std::unique_ptr<CNFProblem> build() override;
         
         GateStructureBuilderImpl();
         virtual ~GateStructureBuilderImpl();
@@ -129,11 +129,11 @@ namespace Candy {
         return *this;
     }
     
-    std::unique_ptr<CNFProblem, void(*)(CNFProblem*)> GateStructureBuilderImpl::build() {
+    std::unique_ptr<CNFProblem> GateStructureBuilderImpl::build() {
         m_usedOutputs.clear();
         m_gateVars.clear();
         m_usedOutputs.clear();
-        return std::unique_ptr<CNFProblem, void(*)(CNFProblem*)>(m_builtClauses.release(), deleteClauses);
+        return std::unique_ptr<CNFProblem>(m_builtClauses.release());
     }
     
     std::unique_ptr<GateStructureBuilder> createGateStructureBuilder() {

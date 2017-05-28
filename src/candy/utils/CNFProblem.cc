@@ -11,7 +11,7 @@
 
 namespace Candy {
 
-std::vector<double> CNFProblem::getLiteralRelativeOccurrences() {
+std::vector<double> CNFProblem::getLiteralRelativeOccurrences() const {
     std::vector<double> literalOccurrence(maxVars*2, 0.0);
     for (auto c : problem) {
         for (Lit lit : *c) {

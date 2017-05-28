@@ -25,10 +25,11 @@
  */
 
 #include <gtest/gtest.h>
-#include <randomsimulation/Conjectures.h>
-#include <rsar/ARSolver.h>
-#include <rsar/Refinement.h>
-#include <utils/FastRand.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/rsar/ARSolver.h>
+#include <candy/rsar/Refinement.h>
+#include <candy/utils/FastRand.h>
+#include <candy/utils/MemUtils.h>
 
 #include "SolverMock.h"
 #include "HeuristicsMock.h"
@@ -63,10 +64,10 @@ namespace Candy {
     struct ARSolverAndGlucoseMock {
         std::unique_ptr<ARSolver> arSolver;
         SolverMock* glucoseMock;
-        CNFProblem minProblem;
+        std::unique_ptr<CNFProblem> minProblem;
     };
     
-    CNFProblem createSimplestCNFProblem(Conjectures &conjectures) {
+    std::unique_ptr<CNFProblem> createSimplestCNFProblem(Conjectures &conjectures) {
         Var maxVar = 0;
         for (auto&& equivalence : conjectures.getEquivalences()) {
             for (auto&& lit : equivalence) {
@@ -77,8 +78,8 @@ namespace Candy {
             maxVar = std::max(maxVar, var(bbConj.getLit()));
         }
         
-        CNFProblem result;
-        result.readClause(mkLit(maxVar, 1));
+        std::unique_ptr<CNFProblem> result = backported_std::make_unique<CNFProblem>();
+        result->readClause(mkLit(maxVar, 1));
         return result;
     }
     
@@ -88,7 +89,7 @@ namespace Candy {
         solverMock.mockctrl_setDefaultSolveResult(false);
         
         auto conjectures = makeDummyConjectures();
-        CNFProblem simplemostProblem = createSimplestCNFProblem(*conjectures);
+        std::unique_ptr<CNFProblem> simplemostProblem = createSimplestCNFProblem(*conjectures);
         
         auto underTestBuilder = createARSolverBuilder();
         underTestBuilder->withSolver(std::move(solverMockPtr));
@@ -98,7 +99,7 @@ namespace Candy {
         underTestBuilder->withMaxRefinementSteps(3);
         auto underTest = underTestBuilder->build();
         
-        return ARSolverAndGlucoseMock{std::move(underTest), &solverMock, simplemostProblem};
+        return ARSolverAndGlucoseMock{std::move(underTest), &solverMock, std::move(simplemostProblem)};
     }
     
     
@@ -108,7 +109,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_DISABLEsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::DISABLE);
-        underTest.arSolver->solve(underTest.minProblem);
+        underTest.arSolver->solve(*underTest.minProblem);
         auto eventLog = getEventLog(underTest);
         
         EXPECT_TRUE(std::find(eventLog.begin(), eventLog.end(), SolverMockEvent::SIMPLIFY)
@@ -117,7 +118,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_RESTRICTsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::RESTRICT);
-        underTest.arSolver->solve(underTest.minProblem);
+        underTest.arSolver->solve(*underTest.minProblem);
         auto eventLog = getEventLog(underTest);
         
         EXPECT_TRUE(std::find(eventLog.begin(), eventLog.end(), SolverMockEvent::SIMPLIFY)
@@ -131,7 +132,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_FREEZEsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::FREEZE);
-        underTest.arSolver->solve(underTest.minProblem);
+        underTest.arSolver->solve(*underTest.minProblem);
         auto eventLog = getEventLog(underTest);
         
         // Expected behaviour: add problem, freeze literals, add clauses, simplify, solve
@@ -142,7 +143,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_FULLsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::FULL);
-        underTest.arSolver->solve(underTest.minProblem);
+        underTest.arSolver->solve(*underTest.minProblem);
         auto eventLog = getEventLog(underTest);
         
         // Expected behaviour: add problem, simplify, add clauses, solve
@@ -153,7 +154,7 @@ namespace Candy {
     
     static void test_temporal_init_solveCallTime(SimplificationHandlingMode mode) {
         auto underTest = createSimpleSetup(mode);
-        underTest.arSolver->solve(underTest.minProblem);
+        underTest.arSolver->solve(*underTest.minProblem);
         auto eventLog = getEventLog(underTest);
         EXPECT_TRUE(occursOnlyAfter(eventLog, SolverMockEvent::SOLVE, SolverMockEvent::ADD_PROBLEM));
         EXPECT_TRUE(!occursBefore(eventLog, SolverMockEvent::SOLVE, SolverMockEvent::ADD_CLAUSE));
@@ -181,7 +182,7 @@ namespace Candy {
     
     TEST(RSARARSolver, forcesDeactivation_SimpleProblem) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::DISABLE);
-        underTest.arSolver->solve(underTest.minProblem);
+        underTest.arSolver->solve(*underTest.minProblem);
         // no heuristics employed, no conflict assumption lits indicated
         // by the solver, no eliminated vars => ARSolver needs to force
         // the additional clauses to be deactivated in the end
@@ -193,7 +194,7 @@ namespace Candy {
     static ARSolverAndGlucoseMock createSetup(SimplificationHandlingMode simplificationMode,
                                               std::unique_ptr<Conjectures> conjectures,
                                               const std::vector<std::vector<Var>> &deactivationsByStep,
-                                              CNFProblem minProblem) {
+                                              std::unique_ptr<CNFProblem> minProblem) {
         auto solverMockPtr = createSolverMock();
         SolverMock& solverMock = *solverMockPtr;
         solverMock.mockctrl_setDefaultSolveResult(false);
@@ -210,7 +211,7 @@ namespace Candy {
         underTestBuilder->addRefinementHeuristic(std::move(fakeHeur));
         auto underTest = underTestBuilder->build();
         
-        return ARSolverAndGlucoseMock{std::move(underTest), &solverMock, minProblem};
+        return ARSolverAndGlucoseMock{std::move(underTest), &solverMock, std::move(minProblem)};
     }
     
     static ARSolverAndGlucoseMock createDefaultTestSetup() {
@@ -224,12 +225,12 @@ namespace Candy {
             mkLit(4, 1),
             mkLit(5, 0)}));
         int nVars = 6;
-        CNFProblem minProblem;
-        minProblem.readClause(mkLit(nVars, 1));
+        std::unique_ptr<CNFProblem> minProblem = backported_std::make_unique<CNFProblem>();
+        minProblem->readClause(mkLit(nVars, 1));
         return createSetup(SimplificationHandlingMode::DISABLE,
                            std::move(conjectures),
                            {{1}, {4}, {0, 3}},
-                           minProblem);
+                           std::move(minProblem));
     }
     
     TEST(RSARARSolver, ultimatelyTerminatesWhenUNSAT) {
@@ -237,7 +238,7 @@ namespace Candy {
         
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         
-        lbool result = solverAndMock.arSolver->solve(solverAndMock.minProblem);
+        lbool result = solverAndMock.arSolver->solve(*solverAndMock.minProblem);
         
         EXPECT_EQ(result, l_False);
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 3);
@@ -250,7 +251,7 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         solverAndMock.glucoseMock->mockctrl_setResultInInvocation(1, true);
         
-        lbool result = solverAndMock.arSolver->solve(solverAndMock.minProblem);
+        lbool result = solverAndMock.arSolver->solve(*solverAndMock.minProblem);
         
         EXPECT_EQ(result, l_True);
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 2);
@@ -263,7 +264,7 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_setEliminated(1, true);
         solverAndMock.glucoseMock->mockctrl_setEliminated(2, true);
         
-        solverAndMock.arSolver->solve(solverAndMock.minProblem);
+        solverAndMock.arSolver->solve(*solverAndMock.minProblem);
         
         EXPECT_FALSE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 1));
         EXPECT_FALSE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 2));
@@ -341,7 +342,7 @@ namespace Candy {
             }
         });
         
-        solverAndMock.arSolver->solve(solverAndMock.minProblem);
+        solverAndMock.arSolver->solve(*solverAndMock.minProblem);
     }
     
     
