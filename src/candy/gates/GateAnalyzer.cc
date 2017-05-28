@@ -40,7 +40,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
             lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)
 {
     runtime.start();
-    gates = new vector<Gate>(problem.nVars());
+    gates.resize(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     index = buildIndexFromClauses(problem.getProblem());
     if (useHolistic) solver->addClauses(problem);
@@ -155,11 +155,11 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
                     if (!mono) inputs[~l]++;
                 }
                 //###
-                (*gates)[var(o)].out = o;
-                (*gates)[var(o)].notMono = !mono;
-                (*gates)[var(o)].fwd.insert((*gates)[var(o)].fwd.end(), f.begin(), f.end());
-                (*gates)[var(o)].bwd.insert((*gates)[var(o)].bwd.end(), g.begin(), g.end());
-                (*gates)[var(o)].inp.insert((*gates)[var(o)].inp.end(), inp.begin(), inp.end());
+                gates[var(o)].out = o;
+                gates[var(o)].notMono = !mono;
+                gates[var(o)].fwd.insert(gates[var(o)].fwd.end(), f.begin(), f.end());
+                gates[var(o)].bwd.insert(gates[var(o)].bwd.end(), g.begin(), g.end());
+                gates[var(o)].inp.insert(gates[var(o)].inp.end(), inp.begin(), inp.end());
                 //###
                 removeFromIndex(index, f);
                 removeFromIndex(index, g);
