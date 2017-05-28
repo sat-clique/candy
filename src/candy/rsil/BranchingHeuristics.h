@@ -36,7 +36,6 @@
 #include "RSARHeuristicsFilter.h"
 
 #include <type_traits>
-#include <iostream>
 
 namespace Candy {
     /**

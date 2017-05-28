@@ -29,7 +29,6 @@
 #include <candy/gates/GateDFSTraversal.h>
 #include <candy/core/SolverTypes.h>
 
-#include <iostream>
 #include <algorithm>
 #include <unordered_map>
 

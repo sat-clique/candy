@@ -40,8 +40,6 @@
 
 #include <candy/utils/MemUtils.h>
 
-#include <iostream>
-
 namespace Candy {
     ClauseOrder::ClauseOrder() {
         

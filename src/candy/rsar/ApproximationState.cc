@@ -37,8 +37,6 @@
 #include <utility>
 #include <map>
 
-#include <iostream>
-
 namespace Candy {
     
     /* -- ApproximationDelta implementation --------------------------------------------------------- */
@@ -457,7 +455,6 @@ namespace Candy {
 
             
             // remove implications
-            //std::cout << "Removing " << removalQueue.size() << " implications" << std::endl;
             for (auto impl : removalQueue) {
                 removeImplication(impl);
             }
@@ -466,13 +463,10 @@ namespace Candy {
             Lit newAnte = removalQueue.front().first;
             Lit newSucc = removalQueue.back().second;
             
-            //std::cout << "newAnte: " << newAnte << " newSucc: " << newSucc << std::endl;
-            
             if (newAnte != newSucc
                 && m_varRemovalWorkQueue.find(var(newAnte)) == m_varRemovalWorkQueue.end()
                 && m_varRemovalWorkQueue.find(var(newSucc)) == m_varRemovalWorkQueue.end()) {
                 // create patch X->Y
-                //std::cout << "Adding a patch" << std::endl;
                 addImplication(Implication{newAnte, newSucc});
                 result.newImplications.push_back(Implication{newAnte, newSucc});
             }
