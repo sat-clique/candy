@@ -26,9 +26,9 @@
 
 #include "Heuristics.h"
 
-#include <rsar/Refinement.h>
-#include <randomsimulation/GateDFSTraversal.h>
-#include <utils/MemUtils.h>
+#include <candy/rsar/Refinement.h>
+#include <candy/gates/GateDFSTraversal.h>
+#include <candy/utils/MemUtils.h>
 
 #include <unordered_map>
 

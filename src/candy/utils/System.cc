@@ -93,3 +93,36 @@ double Glucose::memUsed(void) {
 double Glucose::memUsed() { 
     return 0; }
 #endif
+
+#if defined(_WIN32)
+#include <Windows.h>
+#include <cassert>
+#include <chrono>
+
+static HANDLE processHandle = INVALID_HANDLE_VALUE;
+
+std::chrono::milliseconds Glucose::cpuTime(void) {
+    if (processHandle == INVALID_HANDLE_VALUE) {
+        processHandle = GetCurrentProcess();
+    }
+    
+    FILETIME creationTimeFT;
+    FILETIME exitTimeFT;
+    FILETIME kernelTimeFT;
+    FILETIME userTimeFT;
+    
+    bool success = (GetProcessTimes(processHandle,
+                                    &creationTimeFT,
+                                    &exitTimeFT,
+                                    &kernelTimeFT,
+                                    &userTimeFT) != 0);
+    assert(success);
+    
+    uint64_t userTime = userTimeFT.dwLowDateTime + ((uint64_t)userTimeFT.dwHighDateTime << 32);
+    uint64_t kernelTime = kernelTimeFT.dwLowDateTime + ((uint64_t)kernelTimeFT.dwHighDateTime << 32);
+    
+    // times are given with 100ns resolution
+    return std::chrono::milliseconds{(userTime + kernelTime) / (10 * 1000)};
+}
+
+#endif

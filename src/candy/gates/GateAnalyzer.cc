@@ -32,18 +32,21 @@
 namespace Candy {
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic,
-        bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget, unsigned int timeout) :
+        bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget,
+        std::chrono::milliseconds timeout) :
             problem (dimacs), solver (backported_std::make_unique<DefaultSolver>()),
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
             lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)
 {
+    runtime.start();
     gates = new vector<Gate>(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     index = buildIndexFromClauses(problem.getProblem());
     if (useHolistic) solver->addClauses(problem);
     solver->setIncrementalMode();
     solver->initNbInitialVars(problem.nVars());
+    runtime.stop();
 }
 
 GateAnalyzer::~GateAnalyzer() {
@@ -369,6 +372,10 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     }
 
     return false;
+}
+
+bool GateAnalyzer::hasTimeout() const {
+    return runtime.hasTimeout();
 }
 
 }

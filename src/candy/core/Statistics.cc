@@ -21,11 +21,20 @@ Statistics::Statistics() :
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
 #endif
 #ifdef RUNTIME_STATS
-    runtimes({{RT_INITIALIZATION, 0}, {RT_SOLVER, 0}, {RT_GATOR, 0}, {RT_SIMPLIFIER, 0}}),
-    starttimes({{RT_INITIALIZATION, 0}, {RT_SOLVER, 0}, {RT_GATOR, 0}, {RT_SIMPLIFIER, 0}}),
+    runtimes({{RT_INITIALIZATION, std::chrono::milliseconds{0}},
+              {RT_SOLVER, std::chrono::milliseconds{0}},
+              {RT_GATOR, std::chrono::milliseconds{0}},
+              {RT_SIMPLIFIER, std::chrono::milliseconds{0}}}),
+    starttimes({{RT_INITIALIZATION, std::chrono::milliseconds{0}},
+                {RT_SOLVER, std::chrono::milliseconds{0}},
+                {RT_GATOR, std::chrono::milliseconds{0}},
+                {RT_SIMPLIFIER, std::chrono::milliseconds{0}}}),
 #endif
 #ifdef INCREMENTAL_STATS
-    totalTime4Sat(0.), totalTime4Unsat(0.), nbSatCalls(0), nbUnsatCalls(0),
+    totalTime4Sat(std::chrono::milliseconds{0}),
+    totalTime4Unsat(std::chrono::milliseconds{0}),
+    nbSatCalls(0),
+    nbUnsatCalls(0),
 #endif
 #ifdef ALLOCATOR_STATS
     stats_number_of_pools(0), stats_pool_allocd(), stats_xxl_pool_allocd(0), stats_beyond_mallocd(0),
@@ -33,6 +42,7 @@ Statistics::Statistics() :
 #endif
     stats(0)
 {
+    (void)stats;
 }
 
 Statistics::~Statistics() { }
@@ -55,8 +65,10 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
     printf("c propagations          : %" PRIu64"\n", propagations);
 #endif
 #ifdef INCREMENTAL_STATS
-    printf("\nc SAT Calls             : %d in %g seconds\n", nbSatCalls, totalTime4Sat);
-    printf("c UNSAT Calls           : %d in %g seconds\n", nbUnsatCalls, totalTime4Unsat);
+    double totalTime4SatSec = static_cast<double>(totalTime4Sat.count())/1000.0f;
+    double totalTime4UnsatSec = static_cast<double>(totalTime4Sat.count())/1000.0f;
+    printf("\nc SAT Calls             : %d in %g seconds\n", nbSatCalls, totalTime4SatSec);
+    printf("c UNSAT Calls           : %d in %g seconds\n", nbUnsatCalls, totalTime4UnsatSec);
 
     printf("c--------------------------------------------------\n");
 #endif
@@ -73,7 +85,8 @@ void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uin
 }
 
 void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
-    double cpu_time = Glucose::cpuTime();
+    std::chrono::milliseconds cpu_time_millis = Glucose::cpuTime();
+    double cpu_time = static_cast<double>(cpu_time_millis.count())/1000.0f;
     printf("c ==============================================================================================\n");
 #ifdef RESTART_STATS
     printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));

@@ -27,7 +27,7 @@
 #ifndef X_EC6785CA_AF27_4D6B_97AB_C774E27E926E_GATEDFSVISITOR_H
 #define X_EC6785CA_AF27_4D6B_97AB_C774E27E926E_GATEDFSVISITOR_H
 
-#include <gates/GateAnalyzer.h>
+#include <candy/gates/GateAnalyzer.h>
 
 #include <vector>
 #include <stack>
@@ -40,7 +40,7 @@ namespace Candy {
     /**
      * \class GateDFSMarkedGate
      *
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * \brief Helper data structure used by visitDFS() for marking gates for
      *   backtracking.
@@ -51,7 +51,7 @@ namespace Candy {
     };
     
     /**
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * DFS-traverses the gate structure given by a Gate analyzer. A Collector object
      * is created, receiving pointers to the gates in order of their traversal
@@ -63,6 +63,8 @@ namespace Candy {
      *  - needs to have a method backtrack(Gate*).
      *  - needs to have a method collectInput(Var).
      *  - needs to have a method init(size_t)
+     *  - needs to have a method pruneAt(Gate&) -> bool
+     *  - needs to have a method finished()
      * Furthermore, Collector should be move-constructible and move-assignable.
      *
      * Collector.collect() is called whenever a gate is visited the first time,
@@ -70,7 +72,10 @@ namespace Candy {
      * the traversal. Moreover, Collector.collectInput() is called whenever an input
      * variable is encountered the first time.
      * Before performing the DFS, the amount of gates occuring in the gate structure
-     * is passed to init().
+     * is passed to init(). When the search is completed, finished() is called.
+     *
+     * A gate g is only visited if pruneAt(g) evaluates to false. 
+     *
      *
      * \returns the Collector object having received the gates encountered during
      *   the traversal.
@@ -88,7 +93,7 @@ namespace Candy {
         for (auto&& clause : analyzer.getRoots()) {
             for (auto lit : *clause) {
                 Gate& g = analyzer.getGate(lit);
-                if (g.isDefined()) {
+                if (g.isDefined() && !collector.pruneAt(g)) {
                     work.push(GateDFSMarkedGate{&g, false});
                 }
             }
@@ -107,10 +112,16 @@ namespace Candy {
             else if (visited.find(workItem.gate) == visited.end()) {
                 collector.collect(workItem.gate);
                 visited.emplace(workItem.gate);
+                
+                // Put the gate back on the stack, marking it so that next
+                // time it is popped, it gets backtracked.
                 work.push(GateDFSMarkedGate{workItem.gate, true});
+                
                 for (auto input : workItem.gate->getInputs()) {
                     Gate& g = analyzer.getGate(input);
-                    if (g.isDefined() && visited.find(&g) == visited.end()) {
+                    if (g.isDefined()
+                        && visited.find(&g) == visited.end()
+                        && !collector.pruneAt(g)) {
                         work.push(GateDFSMarkedGate{&g, false});
                     }
                     else if (!g.isDefined() && seenInputs.find(var(input)) == seenInputs.end()) {
@@ -121,11 +132,12 @@ namespace Candy {
             }
         }
         
+        collector.finished();
         return collector;
     }
     
     /*
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * TODO: documentation
      */
@@ -155,12 +167,20 @@ namespace Candy {
             return m_backtrackOutputOrder;
         }
         
+        bool pruneAt(Gate& g) {
+            (void)g;
+            return false;
+        }
+        
+        void finished() {
+        }
+        
     private:
         std::vector<Var> m_backtrackOutputOrder;
     };
 
     /*
-     * \ingroup RandomSimulation
+     * \ingroup Gates
      *
      * TODO: documentation
      */

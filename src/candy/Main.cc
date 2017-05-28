@@ -56,6 +56,7 @@
 #include <regex>
 #include <functional>
 #include <type_traits>
+#include <chrono>
 
 #include <candy/utils/CNFProblem.h>
 #include "candy/core/Certificate.h"
@@ -69,6 +70,7 @@
 #include "candy/simp/SimpSolver.h"
 
 #include "candy/gates/GateAnalyzer.h"
+#include "candy/gates/MiterDetector.h"
 #include "candy/rsar/ARSolver.h"
 #include "candy/rsar/SolverAdapter.h"
 #include "candy/rsar/Heuristics.h"
@@ -269,16 +271,16 @@ static void printProblemStatistics(SolverType& S) {
 }
 
 struct GateRecognitionArguments {
-    const int opt_gr_tries;
-    const bool opt_gr_patterns;
-    const bool opt_gr_semantic;
-    const unsigned int opt_gr_semantic_budget;
-    const unsigned int opt_gr_timeout;
-    const bool opt_gr_holistic;
-    const bool opt_gr_lookahead;
-    const bool opt_gr_intensify;
-    const int opt_gr_lookahead_threshold;
-    const bool opt_print_gates;
+    int opt_gr_tries;
+    bool opt_gr_patterns;
+    bool opt_gr_semantic;
+    unsigned int opt_gr_semantic_budget;
+    std::chrono::milliseconds opt_gr_timeout;
+    bool opt_gr_holistic;
+    bool opt_gr_lookahead;
+    bool opt_gr_intensify;
+    int opt_gr_lookahead_threshold;
+    bool opt_print_gates;
 };
 
 std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& arguments) {
@@ -287,7 +289,7 @@ std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& 
     << "c   Patterns: " << arguments.opt_gr_patterns << std::endl
     << "c   Semantic: " << arguments.opt_gr_semantic << std::endl
     << "c   Semantic budget: " << arguments.opt_gr_semantic_budget << std::endl
-    << "c   Timeout: " << arguments.opt_gr_timeout << std::endl
+    << "c   Timeout: " << arguments.opt_gr_timeout.count() << " ms" << std::endl
     << "c   Holistic: " << arguments.opt_gr_holistic << std::endl
     << "c   Lookahead: " << arguments.opt_gr_lookahead << std::endl
     << "c   Intensify: " << arguments.opt_gr_intensify << std::endl
@@ -348,7 +350,7 @@ struct RandomSimulationArguments {
     const int maxConjectureSize;
     const bool removeBackboneConjectures;
     const bool filterGatesByNonmono;
-    const int preprocessingTimeLimit;
+    std::chrono::milliseconds preprocessingTimeLimit;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments) {
@@ -360,7 +362,7 @@ std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments&
     << "c   Max. conjecture size: " << arguments.maxConjectureSize << std::endl
     << "c   Remove backbone conjectures: " << arguments.removeBackboneConjectures << std::endl
     << "c   Remove conjectures about monotonously nested gates: " << arguments.filterGatesByNonmono << std::endl
-    << "c   Preprocessing time limit: " << arguments.preprocessingTimeLimit << std::endl;
+    << "c   Preprocessing time limit: " << arguments.preprocessingTimeLimit.count() << " ms" << std::endl;
     
     return stream;
 }
@@ -406,7 +408,7 @@ static Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const s
 
 static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
                                                                    const RandomSimulationArguments& rsArguments,
-                                                                   int timeLimit = -1) {
+                                                                   std::chrono::milliseconds timeLimit = std::chrono::milliseconds{-1}) {
     auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();
     simulatorBuilder->withGateAnalyzer(analyzer);
 
@@ -446,12 +448,6 @@ std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsS
     */
 
     std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
-    
-    std::cout << "c Input dependency count heuristic limits: ";
-    for (auto limit : limits) {
-        std::cout << limit << " ";
-    }
-    std::cout << std::endl;
 
     if (limits.size() == 0) {
         throw std::invalid_argument(limitsString + ": invalid limits");
@@ -484,17 +480,24 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
     // TODO: the CPU time code was inserted in quite a hurry and
     // needs to be refactored.
     
-    double startCPUTime = Glucose::cpuTime();
+    std::chrono::milliseconds startCPUTime = Glucose::cpuTime();
     
-    auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
+    GateRecognitionArguments localGateRecognitionArgs = gateRecognitionArgs;
+    if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
+        localGateRecognitionArgs.opt_gr_timeout = std::min(gateRecognitionArgs.opt_gr_timeout,
+                                                           rsArguments.preprocessingTimeLimit);
+    }
+
+    auto gateAnalyzer = createGateAnalyzer(problem, localGateRecognitionArgs);
     gateAnalyzer->analyze();
     
-    double gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
-    std::cout << "c Gate recognition time: " << gateAnalyzerTime << std::endl;
+    std::chrono::milliseconds gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
+    std::cerr << "c Gate recognition time: " << gateAnalyzerTime.count() << " ms" << std::endl;
     
     try {
-        if (rsArguments.preprocessingTimeLimit >= 0
-            && static_cast<double>(gateAnalyzerTime) > rsArguments.preprocessingTimeLimit) {
+        if (gateAnalyzer->hasTimeout()
+            || (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}
+                && gateAnalyzerTime > rsArguments.preprocessingTimeLimit)) {
             throw UnsuitableProblemException{"Gate recognition exceeded the time limit."};
         }
         
@@ -504,9 +507,9 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
                 + std::to_string(gateAnalyzer->getGateCount())};
         }
         
-        int rsTimeLimit = -1;
-        if (rsArguments.preprocessingTimeLimit >= 0) {
-            rsTimeLimit = rsArguments.preprocessingTimeLimit - static_cast<int>(gateAnalyzerTime);
+        std::chrono::milliseconds rsTimeLimit = std::chrono::milliseconds{-1};
+        if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
+            rsTimeLimit = rsArguments.preprocessingTimeLimit - gateAnalyzerTime;
         }
         
         try {
@@ -515,8 +518,8 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
                 throw UnsuitableProblemException{"No conjectures found."};
             }
             
-            double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cout << "c Random simulation time: " << randomSimulationTime << std::endl;
+            auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
     
             auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
@@ -525,8 +528,8 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
             return lbool(result);
         }
         catch (OutOfTimeException& e) {
-            double randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cout << "c Random simulation time: " << randomSimulationTime << std::endl;
+            auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
             throw UnsuitableProblemException{"Random simulation exceeded the time limit."};
         }
@@ -564,6 +567,8 @@ struct RSILArguments {
     const int filterByInputDependenciesMax;
     const bool filterOnlyBackbones;
     const double minGateOutputFraction;
+
+    const bool useRSILOnlyForMiters;
 };
 
 std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
@@ -575,7 +580,8 @@ std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) 
         << "c   Filter by input dependency count enabled: " << arguments.filterByInputDependencies << std::endl
         << "c   Max. input depdencency count: " << arguments.filterByInputDependenciesMax << std::endl
         << "c   Apply filters only to backbone conjectures: " << arguments.filterOnlyBackbones << std::endl
-        << "c   Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl;
+        << "c   Min. gate output fraction: " << arguments.minGateOutputFraction << std::endl
+        << "c   RSIL restricted to miters?: " << arguments.useRSILOnlyForMiters << std::endl;
     }
     
     return stream;
@@ -669,19 +675,64 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
                             const RandomSimulationArguments& randomSimulationArgs,
                             const RSILArguments& rsilArgs) {
     return [gateRecognitionArgs, randomSimulationArgs, rsilArgs](SolverType& solver, CNFProblem& problem) {
-        auto analyzer = createGateAnalyzer(problem, gateRecognitionArgs);
-        analyzer->analyze();
+        Runtime runtime;
+        GateRecognitionArguments localGateRecognitionArgs = gateRecognitionArgs;
+        if (randomSimulationArgs.preprocessingTimeLimit >= std::chrono::milliseconds{-1}) {
+            runtime.setTimeout(randomSimulationArgs.preprocessingTimeLimit);
+            localGateRecognitionArgs.opt_gr_timeout = std::min(gateRecognitionArgs.opt_gr_timeout,
+                                                               randomSimulationArgs.preprocessingTimeLimit);
+        }
+        runtime.start();
         
-        double problemVars = solver.nVars();
+        auto analyzer = createGateAnalyzer(problem, localGateRecognitionArgs);
+        analyzer->analyze();
+        std::cerr << "c Gate recognition time: " << runtime.lap().count() << " ms" << std::endl;
+        
+        double problemVars = problem.nVars();
         double gateOutputs = analyzer->getGateCount();
+        
+        if (analyzer->hasTimeout() || runtime.hasTimeout()) {
+            // Abort RSIL, since the probability is too high that this run
+            // is not reproducible if we continue
+            throw UnsuitableProblemException{"gate analysis exceeded the preprocessing time limit."};
+        }
         
         if (problemVars == 0 || (gateOutputs/problemVars) < rsilArgs.minGateOutputFraction) {
             std::string errorMessage = std::string{"insufficient gate count "} + std::to_string(analyzer->getGateCount())
-            + std::string{"/"} + std::to_string(solver.nVars()) + std::string{"."};
+            + std::string{"/"} + std::to_string(problem.nVars()) + std::string{"."};
             throw UnsuitableProblemException{errorMessage};
         }
         
-        auto conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
+        if (rsilArgs.useRSILOnlyForMiters) {
+            bool isMiter = hasPossiblyMiterStructure(*analyzer);
+            std::cerr << "c Miter recognition time: " << runtime.lap().count() << " ms" << std::endl;
+            
+            if (runtime.hasTimeout()) {
+                throw UnsuitableProblemException{"miter detection exceeded the preprocessing time limit."};
+            }
+            if (!isMiter) {
+                throw UnsuitableProblemException{"problem heuristically determined not to be a miter problem."};
+            }
+        }
+
+        std::unique_ptr<Conjectures> conjectures;
+        
+        if (randomSimulationArgs.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
+            auto remainingTime = randomSimulationArgs.preprocessingTimeLimit - runtime.getRuntime();
+            try {
+                conjectures = performRandomSimulation(*analyzer, randomSimulationArgs, remainingTime);
+            }
+            catch(OutOfTimeException& exception) {
+                std::cerr << "c Random simulation time: " << runtime.lap().count() << " ms" << std::endl;
+                throw UnsuitableProblemException{"random simulation exceeded the preprocessing time limit."};
+            }
+        }
+        else {
+            conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
+        }
+        
+        std::cerr << "c Random simulation time: " << runtime.lap().count() << " ms" << std::endl;
+        
         if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
             throw UnsuitableProblemException{"no conjectures found."};
         }
@@ -783,7 +834,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", true);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", true);
     IntOption opt_gr_semantic_budget("GATE RECOGNITION", "gate-semantic-budget", "Enable Semantic Gate Detection Conflict Budget", 0, IntRange(0, INT32_MAX));
-    IntOption opt_gr_timeout("GATE RECOGNITION", "gate-timeout", "Enable Gate Detection Timeout", 0, IntRange(0, INT32_MAX));
+    IntOption opt_gr_timeout("GATE RECOGNITION", "gate-timeout", "Enable Gate Detection Timeout (seconds)", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
     IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
@@ -823,6 +874,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
                                            false);
     DoubleOption opt_rsil_minGateFraction("RSIL", "rsil-min-gate-frac", "Enable RSIL only when at least this fraction of the variables"\
                                           " consists of gate outputs", 0.1, DoubleRange(0.0, true, 1.0, true));
+    BoolOption opt_rsil_onlyMiters("RSIL", "rsil-only-miters", "Enable RSIL only for miter problems (heuristic detection)", false);
 
     parseOptions(argc, argv, true);
 
@@ -831,7 +883,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_gr_patterns,
         opt_gr_semantic,
         static_cast<unsigned int>(opt_gr_semantic_budget),
-        static_cast<unsigned int>(opt_gr_timeout),
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{opt_gr_timeout}),
         opt_gr_holistic,
         opt_gr_lookahead,
         opt_gr_intensify,
@@ -847,7 +899,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rs_filterConjBySize,
         opt_rs_removeBackboneConj,
         opt_rs_filterGatesByNonmono,
-        opt_rs_ppTimeLimit
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{opt_rs_ppTimeLimit})
     };
 
     RSARArguments rsarArgs{
@@ -867,7 +919,8 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
         opt_rsil_filterByInputDeps != 0,
         opt_rsil_filterByInputDeps,
         opt_rsil_filterOnlyBackbone,
-        opt_rsil_minGateFraction
+        opt_rsil_minGateFraction,
+        opt_rsil_onlyMiters
     };
 
     const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
@@ -982,7 +1035,7 @@ int solve(const GlucoseArguments& args,
         }
 
         auto S = backported_std::make_unique<SolverType>();
-        S->setVerbosities(args.verb, args.vv);
+        S->setVerbosities(args.vv, args.verb);
         S->setCertificate(certificate);
         
         bool fallBackToUnmodifiedCandy = false;
@@ -993,12 +1046,12 @@ int solve(const GlucoseArguments& args,
                 preprocessingHook(*S, problem);
             }
             catch(UnsuitableProblemException& e) {
-                std::cout << "c Aborting RSIL: " << e.what() << std::endl;
-                std::cout << "c Falling back to unmodified Candy" << std::endl;
+                std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
+                std::cerr << "c Falling back to unmodified Candy" << std::endl;
                 fallBackToUnmodifiedCandy = true;
                 S.reset(nullptr);
                 fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
-                fallbackSolver->setVerbosities(args.verb, args.vv);
+                fallbackSolver->setVerbosities(args.vv, args.verb);
                 fallbackSolver->setCertificate(certificate);
             }
         }

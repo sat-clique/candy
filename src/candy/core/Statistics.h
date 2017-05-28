@@ -14,6 +14,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <chrono>
 #include <candy/utils/System.h>
 
 //#define SOLVER_STATS
@@ -43,12 +44,12 @@ class Statistics {
 #define RT_SOLVER           "Runtime Solver"
 #define RT_GATOR            "Runtime Gate Analyzer"
 #define RT_SIMPLIFIER       "Runtime Simplifier"
-    std::map<std::string, double> runtimes;
-    std::map<std::string, double> starttimes;
+    std::map<std::string, std::chrono::milliseconds> runtimes;
+    std::map<std::string, std::chrono::milliseconds> starttimes;
 #endif// RUNTIME_STATS
 
 #ifdef INCREMENTAL_STATS
-    double totalTime4Sat, totalTime4Unsat;
+    std::chrono::milliseconds totalTime4Sat, totalTime4Unsat;
     int nbSatCalls, nbUnsatCalls;
 #endif// INCREMENTAL_STATS
 
@@ -120,42 +121,43 @@ public:
 #ifdef INCREMENTAL_STATS
     inline void incNBSatCalls() { ++nbSatCalls; }
     inline void incNBUnsatCalls() { ++nbUnsatCalls; }
-    inline void incTotalTime4Sat(int amount) { totalTime4Sat += amount; }
-    inline void incTotalTime4Unsat(int amount) { totalTime4Unsat += amount; }
+    inline void incTotalTime4Sat(std::chrono::milliseconds amount) { totalTime4Sat += amount; }
+    inline void incTotalTime4Unsat(std::chrono::milliseconds amount) { totalTime4Unsat += amount; }
 #else
     inline void incNBSatCalls() { }
     inline void incNBUnsatCalls() { }
-    inline void incTotalTime4Sat(unsigned int amount) { (void)(amount); }
-    inline void incTotalTime4Unsat(unsigned int amount) { (void)(amount); }
+    inline void incTotalTime4Sat(std::chrono::milliseconds amount) { (void)(amount); }
+    inline void incTotalTime4Unsat(std::chrono::milliseconds amount) { (void)(amount); }
 #endif// INCREMENTAL_STATS
 #ifdef RUNTIME_STATS
     inline void runtimeReset(std::string key) {
         if (!starttimes.count(key)) {
-            starttimes.insert({{key, 0}});
+            starttimes.insert({{key, std::chrono::milliseconds{0}}});
         }
         if (!runtimes.count(key)) {
-            runtimes.insert({{key, 0}});
+            runtimes.insert({{key, std::chrono::milliseconds{0}}});
         }
-        starttimes[key] = 0;
-        runtimes[key] = 0;
+        starttimes[key] = std::chrono::milliseconds{0};
+        runtimes[key] = std::chrono::milliseconds{0};
     }
     inline void runtimeStart(std::string key) {
         if (!starttimes.count(key)) {
-            starttimes.insert({{key, 0}});
+            starttimes.insert({{key, std::chrono::milliseconds{0}}});
         }
         starttimes[key] = Glucose::cpuTime();
     }
     inline void runtimeStop(std::string key) {
         if (!starttimes.count(key)) {
-            starttimes.insert({{key, 0}});
+            starttimes.insert({{key, std::chrono::milliseconds{0}}});
         }
         if (!runtimes.count(key)) {
-            runtimes.insert({{key, 0}});
+            runtimes.insert({{key, std::chrono::milliseconds{0}}});
         }
         runtimes[key] += Glucose::cpuTime() - starttimes[key];
     }
     void printRuntime(std::string key) {
-        printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), runtimes[key]);
+        double seconds = static_cast<double>(runtimes[key].count())/1000.0f;
+        printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
     }
 #else
     inline void runtimeStart(std::string key) { (void)(key); }

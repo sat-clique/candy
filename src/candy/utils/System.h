@@ -28,6 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <stdint.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <chrono>
 
 #ifndef PRIu64
 #define PRIu64 "lu"
@@ -38,30 +39,36 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Glucose {
 
-static inline double cpuTime(void); // CPU-time in seconds.
 extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
 extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
 
 }
-
 //-------------------------------------------------------------------------------------------------
 // Implementation of inline functions:
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
-#include <time.h>
+#if defined(_WIN32)
 
-static inline double Glucose::cpuTime(void) { return (double)clock() / CLOCKS_PER_SEC; }
+namespace Glucose {
+// Getting the CPU time on Windows involves including Windows.h,
+// for now let's restrict that to System.cc
+std::chrono::milliseconds cpuTime(void);
+}
 
 #else
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
 
-static inline double Glucose::cpuTime(void) {
+namespace Glucose {
+static inline std::chrono::milliseconds cpuTime(void) {
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
-    return (double)ru.ru_utime.tv_sec + (double)ru.ru_utime.tv_usec / 1000000; }
+    return std::chrono::milliseconds {ru.ru_utime.tv_sec * 1000 + ru.ru_utime.tv_usec / 1000 };
+}
+}
 
 #endif
+    
+
 
 #endif
