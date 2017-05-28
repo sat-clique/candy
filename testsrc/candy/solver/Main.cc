@@ -85,8 +85,3 @@ TEST (CandyAddClauseTestPatterns, propagateEarly3) {
   Candy::Clause& clause = solver.getClause(0);
   ASSERT_EQ(clause.size(), 2ul);
 }
-
-int main(int argc, char **argv) {
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
