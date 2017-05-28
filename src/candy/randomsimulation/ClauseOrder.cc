@@ -86,7 +86,7 @@ namespace Candy {
         ClauseOrderImplBase& operator=(const ClauseOrderImplBase& other) = delete;
         
     protected:
-        void backtrack(GateAnalyzer& analyzer, Gate &gate);
+        void backtrack(GateAnalyzer& analyzer, const Gate &gate);
         std::vector<const Cl*> &createClauseStorage(Glucose::Var variable);
         
         std::vector<Glucose::Var> m_inputVariables;
@@ -144,7 +144,7 @@ namespace Candy {
         return m_maxVar + 1;
     }
     
-    void ClauseOrderImplBase::backtrack(GateAnalyzer& analyzer, Gate &gate) {
+    void ClauseOrderImplBase::backtrack(GateAnalyzer& analyzer, const Gate &gate) {
         if (m_filteringEnabled) {
             // backtrack the gate only if
             //  - its output is an enabled variable
@@ -165,7 +165,7 @@ namespace Candy {
         }
         
         Glucose::Lit usedOutput;
-        For *usedGateClauses;
+        const For *usedGateClauses;
         
         if (gate.hasNonMonotonousParent()
             || gate.getForwardClauses().size() <= gate.getBackwardClauses().size()) {
@@ -302,7 +302,7 @@ namespace Candy {
     }
     
     struct DFSGateCollector {
-        std::vector<Gate*> backtrackSequence{};
+        std::vector<const Gate*> backtrackSequence{};
         std::vector<Var> inputs{};
         int maxVar = -1;
         
@@ -310,12 +310,12 @@ namespace Candy {
             backtrackSequence.reserve(gateCount);
         }
         
-        void backtrack(Gate* g) {
+        void backtrack(const Gate* g) {
             maxVar = std::max(maxVar, var(g->getOutput()));
             backtrackSequence.push_back(g);
         }
         
-        void collect(Gate* g) {
+        void collect(const Gate* g) {
             maxVar = std::max(maxVar, var(g->getOutput()));
         }
         
@@ -324,7 +324,7 @@ namespace Candy {
             inputs.push_back(v);
         }
         
-        bool pruneAt(Gate& g) {
+        bool pruneAt(const Gate& g) {
             (void)g;
             return false;
         }
