@@ -66,7 +66,7 @@ namespace Candy {
                                    std::unique_ptr<Partition> partitionStrat,
                                    std::unique_ptr<Randomization> randomizationStrat,
                                    std::unique_ptr<Propagation> propagationStrat,
-                                   GateAnalyzer &gateAnalyzer,
+                                   const GateAnalyzer &gateAnalyzer,
                                    float reductionRateAbortThreshold);
         
         Conjectures run(unsigned int nSteps) override;
@@ -90,7 +90,7 @@ namespace Candy {
         std::unique_ptr<Randomization> m_randomizationStrat;
         std::unique_ptr<Propagation> m_propagationStrat;
         
-        GateAnalyzer& m_gateAnalyzer;
+        const GateAnalyzer& m_gateAnalyzer;
         bool m_isInitialized;
         
         SimulationVectors m_simulationVectors;
@@ -101,7 +101,7 @@ namespace Candy {
                                                            std::unique_ptr<Partition> partitionStrat,
                                                            std::unique_ptr<Randomization> randomizationStrat,
                                                            std::unique_ptr<Propagation> propagationStrat,
-                                                           GateAnalyzer &gateAnalyzer,
+                                                           const GateAnalyzer &gateAnalyzer,
                                                            float reductionRateAbortThreshold)
     : RandomSimulator(), m_clauseOrderStrat(std::move(clauseOrderStrat)),
     m_partitionStrat(std::move(partitionStrat)),
@@ -200,7 +200,7 @@ namespace Candy {
         BitparallelRandomSimulatorBuilder& withPartitionStrategy(std::unique_ptr<Partition> partitionStrat) override;
         BitparallelRandomSimulatorBuilder& withRandomizationStrategy(std::unique_ptr<Randomization> randomizationStrat) override;
         BitparallelRandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation> propagationStrat) override;
-        BitparallelRandomSimulatorBuilder& withGateAnalyzer(GateAnalyzer& gateAnalyzer) override;
+        BitparallelRandomSimulatorBuilder& withGateAnalyzer(const GateAnalyzer& gateAnalyzer) override;
         BitparallelRandomSimulatorBuilder& withReductionRateAbortThreshold(float threshold) override;
         BitparallelRandomSimulatorBuilder& withGateFilter(std::unique_ptr<GateFilter> filter) override;
         std::unique_ptr<RandomSimulator> build() override;
@@ -217,7 +217,7 @@ namespace Candy {
         std::unique_ptr<Randomization> m_randomizationStrat;
         std::unique_ptr<Propagation> m_propagationStrat;
         std::vector<std::unique_ptr<GateFilter>> m_gateFilters;
-        GateAnalyzer *m_gateAnalyzer;
+        const GateAnalyzer *m_gateAnalyzer;
         float m_reductionRateAbortThreshold;
     };
     
@@ -253,7 +253,7 @@ namespace Candy {
         return *this;
     }
     
-    BitparallelRandomSimulatorBuilder& BitparallelRandomSimulatorBuilder::withGateAnalyzer(GateAnalyzer& gateAnalyzer) {
+    BitparallelRandomSimulatorBuilder& BitparallelRandomSimulatorBuilder::withGateAnalyzer(const GateAnalyzer& gateAnalyzer) {
         m_gateAnalyzer = &gateAnalyzer;
         return *this;
     }
@@ -307,7 +307,7 @@ namespace Candy {
         return backported_std::make_unique<BitparallelRandomSimulatorBuilder>();
     }
     
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer) {
+    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(const GateAnalyzer& gateAnalyzer) {
         auto defaultBuilder = createDefaultRandomSimulatorBuilder();
         defaultBuilder->withGateAnalyzer(gateAnalyzer);
         return defaultBuilder->build();

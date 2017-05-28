@@ -39,7 +39,7 @@
 namespace Candy {
     class MockClauseOrder : public ClauseOrder {
     public:
-        void readGates(GateAnalyzer& analyzer) override;
+        void readGates(const GateAnalyzer& analyzer) override;
         const std::vector<Var> &getInputVariables() const override;
         const std::vector<Lit> &getGateOutputsOrdered() const override;
         const std::vector<const Cl*> &getClauses(Var variable) const override;
@@ -79,7 +79,7 @@ namespace Candy {
         }
     }
     
-    void MockClauseOrder::readGates(GateAnalyzer &) {
+    void MockClauseOrder::readGates(const GateAnalyzer &) {
     }
     
     void MockClauseOrder::setGateFilter(std::unique_ptr<GateFilter>) {
