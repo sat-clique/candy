@@ -255,8 +255,8 @@ public:
         this->termCallback = termCallback;
     }
 
-    void setCertificate(Certificate* certificate) {
-        this->certificate = certificate;
+    void setCertificate(Certificate& certificate) {
+        this->certificate = &certificate;
     }
 
     void setVerbosities(int verbEveryConflicts, int verbosity) {
@@ -266,6 +266,7 @@ public:
     }
 
     // Certified UNSAT (Thanks to Marijn Heule)
+    Certificate defaultCertificate;
     Certificate* certificate;
 
     // a few stats are used for heuristics control, keep them here
@@ -594,8 +595,10 @@ namespace SolverOptions {
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(new Certificate(nullptr, false)),
+    certificate(&defaultCertificate),
     // stats for heuristic control
     nConflicts(0), nPropagations(0), nLiterals(0),
     // verbosity flags

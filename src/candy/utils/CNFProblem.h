@@ -31,6 +31,7 @@ namespace Candy {
 
 class CNFProblem {
 
+private:
   For problem;
 
   Certificate* certificate;
@@ -41,11 +42,10 @@ class CNFProblem {
   int headerClauses = 0;
 
 public:
-  CNFProblem() {
-      certificate = new Certificate(nullptr, false);
+  CNFProblem() : certificate(nullptr) {
   }
 
-  CNFProblem(Certificate* _certificate) : certificate(_certificate) {
+  CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
   }
 
   For& getProblem();
@@ -100,7 +100,9 @@ public:
       for (Lit lit : *clause) {
           if (lit == ~prev) {
               delete clause;
-              certificate->removed(begin, end);
+              if (certificate) {
+                  certificate->removed(begin, end);
+              }
               return; // reject tautological clauses
           }
           else if (lit != prev) {
@@ -114,8 +116,10 @@ public:
           }
       }
       if (insertion_point != clause->end()) {
-          certificate->added(clause->begin(), insertion_point);
-          certificate->removed(begin, end);
+          if (certificate) {
+              certificate->added(clause->begin(), insertion_point);
+              certificate->removed(begin, end);
+          }
           clause->erase(insertion_point, clause->end());
       }
       problem.push_back(clause);
