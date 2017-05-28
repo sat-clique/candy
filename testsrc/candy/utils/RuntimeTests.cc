@@ -39,7 +39,7 @@ namespace Candy {
                 m_currentTime += amount;
             }
             
-            std::chrono::milliseconds cpuTime() const noexcept {
+            std::chrono::milliseconds getTime() const noexcept {
                 return m_currentTime;
             }
             
