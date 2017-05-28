@@ -17,15 +17,23 @@ env:
   matrix:
     - CANDY_MODE=REGULAR
     - CANDY_MODE=COVERAGE
+    - CANDY_MODE=SANITIZERS
 
 matrix:
+  global:
+    - ASAN_OPTIONS="detect_leaks=1"
   # Coverage only on Linux/gcc
   exclude:
   - os: osx
     env: CANDY_MODE=COVERAGE
+  - os: osx
+    env: CANDY_MODE=SANITIZERS
   - os: linux
     compiler: clang
     env: CANDY_MODE=COVERAGE
+  - os: linux
+    compiler: clang
+    env: CANDY_MODE=SANITIZERS
 
   allow_failures:
   # Travis' clang on Linux is too old: doesn't support the required builtins
@@ -54,6 +62,9 @@ script:
   - if [ "$CANDY_MODE" = "COVERAGE" ]; then
       cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_COVERAGE=ON $TRAVIS_BUILD_DIR ;
     fi
+  - if [ "$CANDY_MODE" = "SANITIZERS" ]; then
+      cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_LLVM_SANITIZER=ON $TRAVIS_BUILD_DIR ;
+    fi
 
   - cmake --build . --config Release -- -j2
   - ctest -V
@@ -64,6 +75,6 @@ after_success:
      lcov --directory . --capture --output-file coverage.info ;
      lcov --remove coverage.info 'lib/*' 'testsrc/*' '/usr/*' --output-file coverage.info ;
      lcov --list coverage.info ;
-     cd $TRAVIS_BUILD_DIR ; 
+     cd $TRAVIS_BUILD_DIR ;
      coveralls-lcov ../build/coverage.info ;
    fi
