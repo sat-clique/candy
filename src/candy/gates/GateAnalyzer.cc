@@ -261,35 +261,22 @@ void GateAnalyzer::analyze() {
     runtime.stop();
 }
 
-
-namespace GateAnalyzerPrivate {
-namespace {
-    void deleteClauses(For* formula) {
-        for (Cl* clause : *formula) {
-            delete clause;
-        }
-    }
-}
-}
-
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     // generate set of non-tautological resolvents
     
-    // Using a custom deleter here: when isBlockedAfterVE returns,
-    // the clauses in resolvents are freed via deleteClauses
-    std::unique_ptr<For, void(*)(For*)> resolvents {new For{}, GateAnalyzerPrivate::deleteClauses};
+    std::vector<Cl> resolvents;
     for (Cl* a : f) for (Cl* b : g) {
         if (!isBlocked(o, *a, *b)) {
-            Cl* res = new Cl();
-            res->insert(res->end(), a->begin(), a->end());
-            res->insert(res->end(), b->begin(), b->end());
-            res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
-            resolvents->push_back(res);
+            resolvents.resize(resolvents.size() + 1); // new clause gets created at the back
+            Cl& res = resolvents.back();
+            res.insert(res.end(), a->begin(), a->end());
+            res.insert(res.end(), b->begin(), b->end());
+            res.erase(std::remove_if(res.begin(), res.end(), [o](Lit l) { return var(l) == var(o); }), res.end());
         }
-        if ((int)resolvents->size() > lookaheadThreshold) return false;
+        if ((int)resolvents.size() > lookaheadThreshold) return false;
     }
-    if (resolvents->empty()) return true; // the set is trivially blocked
+    if (resolvents.empty()) return true; // the set is trivially blocked
 
 #ifdef GADebug
     printf("Found %zu non-tautologic resolvents\n", resolvents.size());
@@ -297,11 +284,11 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 
     // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
     vector<Var> candidates;
-    for (Lit l : *(*resolvents)[0]) candidates.push_back(var(l));
-    for (size_t i = 1; i < resolvents->size(); i++) {
+    for (Lit l : resolvents[0]) candidates.push_back(var(l));
+    for (size_t i = 1; i < resolvents.size(); i++) {
         if (candidates.empty()) break;
         vector<Var> next_candidates;
-        for (Lit lit : *((*resolvents)[i])) {
+        for (Lit lit : resolvents[i]) {
             if (find(candidates.begin(), candidates.end(), var(lit)) != candidates.end()) {
                 next_candidates.push_back(var(lit));
             }
@@ -368,11 +355,11 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
         if ((fwd.size() > 0 || bwd.size() > 0) && isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
             // split resolvents by output literal 'out' of the function defined by 'fwd' and 'bwd'
             For res_fwd, res_bwd;
-            for (Cl* res : *resolvents) {
-                if (find(res->begin(), res->end(), ~out) != res->end()) {
-                    res_fwd.push_back(res);
+            for (Cl& res : resolvents) {
+                if (find(res.begin(), res.end(), ~out) != res.end()) {
+                    res_fwd.push_back(&res);
                 } else {
-                    res_bwd.push_back(res);
+                    res_bwd.push_back(&res);
                 }
             }
             if ((res_fwd.size() == 0 || bwd.size() > 0) && (res_bwd.size() == 0 || fwd.size() > 0))
