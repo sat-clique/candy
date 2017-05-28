@@ -118,7 +118,7 @@ namespace Candy {
                 work.push(GateDFSMarkedGate{workItem.gate, true});
                 
                 for (auto input : workItem.gate->getInputs()) {
-                    Gate& g = analyzer.getGate(input);
+                    const Gate& g = analyzer.getGate(input);
                     if (g.isDefined()
                         && visited.find(&g) == visited.end()
                         && !collector.pruneAt(g)) {

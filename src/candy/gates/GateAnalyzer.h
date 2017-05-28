@@ -94,8 +94,8 @@ public:
 
     // public getters
     int getGateCount() const { return nGates; }
-    Gate& getGate(Lit output) const { return (*gates)[var(output)]; }
-
+    Gate& getGate(Lit output) { return gates[var(output)]; }
+    const Gate& getGate(Lit output) const { return gates[var(output)]; }
 
     void printGates() {
         std::vector<Lit> outputs;
@@ -147,7 +147,7 @@ private:
 
     // analyzer output:
     std::vector<Cl*> roots; // top-level clauses
-    std::vector<Gate>* gates; // stores gate-struct for every output
+    std::vector<Gate> gates; // stores gate-struct for every output
     int nGates = 0;
 
     void printFormula(For& f, bool nl = false) {
