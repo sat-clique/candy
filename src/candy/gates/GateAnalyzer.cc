@@ -182,7 +182,7 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
 void GateAnalyzer::analyze(vector<Lit>& candidates) {
     if (useIntensification) {
         vector<Lit> remainder;
-        bool patterns, semantic, lookahead, restart = false;
+        bool patterns = false, semantic = false, lookahead = false, restart = false;
         for (int level = 0; level < 3 && !runtime.hasTimeout(); restart ? level = 0 : level++) {
 #ifdef GADebug
             printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
