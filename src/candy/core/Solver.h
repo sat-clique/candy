@@ -130,7 +130,7 @@ public:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0);
 
     // Add clauses to the solver
-    void addClauses(CNFProblem dimacs);
+    void addClauses(const CNFProblem& dimacs);
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
@@ -721,8 +721,8 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
 }
 
 template<class PickBranchLitT>
-void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
-    vector<vector<Lit>*>& problem = dimacs.getProblem();
+void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
+    const vector<vector<Lit>*>& problem = dimacs.getProblem();
     vector<double> occ = dimacs.getLiteralRelativeOccurrences();
     if ((size_t)dimacs.nVars() > nVars()) {
         assigns.reserve(dimacs.nVars());
