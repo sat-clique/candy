@@ -31,6 +31,7 @@ namespace Candy {
 
 class CNFProblem {
 
+private:
   For problem;
 
   Certificate* certificate;
@@ -41,11 +42,16 @@ class CNFProblem {
   int headerClauses = 0;
 
 public:
-  CNFProblem() {
-      certificate = new Certificate(nullptr, false);
+  CNFProblem() : certificate(nullptr) {
   }
 
-  CNFProblem(Certificate* _certificate) : certificate(_certificate) {
+  explicit CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
+  }
+    
+  ~CNFProblem() {
+      for (Cl* clause : problem) {
+          delete clause;
+      }
   }
 
   For& getProblem();
@@ -64,7 +70,7 @@ public:
       return maxVars-1;
   }
 
-  std::vector<double> getLiteralRelativeOccurrences();
+  std::vector<double> getLiteralRelativeOccurrences() const;
 
   bool readDimacsFromStdout();
   bool readDimacsFromFile(const char* filename);
@@ -100,7 +106,9 @@ public:
       for (Lit lit : *clause) {
           if (lit == ~prev) {
               delete clause;
-              certificate->removed(begin, end);
+              if (certificate) {
+                  certificate->removed(begin, end);
+              }
               return; // reject tautological clauses
           }
           else if (lit != prev) {
@@ -114,13 +122,20 @@ public:
           }
       }
       if (insertion_point != clause->end()) {
-          certificate->added(clause->begin(), insertion_point);
-          certificate->removed(begin, end);
+          if (certificate) {
+              certificate->added(clause->begin(), insertion_point);
+              certificate->removed(begin, end);
+          }
           clause->erase(insertion_point, clause->end());
       }
       problem.push_back(clause);
   }
 
+  // CNFProblem can only be moved, not copied
+  CNFProblem(const CNFProblem& other) = delete;
+  CNFProblem& operator=(const CNFProblem& other) = delete;
+  CNFProblem& operator=(CNFProblem&& other) = default;
+  CNFProblem(CNFProblem&& other) = default;
 
 private:
 

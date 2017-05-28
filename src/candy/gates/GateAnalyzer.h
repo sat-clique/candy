@@ -55,15 +55,27 @@ typedef struct Gate {
     bool notMono = false;
     std::vector<Lit> inp;
 
-    inline bool isDefined() { return out != lit_Undef; }
+    inline bool isDefined() const { return out != lit_Undef; }
+    inline Lit getOutput() const { return out; }
 
-    // Compatibility functions
-    inline Lit getOutput() { return out; }
-    inline For& getForwardClauses() { return fwd; }
-    inline For& getBackwardClauses() { return bwd; }
-    inline std::vector<Lit>& getInputs() { return inp; }
-    inline bool hasNonMonotonousParent() { return notMono; }
-    // End of compatibility functions
+    
+    inline const For& getForwardClauses() const { return fwd; }
+    inline const For& getBackwardClauses() const { return bwd; }
+    inline const std::vector<Lit>& getInputs() const  { return inp; }
+    
+    inline For& getForwardClauses() {
+        return const_cast<For&>(static_cast<const Gate*>(this)->getForwardClauses());
+    }
+
+    inline For& getBackwardClauses() {
+        return const_cast<For&>(static_cast<const Gate*>(this)->getBackwardClauses());
+    }
+
+    inline std::vector<Lit>& getInputs() {
+        return const_cast<std::vector<Lit>&>(static_cast<const Gate*>(this)->getInputs());
+    }
+    
+    inline bool hasNonMonotonousParent() const { return notMono; }
 } Gate;
 
 
@@ -81,9 +93,9 @@ public:
     void analyze();
 
     // public getters
-    int getGateCount() { return nGates; }
-    Gate& getGate(Lit output) { return (*gates)[var(output)]; }
-
+    int getGateCount() const { return nGates; }
+    Gate& getGate(Lit output) { return gates[var(output)]; }
+    const Gate& getGate(Lit output) const { return gates[var(output)]; }
 
     void printGates() {
         std::vector<Lit> outputs;
@@ -114,7 +126,7 @@ public:
 
 private:
     // problem to analyze:
-    CNFProblem problem;
+    CNFProblem& problem;
     std::unique_ptr<DefaultSolver> solver;
     std::vector<Lit> assumptions;
 
@@ -135,7 +147,7 @@ private:
 
     // analyzer output:
     std::vector<Cl*> roots; // top-level clauses
-    std::vector<Gate>* gates; // stores gate-struct for every output
+    std::vector<Gate> gates; // stores gate-struct for every output
     int nGates = 0;
 
     void printFormula(For& f, bool nl = false) {

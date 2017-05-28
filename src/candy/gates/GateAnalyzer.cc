@@ -40,7 +40,7 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
             lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)
 {
     runtime.start();
-    gates = new vector<Gate>(problem.nVars());
+    gates.resize(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     index = buildIndexFromClauses(problem.getProblem());
     if (useHolistic) solver->addClauses(problem);
@@ -155,11 +155,11 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
                     if (!mono) inputs[~l]++;
                 }
                 //###
-                (*gates)[var(o)].out = o;
-                (*gates)[var(o)].notMono = !mono;
-                (*gates)[var(o)].fwd.insert((*gates)[var(o)].fwd.end(), f.begin(), f.end());
-                (*gates)[var(o)].bwd.insert((*gates)[var(o)].bwd.end(), g.begin(), g.end());
-                (*gates)[var(o)].inp.insert((*gates)[var(o)].inp.end(), inp.begin(), inp.end());
+                gates[var(o)].out = o;
+                gates[var(o)].notMono = !mono;
+                gates[var(o)].fwd.insert(gates[var(o)].fwd.end(), f.begin(), f.end());
+                gates[var(o)].bwd.insert(gates[var(o)].bwd.end(), g.begin(), g.end());
+                gates[var(o)].inp.insert(gates[var(o)].inp.end(), inp.begin(), inp.end());
                 //###
                 removeFromIndex(index, f);
                 removeFromIndex(index, g);
@@ -182,7 +182,7 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
 void GateAnalyzer::analyze(vector<Lit>& candidates) {
     if (useIntensification) {
         vector<Lit> remainder;
-        bool patterns, semantic, lookahead, restart = false;
+        bool patterns = false, semantic = false, lookahead = false, restart = false;
         for (int level = 0; level < 3 && !runtime.hasTimeout(); restart ? level = 0 : level++) {
 #ifdef GADebug
             printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
@@ -264,14 +264,15 @@ void GateAnalyzer::analyze() {
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     // generate set of non-tautological resolvents
-    For resolvents;
+    
+    std::vector<Cl> resolvents;
     for (Cl* a : f) for (Cl* b : g) {
         if (!isBlocked(o, *a, *b)) {
-            Cl* res = new Cl();
-            res->insert(res->end(), a->begin(), a->end());
-            res->insert(res->end(), b->begin(), b->end());
-            res->erase(std::remove_if(res->begin(), res->end(), [o](Lit l) { return var(l) == var(o); }), res->end());
-            resolvents.push_back(res);
+            resolvents.resize(resolvents.size() + 1); // new clause gets created at the back
+            Cl& res = resolvents.back();
+            res.insert(res.end(), a->begin(), a->end());
+            res.insert(res.end(), b->begin(), b->end());
+            res.erase(std::remove_if(res.begin(), res.end(), [o](Lit l) { return var(l) == var(o); }), res.end());
         }
         if ((int)resolvents.size() > lookaheadThreshold) return false;
     }
@@ -283,11 +284,11 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 
     // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
     vector<Var> candidates;
-    for (Lit l : *resolvents[0]) candidates.push_back(var(l));
+    for (Lit l : resolvents[0]) candidates.push_back(var(l));
     for (size_t i = 1; i < resolvents.size(); i++) {
         if (candidates.empty()) break;
         vector<Var> next_candidates;
-        for (Lit lit : *resolvents[i]) {
+        for (Lit lit : resolvents[i]) {
             if (find(candidates.begin(), candidates.end(), var(lit)) != candidates.end()) {
                 next_candidates.push_back(var(lit));
             }
@@ -354,11 +355,11 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
         if ((fwd.size() > 0 || bwd.size() > 0) && isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
             // split resolvents by output literal 'out' of the function defined by 'fwd' and 'bwd'
             For res_fwd, res_bwd;
-            for (Cl* res : resolvents) {
-                if (find(res->begin(), res->end(), ~out) != res->end()) {
-                    res_fwd.push_back(res);
+            for (Cl& res : resolvents) {
+                if (find(res.begin(), res.end(), ~out) != res.end()) {
+                    res_fwd.push_back(&res);
                 } else {
-                    res_bwd.push_back(res);
+                    res_bwd.push_back(&res);
                 }
             }
             if ((res_fwd.size() == 0 || bwd.size() > 0) && (res_bwd.size() == 0 || fwd.size() > 0))

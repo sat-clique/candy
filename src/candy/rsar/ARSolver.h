@@ -35,10 +35,7 @@
 
 namespace Candy {
     class Conjectures;
-    class RandomSimulator;
-    class GateAnalyzer;
     class RefinementHeuristic;
-    class ConjectureFilter;
     class SolverAdapter;
     
     /**

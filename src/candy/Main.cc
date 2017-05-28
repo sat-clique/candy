@@ -1020,9 +1020,10 @@ int solve(const GlucoseArguments& args,
 
         Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
 
-        Certificate* certificate = new Certificate(args.opt_certified_file, args.do_certified);
+        std::unique_ptr<Certificate> certificate = backported_std::make_unique<Certificate>(args.opt_certified_file,
+                                                                                            args.do_certified);
 
-        Candy::CNFProblem problem(certificate);
+        Candy::CNFProblem problem(*certificate);
         if (args.read_from_stdin) {
             printf("c Reading from standard input... Use '--help' for help.\n");
             if (!problem.readDimacsFromStdout()) {
@@ -1036,7 +1037,7 @@ int solve(const GlucoseArguments& args,
 
         auto S = backported_std::make_unique<SolverType>();
         S->setVerbosities(args.vv, args.verb);
-        S->setCertificate(certificate);
+        S->setCertificate(*certificate);
         
         bool fallBackToUnmodifiedCandy = false;
         std::unique_ptr<DefaultSimpSolver> fallbackSolver{};
@@ -1052,7 +1053,7 @@ int solve(const GlucoseArguments& args,
                 S.reset(nullptr);
                 fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
                 fallbackSolver->setVerbosities(args.vv, args.verb);
-                fallbackSolver->setCertificate(certificate);
+                fallbackSolver->setCertificate(*certificate);
             }
         }
 

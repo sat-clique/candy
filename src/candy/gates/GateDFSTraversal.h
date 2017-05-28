@@ -46,7 +46,7 @@ namespace Candy {
      *   backtracking.
      */
     struct GateDFSMarkedGate {
-        Gate *gate;
+        const Gate *gate;
         bool backtrackOnNextEncounter;
     };
     
@@ -81,9 +81,9 @@ namespace Candy {
      *   the traversal.
      */
     template<typename Collector>
-    Collector traverseDFS(GateAnalyzer& analyzer) {
+    Collector traverseDFS(const GateAnalyzer& analyzer) {
         std::stack<GateDFSMarkedGate> work;
-        std::unordered_set<Gate*> visited;
+        std::unordered_set<const Gate*> visited;
         Collector collector;
         
         collector.init(analyzer.getGateCount());
@@ -92,7 +92,7 @@ namespace Candy {
         // Initialize the work stack
         for (auto&& clause : analyzer.getRoots()) {
             for (auto lit : *clause) {
-                Gate& g = analyzer.getGate(lit);
+                const Gate& g = analyzer.getGate(lit);
                 if (g.isDefined() && !collector.pruneAt(g)) {
                     work.push(GateDFSMarkedGate{&g, false});
                 }
@@ -118,7 +118,7 @@ namespace Candy {
                 work.push(GateDFSMarkedGate{workItem.gate, true});
                 
                 for (auto input : workItem.gate->getInputs()) {
-                    Gate& g = analyzer.getGate(input);
+                    const Gate& g = analyzer.getGate(input);
                     if (g.isDefined()
                         && visited.find(&g) == visited.end()
                         && !collector.pruneAt(g)) {
@@ -147,11 +147,11 @@ namespace Candy {
         : m_backtrackOutputOrder() {
         }
         
-        void backtrack(Gate* g) {
+        void backtrack(const Gate* g) {
             m_backtrackOutputOrder.push_back(var(g->getOutput()));
         }
         
-        void collect(Gate* g) {
+        void collect(const Gate* g) {
             (void)g;
         }
         
@@ -167,7 +167,7 @@ namespace Candy {
             return m_backtrackOutputOrder;
         }
         
-        bool pruneAt(Gate& g) {
+        bool pruneAt(const Gate& g) {
             (void)g;
             return false;
         }
@@ -184,7 +184,7 @@ namespace Candy {
      *
      * TODO: documentation
      */
-    inline TopologicallyOrderedGates getTopoOrder(GateAnalyzer& analyzer) {
+    inline TopologicallyOrderedGates getTopoOrder(const GateAnalyzer& analyzer) {
         return traverseDFS<TopologicallyOrderedGates>(analyzer);
     }
 }

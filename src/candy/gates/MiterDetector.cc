@@ -29,7 +29,6 @@
 #include <candy/gates/GateDFSTraversal.h>
 #include <candy/core/SolverTypes.h>
 
-#include <iostream>
 #include <algorithm>
 #include <unordered_map>
 
@@ -45,7 +44,7 @@ namespace Candy {
         class MonotonousRegionBorderGateCollector {
         public:
             
-            void backtrack(Gate* g) {
+            void backtrack(const Gate* g) {
                 bool isBorderGate = true;
                 for (Lit input : g->getInputs()) {
                     Var inputVar = var(input);
@@ -57,7 +56,7 @@ namespace Candy {
                 }
             }
             
-            void collect(Gate* g) {
+            void collect(const Gate* g) {
                 m_seenOuts.insert(var(g->getOutput()));
             }
             
@@ -69,7 +68,7 @@ namespace Candy {
                 (void) n;
             }
             
-            bool pruneAt(Gate& g) {
+            bool pruneAt(const Gate& g) {
                 // The nonmonotonously nested part of the gate structure is not taken
                 // into account by this heuristic
                 m_seenNonmonotonous |= g.hasNonMonotonousParent();
@@ -80,7 +79,7 @@ namespace Candy {
                 m_seenOuts.clear();
             }
             
-            const std::unordered_set<Gate*>& getMonotonousRegionBorder() const {
+            const std::unordered_set<const Gate*>& getMonotonousRegionBorder() const {
                 return m_monotonousRegionBorder;
             }
             
@@ -90,7 +89,7 @@ namespace Candy {
             
         private:
             std::unordered_set<Var> m_seenOuts;
-            std::unordered_set<Gate*> m_monotonousRegionBorder;
+            std::unordered_set<const Gate*> m_monotonousRegionBorder;
             bool m_seenNonmonotonous = false;
         };
         
@@ -105,7 +104,7 @@ namespace Candy {
         bool allGatesHaveTwoInputs(CollectionType& gates) {
             std::unordered_set<Var> vars;
             
-            for(Gate* g : gates) {
+            for(const Gate* g : gates) {
                 vars.clear();
                 for (auto input : g->getInputs()) {
                     vars.insert(var(input));
@@ -155,7 +154,7 @@ namespace Candy {
         bool allGatesAreAIGXORsWithUniqueInputVars(CollectionType& gates) {
             std::unordered_map<Var, SignOccurence> literalOccurences;
             
-            for (Gate* gate : gates) {
+            for (const Gate* gate : gates) {
                 for (Lit input : gate->getInputs()) {
                     Var inpVar = var(input);
                     bool inpSign = sign(input);
@@ -185,7 +184,7 @@ namespace Candy {
          *
          * \returns     true iff g is a binary XOR gate.
          */
-        bool isBinaryXORGate(Gate& g) {
+        bool isBinaryXORGate(const Gate& g) {
             auto& clauses = g.getForwardClauses();
             if (clauses.size() != 2ull) {
                 return false;
@@ -218,7 +217,7 @@ namespace Candy {
         bool allGatesAreBinaryXORsWithUniqueInputVars(CollectionType& gates) {
             std::unordered_set<Var> seenInputVars;
             
-            for (Gate* gate : gates) {
+            for (const Gate* gate : gates) {
                 if (!isBinaryXORGate(*gate)) {
                     return false;
                 }
@@ -238,7 +237,7 @@ namespace Candy {
         }
     }
     
-    bool hasPossiblyMiterStructure(GateAnalyzer& analyzer) {
+    bool hasPossiblyMiterStructure(const GateAnalyzer& analyzer) noexcept {
         auto borderGateCollector = traverseDFS<MonotonousRegionBorderGateCollector>(analyzer);
         auto& borderGates = borderGateCollector.getMonotonousRegionBorder();
         

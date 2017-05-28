@@ -70,7 +70,7 @@ namespace Candy {
      *
      * Creates a gate filter marking only the outputs of nonmonotonously nested gates as enabled.
      */
-    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(GateAnalyzer &analyzer);
+    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(const GateAnalyzer &analyzer);
     
     /**
      * \class ClauseOrder
@@ -90,7 +90,7 @@ namespace Candy {
         /**
          * Establishes the order using the gate structure contained in the given gate analyzer.
          */
-        virtual void readGates(GateAnalyzer& analyzer) = 0;
+        virtual void readGates(const GateAnalyzer& analyzer) = 0;
         
         /**
          * Retrieves a collection of the variables which are not gate-output variables.
