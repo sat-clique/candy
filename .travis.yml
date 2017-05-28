@@ -17,7 +17,7 @@ env:
   matrix:
     - CANDY_MODE=REGULAR
     - CANDY_MODE=COVERAGE
-    - CANDY_MODE=SANITIZERS
+    - CANDY_MODE=LEAK
 
 matrix:
   global:
@@ -63,7 +63,7 @@ script:
       cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_COVERAGE=ON $TRAVIS_BUILD_DIR ;
     fi
   - if [ "$CANDY_MODE" = "SANITIZERS" ]; then
-      cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_LLVM_SANITIZER=ON $TRAVIS_BUILD_DIR ;
+      cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_ADDRESS_SANITIZER=ON $TRAVIS_BUILD_DIR ;
     fi
 
   - cmake --build . --config Release -- -j2
