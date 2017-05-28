@@ -33,112 +33,82 @@
 
 namespace Candy {
     namespace {
-        void busyWait(std::chrono::milliseconds duration) {
-            auto startTime = Glucose::cpuTime();
-            volatile uint64_t counter = 0;
-            while (Glucose::cpuTime() - startTime < duration) {
-                ++counter;
+        class TestTimeProvider {
+        public:
+            void advanceTime(std::chrono::milliseconds amount) {
+                m_currentTime += amount;
             }
-        }
-    }
-    
-    TEST(RuntimeTests, measuresCPUTime) {
-        Runtime underTest;
-        underTest.start();
-        EXPECT_LE(underTest.getRuntime(), std::chrono::milliseconds{10});
-        busyWait(std::chrono::milliseconds{100});
-        EXPECT_NEAR(static_cast<double>(underTest.getRuntime().count()),
-                    static_cast<double>(std::chrono::milliseconds{100}.count()),
-                    15.0f /* absolute allowed error */);
-    }
-    
-    TEST(RuntimeTests, doesNotMeasureWallClockTime) {
-        Runtime underTest;
-        underTest.start();
-        EXPECT_LE(underTest.getRuntime(), std::chrono::milliseconds{10});
-        std::this_thread::sleep_for(std::chrono::milliseconds{100});
-        EXPECT_LE(underTest.getRuntime(), std::chrono::milliseconds{10});
+            
+            std::chrono::milliseconds cpuTime() const noexcept {
+                return m_currentTime;
+            }
+            
+        private:
+            std::chrono::milliseconds m_currentTime{2000};
+        };
     }
     
     TEST(RuntimeTests, detectsTimeout) {
-        Runtime underTest;
+        GenericRuntime<TestTimeProvider> underTest;
         underTest.setTimeout(std::chrono::milliseconds{300});
         underTest.start();
         EXPECT_FALSE(underTest.hasTimeout());
         
-        busyWait(std::chrono::milliseconds{150});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{150});
         EXPECT_FALSE(underTest.hasTimeout());
         
-        busyWait(std::chrono::milliseconds{200});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{200});
         EXPECT_TRUE(underTest.hasTimeout());
     }
     
     TEST(RuntimeTests, runtimeCanBeInterrupted) {
-        Runtime underTest;
+        GenericRuntime<TestTimeProvider> underTest;
         
         underTest.start();
-        busyWait(std::chrono::milliseconds{100});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{100});
         underTest.stop();
-        EXPECT_NEAR(static_cast<double>(underTest.getRuntime().count()),
-                    static_cast<double>(std::chrono::milliseconds{100}.count()),
-                    15.0f);
-        
-        busyWait(std::chrono::milliseconds{100});
+        EXPECT_EQ(underTest.getRuntime().count(), std::chrono::milliseconds{100}.count());
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{100});
 
         underTest.start();
-        busyWait(std::chrono::milliseconds{100});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{100});
         underTest.stop();
-        EXPECT_NEAR(static_cast<double>(underTest.getRuntime().count()),
-                    static_cast<double>(std::chrono::milliseconds{200}.count()),
-                    15.0f);
+        EXPECT_EQ(underTest.getRuntime().count(), std::chrono::milliseconds{200}.count());
     }
     
     TEST(RuntimeTests, runtimeCanBeLapped) {
-        Runtime underTest;
+        GenericRuntime<TestTimeProvider> underTest;
         
         underTest.start();
-        busyWait(std::chrono::milliseconds{100});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{100});
         auto lap1 = underTest.lap();
         
-        busyWait(std::chrono::milliseconds{150});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{150});
         auto lap2 = underTest.lap();
         
-        busyWait(std::chrono::milliseconds{200});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{200});
         auto lap3 = underTest.lap();
         
-        EXPECT_NEAR(static_cast<double>(lap1.count()),
-                    static_cast<double>(std::chrono::milliseconds{100}.count()),
-                    15.0f);
-        
-        EXPECT_NEAR(static_cast<double>(lap2.count()),
-                    static_cast<double>(std::chrono::milliseconds{150}.count()),
-                    15.0f);
-        
-        EXPECT_NEAR(static_cast<double>(lap3.count()),
-                    static_cast<double>(std::chrono::milliseconds{200}.count()),
-                    15.0f);
+        EXPECT_EQ(lap1.count(), std::chrono::milliseconds{100}.count());
+        EXPECT_EQ(lap2.count(), std::chrono::milliseconds{150}.count());
+        EXPECT_EQ(lap3.count(), std::chrono::milliseconds{200}.count());
     }
     
     TEST(RuntimeTests, runtimeCanBeLappedWithInterrupt) {
-        Runtime underTest;
+        GenericRuntime<TestTimeProvider> underTest;
         
         underTest.start();
-        busyWait(std::chrono::milliseconds{100});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{100});
         auto lap1 = underTest.lap();
         
         underTest.stop();
-        busyWait(std::chrono::milliseconds{150});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{150});
         underTest.start();
         
-        busyWait(std::chrono::milliseconds{200});
+        underTest.test_getTimeProvider().advanceTime(std::chrono::milliseconds{200});
         auto lap2 = underTest.lap();
         
-        EXPECT_NEAR(static_cast<double>(lap1.count()),
-                    static_cast<double>(std::chrono::milliseconds{100}.count()),
-                    15.0f);
-        
-        EXPECT_NEAR(static_cast<double>(lap2.count()),
-                    static_cast<double>(std::chrono::milliseconds{200}.count()),
-                    15.0f);
+        EXPECT_EQ(lap1.count(), std::chrono::milliseconds{100}.count());
+        EXPECT_EQ(lap2.count(), std::chrono::milliseconds{200}.count());
     }
 }

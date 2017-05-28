@@ -13,27 +13,37 @@
 
 namespace Candy {
 
-class Runtime {
+namespace RuntimePrivate {
+    struct DefaultTimeProvider {
+        inline std::chrono::milliseconds cpuTime() const noexcept {
+            return Glucose::cpuTime();
+        }
+    };
+}
+
+template<typename TimeProvider = RuntimePrivate::DefaultTimeProvider>
+class GenericRuntime {
 private:
     std::chrono::milliseconds startTime;
     std::chrono::milliseconds totalRuntime;
     std::chrono::milliseconds timeout;
     std::chrono::milliseconds lastLap;
+    TimeProvider timeProvider;
 
 public:
-    explicit Runtime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
+    explicit GenericRuntime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
         this->timeout = timeout;
         this->startTime = std::chrono::milliseconds{0};
         this->totalRuntime = std::chrono::milliseconds{0};
         this->lastLap = std::chrono::milliseconds{0};
     }
-    ~Runtime() {}
+    ~GenericRuntime() {}
 
     bool start() noexcept {
         if (startTime != std::chrono::milliseconds{0}) {
             return false;
         }
-        startTime = Glucose::cpuTime();
+        startTime = timeProvider.cpuTime();
         lastLap = totalRuntime;
         return true;
     }
@@ -42,7 +52,7 @@ public:
         if (startTime == std::chrono::milliseconds{0}) {
             return false;
         }
-        totalRuntime += Glucose::cpuTime() - this->startTime;
+        totalRuntime += timeProvider.cpuTime() - this->startTime;
         startTime = std::chrono::milliseconds{0};
         return true;
     }
@@ -57,7 +67,7 @@ public:
 
     std::chrono::milliseconds getRuntime() const noexcept {
         if (this->startTime > std::chrono::milliseconds{0}) {
-            return totalRuntime + (Glucose::cpuTime() - this->startTime);
+            return totalRuntime + (timeProvider.cpuTime() - this->startTime);
         }
         else {
             return totalRuntime;
@@ -70,7 +80,15 @@ public:
         this->lastLap = currentTime;
         return result;
     }
+    
+    // for testing only
+    TimeProvider& test_getTimeProvider() {
+        return timeProvider;
+    }
 };
+
+using Runtime = GenericRuntime<>;
+
 
 }
 
