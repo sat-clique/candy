@@ -100,7 +100,6 @@ public:
         subsumption_queue.clear();
 
         preprocessing_enabled = false;
-        this->remove_satisfied = true;
 
         // Force full cleanup (this is safe and desirable since it only happens once):
         this->rebuildOrderHeap();
@@ -188,8 +187,9 @@ protected:
         }
     }
 
-    virtual void attachClause(Clause* cr); // Attach a clause to watcher lists.
-    virtual void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
+    void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
+    void elimDetach(Clause* cr, bool strict); // Detach a clause from occurrence lists for eliminate
+    void elimDetach(Clause* cr, Lit lit, bool strict); // Detach a clause from lit's occurrence lists for eliminate
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
@@ -246,7 +246,6 @@ SimpSolver<PickBranchLitT>::SimpSolver() :
     bwdsub_assigns(0),
     n_touched(0),
     strengthend() {
-    this->remove_satisfied = false;
 }
 
 template<class PickBranchLitT>
@@ -258,7 +257,6 @@ Var SimpSolver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     Var v = Solver<PickBranchLitT>::newVar(sign, dvar, act);
     frozen.push_back((char) false);
     eliminated.push_back((char) false);
-    
     if (preprocessing_enabled) {
         n_occ.push_back(0);
         n_occ.push_back(0);
@@ -273,6 +271,10 @@ template<class PickBranchLitT>
 lbool SimpSolver<PickBranchLitT>::solve() {
     lbool result = l_True;
     
+    if (this->isInConflictingState()) {
+        return l_False;
+    }
+
     if (preprocessing_enabled) {
         result = lbool(eliminate());
     }
@@ -293,39 +295,45 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::attachClause(Clause* cr) {
+void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
 #ifndef NDEBUG
     for (Lit lit : *cr) {
         assert(!isEliminated(var(lit)));
     }
 #endif
+    assert(preprocessing_enabled);
 
-    if (preprocessing_enabled) {
-        subsumption_queue.push_back(cr);
-        for (Lit lit : *cr) {
-            occurs[var(lit)].push_back(cr);
-            n_occ[toInt(lit)]++;
-            touched[var(lit)] = 1;
-            n_touched++;
-            if (elim_heap.inHeap(var(lit))) {
-                elim_heap.increase(var(lit));
-            }
+    subsumption_queue.push_back(cr);
+    for (Lit lit : *cr) {
+        occurs[var(lit)].push_back(cr);
+        n_occ[toInt(lit)]++;
+        touched[var(lit)] = 1;
+        n_touched++;
+        if (elim_heap.inHeap(var(lit))) {
+            elim_heap.increase(var(lit));
         }
     }
-
-    Solver<PickBranchLitT>::attachClause(cr);
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
-    if (preprocessing_enabled) {
-        for (Lit lit : *cr) {
-            n_occ[toInt(lit)]--;
-            updateElimHeap(var(lit));
-            occurs.smudge(var(lit));
-        }
+void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, bool strict) {
+    for (Lit lit : *cr) {
+        elimDetach(cr, lit, strict);
     }
-    Solver<PickBranchLitT>::detachClause(cr, strict);
+}
+
+template<class PickBranchLitT>
+void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, Lit lit, bool strict) {
+    if (strict) {
+        occurs[var(lit)].erase(std::remove(occurs[var(lit)].begin(), occurs[var(lit)].end(), cr), occurs[var(lit)].end());
+        n_occ[toInt(lit)]--;
+        updateElimHeap(var(lit));
+    }
+    else {
+        n_occ[toInt(lit)]--;
+        updateElimHeap(var(lit));
+        occurs.smudge(var(lit));
+    }
 }
 
 template<class PickBranchLitT>
@@ -342,20 +350,13 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     cr->setLBD(cr->getLBD()+1); //use lbd to store original size
     strengthend.push_back(cr); //used to cleanup pages in clause-pool
 
-    // detach
-    occurs[var(l)].erase(std::remove(occurs[var(l)].begin(), occurs[var(l)].end(), cr), occurs[var(l)].end());
-    n_occ[toInt(l)]--;
-    updateElimHeap(var(l));
-
     this->certificate->added(cr->begin(), cr->end());
+
+    elimDetach(cr, l, true);
     
     if (cr->size() == 1) {
+        elimDetach(cr, cr->first(), true);
         cr->setDeleted();
-
-        occurs[var(cr->first())].erase(std::remove(occurs[var(cr->first())].begin(), occurs[var(cr->first())].end(), cr), occurs[var(cr->first())].end());
-        n_occ[toInt(cr->first())]--;
-        updateElimHeap(var(cr->first()));
-
         return this->enqueue(cr->first()) && this->propagate() == nullptr;
     }
     else {
@@ -530,6 +531,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool verbose) {
                 if (l == lit_Undef) {
                     subsumed++;
                     this->removeClause(csi);
+                    elimDetach(csi, false);
                 }
                 else if (l != lit_Error) {
                     deleted_literals++;
@@ -649,6 +651,8 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         SimpSolverImpl::mkElimClause(elimclauses, ~mkLit(v));
     }
     
+    size_t size = this->clauses.size();
+
     // produce clauses in cross product
     std::vector<Lit>& resolvent = this->add_tmp;
     for (Clause* pc : pos) {
@@ -661,8 +665,13 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         }
     }
     
+    for (auto it = this->clauses.begin() + size; it != this->clauses.end(); it++) {
+        elimAttach(*it);
+    }
+
     for (Clause* c : cls) {
         this->removeClause(c);
+        elimDetach(c, false);
     }
     
     // free references to eliminated variable
@@ -686,6 +695,8 @@ bool SimpSolver<PickBranchLitT>::substitute(Var v, Lit x) {
     eliminated[v] = true;
     this->setDecisionVar(v, false);
     
+    size_t size = this->clauses.size();
+
     const vector<Clause*>& cls = occurs.lookup(v);
     for (Clause* c : cls) {
         this->add_tmp.clear();
@@ -698,8 +709,13 @@ bool SimpSolver<PickBranchLitT>::substitute(Var v, Lit x) {
             this->certificate->added(this->add_tmp.begin(), this->add_tmp.end());
         }
         this->removeClause(c);
+        elimDetach(c, false);
     }
     
+    for (auto it = this->clauses.begin() + size; it != this->clauses.end(); it++) {
+        elimAttach(*it);
+    }
+
     return true;
 }
 
@@ -721,31 +737,25 @@ void SimpSolver<PickBranchLitT>::extendModel() {
 
 template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::eliminate(bool turn_off_elim) {
-    vector<Var> extra_frozen;
-    
-    if (!this->simplify()) {
-        this->ok = false;
-        return false;
-    }
-    else if (!preprocessing_enabled) {
+    if (!preprocessing_enabled) {
         return true;
     }
 
-    occurs.cleanAll();
-
     if (this->clauses.size() > 4800000) {
         printf("c Too many clauses... No preprocessing\n");
-        goto cleanup;
+        return true;
     }
     
+    // prepare data-structures
+    for (Clause* c : this->clauses) {
+        elimAttach(c);
+    }
+
     // Assumptions must be temporarily frozen to run variable elimination:
     if (this->isIncremental()) {
-        for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < Solver<PickBranchLitT>::nVars(); v++) {
+        for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < this->nVars(); v++) {
             assert(!isEliminated(v));
-            if (!frozen[v]) { // Freeze and store.
-                setFrozen(v, true);
-                extra_frozen.push_back(v);
-            }
+            setFrozen(v, true);
         }
     }
     
@@ -797,8 +807,10 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool turn_off_elim) {
     
 cleanup:
     // Unfreeze the assumptions that were frozen:
-    for (Var v : extra_frozen) {
-        setFrozen(v, false);
+    if (this->isIncremental()) {
+        for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < this->nVars(); v++) {
+            setFrozen(v, false);
+        }
     }
     
     // If no more simplification is needed, free all simplification-related data structures:
@@ -816,6 +828,9 @@ cleanup:
             this->clauses.push_back(clean);
             this->attachClause(clean);
             this->detachClause(clause);
+            if (preprocessing_enabled) {
+                this->elimDetach(clause, false);
+            }
             clause->setDeleted();
         }
         clause->blow(clause->getLBD());//restore original size for freeMarkedClauses

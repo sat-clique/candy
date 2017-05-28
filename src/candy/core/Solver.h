@@ -389,7 +389,6 @@ protected:
     bool sort_watches;
     bool sort_variables;
 
-    bool remove_satisfied; // Indicates whether possibly inefficient linear scan for satisfied clauses should be performed in 'simplify'.
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -457,10 +456,8 @@ protected:
     }
 
     // Operations on clauses:
-    virtual void attachClause(Clause* cr); // Attach a clause to watcher lists.
-    virtual void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
-    void coreAttach(Clause* cr); // Attach a clause to watcher lists.
-    void coreDetach(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
+    void attachClause(Clause* cr); // Attach a clause to watcher lists.
+    void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
     void removeClause(Clause* cr); // Detach and free a clause.
     void freeMarkedClauses(vector<Clause*>& list);
 
@@ -635,8 +632,7 @@ Solver<PickBranchLitT>::Solver() :
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
-    // simpdb
-    remove_satisfied(true),
+    // simplify
     new_unary(false),
     // conflict state
     ok(true),
@@ -741,8 +737,7 @@ void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
     }
-    // still conflicts with SimpSolver eliminate (don't yet understand why):
-    //simplify();
+    simplify();
 }
 
 template<class PickBranchLitT>
@@ -783,16 +778,6 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
 
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::attachClause(Clause* cr) {
-    coreAttach(cr);
-}
-
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
-    coreDetach(cr, strict);
-}
-
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::coreAttach(Clause* cr) {
     assert(cr->size() > 1);
     
     nLiterals += cr->size();
@@ -807,7 +792,7 @@ void Solver<PickBranchLitT>::coreAttach(Clause* cr) {
 }
 
 template<class PickBranchLitT>
-void Solver<PickBranchLitT>::coreDetach(Clause* cr, bool strict) {
+void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
     
     nLiterals -= cr->size();
@@ -1333,7 +1318,7 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
         for (Clause* c : *list) {
             if (c->size() > 2 && c->size() <= upper) {
                 assert(!locked(c)); assert(!c->isDeleted());
-                coreDetach(c, true);
+                detachClause(c, true);
             }
         }
         list->erase(std::remove_if(list->begin(), list->end(), [this,upper](Clause* c) {
@@ -1344,7 +1329,7 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     for (uint_fast8_t k = 3; k <= upper; k++) {
         vector<Clause*> revamped = allocator.revampPages(k);
         for (Clause* clause : revamped) {
-            coreAttach(clause);
+            attachClause(clause);
             if (clause->isLearnt()) {
                 learnts.push_back(clause);
             } else {
@@ -1390,9 +1375,7 @@ bool Solver<PickBranchLitT>::simplify() {
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    if (remove_satisfied) { // Can be turned off.
-        std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
-    }
+    std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
     // Remove false literals:
     std::unordered_map<Clause*, size_t> shrink_list;
@@ -1400,7 +1383,7 @@ bool Solver<PickBranchLitT>::simplify() {
         for (Clause* clause : list) if (!clause->isDeleted()) {
             auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
             if (pos != clause->end()) {
-                this->removeClause(clause);
+                removeClause(clause);
                 auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
                 certificate->added(clause->begin(), end);
                 size_t size = std::distance(clause->begin(), end);
@@ -1568,7 +1551,7 @@ lbool Solver<PickBranchLitT>::search() {
                     learnts.push_back(cr);
                 }
                 claBumpActivity(*cr);
-                coreAttach(cr);
+                detachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
             }
             varDecayActivity();
@@ -1664,11 +1647,6 @@ lbool Solver<PickBranchLitT>::search() {
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
     Statistics::getInstance().runtimeStart(RT_SOLVER);
-    
-    if (incremental && certificate->isActive()) {
-        printf("Can not use incremental and certified unsat in the same time\n");
-        exit(-1);
-    }
     
     model.clear();
     conflict.clear();
