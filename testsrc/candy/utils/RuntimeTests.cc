@@ -72,4 +72,73 @@ namespace Candy {
         busyWait(std::chrono::milliseconds{45});
         EXPECT_TRUE(underTest.hasTimeout());
     }
+    
+    TEST(RuntimeTests, runtimeCanBeInterrupted) {
+        Runtime underTest;
+        
+        underTest.start();
+        busyWait(std::chrono::milliseconds{10});
+        underTest.stop();
+        EXPECT_NEAR(static_cast<double>(underTest.getRuntime().count()),
+                    static_cast<double>(std::chrono::milliseconds{10}.count()),
+                    1.0f);
+        
+        busyWait(std::chrono::milliseconds{10});
+
+        underTest.start();
+        busyWait(std::chrono::milliseconds{10});
+        underTest.stop();
+        EXPECT_NEAR(static_cast<double>(underTest.getRuntime().count()),
+                    static_cast<double>(std::chrono::milliseconds{20}.count()),
+                    1.0f);
+    }
+    
+    TEST(RuntimeTests, runtimeCanBeLapped) {
+        Runtime underTest;
+        
+        underTest.start();
+        busyWait(std::chrono::milliseconds{10});
+        auto lap1 = underTest.lap();
+        
+        busyWait(std::chrono::milliseconds{15});
+        auto lap2 = underTest.lap();
+        
+        busyWait(std::chrono::milliseconds{20});
+        auto lap3 = underTest.lap();
+        
+        EXPECT_NEAR(static_cast<double>(lap1.count()),
+                    static_cast<double>(std::chrono::milliseconds{10}.count()),
+                    1.0f);
+        
+        EXPECT_NEAR(static_cast<double>(lap2.count()),
+                    static_cast<double>(std::chrono::milliseconds{15}.count()),
+                    1.0f);
+        
+        EXPECT_NEAR(static_cast<double>(lap3.count()),
+                    static_cast<double>(std::chrono::milliseconds{20}.count()),
+                    1.0f);
+    }
+    
+    TEST(RuntimeTests, runtimeCanBeLappedWithInterrupt) {
+        Runtime underTest;
+        
+        underTest.start();
+        busyWait(std::chrono::milliseconds{10});
+        auto lap1 = underTest.lap();
+        
+        underTest.stop();
+        busyWait(std::chrono::milliseconds{15});
+        underTest.start();
+        
+        busyWait(std::chrono::milliseconds{20});
+        auto lap2 = underTest.lap();
+        
+        EXPECT_NEAR(static_cast<double>(lap1.count()),
+                    static_cast<double>(std::chrono::milliseconds{10}.count()),
+                    1.0f);
+        
+        EXPECT_NEAR(static_cast<double>(lap2.count()),
+                    static_cast<double>(std::chrono::milliseconds{20}.count()),
+                    1.0f);
+    }
 }
