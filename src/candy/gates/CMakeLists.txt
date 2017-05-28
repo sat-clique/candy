@@ -1,5 +1,6 @@
 add_library(gates
     GateAnalyzer.cc
-    GateAnalyzer.h)
-
-
+    GateAnalyzer.h
+    GateDFSTraversal.h
+    MiterDetector.h
+    MiterDetector.cc)

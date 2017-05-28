@@ -265,8 +265,9 @@ namespace Candy {
     
     lbool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
         assert(!m_solver->isInConflictingState());
-        double cpuTime = Glucose::cpuTime();
-        std::cout << "c ARSAT: invoking the underlying solver, elapsed CPU time: " << cpuTime << std::endl;
+        std::chrono::milliseconds cpuTime = Glucose::cpuTime();
+        double cpuTimeSec = static_cast<double>(cpuTime.count())/1000.0f;
+        std::cout << "c ARSAT: invoking the underlying solver, elapsed CPU time: " << cpuTimeSec << std::endl;
         return m_solver->solve(assumptions, false, true);
     }
     
