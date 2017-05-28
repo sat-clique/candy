@@ -17,7 +17,7 @@ env:
   matrix:
     - CANDY_MODE=REGULAR
     - CANDY_MODE=COVERAGE
-    - CANDY_MODE=LEAK
+    - CANDY_MODE=SANITIZERS
 
 matrix:
   global:
