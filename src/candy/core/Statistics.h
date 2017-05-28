@@ -17,11 +17,11 @@
 #include <chrono>
 #include <candy/utils/System.h>
 
-#define SOLVER_STATS
-#define RESTART_STATS
-#define LEARNTS_STATS
+//#define SOLVER_STATS
+//#define RESTART_STATS
+//#define LEARNTS_STATS
 #define RUNTIME_STATS
-#define INCREMENTAL_STATS
+//#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
 
 namespace Candy {
@@ -126,8 +126,8 @@ public:
 #else
     inline void incNBSatCalls() { }
     inline void incNBUnsatCalls() { }
-    inline void incTotalTime4Sat(unsigned int amount) { (void)(amount); }
-    inline void incTotalTime4Unsat(unsigned int amount) { (void)(amount); }
+    inline void incTotalTime4Sat(std::chrono::milliseconds amount) { (void)(amount); }
+    inline void incTotalTime4Unsat(std::chrono::milliseconds amount) { (void)(amount); }
 #endif// INCREMENTAL_STATS
 #ifdef RUNTIME_STATS
     inline void runtimeReset(std::string key) {
