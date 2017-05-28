@@ -130,7 +130,7 @@ public:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0);
 
     // Add clauses to the solver
-    void addClauses(CNFProblem dimacs);
+    void addClauses(const CNFProblem& dimacs);
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
@@ -255,8 +255,8 @@ public:
         this->termCallback = termCallback;
     }
 
-    void setCertificate(Certificate* certificate) {
-        this->certificate = certificate;
+    void setCertificate(Certificate& certificate) {
+        this->certificate = &certificate;
     }
 
     void setVerbosities(int verbEveryConflicts, int verbosity) {
@@ -266,6 +266,7 @@ public:
     }
 
     // Certified UNSAT (Thanks to Marijn Heule)
+    Certificate defaultCertificate;
     Certificate* certificate;
 
     // a few stats are used for heuristics control, keep them here
@@ -591,8 +592,10 @@ namespace SolverOptions {
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(new Certificate(nullptr, false)),
+    certificate(&defaultCertificate),
     // stats for heuristic control
     nConflicts(0), nPropagations(0), nLiterals(0),
     // verbosity flags
@@ -714,8 +717,8 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
 }
 
 template<class PickBranchLitT>
-void Solver<PickBranchLitT>::addClauses(CNFProblem dimacs) {
-    vector<vector<Lit>*>& problem = dimacs.getProblem();
+void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
+    const vector<vector<Lit>*>& problem = dimacs.getProblem();
     vector<double> occ = dimacs.getLiteralRelativeOccurrences();
     if ((size_t)dimacs.nVars() > nVars()) {
         assigns.reserve(dimacs.nVars());

@@ -34,16 +34,16 @@
 
 namespace Candy {
     struct TestGateCollector {
-        std::vector<Gate*> backtrackSequence {};
-        std::vector<Gate*> visitSequence {};
+        std::vector<const Gate*> backtrackSequence {};
+        std::vector<const Gate*> visitSequence {};
         size_t gateCount = 0;
         bool finishedCalled = false;
         
-        void backtrack(Gate* g) {
+        void backtrack(const Gate* g) {
             backtrackSequence.push_back(g);
         }
         
-        void collect(Gate* g) {
+        void collect(const Gate* g) {
             visitSequence.push_back(g);
         }
         
@@ -55,7 +55,7 @@ namespace Candy {
             gateCount = n;
         }
         
-        bool pruneAt(Gate& g) {
+        bool pruneAt(const Gate& g) {
             return false;
         }
         
@@ -64,7 +64,7 @@ namespace Candy {
         }
     };
     
-    static bool isNested(GateAnalyzer& analyzer, Gate& influenced, Gate& influencer) {
+    static bool isNested(const GateAnalyzer& analyzer, const Gate& influenced, const Gate& influencer) {
         for (Lit l : influenced.getInputs()) {
             if (analyzer.getGate(l).isDefined()) {
                 if (&analyzer.getGate(l) == &influencer
@@ -78,13 +78,13 @@ namespace Candy {
     }
     
     /** checks if "g1 occurs before g2 => g1 is not nested in g2" for g1,g2 in gates. */
-    static bool isConsistentBacktrackSequence(GateAnalyzer& analyzer, const std::vector<Gate*>& gates) {
+    static bool isConsistentBacktrackSequence(const GateAnalyzer& analyzer, const std::vector<const Gate*>& gates) {
         // this is a rather inefficient implementation, but this is just a test and the input data
         // is expected to be small, so this is reasonable
         for (size_t i = 0; i < gates.size()-1; ++i) {
-            Gate* former = gates[i];
+            const Gate* former = gates[i];
             for (size_t j = i+1; j < gates.size()-1; ++j) {
-                Gate* latter = gates[j];
+                const Gate* latter = gates[j];
                 if (isNested(analyzer, *former, *latter)) {
                     return false;
                 }
@@ -133,15 +133,15 @@ namespace Candy {
     }
     
     struct NonmonotonicPruningTestGateCollector {
-        std::vector<Gate*> backtrackSequence {};
-        std::vector<Gate*> visitSequence {};
+        std::vector<const Gate*> backtrackSequence {};
+        std::vector<const Gate*> visitSequence {};
         size_t gateCount = 0;
         
-        void backtrack(Gate* g) {
+        void backtrack(const Gate* g) {
             backtrackSequence.push_back(g);
         }
         
-        void collect(Gate* g) {
+        void collect(const Gate* g) {
             visitSequence.push_back(g);
         }
         
@@ -153,7 +153,7 @@ namespace Candy {
             gateCount = n;
         }
         
-        bool pruneAt(Gate& g) {
+        bool pruneAt(const Gate& g) {
             return g.hasNonMonotonousParent();
         }
         
@@ -163,8 +163,8 @@ namespace Candy {
     };
     
     namespace {
-        bool containsGateWithOutput(std::vector<Gate*>& gates, Var output) {
-            return std::find_if(gates.begin(), gates.end(), [output](Gate*& g) {
+        bool containsGateWithOutput(std::vector<const Gate*>& gates, Var output) {
+            return std::find_if(gates.begin(), gates.end(), [output](const Gate*& g) {
                 return var(g->getOutput()) == output;
             }) != gates.end();
         }

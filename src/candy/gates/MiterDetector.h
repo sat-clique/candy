@@ -39,7 +39,7 @@ namespace Candy {
      * \returns true iff the given gate structure is believed to originate from
      *   a miter problem.
      */
-    bool hasPossiblyMiterStructure(GateAnalyzer& analyzer);
+    bool hasPossiblyMiterStructure(const GateAnalyzer& analyzer) noexcept;
 }
 
 #endif

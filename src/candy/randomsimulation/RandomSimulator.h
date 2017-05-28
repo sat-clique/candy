@@ -167,7 +167,7 @@ namespace Candy {
          * the gate analyzer; this has to be performed by the user before starting random simulation
          * by invoking the random simulator's run() method.
          */
-        virtual RandomSimulatorBuilder& withGateAnalyzer(GateAnalyzer& gateAnalyzer) = 0;
+        virtual RandomSimulatorBuilder& withGateAnalyzer(const GateAnalyzer& gateAnalyzer) = 0;
 
         /**
          * Builds the random simulator.
@@ -194,7 +194,7 @@ namespace Candy {
      *   the gate analyzer; this has to be performed by the user before starting random simulation
      *   by invoking the random simulator's run() method.
      */
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(GateAnalyzer& gateAnalyzer);
+    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(const GateAnalyzer& gateAnalyzer);
     
     /**
      * \ingroup RandomSimulation
