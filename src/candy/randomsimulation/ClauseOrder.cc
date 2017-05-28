@@ -73,7 +73,7 @@ namespace Candy {
      */
     class ClauseOrderImplBase : public ClauseOrder {
     public:
-        void readGates(GateAnalyzer& analyzer) override = 0;
+        void readGates(const GateAnalyzer& analyzer) override = 0;
         const std::vector<Glucose::Var> &getInputVariables() const override;
         const std::vector<Glucose::Lit> &getGateOutputsOrdered() const override;
         const std::vector<const Cl*> &getClauses(Glucose::Var variable) const override;
@@ -86,7 +86,7 @@ namespace Candy {
         ClauseOrderImplBase& operator=(const ClauseOrderImplBase& other) = delete;
         
     protected:
-        void backtrack(GateAnalyzer& analyzer, const Gate &gate);
+        void backtrack(const GateAnalyzer& analyzer, const Gate &gate);
         std::vector<const Cl*> &createClauseStorage(Glucose::Var variable);
         
         std::vector<Glucose::Var> m_inputVariables;
@@ -144,7 +144,7 @@ namespace Candy {
         return m_maxVar + 1;
     }
     
-    void ClauseOrderImplBase::backtrack(GateAnalyzer& analyzer, const Gate &gate) {
+    void ClauseOrderImplBase::backtrack(const GateAnalyzer& analyzer, const Gate &gate) {
         if (m_filteringEnabled) {
             // backtrack the gate only if
             //  - its output is an enabled variable
@@ -183,7 +183,7 @@ namespace Candy {
         clausesTarget.insert(clausesTarget.begin(), usedGateClauses->begin(), usedGateClauses->end());
     }
     
-    void ClauseOrderImplBase::readGates(GateAnalyzer& analyzer) {
+    void ClauseOrderImplBase::readGates(const GateAnalyzer& analyzer) {
         (void)analyzer;
         m_inputVariables.clear();
         m_maxVar = -1;
@@ -205,7 +205,7 @@ namespace Candy {
      */
     class RecursiveClauseOrder : public ClauseOrderImplBase {
     public:
-        void readGates(GateAnalyzer& analyzer) override;
+        void readGates(const GateAnalyzer& analyzer) override;
         
         RecursiveClauseOrder();
         virtual ~RecursiveClauseOrder();
@@ -213,7 +213,7 @@ namespace Candy {
         RecursiveClauseOrder& operator=(const RecursiveClauseOrder& other) = delete;
         
     private:
-        void readGatesRecursive(GateAnalyzer &analyzer, Glucose::Lit output,
+        void readGatesRecursive(const GateAnalyzer &analyzer, Glucose::Lit output,
                                 std::unordered_set<Glucose::Var>& seenInputs,
                                 std::unordered_set<Glucose::Var>& seenOutputs);
     };
@@ -226,7 +226,7 @@ namespace Candy {
         
     }
     
-    void RecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
+    void RecursiveClauseOrder::readGates(const GateAnalyzer& analyzer) {
         ClauseOrderImplBase::readGates(analyzer);
         
         if (analyzer.getGateCount() == 0) {
@@ -245,7 +245,7 @@ namespace Candy {
         }
     }
     
-    void RecursiveClauseOrder::readGatesRecursive(GateAnalyzer &analyzer, Glucose::Lit output,
+    void RecursiveClauseOrder::readGatesRecursive(const GateAnalyzer &analyzer, Glucose::Lit output,
                                                   std::unordered_set<Glucose::Var>& seenInputs,
                                                   std::unordered_set<Glucose::Var>& seenOutputs) {
         seenOutputs.insert(var(output));
@@ -285,7 +285,7 @@ namespace Candy {
      */
     class NonrecursiveClauseOrder : public ClauseOrderImplBase {
     public:
-        void readGates(GateAnalyzer& analyzer) override;
+        void readGates(const GateAnalyzer& analyzer) override;
         
         NonrecursiveClauseOrder();
         virtual ~NonrecursiveClauseOrder();
@@ -337,7 +337,7 @@ namespace Candy {
         DFSGateCollector& operator=(DFSGateCollector&& other) = default;
     };
     
-    void NonrecursiveClauseOrder::readGates(GateAnalyzer& analyzer) {
+    void NonrecursiveClauseOrder::readGates(const GateAnalyzer& analyzer) {
         DFSGateCollector orderedGates = traverseDFS<DFSGateCollector>(analyzer);
         m_inputVariables = std::move(orderedGates.inputs);
         m_maxVar = orderedGates.maxVar;
@@ -362,16 +362,16 @@ namespace Candy {
     public:
         std::unordered_set<Glucose::Var> getEnabledOutputVars() override;
         
-        explicit NonmonotonousGateFilter(GateAnalyzer &analyzer);
+        explicit NonmonotonousGateFilter(const GateAnalyzer &analyzer);
         virtual ~NonmonotonousGateFilter();
         NonmonotonousGateFilter(const NonmonotonousGateFilter& other) = delete;
         NonmonotonousGateFilter& operator=(const NonmonotonousGateFilter& other) = delete;
         
     private:
-        GateAnalyzer &m_analyzer;
+        const GateAnalyzer &m_analyzer;
     };
     
-    NonmonotonousGateFilter::NonmonotonousGateFilter(GateAnalyzer &analyzer)
+    NonmonotonousGateFilter::NonmonotonousGateFilter(const GateAnalyzer &analyzer)
     : GateFilter(),
     m_analyzer(analyzer) {
     }
@@ -396,7 +396,7 @@ namespace Candy {
     
     
     
-    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(GateAnalyzer &analyzer) {
+    std::unique_ptr<GateFilter> createNonmonotonousGateFilter(const GateAnalyzer &analyzer) {
         return backported_std::make_unique<NonmonotonousGateFilter>(analyzer);
     }
 }
