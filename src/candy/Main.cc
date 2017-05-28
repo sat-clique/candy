@@ -271,16 +271,16 @@ static void printProblemStatistics(SolverType& S) {
 }
 
 struct GateRecognitionArguments {
-    const int opt_gr_tries;
-    const bool opt_gr_patterns;
-    const bool opt_gr_semantic;
-    const unsigned int opt_gr_semantic_budget;
-    const std::chrono::milliseconds opt_gr_timeout;
-    const bool opt_gr_holistic;
-    const bool opt_gr_lookahead;
-    const bool opt_gr_intensify;
-    const int opt_gr_lookahead_threshold;
-    const bool opt_print_gates;
+    int opt_gr_tries;
+    bool opt_gr_patterns;
+    bool opt_gr_semantic;
+    unsigned int opt_gr_semantic_budget;
+    std::chrono::milliseconds opt_gr_timeout;
+    bool opt_gr_holistic;
+    bool opt_gr_lookahead;
+    bool opt_gr_intensify;
+    int opt_gr_lookahead_threshold;
+    bool opt_print_gates;
 };
 
 std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& arguments) {
@@ -422,8 +422,7 @@ static std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAn
 
     auto randomSimulator = simulatorBuilder->build();
     // TODO: time limit
-    auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds),
-                                            std::chrono::duration_cast<std::chrono::seconds>(timeLimit));
+    auto conjectures = randomSimulator->run(static_cast<unsigned int>(rsArguments.nRounds), timeLimit);
 
     if (rsArguments.filterConjecturesBySize) {
         auto sizeFilter = Candy::createSizeConjectureFilter(rsArguments.maxConjectureSize);
@@ -483,16 +482,22 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
     
     std::chrono::milliseconds startCPUTime = Glucose::cpuTime();
     
-    auto gateAnalyzer = createGateAnalyzer(problem, gateRecognitionArgs);
+    GateRecognitionArguments localGateRecognitionArgs = gateRecognitionArgs;
+    if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
+        localGateRecognitionArgs.opt_gr_timeout = std::min(gateRecognitionArgs.opt_gr_timeout,
+                                                           rsArguments.preprocessingTimeLimit);
+    }
+
+    auto gateAnalyzer = createGateAnalyzer(problem, localGateRecognitionArgs);
     gateAnalyzer->analyze();
     
     std::chrono::milliseconds gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
-    double gateAnalyzerTimeSec = static_cast<double>(gateAnalyzerTime.count())/1000.0f;
-    std::cerr << "c Gate recognition time: " << gateAnalyzerTimeSec << std::endl;
+    std::cerr << "c Gate recognition time: " << gateAnalyzerTime.count() << " ms" << std::endl;
     
     try {
-        if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}
-            && gateAnalyzerTime > rsArguments.preprocessingTimeLimit) {
+        if (gateAnalyzer->hasTimeout()
+            || (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}
+                && gateAnalyzerTime > rsArguments.preprocessingTimeLimit)) {
             throw UnsuitableProblemException{"Gate recognition exceeded the time limit."};
         }
         
@@ -514,8 +519,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
             }
             
             auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            double randomSimulationTimeSec = static_cast<double>(randomSimulationTime.count())/1000.0f;
-            std::cerr << "c Random simulation time: " << randomSimulationTimeSec << std::endl;
+            std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
     
             auto arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
@@ -525,8 +529,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
         }
         catch (OutOfTimeException& e) {
             auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
-            double randomSimulationTimeSec = static_cast<double>(randomSimulationTime.count())/1000.0f;
-            std::cerr << "c Random simulation time: " << randomSimulationTimeSec << std::endl;
+            std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
             throw UnsuitableProblemException{"Random simulation exceeded the time limit."};
         }
@@ -673,11 +676,17 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
                             const RSILArguments& rsilArgs) {
     return [gateRecognitionArgs, randomSimulationArgs, rsilArgs](SolverType& solver, CNFProblem& problem) {
         Runtime runtime;
-        runtime.setTimeout(randomSimulationArgs.preprocessingTimeLimit);
+        GateRecognitionArguments localGateRecognitionArgs = gateRecognitionArgs;
+        if (randomSimulationArgs.preprocessingTimeLimit >= std::chrono::milliseconds{-1}) {
+            runtime.setTimeout(randomSimulationArgs.preprocessingTimeLimit);
+            localGateRecognitionArgs.opt_gr_timeout = std::min(gateRecognitionArgs.opt_gr_timeout,
+                                                               randomSimulationArgs.preprocessingTimeLimit);
+        }
         runtime.start();
         
-        auto analyzer = createGateAnalyzer(problem, gateRecognitionArgs);
+        auto analyzer = createGateAnalyzer(problem, localGateRecognitionArgs);
         analyzer->analyze();
+        std::cerr << "c Gate recognition time: " << runtime.lap().count() << " ms" << std::endl;
         
         double problemVars = problem.nVars();
         double gateOutputs = analyzer->getGateCount();
@@ -696,19 +705,33 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
         
         if (rsilArgs.useRSILOnlyForMiters) {
             bool isMiter = hasPossiblyMiterStructure(*analyzer);
+            std::cerr << "c Miter recognition time: " << runtime.lap().count() << " ms" << std::endl;
+            
+            if (runtime.hasTimeout()) {
+                throw UnsuitableProblemException{"miter detection exceeded the preprocessing time limit."};
+            }
             if (!isMiter) {
                 throw UnsuitableProblemException{"problem heuristically determined not to be a miter problem."};
             }
         }
 
         std::unique_ptr<Conjectures> conjectures;
-        auto remainingTime = runtime.getRuntime() - randomSimulationArgs.preprocessingTimeLimit;
-        try {
-            conjectures = performRandomSimulation(*analyzer, randomSimulationArgs, remainingTime);
+        
+        if (randomSimulationArgs.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
+            auto remainingTime = randomSimulationArgs.preprocessingTimeLimit - runtime.getRuntime();
+            try {
+                conjectures = performRandomSimulation(*analyzer, randomSimulationArgs, remainingTime);
+            }
+            catch(OutOfTimeException& exception) {
+                std::cerr << "c Random simulation time: " << runtime.lap().count() << " ms" << std::endl;
+                throw UnsuitableProblemException{"random simulation exceeded the preprocessing time limit."};
+            }
         }
-        catch(OutOfTimeException& exception) {
-            throw UnsuitableProblemException{"random simulation exceeded the preprocessing time limit."};
+        else {
+            conjectures = performRandomSimulation(*analyzer, randomSimulationArgs);
         }
+        
+        std::cerr << "c Random simulation time: " << runtime.lap().count() << " ms" << std::endl;
         
         if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
             throw UnsuitableProblemException{"no conjectures found."};
@@ -811,7 +834,7 @@ static GlucoseArguments parseCommandLineArgs(int& argc, char** argv) {
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", true);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", true);
     IntOption opt_gr_semantic_budget("GATE RECOGNITION", "gate-semantic-budget", "Enable Semantic Gate Detection Conflict Budget", 0, IntRange(0, INT32_MAX));
-    IntOption opt_gr_timeout("GATE RECOGNITION", "gate-timeout", "Enable Gate Detection Timeout", 0, IntRange(0, INT32_MAX));
+    IntOption opt_gr_timeout("GATE RECOGNITION", "gate-timeout", "Enable Gate Detection Timeout (seconds)", 0, IntRange(0, INT32_MAX));
     BoolOption opt_gr_holistic("GATE RECOGNITION", "gate-holistic", "Enable Holistic Gate Detection", false);
     BoolOption opt_gr_lookahead("GATE RECOGNITION", "gate-lookahead", "Enable Local Blocked Elimination", false);
     IntOption opt_gr_lookahead_threshold("GATE RECOGNITION", "gate-lookahead-threshold", "Local Blocked Elimination Threshold", 10, IntRange(1, INT32_MAX));
@@ -1012,7 +1035,7 @@ int solve(const GlucoseArguments& args,
         }
 
         auto S = backported_std::make_unique<SolverType>();
-        S->setVerbosities(args.verb, args.vv);
+        S->setVerbosities(args.vv, args.verb);
         S->setCertificate(certificate);
         
         bool fallBackToUnmodifiedCandy = false;
@@ -1028,7 +1051,7 @@ int solve(const GlucoseArguments& args,
                 fallBackToUnmodifiedCandy = true;
                 S.reset(nullptr);
                 fallbackSolver = backported_std::make_unique<DefaultSimpSolver>();
-                fallbackSolver->setVerbosities(args.verb, args.vv);
+                fallbackSolver->setVerbosities(args.vv, args.verb);
                 fallbackSolver->setCertificate(certificate);
             }
         }
