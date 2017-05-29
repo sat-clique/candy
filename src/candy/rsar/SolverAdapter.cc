@@ -47,7 +47,10 @@ namespace Candy {
             }
             
             if (doSimp) {
-                m_solver.eliminate(turnOffSimp);
+                m_solver.eliminate();
+                if (turnOffSimp) {
+                    m_solver.disablePreprocessing();
+                }
                 if (isInConflictingState()) {
                     return l_False;
                 }

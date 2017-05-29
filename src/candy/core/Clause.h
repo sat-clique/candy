@@ -245,8 +245,8 @@ public:
         calcAbstraction();
     }
 
-    void blow(uint8_t offset) {//use only if you know what you are doing (only to be used after strengthen calls)
-        length += offset;
+    void setSize(uint16_t size) {//use only if you know what you are doing (only to be used after strengthen calls)
+        length = size;
     }
 
 private:

@@ -757,7 +757,6 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
         return ok = false;
     }
     else if (size == 1) {
-        new_unary = true;
         if (value(*begin) == l_Undef) {
             uncheckedEnqueue(*begin);
             return ok = (propagate() == nullptr);
@@ -1400,15 +1399,11 @@ bool Solver<PickBranchLitT>::simplify() {
                         vardata[var(p)].level = 0;
                     }
                     else {
-                        assert(value(p) == l_Undef);
                         uncheckedEnqueue(p);
-                        ok = (propagate() == nullptr);
                     }
                 }
             }
-            if (!ok) break;
         }
-        if (!ok) break;
     }
 
     for (auto pair : shrink_list) {
@@ -1443,7 +1438,7 @@ bool Solver<PickBranchLitT>::simplify() {
     
     Statistics::getInstance().runtimeStop("Runtime Simplify");
 
-    return ok;
+    return (propagate() == nullptr);
 }
 
 /**************************************************************************************************
@@ -1567,15 +1562,17 @@ lbool Solver<PickBranchLitT>::search() {
                 
                 cancelUntil(0);
                 
-                if (new_unary) {
-                    if (!simplify()) {
-                        return l_False;
-                    }
-                    new_unary = false;
-                }
-                
                 // every restart after reduce-db
                 if (reduced) {
+                    reduced = false;
+
+                    if (new_unary) {
+                        new_unary = false;
+                        if (!simplify()) {
+                            return l_False;
+                        }
+                    }
+
                     if (revamp > 2) {
                         revampClausePool(revamp);
                     }
@@ -1594,8 +1591,6 @@ lbool Solver<PickBranchLitT>::search() {
                         }
                         Statistics::getInstance().runtimeStop("Runtime Sort Watches");
                     }
-                    
-                    reduced = false;
                 }
                 
                 return l_Undef;
