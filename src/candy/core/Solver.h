@@ -392,6 +392,7 @@ protected:
     bool sort_variables;
 
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
+    bool new_binary; // Indicates whether a binary clause was learnt since the last restart
     bool inprocessing; // Perform eliminate regularly on all persistent clauses
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -640,6 +641,7 @@ Solver<PickBranchLitT>::Solver() :
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
     new_unary(false),
+    new_binary(false),
     inprocessing(SolverOptions::opt_inprocessing),
     // conflict state
     ok(true),
@@ -1554,6 +1556,7 @@ lbool Solver<PickBranchLitT>::search() {
                     Statistics::getInstance().solverLBD2Inc();
                 }
                 if (cr->size() == 2) {
+                    new_binary = true;
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
                 }
@@ -1579,19 +1582,20 @@ lbool Solver<PickBranchLitT>::search() {
                     reduced = false;
 
                     if (new_unary) {
-                        new_unary = false;
                         if (!simplify()) {
                             return l_False;
                         }
                     }
 
-                    if (inprocessing) {
+                    if (inprocessing && (new_unary || new_binary)) {
                         Statistics::getInstance().runtimeStart("Runtime Inprocessing");
                         if (!eliminate()) {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Runtime Inprocessing");
                     }
+
+                    new_unary = new_binary = false;
 
                     if (revamp > 2) {
                         revampClausePool(revamp);
