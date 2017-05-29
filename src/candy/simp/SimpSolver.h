@@ -92,11 +92,11 @@ public:
     }
 
     inline lbool solve(std::initializer_list<Lit> assumps) {
-        Solver<PickBranchLitT>::solve(assumps);
+        return Solver<PickBranchLitT>::solve(assumps);
     }
 
     inline lbool solve(const vector<Lit>& assumps) {
-        Solver<PickBranchLitT>::solve(assumps);
+        return Solver<PickBranchLitT>::solve(assumps);
     }
 
     // If a variable is frozen it will not be eliminated
