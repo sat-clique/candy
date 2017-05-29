@@ -164,7 +164,8 @@ static lbool solve(SolverType& S, bool do_preprocess) {
 
     if (do_preprocess) {
         Statistics::getInstance().runtimeStart(RT_SIMPLIFIER);
-        S.eliminate(true);
+        S.eliminate();
+        S.disablePreprocessing();
         Statistics::getInstance().runtimeStop(RT_SIMPLIFIER);
         if (S.isInConflictingState()) {
             result = l_False;
