@@ -80,7 +80,7 @@ public:
     // Problem specification:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0); // Add a new variable with parameters specifying variable mode.
 
-    bool eliminate();  // Perform variable elimination based simplification.
+    virtual bool eliminate();  // Perform variable elimination based simplification.
     virtual lbool solve();
 
     inline void enablePreprocessing() {
@@ -691,6 +691,9 @@ void SimpSolver<PickBranchLitT>::setupEliminate() {
     for (Clause* c : this->clauses) {
         elimAttach(c);
     }
+    for (Clause* c : this->learntsBin) {
+        elimAttach(c);
+    }
 
     // Assumptions must be temporarily frozen to run variable elimination:
     if (this->isIncremental()) {
@@ -742,6 +745,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->watches.cleanAll();
     this->watchesBin.cleanAll();
     this->freeMarkedClauses(this->clauses);
+    this->freeMarkedClauses(this->learntsBin);
 }
 
 template<class PickBranchLitT>

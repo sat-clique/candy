@@ -31,8 +31,6 @@ Statistics::Statistics() :
                 {RT_SIMPLIFIER, std::chrono::milliseconds{0}}}),
 #endif
 #ifdef INCREMENTAL_STATS
-    totalTime4Sat(std::chrono::milliseconds{0}),
-    totalTime4Unsat(std::chrono::milliseconds{0}),
     nbSatCalls(0),
     nbUnsatCalls(0),
 #endif
@@ -65,10 +63,8 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
     printf("c propagations          : %" PRIu64"\n", propagations);
 #endif
 #ifdef INCREMENTAL_STATS
-    double totalTime4SatSec = static_cast<double>(totalTime4Sat.count())/1000.0f;
-    double totalTime4UnsatSec = static_cast<double>(totalTime4Sat.count())/1000.0f;
-    printf("\nc SAT Calls             : %d in %g seconds\n", nbSatCalls, totalTime4SatSec);
-    printf("c UNSAT Calls           : %d in %g seconds\n", nbUnsatCalls, totalTime4UnsatSec);
+    printf("\nc SAT Calls             : %d\n", nbSatCalls);
+    printf("c UNSAT Calls           : %d\n", nbUnsatCalls);
 
     printf("c--------------------------------------------------\n");
 #endif
