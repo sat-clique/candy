@@ -477,7 +477,7 @@ std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, D
 
 template<class SolverType> static
 typename std::enable_if<std::is_same<SolverType, DefaultSimpSolver>::value, lbool>::type
-solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
+solveWithRSAR(SolverType& solver, std::unique_ptr<Candy::CNFProblem> problem, const GateRecognitionArguments& gateRecognitionArgs,
                 const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
     // TODO: the CPU time code was inserted in quite a hurry and
     // needs to be refactored.
@@ -490,7 +490,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
                                                            rsArguments.preprocessingTimeLimit);
     }
 
-    auto gateAnalyzer = createGateAnalyzer(problem, localGateRecognitionArgs);
+    auto gateAnalyzer = createGateAnalyzer(*problem, localGateRecognitionArgs);
     gateAnalyzer->analyze();
     
     std::chrono::milliseconds gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
@@ -546,7 +546,7 @@ solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognit
 
 template<class SolverType> static
 typename std::enable_if<!std::is_same<SolverType, DefaultSimpSolver>::value, lbool>::type
-solveWithRSAR(SolverType& solver, Candy::CNFProblem& problem, const GateRecognitionArguments& gateRecognitionArgs,
+solveWithRSAR(SolverType& solver, std::unique_ptr<Candy::CNFProblem> problem, const GateRecognitionArguments& gateRecognitionArgs,
               const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
     throw std::logic_error("solveWithRSAR may only be called with SolverType == DefaultSimpSolver");
 }
@@ -979,9 +979,9 @@ static lbool simplifyAndPrintProblem(SolverType& S) {
 template<class SolverType = DefaultSimpSolver>
 int executeSolver(const GlucoseArguments& args,
                   SolverType& S,
-                  CNFProblem& problem) {
+                  std::unique_ptr<CNFProblem> problem) {
     Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
-    S.addClauses(problem);
+    S.addClauses(*problem);
     Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
     
     if (S.verbosity > 0) {
@@ -997,9 +997,10 @@ int executeSolver(const GlucoseArguments& args,
     if (args.do_simp_out) {
         result = simplifyAndPrintProblem(S);
     } else if (!args.rsarArgs.useRSAR) {
+        problem.reset(nullptr); // free clauses
         result = solve(S, args.do_preprocess);
     } else {
-        result = solveWithRSAR(S, problem, args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
+        result = solveWithRSAR(S, std::move(problem), args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
     }
     
     if (!args.do_simp_out) {
@@ -1025,14 +1026,14 @@ int solve(const GlucoseArguments& args,
         std::unique_ptr<Certificate> certificate = backported_std::make_unique<Certificate>(args.opt_certified_file,
                                                                                             args.do_certified);
 
-        Candy::CNFProblem problem(*certificate);
+        std::unique_ptr<Candy::CNFProblem> problem = backported_std::make_unique<Candy::CNFProblem>(*certificate);
         if (args.read_from_stdin) {
             printf("c Reading from standard input... Use '--help' for help.\n");
-            if (!problem.readDimacsFromStdout()) {
+            if (!problem->readDimacsFromStdout()) {
                 return 1;
             }
         } else {
-            if (!problem.readDimacsFromFile(args.input_filename)) {
+            if (!problem->readDimacsFromFile(args.input_filename)) {
                 return 1;
             }
         }
@@ -1046,7 +1047,7 @@ int solve(const GlucoseArguments& args,
         
         if (preprocessingHook) {
             try {
-                preprocessingHook(*S, problem);
+                preprocessingHook(*S, *problem);
             }
             catch(UnsuitableProblemException& e) {
                 std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
@@ -1062,15 +1063,15 @@ int solve(const GlucoseArguments& args,
         Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
 
         if (args.do_gaterecognition) {
-            benchmarkGateRecognition(problem, args.gateRecognitionArgs);
+            benchmarkGateRecognition(*problem, args.gateRecognitionArgs);
             return 0;
         }
         
         if (!fallBackToUnmodifiedCandy) {
-            return executeSolver(args, *S, problem);
+            return executeSolver(args, *S, std::move(problem));
         }
         else {
-            return executeSolver(args, *fallbackSolver, problem);
+            return executeSolver(args, *fallbackSolver, std::move(problem));
         }
         
     } catch (std::bad_alloc& ba) {
