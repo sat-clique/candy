@@ -206,6 +206,7 @@ static void printResult(SolverType& S, lbool result, bool showModel, const char*
         Statistics::getInstance().printRuntime("Runtime Revamp");
         Statistics::getInstance().printRuntime("Runtime Sort Watches");
         Statistics::getInstance().printRuntime("Runtime Simplify");
+        Statistics::getInstance().printRuntime("Runtime Inprocessing");
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");

@@ -163,6 +163,7 @@ public:
     // Solving:
     bool simplify(); // Removes already satisfied clauses and false literals
 
+    virtual bool eliminate();  // Perform variable elimination based simplification.
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
 
     inline lbool solve(std::initializer_list<Lit> assumps) {
@@ -391,6 +392,7 @@ protected:
     bool sort_variables;
 
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
+    bool inprocessing; // Perform eliminate regularly on all persistent clauses
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
@@ -588,6 +590,7 @@ namespace SolverOptions {
     extern IntOption opt_revamp;
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
+    extern BoolOption opt_inprocessing;
 }
 
 template<class PickBranchLitT>
@@ -637,6 +640,7 @@ Solver<PickBranchLitT>::Solver() :
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
     new_unary(false),
+    inprocessing(SolverOptions::opt_inprocessing),
     // conflict state
     ok(true),
     // lbd computation
@@ -1441,6 +1445,14 @@ bool Solver<PickBranchLitT>::simplify() {
     return (propagate() == nullptr);
 }
 
+/**
+ * Dummy virtual method for inprocessing
+ */
+template<class PickBranchLitT>
+bool Solver<PickBranchLitT>::eliminate() {
+    return true;
+}
+
 /**************************************************************************************************
  *
  *  search : (nof*conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -1573,6 +1585,14 @@ lbool Solver<PickBranchLitT>::search() {
                         }
                     }
 
+                    if (inprocessing) {
+                        Statistics::getInstance().runtimeStart("Runtime Inprocessing");
+                        if (!eliminate()) {
+                            return l_False;
+                        }
+                        Statistics::getInstance().runtimeStop("Runtime Inprocessing");
+                    }
+
                     if (revamp > 2) {
                         revampClausePool(revamp);
                     }
@@ -1645,17 +1665,11 @@ lbool Solver<PickBranchLitT>::search() {
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
     Statistics::getInstance().runtimeStart(RT_SOLVER);
+
+    sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
     model.clear();
     conflict.clear();
-    if (!ok) {
-        Statistics::getInstance().runtimeStop(RT_SOLVER);
-        return l_False;
-    }
-    
-    auto curTime = Glucose::cpuTime();
-    
-    sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
     if (!incremental && verbosity >= 1) {
         printf("c =====================================[ MAGIC CONSTANTS ]======================================\n");
@@ -1665,8 +1679,7 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c |                                |                                |                          |\n");
         printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:    |\n");
         printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d          |\n", lbdQueue.maxSize(), nbclausesbeforereduce, lbSizeMinimizingClause);
-        printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d          |\n", trailQueue.maxSize(), incReduceDB,
-               lbLBDMinimizingClause);
+        printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d          |\n", trailQueue.maxSize(), incReduceDB, lbLBDMinimizingClause);
         printf("c |   * K            : %6.2f      |   * Special   : %6d         |                          |\n", K, specialIncReduceDB);
         printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                          |\n", R, lbLBDFrozenClause);
         printf("c |                                |                                |                          |\n");
@@ -1677,18 +1690,19 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |\n");
         printf("c ==============================================================================================\n");
     }
+
+    lbool status = l_Undef;
+    if (isInConflictingState()) {
+        status = l_False;
+    }
     
     // Search:
-    lbool status = l_Undef;
     while (status == l_Undef && withinBudget()) {
         status = search();
     }
     
-    auto finalTime = Glucose::cpuTime();
-    
     if (status == l_False) {
         Statistics::getInstance().incNBUnsatCalls();
-        Statistics::getInstance().incTotalTime4Unsat(finalTime - curTime);
         
         if (!incremental) {
             certificate->proof();
@@ -1711,7 +1725,6 @@ lbool Solver<PickBranchLitT>::solve() {
     }
     else if (status == l_True) {
         Statistics::getInstance().incNBSatCalls();
-        Statistics::getInstance().incTotalTime4Sat(finalTime - curTime);
         
         model.clear();
         model.insert(model.end(), assigns.begin(), assigns.end());

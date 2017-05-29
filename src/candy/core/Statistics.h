@@ -49,7 +49,6 @@ class Statistics {
 #endif// RUNTIME_STATS
 
 #ifdef INCREMENTAL_STATS
-    std::chrono::milliseconds totalTime4Sat, totalTime4Unsat;
     int nbSatCalls, nbUnsatCalls;
 #endif// INCREMENTAL_STATS
 
@@ -121,13 +120,9 @@ public:
 #ifdef INCREMENTAL_STATS
     inline void incNBSatCalls() { ++nbSatCalls; }
     inline void incNBUnsatCalls() { ++nbUnsatCalls; }
-    inline void incTotalTime4Sat(std::chrono::milliseconds amount) { totalTime4Sat += amount; }
-    inline void incTotalTime4Unsat(std::chrono::milliseconds amount) { totalTime4Unsat += amount; }
 #else
     inline void incNBSatCalls() { }
     inline void incNBUnsatCalls() { }
-    inline void incTotalTime4Sat(std::chrono::milliseconds amount) { (void)(amount); }
-    inline void incTotalTime4Unsat(std::chrono::milliseconds amount) { (void)(amount); }
 #endif// INCREMENTAL_STATS
 #ifdef RUNTIME_STATS
     inline void runtimeReset(std::string key) {
