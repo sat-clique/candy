@@ -135,7 +135,7 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
 
     for (Lit o : candidates) {
         For& f = index[~o], g = index[o];
-        if (f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
+        if (!runtime.hasTimeout() && f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
             bool mono = false, pattern = false, semantic = false;
             set<Lit> inp;
             for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
