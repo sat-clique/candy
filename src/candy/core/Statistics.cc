@@ -13,11 +13,7 @@ namespace Candy {
 Statistics::Statistics() :
 #ifdef SOLVER_STATS
     decisions(0), dec_vars(0), max_literals(0), tot_literals(0),
-#endif
-#ifdef RESTART_STATS
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
-#endif
-#ifdef LEARNTS_STATS
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
 #endif
 #ifdef RUNTIME_STATS
@@ -47,17 +43,15 @@ Statistics::~Statistics() { }
 
 void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations) {
     printf("c---------- Glucose Stats -------------------------\n");
-#ifdef RESTART_STATS
+#ifdef SOLVER_STATS
     printf("c restarts              : %" PRIu64"\n", starts);
-#endif
-#ifdef LEARNTS_STATS
+
     printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
     printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
     printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
     printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
     printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
-#endif
-#ifdef SOLVER_STATS
+
     printf("c conflicts             : %" PRIu64"\n", conflicts);
     printf("c decisions             : %" PRIu64"\n", decisions);
     printf("c propagations          : %" PRIu64"\n", propagations);
@@ -72,7 +66,7 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
 
 void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals) {
-#if defined SOLVER_STATS && defined RESTART_STATS && defined LEARNTS_STATS
+#if defined SOLVER_STATS
     printf("c | %8llu   %7llu    %5llu | %7d %8d %8llu | %5llu %8d   %6llu %8llu |\n",
             starts, nbstopsrestarts, (conflicts / starts),
             (int)dec_vars - trail, clauses, literals,
@@ -84,20 +78,18 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     std::chrono::milliseconds cpu_time_millis = Glucose::cpuTime();
     double cpu_time = static_cast<double>(cpu_time_millis.count())/1000.0f;
     printf("c ==============================================================================================\n");
-#ifdef RESTART_STATS
+#ifdef SOLVER_STATS
     printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
     printf("c blocked restarts      : %" PRIu64" (multiple: %" PRIu64") \n", nbstopsrestarts, nbstopsrestartssame);
     printf("c last block at restart : %" PRIu64"\n", lastblockatrestart);
-#endif
-#ifdef LEARNTS_STATS
+
     printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
     printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
     printf("c nb reduced Clauses    : %" PRIu64"\n", nbReducedClauses);
     printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
     printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
     printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
-#endif
-#ifdef SOLVER_STATS
+
     printf("c conflicts             : %-12" PRIu64"   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
     printf("c decisions             : %-12" PRIu64"   (%.0f /sec)\n", decisions, decisions / cpu_time);
     printf("c propagations          : %-12" PRIu64"   (%.0f /sec)\n", propagations, propagations / cpu_time);
