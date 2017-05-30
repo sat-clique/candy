@@ -163,7 +163,8 @@ protected:
     uint32_t bwdsub_assigns;
     uint32_t n_touched;
 
-    std::unordered_map<Clause*, size_t> strengthened;
+    std::vector<Clause*> strengthened_clauses;
+    std::unordered_map<Clause*, size_t> strengthened_sizes;
     std::unordered_map<Clause*, uint64_t> abstraction;
 
     // Main internal methods:
@@ -236,7 +237,8 @@ SimpSolver<PickBranchLitT>::SimpSolver() :
     elim_heap(ElimLt(n_occ)),
     bwdsub_assigns(0),
     n_touched(0),
-    strengthened(),
+    strengthened_clauses(),
+    strengthened_sizes(),
     abstraction() {
 }
 
@@ -324,8 +326,9 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     // if (!find(subsumption_queue, &c))
     subsumption_queue.push_back(cr);
 
-    if (strengthened.count(cr) == 0) { // used to cleanup pages in clause-pool
-        strengthened[cr] = cr->size();
+    if (strengthened_sizes.count(cr) == 0) { // used to cleanup pages in clause-pool
+        strengthened_sizes[cr] = cr->size();
+        strengthened_clauses.push_back(cr);
     }
     
     this->detachClause(cr, true);
@@ -737,9 +740,8 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->rebuildOrderHeap();
 
     // cleanup strengthened clauses in pool
-    for (auto pair : strengthened) {
-        Clause* clause = pair.first;
-        size_t size = pair.second;
+    for (Clause* clause : strengthened_clauses) {
+        size_t size = strengthened_sizes[clause];
         if (!clause->isDeleted()) {
             // create clause in correct pool
             Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()));
@@ -753,7 +755,8 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
         }
         clause->setSize(size);//restore original size for freeMarkedClauses
     }
-    strengthened.clear();
+    strengthened_clauses.clear();
+    strengthened_sizes.clear();
 
     this->watches.cleanAll();
     this->watchesBin.cleanAll();

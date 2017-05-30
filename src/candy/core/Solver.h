@@ -1308,8 +1308,6 @@ template <class PickBranchLitT>
 void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     assert(upper <= REVAMPABLE_PAGES_MAX_SIZE);
     
-    Statistics::getInstance().runtimeStart("Runtime Revamp");
-    
     size_t old_clauses_size = clauses.size();
     size_t old_learnts_size = learnts.size();
     
@@ -1353,8 +1351,6 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
             propagate();
         }
     }
-
-    Statistics::getInstance().runtimeStop("Runtime Revamp");
     
     assert(old_learnts_size == learnts.size());
     assert(old_clauses_size == clauses.size());
@@ -1378,15 +1374,14 @@ bool Solver<PickBranchLitT>::simplify() {
         return ok = false;
     }
 
-    Statistics::getInstance().runtimeStart("Runtime Simplify");
-
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
     // Remove false literals:
-    std::unordered_map<Clause*, size_t> shrink_list;
+    std::unordered_map<Clause*, size_t> strengthened_sizes;
+    std::vector<Clause*> strengthened_clauses;
     for (auto list : { clauses, learnts, learntsBin }) {
         for (Clause* clause : list) if (!clause->isDeleted()) {
             auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
@@ -1396,7 +1391,8 @@ bool Solver<PickBranchLitT>::simplify() {
                 certificate->added(clause->begin(), end);
                 size_t size = std::distance(clause->begin(), end);
                 if (size > 1) {
-                    shrink_list[clause] = size;
+                    strengthened_sizes[clause] = size;
+                    strengthened_clauses.push_back(clause);
                 }
                 else {
                     Lit p = clause->first();
@@ -1412,9 +1408,8 @@ bool Solver<PickBranchLitT>::simplify() {
         }
     }
 
-    for (auto pair : shrink_list) {
-        Clause* clause = pair.first;
-        size_t size = pair.second;
+    for (Clause* clause : strengthened_clauses) {
+        size_t size = strengthened_sizes[clause];
         Clause* cr = new (allocator.allocate(size)) Clause(clause->begin(), clause->begin() + size);
         attachClause(cr);
         cr->activity() = clause->activity();
@@ -1423,6 +1418,7 @@ bool Solver<PickBranchLitT>::simplify() {
             cr->setLearnt(true);
             cr->setLBD(clause->getLBD());
             if (cr->size() == 2) {
+                new_binary = true;
                 learntsBin.push_back(cr);
             } else {
                 learnts.push_back(cr);
@@ -1441,8 +1437,6 @@ bool Solver<PickBranchLitT>::simplify() {
     freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
-    
-    Statistics::getInstance().runtimeStop("Runtime Simplify");
 
     return (propagate() == nullptr);
 }
@@ -1476,6 +1470,7 @@ lbool Solver<PickBranchLitT>::search() {
     uint_fast16_t nblevels;
     bool blocked = false;
     bool reduced = false;
+    uint32_t nReorganize = 0;
     Statistics::getInstance().solverRestartInc();
     sonification.restart();
     for (;;) {
@@ -1580,14 +1575,19 @@ lbool Solver<PickBranchLitT>::search() {
                 // every restart after reduce-db
                 if (reduced) {
                     reduced = false;
+                    nReorganize++;
 
-                    if (new_unary) {
+                    if (new_unary && nReorganize % 2 == 0) {
+                        new_unary = false;
+                        Statistics::getInstance().runtimeStart("Runtime Simplify");
                         if (!simplify()) {
                             return l_False;
                         }
+                        Statistics::getInstance().runtimeStop("Runtime Simplify");
                     }
 
-                    if (inprocessing && (new_unary || new_binary)) {
+                    if (inprocessing && new_binary && nReorganize % 4 == 0) {
+                        new_binary = false;
                         Statistics::getInstance().runtimeStart("Runtime Inprocessing");
                         if (!eliminate(false, false)) {
                             return l_False;
@@ -1595,10 +1595,10 @@ lbool Solver<PickBranchLitT>::search() {
                         Statistics::getInstance().runtimeStop("Runtime Inprocessing");
                     }
 
-                    new_unary = new_binary = false;
-
                     if (revamp > 2) {
+                        Statistics::getInstance().runtimeStart("Runtime Revamp");
                         revampClausePool(revamp);
+                        Statistics::getInstance().runtimeStop("Runtime Revamp");
                     }
                     
                     if (sort_watches) {
