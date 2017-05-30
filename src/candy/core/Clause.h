@@ -30,10 +30,7 @@ class Clause {
     uint16_t length;
     uint16_t header;
 
-    union {
-        float activity;
-        uint32_t abstraction;
-    } data;
+    float activity_;
 
     Lit literals[1];
 
@@ -44,7 +41,7 @@ public:
         header = 0;
         setLearnt(true); // only learnts have lbd
         setLBD(lbd);
-        data.activity = 0;
+        activity_ = 0;
         assert(std::unique(begin(), end()) == end());
     }
 
@@ -52,14 +49,14 @@ public:
         copyLiterals(list.begin(), list.end(), literals);
         length = static_cast<decltype(length)>(list.size());
         header = 0; // all flags false; lbd=0
-        calcAbstraction();
+        activity_ = 0;
     }
 
     Clause(const std::vector<Lit>& list) {
         copyLiterals(list.begin(), list.end(), literals);
         length = static_cast<decltype(length)>(list.size());
         header = 0; // not frozen, not deleted and not learnt; lbd=0
-        calcAbstraction();
+        activity_ = 0;
     }
 
     template<typename Iterator>
@@ -67,7 +64,7 @@ public:
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
         header = 0; // not frozen, not deleted and not learnt; lbd=0
-        data.abstraction = 0;
+        activity_ = 0;
     }
 
     ~Clause();
@@ -117,8 +114,6 @@ public:
     inline const Lit back() const {
         return literals[length-1];
     }
-
-    void calcAbstraction();
 
     bool contains(const Lit lit) const;
     bool contains(const Var var) const;
@@ -188,7 +183,7 @@ public:
     }
 
     inline float& activity() {
-        return data.activity;
+        return activity_;
     }
 
     inline uint16_t getHeader() const {
@@ -208,10 +203,7 @@ public:
      *       p          - The literal p can be deleted from 'other'
      */
     inline Lit subsumes(const Clause& other) const {
-        assert(!isLearnt());
-        assert(!other.isLearnt());
-
-        if (other.size() < size() || (data.abstraction & ~other.data.abstraction) != 0) {
+        if (other.size() < size()) {
             return lit_Error;
         }
 
@@ -242,7 +234,6 @@ public:
             Statistics::getInstance().allocatorStrengthenClause(length);
             --length;
         }
-        calcAbstraction();
     }
 
     void setSize(uint16_t size) {//use only if you know what you are doing (only to be used after strengthen calls)

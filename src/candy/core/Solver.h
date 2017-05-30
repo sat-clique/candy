@@ -163,7 +163,7 @@ public:
     // Solving:
     bool simplify(); // Removes already satisfied clauses and false literals
 
-    virtual bool eliminate();  // Perform variable elimination based simplification.
+    virtual bool eliminate(bool use_asymm, bool use_elim);  // Perform variable elimination based simplification.
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
 
     inline lbool solve(std::initializer_list<Lit> assumps) {
@@ -1451,7 +1451,7 @@ bool Solver<PickBranchLitT>::simplify() {
  * Dummy virtual method for inprocessing
  */
 template<class PickBranchLitT>
-bool Solver<PickBranchLitT>::eliminate() {
+bool Solver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     return true;
 }
 
@@ -1564,7 +1564,7 @@ lbool Solver<PickBranchLitT>::search() {
                     learnts.push_back(cr);
                 }
                 claBumpActivity(*cr);
-                detachClause(cr);
+                attachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
             }
             varDecayActivity();
@@ -1589,7 +1589,7 @@ lbool Solver<PickBranchLitT>::search() {
 
                     if (inprocessing && (new_unary || new_binary)) {
                         Statistics::getInstance().runtimeStart("Runtime Inprocessing");
-                        if (!eliminate()) {
+                        if (!eliminate(false, false)) {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Runtime Inprocessing");
