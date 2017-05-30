@@ -732,7 +732,7 @@ createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
         
         std::cerr << "c Random simulation time: " << runtime.lap().count() << " ms" << std::endl;
         
-        if (conjectures->getEquivalences().empty() || conjectures->getBackbones().empty()) {
+        if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
             throw UnsuitableProblemException{"no conjectures found."};
         }
         
@@ -776,7 +776,7 @@ std::ostream& operator <<(std::ostream& stream, const GlucoseArguments& argument
     stream << "c Glucose arguments: " << std::endl
     << "c   Verbosity: " << arguments.verb << std::endl
     << "c   Show model: " << arguments.mod << std::endl
-    << "c   Verboisty every conflicts: " << arguments.vv << std::endl
+    << "c   Verbosity every conflicts: " << arguments.vv << std::endl
     << "c   CPU time limit: " << arguments.cpu_lim << std::endl
     << "c   Memory limit: " << arguments.mem_lim << std::endl
     << "c   Solve: " << arguments.do_solve << std::endl
