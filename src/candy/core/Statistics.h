@@ -18,8 +18,6 @@
 #include <candy/utils/System.h>
 
 //#define SOLVER_STATS
-//#define RESTART_STATS
-//#define LEARNTS_STATS
 #define RUNTIME_STATS
 //#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
@@ -29,15 +27,9 @@ namespace Candy {
 class Statistics {
 #ifdef SOLVER_STATS
     uint64_t decisions, dec_vars, max_literals, tot_literals;
-#endif// SOLVER_STATS
-
-#ifdef RESTART_STATS
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
-#endif// RESTART_STATS
-
-#ifdef LEARNTS_STATS
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
-#endif// LEARNTS_STATS
+#endif// SOLVER_STATS
 
 #ifdef RUNTIME_STATS
 #define RT_INITIALIZATION   "Runtime Initialization"
@@ -80,28 +72,12 @@ public:
     inline void solverDecisionVariablesDec() { --dec_vars; }
     inline void solverMaxLiteralsInc(unsigned int amount) { max_literals += amount; }
     inline void solverTotLiteralsInc(unsigned int amount) { tot_literals += amount; }
-#else
-    inline void solverDecisionsInc() { }
-    inline void solverRandomDecisionsInc() { }
-    inline void solverDecisionVariablesInc() { }
-    inline void solverDecisionVariablesDec() { }
-    inline void solverMaxLiteralsInc(unsigned int amount) { (void)(amount); }
-    inline void solverTotLiteralsInc(unsigned int amount) { (void)(amount); }
-#endif// SOLVER_STATS
 
-#ifdef RESTART_STATS
     inline void solverRestartInc() { ++starts; }
     inline void solverStopsRestartsInc() { ++nbstopsrestarts; }
     inline void solverStopsRestartsSameInc() { ++nbstopsrestartssame; }
     inline void solverLastBlockAtRestartSave() { lastblockatrestart = starts; }
-#else
-    inline void solverRestartInc() { }
-    inline void solverStopsRestartsInc() { }
-    inline void solverStopsRestartsSameInc() { }
-    inline void solverLastBlockAtRestartSave() { }
-#endif// RESTART_STATS
 
-#ifdef LEARNTS_STATS
     inline void solverRemovedClausesInc(unsigned int amount) { nbRemovedClauses += amount; }
     inline void solverReducedClausesInc(unsigned int amount) { nbReducedClauses += amount; }
     inline void solverReduceDBInc() { ++nbReduceDB; }
@@ -109,13 +85,26 @@ public:
     inline void solverBinariesInc() { ++nbBin; }
     inline void solverLBD2Inc() { ++nbDL2; }
 #else
+    inline void solverDecisionsInc() { }
+    inline void solverRandomDecisionsInc() { }
+    inline void solverDecisionVariablesInc() { }
+    inline void solverDecisionVariablesDec() { }
+    inline void solverMaxLiteralsInc(unsigned int amount) { (void)(amount); }
+    inline void solverTotLiteralsInc(unsigned int amount) { (void)(amount); }
+
+    inline void solverRestartInc() { }
+    inline void solverStopsRestartsInc() { }
+    inline void solverStopsRestartsSameInc() { }
+    inline void solverLastBlockAtRestartSave() { }
+
     inline void solverRemovedClausesInc(unsigned int amount) { (void)(amount); }
     inline void solverReducedClausesInc(unsigned int amount) { (void)(amount); }
     inline void solverReduceDBInc() { }
     inline void solverUnariesInc() { }
     inline void solverBinariesInc() { }
     inline void solverLBD2Inc() { }
-#endif// LEARNTS_STATS
+#endif// SOLVER_STATS
+
 
 #ifdef INCREMENTAL_STATS
     inline void incNBSatCalls() { ++nbSatCalls; }
@@ -154,10 +143,19 @@ public:
         double seconds = static_cast<double>(runtimes[key].count())/1000.0f;
         printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
     }
+    void printRuntimes() {
+        for (auto pair : runtimes) {
+            auto key = pair.first;
+            auto runtime = pair.second;
+            double seconds = static_cast<double>(runtime.count())/1000.0f;
+            printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
+        }
+    }
 #else
     inline void runtimeStart(std::string key) { (void)(key); }
     inline void runtimeStop(std::string key) { (void)(key); }
     void printRuntime(std::string key) { (void)(key); }
+    void printRuntimes() { }
 #endif// RUNTIME_STATS
 #ifdef ALLOCATOR_STATS
     inline void allocatorNumberOfPoolsSet(uint32_t nPools) {
