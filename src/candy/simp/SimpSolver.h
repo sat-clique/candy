@@ -706,6 +706,12 @@ void SimpSolver<PickBranchLitT>::setupEliminate() {
     for (Clause* c : this->clauses) {
         elimAttach(c);
     }
+    // include persistent learnt clauses
+    for (Clause* c : this->learnts) {
+        if (c->getLBD() <= 2) {
+            elimAttach(c);
+        }
+    }
     for (Clause* c : this->learntsBin) {
         elimAttach(c);
     }
@@ -761,6 +767,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->watches.cleanAll();
     this->watchesBin.cleanAll();
     this->freeMarkedClauses(this->clauses);
+    this->freeMarkedClauses(this->learnts);
     this->freeMarkedClauses(this->learntsBin);
 }
 
