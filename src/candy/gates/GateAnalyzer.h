@@ -168,8 +168,8 @@ private:
     std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
 
     // clause selection heuristic
-    Var getRarestVariable(std::vector<For>& index);
-    Lit getRarestLiteral(std::vector<For>& index);
+    std::vector<Lit> getRarestLiterals(std::vector<For>& index);
+    std::vector<Cl*> getBestRoots();
 
     // clause patterns of full encoding
     bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
