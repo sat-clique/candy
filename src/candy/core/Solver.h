@@ -392,7 +392,6 @@ protected:
     bool sort_variables;
 
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
-    bool new_binary; // Indicates whether a binary clause was learnt since the last restart
     bool inprocessing; // Perform eliminate regularly on all persistent clauses
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -641,7 +640,6 @@ Solver<PickBranchLitT>::Solver() :
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
     new_unary(false),
-    new_binary(false),
     inprocessing(SolverOptions::opt_inprocessing),
     // conflict state
     ok(true),
@@ -746,7 +744,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
     }
-    simplify();
+    ok = (propagate() == nullptr) && simplify();
 }
 
 template<class PickBranchLitT>
@@ -765,7 +763,8 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
     else if (size == 1) {
         if (value(*begin) == l_Undef) {
             uncheckedEnqueue(*begin);
-            return ok = (propagate() == nullptr);
+            //return ok = (propagate() == nullptr);
+            return true;
         }
         else if (value(*begin) == l_True) {
             vardata[var(*begin)].reason = nullptr;
@@ -1418,7 +1417,6 @@ bool Solver<PickBranchLitT>::simplify() {
             cr->setLearnt(true);
             cr->setLBD(clause->getLBD());
             if (cr->size() == 2) {
-                new_binary = true;
                 learntsBin.push_back(cr);
             } else {
                 learnts.push_back(cr);
@@ -1470,7 +1468,6 @@ lbool Solver<PickBranchLitT>::search() {
     uint_fast16_t nblevels;
     bool blocked = false;
     bool reduced = false;
-    uint32_t nReorganize = 0;
     Statistics::getInstance().solverRestartInc();
     sonification.restart();
     for (;;) {
@@ -1551,7 +1548,6 @@ lbool Solver<PickBranchLitT>::search() {
                     Statistics::getInstance().solverLBD2Inc();
                 }
                 if (cr->size() == 2) {
-                    new_binary = true;
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
                 }
@@ -1575,9 +1571,8 @@ lbool Solver<PickBranchLitT>::search() {
                 // every restart after reduce-db
                 if (reduced) {
                     reduced = false;
-                    nReorganize++;
 
-                    if (new_unary && nReorganize % 2 == 0) {
+                    if (new_unary == 0) {
                         new_unary = false;
                         Statistics::getInstance().runtimeStart("Runtime Simplify");
                         if (!simplify()) {
@@ -1586,8 +1581,7 @@ lbool Solver<PickBranchLitT>::search() {
                         Statistics::getInstance().runtimeStop("Runtime Simplify");
                     }
 
-                    if (inprocessing && new_binary && nReorganize % 4 == 0) {
-                        new_binary = false;
+                    if (inprocessing) {
                         Statistics::getInstance().runtimeStart("Runtime Inprocessing");
                         if (!eliminate(false, false)) {
                             return l_False;
