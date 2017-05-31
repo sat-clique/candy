@@ -43,7 +43,6 @@ TEST (CandyAddClauseTestPatterns, rejectSatisfied) {
   formula.readClause(mkLit(1), mkLit(2));
   Solver<> solver;
   solver.addClauses(formula);
-  solver.simplify();
   ASSERT_EQ(solver.nClauses(), 0ul);
 }
 
@@ -70,7 +69,6 @@ TEST (CandyAddClauseTestPatterns, propagateEarly2) {
   formula.readClause(mkLit(1), mkLit(2));
   Solver<> solver;
   solver.addClauses(formula);
-  solver.simplify();
   ASSERT_EQ(solver.nClauses(), 0ul);;
 }
 
@@ -80,7 +78,6 @@ TEST (CandyAddClauseTestPatterns, propagateEarly3) {
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
   Solver<> solver;
   solver.addClauses(formula);
-  solver.simplify();
   ASSERT_EQ(solver.nClauses(), 1ul);
   Candy::Clause& clause = solver.getClause(0);
   ASSERT_EQ(clause.size(), 2ul);
