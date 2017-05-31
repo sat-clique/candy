@@ -77,6 +77,8 @@ option(CANDY_ENABLE_ADDRESS_SANITIZER "Just enable address sanitizer" OFF)
 # Enable -march=native - if set to OFF, at least SSE 4.1 will still be enabled.
 option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
 
+option(CANDY_ENABLE_STAREXEC_ARCH "Optimize for StarExec" OFF)
+
 # Enable Sonification
 option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 
@@ -188,6 +190,12 @@ if (CANDY_ENABLE_NATIVEARCH)
     message(FATAL_ERROR "CANDY_ENABLE_NATIVEARCH is not yet supported for MSVC")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+elseif (CANDY_ENABLE_STAREXEC_ARCH)
+  message("Compiling for the processor architecture of StarExec Cluster.")
+  if(MSVC)
+    message(FATAL_ERROR "CANDY_ENABLE_STAREXEC_ARCH is not supported for MSVC")
+  endif()
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=corei7-avx")
 else ()
   message("Compiling for processors supporting at least SSE 4.1.")
   if(MSVC)
