@@ -161,7 +161,7 @@ public:
     }
 
     // Solving:
-    bool simplify(); // Removes already satisfied clauses and false literals
+    bool simplify(bool strengthen); // Removes already satisfied clauses and false literals (if strengthen is true)
 
     virtual bool eliminate(bool use_asymm, bool use_elim);  // Perform variable elimination based simplification.
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
@@ -744,7 +744,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
     }
-    ok = (propagate() == nullptr) && simplify();
+    ok = (propagate() == nullptr) && simplify(true);
 }
 
 template<class PickBranchLitT>
@@ -1366,7 +1366,7 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
  *    thing done here is the removal of satisfied clauses, but more things can be put here.
  **************************************************************************************************/
 template <class PickBranchLitT>
-bool Solver<PickBranchLitT>::simplify() {
+bool Solver<PickBranchLitT>::simplify(bool strengthen) {
     assert(decisionLevel() == 0);
     
     if (!ok || propagate() != nullptr) {
@@ -1378,51 +1378,53 @@ bool Solver<PickBranchLitT>::simplify() {
     std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
-    // Remove false literals:
-    std::unordered_map<Clause*, size_t> strengthened_sizes;
-    std::vector<Clause*> strengthened_clauses;
-    for (auto list : { clauses, learnts, learntsBin }) {
-        for (Clause* clause : list) if (!clause->isDeleted()) {
-            auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
-            if (pos != clause->end()) {
-                removeClause(clause);
-                auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
-                certificate->added(clause->begin(), end);
-                size_t size = std::distance(clause->begin(), end);
-                if (size > 1) {
-                    strengthened_sizes[clause] = size;
-                    strengthened_clauses.push_back(clause);
-                }
-                else {
-                    Lit p = clause->first();
-                    if (value(p) == l_True) {
-                        vardata[var(p)].reason = nullptr;
-                        vardata[var(p)].level = 0;
+    if (strengthen) {
+        // Remove false literals:
+        std::unordered_map<Clause*, size_t> strengthened_sizes;
+        std::vector<Clause*> strengthened_clauses;
+        for (auto list : { clauses, learnts, learntsBin }) {
+            for (Clause* clause : list) if (!clause->isDeleted()) {
+                auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+                if (pos != clause->end()) {
+                    removeClause(clause);
+                    auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+                    certificate->added(clause->begin(), end);
+                    size_t size = std::distance(clause->begin(), end);
+                    if (size > 1) {
+                        strengthened_sizes[clause] = size;
+                        strengthened_clauses.push_back(clause);
                     }
                     else {
-                        uncheckedEnqueue(p);
+                        Lit p = clause->first();
+                        if (value(p) == l_True) {
+                            vardata[var(p)].reason = nullptr;
+                            vardata[var(p)].level = 0;
+                        }
+                        else {
+                            uncheckedEnqueue(p);
+                        }
                     }
                 }
             }
         }
-    }
 
-    for (Clause* clause : strengthened_clauses) {
-        size_t size = strengthened_sizes[clause];
-        Clause* cr = new (allocator.allocate(size)) Clause(clause->begin(), clause->begin() + size);
-        attachClause(cr);
-        cr->activity() = clause->activity();
-        cr->setFrozen(clause->isFrozen());
-        if (clause->isLearnt()) {
-            cr->setLearnt(true);
-            cr->setLBD(clause->getLBD());
-            if (cr->size() == 2) {
-                learntsBin.push_back(cr);
+        for (Clause* clause : strengthened_clauses) {
+            size_t size = strengthened_sizes[clause];
+            Clause* cr = new (allocator.allocate(size)) Clause(clause->begin(), clause->begin() + size);
+            attachClause(cr);
+            cr->activity() = clause->activity();
+            cr->setFrozen(clause->isFrozen());
+            if (clause->isLearnt()) {
+                cr->setLearnt(true);
+                cr->setLBD(clause->getLBD());
+                if (cr->size() == 2) {
+                    learntsBin.push_back(cr);
+                } else {
+                    learnts.push_back(cr);
+                }
             } else {
-                learnts.push_back(cr);
+                clauses.push_back(cr);
             }
-        } else {
-            clauses.push_back(cr);
         }
     }
 
@@ -1575,7 +1577,7 @@ lbool Solver<PickBranchLitT>::search() {
                     if (new_unary == 0) {
                         new_unary = false;
                         Statistics::getInstance().runtimeStart("Runtime Simplify");
-                        if (!simplify()) {
+                        if (!simplify(inprocessing)) {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Runtime Simplify");
