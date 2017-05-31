@@ -29,6 +29,8 @@
 #include "candy/utils/CNFProblem.h"
 #include "candy/utils/MemUtils.h"
 
+#include <iterator>
+
 namespace Candy {
 
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic,
@@ -52,31 +54,46 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
 GateAnalyzer::~GateAnalyzer() {
 }
 
-// heuristically select clauses
-Var GateAnalyzer::getRarestVariable(vector<For>& index) {
-    int min_count = INT_MAX;
-    Var min = -1;
-    for (Var v = 0; v < problem.nVars(); v++) {
-        Lit lit1 = mkLit(v, false);
-        Lit lit2 = mkLit(v, true);
-        int count = index[lit1].size() + index[lit2].size();
-        if (count > 0 && count <= min_count) {
-            min = v;
-            min_count = count;
+std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
+    std::vector<Lit> result;
+    unsigned int min = UINT_MAX;
+    for (Lit l = mkLit(0, false); l.x < (int32_t)index.size(); l.x++) {
+        if (index[l].size() > 0 && index[l].size() < min) {
+            min = index[l].size();
+            result.clear();
+            result.push_back(l);
+        }
+        else if (index[l].size() == min) {
+            result.push_back(l);
         }
     }
-    //assert(min.x < INT_MAX);
-    return min;
+    return result;
 }
 
-Lit GateAnalyzer::getRarestLiteral(vector<For>& index) {
-    Lit min; min.x = INT_MAX;
-    for (size_t l = 0; l < index.size(); l++) {
-        if (index[l].size() > 0 && (min.x == INT_MAX || index[l].size() < index[min.x].size())) {
-            min.x = l;
-        }
-    }
-    return min;
+std::vector<Cl*> GateAnalyzer::getBestRoots() {
+    std::vector<Cl*> clauses;
+    std::vector<Lit> lits = getRarestLiterals(index);
+    if (lits.empty()) return clauses;
+    Lit best = lits.back();
+//    int weight = 0;
+//    for (Lit lit : lits) {
+//        std::vector<Lit> others;
+//        for (Cl* clause : index[lit]) {
+//            others.insert(others.end(), clause->begin(), clause->end());
+//        }
+//        sort(others.begin(), others.end());
+//        others.erase(std::unique(others.begin(), others.end()), others.end());
+//        auto end = remove_if(others.begin(), others.end(), [lits] (Lit lit) { return std::find(lits.begin(), lits.end(), lit) == lits.end(); });
+//
+//        if (std::distance(end, others.end()) < weight) {
+//            weight = std::distance(end, others.end());
+//            best = lit;
+//        }
+//    }
+    clauses.insert(clauses.end(), index[best].begin(), index[best].end());
+    index[best].clear();
+    removeFromIndex(index, clauses);
+    return clauses;
 }
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
@@ -107,11 +124,11 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
 
 
 // clause patterns of full encoding
-bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
+bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inp) {
     // precondition: fwd blocks bwd on the o
 
     // check if fwd and bwd constrain exactly the same inputs (in opposite polarity)
-    set<Lit> t;
+    std::set<Lit> t;
     for (Cl* c : bwd) for (Lit l : *c) if (l != o) t.insert(~l);
     if (inp != t) return false;
 
@@ -121,7 +138,7 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
 
     // given a total of 2^n blocked clauses if size n+1 with n times the same variable should imply that we have no redundancy in the n inputs
     if (fwd.size() == bwd.size() && 2*fwd.size() == pow(2, inp.size()/2)) {
-        set<Var> vars;
+        std::set<Var> vars;
         for (Lit l : inp) vars.insert(var(l));
         return 2*vars.size() == inp.size();
     }
@@ -130,8 +147,8 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, set<Lit>& inp) {
 }
 
 // main analysis routine
-vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, bool lah) {
-    vector<Lit> frontier, remainder;
+vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool lah) {
+    std::vector<Lit> frontier, remainder;
 
     for (Lit o : candidates) {
         For& f = index[~o], g = index[o];
@@ -181,7 +198,7 @@ vector<Lit> GateAnalyzer::analyze(vector<Lit>& candidates, bool pat, bool sem, b
 
 void GateAnalyzer::analyze(vector<Lit>& candidates) {
     if (useIntensification) {
-        vector<Lit> remainder;
+        std::vector<Lit> remainder;
         bool patterns = false, semantic = false, lookahead = false, restart = false;
         for (int level = 0; level < 3 && !runtime.hasTimeout(); restart ? level = 0 : level++) {
 #ifdef GADebug
@@ -205,7 +222,7 @@ void GateAnalyzer::analyze(vector<Lit>& candidates) {
             remainder.clear();
 
             while (candidates.size() && !runtime.hasTimeout()) {
-                vector<Lit> frontier = analyze(candidates, patterns, semantic, lookahead);
+                std::vector<Lit> frontier = analyze(candidates, patterns, semantic, lookahead);
                 if (level > 0 && frontier.size() > 0) restart = true;
                 remainder.insert(remainder.end(), candidates.begin(), candidates.end());
                 candidates.swap(frontier);
@@ -218,14 +235,14 @@ void GateAnalyzer::analyze(vector<Lit>& candidates) {
     }
     else {
         while (candidates.size() && !runtime.hasTimeout()) {
-            vector<Lit> frontier = analyze(candidates, usePatterns, useSemantic, useLookahead);
+            std::vector<Lit> frontier = analyze(candidates, usePatterns, useSemantic, useLookahead);
             candidates.swap(frontier);
         }
     }
 }
 
 void GateAnalyzer::analyze() {
-    vector<Lit> next;
+    std::vector<Lit> next;
 
     runtime.start();
 
@@ -243,13 +260,7 @@ void GateAnalyzer::analyze() {
 
     // clause selection loop
     for (int k = 0; k < maxTries && !runtime.hasTimeout(); k++) {
-        next.clear();
-        Lit lit = getRarestLiteral(index);
-        if (lit.x == INT_MAX) break; // index is empty
-        vector<Cl*> clauses;
-        clauses.insert(clauses.end(), index[lit].begin(), index[lit].end());
-        index[lit].clear();
-        removeFromIndex(index, clauses);
+        std::vector<Cl*> clauses = getBestRoots();
         roots.insert(roots.end(), clauses.begin(), clauses.end());
         for (Cl* c : clauses) {
             next.insert(next.end(), c->begin(), c->end());
@@ -283,11 +294,11 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 #endif
 
     // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
-    vector<Var> candidates;
+    std::vector<Var> candidates;
     for (Lit l : resolvents[0]) candidates.push_back(var(l));
     for (size_t i = 1; i < resolvents.size(); i++) {
         if (candidates.empty()) break;
-        vector<Var> next_candidates;
+        std::vector<Var> next_candidates;
         for (Lit lit : resolvents[i]) {
             if (find(candidates.begin(), candidates.end(), var(lit)) != candidates.end()) {
                 next_candidates.push_back(var(lit));
@@ -305,8 +316,8 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 #endif
 
     // generate set of input variables of candidate gate (o, f, g)
-    vector<Var> inputs;
-    vector<int> occCount(problem.nVars()+1);
+    std::vector<Var> inputs;
+    std::vector<int> occCount(problem.nVars()+1);
     for (For formula : { f, g })  for (Cl* c : formula)  for (Lit l : *c) {
         if (var(l) != var(o)) {
             inputs.push_back(var(l));
