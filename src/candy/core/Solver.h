@@ -1521,6 +1521,10 @@ lbool Solver<PickBranchLitT>::search() {
             
             sonification.learntSize(static_cast<int>(learnt_clause.size()));
 
+            if (nblevels <= 2) {
+                Statistics::getInstance().solverLBD2Inc();
+            }
+
             if (!isSelector(learnt_clause.back())) {
                 certificate->added(learnt_clause.begin(), learnt_clause.end());
             }
@@ -1535,30 +1539,27 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().solverUnariesInc();
             }
             else {
-                // Find correct backtrack level:
-                int max_i = 1;
-                // Find the first literal assigned at the next-highest level:
-                for (uint_fast16_t i = 2; i < learnt_clause.size(); i++)
-                    if (level(var(learnt_clause[i])) > level(var(learnt_clause[max_i])))
-                        max_i = i;
-                // Swap-in this literal at index 1:
-                std::swap(learnt_clause[max_i], learnt_clause[1]);
-
-                cancelUntil(level(var(learnt_clause[1])));
-
                 uint32_t clauseLength = checked_unsigned_cast<decltype(learnt_clause)::size_type, uint32_t>(learnt_clause.size());
                 Clause* cr = new (allocator.allocate(clauseLength)) Clause(learnt_clause, nblevels);
 
-                if (nblevels <= 2) {
-                    Statistics::getInstance().solverLBD2Inc();
-                }
-                if (cr->size() == 2) {
+                if (clauseLength == 2) {
                     learntsBin.push_back(cr);
                     Statistics::getInstance().solverBinariesInc();
                 }
                 else {
                     learnts.push_back(cr);
+                    // Find correct backtrack level:
+                    int max_i = 1;
+                    // Find the first literal assigned at the next-highest level:
+                    for (uint_fast16_t i = 2; i < cr->size(); i++)
+                        if (level(var((*cr)[i])) > level(var((*cr)[max_i])))
+                            max_i = i;
+                    // Swap-in this literal at index 1:
+                    cr->swap(max_i, 1);
                 }
+
+                cancelUntil(level(var(cr->second())));
+
                 claBumpActivity(*cr);
                 attachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
