@@ -179,16 +179,16 @@ protected:
     void setupEliminate(bool full);
     void cleanupEliminate();
 
-    void elimAttach(Clause* cr, bool full); // Attach a clause to occurrence lists for eliminate
-    void elimDetach(Clause* cr, bool full, bool strict); // Detach a clause from occurrence lists for eliminate
-    void elimDetach(Clause* cr, Lit lit, bool full, bool strict); // Detach a clause from lit's occurrence lists for eliminate
+    void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
+    void elimDetach(Clause* cr, bool strict); // Detach a clause from occurrence lists for eliminate
+    void elimDetach(Clause* cr, Lit lit, bool strict); // Detach a clause from lit's occurrence lists for eliminate
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
     void gatherTouchedClauses();
     bool merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
     bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size);
-    bool backwardSubsumptionCheck(bool full);
+    bool backwardSubsumptionCheck();
     bool eliminateVar(Var v);
     void extendModel();
 
@@ -278,7 +278,7 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr, bool full) {
+void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
 #ifndef NDEBUG
     for (Lit lit : *cr) {
         assert(!isEliminated(var(lit)));
@@ -289,7 +289,7 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr, bool full) {
     for (Lit lit : *cr) {
         clause_abstraction |= 1ull << (var(lit) & 63);
         occurs[var(lit)].push_back(cr);
-        if (full) {
+        if (n_occ.size() > 0) { // elim initialized
             n_occ[toInt(lit)]++;
             touched[var(lit)] = 1;
             n_touched++;
@@ -302,21 +302,21 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr, bool full) {
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, bool full, bool strict) {
+void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, bool strict) {
     for (Lit lit : *cr) {
-        elimDetach(cr, lit, full, strict);
+        elimDetach(cr, lit, strict);
     }
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, Lit lit, bool full, bool strict) {
+void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, Lit lit, bool strict) {
     if (strict) {
         occurs[var(lit)].erase(std::remove(occurs[var(lit)].begin(), occurs[var(lit)].end(), cr), occurs[var(lit)].end());
     }
     else {
         occurs.smudge(var(lit));
     }
-    if (full) {
+    if (n_occ.size() > 0) { // elim initialized
         n_occ[toInt(lit)]--;
         updateElimHeap(var(lit));
     }
@@ -468,22 +468,18 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
 
 // Backward subsumption + backward subsumption resolution
 template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool full) {
+bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
     assert(this->decisionLevel() == 0);
 
-    int cnt = 0;
     int subsumed = 0;
     int deleted_literals = 0;
     Clause bwdsub_tmpunit({ lit_Undef });
     
     while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
-        // Empty subsumption queue and return immediately on user-interrupt:
         if (this->asynch_interrupt) {
-            subsumption_queue.clear();
-            bwdsub_assigns = this->trail_size;
             break;
         }
-        
+
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
         if (subsumption_queue.size() == 0 && bwdsub_assigns < this->trail_size) {
             Lit l = this->trail[bwdsub_assigns++];
@@ -491,7 +487,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool full) {
             abstraction[&bwdsub_tmpunit] = 1ull << (var(l) & 63);
             subsumption_queue.push_back(&bwdsub_tmpunit);
         }
-        
+
         Clause* cr = subsumption_queue.front();
         subsumption_queue.pop_front();
         
@@ -499,23 +495,18 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool full) {
             continue;
         }
         
-        if (verbose && this->verbosity >= 2 && cnt++ % 1000 == 0) {
-            printf("c subsumption left: %10d (%10d subsumed, %10d deleted literals)\r", (int) subsumption_queue.size(), subsumed, deleted_literals);
-        }
-        
         assert(cr->size() > 1 || this->value(cr->first()) == l_True); // Unit-clauses should have been propagated before this point.
         
         // Find best variable to scan:
-        Var best = var(*std::min_element(cr->begin(), cr->end(), [this] (Lit l1, Lit l2) { return occurs[var(l1)].size() < occurs[var(l2)].size(); }));
+        Var best = var(*std::min_element(cr->begin(), cr->end(), [this] (Lit l1, Lit l2) {
+            return occurs[var(l1)].size() < occurs[var(l2)].size();
+        }));
 
         // Search all candidates:
         vector<Clause*>& cs = occurs.lookup(best);
         for (unsigned int i = 0; i < cs.size(); i++) {
             Clause* csi = cs[i];
-            if (cr->isDeleted()) {
-                break;
-            }
-            else if (csi != cr && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
+            if (csi != cr && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
                 if ((abstraction[cr] & ~abstraction[csi]) != 0) continue;
 
                 Lit l = cr->subsumes(*csi);
@@ -523,7 +514,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool full) {
                 if (l == lit_Undef) {
                     subsumed++;
                     this->removeClause(csi);
-                    elimDetach(csi, full, false);
+                    elimDetach(csi, false);
                 }
                 else if (l != lit_Error) {
                     deleted_literals++;
@@ -540,7 +531,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck(bool full) {
         }
     }
     
-    if (verbose && this->verbosity >= 2) {
+    if (this->verbosity >= 2 && subsumed + deleted_literals > 0) {
         printf("c subsumption left: %10d (%10d subsumed, %10d deleted literals)\n", (int) subsumption_queue.size(), subsumed, deleted_literals);
     }
 
@@ -593,7 +584,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
         if (!asymm(v, c))
             return false;
     
-    bool ret = backwardSubsumptionCheck(true);
+    bool ret = backwardSubsumptionCheck();
     frozen[v] = was_frozen;
     return ret;
 }
@@ -671,7 +662,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
 
     for (Clause* c : cls) {
         this->removeClause(c);
-        elimDetach(c, true, false);
+        elimDetach(c, false);
     }
     
     // free references to eliminated variable
@@ -679,7 +670,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     this->watches[mkLit(v)].clear();
     this->watches[~mkLit(v)].clear();
     
-    return backwardSubsumptionCheck(true);
+    return backwardSubsumptionCheck();
 }
 
 template<class PickBranchLitT>
@@ -700,24 +691,27 @@ void SimpSolver<PickBranchLitT>::extendModel() {
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
+    if (full) {
+        n_occ.resize(2 * this->nVars(), 0);
+        touched.resize(this->nVars(), 0);
+        for (Var v = 0; v < static_cast<int>(this->nVars()); v++) {
+            elim_heap.insert(v);
+        }
+    }
     for (Var v = 0; v < static_cast<int>(this->nVars()); v++) {
-        n_occ.push_back(0);
-        n_occ.push_back(0);
         occurs.init(v);
-        touched.push_back(0);
-        elim_heap.insert(v);
     }
     for (Clause* c : this->clauses) {
-        elimAttach(c, full);
+        elimAttach(c);
     }
     // include persistent learnt clauses
     for (Clause* c : this->learnts) {
         if (c->getLBD() <= 2) {
-            elimAttach(c, full);
+            elimAttach(c);
         }
     }
     for (Clause* c : this->learntsBin) {
-        elimAttach(c, full);
+        elimAttach(c);
     }
 
     // Assumptions must be temporarily frozen to run variable elimination:
@@ -783,7 +777,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     // only perform subsumption checks (inprocessing)
     if (!use_asymm && !use_elim) {
         if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
-            this->ok = backwardSubsumptionCheck(true);
+            this->ok = backwardSubsumptionCheck();
         }
         assert(subsumption_queue.size() == 0);
     }
@@ -793,7 +787,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
             gatherTouchedClauses();
             
             if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
-                this->ok = backwardSubsumptionCheck(true);
+                this->ok = backwardSubsumptionCheck();
             }
 
             while (!elim_heap.empty() && !this->isInConflictingState() && !this->asynch_interrupt) {
