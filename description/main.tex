@@ -42,7 +42,7 @@
 \def\blfootnote{\gdef\@thefnmark{}\@footnotetext}
 \makeatother
 
-\title{System Description of the Candy Family of SAT Solvers}
+\title{System Description of Candy Kingdom --\\ A Sweet Family of SAT Solvers}
 \author{Markus Iser, Felix Kutzner}
 \institute{
   Karlsruhe Institute of Technology (KIT), Germany\\
@@ -57,19 +57,26 @@
 
 \end{abstract}
 
-\begin{itemize}
-\item Glucose Branch (STL Datastructures)
-\item ClauseAllocator (Size Buckets, Revamping, Small Clause-Headers, Clauses are Pointers, Size Buckets)
-\item Watcher sorting
-\item Clauses are pointers
-\item Inprocessing: Simplify, Subsumption, Self-Subsuming Resolution (no eager simplify)
-\item Optimizations and Certificate also in Incremental Mode 
-\item Gate Analysis and Random Simulation (RSAR and RSIL Variants of Candy Solver)
-\item improved extensibility via templates
-\item modular toolbox approach: gate recognition, RSIL, RSAR, IPASIR
-\item miter detection (RSILmd)
-\item code quality: > 200 tests, continuous integration
-\end{itemize}  
+\section{Introduction}
+
+The development of our SAT solver \textbf{Candy} started as a branch of the well-known \textbf{Glucose 3} solver. The goal was to create a firm foundation for further development by rewriting most parts of the orignial code with paradigms of recent software architecture in mind. Most data-structures were replaced by their standard library (STL) equivalent, also we have a general preference for standard algorithms (e.g. std::sort). We also improved the extensibility of our Solver by usage of templates and a modular toolbox approach. The code quality is ensured by a continuously increasing amount of unit and integration tests and usage of the two continuous integration frameworks Travis and AppVeyor, automatically testing Candy on Linux, MacOS and Windows Platforms. 
+
+\section{Clause Memory Management}
+\label{sec:clauses}
+
+In contrast to Glucose, in Candy clauses are now referenced as regular pointers and for fast access and optimized Cache usage we introduced a dedicated memory management. Clauses are optimized for size so we have a very small clause header that only keep size, activity, lbd value and few flags. Our Clause Allocator preallocates clauses in buckets of equivalently sized clauses up to clauses of length 500. Only clauses exceeding that size limit are allocated by regular new/delete methods. Memory for small clauses is regularly revamped such that the clauses are sorted by their activity (in memory) with the highest activity first. Also the watchers are sorted by clause size and activity. 
+
+\section{Improved Incremental Mode}
+
+In contrast to Glucose we made several optimizations (minimization of learnt clauses with binary resolution, clause simplification) work in incremental mode. Also a certificate can be generated in incremental mode if assumpations are used properly. Candy outputs no proof if clauses containing assumptions were used in the final conflict. 
+
+\section{Inprocessing}
+
+We improved the architecture of clause simplification in Glucuse such that Candy can now perform clause data-base simplification during search. We perform clause strengthening with new unit clauses, clause subsumption and self-subsuming resolution. Clauses of the original problem are included as well as the learnt clauses that are persitent in the learnt-clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
+
+\section{Gate Structure Analysis and Random Simulation}
+
+Candy includes modules that perform gate extraction, miter detection and random simulation. The random simulation module uses extracted gates to generate conjectures about literal equivalences and backbones. The Candy solver variants RSAR, RSIL and RSILmd, make use of the extracted information. RSIL uses its own pick-branch-lit implementation (hooked in as a template parameter) that tries to violate extracted conjectures about variable equivalences in order to stimulate clause learning. The variant RSILmd does that only if miter structure is detected. RSAR uses the conjectures in an abstraction refinement loop by adding them to the problem and relaxing them if necessary. 
     
 
 \bibliographystyle{splncs03}
