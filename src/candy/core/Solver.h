@@ -392,9 +392,10 @@ protected:
     bool sort_variables;
 
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
-    bool inprocessing; // Perform eliminate regularly on all persistent clauses
-
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
+
+    uint64_t lastRestartWithInprocessing;
+    uint32_t inprocessingFrequency;
 
     vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     uint32_t MYFLAG;
@@ -590,7 +591,7 @@ namespace SolverOptions {
     extern IntOption opt_revamp;
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
-    extern BoolOption opt_inprocessing;
+    extern IntOption opt_inprocessing;
 }
 
 template<class PickBranchLitT>
@@ -640,9 +641,11 @@ Solver<PickBranchLitT>::Solver() :
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
     new_unary(false),
-    inprocessing(SolverOptions::opt_inprocessing),
     // conflict state
     ok(true),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
     // lbd computation
     permDiff(), MYFLAG(0),
     // temporaries
@@ -1573,6 +1576,12 @@ lbool Solver<PickBranchLitT>::search() {
                 // every restart after reduce-db
                 if (reduced) {
                     reduced = false;
+
+                    bool inprocessing = false;
+                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency < curRestart) {
+                        lastRestartWithInprocessing = curRestart;
+                        inprocessing = true;
+                    }
 
                     if (new_unary == 0) {
                         new_unary = false;
