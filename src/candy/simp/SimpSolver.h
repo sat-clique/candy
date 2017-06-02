@@ -575,7 +575,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     bool was_frozen = frozen[v];
     frozen[v] = true;
     
-    const vector<Clause*>& cls = occurs.lookup(v);
+    vector<Clause*> cls(occurs.lookup(v));
     
     if (this->value(v) != l_Undef || cls.size() == 0)
         return true;
@@ -604,41 +604,35 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         return true;
     }
 
-    // Split the occurrences into positive and negative:
+    // split the occurrences into positive and negative:
     vector<Clause*>& cls = occurs.lookup(v);
     vector<Clause*> pos, neg;
     for (Clause* cl : cls) {
         if (cl->contains(mkLit(v))) {
             pos.push_back(cl);
-        }
-        else {
+        } else {
             neg.push_back(cl);
         }
     }
     
-    // Check wether the increase in number of clauses stays within the allowed ('grow'). Moreover, no
-    // clause must exceed the limit on the maximal clause size:
+    // increase in number of clauses must stay within the allowed ('grow') and no clause must exceed the limit on the maximal clause size:
     size_t cnt = 0;
-    for (Clause* pc : pos) {
-        for (Clause* nc : neg) {
-            size_t clause_size = 0;
-            if (merge(*pc, *nc, v, clause_size) && (++cnt > cls.size() + grow || (clause_lim > 0 && clause_size > clause_lim))) {
-                return true;
-            }
+    for (Clause* pc : pos) for (Clause* nc : neg) {
+        size_t clause_size = 0;
+        if (merge(*pc, *nc, v, clause_size) && (++cnt > cls.size() + grow || (clause_lim > 0 && clause_size > clause_lim))) {
+            return true;
         }
     }
     
-    // Delete and store old clauses:
+    // delete and store old clauses:
     eliminated[v] = true;
     this->setDecisionVar(v, false);
     
     if (pos.size() > neg.size()) {
-        for (Clause* c : neg)
-            SimpSolverImpl::mkElimClause(elimclauses, v, *c);
+        for (Clause* c : neg) SimpSolverImpl::mkElimClause(elimclauses, v, *c);
         SimpSolverImpl::mkElimClause(elimclauses, mkLit(v));
     } else {
-        for (Clause* c : pos)
-            SimpSolverImpl::mkElimClause(elimclauses, v, *c);
+        for (Clause* c : pos) SimpSolverImpl::mkElimClause(elimclauses, v, *c);
         SimpSolverImpl::mkElimClause(elimclauses, ~mkLit(v));
     }
     
@@ -646,13 +640,11 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
 
     // produce clauses in cross product
     std::vector<Lit>& resolvent = this->add_tmp;
-    for (Clause* pc : pos) {
-        for (Clause* nc : neg) {
-            if (merge(*pc, *nc, v, resolvent) && !this->addClause(resolvent)) {
-                return false;
-            } else {
-                this->certificate->added(resolvent.begin(), resolvent.end());
-            }
+    for (Clause* pc : pos) for (Clause* nc : neg) {
+        if (merge(*pc, *nc, v, resolvent) && !this->addClause(resolvent)) {
+            return false;
+        } else {
+            this->certificate->added(resolvent.begin(), resolvent.end());
         }
     }
     
@@ -698,9 +690,9 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
             elim_heap.insert(v);
         }
     }
-    for (Var v = 0; v < static_cast<int>(this->nVars()); v++) {
-        occurs.init(v);
-    }
+
+    occurs.init(this->nVars());
+
     for (Clause* c : this->clauses) {
         elimAttach(c);
     }
@@ -779,7 +771,6 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
         if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
             this->ok = backwardSubsumptionCheck();
         }
-        assert(subsumption_queue.size() == 0);
     }
     // either asymm or elim are true (preprocessing)
     else {
@@ -809,8 +800,6 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
             if (this->isInConflictingState() || this->asynch_interrupt) {
                 break;
             }
-
-            assert(subsumption_queue.size() == 0);
         }
     }
 
