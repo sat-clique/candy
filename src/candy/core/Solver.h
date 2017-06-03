@@ -221,7 +221,7 @@ public:
         return clauses.size();
     }
     inline size_t nLearnts() const {
-        return learnts.size() + learntsBin.size();
+        return learnts.size() + persist.size();
     }
     inline size_t nVars() const {
         return vardata.size();
@@ -271,7 +271,7 @@ public:
     Certificate* certificate;
 
     // a few stats are used for heuristics control, keep them here
-    uint64_t nConflicts, nPropagations, nLiterals;
+    uint64_t nConflicts, nPropagations;
 
     // Control verbosity
     int verbEveryConflicts;
@@ -364,7 +364,7 @@ protected:
     // Clauses
     vector<Clause*> clauses; // List of problem clauses.
     vector<Clause*> learnts; // List of learnt clauses.
-    vector<Clause*> learntsBin; // List of binary learnt clauses.
+    vector<Clause*> persist; // List of binary learnt clauses.
 
     // Constants For restarts
     double K;
@@ -521,7 +521,7 @@ protected:
     }
 
     void claRescaleActivity() {
-        for (auto container : { clauses, learnts, learntsBin }) {
+        for (auto container : { clauses, learnts, persist }) {
             for (Clause* clause : container) {
                 clause->activity() *= 1e-20f;
             }
@@ -595,7 +595,7 @@ Solver<PickBranchLitT>::Solver() :
     // unsat certificate
     certificate(&defaultCertificate),
     // stats for heuristic control
-    nConflicts(0), nPropagations(0), nLiterals(0),
+    nConflicts(0), nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -616,7 +616,7 @@ Solver<PickBranchLitT>::Solver() :
     var_inc(1), var_decay(SolverOptions::opt_var_decay), max_var_decay(SolverOptions::opt_max_var_decay),
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), learntsBin(),
+    clauses(), learnts(), persist(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -662,7 +662,7 @@ Solver<PickBranchLitT>::~Solver() {
     for (Clause* c : learnts) {
         allocator.deallocate(c);
     }
-    for (Clause* c : learntsBin) {
+    for (Clause* c : persist) {
         allocator.deallocate(c);
     }
 }
@@ -784,8 +784,6 @@ template<class PickBranchLitT>
 void Solver<PickBranchLitT>::attachClause(Clause* cr) {
     assert(cr->size() > 1);
     
-    nLiterals += cr->size();
-    
     if (cr->size() == 2) {
         watchesBin[~cr->first()].emplace_back(cr, cr->second());
         watchesBin[~cr->second()].emplace_back(cr, cr->first());
@@ -798,8 +796,6 @@ void Solver<PickBranchLitT>::attachClause(Clause* cr) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
-    
-    nLiterals -= cr->size();
     
     if (cr->size() == 2) {
         if (strict) {
@@ -1244,7 +1240,7 @@ void Solver<PickBranchLitT>::reduceDB() {
     Statistics::getInstance().solverReduceDBInc();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
     
-    size_t index = (learnts.size() + learntsBin.size()) / 2;
+    size_t index = (learnts.size() + persist.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
         if (specialIncReduceDB == 0) {
@@ -1265,7 +1261,9 @@ void Solver<PickBranchLitT>::reduceDB() {
         }
     }
     watches.cleanAll();
+    size_t old_size = learnts.size();
     freeMarkedClauses(learnts);
+    Statistics::getInstance().solverRemovedClausesInc(old_size - learnts.size());
     for (Clause* c : learnts) { // "unfreeze" remaining clauses
         c->setFrozen(false);
     }
@@ -1285,7 +1283,6 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
                                           return false;
                                       }
                                   });
-    Statistics::getInstance().solverRemovedClausesInc(std::distance(new_end, list.end()));
     list.erase(new_end, list.end());
 }
 
@@ -1372,14 +1369,14 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
 
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
+    std::for_each(persist.begin(), persist.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
     if (strengthen) {
         // Remove false literals:
         std::unordered_map<Clause*, size_t> strengthened_sizes;
         std::vector<Clause*> strengthened_clauses;
-        for (auto list : { clauses, learnts, learntsBin }) {
+        for (auto list : { clauses, learnts, persist }) {
             for (Clause* clause : list) if (!clause->isDeleted()) {
                 auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
                 if (pos != clause->end()) {
@@ -1413,7 +1410,7 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
                 attachClause(clean);
                 if (clean->isLearnt()) {
                     if (clean->size() == 2) {
-                        learntsBin.push_back(clean);
+                        persist.push_back(clean);
                     } else {
                         learnts.push_back(clean);
                     }
@@ -1431,7 +1428,7 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
     watchesBin.cleanAll();
 
     freeMarkedClauses(learnts);
-    freeMarkedClauses(learntsBin);
+    freeMarkedClauses(persist);
     freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
@@ -1490,8 +1487,7 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]),
                     static_cast<int>(nClauses()),
                     static_cast<int>(nLearnts()),
-                    static_cast<int>(nConflicts),
-                    static_cast<int>(nLiterals));
+                    static_cast<int>(nConflicts));
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -1519,6 +1515,12 @@ lbool Solver<PickBranchLitT>::search() {
             if (nblevels <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
             }
+            if (learnt_clause.size() == 1) {
+                Statistics::getInstance().solverUnariesInc();
+            }
+            if (learnt_clause.size() == 2) {
+                Statistics::getInstance().solverBinariesInc();
+            }
 
             if (!isSelector(learnt_clause.back())) {
                 certificate->added(learnt_clause.begin(), learnt_clause.end());
@@ -1531,15 +1533,13 @@ lbool Solver<PickBranchLitT>::search() {
                 cancelUntil(0);
                 uncheckedEnqueue(learnt_clause[0]);
                 new_unary = true;
-                Statistics::getInstance().solverUnariesInc();
             }
             else {
                 uint32_t clauseLength = checked_unsigned_cast<decltype(learnt_clause)::size_type, uint32_t>(learnt_clause.size());
                 Clause* cr = new (allocator.allocate(clauseLength)) Clause(learnt_clause, nblevels);
 
                 if (clauseLength == 2) {
-                    learntsBin.push_back(cr);
-                    Statistics::getInstance().solverBinariesInc();
+                    persist.push_back(cr);
                 }
                 else {
                     learnts.push_back(cr);
@@ -1574,7 +1574,7 @@ lbool Solver<PickBranchLitT>::search() {
                     reduced = false;
 
                     bool inprocessing = false;
-                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency < curRestart) {
+                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
                         inprocessing = true;
                     }

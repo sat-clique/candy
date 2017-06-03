@@ -63,7 +63,7 @@ public:
     ~Statistics();
 
     void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
-    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals);
+    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts);
     void printSimplificationStats();
     void printFinalStats(uint64_t conflicts, uint64_t propagations);
     void printAllocatorStatistics();

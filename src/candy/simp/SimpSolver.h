@@ -709,7 +709,7 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
             elimAttach(c);
         }
     }
-    for (Clause* c : this->learntsBin) {
+    for (Clause* c : this->persist) {
         elimAttach(c);
     }
 
@@ -750,7 +750,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
             Clause* clean = new (this->allocator.allocate(clause->size())) Clause(*clause);
             if (clean->isLearnt()) {
                 if (clean->size() == 2) {
-                    this->learntsBin.push_back(clean);
+                    this->persist.push_back(clean);
                 } else {
                     this->learnts.push_back(clean);
                 }
@@ -773,7 +773,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->watchesBin.cleanAll();
     this->freeMarkedClauses(this->clauses);
     this->freeMarkedClauses(this->learnts);
-    this->freeMarkedClauses(this->learntsBin);
+    this->freeMarkedClauses(this->persist);
 }
 
 template<class PickBranchLitT>

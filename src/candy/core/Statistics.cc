@@ -66,11 +66,11 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 }
 
 
-void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals) {
+void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
 #if defined SOLVER_STATS
-    printf("c | %8llu   %7llu    %5llu | %7d %8d %8llu | %5llu %8d   %6llu %8llu |\n",
+    printf("c | %8llu   %7llu    %5llu | %7d %8d          | %5llu %8d   %6llu %8llu |\n",
             starts, nbstopsrestarts, (conflicts / starts),
-            (int)dec_vars - trail, clauses, literals,
+            (int)dec_vars - trail, clauses,
             nbReduceDB, learnts, nbDL2, nbRemovedClauses);
 #endif
 }
