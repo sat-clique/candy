@@ -1075,19 +1075,16 @@ void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
                 assert(level(x) > 0);
                 out_conflict.push_back(~trail[i]);
             } else {
-                Clause& c = *reason(x);
-                //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
-                // Bug in case of assumptions due to special data structures for Binary.
-                // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
-                for (uint_fast16_t j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
-                    if (level(var(c[j])) > 0)
-                        seen[var(c[j])] = 1;
+                Clause* c = reason(x);
+                for (Lit lit : *c) {
+                    if (level(var(lit)) > 0) {
+                        seen[var(lit)] = 1;
+                    }
+                }
             }
-            
             seen[x] = 0;
         }
     }
-    
     seen[var(p)] = 0;
 }
 
@@ -1579,31 +1576,31 @@ lbool Solver<PickBranchLitT>::search() {
                         inprocessing = true;
                     }
 
-                    if (new_unary == 0) {
+                    if (new_unary) {
                         new_unary = false;
-                        Statistics::getInstance().runtimeStart("Runtime Simplify");
+                        Statistics::getInstance().runtimeStart("Simplify");
                         if (!simplify(inprocessing)) {
                             return l_False;
                         }
-                        Statistics::getInstance().runtimeStop("Runtime Simplify");
+                        Statistics::getInstance().runtimeStop("Simplify");
                     }
 
                     if (inprocessing) {
-                        Statistics::getInstance().runtimeStart("Runtime Inprocessing");
+                        Statistics::getInstance().runtimeStart("Inprocessing");
                         if (!eliminate(false, false)) {
                             return l_False;
                         }
-                        Statistics::getInstance().runtimeStop("Runtime Inprocessing");
+                        Statistics::getInstance().runtimeStop("Inprocessing");
                     }
 
                     if (revamp > 2) {
-                        Statistics::getInstance().runtimeStart("Runtime Revamp");
+                        Statistics::getInstance().runtimeStart("Revamp");
                         revampClausePool(revamp);
-                        Statistics::getInstance().runtimeStop("Runtime Revamp");
+                        Statistics::getInstance().runtimeStop("Revamp");
                     }
                     
                     if (sort_watches) {
-                        Statistics::getInstance().runtimeStart("Runtime Sort Watches");
+                        Statistics::getInstance().runtimeStart("Sort Watches");
                         for (size_t v = 0; v < nVars(); v++) {
                             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
                             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
@@ -1614,7 +1611,7 @@ lbool Solver<PickBranchLitT>::search() {
                                 });
                             }
                         }
-                        Statistics::getInstance().runtimeStop("Runtime Sort Watches");
+                        Statistics::getInstance().runtimeStop("Sort Watches");
                     }
                 }
                 
@@ -1669,7 +1666,7 @@ lbool Solver<PickBranchLitT>::search() {
 // Parameters are useless in core but useful for SimpSolver....
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
-    Statistics::getInstance().runtimeStart(RT_SOLVER);
+    Statistics::getInstance().runtimeStart("Solver");
 
     sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
@@ -1690,9 +1687,8 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c |                                |                                |                          |\n");
         printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
         printf("c |                                                                                            |\n");
-        
-        printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              |\n");
-        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |\n");
+        printf("c |      RESTARTS      |       ORIGINAL      |                     LEARNT                      |\n");
+        printf("c |  NB  Blocked  Avg  |  Vars    Clauses    |  Red  Learnts    Binary  Unary  LBD2  Removed   |\n");
         printf("c ==============================================================================================\n");
     }
 
@@ -1742,7 +1738,7 @@ lbool Solver<PickBranchLitT>::solve() {
     
     cancelUntil(0);
     
-    Statistics::getInstance().runtimeStop(RT_SOLVER);
+    Statistics::getInstance().runtimeStop("Solver");
     return status;
 }
 

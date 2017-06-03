@@ -163,16 +163,16 @@ static lbool solve(SolverType& S, bool do_preprocess) {
     lbool result = l_Undef;
 
     if (do_preprocess) {
-        Statistics::getInstance().runtimeStart(RT_SIMPLIFIER);
+        Statistics::getInstance().runtimeStart("Preprocessing");
         S.eliminate();
         S.disablePreprocessing();
-        Statistics::getInstance().runtimeStop(RT_SIMPLIFIER);
+        Statistics::getInstance().runtimeStop("Preprocessing");
         if (S.isInConflictingState()) {
             result = l_False;
             S.certificate->proof();
         }
         if (S.verbosity > 0) {
-            Statistics::getInstance().printRuntime(RT_SIMPLIFIER);
+            Statistics::getInstance().printRuntime("Preprocessing");
             if (result == l_False) {
                 printf("c ==============================================================================================\n");
                 printf("c Solved by simplification\n");
@@ -309,16 +309,16 @@ static std::unique_ptr<Candy::GateAnalyzer> createGateAnalyzer(Candy::CNFProblem
  * TODO: document parameters
  */
 static void benchmarkGateRecognition(Candy::CNFProblem &dimacs, const GateRecognitionArguments& recognitionArgs) {
-    Statistics::getInstance().runtimeStart(RT_GATOR);
+    Statistics::getInstance().runtimeStart("Gate Analysis");
     auto gates = createGateAnalyzer(dimacs, recognitionArgs);
     gates->analyze();
-    Statistics::getInstance().runtimeStop(RT_GATOR);
+    Statistics::getInstance().runtimeStop("Gate Analysis");
     printf("c =====================================[ Problem Statistics ]===================================\n");
     printf("c |                                                                                            |\n");
     printf("c |  Number of gates:        %12d                                                      |\n", gates->getGateCount());
     printf("c |  Number of variables:    %12d                                                      |\n", dimacs.nVars());
     printf("c |  Number of clauses:      %12d                                                      |\n", dimacs.nClauses());
-    Statistics::getInstance().printRuntime(RT_GATOR);
+    Statistics::getInstance().printRuntime("Gate Analysis");
     printf("c |                                                                                            |\n");
     printf("c ==============================================================================================\n");
     if (recognitionArgs.opt_print_gates) {
@@ -977,13 +977,13 @@ template<class SolverType = DefaultSimpSolver>
 int executeSolver(const GlucoseArguments& args,
                   SolverType& S,
                   std::unique_ptr<CNFProblem> problem) {
-    Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
+    Statistics::getInstance().runtimeStart("Initialization");
     S.addClauses(*problem);
-    Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
+    Statistics::getInstance().runtimeStop("Initialization");
     
     if (S.verbosity > 0) {
         printProblemStatistics(S);
-        Statistics::getInstance().printRuntime(RT_INITIALIZATION);
+        Statistics::getInstance().printRuntime("Initialization");
         printf("c |                                                                                            |\n");
     }
     
@@ -1018,7 +1018,7 @@ int solve(const GlucoseArguments& args,
 
         setLimits(args.cpu_lim, args.mem_lim);
 
-        Statistics::getInstance().runtimeStart(RT_INITIALIZATION);
+        Statistics::getInstance().runtimeStart("Initialization");
 
         std::unique_ptr<Certificate> certificate = backported_std::make_unique<Certificate>(args.opt_certified_file,
                                                                                             args.do_certified);
@@ -1057,7 +1057,7 @@ int solve(const GlucoseArguments& args,
             }
         }
 
-        Statistics::getInstance().runtimeStop(RT_INITIALIZATION);
+        Statistics::getInstance().runtimeStop("Initialization");
 
         if (args.do_gaterecognition) {
             benchmarkGateRecognition(*problem, args.gateRecognitionArgs);

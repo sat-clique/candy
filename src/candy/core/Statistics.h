@@ -17,7 +17,7 @@
 #include <chrono>
 #include <candy/utils/System.h>
 
-#define SOLVER_STATS
+//#define SOLVER_STATS
 #define RUNTIME_STATS
 //#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
@@ -33,10 +33,6 @@ class Statistics {
 #endif// SOLVER_STATS
 
 #ifdef RUNTIME_STATS
-#define RT_INITIALIZATION   "Runtime Initialization"
-#define RT_SOLVER           "Runtime Solver"
-#define RT_GATOR            "Runtime Gate Analyzer"
-#define RT_SIMPLIFIER       "Runtime Simplifier"
     std::map<std::string, std::chrono::milliseconds> runtimes;
     std::map<std::string, std::chrono::milliseconds> starttimes;
 #endif// RUNTIME_STATS
@@ -149,14 +145,11 @@ public:
     }
     void printRuntime(std::string key) {
         double seconds = static_cast<double>(runtimes[key].count())/1000.0f;
-        printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
+        printf("c Runtime %-14s: %12.2f s\n", key.c_str(), seconds);
     }
     void printRuntimes() {
         for (auto pair : runtimes) {
-            auto key = pair.first;
-            auto runtime = pair.second;
-            double seconds = static_cast<double>(runtime.count())/1000.0f;
-            printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
+            printRuntime(pair.first);
         }
     }
 #else
