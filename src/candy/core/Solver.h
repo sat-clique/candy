@@ -469,12 +469,6 @@ protected:
     uint_fast16_t computeLBD(Iterator it, Iterator end);
     bool minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
-    // Test if fact 'p' contradicts current state, enqueue otherwise.
-    // NOTE: enqueue does not set the ok flag! (only public methods do)
-    inline bool enqueue(Lit p, Clause* from = nullptr) {
-        return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
-    }
-
     Lit pickBranchLit(); // Return the next decision variable.
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
