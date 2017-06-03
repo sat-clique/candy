@@ -740,8 +740,16 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
         size_t size = strengthened_sizes[clause];
         if (!clause->isDeleted()) {
             // create clause in correct pool
-            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()));
-            this->clauses.push_back(clean);
+            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(*clause);
+            if (clean->isLearnt()) {
+                if (clean->size() == 2) {
+                    this->learntsBin.push_back(clean);
+                } else {
+                    this->learnts.push_back(clean);
+                }
+            } else {
+                this->clauses.push_back(clean);
+            }
             this->attachClause(clean);
             clause->setDeleted();
             this->detachClause(clause);
