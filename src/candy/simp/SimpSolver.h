@@ -343,9 +343,21 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     elimDetach(cr, l, true);
     
     if (cr->size() == 1) {
-        elimDetach(cr, cr->first(), true);
+        Lit unit = cr->first();
+        elimDetach(cr, unit, true);
         cr->setDeleted();
-        return this->enqueue(cr->first()) && this->propagate() == nullptr;
+
+        if (this->value(unit) == l_Undef) {
+            this->uncheckedEnqueue(unit);
+            return this->propagate() == nullptr;
+        }
+        else if (this->value(unit) == l_False) {
+            return false;
+        }
+        else {
+            this->vardata[var(unit)].reason = nullptr;
+            return true;
+        }
     }
     else {
         this->attachClause(cr);
