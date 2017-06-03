@@ -17,7 +17,7 @@
 #include <chrono>
 #include <candy/utils/System.h>
 
-//#define SOLVER_STATS
+#define SOLVER_STATS
 #define RUNTIME_STATS
 //#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
@@ -29,6 +29,7 @@ class Statistics {
     uint64_t decisions, dec_vars, max_literals, tot_literals;
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
+    uint64_t subsumed, deleted;
 #endif// SOLVER_STATS
 
 #ifdef RUNTIME_STATS
@@ -63,6 +64,7 @@ public:
 
     void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
     void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals);
+    void printSimplificationStats();
     void printFinalStats(uint64_t conflicts, uint64_t propagations);
     void printAllocatorStatistics();
 
@@ -84,6 +86,9 @@ public:
     inline void solverUnariesInc() { ++nbUn; }
     inline void solverBinariesInc() { ++nbBin; }
     inline void solverLBD2Inc() { ++nbDL2; }
+
+    inline void solverSubsumedInc() { ++subsumed; }
+    inline void solverDeletedInc() { ++deleted; }
 #else
     inline void solverDecisionsInc() { }
     inline void solverRandomDecisionsInc() { }
@@ -103,6 +108,9 @@ public:
     inline void solverUnariesInc() { }
     inline void solverBinariesInc() { }
     inline void solverLBD2Inc() { }
+
+    inline void solverSubsumedInc() { }
+    inline void solverDeletedInc() { }
 #endif// SOLVER_STATS
 
 

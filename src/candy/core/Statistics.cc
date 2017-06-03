@@ -15,6 +15,7 @@ Statistics::Statistics() :
     decisions(0), dec_vars(0), max_literals(0), tot_literals(0),
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
+    subsumed(0), deleted(0),
 #endif
 #ifdef RUNTIME_STATS
     runtimes({{RT_INITIALIZATION, std::chrono::milliseconds{0}},
@@ -71,6 +72,12 @@ void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uin
             starts, nbstopsrestarts, (conflicts / starts),
             (int)dec_vars - trail, clauses, literals,
             nbReduceDB, learnts, nbDL2, nbRemovedClauses);
+#endif
+}
+
+void Statistics::printSimplificationStats() {
+#if defined SOLVER_STATS
+    printf("c simplification        : %" PRIu64" subsumed, %" PRIu64" deleted literals)\n", subsumed, deleted);
 #endif
 }
 
