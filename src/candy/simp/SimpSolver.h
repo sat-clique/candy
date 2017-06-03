@@ -356,6 +356,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
         }
         else {
             this->vardata[var(unit)].reason = nullptr;
+            this->vardata[var(unit)].level = 0;
             return true;
         }
     }
@@ -483,8 +484,6 @@ template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
     assert(this->decisionLevel() == 0);
 
-    int subsumed = 0;
-    int deleted_literals = 0;
     Clause bwdsub_tmpunit({ lit_Undef });
     
     while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
@@ -524,12 +523,12 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
                 Lit l = cr->subsumes(*csi);
 
                 if (l == lit_Undef) {
-                    subsumed++;
+                    Statistics::getInstance().solverSubsumedInc();
                     this->removeClause(csi);
                     elimDetach(csi, false);
                 }
                 else if (l != lit_Error) {
-                    deleted_literals++;
+                    Statistics::getInstance().solverDeletedInc();
                     // this might modifiy occurs ...
                     if (!strengthenClause(csi, ~l)) {
                         return false;
@@ -541,10 +540,6 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
                 }
             }
         }
-    }
-    
-    if (this->verbosity >= 2 && subsumed + deleted_literals > 0) {
-        printf("c subsumption left: %10d (%10d subsumed, %10d deleted literals)\n", (int) subsumption_queue.size(), subsumed, deleted_literals);
     }
 
     return true;
@@ -821,6 +816,10 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                 break;
             }
         }
+    }
+
+    if (this->verbosity >= 2) {
+        Statistics::getInstance().printSimplificationStats();
     }
 
     cleanupEliminate();
