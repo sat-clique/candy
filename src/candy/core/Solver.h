@@ -1389,45 +1389,46 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
             for (Clause* clause : list) if (!clause->isDeleted()) {
                 auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
                 if (pos != clause->end()) {
-                    removeClause(clause);
+                    detachClause(clause);
+                    certificate->removed(clause->begin(), clause->end());
                     auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
                     certificate->added(clause->begin(), end);
-                    size_t size = std::distance(clause->begin(), end);
-                    if (size > 1) {
-                        strengthened_sizes[clause] = size;
-                        strengthened_clauses.push_back(clause);
-                    }
-                    else {
-                        Lit p = clause->first();
-                        if (value(p) == l_True) {
-                            vardata[var(p)].reason = nullptr;
-                            vardata[var(p)].level = 0;
-                        }
-                        else {
-                            uncheckedEnqueue(p);
-                        }
-                    }
+                    strengthened_clauses.push_back(clause);
+                    strengthened_sizes[clause] = clause->size();
+                    clause->setSize(std::distance(clause->begin(), end));
                 }
             }
         }
 
         for (Clause* clause : strengthened_clauses) {
-            size_t size = strengthened_sizes[clause];
-            Clause* cr = new (allocator.allocate(size)) Clause(clause->begin(), clause->begin() + size);
-            attachClause(cr);
-            cr->activity() = clause->activity();
-            cr->setFrozen(clause->isFrozen());
-            if (clause->isLearnt()) {
-                cr->setLearnt(true);
-                cr->setLBD(clause->getLBD());
-                if (cr->size() == 2) {
-                    learntsBin.push_back(cr);
-                } else {
-                    learnts.push_back(cr);
+            if (clause->size() == 1) {
+                Lit p = clause->first();
+                if (value(p) == l_True) {
+                    vardata[var(p)].reason = nullptr;
+                    vardata[var(p)].level = 0;
                 }
-            } else {
-                clauses.push_back(cr);
+                else {
+                    uncheckedEnqueue(p);
+                }
             }
+            else {
+                Clause* clean = new (allocator.allocate(clause->size())) Clause(*clause);
+                if (locked(clause)) {
+                    vardata[var(clause->first())].reason = clean;
+                }
+                attachClause(clean);
+                if (clean->isLearnt()) {
+                    if (clean->size() == 2) {
+                        learntsBin.push_back(clean);
+                    } else {
+                        learnts.push_back(clean);
+                    }
+                } else {
+                    clauses.push_back(clean);
+                }
+            }
+            clause->setSize(strengthened_sizes[clause]); // restore original size for freeMarkedClauses
+            clause->setDeleted();
         }
     }
 
