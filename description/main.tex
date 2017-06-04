@@ -60,13 +60,13 @@
 
 \section{Introduction}
 
-The development of our SAT solver \textbf{Candy} started as a branch of the well-known \textbf{Glucose 3} solver.
+The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose} CDCL SAT solver (version 3.0).
 With Candy, we aim to facilitate the solver's development by refactoring the Glucose source code towards modern C++ and by reducing dependencies within the source code.
 This involved replacing most custom lowest-level data structures and algorithms by their C++ standard library equivalents.
-The refactoring effort enabled high-level optimizations of the solver, such as inprocessing and improved propagation.
+The refactoring effort enabled high-level optimizations of the solver such as inprocessing and improved propagation.
 We also increased the extensibility of Candy via static polymorphism, e.g. allowing the solver's decision heuristic to be customized without incurring the overhead of dynamic polymorphism. This enabled us to efficiently implement variants of the Candy solver.
 Furthermore, we modularized the source code of Candy to make its subsystems reusable.
-The quality of Candy is assured by automated testing with different compilers (clang, gcc, Microsoft C/C++) and operating platforms (Linux, macOS, Windows) using continuous integration systems.
+The quality of Candy is assured by automated testing, with the functionality of Candy tested on different compilers (clang, gcc, Microsoft C/C++) and operating platforms (Linux, macOS, Windows) using continuous integration systems.
 In the following sections, we present the optimizations we implemented in Candy and describe variants of the solver.
 
 \section{Clause Memory Management}
