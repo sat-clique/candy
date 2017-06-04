@@ -95,7 +95,7 @@ namespace Candy {
      *                  marked for removal. For X > N, all remaining variables are marked for
      *                  removal. (\p analyzer may be destroyed after the function call)
      */
-    std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(GateAnalyzer& analyzer,
+    std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(const GateAnalyzer& analyzer,
                                                                                 const std::vector<size_t>& config);
 }
 

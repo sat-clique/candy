@@ -27,7 +27,7 @@
 #include "Exceptions.h"
 
 namespace Candy {
-    UnsuitableProblemException::UnsuitableProblemException(const std::string& what)
+    UnsuitableProblemException::UnsuitableProblemException(const std::string& what) noexcept
     : m_what(what) {
     }
     

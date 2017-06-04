@@ -34,7 +34,7 @@
 #include <candy/utils/MemUtils.h>
 
 namespace Candy {
-    std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
+    std::unique_ptr<Candy::Conjectures> performRandomSimulation(const Candy::GateAnalyzer &analyzer,
                                                                 const RandomSimulationArguments& rsArguments,
                                                                 std::chrono::milliseconds timeLimit) {
         auto simulatorBuilder = Candy::createDefaultRandomSimulatorBuilder();

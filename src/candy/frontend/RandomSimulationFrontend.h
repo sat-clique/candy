@@ -79,7 +79,7 @@ namespace Candy {
      * \returns a set of conjectures about equivalences and backbone variables in the given gate structure
      *   (transferring ownership of the returned object to the caller).
      */
-    std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
+    std::unique_ptr<Candy::Conjectures> performRandomSimulation(const Candy::GateAnalyzer &analyzer,
                                                                 const RandomSimulationArguments& rsArguments,
                                                                 std::chrono::milliseconds timeLimit = std::chrono::milliseconds{-1});
 }

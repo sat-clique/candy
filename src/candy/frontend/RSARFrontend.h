@@ -66,6 +66,8 @@ namespace Candy {
      *
      * \brief Parses RSAR simplification handling mode strings.
      *
+     * Throws std::invalid_argument if the simplification handling mode string is illegal.
+     *
      * \param str   the string representing the simplification mode. Must be one of
      *              FREEZE, RESTRICT, FULL, DISABLE.
      *
@@ -87,7 +89,7 @@ namespace Candy {
      * \returns a unique_pointer to the new ARSolver instance (transferring ownership of the ARSolver
      *   instance to the caller).
      */
-    std::unique_ptr<Candy::ARSolver> createARSolver(GateAnalyzer& analyzer,
+    std::unique_ptr<Candy::ARSolver> createARSolver(const GateAnalyzer& analyzer,
                                                     DefaultSimpSolver& satSolver,
                                                     std::unique_ptr<Conjectures> conjectures,
                                                     const RSARArguments& rsarArguments);
