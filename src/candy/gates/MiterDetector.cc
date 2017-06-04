@@ -45,10 +45,10 @@ namespace Candy {
         public:
             
             void backtrack(const Gate* g) {
-                bool isBorderGate = true;
+                bool isBorderGate = false;
                 for (Lit input : g->getInputs()) {
                     Var inputVar = var(input);
-                    isBorderGate &= m_seenOuts.find(inputVar) == m_seenOuts.end();
+                    isBorderGate |= m_seenOuts.find(inputVar) == m_seenOuts.end();
                 }
                 
                 if (isBorderGate) {

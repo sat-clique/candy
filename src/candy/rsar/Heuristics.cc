@@ -77,9 +77,9 @@ namespace Candy {
          * computes a mapping of gates G to the gates G' for which G is directly nested in G'. The mapping's
          * domain consists of all gates having an output variable in gateOutputs.
          */
-        std::unordered_map<Gate*, std::vector<Gate*>> getDirectlyNestedGates(GateAnalyzer &analyzer,
+        std::unordered_map<const Gate*, std::vector<const Gate*>> getDirectlyNestedGates(const GateAnalyzer &analyzer,
                                                                              const std::vector<Var> gateOutputs) {
-            std::unordered_map<Gate*, std::vector<Gate*>> result;
+            std::unordered_map<const Gate*, std::vector<const Gate*>> result;
             
             for (auto output : gateOutputs) {
                 auto& dependentGate = analyzer.getGate(mkLit(output, 1));
@@ -98,7 +98,7 @@ namespace Candy {
          * Given a gate analyzer, countInputDependencies computes for each gate output variable v
          * the amount of inputs on which the value of v depends.
          */
-        std::unordered_map<Var, size_t> countInputDependencies(GateAnalyzer& analyzer, size_t maxInputs) {
+        std::unordered_map<Var, size_t> countInputDependencies(const GateAnalyzer& analyzer, size_t maxInputs) {
             // for each gate, get the set of gates which depend on the output
             auto topo = getTopoOrder(analyzer);
             auto dependents = getDirectlyNestedGates(analyzer, topo.getOutputsOrdered());
@@ -110,7 +110,7 @@ namespace Candy {
             //   - clear the set of input variables for g to save memory (due to the ordering,
             //     it is not necessary to visit g again)
             // i.e. the input dependency sets are "pushed" through the gate structure.
-            std::unordered_map<Gate*, std::unique_ptr<std::unordered_set<Var>>> inputDependencies;
+            std::unordered_map<const Gate*, std::unique_ptr<std::unordered_set<Var>>> inputDependencies;
             std::unordered_map<Var, size_t> inputDependencyCount;
             
             const size_t exceedingMax = std::numeric_limits<size_t>::max();
@@ -175,19 +175,19 @@ namespace Candy {
             void markRemovals(Backbones& backbones) override;
             bool probe(Var v, bool isBackbone) override;
             
-            InputDepCountRefinementHeuristic(GateAnalyzer& analyzer, const std::vector<size_t>& config);
+            InputDepCountRefinementHeuristic(const GateAnalyzer& analyzer, const std::vector<size_t>& config);
             virtual ~InputDepCountRefinementHeuristic();
             InputDepCountRefinementHeuristic(const InputDepCountRefinementHeuristic &other) = delete;
             InputDepCountRefinementHeuristic& operator= (const InputDepCountRefinementHeuristic& other) = delete;
             
         private:
-            void init(GateAnalyzer& m_analyzer, const std::vector<size_t>& config);
+            void init(const GateAnalyzer& analyzer, const std::vector<size_t>& config);
             
             std::vector<std::unordered_set<Var>> m_deactivationsByStep;
             int m_step;
         };
         
-        InputDepCountRefinementHeuristic::InputDepCountRefinementHeuristic(GateAnalyzer& analyzer,
+        InputDepCountRefinementHeuristic::InputDepCountRefinementHeuristic(const GateAnalyzer& analyzer,
                                                                            const std::vector<size_t>& config)
         : RefinementHeuristic(),
         m_deactivationsByStep(),
@@ -198,7 +198,7 @@ namespace Candy {
         InputDepCountRefinementHeuristic::~InputDepCountRefinementHeuristic() {
         }
 
-        void InputDepCountRefinementHeuristic::init(GateAnalyzer& analyzer, const std::vector<size_t>& config) {
+        void InputDepCountRefinementHeuristic::init(const GateAnalyzer& analyzer, const std::vector<size_t>& config) {
             auto maxInput = (config.empty() ? 0 : config[0]);
             auto inputSizes = countInputDependencies(analyzer, maxInput);
             
@@ -268,7 +268,7 @@ namespace Candy {
         }
     }
     
-    std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(GateAnalyzer& analyzer,
+    std::unique_ptr<RefinementHeuristic> createInputDepCountRefinementHeuristic(const GateAnalyzer& analyzer,
                                                                                 const std::vector<size_t>& config) {
         return backported_std::make_unique<InputDepCountRefinementHeuristic>(analyzer,
                                                                              config);
