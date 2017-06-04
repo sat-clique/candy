@@ -87,7 +87,21 @@ namespace Candy {
     };
     
     std::ostream& operator <<(std::ostream& stream, const GlucoseArguments& arguments);
+    /**
+     * \defgroup CandyFrontend
+     */
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Parses the command line args for the Candy Kingdom. Exits the program when
+     *   parsing the arguments failed.
+     *
+     * \param argv  the array of argument strings.
+     * \param argc  the length of argv.
+     *
+     * \returns     the parsed arguments represented as a GlucoseArguments object.
+     */
     GlucoseArguments parseCommandLineArgs(int& argc, char** argv);
 }
 

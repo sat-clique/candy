@@ -62,36 +62,55 @@ namespace Candy {
     
     std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments);
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Parses strings representing RSIL modes.
+     *
+     * \param mode      The RSIL mode. Must be one of unrestricted, implicationbudgeted, or
+     *                  vanishing.
+     *
+     * \returns the corresponding RSILMode value.
+     */
     RSILMode getRSILMode(const std::string& mode);
     
     using RSILSolver = SimpSolver<RSILBranchingHeuristic2>;
     using RSILVanishingSolver = SimpSolver<RSILVanishingBranchingHeuristic2>;
-    using RSILBugetSolver = SimpSolver<RSILBudgetBranchingHeuristic2>;
+    using RSILBudgetSolver = SimpSolver<RSILBudgetBranchingHeuristic2>;
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Creates a preprocessing hook for RSIL solvers.
+     *
+     *  When the produced hook is called, gate analysis is performed on the CNF problem P
+     *  provided to the hook; then, random simulation is executed on the gates found in P,
+     *  and finally, the RSIL solver provided to the produced hook is configured with the RSIL
+     *  configuration. If the problem P is unsuitable for RSIL (e.g. due to timeouts during
+     *  preprocessing or too few gates in P), the created hook throws an
+     *  UnsuitableProblemException.
+     *
+     *  Note that the desired concrete RSIL implementation (unrestricted, vanishing, or
+     *  implicationbudgeted) needs to match the SolverType template argument.
+     *
+     * \param gateRecognitionArgs   the gate recognition arguments.
+     * \param randomSimulationArgs  the random simulation arguments.
+     * \param rsilArgs              the RSIL arguments.
+     *
+     * \returns an RSIL candy solver preprocessing hook performing RSIL preprocessing when
+     *   called.
+     */
     template<class SolverType> static
     std::function<void(SolverType&, CNFProblem&)>
     createRSILPreprocessingHook(const GateRecognitionArguments& gateRecognitionArgs,
                                 const RandomSimulationArguments& randomSimulationArgs,
                                 const RSILArguments& rsilArgs);
     
-    template<class PickBranchLitType> static
-    typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILBranchingHeuristic3::BasicType>::value,
-    typename PickBranchLitType::Parameters>::type
-    getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer);
-    
-    template<class PickBranchLitType> static
-    typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILVanishingBranchingHeuristic3::BasicType>::value,
-    typename PickBranchLitType::Parameters>::type
-    getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer);
-    
-    template<class PickBranchLitType> static
-    typename std::enable_if<std::is_same<typename PickBranchLitType::BasicType, RSILBudgetBranchingHeuristic3::BasicType>::value,
-    typename PickBranchLitType::Parameters>::type
-    getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer);
     
     
     
-    /*********** Implementation ********************************************************/
+    
+    /*********** Implementation *************************************************************/
     
     
     // getRSILHeuristicParameters is implemented using SFINAE.

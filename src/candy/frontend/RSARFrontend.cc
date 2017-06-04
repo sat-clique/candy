@@ -65,7 +65,7 @@ namespace Candy {
     
     
     
-    std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString) {
+    static std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString) {
         
         /* TODO: user input validation is currently broken.
          

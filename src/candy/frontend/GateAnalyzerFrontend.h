@@ -51,11 +51,24 @@ namespace Candy {
     
     std::ostream& operator <<(std::ostream& stream, const GateRecognitionArguments& arguments);
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Creates a GateAnalyzer instance for the given CNF problem and gate analysis arguments.
+     *
+     * \param problem           the CNF problem.
+     * \param recognitionArgs   the gate recognition arguments.
+     *
+     * \returns a unique_ptr to the newly created gate analyzer (transferring ownership of the gate
+     *   analyzer to the caller.)
+     */
     std::unique_ptr<GateAnalyzer> createGateAnalyzer(CNFProblem &problem,
                                                      const GateRecognitionArguments recognitionArgs);
     
     /**
-     * Performs gate recognition on the problem \p dimacs and prints statistics.
+     * \ingroup CandyFrontend
+     *
+     * \brief Performs gate recognition on the problem \p dimacs and prints statistics.
      *
      * TODO: document parameters
      */
