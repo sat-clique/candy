@@ -130,7 +130,7 @@ public:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0);
 
     // Add clauses to the solver
-    void addClauses(const CNFProblem& dimacs);
+    virtual void addClauses(const CNFProblem& dimacs);
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
@@ -701,17 +701,15 @@ bool Solver<PickBranchLitT>::isIncremental() {
 template<class PickBranchLitT>
 Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     int v = static_cast<int>(nVars());
-    watches.init(mkLit(v, false));
     watches.init(mkLit(v, true));
-    watchesBin.init(mkLit(v, false));
     watchesBin.init(mkLit(v, true));
     assigns.push_back(l_Undef);
     vardata.emplace_back();
-    activity.push_back(act);
     seen.push_back(0);
     permDiff.push_back(0);
-    polarity.push_back(sign);
     decision.push_back(0);
+    activity.push_back(act);
+    polarity.push_back(sign);
     trail.resize(v + 1);
     setDecisionVar(v, dvar);
     return v;
@@ -720,22 +718,29 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     const vector<vector<Lit>*>& problem = dimacs.getProblem();
-    vector<double> occ = dimacs.getLiteralRelativeOccurrences();
-    if ((size_t)dimacs.nVars() > nVars()) {
-        assigns.reserve(dimacs.nVars());
-        vardata.reserve(dimacs.nVars());
-        activity.reserve(dimacs.nVars());
-        seen.reserve(dimacs.nVars());
-        permDiff.reserve(dimacs.nVars());
-        polarity.reserve(dimacs.nVars());
-        decision.reserve(dimacs.nVars());
-        trail.resize(dimacs.nVars());
-        for (int i = nVars(); i < dimacs.nVars(); i++) {
-            if (sort_variables) {
-                newVar(occ[mkLit(i, true)] > occ[mkLit(i, false)], true, occ[mkLit(i, true)] + occ[mkLit(i, false)]);
-            } else {
-                newVar();
+    size_t curVars = this->nVars();
+    size_t maxVars = (size_t)dimacs.nVars();
+    if (maxVars > curVars) {
+        watches.init(mkLit(maxVars, true));
+        watchesBin.init(mkLit(maxVars, true));
+        assigns.resize(maxVars, l_Undef);
+        vardata.resize(maxVars);
+        seen.resize(maxVars, 0);
+        permDiff.resize(maxVars, 0);
+        decision.resize(maxVars, true);
+        trail.resize(maxVars);
+        activity.resize(maxVars, 0.0);
+        polarity.resize(maxVars, false);
+        if (sort_variables) {
+            vector<double> occ = dimacs.getLiteralRelativeOccurrences();
+            for (size_t i = curVars; i < maxVars; i++) {
+                activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
+                polarity[i] = occ[mkLit(i, true)] > occ[mkLit(i, false)];
             }
+        }
+        for (size_t i = curVars; i < maxVars; i++) {
+            insertVarOrder(i);
+            Statistics::getInstance().solverDecisionVariablesInc();
         }
     }
     for (vector<Lit>* clause : problem) {
@@ -923,7 +928,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         claBumpActivity(c);
         
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.isLearnt() && c.getLBD() > 2) {
+        if (c.getLBD() > 2) { // -> c.isLearnt()
             uint_fast16_t nblevels = computeLBD(c.begin(), c.end());
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
@@ -934,9 +939,8 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
             }
         }
         
-        for (uint_fast16_t j = (asslit == lit_Undef) ? 0 : 1; j < c.size(); j++) {
-            Lit lit = c[j];
-            
+        for (auto it = (asslit == lit_Undef) ? c.begin() : c.begin() + 1; it != c.end(); it++) {
+            Lit lit = *it;
             if (!seen[var(lit)] && level(var(lit)) != 0) {
                 varBumpActivity(var(lit));
                 seen[var(lit)] = 1;
@@ -1137,12 +1141,12 @@ Clause* Solver<PickBranchLitT>::propagate() {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
         
         // Propagate binary clauses
-        vector<Watcher>& wbin = watchesBin[p];
-        for (auto watcher : wbin) {
-            if (value(watcher.blocker) == l_False) {
+        for (auto watcher : watchesBin[p]) {
+            lbool val = value(watcher.blocker);
+            if (val == l_False) {
                 return watcher.cref;
             }
-            if (value(watcher.blocker) == l_Undef) {
+            if (val == l_Undef) {
                 uncheckedEnqueue(watcher.blocker, watcher.cref);
             }
         }
@@ -1152,66 +1156,62 @@ Clause* Solver<PickBranchLitT>::propagate() {
         auto keep = ws.begin();
         for (auto watcher = ws.begin(); watcher != ws.end();) {
             // Try to avoid inspecting the clause:
-            Lit blocker = watcher->blocker;
-            if (value(blocker) == l_True) {
+            if (value(watcher->blocker) == l_True) {
                 *keep++ = *watcher++;
                 continue;
             }
             
-            // Make sure the false literal is data[1]:
-            Clause* cr = watcher->cref;
-            if (cr->first() == ~p) {
-                cr->swap(0, 1);
-            }
-            
-            watcher++;
-            // If 0th watch is true, then clause is already satisfied.
-            Watcher w = Watcher(cr, cr->first());
-            if (cr->first() != blocker && value(cr->first()) == l_True) {
-                *keep++ = w;
-                continue;
+            Clause* clause = watcher->cref;
+
+            if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                clause->swap(0, 1);
+                if (value(clause->first()) == l_True) { // If 0th watch is true, then clause is already satisfied
+                    watcher->blocker = clause->first();
+                    *keep++ = *watcher++;
+                    continue;
+                }
             }
 
+            watcher++;
+
             if (decisionLevel() < assumptions.size()) { // INCREMENTAL MODE
-                Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
-                for (uint_fast16_t k = 2; k < c.size(); k++) {
-                    if (value(c[k]) != l_False) {
+                for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                    if (value((*clause)[k]) != l_False) {
                         watchesUpdateLiteralIndex = k;
-                        if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
+                        if (value((*clause)[k]) == l_True || !isSelector(var((*clause)[k]))) {
                             break;
                         }
                     }
                 }
                 
                 if (watchesUpdateLiteralIndex != -1) {
-                    c.swap(1, watchesUpdateLiteralIndex);
-                    watches[~c[1]].push_back(w);
+                    clause->swap(1, watchesUpdateLiteralIndex);
+                    watches[~clause->second()].emplace_back(clause, clause->first());
                     goto NextClause;
                 }
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)
-                Clause& c = *cr;
-                for (uint_fast16_t k = 2; k < c.size(); k++) {
-                    if (value(c[k]) != l_False) {
-                        c.swap(1, k);
-                        watches[~c[1]].push_back(w);
+                for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                    if (value((*clause)[k]) != l_False) {
+                        clause->swap(1, k);
+                        watches[~clause->second()].emplace_back(clause, clause->first());
                         goto NextClause;
                     }
                 }
             }
             
             // Did not find watch -- clause is unit under assignment:
-            *keep++ = w;
-            if (value(cr->first()) == l_False) {
-                confl = cr;
+            *keep++ = Watcher(clause, clause->first());
+            if (value(clause->first()) == l_False) {
+                confl = clause;
                 qhead = trail_size;
                 while (watcher != ws.end()) { // Copy the remaining watches
                     *keep++ = *watcher++;
                 }
             }
             else {
-                uncheckedEnqueue(cr->first(), cr);
+                uncheckedEnqueue(clause->first(), clause);
             }
             
         NextClause: ;

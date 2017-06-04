@@ -79,6 +79,7 @@ public:
 
     // Problem specification:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0); // Add a new variable with parameters specifying variable mode.
+    virtual void addClauses(const CNFProblem& dimacs);
 
     bool eliminate() {
         return eliminate(use_asymm, use_elim);
@@ -252,6 +253,15 @@ Var SimpSolver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     frozen.push_back((char) false);
     eliminated.push_back((char) false);
     return v;
+}
+
+template<class PickBranchLitT>
+void SimpSolver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
+    Solver<PickBranchLitT>::addClauses(dimacs);
+    if (frozen.size() < this->nVars()) {
+        frozen.resize(this->nVars(), (char) false);
+        eliminated.resize(this->nVars(), (char) false);
+    }
 }
 
 template<class PickBranchLitT>
