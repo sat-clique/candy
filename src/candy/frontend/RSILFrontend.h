@@ -33,7 +33,7 @@
 #include <candy/simp/SimpSolver.h>
 #include <candy/rsil/BranchingHeuristics.h>
 #include <candy/gates/MiterDetector.h>
-#include <candy/randomsimulation/RandomSimulator.h>
+#include <candy/utils/Runtime.h>
 
 #include "Exceptions.h"
 #include "RandomSimulationFrontend.h"
