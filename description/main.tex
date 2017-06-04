@@ -74,9 +74,20 @@ In contrast to Glucose we made several optimizations (minimization of learnt cla
 
 We improved the architecture of clause simplification in Glucuse such that Candy can now perform clause data-base simplification during search. We perform clause strengthening with new unit clauses, clause subsumption and self-subsuming resolution. Clauses of the original problem are included as well as the learnt clauses that are persitent in the learnt-clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
 
-\section{Gate Structure Analysis and Random Simulation}
+\section{Gate Structure Analysis and Applications}
 
-Candy includes modules that perform gate extraction, miter detection and random simulation. The random simulation module uses extracted gates to generate conjectures about literal equivalences and backbones. The Candy solver variants RSAR, RSIL and RSILmd, make use of the extracted information. RSIL uses its own pick-branch-lit implementation (hooked in as a template parameter) that tries to violate extracted conjectures about variable equivalences in order to stimulate clause learning. The variant RSILmd does that only if miter structure is detected. RSAR uses the conjectures in an abstraction refinement loop by adding them to the problem and relaxing them if necessary. 
+Candy provides modules for gate extraction \cite{Iser:2015:GateRecognition} and random simulation \cite{krohm1996use}.
+Detemerminized random simulation is used on gate structure extracted from SAT problems to generate conjectures about literal equivalences and backbone variables.
+The Candy solver variant Candy/RSAR uses these conjectures to compute and iteratively refine under-approximations of the SAT problem instance \cite{Kutzer:2016:Thesis}.
+The Candy solver variant Candy/RSIL uses branching heuristics based on implicit learning \cite{Kutzer:2016:Thesis,DBLP:journals/jucs/LuWCMH04} to stimulate clause learning by violating extracted conjectures about variable equivalencies where possible, otherwise using the VSIDS branching heuristic.
+Candy/RSIL includes the sub-variants Candy/RSILv, with which the probability of implicit learning being used is iteratively decreased during the solver execution, and Candy/RSILi, with which usage budgets are assigned to each conjecture.
+Using branching heuristics based on implicit learning has proven to be particularly efficient for solving miter problems with general-purpose SAT solvers \cite{Kutzer:2016:Thesis}.
+Candy includes fast miter problem detection heuristics enabling implicit learning to be enabled only for SAT problem instances detected to be miter encodings.
+For a general description of miter problems, see e.g. \cite{hwmcc12Bench}.
+
+
+%\section{Gate Structure Analysis and Random Simulation}
+%Candy includes modules that perform gate extraction, miter detection and random simulation. The random simulation module uses extracted gates to generate conjectures about literal equivalences and backbones. The Candy solver variants RSAR, RSIL and RSILmd, make use of the extracted information. RSIL uses its own pick-branch-lit implementation (hooked in as a template parameter) that tries to violate extracted conjectures about variable equivalences in order to stimulate clause learning. The variant RSILmd does that only if miter structure is detected. RSAR uses the conjectures in an abstraction refinement loop by adding them to the problem and relaxing them if necessary. 
     
 
 \bibliographystyle{splncs03}
