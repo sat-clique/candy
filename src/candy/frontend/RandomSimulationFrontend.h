@@ -33,14 +33,34 @@
 #include <candy/gates/GateAnalyzer.h>
 
 namespace Candy {
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Random simulation argument structure
+     */
     struct RandomSimulationArguments {
+        /// The maximum amount of random simulation steps to be performed. This amount may be rounded up to the nearest multiple of 2048.
         const int nRounds;
+        
+        /// Iff true, random simulation may be aborted due to the reduction rate abort threshold being too low.
         const bool abortByRRAT;
+        
+        /// The reduction rate abort threshold.
         const double rrat;
+        
+        /// If true, conjectures larger than maxConjectureSize are discarded.
         const bool filterConjecturesBySize;
+        
+        /// The maximum conjecture size (ignored if filterConjecturesBySize == false).
         const int maxConjectureSize;
+        
+        /// Remove backbone variables from the conjectures produced by random simulation.
         const bool removeBackboneConjectures;
+        
+        /// If true, only nonmonotonously nested gates are taken into account for random simulation.
         const bool filterGatesByNonmono;
+        
+        /// The random simulation time limit. If negative, no time limit is used.
         std::chrono::milliseconds preprocessingTimeLimit;
     };
     

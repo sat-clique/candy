@@ -58,6 +58,10 @@
 #include <candy/frontend/RSARFrontend.h>
 
 namespace Candy {
+    /**
+     * \defgroup CandyFrontend
+     */
+    
     struct GlucoseArguments {
         const int verb;
         const bool mod;
@@ -87,9 +91,6 @@ namespace Candy {
     };
     
     std::ostream& operator <<(std::ostream& stream, const GlucoseArguments& arguments);
-    /**
-     * \defgroup CandyFrontend
-     */
     
     /**
      * \ingroup CandyFrontend
