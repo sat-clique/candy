@@ -61,9 +61,9 @@
 
 The development of our SAT solver \textbf{Candy} started as a branch of the well-known \textbf{Glucose 3} solver.
 The goal of Candy is to create a solid foundation for further optimization and development by refactoring most parts of the orignial code towards modern C++ and reducing dependencies within the code.
-This involved replacing most data structures by their C++ standard template library (STL) equivalent and generally preferring standard algorithm implementations (e.g. std::sort) over rsp. custom implementations.
-We increased the extensibility of Candy using static polymorphism and employ a modular toolbox approach to software development.
-The code quality is assured by automated testing of Candy using different compilers (clang, gcc, Microsoft C/C++) and operating systems (Linux, macOS, Windows).
+This involved replacing most custom low-level data structures (e.g. vectors) and algorithms (e.g. sorting) by their C++ standard template library equivalents.
+We also increased the extensibility of Candy by using static polymorphism and employ a modular toolbox approach to software development.
+The code quality is assured by automated testing of Candy using different compilers (clang, gcc, Microsoft C/C++) and operating systems (Linux, macOS, Windows) integrated into the regular development workflow using continuous integration systems.
 
 \section{Clause Memory Management}
 \label{sec:clauses}
