@@ -84,7 +84,9 @@ namespace Candy {
         return limits;
     }
     
-    std::unique_ptr<Candy::ARSolver> createARSolver(Candy::GateAnalyzer& analyzer, DefaultSimpSolver& satSolver, std::unique_ptr<Candy::Conjectures> conjectures,
+    std::unique_ptr<Candy::ARSolver> createARSolver(const GateAnalyzer& analyzer,
+                                                    DefaultSimpSolver& satSolver,
+                                                    std::unique_ptr<Conjectures> conjectures,
                                                     const RSARArguments& rsarArguments) {
         auto arSolverBuilder = Candy::createARSolverBuilder();
         arSolverBuilder->withConjectures(std::move(conjectures));

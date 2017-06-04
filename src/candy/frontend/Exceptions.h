@@ -38,7 +38,7 @@ namespace Candy {
      */
     class UnsuitableProblemException {
     public:
-        explicit UnsuitableProblemException(const std::string& what);
+        explicit UnsuitableProblemException(const std::string& what) noexcept;
         const std::string& what() const noexcept;
         
     private:
