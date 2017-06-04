@@ -1152,27 +1152,21 @@ Clause* Solver<PickBranchLitT>::propagate() {
         }
         
         // Propagate other 2-watched clauses
-        std::vector<Watcher>& ws = watches[p];
-        auto keep = ws.begin();
-        for (auto watcher = ws.begin(); watcher != ws.end();) {
+        for (auto& watcher : watches[p]) {
             // Try to avoid inspecting the clause:
-            if (value(watcher->blocker) == l_True) {
-                *keep++ = *watcher++;
+            if (value(watcher.blocker) == l_True) {
                 continue;
             }
             
-            Clause* clause = watcher->cref;
+            Clause* clause = watcher.cref;
 
             if (clause->first() == ~p) { // Make sure the false literal is data[1]
                 clause->swap(0, 1);
+                watcher.blocker = clause->first();
                 if (value(clause->first()) == l_True) { // If 0th watch is true, then clause is already satisfied
-                    watcher->blocker = clause->first();
-                    *keep++ = *watcher++;
                     continue;
                 }
             }
-
-            watcher++;
 
             if (decisionLevel() < assumptions.size()) { // INCREMENTAL MODE
                 int watchesUpdateLiteralIndex = -1;
@@ -1188,7 +1182,8 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 if (watchesUpdateLiteralIndex != -1) {
                     clause->swap(1, watchesUpdateLiteralIndex);
                     watches[~clause->second()].emplace_back(clause, clause->first());
-                    goto NextClause;
+                    watcher.cref = nullptr; // mark watcher for deletion
+                    continue;
                 }
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)
@@ -1196,27 +1191,25 @@ Clause* Solver<PickBranchLitT>::propagate() {
                     if (value((*clause)[k]) != l_False) {
                         clause->swap(1, k);
                         watches[~clause->second()].emplace_back(clause, clause->first());
-                        goto NextClause;
+                        watcher.cref = nullptr; // mark watcher for deletion
+                        break;
                     }
                 }
             }
             
-            // Did not find watch -- clause is unit under assignment:
-            *keep++ = Watcher(clause, clause->first());
-            if (value(clause->first()) == l_False) {
-                confl = clause;
-                qhead = trail_size;
-                while (watcher != ws.end()) { // Copy the remaining watches
-                    *keep++ = *watcher++;
+            if (watcher.cref != nullptr) {
+                // Did not find watch -- clause is unit under assignment:
+                if (value(clause->first()) == l_False) {
+                    confl = clause;
+                    qhead = trail_size;
+                }
+                else {
+                    uncheckedEnqueue(clause->first(), clause);
                 }
             }
-            else {
-                uncheckedEnqueue(clause->first(), clause);
-            }
-            
-        NextClause: ;
         }
-        ws.erase(keep, ws.end());
+        // remove watchers marked for deletion:
+        watches[p].erase(std::remove_if(watches[p].begin(), watches[p].end(), [](Watcher& w) { return w.cref == nullptr; } ), watches[p].end());
     }
     
     nPropagations += qhead - old_qhead;
