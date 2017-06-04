@@ -162,6 +162,9 @@ public:
  * A RuntimeImpl specialization measuring elapsed CPU time.
  */
 using Runtime = GenericRuntime<>;
+    
+class OutOfTimeException {
+};
 
 }
 

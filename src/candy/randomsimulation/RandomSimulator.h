@@ -47,9 +47,6 @@ namespace Candy {
      * \defgroup RandomSimulation
      */
     
-    class OutOfTimeException {
-    };
-    
     /**
      * \class RandomSimulator
      *
