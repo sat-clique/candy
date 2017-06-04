@@ -30,6 +30,7 @@
 
 #include <utils/MemUtils.h>
 #include <utils/System.h>
+#include <utils/Runtime.h>
 
 #include "ClauseOrder.h"
 #include "Partition.h"
