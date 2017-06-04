@@ -45,11 +45,32 @@ namespace Candy {
     
     std::ostream& operator <<(std::ostream& stream, const RSARArguments& arguments);
     
-    Candy::SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str);
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Parses RSAR simplification handling mode strings.
+     *
+     * \param str   the string representing the simplification mode. Must be one of
+     *              FREEZE, RESTRICT, FULL, DISABLE.
+     *
+     * \returns the SimplificationHandlingMode value corresponding to the parameter str.
+     */
+    SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str);
     
     
-    std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString);
-    
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Creates an ARSolver instance.
+     *
+     * \param analyzer      a GateAnalyzer using which the CNF problem to be solved has been analyzed.
+     * \param satSolver     the SAT solver which should be used by RSAR.
+     * \param conjectures   equivalence/backbone conjectures which should be used to compute abstractions.
+     * \param rsarArguments the RSAR configuration.
+     *
+     * \returns a unique_pointer to the new ARSolver instance (transferring ownership of the ARSolver
+     *   instance to the caller).
+     */
     std::unique_ptr<Candy::ARSolver> createARSolver(GateAnalyzer& analyzer,
                                                     DefaultSimpSolver& satSolver,
                                                     std::unique_ptr<Conjectures> conjectures,

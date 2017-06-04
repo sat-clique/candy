@@ -30,6 +30,12 @@
 #include <string>
 
 namespace Candy {
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief An exception intended to be thrown when the given problem instance is
+     *   not suitable for the algorithm intended to solve it.
+     */
     class UnsuitableProblemException {
     public:
         explicit UnsuitableProblemException(const std::string& what);

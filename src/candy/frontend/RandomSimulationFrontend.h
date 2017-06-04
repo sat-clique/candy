@@ -46,6 +46,19 @@ namespace Candy {
     
     std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments);
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief Performs random simulation on the given gate structure, throwing an OutOfTimeException
+     *   if a time limit is given and exceeded.
+     *
+     * \param analyzer      the target gate structure.
+     * \param rsArguments   the random simulation arguments.
+     * \param timeLimit     the time limit. If negative, time limiting is disabled, which is the default.
+     *
+     * \returns a set of conjectures about equivalences and backbone variables in the given gate structure
+     *   (transferring ownership of the returned object to the caller).
+     */
     std::unique_ptr<Candy::Conjectures> performRandomSimulation(Candy::GateAnalyzer &analyzer,
                                                                 const RandomSimulationArguments& rsArguments,
                                                                 std::chrono::milliseconds timeLimit = std::chrono::milliseconds{-1});

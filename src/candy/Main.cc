@@ -492,10 +492,10 @@ static int solveWithRSIL(const GlucoseArguments& args) {
     }
     
     if (args.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
-        auto preprocessor = createRSILPreprocessingHook<RSILBugetSolver>(args.gateRecognitionArgs,
+        auto preprocessor = createRSILPreprocessingHook<RSILBudgetSolver>(args.gateRecognitionArgs,
                                                                          args.randomSimulationArgs,
                                                                          args.rsilArgs);
-        return solve<RSILBugetSolver>(args, preprocessor);
+        return solve<RSILBudgetSolver>(args, preprocessor);
     }
     
     throw std::invalid_argument{"RSIL mode not implemented"};
