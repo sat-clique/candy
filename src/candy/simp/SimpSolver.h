@@ -79,6 +79,7 @@ public:
 
     // Problem specification:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0); // Add a new variable with parameters specifying variable mode.
+    virtual void addClauses(const CNFProblem& dimacs);
 
     bool eliminate() {
         return eliminate(use_asymm, use_elim);
@@ -255,6 +256,15 @@ Var SimpSolver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
 }
 
 template<class PickBranchLitT>
+void SimpSolver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
+    Solver<PickBranchLitT>::addClauses(dimacs);
+    if (frozen.size() < this->nVars()) {
+        frozen.resize(this->nVars(), (char) false);
+        eliminated.resize(this->nVars(), (char) false);
+    }
+}
+
+template<class PickBranchLitT>
 lbool SimpSolver<PickBranchLitT>::solve() {
     lbool result = l_True;
     
@@ -343,9 +353,22 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     elimDetach(cr, l, true);
     
     if (cr->size() == 1) {
-        elimDetach(cr, cr->first(), true);
+        Lit unit = cr->first();
+        elimDetach(cr, unit, true);
         cr->setDeleted();
-        return this->enqueue(cr->first()) && this->propagate() == nullptr;
+
+        if (this->value(unit) == l_Undef) {
+            this->uncheckedEnqueue(unit);
+            return this->propagate() == nullptr;
+        }
+        else if (this->value(unit) == l_False) {
+            return false;
+        }
+        else {
+            this->vardata[var(unit)].reason = nullptr;
+            this->vardata[var(unit)].level = 0;
+            return true;
+        }
     }
     else {
         this->attachClause(cr);
@@ -471,8 +494,6 @@ template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
     assert(this->decisionLevel() == 0);
 
-    int subsumed = 0;
-    int deleted_literals = 0;
     Clause bwdsub_tmpunit({ lit_Undef });
     
     while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_size) {
@@ -512,12 +533,12 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
                 Lit l = cr->subsumes(*csi);
 
                 if (l == lit_Undef) {
-                    subsumed++;
+                    Statistics::getInstance().solverSubsumedInc();
                     this->removeClause(csi);
                     elimDetach(csi, false);
                 }
                 else if (l != lit_Error) {
-                    deleted_literals++;
+                    Statistics::getInstance().solverDeletedInc();
                     // this might modifiy occurs ...
                     if (!strengthenClause(csi, ~l)) {
                         return false;
@@ -529,10 +550,6 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
                 }
             }
         }
-    }
-    
-    if (this->verbosity >= 2 && subsumed + deleted_literals > 0) {
-        printf("c subsumption left: %10d (%10d subsumed, %10d deleted literals)\n", (int) subsumption_queue.size(), subsumed, deleted_literals);
     }
 
     return true;
@@ -702,7 +719,7 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
             elimAttach(c);
         }
     }
-    for (Clause* c : this->learntsBin) {
+    for (Clause* c : this->persist) {
         elimAttach(c);
     }
 
@@ -740,8 +757,16 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
         size_t size = strengthened_sizes[clause];
         if (!clause->isDeleted()) {
             // create clause in correct pool
-            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(std::vector<Lit>(clause->begin(), clause->end()));
-            this->clauses.push_back(clean);
+            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(*clause);
+            if (clean->isLearnt()) {
+                if (clean->size() == 2) {
+                    this->persist.push_back(clean);
+                } else {
+                    this->learnts.push_back(clean);
+                }
+            } else {
+                this->clauses.push_back(clean);
+            }
             this->attachClause(clean);
             clause->setDeleted();
             this->detachClause(clause);
@@ -758,7 +783,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->watchesBin.cleanAll();
     this->freeMarkedClauses(this->clauses);
     this->freeMarkedClauses(this->learnts);
-    this->freeMarkedClauses(this->learntsBin);
+    this->freeMarkedClauses(this->persist);
 }
 
 template<class PickBranchLitT>
@@ -801,6 +826,10 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                 break;
             }
         }
+    }
+
+    if (this->verbosity >= 2) {
+        Statistics::getInstance().printSimplificationStats();
     }
 
     cleanupEliminate();

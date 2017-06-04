@@ -62,10 +62,10 @@ namespace Candy {
     
 
     void benchmarkGateRecognition(Candy::CNFProblem &problem, const GateRecognitionArguments& recognitionArgs) {
-        Statistics::getInstance().runtimeStart(RT_GATOR);
+        Statistics::getInstance().runtimeStart("Gate analysis");
         auto gates = createGateAnalyzer(problem, recognitionArgs);
         gates->analyze();
-        Statistics::getInstance().runtimeStop(RT_GATOR);
+        Statistics::getInstance().runtimeStop("Gate analysis");
         printf("c =====================================[ Problem Statistics ]===================================\n");
         printf("c |                                                                                            |\n");
         printf("c |  Number of gates:        %12d                                                      |\n",
@@ -74,7 +74,7 @@ namespace Candy {
                problem.nVars());
         printf("c |  Number of clauses:      %12d                                                      |\n",
                problem.nClauses());
-        Statistics::getInstance().printRuntime(RT_GATOR);
+        Statistics::getInstance().printRuntime("Gate analysis");
         printf("c |                                                                                            |\n");
         printf("c ==============================================================================================\n");
         if (recognitionArgs.opt_print_gates) {
