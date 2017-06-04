@@ -29,13 +29,10 @@ class Statistics {
     uint64_t decisions, dec_vars, max_literals, tot_literals;
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
+    uint64_t subsumed, deleted;
 #endif// SOLVER_STATS
 
 #ifdef RUNTIME_STATS
-#define RT_INITIALIZATION   "Runtime Initialization"
-#define RT_SOLVER           "Runtime Solver"
-#define RT_GATOR            "Runtime Gate Analyzer"
-#define RT_SIMPLIFIER       "Runtime Simplifier"
     std::map<std::string, std::chrono::milliseconds> runtimes;
     std::map<std::string, std::chrono::milliseconds> starttimes;
 #endif// RUNTIME_STATS
@@ -62,7 +59,8 @@ public:
     ~Statistics();
 
     void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
-    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts, uint64_t literals);
+    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts);
+    void printSimplificationStats();
     void printFinalStats(uint64_t conflicts, uint64_t propagations);
     void printAllocatorStatistics();
 
@@ -84,6 +82,9 @@ public:
     inline void solverUnariesInc() { ++nbUn; }
     inline void solverBinariesInc() { ++nbBin; }
     inline void solverLBD2Inc() { ++nbDL2; }
+
+    inline void solverSubsumedInc() { ++subsumed; }
+    inline void solverDeletedInc() { ++deleted; }
 #else
     inline void solverDecisionsInc() { }
     inline void solverRandomDecisionsInc() { }
@@ -103,6 +104,9 @@ public:
     inline void solverUnariesInc() { }
     inline void solverBinariesInc() { }
     inline void solverLBD2Inc() { }
+
+    inline void solverSubsumedInc() { }
+    inline void solverDeletedInc() { }
 #endif// SOLVER_STATS
 
 
@@ -141,14 +145,11 @@ public:
     }
     void printRuntime(std::string key) {
         double seconds = static_cast<double>(runtimes[key].count())/1000.0f;
-        printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
+        printf("c Runtime %-14s: %12.2f s\n", key.c_str(), seconds);
     }
     void printRuntimes() {
         for (auto pair : runtimes) {
-            auto key = pair.first;
-            auto runtime = pair.second;
-            double seconds = static_cast<double>(runtime.count())/1000.0f;
-            printf("c |  %-23s:  %12.2f s                                                  |\n", key.c_str(), seconds);
+            printRuntime(pair.first);
         }
     }
 #else

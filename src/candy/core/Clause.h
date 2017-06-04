@@ -67,6 +67,13 @@ public:
         activity_ = 0;
     }
 
+    Clause(const Clause& clause) {
+        copyLiterals(clause.begin(), clause.end(), literals);
+        length = clause.length;
+        header = clause.header;
+        activity_ = clause.activity_;
+    }
+
     ~Clause();
 
     //void* operator new (std::size_t size) = delete;

@@ -130,7 +130,7 @@ public:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0);
 
     // Add clauses to the solver
-    void addClauses(const CNFProblem& dimacs);
+    virtual void addClauses(const CNFProblem& dimacs);
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
@@ -221,7 +221,7 @@ public:
         return clauses.size();
     }
     inline size_t nLearnts() const {
-        return learnts.size() + learntsBin.size();
+        return learnts.size() + persist.size();
     }
     inline size_t nVars() const {
         return vardata.size();
@@ -271,7 +271,7 @@ public:
     Certificate* certificate;
 
     // a few stats are used for heuristics control, keep them here
-    uint64_t nConflicts, nPropagations, nLiterals;
+    uint64_t nConflicts, nPropagations;
 
     // Control verbosity
     int verbEveryConflicts;
@@ -364,7 +364,7 @@ protected:
     // Clauses
     vector<Clause*> clauses; // List of problem clauses.
     vector<Clause*> learnts; // List of learnt clauses.
-    vector<Clause*> learntsBin; // List of binary learnt clauses.
+    vector<Clause*> persist; // List of binary learnt clauses.
 
     // Constants For restarts
     double K;
@@ -469,12 +469,6 @@ protected:
     uint_fast16_t computeLBD(Iterator it, Iterator end);
     bool minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
-    // Test if fact 'p' contradicts current state, enqueue otherwise.
-    // NOTE: enqueue does not set the ok flag! (only public methods do)
-    inline bool enqueue(Lit p, Clause* from = nullptr) {
-        return value(p) != l_Undef ? value(p) != l_False : (uncheckedEnqueue(p, from), true);
-    }
-
     Lit pickBranchLit(); // Return the next decision variable.
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
@@ -527,7 +521,7 @@ protected:
     }
 
     void claRescaleActivity() {
-        for (auto container : { clauses, learnts, learntsBin }) {
+        for (auto container : { clauses, learnts, persist }) {
             for (Clause* clause : container) {
                 clause->activity() *= 1e-20f;
             }
@@ -601,7 +595,7 @@ Solver<PickBranchLitT>::Solver() :
     // unsat certificate
     certificate(&defaultCertificate),
     // stats for heuristic control
-    nConflicts(0), nPropagations(0), nLiterals(0),
+    nConflicts(0), nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -622,7 +616,7 @@ Solver<PickBranchLitT>::Solver() :
     var_inc(1), var_decay(SolverOptions::opt_var_decay), max_var_decay(SolverOptions::opt_max_var_decay),
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), learntsBin(),
+    clauses(), learnts(), persist(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -668,7 +662,7 @@ Solver<PickBranchLitT>::~Solver() {
     for (Clause* c : learnts) {
         allocator.deallocate(c);
     }
-    for (Clause* c : learntsBin) {
+    for (Clause* c : persist) {
         allocator.deallocate(c);
     }
 }
@@ -707,17 +701,15 @@ bool Solver<PickBranchLitT>::isIncremental() {
 template<class PickBranchLitT>
 Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     int v = static_cast<int>(nVars());
-    watches.init(mkLit(v, false));
     watches.init(mkLit(v, true));
-    watchesBin.init(mkLit(v, false));
     watchesBin.init(mkLit(v, true));
     assigns.push_back(l_Undef);
     vardata.emplace_back();
-    activity.push_back(act);
     seen.push_back(0);
     permDiff.push_back(0);
-    polarity.push_back(sign);
     decision.push_back(0);
+    activity.push_back(act);
+    polarity.push_back(sign);
     trail.resize(v + 1);
     setDecisionVar(v, dvar);
     return v;
@@ -726,22 +718,29 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     const vector<vector<Lit>*>& problem = dimacs.getProblem();
-    vector<double> occ = dimacs.getLiteralRelativeOccurrences();
-    if ((size_t)dimacs.nVars() > nVars()) {
-        assigns.reserve(dimacs.nVars());
-        vardata.reserve(dimacs.nVars());
-        activity.reserve(dimacs.nVars());
-        seen.reserve(dimacs.nVars());
-        permDiff.reserve(dimacs.nVars());
-        polarity.reserve(dimacs.nVars());
-        decision.reserve(dimacs.nVars());
-        trail.resize(dimacs.nVars());
-        for (int i = nVars(); i < dimacs.nVars(); i++) {
-            if (sort_variables) {
-                newVar(occ[mkLit(i, true)] > occ[mkLit(i, false)], true, occ[mkLit(i, true)] + occ[mkLit(i, false)]);
-            } else {
-                newVar();
+    size_t curVars = this->nVars();
+    size_t maxVars = (size_t)dimacs.nVars();
+    if (maxVars > curVars) {
+        watches.init(mkLit(maxVars, true));
+        watchesBin.init(mkLit(maxVars, true));
+        assigns.resize(maxVars, l_Undef);
+        vardata.resize(maxVars);
+        seen.resize(maxVars, 0);
+        permDiff.resize(maxVars, 0);
+        decision.resize(maxVars, true);
+        trail.resize(maxVars);
+        activity.resize(maxVars, 0.0);
+        polarity.resize(maxVars, false);
+        if (sort_variables) {
+            vector<double> occ = dimacs.getLiteralRelativeOccurrences();
+            for (size_t i = curVars; i < maxVars; i++) {
+                activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
+                polarity[i] = occ[mkLit(i, true)] > occ[mkLit(i, false)];
             }
+        }
+        for (size_t i = curVars; i < maxVars; i++) {
+            insertVarOrder(i);
+            Statistics::getInstance().solverDecisionVariablesInc();
         }
     }
     for (vector<Lit>* clause : problem) {
@@ -790,8 +789,6 @@ template<class PickBranchLitT>
 void Solver<PickBranchLitT>::attachClause(Clause* cr) {
     assert(cr->size() > 1);
     
-    nLiterals += cr->size();
-    
     if (cr->size() == 2) {
         watchesBin[~cr->first()].emplace_back(cr, cr->second());
         watchesBin[~cr->second()].emplace_back(cr, cr->first());
@@ -804,8 +801,6 @@ void Solver<PickBranchLitT>::attachClause(Clause* cr) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
-    
-    nLiterals -= cr->size();
     
     if (cr->size() == 2) {
         if (strict) {
@@ -933,7 +928,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         claBumpActivity(c);
         
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.isLearnt() && c.getLBD() > 2) {
+        if (c.getLBD() > 2) { // -> c.isLearnt()
             uint_fast16_t nblevels = computeLBD(c.begin(), c.end());
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
@@ -944,9 +939,8 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
             }
         }
         
-        for (uint_fast16_t j = (asslit == lit_Undef) ? 0 : 1; j < c.size(); j++) {
-            Lit lit = c[j];
-            
+        for (auto it = (asslit == lit_Undef) ? c.begin() : c.begin() + 1; it != c.end(); it++) {
+            Lit lit = *it;
             if (!seen[var(lit)] && level(var(lit)) != 0) {
                 varBumpActivity(var(lit));
                 seen[var(lit)] = 1;
@@ -1085,19 +1079,16 @@ void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
                 assert(level(x) > 0);
                 out_conflict.push_back(~trail[i]);
             } else {
-                Clause& c = *reason(x);
-                //                for (int j = 1; j < c.size(); j++) Minisat (glucose 2.0) loop
-                // Bug in case of assumptions due to special data structures for Binary.
-                // Many thanks to Sam Bayless (sbayless@cs.ubc.ca) for discover this bug.
-                for (uint_fast16_t j = ((c.size() == 2) ? 0 : 1); j < c.size(); j++)
-                    if (level(var(c[j])) > 0)
-                        seen[var(c[j])] = 1;
+                Clause* c = reason(x);
+                for (Lit lit : *c) {
+                    if (level(var(lit)) > 0) {
+                        seen[var(lit)] = 1;
+                    }
+                }
             }
-            
             seen[x] = 0;
         }
     }
-    
     seen[var(p)] = 0;
 }
 
@@ -1150,86 +1141,75 @@ Clause* Solver<PickBranchLitT>::propagate() {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
         
         // Propagate binary clauses
-        vector<Watcher>& wbin = watchesBin[p];
-        for (auto watcher : wbin) {
-            if (value(watcher.blocker) == l_False) {
+        for (auto watcher : watchesBin[p]) {
+            lbool val = value(watcher.blocker);
+            if (val == l_False) {
                 return watcher.cref;
             }
-            if (value(watcher.blocker) == l_Undef) {
+            if (val == l_Undef) {
                 uncheckedEnqueue(watcher.blocker, watcher.cref);
             }
         }
         
         // Propagate other 2-watched clauses
-        std::vector<Watcher>& ws = watches[p];
-        auto keep = ws.begin();
-        for (auto watcher = ws.begin(); watcher != ws.end();) {
+        for (auto& watcher : watches[p]) {
             // Try to avoid inspecting the clause:
-            Lit blocker = watcher->blocker;
-            if (value(blocker) == l_True) {
-                *keep++ = *watcher++;
+            if (value(watcher.blocker) == l_True) {
                 continue;
             }
             
-            // Make sure the false literal is data[1]:
-            Clause* cr = watcher->cref;
-            if (cr->first() == ~p) {
-                cr->swap(0, 1);
-            }
-            
-            watcher++;
-            // If 0th watch is true, then clause is already satisfied.
-            Watcher w = Watcher(cr, cr->first());
-            if (cr->first() != blocker && value(cr->first()) == l_True) {
-                *keep++ = w;
-                continue;
+            Clause* clause = watcher.cref;
+
+            if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                clause->swap(0, 1);
+                watcher.blocker = clause->first();
+                if (value(clause->first()) == l_True) { // If 0th watch is true, then clause is already satisfied
+                    continue;
+                }
             }
 
             if (decisionLevel() < assumptions.size()) { // INCREMENTAL MODE
-                Clause& c = *cr;
                 int watchesUpdateLiteralIndex = -1;
-                for (uint_fast16_t k = 2; k < c.size(); k++) {
-                    if (value(c[k]) != l_False) {
+                for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                    if (value((*clause)[k]) != l_False) {
                         watchesUpdateLiteralIndex = k;
-                        if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
+                        if (value((*clause)[k]) == l_True || !isSelector(var((*clause)[k]))) {
                             break;
                         }
                     }
                 }
                 
                 if (watchesUpdateLiteralIndex != -1) {
-                    c.swap(1, watchesUpdateLiteralIndex);
-                    watches[~c[1]].push_back(w);
-                    goto NextClause;
+                    clause->swap(1, watchesUpdateLiteralIndex);
+                    watches[~clause->second()].emplace_back(clause, clause->first());
+                    watcher.cref = nullptr; // mark watcher for deletion
+                    continue;
                 }
             }
             else { // DEFAULT MODE (NOT INCREMENTAL)
-                Clause& c = *cr;
-                for (uint_fast16_t k = 2; k < c.size(); k++) {
-                    if (value(c[k]) != l_False) {
-                        c.swap(1, k);
-                        watches[~c[1]].push_back(w);
-                        goto NextClause;
+                for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                    if (value((*clause)[k]) != l_False) {
+                        clause->swap(1, k);
+                        watches[~clause->second()].emplace_back(clause, clause->first());
+                        watcher.cref = nullptr; // mark watcher for deletion
+                        break;
                     }
                 }
             }
             
-            // Did not find watch -- clause is unit under assignment:
-            *keep++ = w;
-            if (value(cr->first()) == l_False) {
-                confl = cr;
-                qhead = trail_size;
-                while (watcher != ws.end()) { // Copy the remaining watches
-                    *keep++ = *watcher++;
+            if (watcher.cref != nullptr) {
+                // Did not find watch -- clause is unit under assignment:
+                if (value(clause->first()) == l_False) {
+                    confl = clause;
+                    qhead = trail_size;
+                }
+                else {
+                    uncheckedEnqueue(clause->first(), clause);
                 }
             }
-            else {
-                uncheckedEnqueue(cr->first(), cr);
-            }
-            
-        NextClause: ;
         }
-        ws.erase(keep, ws.end());
+        // remove watchers marked for deletion:
+        watches[p].erase(std::remove_if(watches[p].begin(), watches[p].end(), [](Watcher& w) { return w.cref == nullptr; } ), watches[p].end());
     }
     
     nPropagations += qhead - old_qhead;
@@ -1250,7 +1230,7 @@ void Solver<PickBranchLitT>::reduceDB() {
     Statistics::getInstance().solverReduceDBInc();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
     
-    size_t index = (learnts.size() + learntsBin.size()) / 2;
+    size_t index = (learnts.size() + persist.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
         // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
         if (specialIncReduceDB == 0) {
@@ -1271,7 +1251,9 @@ void Solver<PickBranchLitT>::reduceDB() {
         }
     }
     watches.cleanAll();
+    size_t old_size = learnts.size();
     freeMarkedClauses(learnts);
+    Statistics::getInstance().solverRemovedClausesInc(old_size - learnts.size());
     for (Clause* c : learnts) { // "unfreeze" remaining clauses
         c->setFrozen(false);
     }
@@ -1291,7 +1273,6 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
                                           return false;
                                       }
                                   });
-    Statistics::getInstance().solverRemovedClausesInc(std::distance(new_end, list.end()));
     list.erase(new_end, list.end());
 }
 
@@ -1378,56 +1359,57 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
 
     // Remove satisfied clauses:
     std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
-    std::for_each(learntsBin.begin(), learntsBin.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
+    std::for_each(persist.begin(), persist.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
     if (strengthen) {
         // Remove false literals:
         std::unordered_map<Clause*, size_t> strengthened_sizes;
         std::vector<Clause*> strengthened_clauses;
-        for (auto list : { clauses, learnts, learntsBin }) {
+        for (auto list : { clauses, learnts, persist }) {
             for (Clause* clause : list) if (!clause->isDeleted()) {
                 auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
                 if (pos != clause->end()) {
-                    removeClause(clause);
+                    detachClause(clause);
+                    certificate->removed(clause->begin(), clause->end());
                     auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
                     certificate->added(clause->begin(), end);
-                    size_t size = std::distance(clause->begin(), end);
-                    if (size > 1) {
-                        strengthened_sizes[clause] = size;
-                        strengthened_clauses.push_back(clause);
-                    }
-                    else {
-                        Lit p = clause->first();
-                        if (value(p) == l_True) {
-                            vardata[var(p)].reason = nullptr;
-                            vardata[var(p)].level = 0;
-                        }
-                        else {
-                            uncheckedEnqueue(p);
-                        }
-                    }
+                    strengthened_clauses.push_back(clause);
+                    strengthened_sizes[clause] = clause->size();
+                    clause->setSize(std::distance(clause->begin(), end));
                 }
             }
         }
 
         for (Clause* clause : strengthened_clauses) {
-            size_t size = strengthened_sizes[clause];
-            Clause* cr = new (allocator.allocate(size)) Clause(clause->begin(), clause->begin() + size);
-            attachClause(cr);
-            cr->activity() = clause->activity();
-            cr->setFrozen(clause->isFrozen());
-            if (clause->isLearnt()) {
-                cr->setLearnt(true);
-                cr->setLBD(clause->getLBD());
-                if (cr->size() == 2) {
-                    learntsBin.push_back(cr);
-                } else {
-                    learnts.push_back(cr);
+            if (clause->size() == 1) {
+                Lit p = clause->first();
+                if (value(p) == l_True) {
+                    vardata[var(p)].reason = nullptr;
+                    vardata[var(p)].level = 0;
                 }
-            } else {
-                clauses.push_back(cr);
+                else {
+                    uncheckedEnqueue(p);
+                }
             }
+            else {
+                Clause* clean = new (allocator.allocate(clause->size())) Clause(*clause);
+                if (locked(clause)) {
+                    vardata[var(clause->first())].reason = clean;
+                }
+                attachClause(clean);
+                if (clean->isLearnt()) {
+                    if (clean->size() == 2) {
+                        persist.push_back(clean);
+                    } else {
+                        learnts.push_back(clean);
+                    }
+                } else {
+                    clauses.push_back(clean);
+                }
+            }
+            clause->setSize(strengthened_sizes[clause]); // restore original size for freeMarkedClauses
+            clause->setDeleted();
         }
     }
 
@@ -1436,7 +1418,7 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
     watchesBin.cleanAll();
 
     freeMarkedClauses(learnts);
-    freeMarkedClauses(learntsBin);
+    freeMarkedClauses(persist);
     freeMarkedClauses(clauses);
 
     rebuildOrderHeap();
@@ -1495,8 +1477,7 @@ lbool Solver<PickBranchLitT>::search() {
                 Statistics::getInstance().printIntermediateStats((int) (trail_lim.size() == 0 ? trail_size : trail_lim[0]),
                     static_cast<int>(nClauses()),
                     static_cast<int>(nLearnts()),
-                    static_cast<int>(nConflicts),
-                    static_cast<int>(nLiterals));
+                    static_cast<int>(nConflicts));
             }
             if (decisionLevel() == 0) {
                 return l_False;
@@ -1524,6 +1505,12 @@ lbool Solver<PickBranchLitT>::search() {
             if (nblevels <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
             }
+            if (learnt_clause.size() == 1) {
+                Statistics::getInstance().solverUnariesInc();
+            }
+            if (learnt_clause.size() == 2) {
+                Statistics::getInstance().solverBinariesInc();
+            }
 
             if (!isSelector(learnt_clause.back())) {
                 certificate->added(learnt_clause.begin(), learnt_clause.end());
@@ -1536,15 +1523,13 @@ lbool Solver<PickBranchLitT>::search() {
                 cancelUntil(0);
                 uncheckedEnqueue(learnt_clause[0]);
                 new_unary = true;
-                Statistics::getInstance().solverUnariesInc();
             }
             else {
                 uint32_t clauseLength = checked_unsigned_cast<decltype(learnt_clause)::size_type, uint32_t>(learnt_clause.size());
                 Clause* cr = new (allocator.allocate(clauseLength)) Clause(learnt_clause, nblevels);
 
                 if (clauseLength == 2) {
-                    learntsBin.push_back(cr);
-                    Statistics::getInstance().solverBinariesInc();
+                    persist.push_back(cr);
                 }
                 else {
                     learnts.push_back(cr);
@@ -1579,36 +1564,36 @@ lbool Solver<PickBranchLitT>::search() {
                     reduced = false;
 
                     bool inprocessing = false;
-                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency < curRestart) {
+                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
                         inprocessing = true;
                     }
 
-                    if (new_unary == 0) {
+                    if (new_unary) {
                         new_unary = false;
-                        Statistics::getInstance().runtimeStart("Runtime Simplify");
+                        Statistics::getInstance().runtimeStart("Simplify");
                         if (!simplify(inprocessing)) {
                             return l_False;
                         }
-                        Statistics::getInstance().runtimeStop("Runtime Simplify");
+                        Statistics::getInstance().runtimeStop("Simplify");
                     }
 
                     if (inprocessing) {
-                        Statistics::getInstance().runtimeStart("Runtime Inprocessing");
+                        Statistics::getInstance().runtimeStart("Inprocessing");
                         if (!eliminate(false, false)) {
                             return l_False;
                         }
-                        Statistics::getInstance().runtimeStop("Runtime Inprocessing");
+                        Statistics::getInstance().runtimeStop("Inprocessing");
                     }
 
                     if (revamp > 2) {
-                        Statistics::getInstance().runtimeStart("Runtime Revamp");
+                        Statistics::getInstance().runtimeStart("Revamp");
                         revampClausePool(revamp);
-                        Statistics::getInstance().runtimeStop("Runtime Revamp");
+                        Statistics::getInstance().runtimeStop("Revamp");
                     }
                     
                     if (sort_watches) {
-                        Statistics::getInstance().runtimeStart("Runtime Sort Watches");
+                        Statistics::getInstance().runtimeStart("Sort Watches");
                         for (size_t v = 0; v < nVars(); v++) {
                             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
                             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
@@ -1619,7 +1604,7 @@ lbool Solver<PickBranchLitT>::search() {
                                 });
                             }
                         }
-                        Statistics::getInstance().runtimeStop("Runtime Sort Watches");
+                        Statistics::getInstance().runtimeStop("Sort Watches");
                     }
                 }
                 
@@ -1674,7 +1659,7 @@ lbool Solver<PickBranchLitT>::search() {
 // Parameters are useless in core but useful for SimpSolver....
 template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::solve() {
-    Statistics::getInstance().runtimeStart(RT_SOLVER);
+    Statistics::getInstance().runtimeStart("Solver");
 
     sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
@@ -1695,9 +1680,8 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c |                                |                                |                          |\n");
         printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
         printf("c |                                                                                            |\n");
-        
-        printf("c |          RESTARTS           |          ORIGINAL         |              LEARNT              |\n");
-        printf("c |       NB   Blocked  Avg Cfc |    Vars  Clauses Literals |   Red   Learnts    LBD2  Removed |\n");
+        printf("c |      RESTARTS      |       ORIGINAL      |                     LEARNT                      |\n");
+        printf("c |  NB  Blocked  Avg  |  Vars    Clauses    |  Red  Learnts    Binary  Unary  LBD2  Removed   |\n");
         printf("c ==============================================================================================\n");
     }
 
@@ -1747,7 +1731,7 @@ lbool Solver<PickBranchLitT>::solve() {
     
     cancelUntil(0);
     
-    Statistics::getInstance().runtimeStop(RT_SOLVER);
+    Statistics::getInstance().runtimeStop("Solver");
     return status;
 }
 
