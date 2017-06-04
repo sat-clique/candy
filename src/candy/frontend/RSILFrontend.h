@@ -41,22 +41,42 @@
 
 namespace Candy {
     enum class RSILMode {
-        UNRESTRICTED,
-        VANISHING,
-        IMPLICATIONBUDGETED
+        UNRESTRICTED, ///< use RSIL for all decisions
+        VANISHING, ///< use RSIL with decreasing probability (note that the pseudorandom number generator is determinized)
+        IMPLICATIONBUDGETED ///< use RSIL with implication budgets
     };
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief RSIL argument structure
+     */
     struct RSILArguments {
+        /// iff true, RSIL should be used for SAT solving.
         const bool useRSIL;
+        
+        /// the RSIL mode to be used for RSIL-enabled SAT solving.
         const RSILMode mode;
+        
+        /// the half-life of the probability of performing decisions using RSIL (used only when mode=VANISHING)
         const uint64_t vanishing_probabilityHalfLife;
+        
+        /// the initial implication budgets (used only when mode=IMPLICATIONBUDGETED)
         const uint64_t impbudget_initialBudget;
         
+        /// iff true, the conjectures about the problem to be solved are filtered by input dependency count.
         const bool filterByInputDependencies;
+        
+        /// the max. allowed input dependency count of literals in conjectures (used only when filterByInputDependencies == true)
         const int filterByInputDependenciesMax;
+        
+        /// restrict input-dependency-filtering to conjectures about backbone variables
         const bool filterOnlyBackbones;
+        
+        /// the minimal fraction of gate outputs (wrt. the total amount of variables of the problem) for RSIL to be enabled.
         const double minGateOutputFraction;
         
+        /// iff true, the problem to be solved is deemed unsuitable for RSIL if it is not (heuristically) recognized as a miter.
         const bool useRSILOnlyForMiters;
     };
     
@@ -87,7 +107,7 @@ namespace Candy {
      *  provided to the hook; then, random simulation is executed on the gates found in P,
      *  and finally, the RSIL solver provided to the produced hook is configured with the RSIL
      *  configuration. If the problem P is unsuitable for RSIL (e.g. due to timeouts during
-     *  preprocessing or too few gates in P), the created hook throws an
+     *  preprocessing or too few gates found in P), the created hook throws an
      *  UnsuitableProblemException.
      *
      *  Note that the desired concrete RSIL implementation (unrestricted, vanishing, or

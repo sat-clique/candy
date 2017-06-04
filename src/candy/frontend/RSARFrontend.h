@@ -34,12 +34,28 @@ namespace Candy {
     class DefaultSimpSolver;
     class Conjectures;
     
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief RSAR argument structure
+     */
     struct RSARArguments {
+        /// iff true, RSAR should be used for SAT solving.
         const bool useRSAR;
+        
+        /// the maximum amount of refinements computed after the initial one. If this budget is depleted, the original problem is solved.
         const int maxRefinementSteps;
+        
+        /// the simplification handling mode to be used for RSAR initialization.
         const Candy::SimplificationHandlingMode simplificationHandlingMode;
+        
+        /// iff true, the input-dependency-count refinement heuristic is used.
         const bool withInputDepCountHeuristic;
+        
+        /// the configuration for the input-dependency-count refinement heuristic.
         const std::string inputDepCountHeuristicConfiguration;
+        
+        /// the minimum amount of gates needed to be recognized in a problem for RSAR to be used.
         const int minGateCount;
     };
     
