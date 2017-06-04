@@ -1141,7 +1141,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
         
         // Propagate binary clauses
-        for (auto watcher : watchesBin[p]) {
+        for (auto& watcher : watchesBin[p]) {
             lbool val = value(watcher.blocker);
             if (val == l_False) {
                 return watcher.cref;
