@@ -1202,6 +1202,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 if (value(clause->first()) == l_False) {
                     confl = clause;
                     qhead = trail_size;
+                    break;
                 }
                 else {
                     uncheckedEnqueue(clause->first(), clause);
