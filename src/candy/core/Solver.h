@@ -433,7 +433,7 @@ protected:
     }
 
     inline uint64_t abstractLevel(Var x) const {
-        return 1ull << (level(x) & 63);
+        return 1ull << (level(x) % 64);
     }
 
     // Insert a variable in the decision order priority queue.
@@ -919,13 +919,13 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         assert(confl != nullptr); // (otherwise should be UIP)
         Clause& c = *confl;
         
+        claBumpActivity(c);
+
         // Special case for binary clauses: The first one has to be SAT
         if (asslit != lit_Undef && c.size() == 2 && value(c[0]) == l_False) {
             assert(value(c[1]) == l_True);
             c.swap(0, 1);
         }
-        
-        claBumpActivity(c);
         
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
         if (c.getLBD() > 2) { // -> c.isLearnt()
@@ -1033,7 +1033,7 @@ bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
             assert(value(c[1]) == l_True);
             c.swap(0, 1);
         }
-        
+
         for (Lit p : c) {
             if (!seen[var(p)] && level(var(p)) > 0) {
                 if (reason(var(p)) != nullptr && (abstractLevel(var(p)) & abstract_levels) != 0) {

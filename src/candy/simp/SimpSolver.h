@@ -297,7 +297,7 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
     subsumption_queue.push_back(cr);
     uint64_t clause_abstraction = 0;
     for (Lit lit : *cr) {
-        clause_abstraction |= 1ull << (var(lit) & 63);
+        clause_abstraction |= 1ull << (var(lit) % 64);
         occurs[var(lit)].push_back(cr);
         if (n_occ.size() > 0) { // elim initialized
             n_occ[toInt(lit)]++;
@@ -375,7 +375,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
 
         uint64_t clause_abstraction = 0;
         for (Lit lit : *cr) {
-            clause_abstraction |= 1ull << (var(lit) & 63);
+            clause_abstraction |= 1ull << (var(lit) % 64);
         }
         abstraction[cr] = clause_abstraction;
 
@@ -505,7 +505,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
         if (subsumption_queue.size() == 0 && bwdsub_assigns < this->trail_size) {
             Lit l = this->trail[bwdsub_assigns++];
             bwdsub_tmpunit[0] = l;
-            abstraction[&bwdsub_tmpunit] = 1ull << (var(l) & 63);
+            abstraction[&bwdsub_tmpunit] = 1ull << (var(l) % 64);
             subsumption_queue.push_back(&bwdsub_tmpunit);
         }
 
