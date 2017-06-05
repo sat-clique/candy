@@ -1162,38 +1162,19 @@ Clause* Solver<PickBranchLitT>::propagate() {
 
             if (clause->first() == ~p) { // Make sure the false literal is data[1]
                 clause->swap(0, 1);
-                watcher.blocker = clause->first();
-                if (value(clause->first()) == l_True) { // If 0th watch is true, then clause is already satisfied
-                    continue;
-                }
             }
 
-            if (decisionLevel() < assumptions.size()) { // INCREMENTAL MODE
-                int watchesUpdateLiteralIndex = -1;
-                for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                    if (value((*clause)[k]) != l_False) {
-                        watchesUpdateLiteralIndex = k;
-                        if (value((*clause)[k]) == l_True || !isSelector(var((*clause)[k]))) {
-                            break;
-                        }
-                    }
-                }
-                
-                if (watchesUpdateLiteralIndex != -1) {
-                    clause->swap(1, watchesUpdateLiteralIndex);
+            if (watcher.blocker != clause->first() && value(clause->first()) == l_True) {
+                watcher.blocker = clause->first();
+                continue;
+            }
+
+            for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                if (value((*clause)[k]) != l_False) {
+                    clause->swap(1, k);
                     watches[~clause->second()].emplace_back(clause, clause->first());
                     watcher.cref = nullptr; // mark watcher for deletion
-                    continue;
-                }
-            }
-            else { // DEFAULT MODE (NOT INCREMENTAL)
-                for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                    if (value((*clause)[k]) != l_False) {
-                        clause->swap(1, k);
-                        watches[~clause->second()].emplace_back(clause, clause->first());
-                        watcher.cref = nullptr; // mark watcher for deletion
-                        break;
-                    }
+                    break;
                 }
             }
             
