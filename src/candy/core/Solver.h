@@ -1118,6 +1118,104 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
     trail[trail_size++] = p;
 }
 
+//#define COMPILE_WITH_OLD_PROPAGATE
+#ifdef COMPILE_WITH_OLD_PROPAGATE
+template <class PickBranchLitT>
+Clause* Solver<PickBranchLitT>::propagate() {
+    Clause* confl = nullptr;
+
+    watches.cleanAll();
+    watchesBin.cleanAll();
+
+    while (qhead < trail_size) {
+        Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
+
+        // Propagate binary clauses
+        vector<Watcher>& wbin = watchesBin[p];
+        for (auto watcher : wbin) {
+            if (value(watcher.blocker) == l_False) {
+                return watcher.cref;
+            }
+            if (value(watcher.blocker) == l_Undef) {
+                uncheckedEnqueue(watcher.blocker, watcher.cref);
+            }
+        }
+
+        // Propagate other 2-watched clauses
+        std::vector<Watcher>& ws = watches[p];
+        auto keep = ws.begin();
+        for (auto watcher = ws.begin(); watcher != ws.end();) {
+            // Try to avoid inspecting the clause:
+            Lit blocker = watcher->blocker;
+            if (value(blocker) == l_True) {
+                *keep++ = *watcher++;
+                continue;
+            }
+
+            // Make sure the false literal is data[1]:
+            Clause* cr = watcher->cref;
+            if (cr->first() == ~p) {
+                cr->swap(0, 1);
+            }
+
+            watcher++;
+            // If 0th watch is true, then clause is already satisfied.
+            Watcher w = Watcher(cr, cr->first());
+            if (cr->first() != blocker && value(cr->first()) == l_True) {
+                *keep++ = w;
+                continue;
+            }
+
+            if (decisionLevel() < assumptions.size()) { // INCREMENTAL MODE
+                Clause& c = *cr;
+                int watchesUpdateLiteralIndex = -1;
+                for (uint_fast16_t k = 2; k < c.size(); k++) {
+                    if (value(c[k]) != l_False) {
+                        watchesUpdateLiteralIndex = k;
+                        if (value(c[k]) == l_True || !isSelector(var(c[k]))) {
+                            break;
+                        }
+                    }
+                }
+
+                if (watchesUpdateLiteralIndex != -1) {
+                    c.swap(1, watchesUpdateLiteralIndex);
+                    watches[~c[1]].push_back(w);
+                    goto NextClause;
+                }
+            }
+            else { // DEFAULT MODE (NOT INCREMENTAL)
+                Clause& c = *cr;
+                for (uint_fast16_t k = 2; k < c.size(); k++) {
+                    if (value(c[k]) != l_False) {
+                        c.swap(1, k);
+                        watches[~c[1]].push_back(w);
+                        goto NextClause;
+                    }
+                }
+            }
+
+            // Did not find watch -- clause is unit under assignment:
+            *keep++ = w;
+            if (value(cr->first()) == l_False) {
+                confl = cr;
+                qhead = trail_size;
+                while (watcher != ws.end()) { // Copy the remaining watches
+                    *keep++ = *watcher++;
+                }
+            }
+            else {
+                uncheckedEnqueue(cr->first(), cr);
+            }
+
+        NextClause: ;
+        }
+        ws.erase(keep, ws.end());
+    }
+
+    return confl;
+}
+#else
 /**************************************************************************************************
  *
  *  propagate : [void]  ->  [Clause*]
@@ -1172,9 +1270,10 @@ Clause* Solver<PickBranchLitT>::propagate() {
                     }
 
                     if (watcher->cref != nullptr) { // did not find watch
+                        watcher->blocker = clause->first();
                         if (value(clause->first()) == l_False) { // conflict
                             // remove watchers marked for deletion:
-                            list.erase(std::remove_if(list.begin(), watcher+1, [](Watcher& w) { return w.cref == nullptr; } ), watcher+1);
+                            list.erase(std::remove_if(list.begin(), watcher, [](Watcher& w) { return w.cref == nullptr; } ), watcher);
                             return clause;
                         }
                         else { // unit
@@ -1190,6 +1289,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
 
     return nullptr;
 }
+#endif
 
 /**************************************************************************************************
  *
