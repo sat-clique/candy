@@ -1131,9 +1131,6 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
  **************************************************************************************************/
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
-    Clause* confl = nullptr;
-    uint32_t old_qhead = qhead;
-    
     watches.cleanAll();
     watchesBin.cleanAll();
     
@@ -1141,7 +1138,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
         
         // Propagate binary clauses
-        for (auto& watcher : watchesBin[p]) {
+        for (Watcher& watcher : watchesBin[p]) {
             lbool val = value(watcher.blocker);
             if (val == l_False) {
                 return watcher.cref;
@@ -1152,51 +1149,46 @@ Clause* Solver<PickBranchLitT>::propagate() {
         }
         
         // Propagate other 2-watched clauses
-        for (auto& watcher : watches[p]) {
-            // Try to avoid inspecting the clause:
-            if (value(watcher.blocker) == l_True) {
-                continue;
-            }
-            
-            Clause* clause = watcher.cref;
+        vector<Watcher>& list = watches[p];
+        for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
+            if (value(watcher->blocker) != l_True) { // Try to avoid inspecting the clause
+                Clause* clause = watcher->cref;
 
-            if (clause->first() == ~p) { // Make sure the false literal is data[1]
-                clause->swap(0, 1);
-            }
-
-            if (watcher.blocker != clause->first() && value(clause->first()) == l_True) {
-                watcher.blocker = clause->first();
-                continue;
-            }
-
-            for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                if (value((*clause)[k]) != l_False) {
-                    clause->swap(1, k);
-                    watches[~clause->second()].emplace_back(clause, clause->first());
-                    watcher.cref = nullptr; // mark watcher for deletion
-                    break;
+                if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                    clause->swap(0, 1);
                 }
-            }
-            
-            if (watcher.cref != nullptr) {
-                // Did not find watch -- clause is unit under assignment:
-                if (value(clause->first()) == l_False) {
-                    confl = clause;
-                    qhead = trail_size;
-                    break;
+
+                if (watcher->blocker != clause->first() && value(clause->first()) == l_True) {
+                    watcher->blocker = clause->first(); // repair blocker (why?)
                 }
                 else {
-                    uncheckedEnqueue(clause->first(), clause);
+                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                        if (value((*clause)[k]) != l_False) {
+                            clause->swap(1, k);
+                            watches[~clause->second()].emplace_back(clause, clause->first());
+                            watcher->cref = nullptr; // mark watcher for deletion
+                            break;
+                        }
+                    }
+
+                    if (watcher->cref != nullptr) { // did not find watch
+                        if (value(clause->first()) == l_False) { // conflict
+                            // remove watchers marked for deletion:
+                            list.erase(std::remove_if(list.begin(), watcher+1, [](Watcher& w) { return w.cref == nullptr; } ), watcher+1);
+                            return clause;
+                        }
+                        else { // unit
+                            uncheckedEnqueue(clause->first(), clause);
+                        }
+                    }
                 }
             }
         }
         // remove watchers marked for deletion:
-        watches[p].erase(std::remove_if(watches[p].begin(), watches[p].end(), [](Watcher& w) { return w.cref == nullptr; } ), watches[p].end());
+        list.erase(std::remove_if(list.begin(), list.end(), [](Watcher& w) { return w.cref == nullptr; } ), list.end());
     }
-    
-    nPropagations += qhead - old_qhead;
 
-    return confl;
+    return nullptr;
 }
 
 /**************************************************************************************************
@@ -1442,7 +1434,12 @@ lbool Solver<PickBranchLitT>::search() {
     for (;;) {
         sonification.decisionLevel(decisionLevel(), SolverOptions::opt_sonification_delay);
         
+
+        uint32_t old_qhead = qhead;
+
         Clause* confl = propagate();
+
+        nPropagations += qhead - old_qhead;
         
         sonification.assignmentLevel(static_cast<int>(nAssigns()));
         
