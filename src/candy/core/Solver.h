@@ -1256,32 +1256,33 @@ Clause* Solver<PickBranchLitT>::propagate() {
                     clause->swap(0, 1);
                 }
 
-                if (watcher->blocker != clause->first() && value(clause->first()) == l_True) {
+                if (watcher->blocker != clause->first()) {
                     watcher->blocker = clause->first(); // repair blocker (why?)
+                    if (value(clause->first()) == l_True) {
+                        goto propagate_skip;
+                    }
                 }
-                else {
-                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                        if (value((*clause)[k]) != l_False) {
-                            clause->swap(1, k);
-                            watches[~clause->second()].emplace_back(clause, clause->first());
-                            watcher->cref = nullptr; // mark watcher for deletion
-                            break;
-                        }
-                    }
 
-                    if (watcher->cref != nullptr) { // did not find watch
-                        watcher->blocker = clause->first();
-                        if (value(clause->first()) == l_False) { // conflict
-                            // remove watchers marked for deletion:
-                            list.erase(std::remove_if(list.begin(), watcher, [](Watcher& w) { return w.cref == nullptr; } ), watcher);
-                            return clause;
-                        }
-                        else { // unit
-                            uncheckedEnqueue(clause->first(), clause);
-                        }
+                for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                    if (value((*clause)[k]) != l_False) {
+                        clause->swap(1, k);
+                        watches[~clause->second()].emplace_back(clause, clause->first());
+                        watcher->cref = nullptr; // mark watcher for deletion
+                        goto propagate_skip;
                     }
+                }
+
+                // did not find watch
+                if (value(clause->first()) == l_False) { // conflict
+                    // remove watchers marked for deletion:
+                    list.erase(std::remove_if(list.begin(), watcher, [](Watcher& w) { return w.cref == nullptr; } ), watcher);
+                    return clause;
+                }
+                else { // unit
+                    uncheckedEnqueue(clause->first(), clause);
                 }
             }
+            propagate_skip:;
         }
         // remove watchers marked for deletion:
         list.erase(std::remove_if(list.begin(), list.end(), [](Watcher& w) { return w.cref == nullptr; } ), list.end());
