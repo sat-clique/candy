@@ -1249,7 +1249,8 @@ Clause* Solver<PickBranchLitT>::propagate() {
         // Propagate other 2-watched clauses
         vector<Watcher>& list = watches[p];
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            if (value(watcher->blocker) != l_True) { // Try to avoid inspecting the clause
+            lbool val = value(watcher->blocker);
+            if (val != l_True) { // Try to avoid inspecting the clause
                 Clause* clause = watcher->cref;
 
                 if (clause->first() == ~p) { // Make sure the false literal is data[1]
@@ -1258,9 +1259,8 @@ Clause* Solver<PickBranchLitT>::propagate() {
 
                 if (watcher->blocker != clause->first()) {
                     watcher->blocker = clause->first(); // repair blocker (why?)
-                    if (value(clause->first()) == l_True) {
-                        goto propagate_skip;
-                    }
+                    val = value(clause->first());
+                    if (val == l_True) continue;
                 }
 
                 for (uint_fast16_t k = 2; k < clause->size(); k++) {
@@ -1273,7 +1273,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 }
 
                 // did not find watch
-                if (value(clause->first()) == l_False) { // conflict
+                if (val == l_False) { // conflict
                     // remove watchers marked for deletion:
                     list.erase(std::remove_if(list.begin(), watcher, [](Watcher& w) { return w.cref == nullptr; } ), watcher);
                     return clause;
