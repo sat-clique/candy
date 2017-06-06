@@ -163,6 +163,8 @@ protected:
     vector<char> eliminated;
     uint32_t bwdsub_assigns;
     uint32_t n_touched;
+    //temporary
+    std::vector<Lit> resolvent;
 
     std::vector<Clause*> strengthened_clauses;
     std::unordered_map<Clause*, size_t> strengthened_sizes;
@@ -238,6 +240,7 @@ SimpSolver<PickBranchLitT>::SimpSolver() :
     elim_heap(ElimLt(n_occ)),
     bwdsub_assigns(0),
     n_touched(0),
+    resolvent(),
     strengthened_clauses(),
     strengthened_sizes(),
     abstraction() {
@@ -656,7 +659,6 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     size_t size = this->clauses.size();
 
     // produce clauses in cross product
-    std::vector<Lit>& resolvent = this->add_tmp;
     for (Clause* pc : pos) for (Clause* nc : neg) {
         if (merge(*pc, *nc, v, resolvent) && !this->addClause(resolvent)) {
             return false;
