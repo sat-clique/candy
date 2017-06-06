@@ -72,15 +72,15 @@ In the following sections, we present the optimizations we implemented in Candy 
 \section{Clause Memory Management}
 \label{sec:clauses}
 
-In contrast to Glucose, in Candy clauses are now referenced as regular pointers and for fast access and optimized Cache usage we introduced a dedicated memory management. Clauses are optimized for size so we have a very small clause header that only keep size, activity, lbd value and few flags. Our Clause Allocator preallocates clauses in buckets of equivalently sized clauses up to clauses of length 500. Only clauses exceeding that size limit are allocated by regular new/delete methods. Memory for small clauses is regularly revamped such that the clauses are sorted by their activity (in memory) with the highest activity first. Also the watchers are sorted by clause size and activity. 
+In contrast to Glucose, in Candy clauses are now referenced as regular pointers and for fast access and optimized cache usage we introduced a dedicated memory management. Clauses are optimized for size so we have a very small clause header that only keep size, activity, lbd value and only a few flags. Our clause allocator preallocates clauses in buckets of equivalently sized clauses up to clauses of length 500. Only clauses exceeding that size limit are allocated by regular new/delete methods. Memory for small clauses is regularly revamped such that the clauses are sorted by their activity (in memory) with the highest activity first. Also the watchers are sorted by clause size and activity. 
 
 \section{Improved Incremental Mode}
 
-In contrast to Glucose we made several optimizations (minimization of learnt clauses with binary resolution, clause simplification) work in incremental mode. Also a certificate can be generated in incremental mode if assumpations are used properly. Candy outputs no proof if clauses containing assumptions were used in the final conflict. 
+In contrast to Glucose we made several optimizations (minimization of learnt clauses with binary resolution, clause simplification) work in incremental mode. Also a certificate can be generated in incremental mode if assumpations are used properly. Candy suppresses the output of learnt clauses that contain assumptions as well as the output of the empty clause as long as any of these clauses was used in the final conflict. 
 
 \section{Inprocessing}
 
-We improved the architecture of clause simplification in Glucuse such that Candy can now perform clause data-base simplification during search. We perform clause strengthening with new unit clauses, clause subsumption and self-subsuming resolution. Clauses of the original problem are included as well as the learnt clauses that are persitent in the learnt-clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
+We improved the architecture of clause simplification such that Candy can now perform clause database simplification during search. We perform clause strengthening with learnt unit clauses, clause subsumption and self-subsuming resolution. Clauses of the original problem are included as well as the learnt clauses that are persitent in the learnt-clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
 
 \section{Gate Structure Analysis and Applications}
 
@@ -94,10 +94,6 @@ If budgets are assigned, such an implication can be used for implicit learning o
 Employing implicit learning has proven particularly efficient for solving miter problems with general-purpose SAT solvers \cite{Kutzer:2016:Thesis}.
 Candy includes fast miter problem detection heuristics enabling implicit learning to be enabled only for SAT problem instances detected to be miter encodings within a given time limit.
 For a general description of miter problems, see e.g. \cite{hwmcc12Bench}.
-
-%\section{Gate Structure Analysis and Random Simulation}
-%Candy includes modules that perform gate extraction, miter detection and random simulation. The random simulation module uses extracted gates to generate conjectures about literal equivalences and backbones. The Candy solver variants RSAR, RSIL and RSILmd, make use of the extracted information. RSIL uses its own pick-branch-lit implementation (hooked in as a template parameter) that tries to violate extracted conjectures about variable equivalences in order to stimulate clause learning. The variant RSILmd does that only if miter structure is detected. RSAR uses the conjectures in an abstraction refinement loop by adding them to the problem and relaxing them if necessary. 
-    
 
 \bibliographystyle{splncs03}
 %\bibliographystyle{abbrv}
