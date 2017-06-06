@@ -363,7 +363,8 @@ static lbool simplifyAndPrintProblem(SolverType& S) {
 
     vector<Lit> assumptions;
     result = S.solve(assumptions);
-    S.simplify(true);
+    S.simplify();
+    S.strengthen();
     S.printDIMACS();
 
     return result;

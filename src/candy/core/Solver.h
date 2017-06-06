@@ -161,8 +161,8 @@ public:
     }
 
     // Solving:
-    bool simplify(bool strengthen); // Removes already satisfied clauses and false literals (if strengthen is true)
-
+    bool simplify(); // remove satisfied clauses
+    bool strengthen(); // remove false literals from clauses
     virtual bool eliminate(bool use_asymm, bool use_elim);  // Perform variable elimination based simplification.
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
 
@@ -404,7 +404,8 @@ protected:
     // used, exept 'seen' wich is used in several places.
     vector<char> seen;
     vector<Lit> analyze_toclear;
-    vector<Lit> add_tmp;
+    vector<Lit> analyze_stack;
+//    vector<Lit> add_tmp;
 
     // Resource contraints and other interrupts
     uint32_t conflict_budget;    // 0 means no budget.
@@ -643,7 +644,7 @@ Solver<PickBranchLitT>::Solver() :
     // lbd computation
     permDiff(), MYFLAG(0),
     // temporaries
-    seen(), analyze_toclear(), add_tmp(),
+    seen(), analyze_toclear(), analyze_stack(),
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
@@ -745,8 +746,9 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     }
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
+        if (!ok) return;
     }
-    ok = (propagate() == nullptr) && simplify(true);
+    ok = simplify() && strengthen();
 }
 
 template<class PickBranchLitT>
@@ -765,8 +767,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
     else if (size == 1) {
         if (value(*begin) == l_Undef) {
             uncheckedEnqueue(*begin);
-            //return ok = (propagate() == nullptr);
-            return true;
+            return ok = (propagate() == nullptr);
         }
         else if (value(*begin) == l_True) {
             vardata[var(*begin)].reason = nullptr;
@@ -928,7 +929,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         }
         
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.getLBD() > 2) { // -> c.isLearnt()
+        if (c.isLearnt() && c.getLBD() > 2) {
             uint_fast16_t nblevels = computeLBD(c.begin(), c.end());
             if (nblevels + 1 < c.getLBD()) { // improve the LBD
                 if (c.getLBD() <= lbLBDFrozenClause) {
@@ -1020,21 +1021,20 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 // visiting literals at levels that cannot be removed later.
 template <class PickBranchLitT>
-bool Solver<PickBranchLitT>::litRedundant(Lit p, uint64_t abstract_levels) {
-    static vector<Lit> analyze_stack;
+bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
     analyze_stack.clear();
-    analyze_stack.push_back(p);
+    analyze_stack.push_back(lit);
     auto top = analyze_toclear.size();
     while (analyze_stack.size() > 0) {
         assert(reason(var(analyze_stack.back())) != nullptr);
-        Clause& c = *reason(var(analyze_stack.back()));
+        Clause& clause = *reason(var(analyze_stack.back()));
         analyze_stack.pop_back();
-        if (c.size() == 2 && value(c[0]) == l_False) {
-            assert(value(c[1]) == l_True);
-            c.swap(0, 1);
+        if (clause.size() == 2 && value(clause[0]) == l_False) {
+            assert(value(clause[1]) == l_True);
+            clause.swap(0, 1);
         }
 
-        for (Lit p : c) {
+        for (Lit p : clause) {
             if (!seen[var(p)] && level(var(p)) > 0) {
                 if (reason(var(p)) != nullptr && (abstractLevel(var(p)) & abstract_levels) != 0) {
                     seen[var(p)] = 1;
@@ -1425,7 +1425,7 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
  *    thing done here is the removal of satisfied clauses, but more things can be put here.
  **************************************************************************************************/
 template <class PickBranchLitT>
-bool Solver<PickBranchLitT>::simplify(bool strengthen) {
+bool Solver<PickBranchLitT>::simplify() {
     assert(decisionLevel() == 0);
     
     if (!ok || propagate() != nullptr) {
@@ -1437,55 +1437,68 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
     std::for_each(persist.begin(), persist.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); } );
     std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
-    if (strengthen) {
-        // Remove false literals:
-        std::unordered_map<Clause*, size_t> strengthened_sizes;
-        std::vector<Clause*> strengthened_clauses;
-        for (auto list : { clauses, learnts, persist }) {
-            for (Clause* clause : list) if (!clause->isDeleted()) {
-                auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
-                if (pos != clause->end()) {
-                    detachClause(clause);
-                    certificate->removed(clause->begin(), clause->end());
-                    auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
-                    certificate->added(clause->begin(), end);
-                    strengthened_clauses.push_back(clause);
-                    strengthened_sizes[clause] = clause->size();
-                    clause->setSize(std::distance(clause->begin(), end));
-                }
+    // Cleanup:
+    watches.cleanAll();
+    watchesBin.cleanAll();
+
+    freeMarkedClauses(learnts);
+    freeMarkedClauses(persist);
+    freeMarkedClauses(clauses);
+
+    rebuildOrderHeap();
+
+    return true;
+}
+
+template <class PickBranchLitT>
+bool Solver<PickBranchLitT>::strengthen() {
+    // Remove false literals:
+    std::unordered_map<Clause*, size_t> strengthened_sizes;
+    std::vector<Clause*> strengthened_clauses;
+    for (auto list : { clauses, learnts, persist }) {
+        for (Clause* clause : list) if (!clause->isDeleted()) {
+            auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+            if (pos != clause->end()) {
+                detachClause(clause);
+                certificate->removed(clause->begin(), clause->end());
+                auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return value(lit) == l_False; });
+                certificate->added(clause->begin(), end);
+                strengthened_clauses.push_back(clause);
+                strengthened_sizes[clause] = clause->size();
+                clause->setSize(std::distance(clause->begin(), end));
             }
         }
+    }
 
-        for (Clause* clause : strengthened_clauses) {
-            if (clause->size() == 1) {
-                Lit p = clause->first();
-                if (value(p) == l_True) {
-                    vardata[var(p)].reason = nullptr;
-                    vardata[var(p)].level = 0;
-                }
-                else {
-                    uncheckedEnqueue(p);
-                }
+    for (Clause* clause : strengthened_clauses) {
+        if (clause->size() == 1) {
+            Lit p = clause->first();
+            if (value(p) == l_True) {
+                vardata[var(p)].reason = nullptr;
+                vardata[var(p)].level = 0;
             }
             else {
-                Clause* clean = new (allocator.allocate(clause->size())) Clause(*clause);
-                if (locked(clause)) {
-                    vardata[var(clause->first())].reason = clean;
-                }
-                attachClause(clean);
-                if (clean->isLearnt()) {
-                    if (clean->size() == 2) {
-                        persist.push_back(clean);
-                    } else {
-                        learnts.push_back(clean);
-                    }
-                } else {
-                    clauses.push_back(clean);
-                }
+                uncheckedEnqueue(p);
             }
-            clause->setSize(strengthened_sizes[clause]); // restore original size for freeMarkedClauses
-            clause->setDeleted();
         }
+        else {
+            Clause* clean = new (allocator.allocate(clause->size())) Clause(*clause);
+            if (locked(clause)) {
+                vardata[var(clause->first())].reason = clean;
+            }
+            attachClause(clean);
+            if (clean->isLearnt()) {
+                if (clean->size() == 2) {
+                    persist.push_back(clean);
+                } else {
+                    learnts.push_back(clean);
+                }
+            } else {
+                clauses.push_back(clean);
+            }
+        }
+        clause->setSize(strengthened_sizes[clause]); // restore original size for freeMarkedClauses
+        clause->setDeleted();
     }
 
     // Cleanup:
@@ -1498,7 +1511,7 @@ bool Solver<PickBranchLitT>::simplify(bool strengthen) {
 
     rebuildOrderHeap();
 
-    return (propagate() == nullptr);
+    return ok = (propagate() == nullptr);
 }
 
 /**
@@ -1643,22 +1656,17 @@ lbool Solver<PickBranchLitT>::search() {
                 if (reduced) {
                     reduced = false;
 
-                    bool inprocessing = false;
-                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
-                        lastRestartWithInprocessing = curRestart;
-                        inprocessing = true;
-                    }
-
                     if (new_unary) {
                         new_unary = false;
                         Statistics::getInstance().runtimeStart("Simplify");
-                        if (!simplify(inprocessing)) {
+                        if (!simplify()) {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Simplify");
                     }
 
-                    if (inprocessing) {
+                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
+                        lastRestartWithInprocessing = curRestart;
                         Statistics::getInstance().runtimeStart("Inprocessing");
                         if (!eliminate(false, false)) {
                             return l_False;
