@@ -384,8 +384,6 @@ protected:
     uint16_t lbSizeMinimizingClause;
     uint16_t lbLBDMinimizingClause;
 
-    uint8_t phase_saving; // Controls the level of phase saving (0=none, 1=limited, 2=full).
-
     // constants for memory reorganization
     uint8_t revamp;
     bool sort_watches;
@@ -394,18 +392,22 @@ protected:
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
+    // Variables added for incremental mode
+    bool incremental; // Use incremental SAT Solver
+    uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
+
+    // inprocessing
     uint64_t lastRestartWithInprocessing;
     uint32_t inprocessingFrequency;
 
+    // lbd
     vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
     uint32_t MYFLAG;
 
-    // Temporaries (to reduce allocation overhead). Each variable is prefixed by the method in which it is
-    // used, exept 'seen' wich is used in several places.
+    // temporaries (to reduce allocation overhead)
     vector<char> seen;
-    vector<Lit> analyze_toclear;
+    vector<Lit> analyze_clear;
     vector<Lit> analyze_stack;
-//    vector<Lit> add_tmp;
 
     // Resource contraints and other interrupts
     uint32_t conflict_budget;    // 0 means no budget.
@@ -413,10 +415,6 @@ protected:
     void* termCallbackState;
     int (*termCallback)(void* state);
     bool asynch_interrupt;
-
-    // Variables added for incremental mode
-    bool incremental; // Use incremental SAT Solver
-    uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
 
     // Sonification
     SolverSonification sonification;
@@ -628,8 +626,6 @@ Solver<PickBranchLitT>::Solver() :
     // clause reduction
     lbSizeMinimizingClause(SolverOptions::opt_lb_size_minimzing_clause),
     lbLBDMinimizingClause(SolverOptions::opt_lb_lbd_minimzing_clause),
-    // phase saving
-    phase_saving(SolverOptions::opt_phase_saving),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -638,19 +634,19 @@ Solver<PickBranchLitT>::Solver() :
     new_unary(false),
     // conflict state
     ok(true),
+    // incremental mode
+    incremental(false), nbVarsInitialFormula(INT32_MAX),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
     // lbd computation
     permDiff(), MYFLAG(0),
     // temporaries
-    seen(), analyze_toclear(), analyze_stack(),
+    seen(), analyze_clear(), analyze_stack(),
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
     asynch_interrupt(false),
-    // incremental related
-    incremental(false), nbVarsInitialFormula(INT32_MAX),
     // sonification
     sonification(),
     pickBranchLitData() { }
@@ -911,7 +907,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     int pathC = 0;
     Lit asslit = lit_Undef;
     vector<Lit> selectors;
-    vector<Lit> lastDecisionLevel; // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+    vector<Lit> lastDecisionLevel;
     
     // Generate conflict clause:
     out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
@@ -943,12 +939,10 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         for (auto it = (asslit == lit_Undef) ? c.begin() : c.begin() + 1; it != c.end(); it++) {
             Lit lit = *it;
             if (!seen[var(lit)] && level(var(lit)) != 0) {
-                varBumpActivity(var(lit));
                 seen[var(lit)] = 1;
                 if (level(var(lit)) >= (int)decisionLevel()) {
                     pathC++;
-                    // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    if ((reason(var(lit)) != nullptr) && reason(var(lit))->isLearnt()) {
+                    if (reason(var(lit)) != nullptr && reason(var(lit))->isLearnt()) {
                         lastDecisionLevel.push_back(lit);
                     }
                 } else {
@@ -959,6 +953,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
                         out_learnt.push_back(lit);
                     }
                 }
+                varBumpActivity(var(lit));
             }
         }
         
@@ -968,8 +963,8 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         }
         
         asslit = trail[index];
-        confl = reason(var(asslit));
         seen[var(asslit)] = 0;
+        confl = reason(var(asslit));
         pathC--;
     } while (pathC > 0);
     
@@ -979,8 +974,8 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
     Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
     
-    analyze_toclear.clear();
-    analyze_toclear.insert(analyze_toclear.end(), out_learnt.begin(), out_learnt.end());
+    analyze_clear.clear();
+    analyze_clear.insert(analyze_clear.end(), out_learnt.begin(), out_learnt.end());
     
     // minimize clause
     uint64_t abstract_level = 0;
@@ -994,7 +989,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     out_learnt.erase(end, out_learnt.end());
 
     // clear seen[]
-    for_each(analyze_toclear.begin(), analyze_toclear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
+    for_each(analyze_clear.begin(), analyze_clear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
     
     assert(out_learnt[0] == ~asslit);
 
@@ -1002,19 +997,17 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     if (lbd <= lbLBDMinimizingClause && out_learnt.size() <= lbSizeMinimizingClause) {
         bool minimized = minimisationWithBinaryResolution(out_learnt);
         if (minimized) {
-            lbd = computeLBD(out_learnt.begin(), out_learnt.end() - selectors.size());
+            lbd = computeLBD(out_learnt.begin(), out_learnt.end());
         }
     }
     
     Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
 
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-    if (lastDecisionLevel.size() > 0) {
-        for (Lit lit : lastDecisionLevel) {
-            if (reason(var(lit))->getLBD() < lbd)
-                varBumpActivity(var(lit));
+    for (Lit lit : lastDecisionLevel) {
+        if (reason(var(lit))->getLBD() < lbd) {
+            varBumpActivity(var(lit));
         }
-        lastDecisionLevel.clear();
     }
 }
 
@@ -1022,28 +1015,31 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
 // visiting literals at levels that cannot be removed later.
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
+    size_t top = analyze_clear.size();
     analyze_stack.clear();
     analyze_stack.push_back(lit);
-    auto top = analyze_toclear.size();
     while (analyze_stack.size() > 0) {
         assert(reason(var(analyze_stack.back())) != nullptr);
-        Clause& clause = *reason(var(analyze_stack.back()));
+
+        Clause* clause = reason(var(analyze_stack.back()));
         analyze_stack.pop_back();
-        if (clause.size() == 2 && value(clause[0]) == l_False) {
-            assert(value(clause[1]) == l_True);
-            clause.swap(0, 1);
+
+        if (clause->size() == 2 && value(clause->first()) == l_False) {
+            assert(value(clause->second()) == l_True);
+            clause->swap(0, 1);
         }
 
-        for (Lit p : clause) {
+        for (Lit p : *clause) {
             if (!seen[var(p)] && level(var(p)) > 0) {
                 if (reason(var(p)) != nullptr && (abstractLevel(var(p)) & abstract_levels) != 0) {
                     seen[var(p)] = 1;
                     analyze_stack.push_back(p);
-                    analyze_toclear.push_back(p);
+                    analyze_clear.push_back(p);
                 } else {
-                    for (auto j = top; j < analyze_toclear.size(); j++)
-                        seen[var(analyze_toclear[j])] = 0;
-                    analyze_toclear.resize(top);
+                    for (auto j = top; j < analyze_clear.size(); j++) {
+                        seen[var(analyze_clear[j])] = 0;
+                    }
+                    analyze_clear.erase(analyze_clear.begin() + top, analyze_clear.end());
                     return false;
                 }
             }
@@ -1099,14 +1095,12 @@ void Solver<PickBranchLitT>::cancelUntil(int level) {
         for (int c = trail_size - 1; c >= (int)trail_lim[level]; c--) {
             Var x = var(trail[c]);
             assigns[x] = l_Undef;
-            if (phase_saving > 1 || ((phase_saving == 1) && c > (int)trail_lim.back())) {
-                polarity[x] = sign(trail[c]);
-            }
+            polarity[x] = sign(trail[c]);
             insertVarOrder(x);
         }
         qhead = trail_lim[level];
         trail_size = trail_lim[level];
-        trail_lim.resize(level);
+        trail_lim.erase(trail_lim.begin() + level, trail_lim.end());
     }
 }
 
