@@ -406,8 +406,8 @@ protected:
 
     // temporaries (to reduce allocation overhead)
     vector<char> seen;
-    vector<Lit> analyze_clear;
-    vector<Lit> analyze_stack;
+    vector<Var> analyze_clear;
+    vector<Var> analyze_stack;
 
     // Resource contraints and other interrupts
     uint32_t conflict_budget;    // 0 means no budget.
@@ -907,7 +907,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     int pathC = 0;
     Lit asslit = lit_Undef;
     vector<Lit> selectors;
-    vector<Lit> lastDecisionLevel;
+    vector<Var> lastDecisionLevel;
     
     // Generate conflict clause:
     out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
@@ -937,23 +937,23 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         }
         
         for (auto it = (asslit == lit_Undef) ? c.begin() : c.begin() + 1; it != c.end(); it++) {
-            Lit lit = *it;
-            if (!seen[var(lit)] && level(var(lit)) != 0) {
-                seen[var(lit)] = 1;
-                if (level(var(lit)) >= (int)decisionLevel()) {
+            Var v = var(*it);
+            if (!seen[v] && level(v) != 0) {
+                seen[v] = 1;
+                if (level(v) >= (int)decisionLevel()) {
                     pathC++;
-                    if (reason(var(lit)) != nullptr && reason(var(lit))->isLearnt()) {
-                        lastDecisionLevel.push_back(lit);
+                    if (reason(v) != nullptr && reason(v)->isLearnt()) {
+                        lastDecisionLevel.push_back(v);
                     }
                 } else {
-                    if (isSelector(var(lit))) {
-                        assert(value(lit) == l_False);
-                        selectors.push_back(lit);
+                    if (isSelector(v)) {
+                        assert(value(*it) == l_False);
+                        selectors.push_back(*it);
                     } else {
-                        out_learnt.push_back(lit);
+                        out_learnt.push_back(*it);
                     }
                 }
-                varBumpActivity(var(lit));
+                varBumpActivity(v);
             }
         }
         
@@ -973,10 +973,10 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     // Simplify conflict clause:
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
     Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
-    
+
     analyze_clear.clear();
-    analyze_clear.insert(analyze_clear.end(), out_learnt.begin(), out_learnt.end());
-    
+    for_each(out_learnt.begin(), out_learnt.end(), [this] (Lit lit) { analyze_clear.push_back(var(lit)); });
+
     // minimize clause
     uint64_t abstract_level = 0;
     for (uint_fast16_t i = 1; i < out_learnt.size(); i++) {
@@ -989,7 +989,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     out_learnt.erase(end, out_learnt.end());
 
     // clear seen[]
-    for_each(analyze_clear.begin(), analyze_clear.end(), [this] (Lit lit) { seen[var(lit)] = 0; });
+    for_each(analyze_clear.begin(), analyze_clear.end(), [this] (Var v) { seen[v] = 0; });
     
     assert(out_learnt[0] == ~asslit);
 
@@ -1004,9 +1004,9 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
 
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-    for (Lit lit : lastDecisionLevel) {
-        if (reason(var(lit))->getLBD() < lbd) {
-            varBumpActivity(var(lit));
+    for (Var v : lastDecisionLevel) {
+        if (reason(v)->getLBD() < lbd) {
+            varBumpActivity(v);
         }
     }
 }
@@ -1016,12 +1016,14 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
     size_t top = analyze_clear.size();
-    analyze_stack.clear();
-    analyze_stack.push_back(lit);
-    while (analyze_stack.size() > 0) {
-        assert(reason(var(analyze_stack.back())) != nullptr);
 
-        Clause* clause = reason(var(analyze_stack.back()));
+    analyze_stack.clear();
+    analyze_stack.push_back(var(lit));
+
+    while (analyze_stack.size() > 0) {
+        assert(reason(analyze_stack.back()) != nullptr);
+
+        Clause* clause = reason(analyze_stack.back());
         analyze_stack.pop_back();
 
         if (clause->size() == 2 && value(clause->first()) == l_False) {
@@ -1029,17 +1031,17 @@ bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
             clause->swap(0, 1);
         }
 
-        for (Lit p : *clause) {
-            if (!seen[var(p)] && level(var(p)) > 0) {
-                if (reason(var(p)) != nullptr && (abstractLevel(var(p)) & abstract_levels) != 0) {
-                    seen[var(p)] = 1;
-                    analyze_stack.push_back(p);
-                    analyze_clear.push_back(p);
+        for (Lit imp : *clause) {
+            Var v = var(imp);
+            if (!seen[v] && level(v) > 0) {
+                if (reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
+                    seen[v] = 1;
+                    analyze_stack.push_back(v);
+                    analyze_clear.push_back(v);
                 } else {
-                    for (auto j = top; j < analyze_clear.size(); j++) {
-                        seen[var(analyze_clear[j])] = 0;
-                    }
-                    analyze_clear.erase(analyze_clear.begin() + top, analyze_clear.end());
+                    auto begin = analyze_clear.begin() + top;
+                    for_each(begin, analyze_clear.end(), [this](Var v) { seen[v] = 0; });
+                    analyze_clear.erase(begin, analyze_clear.end());
                     return false;
                 }
             }
