@@ -731,7 +731,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         decision.resize(maxVars, true);
         trail.resize(maxVars);
         activity.resize(maxVars, 0.0);
-        polarity.resize(maxVars, false);
+        polarity.resize(maxVars, true);
         if (sort_variables) {
             vector<double> occ = dimacs.getLiteralRelativeOccurrences();
             for (size_t i = curVars; i < maxVars; i++) {
@@ -1216,6 +1216,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
     return confl;
 }
 #else
+//#define INLINE_UPDATES
 /**************************************************************************************************
  *
  *  propagate : [void]  ->  [Clause*]
@@ -1248,6 +1249,9 @@ Clause* Solver<PickBranchLitT>::propagate() {
         
         // Propagate other 2-watched clauses
         vector<Watcher>& list = watches[p];
+#ifdef INLINE_UPDATES
+        auto keep = list.begin();
+#endif
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
             lbool val = value(watcher->blocker);
             if (val != l_True) { // Try to avoid inspecting the clause
@@ -1260,32 +1264,45 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 if (watcher->blocker != clause->first()) {
                     watcher->blocker = clause->first(); // repair blocker (why?)
                     val = value(clause->first());
-                    if (val == l_True) continue;
                 }
 
-                for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                    if (value((*clause)[k]) != l_False) {
-                        clause->swap(1, k);
-                        watches[~clause->second()].emplace_back(clause, clause->first());
-                        watcher->cref = nullptr; // mark watcher for deletion
-                        goto propagate_skip;
+                if (val != l_True) {
+                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                        if (value((*clause)[k]) != l_False) {
+                            clause->swap(1, k);
+                            watches[~clause->second()].emplace_back(clause, clause->first());
+#ifndef INLINE_UPDATES
+                            watcher->cref = nullptr; // mark watcher for deletion
+#endif
+                            goto propagate_skip;
+                        }
+                    }
+
+                    // did not find watch
+                    if (val == l_False) { // conflict
+#ifdef INLINE_UPDATES
+                        list.erase(keep, watcher);
+#else
+                        list.erase(std::remove_if(list.begin(), watcher, [](Watcher& w) { return w.cref == nullptr; } ), watcher);
+#endif
+                        return clause;
+                    }
+                    else { // unit
+                        uncheckedEnqueue(clause->first(), clause);
                     }
                 }
-
-                // did not find watch
-                if (val == l_False) { // conflict
-                    // remove watchers marked for deletion:
-                    list.erase(std::remove_if(list.begin(), watcher, [](Watcher& w) { return w.cref == nullptr; } ), watcher);
-                    return clause;
-                }
-                else { // unit
-                    uncheckedEnqueue(clause->first(), clause);
-                }
             }
+#ifdef INLINE_UPDATES
+            *keep = *watcher;
+            keep++;
+#endif
             propagate_skip:;
         }
-        // remove watchers marked for deletion:
+#ifdef INLINE_UPDATES
+        list.erase(keep, list.end());
+#else
         list.erase(std::remove_if(list.begin(), list.end(), [](Watcher& w) { return w.cref == nullptr; } ), list.end());
+#endif
     }
 
     return nullptr;
