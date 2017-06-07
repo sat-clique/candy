@@ -1118,7 +1118,7 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
     trail[trail_size++] = p;
 }
 
-//#define INLINE_UPDATES
+#define INLINE_UPDATES
 /**************************************************************************************************
  *
  *  propagate : [void]  ->  [Clause*]
