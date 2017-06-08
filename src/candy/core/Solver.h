@@ -764,9 +764,6 @@ template<class PickBranchLitT>
 template<typename Iterator>
 bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
     assert(decisionLevel() == 0);
-    if (!ok) {
-        return false;
-    }
 
     uint32_t size = static_cast<uint32_t>(std::distance(begin, end));
 
@@ -780,7 +777,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
         }
         else if (value(*begin) == l_True) {
             vardata[var(*begin)].reason = nullptr;
-            return true;
+            return ok;
         }
         else {
             return ok = false;
@@ -792,7 +789,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
         attachClause(cr);
     }
     
-    return true;
+    return ok;
 }
 
 template<class PickBranchLitT>
