@@ -660,28 +660,34 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
 
     // produce clauses in cross product
     for (Clause* pc : pos) for (Clause* nc : neg) {
-        if (merge(*pc, *nc, v, resolvent) && !this->addClause(resolvent)) {
-            return false;
-        } else {
+        if (merge(*pc, *nc, v, resolvent)) {
             this->certificate->added(resolvent.begin(), resolvent.end());
+            this->addClause(resolvent);
         }
     }
     
-    for (auto it = this->clauses.begin() + size; it != this->clauses.end(); it++) {
-        elimAttach(*it);
-    }
+    if (!this->isInConflictingState()) {
+        for (auto it = this->clauses.begin() + size; it != this->clauses.end(); it++) {
+            elimAttach(*it);
+        }
+        for (Clause* c : cls) {
+            this->removeClause(c);
+            elimDetach(c, false);
+        }
+        occurs[v].clear();
+        this->watches[mkLit(v)].clear();
+        this->watches[~mkLit(v)].clear();
+        this->watchesBin[mkLit(v)].clear();
+        this->watchesBin[~mkLit(v)].clear();
 
-    for (Clause* c : cls) {
-        this->removeClause(c);
-        elimDetach(c, false);
+        return backwardSubsumptionCheck();
     }
-    
-    // free references to eliminated variable
-    occurs[v].clear();
-    this->watches[mkLit(v)].clear();
-    this->watches[~mkLit(v)].clear();
-    
-    return backwardSubsumptionCheck();
+    else {
+        for (Clause* c : cls) {
+            this->removeClause(c);
+        }
+        return false;
+    }
 }
 
 template<class PickBranchLitT>
@@ -732,6 +738,9 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
             setFrozen(v, true);
         }
     }
+    for (Lit lit : this->assumptions) {
+        setFrozen(var(lit), true);
+    }
 }
 
 template<class PickBranchLitT>
@@ -741,6 +750,9 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
         for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < static_cast<int>(this->nVars()); v++) {
             setFrozen(v, false);
         }
+    }
+    for (Lit lit : this->assumptions) {
+        setFrozen(var(lit), false);
     }
 
     n_occ.clear();
