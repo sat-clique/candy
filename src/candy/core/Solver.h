@@ -256,6 +256,12 @@ public:
         this->termCallback = termCallback;
     }
 
+    void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) {
+        this->learntCallbackState = state;
+        this->learntCallbackMaxLength = max_length;
+        this->learntCallback = learntCallback;
+    }
+
     void setCertificate(Certificate& certificate) {
         this->certificate = &certificate;
     }
@@ -415,6 +421,11 @@ protected:
     void* termCallbackState;
     int (*termCallback)(void* state);
     bool asynch_interrupt;
+
+    // Learnt callback ipasir
+    void* learntCallbackState;
+    int learntCallbackMaxLength;
+    void (*learntCallback)(void* state, int* clause);
 
     // Sonification
     SolverSonification sonification;
@@ -647,6 +658,8 @@ Solver<PickBranchLitT>::Solver() :
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
     asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
     // sonification
     sonification(),
     pickBranchLitData() { }
@@ -1507,6 +1520,15 @@ lbool Solver<PickBranchLitT>::search() {
             
             analyze(confl, learnt_clause, nblevels);
             
+            if (learntCallback != nullptr && (int)learnt_clause.size() <= learntCallbackMaxLength) {
+                vector<int> clause(learnt_clause.size() + 1);
+                for (Lit lit : learnt_clause) {
+                    clause.push_back((var(lit)+1)*(sign(lit)?-1:1));
+                }
+                clause.push_back(0);
+                learntCallback(learntCallbackState, &clause[0]);
+            }
+
             sonification.learntSize(static_cast<int>(learnt_clause.size()));
 
             if (nblevels <= 2) {
