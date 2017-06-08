@@ -119,6 +119,9 @@ namespace Candy {
         /**
          * Sets the simplification handling mode to be used (see the documentation of
          * SimplificationHandlingMode). The default is SimplificationHandlingMode::RESTRICT.
+         *
+         * Note: The FREEZE simplification handling mode is currently unavailable due to an ongoing
+         * refactoring of the simplification code in SimpSolver.
          */
         virtual ARSolverBuilder& withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept = 0;
         

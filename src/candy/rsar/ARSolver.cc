@@ -205,8 +205,12 @@ namespace Candy {
          */
         void init();
         
-        /** Runs the underlying SAT solver's simplification system. */
+        /** Runs the underlying SAT solver's simplification system. This method may only be called
+         * before clauses containing assumptions have been added to the solver. */
         void simplify();
+        
+        /** Runs the underlying SAT solver's simplification system. */
+        void simplify(const std::vector<Lit>& assumptions);
         
         /** Removes eliminated variables from the conjectures. */
         void reduceConjectures();
@@ -313,7 +317,12 @@ namespace Candy {
         // first approximation stage.
         if (m_simpHandlingMode == SimplificationHandlingMode::RESTRICT
             || m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
-            simplify();
+            
+            std::vector<Lit> assumptions;
+            for (auto&& clause : delta.getNewClauses()) {
+                assumptions.push_back(activatedAssumptionLit(var(getAssumptionLit(clause))));
+            }
+            simplify(assumptions);
         }
         
         if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
@@ -335,7 +344,11 @@ namespace Candy {
     }
     
     void ARSolverImpl::simplify() {
-        m_solver->simplify();
+        simplify({});
+    }
+    
+    void ARSolverImpl::simplify(const std::vector<Lit>& assumptions) {
+        m_solver->simplify(assumptions);
     }
     
     void ARSolverImpl::reduceConjectures() {
