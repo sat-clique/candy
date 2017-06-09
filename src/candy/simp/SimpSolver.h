@@ -159,6 +159,7 @@ protected:
     vector<int> n_occ;
     Glucose::Heap<ElimLt> elim_heap;
     deque<Clause*> subsumption_queue;
+    unordered_map<Clause*, char> subsumption_queue_contains;
     vector<char> frozen;
     vector<char> eliminated;
     uint32_t bwdsub_assigns;
@@ -193,6 +194,9 @@ protected:
 
     void setupEliminate(bool full);
     void cleanupEliminate();
+
+    void subsumptionQueueProtectedPush(Clause* cr);
+    Clause* subsumptionQueueProtectedPop();
 
     void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
     void elimDetach(Clause* cr, bool strict); // Detach a clause from occurrence lists for eliminate
@@ -250,6 +254,10 @@ SimpSolver<PickBranchLitT>::SimpSolver() :
     preprocessing_enabled(true),
     occurs(ClauseDeleted()),
     elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
     bwdsub_assigns(0),
     n_touched(0),
     resolvent(),
@@ -304,6 +312,22 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 }
 
 template<class PickBranchLitT>
+void SimpSolver<PickBranchLitT>::subsumptionQueueProtectedPush(Clause* cr) {
+    if (!subsumption_queue_contains[cr]) {
+        subsumption_queue.push_back(cr);
+        subsumption_queue_contains[cr] = true;
+    }
+}
+
+template<class PickBranchLitT>
+Clause* SimpSolver<PickBranchLitT>::subsumptionQueueProtectedPop() {
+    Clause* cr = subsumption_queue.front();
+    subsumption_queue.pop_front();
+    subsumption_queue_contains[cr] = false;
+    return cr;
+}
+
+template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
 #ifndef NDEBUG
     for (Lit lit : *cr) {
@@ -311,6 +335,7 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
     }
 #endif
     subsumption_queue.push_back(cr);
+    subsumption_queue_contains[cr] = true;
     uint64_t clause_abstraction = 0;
     for (Lit lit : *cr) {
         clause_abstraction |= 1ull << (var(lit) % 64);
@@ -352,9 +377,7 @@ template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     assert(this->decisionLevel() == 0);
     
-    // FIX: this is too inefficient but would be nice to have (properly implemented)
-    // if (!find(subsumption_queue, &c))
-    subsumption_queue.push_back(cr);
+    subsumptionQueueProtectedPush(cr);
 
     if (strengthened_sizes.count(cr) == 0) { // used to cleanup pages in clause-pool
         strengthened_sizes[cr] = cr->size();
@@ -464,24 +487,18 @@ void SimpSolver<PickBranchLitT>::gatherTouchedClauses() {
     if (n_touched == 0)
         return;
     
-    for (Clause* c : subsumption_queue)
-        c->setFrozen(true);
-    
-    for (unsigned int i = 0; i < touched.size(); i++)
+    for (unsigned int i = 0; i < touched.size(); i++) {
         if (touched[i]) {
             const vector<Clause*>& cs = occurs.lookup(i);
             for (Clause* c : cs) {
-                if (!c->isFrozen() && !c->isDeleted()) {
-                    subsumption_queue.push_back(c);
-                    c->setFrozen(true);
+                if (!c->isDeleted()) {
+                    subsumptionQueueProtectedPush(c);
                 }
             }
             touched[i] = 0;
         }
-    
-    for (Clause* c : subsumption_queue)
-        c->setFrozen(false);
-    
+    }
+
     n_touched = 0;
 }
 
@@ -525,8 +542,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
             subsumption_queue.push_back(&bwdsub_tmpunit);
         }
 
-        Clause* cr = subsumption_queue.front();
-        subsumption_queue.pop_front();
+        Clause* cr = subsumptionQueueProtectedPop();
         
         if (cr->isDeleted()) {
             continue;
