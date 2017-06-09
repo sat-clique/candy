@@ -93,7 +93,7 @@ namespace Candy {
         }
     }
     
-    bool SolverMock::simplify() {
+    bool SolverMock::simplify(const std::vector<Lit>& assumptions) {
         m_eventLog.push_back(SolverMockEvent::SIMPLIFY);
         if (m_callOnSimplify) {
             m_callOnSimplify(m_nInvocations);

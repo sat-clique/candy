@@ -85,13 +85,13 @@ namespace Candy {
             m_solver.setFrozen(variable, frozen);
         }
         
-        bool simplify() override {
+        bool simplify(const std::vector<Lit>& assumptions) override {
             if (isInConflictingState()) {
                 return true;
             }
             
             m_solver.setPropBudget(1);
-            m_solver.solve({});
+            m_solver.solve(assumptions);
             m_solver.budgetOff();
             return true;
         }
