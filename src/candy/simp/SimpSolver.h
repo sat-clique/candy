@@ -783,6 +783,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
                 if (clean->size() == 2) {
                     this->persist.push_back(clean);
                 } else {
+                    clean->setLBD(std::min(clean->getLBD(), clean->size()));
                     this->learnts.push_back(clean);
                 }
             } else {
