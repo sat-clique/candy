@@ -105,16 +105,16 @@ public:
         return Solver<PickBranchLitT>::solve(assumps);
     }
 
-    // If a variable is frozen it will not be eliminated
-    inline void setFrozen(Var v, bool b) {
-        frozen[v] = (char) b;
-        if (!b) {
-            updateElimHeap(v);
-        }
-    }
-
     inline bool isEliminated(Var v) const {
         return eliminated[v];
+    }
+
+    inline void setFrozen(Var v, bool freeze) {
+        if (freeze) {
+            freezes.push_back(v);
+        } else {
+            freezes.erase(std::remove(freezes.begin(), freezes.end(), v), freezes.end());
+        }
     }
 
     // Mode of operation:
@@ -163,8 +163,12 @@ protected:
     vector<char> eliminated;
     uint32_t bwdsub_assigns;
     uint32_t n_touched;
-    //temporary
+
+    // temporary
     std::vector<Lit> resolvent;
+
+    // set these variables to frozen on init
+    std::vector<Var> freezes;
 
     std::vector<Clause*> strengthened_clauses;
     std::unordered_map<Clause*, size_t> strengthened_sizes;
@@ -176,6 +180,14 @@ protected:
         if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v)
                                     && this->value(v) == l_Undef)) {
             elim_heap.update(v);
+        }
+    }
+
+    // If a variable is frozen it will not be eliminated
+    inline void setFrozenIntern(Var v, bool b) {
+        frozen[v] = (char) b;
+        if (!b) {
+            updateElimHeap(v);
         }
     }
 
@@ -241,6 +253,7 @@ SimpSolver<PickBranchLitT>::SimpSolver() :
     bwdsub_assigns(0),
     n_touched(0),
     resolvent(),
+    freezes(),
     strengthened_clauses(),
     strengthened_sizes(),
     abstraction() {
@@ -731,28 +744,23 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
         elimAttach(c);
     }
 
-    // Assumptions must be temporarily frozen to run variable elimination:
-    if (this->isIncremental()) {
-        for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < static_cast<int>(this->nVars()); v++) {
-            assert(!isEliminated(v));
-            setFrozen(v, true);
-        }
-    }
     for (Lit lit : this->assumptions) {
-        setFrozen(var(lit), true);
+        setFrozenIntern(var(lit), true);
+    }
+
+    for (Var var : freezes) {
+        setFrozenIntern(var, true);
     }
 }
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::cleanupEliminate() {
-    // Unfreeze the assumptions that were frozen:
-    if (this->isIncremental()) {
-        for (Var v = Solver<PickBranchLitT>::nbVarsInitialFormula; v < static_cast<int>(this->nVars()); v++) {
-            setFrozen(v, false);
-        }
-    }
     for (Lit lit : this->assumptions) {
-        setFrozen(var(lit), false);
+        setFrozenIntern(var(lit), false);
+    }
+
+    for (Var var : freezes) {
+        setFrozenIntern(var, false);
     }
 
     n_occ.clear();
