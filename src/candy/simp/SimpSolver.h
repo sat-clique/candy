@@ -75,7 +75,7 @@ template<class PickBranchLitT=DefaultPickBranchLit>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:
     SimpSolver();
-    ~SimpSolver();
+    virtual ~SimpSolver();
 
     // Problem specification:
     virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0); // Add a new variable with parameters specifying variable mode.
@@ -731,23 +731,23 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
 
     occurs.init(this->nVars());
 
-    for (Clause* c : this->clauses) {
+    // include persistent learnt clauses
+    for (Clause* c : this->persist) {
         elimAttach(c);
     }
-    // include persistent learnt clauses
     for (Clause* c : this->learnts) {
         if (c->getLBD() <= 2) {
             elimAttach(c);
         }
     }
-    for (Clause* c : this->persist) {
+    for (Clause* c : this->clauses) {
         elimAttach(c);
     }
 
+    // freeze assumptions and other externally set frozen variables
     for (Lit lit : this->assumptions) {
         setFrozenIntern(var(lit), true);
     }
-
     for (Var var : freezes) {
         setFrozenIntern(var, true);
     }
@@ -758,7 +758,6 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     for (Lit lit : this->assumptions) {
         setFrozenIntern(var(lit), false);
     }
-
     for (Var var : freezes) {
         setFrozenIntern(var, false);
     }
@@ -771,7 +770,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     subsumption_queue.clear();
     abstraction.clear();
 
-    // Force full cleanup (this is safe and desirable since it only happens once):
+    // force full cleanup
     this->rebuildOrderHeap();
 
     // cleanup strengthened clauses in pool
