@@ -72,8 +72,8 @@ IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving average for 
 IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
 
 IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 2000, IntRange(0, INT16_MAX));
-IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1000, IntRange(0, INT16_MAX));
-IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 700, IntRange(0, INT16_MAX));
+IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1700, IntRange(0, INT16_MAX));
+IntOption opt_spec_inc_reduce_db(_cred, "specialIncReduceDB", "Special increment for reduce DB", 300, IntRange(0, INT16_MAX));
 IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30, IntRange(0, INT16_MAX));
 
 IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT16_MAX));
@@ -87,8 +87,8 @@ IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay
 
 IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
 BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
-BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", false);
-IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
+BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
+IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 10);
     
 }
 
