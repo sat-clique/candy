@@ -1571,12 +1571,12 @@ lbool Solver<PickBranchLitT>::search() {
 
                 cancelUntil(level(var(cr->second())));
 
-                claBumpActivity(*cr);
                 attachClause(cr);
                 uncheckedEnqueue(cr->first(), cr);
+                claBumpActivity(*cr);
             }
-            varDecayActivity();
             claDecayActivity();
+            varDecayActivity();
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
