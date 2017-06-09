@@ -5,7 +5,7 @@ static int avg_l(int *a, int n) {
 
     for (i = 0; i < n; i++)
         s += a[i];
-    if (s < 0 && s % n != 0) {
+    if (s < 0 && (s % n != 0)) {
         // avoid round-towards-zero
         return (s / n) - 1;
     } else {
