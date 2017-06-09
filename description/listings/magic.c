@@ -1,7 +1,7 @@
-#define lshrl(a,b) (int64_t)((uint64_t)a >> (uint64_t)b)
-#define lshri(a,b) (int32_t)((uint32_t)a >> (uint32_t)b)
-#define trim(n) (int32_t)(uint32_t)(uint64_t)n
-#define zext(n) (int64_t)(uint64_t)(uint32_t)n
+#define lshrl(a,b) (int64_t)(((uint64_t)a) >> ((uint64_t)b))
+#define lshri(a,b) (int32_t)(((uint32_t)a) >> ((uint32_t)b))
+#define trim(n) (int32_t)((uint32_t)((uint64_t)n))
+#define zext(n) (int64_t)((uint64_t)((uint32_t)n))
 
 void __llbmc_main(int32_t input) {
     int64_t magic = (int64_t)1374389535;
