@@ -56,7 +56,7 @@ namespace Candy {
         virtual bool addClause(const Cl &clause) = 0;
         virtual void insertClauses(const CNFProblem &problem) = 0;
         virtual void setFrozen(Var variable, bool frozen) = 0;
-        virtual bool simplify() = 0;
+        virtual bool simplify(const std::vector<Lit>& assumptions) = 0;
         virtual bool isEliminated(Var var) = 0;
         
         virtual void setIncrementalMode() = 0;

@@ -26,6 +26,8 @@
 
 #include "RSARFrontend.h"
 
+#include <stdexcept>
+
 #include <candy/utils/StringUtils.h>
 #include <candy/rsar/ARSolver.h>
 #include <candy/rsar/Heuristics.h>
@@ -88,6 +90,10 @@ namespace Candy {
                                                     DefaultSimpSolver& satSolver,
                                                     std::unique_ptr<Conjectures> conjectures,
                                                     const RSARArguments& rsarArguments) {
+        if (rsarArguments.simplificationHandlingMode == SimplificationHandlingMode::FREEZE) {
+            throw std::runtime_error("The FREEZE simplification handling mode is temporarily unavailable");
+        }
+        
         auto arSolverBuilder = Candy::createARSolverBuilder();
         arSolverBuilder->withConjectures(std::move(conjectures));
         arSolverBuilder->withMaxRefinementSteps(rsarArguments.maxRefinementSteps);

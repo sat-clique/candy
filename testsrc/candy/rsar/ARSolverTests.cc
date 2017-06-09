@@ -404,7 +404,7 @@ namespace Candy {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::RESTRICT, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_1_FREEZEsimp) {
+    /*TEST(RSARARSolver, acceptanceTest_problem_flat200_1_FREEZEsimp) {
         test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::FREEZE, true);
     }
     
@@ -414,7 +414,7 @@ namespace Candy {
     
     TEST(RSARARSolver, acceptanceTest_problem_flat200_6_FREEZEsimp) {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::FREEZE, true);
-    }
+    }*/
     
     TEST(RSARARSolver, acceptanceTest_problem_flat200_1_FULLsimp) {
         test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::FULL, true);

@@ -67,7 +67,7 @@ namespace Candy {
         bool addClause(const Cl &clause) override;
         void insertClauses(const CNFProblem &problem) override;
         void setFrozen(Var variable, bool frozen) override;
-        bool simplify() override;
+        bool simplify(const std::vector<Lit>& assumptions) override;
         bool isEliminated(Var var) override;
         
         void setIncrementalMode() override;
