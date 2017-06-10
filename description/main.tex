@@ -89,8 +89,8 @@ This is achieved by suppressing the emission of learnt clauses containing assump
 
 \section{Inprocessing}
 
-We improved the architecture of clause simplification such that Candy can now perform subsumption and self-subsuming resolution during search.
-Clauses of the original problem are included as well as learnt clauses that are persitent in the learnt clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
+We improved the architecture of clause simplification such that Candy can now perform simplification based on clause subsumption and self-subsuming resolution during search.
+The original problem's clauses are included as well as learnt clauses that are persistent in the learnt clause database, i.e. clauses of size 2 and clauses with an LBD value no larger than 2.
 
 \section{Gate Structure Analysis and Applications}
 
