@@ -1596,10 +1596,8 @@ lbool Solver<PickBranchLitT>::search() {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Inprocessing");
-                        new_unary = true;
                     }
-
-                    if (new_unary) {
+                    else if (new_unary) {
                         new_unary = false;
                         Statistics::getInstance().runtimeStart("Simplify");
                         if (!simplify()) {
