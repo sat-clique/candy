@@ -72,15 +72,15 @@ In the following sections, we present the optimizations we implemented in Candy 
 \section{Clause Memory Management}
 \label{sec:clauses}
 
-In contrast to Glucose, in Candy clauses are now referenced as regular pointers and for fast access and optimized cache usage we introduced a dedicated memory management. Clauses are optimized for size so we have a very small clause header that only keep size, activity, lbd value and only a few flags. Our clause allocator preallocates clauses in buckets of equivalently sized clauses up to clauses of length 500. Only clauses exceeding that size limit are allocated by regular new/delete methods. Memory for small clauses is regularly revamped such that the clauses are sorted by their activity (in memory) with the highest activity first. Also the watchers are sorted by clause size and activity. 
+In contrast to Glucose, in Candy clauses are now referenced as regular pointers and for fast access and optimized cache usage we introduced a dedicated memory management. Clauses are optimized for size so we have a very small clause header that keeps size, activity, lbd value and only a few flags. Our clause allocator preallocates clauses in buckets of equivalently sized clauses up to clauses of length $500$. Only clauses exceeding that size limit are allocated by regular new/delete methods. Memory for small clauses is regularly revamped such that the clauses are sorted by their activity (in memory) with the highest activity first. Also the watchers are sorted by clause size and activity. 
 
 \section{Improved Incremental Mode}
 
-In contrast to Glucose we made several optimizations (minimization of learnt clauses with binary resolution, clause simplification) work in incremental mode. Also a certificate can be generated in incremental mode if assumpations are used properly. Candy suppresses the output of learnt clauses that contain assumptions as well as the output of the empty clause as long as any of these clauses was used in the final conflict. 
+We made several clause simplifications work in incremental mode that have been deactivated before in Glucose. Also a certificate can be generated in incremental mode if assumptions are used properly. In incremental mode for certificate generation Candy suppresses output of learnt clauses containing assumptions as well as the output of the empty clause as long as assumptions are used in the final conflict. 
 
 \section{Inprocessing}
 
-We improved the architecture of clause simplification such that Candy can now perform clause database simplification during search. We perform clause strengthening with learnt unit clauses, clause subsumption and self-subsuming resolution. Clauses of the original problem are included as well as the learnt clauses that are persitent in the learnt-clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
+We improved the architecture of clause simplification such that Candy can now perform subsumption and self-subsuming resolution during search. Clauses of the original problem are included as well as learnt clauses that are persitent in the learnt-clause database (that includes clauses of size 2 and clauses with lbd <= 2). 
 
 \section{Gate Structure Analysis and Applications}
 
