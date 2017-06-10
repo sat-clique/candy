@@ -1,4 +1,4 @@
-add_library(randomsimulation
+add_library(randomsimulation OBJECT
     RandomSimulator.cc
     RandomSimulator.h
     SimulationVector.cc

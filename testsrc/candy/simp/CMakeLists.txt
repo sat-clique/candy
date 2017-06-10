@@ -1,5 +1,6 @@
 add_executable(simp_tests
-    SimpSolverTests.cc)
+    SimpSolverTests.cc
+    ${CANDY_OBJECTS})
 
 candy_executable_customizations(simp_tests)
 

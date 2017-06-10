@@ -1,4 +1,4 @@
-add_library(frontend
+add_library(frontend OBJECT
     RSILFrontend.h
     RSILFrontend.cc
     Exceptions.h

@@ -1,4 +1,4 @@
-add_library(sonification
+add_library(sonification OBJECT
     Sonification.cc
     Sonification.h
     SolverSonification.cc

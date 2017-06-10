@@ -1,4 +1,4 @@
-add_library(core
+add_library(core OBJECT
     Solver.cc
     Solver.h
     Statistics.cc
