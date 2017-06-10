@@ -8,7 +8,9 @@ add_executable(randomsimulation_tests
     RandomSimulatorTests.cc
     RandomizationTests.cc
     ConjectureFilterTests.cc
-    GateFilterTests.cc)
+    GateFilterTests.cc
+    ${CANDY_OBJECTS}
+    $<TARGET_OBJECTS:testutils>)
 
 candy_executable_customizations(randomsimulation_tests)
 
@@ -22,5 +24,5 @@ add_test(NAME randomsimulation_module_tests COMMAND randomsimulation_tests)
 target_include_directories(randomsimulation_tests PUBLIC ${CMAKE_PROJECT_ROOT}/lib/googletest/googletest/include
                                                          ${CMAKE_PROJECT_ROOT}/lib/googletest/googlemock/include)
 
-target_link_libraries(randomsimulation_tests ${CANDY_LIBS} testutils gtest_main gtest)
+target_link_libraries(randomsimulation_tests ${CANDY_LIBS} gtest_main gtest)
 

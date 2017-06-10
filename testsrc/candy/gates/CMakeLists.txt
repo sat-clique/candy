@@ -1,6 +1,8 @@
 add_executable(gates_tests
     GateDFSTraversalTests.cc
-    MiterDetectorTests.cc)
+    MiterDetectorTests.cc
+    ${CANDY_OBJECTS}
+    $<TARGET_OBJECTS:testutils>)
 candy_executable_customizations(gates_tests)
 
 target_include_directories(gates_tests PUBLIC ${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include
@@ -9,7 +11,7 @@ target_include_directories(gates_tests PUBLIC ${PROJECT_SOURCE_DIR}/lib/googlete
 target_include_directories(gates_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
 target_include_directories(gates_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
-target_link_libraries(gates_tests ${CANDY_LIBS} testutils gtest_main gtest)
+target_link_libraries(gates_tests ${CANDY_LIBS} gtest_main gtest)
 
 # add a ctest test named gates_module_tests which executes the binary defined by the target gates_tests
 add_test(NAME gates_module_tests COMMAND gates_tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})

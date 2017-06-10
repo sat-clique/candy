@@ -254,13 +254,27 @@ endif()
 
 add_subdirectory(src)
 
-set(CANDY_LIBS frontend gates randomsimulation rsil rsar ipasir simp core sonification utils ${ZLIB_LIBRARIES})
+set(CANDY_OBJECTS $<TARGET_OBJECTS:frontend>
+  $<TARGET_OBJECTS:gates>
+  $<TARGET_OBJECTS:randomsimulation>
+  $<TARGET_OBJECTS:rsil>
+  $<TARGET_OBJECTS:rsar>
+  $<TARGET_OBJECTS:ipasir>
+  $<TARGET_OBJECTS:simp>
+  $<TARGET_OBJECTS:core>
+  $<TARGET_OBJECTS:sonification>
+  $<TARGET_OBJECTS:utils>)
+
+set(CANDY_LIBS ${ZLIB_LIBRARIES})
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
 
 ### Define and link target executables and libraries
 
-add_executable(candy src/candy/Main.cc)
+add_executable(candy src/candy/Main.cc ${CANDY_OBJECTS})
 candy_executable_customizations(candy)
 target_link_libraries(candy ${CANDY_LIBS})
+
+add_library(candystatic STATIC ${CANDY_OBJECTS})
+target_link_libraries(candystatic ${CANDY_LIBS})

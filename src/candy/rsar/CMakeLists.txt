@@ -1,4 +1,4 @@
-add_library(rsar
+add_library(rsar OBJECT
   SolverAdapter.h
   SolverAdapter.cc
   ARSolver.h
