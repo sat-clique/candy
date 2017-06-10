@@ -3,5 +3,6 @@
 mkdir build
 cd build
 cmake candy -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release -DCANDY_ENABLE_STATIC_LINKING=ON -DCANDY_DISABLE_RTTI=ON ..
+make candy
 cp candy ../bin
 
