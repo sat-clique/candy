@@ -1,4 +1,4 @@
-add_library(rsil
+add_library(rsil OBJECT
   BranchingHeuristics.h
   BranchingHeuristics.cc
   RSARHeuristicsFilter.h

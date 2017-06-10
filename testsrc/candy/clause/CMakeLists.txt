@@ -1,5 +1,6 @@
 add_executable(clause_tests
-  Main.cc)
+  Main.cc
+  ${CANDY_OBJECTS})
 candy_executable_customizations(clause_tests)
 
 target_include_directories(clause_tests PUBLIC ${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include

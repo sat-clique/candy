@@ -1,4 +1,4 @@
-add_library(utils
+add_library(utils OBJECT
     CNFProblem.cc
     CNFProblem.h
     Runtime.h
