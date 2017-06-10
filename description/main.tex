@@ -22,6 +22,8 @@
 \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
+\usepackage{cite}
+
 \newcommand{\assign}{\ensuremath{\leftarrow }}
 
 \newcommand{\underapp}[1]{\ensuremath{#1^\downarrow}}
@@ -63,7 +65,7 @@ New functionality in Candy is based on gate structure analysis and random simula
 
 \section{Introduction}
 
-The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose} CDCL SAT solver (version 3.0).
+The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose,Niklas:2003:Minisat} CDCL SAT solver (version 3.0).
 With Candy, we aim to facilitate the solver's development by refactoring the Glucose source code towards modern C++ and by reducing dependencies within the source code.
 This involved replacing most custom lowest-level data structures and algorithms by their C++ standard library equivalents.
 The refactoring effort enabled high-level optimizations of the solver such as inprocessing and cache-efficient clause memory management.
