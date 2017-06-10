@@ -74,12 +74,12 @@ In what follows, we present the optimizations we implemented in Candy and descri
 \section{Clause Memory Management}
 \label{sec:clauses}
 
-In contrast to Glucose, in Candy clauses are now referenced as regular pointers and for fast access and optimized cache usage we introduced a dedicated memory management.
-Clauses are optimized for size so we have a very small clause header that keeps size, activity, lbd value and only a few flags.
-Our clause allocator preallocates clauses in buckets of equivalently sized clauses up to clauses of length $500$.
-Only clauses exceeding that size limit are allocated by regular new/delete methods.
-Memory for small clauses is regularly revamped such that the clauses are sorted by their activity (in memory) with the highest activity first.
-Also the watchers are sorted by clause size and activity.
+Unlike Glucose, we use regular pointers to reference clauses in Candy. To reduce the memory access overhead, we introduced a dedicated cache-optimized clause storage system.
+To this end, we reduced the memory footprint of clauses by shrinking the clause header, in which Candy only stores the clause's size, activity and LBD values as well as a minimal amount of flags.
+For clauses containing $500$ literals or less, our new clause allocator preallocates clauses in buckets of same-sized clauses.
+Clauses larger than $500$ literals are individually allocated on the heap.
+Buckets containing small clauses are regularly sorted by their activity in descending order to group frequently-accessed clauses, thereby concentrating memory accesses to smaller memory regions.
+Moreover, the watchers are regularly sorted by clause size and activity.
 
 \section{Improved Incremental Mode}
 
