@@ -276,5 +276,5 @@ add_executable(candy src/candy/Main.cc ${CANDY_OBJECTS})
 candy_executable_customizations(candy)
 target_link_libraries(candy ${CANDY_LIBS})
 
-add_library(candys STATIC ${CANDY_OBJECTS})
-target_link_libraries(candys ${CANDY_LIBS})
+add_library(candystatic STATIC ${CANDY_OBJECTS})
+target_link_libraries(candystatic ${CANDY_LIBS})
