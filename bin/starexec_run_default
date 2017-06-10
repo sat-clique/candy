@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./candy -verb=0 -model -certified -certified-output=$2/proof.out $1
+./candy -inprocessing=0 -verb=0 -model -certified -certified-output=$2/proof.out $1
