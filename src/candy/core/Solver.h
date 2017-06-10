@@ -1589,15 +1589,6 @@ lbool Solver<PickBranchLitT>::search() {
                 if (reduced) {
                     reduced = false;
 
-                    if (new_unary) {
-                        new_unary = false;
-                        Statistics::getInstance().runtimeStart("Simplify");
-                        if (!simplify()) {
-                            return l_False;
-                        }
-                        Statistics::getInstance().runtimeStop("Simplify");
-                    }
-
                     if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
                         Statistics::getInstance().runtimeStart("Inprocessing");
@@ -1605,6 +1596,16 @@ lbool Solver<PickBranchLitT>::search() {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Inprocessing");
+                        new_unary = true;
+                    }
+
+                    if (new_unary) {
+                        new_unary = false;
+                        Statistics::getInstance().runtimeStart("Simplify");
+                        if (!simplify()) {
+                            return l_False;
+                        }
+                        Statistics::getInstance().runtimeStop("Simplify");
                     }
 
                     if (revamp > 2) {
