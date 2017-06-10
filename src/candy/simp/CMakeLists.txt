@@ -1,4 +1,4 @@
-add_library(simp
+add_library(simp OBJECT
     SimpSolver.h
     SimpSolver.cc)
 

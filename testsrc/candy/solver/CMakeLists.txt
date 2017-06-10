@@ -1,5 +1,6 @@
 add_executable(solver_tests
-  Main.cc)
+  Main.cc
+  ${CANDY_OBJECTS})
 candy_executable_customizations(solver_tests)
 
 target_include_directories(solver_tests PUBLIC ${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include

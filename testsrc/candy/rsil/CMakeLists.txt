@@ -2,7 +2,9 @@ add_executable(rsil_tests
     TestUtils.h
     BranchingHeuristicsTests.cc
     RSARHeuristicsFilterTests.cc
-    ImplicitLearningAdviceTests.cc)
+    ImplicitLearningAdviceTests.cc
+    ${CANDY_OBJECTS}
+    $<TARGET_OBJECTS:testutils>)
 
 candy_executable_customizations(rsil_tests)
 
@@ -16,7 +18,7 @@ add_test(NAME rsil_module_tests COMMAND rsil_tests)
 target_include_directories(rsil_tests PUBLIC ${CMAKE_PROJECT_ROOT}/lib/googletest/googletest/include
                                              ${CMAKE_PROJECT_ROOT}/lib/googletest/googlemock/include)
 
-target_link_libraries(rsil_tests ${CANDY_LIBS} testutils gtest_main gtest gmock)
+target_link_libraries(rsil_tests ${CANDY_LIBS} gtest_main gtest gmock)
 
 file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "problems/*.cnf")
 message("Test CNF files: ${TEST_CNF_PROBLEMS}")
