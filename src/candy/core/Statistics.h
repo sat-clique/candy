@@ -18,7 +18,7 @@
 #include <candy/utils/System.h>
 
 //#define SOLVER_STATS
-#define RUNTIME_STATS
+//#define RUNTIME_STATS
 //#define INCREMENTAL_STATS
 //#define ALLOCATOR_STATS
 
