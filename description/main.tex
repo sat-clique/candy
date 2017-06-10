@@ -83,9 +83,9 @@ Moreover, the watchers are regularly sorted by clause size and activity.
 
 \section{Improved Incremental Mode}
 
-We made several clause simplifications work in incremental mode that have been deactivated before in Glucose.
-Also a certificate can be generated in incremental mode if assumptions are used properly.
-In incremental mode for certificate generation Candy suppresses output of learnt clauses containing assumptions as well as the output of the empty clause as long as assumptions are used in the final conflict.
+We enabled several clause simplifications in Candy's incremental mode that had been deactivated in Glucose's incremental mode.
+Also, certificates for unsatisfiability can be generated in incremental mode for sub-formulas not containing assumption literals.
+This is achieved by suppressing the emission of learnt clauses containing assumption literals as well as the output of the empty clause until no assumptions are used in the resolution steps by which unsatisfiability is deduced.
 
 \section{Inprocessing}
 
