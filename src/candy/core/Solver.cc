@@ -88,7 +88,7 @@ IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay
 IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
 BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
 BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
-IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 10);
+IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
     
 }
 
