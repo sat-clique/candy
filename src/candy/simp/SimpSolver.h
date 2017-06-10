@@ -195,12 +195,12 @@ protected:
     void setupEliminate(bool full);
     void cleanupEliminate();
 
-    void subsumptionQueueProtectedPush(Clause* cr);
-    Clause* subsumptionQueueProtectedPop();
+    inline void subsumptionQueueProtectedPush(Clause* cr);
+    inline Clause* subsumptionQueueProtectedPop();
 
-    void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
-    void elimDetach(Clause* cr, bool strict); // Detach a clause from occurrence lists for eliminate
-    void elimDetach(Clause* cr, Lit lit, bool strict); // Detach a clause from lit's occurrence lists for eliminate
+    inline void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
+    inline void elimDetach(Clause* cr, bool strict); // Detach a clause from occurrence lists for eliminate
+    inline void elimDetach(Clause* cr, Lit lit, bool strict); // Detach a clause from lit's occurrence lists for eliminate
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
