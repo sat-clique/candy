@@ -22,6 +22,8 @@
 \DeclarePairedDelimiter\ceil{\lceil}{\rceil}
 \DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
 
+\usepackage{cite}
+
 \newcommand{\assign}{\ensuremath{\leftarrow }}
 
 \newcommand{\underapp}[1]{\ensuremath{#1^\downarrow}}
@@ -43,12 +45,13 @@
 \makeatother
 
 \title{System Description of Candy Kingdom --\\ A Sweet Family of SAT Solvers}
-\author{Markus Iser, Felix Kutzner}
-% TODO: add institute etc
-%\institute{
-%  Karlsruhe Institute of Technology (KIT), Germany\\
-%  \url{{markus.iser, felix.kutzner}@kit.edu}
-%}
+\author{\IEEEauthorblockN{Markus Iser\IEEEauthorrefmark{1}
+and Felix Kutzner\IEEEauthorrefmark{2}}
+\IEEEauthorblockA{Institute for Theoretical Computer Science,
+Karlsruhe Institute of Technology\\
+Karlsruhe, Germany\\
+Email: \IEEEauthorrefmark{1}markus.iser@kit.edu,
+\IEEEauthorrefmark{2}felix.kutzner@qpr-technologies.de}}
 
 \begin{document}
 
@@ -62,13 +65,13 @@ New functionality in Candy is based on gate structure analysis and random simula
 
 \section{Introduction}
 
-The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose} CDCL SAT solver (version 3.0).
+The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose,Niklas:2003:Minisat} CDCL SAT solver (version 3.0).
 With Candy, we aim to facilitate the solver's development by refactoring the Glucose source code towards modern C++ and by reducing dependencies within the source code.
 This involved replacing most custom lowest-level data structures and algorithms by their C++ standard library equivalents.
 The refactoring effort enabled high-level optimizations of the solver such as inprocessing and cache-efficient clause memory management.
 We also increased the extensibility of Candy via static polymorphism, e.g. allowing the solver's decision heuristic to be customized without incurring the overhead of dynamic polymorphism. This enabled us to efficiently implement variants of the Candy solver.
 Furthermore, we modularized the source code of Candy to make its subsystems reusable.
-The quality of Candy is assured by automated testing, with the functionality of Candy tested on different compilers (clang, gcc, Microsoft C/C++) and operating systems (Linux, Apple macOS, Microsoft Windows) using continuous integration systems.
+The quality of Candy is assured by automated testing, with the functionality of Candy tested on different compilers (Clang, GCC, Microsoft C/C++) and operating systems (Linux, Apple macOS, Microsoft Windows) using continuous integration systems.
 In what follows, we present the optimizations we implemented in Candy and describe two variants of the solver.
 
 \section{Clause Memory Management}
@@ -107,6 +110,7 @@ For a general description of miter problems, see e.g. \cite{hwmcc12Bench}.
 
 \bibliographystyle{splncs03}
 %\bibliographystyle{abbrv}
+\IEEEtriggeratref{3}
 \bibliography{abstractionrefinement,blockedsets,general,preprocessing,structurerecognition,applications,encodings,otherstructure,self}
 
 \end{document}
