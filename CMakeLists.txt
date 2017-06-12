@@ -85,6 +85,9 @@ option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 # Enable Static Linking
 option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 
+# Enable Link Time Optimization in Release Builds
+option(CANDY_ENABLE_LTO "Enable linking time optimization" ON)
+
 # Enable checked casts in debug mode
 option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
 
@@ -127,7 +130,10 @@ if(MSVC)
 else()
   set(CMAKE_CXX_FLAGS "-std=c++11 -Wall -Wno-parentheses -D __STDC_LIMIT_MACROS -D __STDC_FORMAT_MACROS")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
-  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -flto -O3")
+  set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -O3")
+  if (CANDY_ENABLE_LTO) 
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
+  endif()
 endif()
 
 if(CANDY_ENABLE_DEBUG_CHECKEDCASTS)
