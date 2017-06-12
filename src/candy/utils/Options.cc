@@ -56,13 +56,13 @@ void Glucose::parseOptions(int& argc, char** argv, bool strict)
 
 void Glucose::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
 void Glucose::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
-void Glucose::printUsageAndExit (int argc, char** argv, bool verbose)
-{
+void Glucose::printUsageAndExit (int argc, char** argv, bool verbose) {
     const char* usage = Option::getUsageString();
-    if (usage != NULL)
+    if (usage != NULL) {
         fprintf(stderr, usage, argv[0]);
+    }
 
-        std::sort(Option::getOptionList().begin(), Option::getOptionList().end(), Option::OptionLt());
+    std::sort(Option::getOptionList().begin(), Option::getOptionList().end(), Option::OptionLt());
 
     const char* prev_cat  = NULL;
     const char* prev_type = NULL;
