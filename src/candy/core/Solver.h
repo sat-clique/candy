@@ -483,6 +483,9 @@ protected:
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
     Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+    Clause* future_propagate(); // Perform unit propagation. Returns possibly conflicting clause.
+    inline Clause* future_propagate_binary_clauses(Lit p);
+    inline Clause* future_propagate_longer_clauses(Lit p);
     void cancelUntil(int level); // Backtrack until a certain level.
     void analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &nblevels);
     void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -1154,7 +1157,7 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 uncheckedEnqueue(watcher.blocker, watcher.cref);
             }
         }
-        
+
         // Propagate other 2-watched clauses
         vector<Watcher>& list = watches[p];
 #ifdef INLINE_UPDATES
@@ -1211,6 +1214,96 @@ Clause* Solver<PickBranchLitT>::propagate() {
 #else
         list.erase(std::remove_if(list.begin(), list.end(), [](Watcher& w) { return w.cref == nullptr; } ), list.end());
 #endif
+    }
+
+    return nullptr;
+}
+
+template <class PickBranchLitT>
+Clause* Solver<PickBranchLitT>::future_propagate_binary_clauses(Lit p) {
+    for (Watcher& watcher : watchesBin[p]) {
+        lbool val = value(watcher.blocker);
+        if (val == l_False) {
+            return watcher.cref;
+        }
+        if (val == l_Undef) {
+            uncheckedEnqueue(watcher.blocker, watcher.cref);
+        }
+    }
+    return nullptr;
+}
+
+template <class PickBranchLitT>
+Clause* Solver<PickBranchLitT>::future_propagate_longer_clauses(Lit p) {
+    vector<Watcher>& list = watches[p];
+    auto keep = list.begin();
+    for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
+        lbool val = value(watcher->blocker);
+        if (val != l_True) { // Try to avoid inspecting the clause
+            Clause* clause = watcher->cref;
+
+            if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                clause->swap(0, 1);
+            }
+
+            if (watcher->blocker != clause->first()) {
+                watcher->blocker = clause->first(); // repair blocker (why?)
+                val = value(clause->first());
+            }
+
+            if (val != l_True) {
+                for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                    if (value((*clause)[k]) != l_False) {
+                        clause->swap(1, k);
+                        watches[~clause->second()].emplace_back(clause, clause->first());
+                        goto propagate_skip;
+                    }
+                }
+
+                // did not find watch
+                if (val == l_False) { // conflict
+                    list.erase(keep, watcher);
+                    return clause;
+                }
+                else { // unit
+                    uncheckedEnqueue(clause->first(), clause);
+                }
+            }
+        }
+        *keep = *watcher;
+        keep++;
+        propagate_skip:;
+    }
+    list.erase(keep, list.end());
+    return nullptr;
+}
+
+#define FUTURE_PROPAGATE
+template <class PickBranchLitT>
+Clause* Solver<PickBranchLitT>::future_propagate() {
+    watches.cleanAll();
+    watchesBin.cleanAll();
+    Clause* conflict = nullptr;
+
+    uint32_t binary_pos = qhead;
+    uint32_t longer_pos = qhead;
+    while (qhead < trail_size) {
+        while (binary_pos < trail_size) {
+            Lit p = trail[binary_pos++];
+            conflict = future_propagate_binary_clauses(p);
+            if (conflict != nullptr) {
+                return conflict;
+            }
+        }
+        while (longer_pos < trail_size) {
+            Lit p = trail[longer_pos++];
+            conflict = future_propagate_longer_clauses(p);
+            if (conflict != nullptr) {
+                return conflict;
+            }
+        }
+        qhead = std::min(binary_pos, longer_pos);
+
     }
 
     return nullptr;
@@ -1475,7 +1568,11 @@ lbool Solver<PickBranchLitT>::search() {
 
         uint32_t old_qhead = qhead;
 
+#ifndef FUTURE_PROPAGATE
         Clause* confl = propagate();
+#else
+        Clause* confl = future_propagate();
+#endif
 
         nPropagations += qhead - old_qhead;
         
