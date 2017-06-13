@@ -704,10 +704,17 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
             elimDetach(c, false);
         }
         occurs[v].clear();
+#ifndef FUTURE_PROPAGATE
         this->watches[mkLit(v)].clear();
         this->watches[~mkLit(v)].clear();
         this->watchesBin[mkLit(v)].clear();
         this->watchesBin[~mkLit(v)].clear();
+#else
+        for (auto& watchers : this->watches) {
+            watchers[mkLit(v)].clear();
+            watchers[~mkLit(v)].clear();
+        }
+#endif
 
         return backwardSubsumptionCheck();
     }
@@ -817,8 +824,14 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     strengthened_clauses.clear();
     strengthened_sizes.clear();
 
-    this->watches.cleanAll();
-    this->watchesBin.cleanAll();
+#ifndef FUTURE_PROPAGATE
+    watches.cleanAll();
+    watchesBin.cleanAll();
+#else
+    for (auto& watchers : this->watches) {
+        watchers.cleanAll();
+    }
+#endif
     this->freeMarkedClauses(this->clauses);
     this->freeMarkedClauses(this->learnts);
     this->freeMarkedClauses(this->persist);
