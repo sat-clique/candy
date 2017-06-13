@@ -73,6 +73,8 @@
 
 #include "sonification/SolverSonification.h"
 
+#define FUTURE_PROPAGATE
+
 namespace Candy {
 
 class DefaultPickBranchLit {
@@ -344,9 +346,13 @@ protected:
 
     ClauseAllocator allocator;
 
+#ifndef FUTURE_PROPAGATE
     // 'watches[lit]' is a list of constraints watching 'lit' (will go there if literal becomes true).
     OccLists<Lit, Watcher, WatcherDeleted> watches;
     OccLists<Lit, Watcher, WatcherDeleted> watchesBin;
+#else
+    std::array<OccLists<Lit, Watcher, WatcherDeleted>, 6> watches;
+#endif
 
     vector<lbool> assigns; // The current assignments.
     vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
@@ -483,9 +489,8 @@ protected:
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
     Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-    Clause* future_propagate(); // Perform unit propagation. Returns possibly conflicting clause.
     inline Clause* future_propagate_binary_clauses(Lit p);
-    inline Clause* future_propagate_longer_clauses(Lit p);
+    inline Clause* future_propagate_clauses(Lit p, uint_fast8_t level);
     void cancelUntil(int level); // Backtrack until a certain level.
     void analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &nblevels);
     void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -616,7 +621,11 @@ Solver<PickBranchLitT>::Solver() :
     // clause allocator
     allocator(),
     // watchers
+#ifndef FUTURE_PROPAGATE
     watches(WatcherDeleted()), watchesBin(WatcherDeleted()),
+#else
+    watches(),
+#endif
     // current assignment
     assigns(), trail(), trail_size(0), qhead(0),
     vardata(), trail_lim(),
@@ -665,7 +674,12 @@ Solver<PickBranchLitT>::Solver() :
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
     // sonification
     sonification(),
-    pickBranchLitData() { }
+    pickBranchLitData()
+{
+    for (auto& watchers : watches) {
+        watchers = OccLists<Lit, Watcher, WatcherDeleted>();
+    }
+}
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::~Solver() {
@@ -714,8 +728,14 @@ bool Solver<PickBranchLitT>::isIncremental() {
 template<class PickBranchLitT>
 Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     int v = static_cast<int>(nVars());
+#ifndef FUTURE_PROPAGATE
     watches.init(mkLit(v, true));
     watchesBin.init(mkLit(v, true));
+#else
+    for (auto& watchers : watches) {
+        watchers.init(mkLit(v, true));
+    }
+#endif
     assigns.push_back(l_Undef);
     vardata.emplace_back();
     seen.push_back(0);
@@ -734,8 +754,14 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     size_t curVars = this->nVars();
     size_t maxVars = (size_t)dimacs.nVars();
     if (maxVars > curVars) {
+#ifndef FUTURE_PROPAGATE
         watches.init(mkLit(maxVars, true));
         watchesBin.init(mkLit(maxVars, true));
+#else
+        for (auto& watchers : watches) {
+            watchers.init(mkLit(maxVars, true));
+        }
+#endif
         assigns.resize(maxVars, l_Undef);
         vardata.resize(maxVars);
         seen.resize(maxVars, 0);
@@ -798,7 +824,8 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::attachClause(Clause* cr) {
     assert(cr->size() > 1);
-    
+
+#ifndef FUTURE_PROPAGATE
     if (cr->size() == 2) {
         watchesBin[~cr->first()].emplace_back(cr, cr->second());
         watchesBin[~cr->second()].emplace_back(cr, cr->first());
@@ -806,12 +833,18 @@ void Solver<PickBranchLitT>::attachClause(Clause* cr) {
         watches[~cr->first()].emplace_back(cr, cr->second());
         watches[~cr->second()].emplace_back(cr, cr->first());
     }
+#else
+    uint_fast8_t pos = std::min(cr->size()-2, 5);
+    watches[pos][~cr->first()].emplace_back(cr, cr->second());
+    watches[pos][~cr->second()].emplace_back(cr, cr->first());
+#endif
 }
 
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
-    
+
+#ifndef FUTURE_PROPAGATE
     if (cr->size() == 2) {
         if (strict) {
             vector<Watcher>& list0 = watchesBin[~cr->first()];
@@ -833,6 +866,18 @@ void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
             watches.smudge(~cr->second());
         }
     }
+#else
+    uint_fast8_t pos = std::min(cr->size()-2, 5);
+    if (strict) {
+        vector<Watcher>& list0 = watches[pos][~cr->first()];
+        vector<Watcher>& list1 = watches[pos][~cr->second()];
+        list0.erase(std::remove_if(list0.begin(), list0.end(), [cr](Watcher w){ return w.cref == cr; }), list0.end());
+        list1.erase(std::remove_if(list1.begin(), list1.end(), [cr](Watcher w){ return w.cref == cr; }), list1.end());
+    } else {
+        watches[pos].smudge(~cr->first());
+        watches[pos].smudge(~cr->second());
+    }
+#endif
 }
 
 template<class PickBranchLitT>
@@ -882,7 +927,11 @@ bool Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_l
     }
     
     bool minimize = false;
+#ifndef FUTURE_PROPAGATE
     for (Watcher w : watchesBin[~out_learnt[0]]) {
+#else
+    for (Watcher w : watches[0][~out_learnt[0]]) {
+#endif
         if (permDiff[var(w.blocker)] == MYFLAG && value(w.blocker) == l_True) {
             minimize = true;
             permDiff[var(w.blocker)] = MYFLAG - 1;
@@ -1127,6 +1176,7 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
     trail[trail_size++] = p;
 }
 
+#ifndef FUTURE_PROPAGATE
 #define INLINE_UPDATES
 /**************************************************************************************************
  *
@@ -1219,95 +1269,95 @@ Clause* Solver<PickBranchLitT>::propagate() {
     return nullptr;
 }
 
+#else // FUTURE PROPAGATE
+
 template <class PickBranchLitT>
-Clause* Solver<PickBranchLitT>::future_propagate_binary_clauses(Lit p) {
-    for (Watcher& watcher : watchesBin[p]) {
-        lbool val = value(watcher.blocker);
-        if (val == l_False) {
-            return watcher.cref;
-        }
-        if (val == l_Undef) {
-            uncheckedEnqueue(watcher.blocker, watcher.cref);
+Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t level) {
+    assert(level < watches.size());
+
+    vector<Watcher>& list = watches[level][p];
+
+    if (level == 0) { // propagate binary clauses
+        for (Watcher& watcher : list) {
+            lbool val = value(watcher.blocker);
+            if (val == l_False) {
+                return watcher.cref;
+            }
+            if (val == l_Undef) {
+                uncheckedEnqueue(watcher.blocker, watcher.cref);
+            }
         }
     }
-    return nullptr;
-}
+    else { // propagate other clauses
+        auto keep = list.begin();
+        for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
+            lbool val = value(watcher->blocker);
+            if (val != l_True) { // Try to avoid inspecting the clause
+                Clause* clause = watcher->cref;
 
-template <class PickBranchLitT>
-Clause* Solver<PickBranchLitT>::future_propagate_longer_clauses(Lit p) {
-    vector<Watcher>& list = watches[p];
-    auto keep = list.begin();
-    for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-        lbool val = value(watcher->blocker);
-        if (val != l_True) { // Try to avoid inspecting the clause
-            Clause* clause = watcher->cref;
+                if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                    clause->swap(0, 1);
+                }
 
-            if (clause->first() == ~p) { // Make sure the false literal is data[1]
-                clause->swap(0, 1);
-            }
+                if (watcher->blocker != clause->first()) {
+                    watcher->blocker = clause->first(); // repair blocker (why?)
+                    val = value(clause->first());
+                }
 
-            if (watcher->blocker != clause->first()) {
-                watcher->blocker = clause->first(); // repair blocker (why?)
-                val = value(clause->first());
-            }
+                if (val != l_True) {
+                    for (uint_fast8_t k = 2; k < clause->size(); k++) {
+                        if (value((*clause)[k]) != l_False) {
+                            clause->swap(1, k);
+                            watches[level][~clause->second()].emplace_back(clause, clause->first());
+                            goto propagate_skip;
+                        }
+                    }
 
-            if (val != l_True) {
-                for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                    if (value((*clause)[k]) != l_False) {
-                        clause->swap(1, k);
-                        watches[~clause->second()].emplace_back(clause, clause->first());
-                        goto propagate_skip;
+                    // did not find watch
+                    if (val == l_False) { // conflict
+                        list.erase(keep, watcher);
+                        return clause;
+                    }
+                    else { // unit
+                        uncheckedEnqueue(clause->first(), clause);
                     }
                 }
-
-                // did not find watch
-                if (val == l_False) { // conflict
-                    list.erase(keep, watcher);
-                    return clause;
-                }
-                else { // unit
-                    uncheckedEnqueue(clause->first(), clause);
-                }
             }
+            *keep = *watcher;
+            keep++;
+            propagate_skip:;
         }
-        *keep = *watcher;
-        keep++;
-        propagate_skip:;
+        list.erase(keep, list.end());
     }
-    list.erase(keep, list.end());
+
     return nullptr;
 }
 
-#define FUTURE_PROPAGATE
 template <class PickBranchLitT>
-Clause* Solver<PickBranchLitT>::future_propagate() {
-    watches.cleanAll();
-    watchesBin.cleanAll();
+Clause* Solver<PickBranchLitT>::propagate() {
+    for (auto& watchers : watches) {
+        watchers.cleanAll();
+    }
     Clause* conflict = nullptr;
 
-    uint32_t binary_pos = qhead;
-    uint32_t longer_pos = qhead;
+    std::array<uint32_t, 6> pos;
+    pos.fill(qhead);
     while (qhead < trail_size) {
-        while (binary_pos < trail_size) {
-            Lit p = trail[binary_pos++];
-            conflict = future_propagate_binary_clauses(p);
-            if (conflict != nullptr) {
-                return conflict;
+        for (uint_fast8_t level = 0; level < 6; level++) {
+            while (pos[level] < trail_size) {
+                Lit p = trail[pos[level]++];
+                conflict = future_propagate_clauses(p, level);
+                if (conflict != nullptr) {
+                    return conflict;
+                }
             }
         }
-        while (longer_pos < trail_size) {
-            Lit p = trail[longer_pos++];
-            conflict = future_propagate_longer_clauses(p);
-            if (conflict != nullptr) {
-                return conflict;
-            }
-        }
-        qhead = std::min(binary_pos, longer_pos);
-
+        qhead = *std::min_element(pos.begin(), pos.end());
     }
 
     return nullptr;
 }
+#endif
 
 /**************************************************************************************************
  *
@@ -1342,7 +1392,13 @@ void Solver<PickBranchLitT>::reduceDB() {
             removeClause(c);
         }
     }
+#ifndef FUTURE_PROPAGATE
     watches.cleanAll();
+#else
+    for (auto& watchers : watches) {
+        watchers.cleanAll();
+    }
+#endif
     size_t old_size = learnts.size();
     freeMarkedClauses(learnts);
     Statistics::getInstance().solverRemovedClausesInc(old_size - learnts.size());
@@ -1455,8 +1511,14 @@ bool Solver<PickBranchLitT>::simplify() {
     std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (satisfied(*c)) removeClause(c); });
 
     // Cleanup:
+#ifndef FUTURE_PROPAGATE
     watches.cleanAll();
     watchesBin.cleanAll();
+#else
+    for (auto& watchers : watches) {
+        watchers.cleanAll();
+    }
+#endif
 
     freeMarkedClauses(learnts);
     freeMarkedClauses(persist);
@@ -1519,8 +1581,14 @@ bool Solver<PickBranchLitT>::strengthen() {
     }
 
     // Cleanup:
+#ifndef FUTURE_PROPAGATE
     watches.cleanAll();
     watchesBin.cleanAll();
+#else
+    for (auto& watchers : watches) {
+        watchers.cleanAll();
+    }
+#endif
 
     freeMarkedClauses(learnts);
     freeMarkedClauses(persist);
@@ -1568,11 +1636,7 @@ lbool Solver<PickBranchLitT>::search() {
 
         uint32_t old_qhead = qhead;
 
-#ifndef FUTURE_PROPAGATE
         Clause* confl = propagate();
-#else
-        Clause* confl = future_propagate();
-#endif
 
         nPropagations += qhead - old_qhead;
         
@@ -1714,11 +1778,21 @@ lbool Solver<PickBranchLitT>::search() {
                         for (size_t v = 0; v < nVars(); v++) {
                             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
                             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
+#ifndef FUTURE_PROPAGATE
                                 sort(watches[l].begin(), watches[l].end(), [](Watcher w1, Watcher w2) {
                                     Clause& c1 = *w1.cref;
                                     Clause& c2 = *w2.cref;
                                     return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
                                 });
+#else
+                                for (auto& watchers : watches) {
+                                    sort(watchers[l].begin(), watchers[l].end(), [](Watcher w1, Watcher w2) {
+                                        Clause& c1 = *w1.cref;
+                                        Clause& c2 = *w2.cref;
+                                        return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
+                                    });
+                                }
+#endif
                             }
                         }
                         Statistics::getInstance().runtimeStop("Sort Watches");
