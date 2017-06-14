@@ -347,10 +347,12 @@ protected:
     ClauseAllocator allocator;
 
 #ifndef FUTURE_PROPAGATE
-    std::array<OccLists<Lit, Watcher, WatcherDeleted>, 2> watches;
+#define NWATCHES 2
 #else
-    std::array<OccLists<Lit, Watcher, WatcherDeleted>, 6> watches;
+#define NWATCHES 6
 #endif
+
+    std::array<OccLists<Lit, Watcher, WatcherDeleted>, NWATCHES> watches;
 
     vector<lbool> assigns; // The current assignments.
     vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
@@ -487,7 +489,7 @@ protected:
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
     Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-    inline Clause* future_propagate_clauses(Lit p, uint_fast8_t level);
+    template<unsigned int N> inline Clause* future_propagate_clauses(Lit p);
     void cancelUntil(int level); // Backtrack until a certain level.
     void analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &nblevels);
     void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
@@ -807,7 +809,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::attachClause(Clause* cr) {
     assert(cr->size() > 1);
-    uint_fast8_t pos = std::min(cr->size()-2, (uint_fast8_t)watches.size() - 1);
+    uint_fast8_t pos = std::min(cr->size()-2, NWATCHES-1);
     watches[pos][~cr->first()].emplace_back(cr, cr->second());
     watches[pos][~cr->second()].emplace_back(cr, cr->first());
 }
@@ -815,7 +817,7 @@ void Solver<PickBranchLitT>::attachClause(Clause* cr) {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
     assert(cr->size() > 1);
-    uint_fast8_t pos = std::min(cr->size()-2, (uint_fast8_t)watches.size() - 1);
+    uint_fast8_t pos = std::min(cr->size()-2, NWATCHES-1);
     if (strict) {
         vector<Watcher>& list0 = watches[pos][~cr->first()];
         vector<Watcher>& list1 = watches[pos][~cr->second()];
@@ -1131,12 +1133,13 @@ void Solver<PickBranchLitT>::uncheckedEnqueue(Lit p, Clause* from) {
  *      * the propagation queue is empty, even if there was a conflict.
  **************************************************************************************************/
 template <class PickBranchLitT>
-Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t level) {
-    assert(level < watches.size());
+template<unsigned int N>
+Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p) {
+    assert(N < watches.size());
 
-    vector<Watcher>& list = watches[level][p];
+    vector<Watcher>& list = watches[N][p];
 
-    if (level == 0) { // propagate binary clauses
+    if (N == 0) { // propagate binary clauses
         for (Watcher& watcher : list) {
             lbool val = value(watcher.blocker);
             if (val == l_False) {
@@ -1164,10 +1167,21 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t lev
                 }
 
                 if (val != l_True) {
+#if N == NWATCHES-1
+                    for (uint_fast8_t k = 2; k < clause->size(); k++) {
+#else
+                    for (uint_fast8_t k = 2; k < N; k++) {
+#endif
+                        if (value((*clause)[k]) != l_False) {
+                            clause->swap(1, k);
+                            watches[N][~clause->second()].emplace_back(clause, clause->first());
+                            goto propagate_skip;
+                        }
+                    }
                     for (uint_fast8_t k = 2; k < clause->size(); k++) {
                         if (value((*clause)[k]) != l_False) {
                             clause->swap(1, k);
-                            watches[level][~clause->second()].emplace_back(clause, clause->first());
+                            watches[N][~clause->second()].emplace_back(clause, clause->first());
                             goto propagate_skip;
                         }
                     }
@@ -1205,11 +1219,11 @@ Clause* Solver<PickBranchLitT>::propagate() {
         Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
 
         // Propagate binary clauses
-        conflict = future_propagate_clauses(p, 0);
+        conflict = future_propagate_clauses<0>(p);
         if (conflict != nullptr) break;
 
         // Propagate other 2-watched clauses
-        conflict = future_propagate_clauses(p, 1);
+        conflict = future_propagate_clauses<1>(p);
         if (conflict != nullptr) break;
     }
 
@@ -1223,24 +1237,65 @@ Clause* Solver<PickBranchLitT>::propagate() {
     for (auto& watchers : watches) {
         watchers.cleanAll();
     }
+
     Clause* conflict = nullptr;
 
-    std::array<uint32_t, 6> pos;
-    pos.fill(qhead);
-    while (qhead < trail_size) {
-        for (uint_fast8_t level = 0; level < 6; level++) {
-            while (pos[level] < trail_size) {
-                Lit p = trail[pos[level]++];
-                conflict = future_propagate_clauses(p, level);
-                if (conflict != nullptr) {
-                    return conflict;
-                }
+    if (qhead < trail_size) {
+        std::array<uint32_t, NWATCHES> pos;
+        pos.fill(qhead);
+
+        while (pos[0] < trail_size) {
+            while (pos[0] < trail_size) {
+                Lit p = trail[pos[0]++];
+                conflict = future_propagate_clauses<0>(p);
+                if (conflict != nullptr) return conflict;
+            }
+
+            while (pos[1] < trail_size) {
+                Lit p = trail[pos[1]++];
+                conflict = future_propagate_clauses<1>(p);
+                if (conflict != nullptr) return conflict;
+            }
+
+            if (pos[0] < trail_size) continue;
+
+            while (pos[2] < trail_size) {
+                Lit p = trail[pos[2]++];
+                conflict = future_propagate_clauses<2>(p);
+                if (conflict != nullptr) return conflict;
+            }
+
+            if (pos[0] < trail_size) continue;
+
+            while (pos[3] < trail_size) {
+                Lit p = trail[pos[3]++];
+                conflict = future_propagate_clauses<3>(p);
+                if (conflict != nullptr) return conflict;
+            }
+
+            if (pos[0] < trail_size) continue;
+
+            while (pos[4] < trail_size) {
+                Lit p = trail[pos[4]++];
+                conflict = future_propagate_clauses<4>(p);
+                if (conflict != nullptr) return conflict;
+            }
+
+            if (pos[0] < trail_size) continue;
+
+            while (pos[5] < trail_size) {
+                Lit p = trail[pos[5]++];
+                conflict = future_propagate_clauses<5>(p);
+                if (conflict != nullptr) return conflict;
             }
         }
-        qhead = *std::min_element(pos.begin(), pos.end());
+
+        assert(pos[0] == trail_size);
+
+        qhead = trail_size;
     }
 
-    return nullptr;
+    return conflict;
 }
 #endif
 
