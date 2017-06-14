@@ -1167,18 +1167,8 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p) {
                 }
 
                 if (val != l_True) {
-#if N == NWATCHES-1
-                    for (uint_fast8_t k = 2; k < clause->size(); k++) {
-#else
-                    for (uint_fast8_t k = 2; k < N; k++) {
-#endif
-                        if (value((*clause)[k]) != l_False) {
-                            clause->swap(1, k);
-                            watches[N][~clause->second()].emplace_back(clause, clause->first());
-                            goto propagate_skip;
-                        }
-                    }
-                    for (uint_fast8_t k = 2; k < clause->size(); k++) {
+                    uint_fast8_t n = (N == NWATCHES-1) ? clause->size() : N+2;
+                    for (uint_fast8_t k = 2; k < n; k++) {
                         if (value((*clause)[k]) != l_False) {
                             clause->swap(1, k);
                             watches[N][~clause->second()].emplace_back(clause, clause->first());
