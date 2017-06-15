@@ -43,6 +43,8 @@ namespace Candy {
      */
     
     /**
+     * \class RSILBranchingHeuristic
+     *
      * \ingroup RS_ImplicitLearning
      *
      * \brief A PickBranchLit type for branching decisions using implicit learning.
@@ -214,6 +216,8 @@ namespace Candy {
     
     
     /**
+     * \class RSILBudgetBranchingHeuristic
+     *
      * \ingroup RS_ImplicitLearning
      *
      * \brief A PickBranchLit type for branching decisions using implicit learning, limited by budgets.
@@ -235,6 +239,7 @@ namespace Candy {
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
         /**
+         * \class
          * \brief RSILBudgetBranchingHeuristic parameters.
          */
         class Parameters {
@@ -280,6 +285,8 @@ namespace Candy {
     using RSILBudgetBranchingHeuristic2 = RSILBudgetBranchingHeuristic<2>;
     
     /**
+     * \class RSILVanishingBranchingHeuristic
+     *
      * \ingroup RS_ImplicitLearning
      *
      * \brief A PickBranchLit type for branching decisions using implicit learning, limited by the amount of performed decisions.
