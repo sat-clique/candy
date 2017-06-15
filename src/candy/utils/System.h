@@ -25,7 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #if defined(_WIN32)
 
-namespace Glucose {
+namespace Candy {
 // Getting the CPU time on Windows involves including Windows.h,
 // for now let's restrict that to System.cc
 std::chrono::milliseconds cpuTime(void);
@@ -36,7 +36,7 @@ std::chrono::milliseconds cpuTime(void);
 #include <sys/resource.h>
 #include <unistd.h>
 
-namespace Glucose {
+namespace Candy {
 static inline std::chrono::milliseconds cpuTime(void) {
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);

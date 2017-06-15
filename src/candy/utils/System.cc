@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 static HANDLE processHandle = INVALID_HANDLE_VALUE;
 
-std::chrono::milliseconds Glucose::cpuTime(void) {
+std::chrono::milliseconds Candy::cpuTime(void) {
     if (processHandle == INVALID_HANDLE_VALUE) {
         processHandle = GetCurrentProcess();
     }
