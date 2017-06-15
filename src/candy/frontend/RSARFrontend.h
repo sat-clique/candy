@@ -27,7 +27,7 @@
 #ifndef X_C68DAB8D_F573_4EEB_90C7_B7B0CC7795B9_H
 #define X_C68DAB8D_F573_4EEB_90C7_B7B0CC7795B9_H
 
-#include <rsar/ARSolver.h>
+#include <candy/rsar/ARSolver.h>
 
 namespace Candy {
     class GateAnalyzer;

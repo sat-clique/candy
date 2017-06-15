@@ -27,7 +27,7 @@
 #ifndef X_4311DBC6_D73E_4BCA_A592_823CDA996EB9_TESTUTILS_H
 #define X_4311DBC6_D73E_4BCA_A592_823CDA996EB9_TESTUTILS_H
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>

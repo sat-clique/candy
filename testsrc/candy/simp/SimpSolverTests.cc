@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
-#include <core/SolverTypes.h>
-#include <simp/SimpSolver.h>
-#include <core/Solver.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/simp/SimpSolver.h>
+#include <candy/core/Solver.h>
 
 // This is a regression test provoking a bug due to SimpSolver appending,
 // instead of replacing the vector of assumption literals

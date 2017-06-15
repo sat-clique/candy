@@ -239,8 +239,6 @@ endfunction()
 ### Set up include directories
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
-# for refactoring purposes, TODO: use e.g. candy/core/SolverTypes.h instead of core/SolverTypes.h
-include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 
 set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 

@@ -28,7 +28,7 @@
 
 #include "Propagation.h"
 
-#include <utils/MemUtils.h>
+#include <candy/utils/MemUtils.h>
 
 #include "ClauseOrder.h"
 #include "SimulationVector.h"

@@ -6,7 +6,6 @@ add_executable(utils_tests
     $<TARGET_OBJECTS:testutils>)
 
 target_include_directories(utils_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
-target_include_directories(utils_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
 candy_executable_customizations(utils_tests)
 

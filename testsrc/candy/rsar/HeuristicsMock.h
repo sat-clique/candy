@@ -28,8 +28,8 @@
 #define X_70571638_C307_4548_8A51_938865519EE0_HEURISTICSMOCK_H
 
 #include <gmock/gmock.h>
-#include <core/SolverTypes.h>
-#include <rsar/Heuristics.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/rsar/Heuristics.h>
 
 #include <map>
 

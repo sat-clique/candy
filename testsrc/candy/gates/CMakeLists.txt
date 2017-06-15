@@ -9,7 +9,6 @@ target_include_directories(gates_tests PUBLIC ${PROJECT_SOURCE_DIR}/lib/googlete
                                               ${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include)
 
 target_include_directories(gates_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
-target_include_directories(gates_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
 target_link_libraries(gates_tests ${CANDY_LIBS} gtest_main gtest)
 

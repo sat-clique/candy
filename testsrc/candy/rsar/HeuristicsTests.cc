@@ -24,11 +24,11 @@
  
  */
 #include <gtest/gtest.h>
-#include <gates/GateAnalyzer.h>
-#include <rsar/Heuristics.h>
-#include <rsar/ApproximationState.h>
+#include <candy/gates/GateAnalyzer.h>
+#include <candy/rsar/Heuristics.h>
+#include <candy/rsar/ApproximationState.h>
 
-#include <testutils/TestGateStructure.h>
+#include <candy/testutils/TestGateStructure.h>
 
 #include <unordered_set>
 #include <vector>

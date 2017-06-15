@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include <core/Statistics.h>
+#include <candy/core/Statistics.h>
 #include "candy/utils/System.h"
 
 namespace Candy {

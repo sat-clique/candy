@@ -31,7 +31,7 @@
 #include <memory>
 #include <unordered_set>
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 
 namespace Candy {
   class GateAnalyzer;

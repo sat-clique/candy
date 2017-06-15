@@ -26,9 +26,9 @@
 
 #include "ARSolver.h"
 
-#include <randomsimulation/Conjectures.h>
-#include <utils/MemUtils.h>
-#include <utils/System.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/utils/MemUtils.h>
+#include <candy/utils/System.h>
 
 #include "Heuristics.h"
 #include "Refinement.h"

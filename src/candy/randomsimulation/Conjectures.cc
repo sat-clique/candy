@@ -27,7 +27,7 @@
 // TODO: documentation
 
 #include "Conjectures.h"
-#include <utils/MemUtils.h>
+#include <candy/utils/MemUtils.h>
 
 namespace Candy {
     EquivalenceConjecture::EquivalenceConjecture() : m_lits() {

@@ -26,8 +26,8 @@
 
 #define CANDY_EXPOSE_TESTING_INTERFACE
 #include "ApproximationState.h"
-#include <randomsimulation/Conjectures.h>
-#include <utils/MemUtils.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/utils/MemUtils.h>
 
 #include <set>
 #include <unordered_map>
