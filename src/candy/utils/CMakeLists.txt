@@ -1,6 +1,4 @@
 add_library(utils OBJECT
-    CNFProblem.cc
-    CNFProblem.h
     Runtime.h
     Options.cc
     Options.h

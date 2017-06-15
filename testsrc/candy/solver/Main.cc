@@ -6,7 +6,7 @@
 
 #include <gtest/gtest.h>
 
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 #include <candy/core/Solver.h>
 
 using namespace Candy;

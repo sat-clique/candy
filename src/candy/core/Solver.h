@@ -66,7 +66,7 @@
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/ClauseAllocator.h"
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 #include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"

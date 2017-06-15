@@ -31,7 +31,7 @@
 #include <iostream>
 #include <memory>
 
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 
 namespace Candy {
     class GateAnalyzer;
