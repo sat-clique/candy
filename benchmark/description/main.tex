@@ -15,6 +15,7 @@
 \usepackage[T1]{fontenc} 
 \usepackage[utf8]{inputenc}
 \usepackage{listings}
+\usepackage{balance}
 
 \usepackage{tikz}
 \usetikzlibrary{shapes,arrows,chains,matrix,fit,backgrounds,calc}
@@ -132,7 +133,7 @@ The main function (\texttt{\_\_llbmc\_main}) runs both implementations on
 a non-deterministically initialized array and checks that they always return equal
 values.
 
-Instances, where $N$ is a power of two should be simpler to solve due to simplifications
+Instances where $N$ is a power of two should be simpler to solve due to simplifications
 performed by LLBMC and the SMT solver. All instances are unsatisfiable.
 
 \lstinputlisting{listings/array-avg.c}
@@ -163,8 +164,12 @@ for an exponent $n$ of 3, i.e. that there are no solutions of the equation
 $x^3 + y^3 = z^3$ for suitable machine integers $x$, $y$, and $z$.
 The instance is unsatisfiable.
 
+\noindent
+\begin{minipage}[l]{\textwidth}
 \lstinputlisting{listings/fermat.c}
+\end{minipage}
 
+\balance
 \subsection{Magic}
 
 This instance checks an assertion in a C program containing shifts and multiplication.
