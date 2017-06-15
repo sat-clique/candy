@@ -26,11 +26,11 @@
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
-#include <core/SolverTypes.h>
-#include <randomsimulation/Conjectures.h>
-#include <rsil/ImplicitLearningAdvice.h>
-#include <rsar/Heuristics.h>
-#include <rsil/RSARHeuristicsFilter.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/rsil/ImplicitLearningAdvice.h>
+#include <candy/rsar/Heuristics.h>
+#include <candy/rsil/RSARHeuristicsFilter.h>
 
 #include "TestUtils.h"
 

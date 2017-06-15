@@ -27,8 +27,8 @@
 #ifndef X_B0365966_12B4_43E3_96EF_988DF3D415D6_IMPLICITLEARNINGADVICE_H
 #define X_B0365966_12B4_43E3_96EF_988DF3D415D6_IMPLICITLEARNINGADVICE_H
 
-#include <core/SolverTypes.h>
-#include <randomsimulation/Conjectures.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/randomsimulation/Conjectures.h>
 
 #include <array>
 #include <vector>

@@ -26,8 +26,8 @@
 
 #include "TestUtils.h"
 #include <candy/core/CNFProblem.h>
-#include <randomsimulation/Conjectures.h>
-#include <testutils/TestUtils.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/testutils/TestUtils.h>
 
 namespace Candy {
     bool hasBackboneConj(const Conjectures &c, Lit lit) {

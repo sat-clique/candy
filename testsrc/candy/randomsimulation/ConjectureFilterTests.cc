@@ -25,7 +25,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <randomsimulation/Conjectures.h>
+#include <candy/randomsimulation/Conjectures.h>
 
 #include "TestUtils.h"
 

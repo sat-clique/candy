@@ -26,7 +26,7 @@
 
 #include <gtest/gtest.h>
 
-#include <gates/GateAnalyzer.h>
+#include <candy/gates/GateAnalyzer.h>
 
 #include "TestGateStructure.h"
 #include "TestUtils.h"

@@ -30,10 +30,10 @@
 #include "HeuristicsMock.h"
 #include "TestUtils.h"
 
-#include <rsar/Refinement.h>
-#include <rsar/ApproximationState.h>
-#include <rsar/Heuristics.h>
-#include <randomsimulation/Conjectures.h>
+#include <candy/rsar/Refinement.h>
+#include <candy/rsar/ApproximationState.h>
+#include <candy/rsar/Heuristics.h>
+#include <candy/randomsimulation/Conjectures.h>
 
 #include <functional>
 

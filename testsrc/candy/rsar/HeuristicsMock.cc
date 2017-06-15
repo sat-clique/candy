@@ -25,8 +25,8 @@
  */
 
 #include "HeuristicsMock.h"
-#include <core/SolverTypes.h>
-#include <rsar/ApproximationState.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/rsar/ApproximationState.h>
 
 #include <gtest/gtest.h>
 

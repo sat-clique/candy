@@ -30,8 +30,8 @@
 #include "ApproximationState.h"
 
 
-#include <randomsimulation/Conjectures.h>
-#include <utils/MemUtils.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/utils/MemUtils.h>
 
 #include <memory>
 #include <functional>

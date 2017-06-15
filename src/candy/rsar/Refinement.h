@@ -28,7 +28,7 @@
 #define X_32B3E7DC_D35F_4CE4_8AC0_1C936836339D_REFINEMENT_H
 
 #include "ApproximationState.h"
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 
 #include <vector>
 #include <utility>

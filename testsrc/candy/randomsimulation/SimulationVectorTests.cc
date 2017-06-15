@@ -26,7 +26,7 @@
 
 #include <gtest/gtest.h>
 
-#include <randomsimulation/SimulationVector.h>
+#include <candy/randomsimulation/SimulationVector.h>
 
 
 namespace Candy {

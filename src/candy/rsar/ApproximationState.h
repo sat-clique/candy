@@ -27,7 +27,7 @@
 #ifndef X_500114B7_8000_48A9_B794_0AB186344A6E_REFINEMENTSTATE_H
 #define X_500114B7_8000_48A9_B794_0AB186344A6E_REFINEMENTSTATE_H
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 
 #include <memory>
 #include <deque>

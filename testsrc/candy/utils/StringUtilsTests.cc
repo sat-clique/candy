@@ -25,7 +25,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <utils/StringUtils.h>
+#include <candy/utils/StringUtils.h>
 
 #include <string>
 

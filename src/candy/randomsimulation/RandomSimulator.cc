@@ -28,9 +28,9 @@
 
 #include <cassert>
 
-#include <utils/MemUtils.h>
-#include <utils/System.h>
-#include <utils/Runtime.h>
+#include <candy/utils/MemUtils.h>
+#include <candy/utils/System.h>
+#include <candy/utils/Runtime.h>
 
 #include "ClauseOrder.h"
 #include "Partition.h"
