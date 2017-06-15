@@ -1228,49 +1228,46 @@ Clause* Solver<PickBranchLitT>::propagate() {
         watchers.cleanAll();
     }
 
-    Clause* conflict = nullptr;
-    std::array<uint32_t, NWATCHES> pos;
+    std::array<uint32_t, NWATCHES-1> pos;
     pos.fill(qhead);
 
-    while (pos[0] < trail_size) {
+    while (qhead < trail_size) {
+        while (qhead < trail_size) {
+            Lit p = trail[qhead++];
+            Clause* conflict = future_propagate_clauses<0>(p);
+            if (conflict != nullptr) return conflict;
+        }
+
         while (pos[0] < trail_size) {
             Lit p = trail[pos[0]++];
-            conflict = future_propagate_clauses<0>(p);
+            Clause* conflict = future_propagate_clauses<1>(p);
             if (conflict != nullptr) return conflict;
         }
 
         while (pos[1] < trail_size) {
             Lit p = trail[pos[1]++];
-            conflict = future_propagate_clauses<1>(p);
+            Clause* conflict = future_propagate_clauses<2>(p);
             if (conflict != nullptr) return conflict;
         }
 
         while (pos[2] < trail_size) {
             Lit p = trail[pos[2]++];
-            conflict = future_propagate_clauses<2>(p);
+            Clause* conflict = future_propagate_clauses<3>(p);
             if (conflict != nullptr) return conflict;
         }
 
         while (pos[3] < trail_size) {
             Lit p = trail[pos[3]++];
-            conflict = future_propagate_clauses<3>(p);
+            Clause* conflict = future_propagate_clauses<4>(p);
             if (conflict != nullptr) return conflict;
         }
 
         while (pos[4] < trail_size) {
             Lit p = trail[pos[4]++];
-            conflict = future_propagate_clauses<4>(p);
-            if (conflict != nullptr) return conflict;
-        }
-
-        while (pos[5] < trail_size) {
-            Lit p = trail[pos[5]++];
-            conflict = future_propagate_clauses<5>(p);
+            Clause* conflict = future_propagate_clauses<5>(p);
             if (conflict != nullptr) return conflict;
         }
     }
-
-    qhead = pos[0];
 
     return nullptr;
 }
