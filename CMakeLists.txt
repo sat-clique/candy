@@ -258,7 +258,7 @@ endif()
 
 add_subdirectory(src)
 
-set(CANDY_OBJECTS $<TARGET_OBJECTS:frontend>
+set(CANDY_OBJECTS
   $<TARGET_OBJECTS:gates>
   $<TARGET_OBJECTS:randomsimulation>
   $<TARGET_OBJECTS:rsil>
@@ -275,10 +275,11 @@ add_subdirectory(lib)
 add_subdirectory(testsrc)
 
 ### Define and link target executables and libraries
-
-add_executable(candy src/candy/Main.cc ${CANDY_OBJECTS})
-candy_executable_customizations(candy)
-target_link_libraries(candy ${CANDY_LIBS})
-
 add_library(candystatic STATIC ${CANDY_OBJECTS})
 target_link_libraries(candystatic ${CANDY_LIBS})
+
+add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
+candy_executable_customizations(candy)
+target_link_libraries(candy candystatic)
+
+
