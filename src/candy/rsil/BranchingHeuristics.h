@@ -45,9 +45,18 @@ namespace Candy {
     /**
      * \ingroup RS_ImplicitLearning
      *
+     * \brief A PickBranchLit type for branching decisions using implicit learning.
+     *
      * A PickBranchLitT type (see candy/core/Solver.h) for plain random-simulation-based
      * implicit learning solvers. A pickBranchLit implementation is provided for the
      * RSILBranchingHeuristic PickBranchLitT type.
+     *
+     * \tparam AdviceType    The advice type used by the branching heuristic. May be any
+     *                       type having the same interface as AdviceType defined in the
+     *                       ImplicitLearningAdvice.h file. Advices are used as compact
+     *                       storages of conjectures about literal equivalencies and may
+     *                       carry further information about these conjectures, e.g. usage
+     *                       budgets.
      */
     template<class AdviceType>
     class RSILBranchingHeuristic {
@@ -55,23 +64,42 @@ namespace Candy {
           "AdviceType must have an inner type BasicType");
         
     public:
+        /// The type of the underlying solver's trail data structure
         using TrailType = std::vector<Lit>;
+        
+        /// The type of the underlying solver's trail limits data structure
         using TrailLimType = std::vector<uint32_t>;
+        
+        /// The type of the underlying solver's container marking decision variables
         using DecisionType = std::vector<char>;
+        
+        /// The type of the underlying solver's assignment data structure
         using AssignsType = std::vector<lbool>;
         
+        /// A type used for recognition of RSILBranchingHeuristic types in template metaprogramming.
+        /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBranchingHeuristic<AdviceEntry<3>>;
         
         /**
-         * RSILBranchingHeuristic parameters.
+         * \brief RSILBranchingHeuristic parameters.
          */
         class Parameters {
         public:
             /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
             const Conjectures& conjectures;
+            
+            /// Iff true, conjectures about backbone variables are taken into consideration for implicit learning.
             const bool backbonesEnabled;
+            
+            /// Iff true, the RSARHeuristic given by this parameter struct is used to filter the conjectures
+            /// before running RSIL.
             const bool filterByRSARHeuristic;
+            
+            /// An RSARHeuristic used to filter the conjectures before running RSIL. May contain nullptr if
+            /// filterByRSARHeuristic == false.
             std::shared_ptr<RefinementHeuristic> RSARHeuristic;
+            
+            /// Iff true, the RSARHeuristic is only used to filter backbone conjectures.
             const bool filterOnlyBackbones;
             
             Parameters(const Conjectures& conjectures_,
@@ -89,26 +117,83 @@ namespace Candy {
             Parameters() = default;
         };
         
+        /**
+         * \brief Constructs a new RSILBranchingHeuristic instance with a default configuration
+         *        and no literal-equivalency/backbone conjectures.
+         *
+         * An instance constructed this way does not provide implicit learning advice, i.e.
+         * getAdvice(...) always returns lit_Undef and getSignAdvice(L) returns L.
+         *
+         */
         RSILBranchingHeuristic();
+        
+        /**
+         * \brief Constructs a new RSILBranchingHeuristic instance using the given parameters.
+         *
+         * \param params    The RSIL parameter object used to configure the constructed object.
+         */
         explicit RSILBranchingHeuristic(const Parameters& params);
         RSILBranchingHeuristic(RSILBranchingHeuristic&& other) = default;
         RSILBranchingHeuristic& operator=(RSILBranchingHeuristic&& other) = default;
         
+        /**
+         * \brief Gets a branching literal advice using implicit learning.
+         *
+         * If possible, a branching decision literal is proposed with implicit learning using
+         * the literals occurring on the trail's most recent decision level. If no such literal
+         * can be picked, lit_Undef is returned. Note that getAdvice(...) does not return literals
+         * conjectured to belong to the problem's backbone.
+         *
+         * \param trail         The sequence of current variable assignments, ordered by the
+         *                      time of assignment.
+         * \param trailSize     The size of the initial segment of \p trail containing the current
+         *                      sequence of variable assignments.
+         * \param trailLimits   A sequence of indices of \p trail partitioning \p trail into assignments
+         *                      occurring on different decision levels.
+         * \param assigns       The underlying solver's variable assignments. For a variable \p v,
+         *                      \p assigns[v] must be the lbool representing its current assignment.
+         * \param decision      A data structure marking variables eligible to be used for branching
+         *                      decisions. A variable \p v is considered eligible iff \p decision[v]
+         *                      is not 0.
+         *
+         * \returns a literal chosen via implicit learning or lit_Undef.
+         */
         Lit getAdvice(const TrailType& trail,
                       uint64_t trailSize,
                       const TrailLimType& trailLimits,
                       const AssignsType& assigns,
                       const DecisionType& decision) noexcept;
         
+        /**
+         * \brief Gets a branching literal sign advice using implicit learning.
+         *
+         * For a branching literal L having already been picked for a branching decision, this method
+         * returns a literal with the same variable as L, but a sign chosen via implicit learning. Note
+         * that with this method, implicit learning is only used for backbone variable conjectures.
+         *
+         * \returns a literal L having the same variable as \p literal.
+         */
         Lit getSignAdvice(Lit literal) noexcept;
         
+        /**
+         * \brief Gets the pseudorandom number generator used by the heuristic.
+         *
+         * This method exposes the heuristic's internal PRNG to allow more efficient implementations
+         * of this heuristic's variants. Clients may use and modify the PRNG.
+         *
+         * \returns a PRNG.
+         */
         FastRandomNumberGenerator& getRandomNumberGenerator() noexcept;
         
     protected:
+        /// The conjectures about literal equivalencies and backbones.
         ImplicitLearningAdvice<AdviceType> m_advice;
         
     private:
+        /// The heuristic's pseudorandom number generator.
         FastRandomNumberGenerator m_rng;
+        
+        /// Iff true, backbones are taken into consideration for implicit learning.
         bool m_backbonesEnabled;
     };
     
@@ -119,11 +204,19 @@ namespace Candy {
      * A specialization of RSILBranchingHeuristic<n> with n=3.
      */
     using RSILBranchingHeuristic3 = RSILBranchingHeuristic<AdviceEntry<3>>;
+    
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A specialization of RSILBranchingHeuristic<n> with n=2.
+     */
     using RSILBranchingHeuristic2 = RSILBranchingHeuristic<AdviceEntry<2>>;
     
     
     /**
      * \ingroup RS_ImplicitLearning
+     *
+     * \brief A PickBranchLit type for branching decisions using implicit learning, limited by budgets.
      *
      * This is a RSILBranchingHeuristic tailored for implicit learning with implication
      * budgets. Each implication is assigned an initial budget, and each time it is used
@@ -134,12 +227,15 @@ namespace Candy {
     class RSILBudgetBranchingHeuristic : public RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>> {
         static_assert(tAdviceSize > 1, "advice size must be >= 2");
     public:
-        
+        /// A type used for recognition of RSILBudgetBranchingHeuristic types in template metaprogramming.
+        /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBudgetBranchingHeuristic<3>;
+        
+        /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
         /**
-         * RSILBudgetBranchingHeuristic parameters.
+         * \brief RSILBudgetBranchingHeuristic parameters.
          */
         class Parameters {
         public:
@@ -169,11 +265,24 @@ namespace Candy {
         RSILBudgetBranchingHeuristic& operator=(RSILBudgetBranchingHeuristic&& other) = default;
     };
     
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A specialization of RSILBudgetBranchingHeuristic<n> with n=3.
+     */
     using RSILBudgetBranchingHeuristic3 = RSILBudgetBranchingHeuristic<3>;
+    
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A specialization of RSILBudgetBranchingHeuristic<n> with n=2.
+     */
     using RSILBudgetBranchingHeuristic2 = RSILBudgetBranchingHeuristic<2>;
     
     /**
      * \ingroup RS_ImplicitLearning
+     *
+     * \brief A PickBranchLit type for branching decisions using implicit learning, limited by the amount of performed decisions.
      *
      * A PickBranchLitT type (see candy/core/Solver.h) for plain random-simulation-based
      * implicit learning solvers. This heuristic produces results with decreased probability,
@@ -186,14 +295,18 @@ namespace Candy {
     template<class AdviceType>
     class RSILVanishingBranchingHeuristic {
     public:
+        // See the documentation of RSILBranchingHeuristic for the following 4 types.
         using TrailType = typename RSILBranchingHeuristic<AdviceType>::TrailType;
         using TrailLimType = typename RSILBranchingHeuristic<AdviceType>::TrailLimType;
         using DecisionType = typename RSILBranchingHeuristic<AdviceType>::DecisionType;
         using AssignsType = typename RSILBranchingHeuristic<AdviceType>::AssignsType;
         
         
+        /// A type used for recognition of RSILVanishingBranchingHeuristic types in template metaprogramming.
+        /// This type is independent of the template argument AdviceType.
         using BasicType = RSILVanishingBranchingHeuristic<AdviceEntry<3>>;
         
+        /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
         
         /**
@@ -229,22 +342,76 @@ namespace Candy {
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
         
+        /**
+         * \brief Gets a branching literal advice using implicit learning.
+         *
+         * If possible, a branching decision literal is proposed with implicit learning using
+         * the literals occurring on the trail's most recent decision level. If no such literal
+         * can be picked, lit_Undef is returned. Note that getAdvice(...) does not return literals
+         * conjectured to belong to the problem's backbone.
+         *
+         * \param trail         The sequence of current variable assignments, ordered by the
+         *                      time of assignment.
+         * \param trailSize     The size of the initial segment of \p trail containing the current
+         *                      sequence of variable assignments.
+         * \param trailLimits   A sequence of indices of \p trail partitioning \p trail into assignments
+         *                      occurring on different decision levels.
+         * \param assigns       The underlying solver's variable assignments. For a variable \p v,
+         *                      \p assigns[v] must be the lbool representing its current assignment.
+         * \param decision      A data structure marking variables eligible to be used for branching
+         *                      decisions. A variable \p v is considered eligible iff \p decision[v]
+         *                      is not 0.
+         *
+         * \returns a literal chosen via implicit learning or lit_Undef.
+         */
         Lit getAdvice(const TrailType& trail,
                       uint64_t trailSize,
                       const TrailLimType& trailLimits,
                       const AssignsType& assigns,
                       const DecisionType& decision) noexcept;
         
+        /**
+         * \brief Gets a branching literal sign advice using implicit learning.
+         *
+         * For a branching literal L having already been picked for a branching decision, this method
+         * returns a literal with the same variable as L, but a sign chosen via implicit learning. Note
+         * that with this method, implicit learning is only used for backbone variable conjectures.
+         *
+         * \returns a literal L having the same variable as \p literal.
+         */
         Lit getSignAdvice(Lit literal) noexcept;
         
         
     private:
+        /**
+         * \brief Decides if implicit learning can used for this decision.
+         *
+         * \returns true iff implicit learning can used for this decision.
+         */
         bool isRSILEnabled() noexcept;
+        
+        /**
+         * \brief Updates the counter used for isRSILEnabled().
+         *
+         * Increases m_callCounter by one. If the counter exceeds the probability half-life,
+         * the probability of using implicit learning is halved and the counter is reset to 0.
+         */
         void updateCallCounter() noexcept;
         
+        /// The counter used to keep track of the number of branching decisions modulo the
+        /// intervention probability half-life.
         uint64_t m_callCounter;
+        
+        /// The mask used on a pseudorandom number for deciding whether to use implicit learning:
+        /// If the current probability of using IL is 2^{-P}, the P lowest bits of m_mask are set
+        /// to 1. To decide whether to use IL, a pseudorandom number X is generated; if X & m_mask
+        /// is 0, implicit learning is used, otherwise not.
         fastnextrand_state_t m_mask;
+        
+        /// The intervention probability half-life (in terms of overall performed decisions)
         uint64_t m_probHalfLife;
+        
+        /// The underlying RSIL branching heuristic used for computing implicit learning advice.
         RSILBranchingHeuristic<AdviceType> m_rsilHeuristic;
     };
     
@@ -254,6 +421,12 @@ namespace Candy {
      * A specialization of RSILVanishingBranchingHeuristic<n> with n=3.
      */
     using RSILVanishingBranchingHeuristic3 = RSILVanishingBranchingHeuristic<AdviceEntry<3>>;
+    
+    /**
+     * \ingroup RS_ImplicitLearning
+     *
+     * A specialization of RSILVanishingBranchingHeuristic<n> with n=2.
+     */
     using RSILVanishingBranchingHeuristic2 = RSILVanishingBranchingHeuristic<AdviceEntry<2>>;
     
     
