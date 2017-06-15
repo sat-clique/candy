@@ -36,7 +36,7 @@ namespace Candy {
 namespace RuntimePrivate {
     struct DefaultCPUTimeProvider {
         inline std::chrono::milliseconds getTime() const noexcept {
-            return Glucose::cpuTime();
+            return cpuTime();
         }
     };
 }
