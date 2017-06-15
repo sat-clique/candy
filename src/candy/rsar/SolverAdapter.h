@@ -28,7 +28,7 @@
 #define X_C53F2B2A_C7F9_4DFF_890B_196A6135FD51_SOLVERADAPTER_H
 
 #include <candy/core/SolverTypes.h>
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 
 #include <vector>
 #include <memory>

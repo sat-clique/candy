@@ -29,8 +29,8 @@
 
 #include <memory>
 #include <vector>
-#include <core/SolverTypes.h>
-#include <utils/CNFProblem.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/core/CNFProblem.h>
 
 namespace Candy {
     

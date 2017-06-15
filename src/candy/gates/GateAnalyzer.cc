@@ -26,7 +26,7 @@
 
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/core/Solver.h"
-#include "candy/utils/CNFProblem.h"
+#include "candy/core/CNFProblem.h"
 #include "candy/utils/MemUtils.h"
 
 #include <iterator>

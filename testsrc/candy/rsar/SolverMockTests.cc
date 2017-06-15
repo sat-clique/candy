@@ -28,7 +28,7 @@
 #include "SolverMock.h"
 
 #include <candy/core/SolverTypes.h>
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 
 #include <unordered_map>
 

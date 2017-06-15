@@ -25,7 +25,7 @@
  */
 
 #include "TestUtils.h"
-#include <utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 #include <randomsimulation/Conjectures.h>
 #include <testutils/TestUtils.h>
 
