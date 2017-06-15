@@ -1247,23 +1247,17 @@ Clause* Solver<PickBranchLitT>::propagate() {
                 if (conflict != nullptr) return conflict;
             }
 
-            if (pos[0] < trail_size) continue;
-
             while (pos[2] < trail_size) {
                 Lit p = trail[pos[2]++];
                 conflict = future_propagate_clauses<2>(p);
                 if (conflict != nullptr) return conflict;
             }
 
-            if (pos[0] < trail_size) continue;
-
             while (pos[3] < trail_size) {
                 Lit p = trail[pos[3]++];
                 conflict = future_propagate_clauses<3>(p);
                 if (conflict != nullptr) return conflict;
             }
-
-            if (pos[0] < trail_size) continue;
 
             while (pos[4] < trail_size) {
                 Lit p = trail[pos[4]++];
