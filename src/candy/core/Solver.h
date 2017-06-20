@@ -73,7 +73,7 @@
 
 #include "sonification/SolverSonification.h"
 
-//#define FUTURE_PROPAGATE
+#define FUTURE_PROPAGATE
 
 namespace Candy {
 
@@ -489,7 +489,7 @@ protected:
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void uncheckedEnqueue(Lit p, Clause* from = nullptr); // Enqueue a literal. Assumes value of literal is undefined.
     Clause* propagate(); // Perform unit propagation. Returns possibly conflicting clause.
-    template<unsigned int N> inline Clause* future_propagate_clauses(Lit p);
+    template<unsigned int N> Clause* future_propagate_clauses(Lit p);
     void cancelUntil(int level); // Backtrack until a certain level.
     void analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &nblevels);
     void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
