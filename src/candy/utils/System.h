@@ -21,34 +21,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef Glucose_System_h
 #define Glucose_System_h
 
-#if defined(__linux__)
-#include <fpu_control.h>
-#endif
-
-#include <stdint.h>
-#include <inttypes.h>
-#include <limits.h>
 #include <chrono>
-
-#ifndef PRIu64
-#define PRIu64 "lu"
-#define PRIi64 "ld"
-#endif
-
-//-------------------------------------------------------------------------------------------------
-
-namespace Glucose {
-
-extern double memUsed();            // Memory in mega bytes (returns 0 for unsupported architectures).
-extern double memUsedPeak();        // Peak-memory in mega bytes (returns 0 for unsupported architectures).
-
-}
-//-------------------------------------------------------------------------------------------------
-// Implementation of inline functions:
 
 #if defined(_WIN32)
 
-namespace Glucose {
+namespace Candy {
 // Getting the CPU time on Windows involves including Windows.h,
 // for now let's restrict that to System.cc
 std::chrono::milliseconds cpuTime(void);
@@ -59,7 +36,7 @@ std::chrono::milliseconds cpuTime(void);
 #include <sys/resource.h>
 #include <unistd.h>
 
-namespace Glucose {
+namespace Candy {
 static inline std::chrono::milliseconds cpuTime(void) {
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);

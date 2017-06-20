@@ -31,10 +31,10 @@
 
 #include "TestUtils.h"
 
-#include <randomsimulation/Partition.h>
-#include <randomsimulation/Conjectures.h>
-#include <randomsimulation/SimulationVector.h>
-#include <core/SolverTypes.h>
+#include <candy/randomsimulation/Partition.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/randomsimulation/SimulationVector.h>
+#include <candy/core/SolverTypes.h>
 
 
 namespace Candy {

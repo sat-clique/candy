@@ -28,8 +28,8 @@
 
 #include "Randomization.h"
 
-#include <utils/FastRand.h>
-#include <utils/MemUtils.h>
+#include <candy/utils/FastRand.h>
+#include <candy/utils/MemUtils.h>
 
 namespace Candy {
     Randomization::~Randomization() {

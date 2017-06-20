@@ -25,7 +25,7 @@
  */
 
 #include "TestUtils.h"
-#include <utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 
 namespace Candy {
     void assertContainsVariable(const std::unordered_set<Var>& variables, Var forbidden) {

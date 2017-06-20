@@ -26,11 +26,11 @@
 
 #include <gtest/gtest.h>
 
-#include <randomsimulation/RandomSimulator.h>
-#include <gates/GateAnalyzer.h>
+#include <candy/randomsimulation/RandomSimulator.h>
+#include <candy/gates/GateAnalyzer.h>
 
-#include <testutils/TestGateStructure.h>
-#include <testutils/TestUtils.h>
+#include <candy/testutils/TestGateStructure.h>
+#include <candy/testutils/TestUtils.h>
 #include "TestUtils.h"
 
 namespace Candy {

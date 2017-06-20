@@ -15,7 +15,6 @@ add_executable(randomsimulation_tests
 candy_executable_customizations(randomsimulation_tests)
 
 target_include_directories(randomsimulation_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
-target_include_directories(randomsimulation_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
 
 # add a ctest test named randomsimulation_module_tests which executes the binary defined by the target randomsimulation_tests

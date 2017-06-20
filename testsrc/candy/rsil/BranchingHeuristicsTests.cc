@@ -431,15 +431,27 @@ namespace Candy {
         EXPECT_TRUE((expectedResult ? l_True : l_False) == solver.solve());
     }
     
-    TEST(RSILBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
+    TEST(RSILBranchingHeuristicsTests, acceptanceTest_problem_6s33_adviceSize3) {
         test_acceptanceTest<RSILBranchingHeuristic3>("problems/6s33.cnf", false);
     }
     
-    TEST(RSILVanishingBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
+    TEST(RSILVanishingBranchingHeuristicsTests, acceptanceTest_problem_6s33_adviceSize3) {
         test_acceptanceTest<RSILVanishingBranchingHeuristic3>("problems/6s33.cnf", false);
     }
     
-    TEST(RSILBudgetBranchingHeuristicsTests, acceptanceTest_problem_6s33) {
+    TEST(RSILBudgetBranchingHeuristicsTests, acceptanceTest_problem_6s33_adviceSize3) {
         test_acceptanceTest<RSILBudgetBranchingHeuristic3>("problems/6s33.cnf", false);
+    }
+    
+    TEST(RSILBranchingHeuristicsTests, acceptanceTest_problem_6s33_adviceSize2) {
+        test_acceptanceTest<RSILBranchingHeuristic2>("problems/6s33.cnf", false);
+    }
+    
+    TEST(RSILVanishingBranchingHeuristicsTests, acceptanceTest_problem_6s33_adviceSize2) {
+        test_acceptanceTest<RSILVanishingBranchingHeuristic2>("problems/6s33.cnf", false);
+    }
+    
+    TEST(RSILBudgetBranchingHeuristicsTests, acceptanceTest_problem_6s33_adviceSize2) {
+        test_acceptanceTest<RSILBudgetBranchingHeuristic2>("problems/6s33.cnf", false);
     }
 }

@@ -9,7 +9,6 @@ add_executable(rsil_tests
 candy_executable_customizations(rsil_tests)
 
 target_include_directories(rsil_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
-target_include_directories(rsil_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
 
 # add a ctest test named randomsimulation_module_tests which executes the binary defined by the target rsil_tests

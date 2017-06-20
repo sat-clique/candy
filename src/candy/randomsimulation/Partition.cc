@@ -32,8 +32,8 @@
 #include <unordered_map>
 #include <cstdint>
 
-#include <utils/FastRand.h>
-#include <utils/MemUtils.h>
+#include <candy/utils/FastRand.h>
+#include <candy/utils/MemUtils.h>
 
 #include "SimulationVector.h"
 #include "Conjectures.h"

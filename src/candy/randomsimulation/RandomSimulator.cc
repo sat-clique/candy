@@ -28,9 +28,9 @@
 
 #include <cassert>
 
-#include <utils/MemUtils.h>
-#include <utils/System.h>
-#include <utils/Runtime.h>
+#include <candy/utils/MemUtils.h>
+#include <candy/utils/System.h>
+#include <candy/utils/Runtime.h>
 
 #include "ClauseOrder.h"
 #include "Partition.h"
@@ -163,7 +163,7 @@ namespace Candy {
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
         
-        auto startCPUTime = Glucose::cpuTime();
+        auto startCPUTime = cpuTime();
         
         for (unsigned int step = 0; !boundedRun || step < realSteps; ++step) {
             m_randomizationStrat->randomize(m_simulationVectors, inputVars);
@@ -178,7 +178,7 @@ namespace Candy {
             }
             
             if (timeLimit > std::chrono::milliseconds{0}) {
-                auto currentCPUTime = Glucose::cpuTime();
+                auto currentCPUTime = cpuTime();
                 if ((currentCPUTime - startCPUTime) > timeLimit) {
                     throw OutOfTimeException{};
                 }

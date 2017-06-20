@@ -28,7 +28,7 @@
 #define X_0395F739_E671_4531_888D_C7654FBF211C_RSARHEURISTICSFILTER_H
 
 #include "ImplicitLearningAdvice.h"
-#include <rsar/Heuristics.h>
+#include <candy/rsar/Heuristics.h>
 #include <memory>
 
 namespace Candy {

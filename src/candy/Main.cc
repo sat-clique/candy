@@ -58,7 +58,7 @@
 #include <type_traits>
 #include <chrono>
 
-#include <candy/utils/CNFProblem.h>
+#include "candy/core/CNFProblem.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/ClauseAllocator.h"
@@ -277,7 +277,7 @@ solveWithRSAR(SolverType& solver, std::unique_ptr<Candy::CNFProblem> problem, co
     // TODO: the CPU time code was inserted in quite a hurry and
     // needs to be refactored.
     
-    std::chrono::milliseconds startCPUTime = Glucose::cpuTime();
+    std::chrono::milliseconds startCPUTime = cpuTime();
     
     GateRecognitionArguments localGateRecognitionArgs = gateRecognitionArgs;
     if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
@@ -288,7 +288,7 @@ solveWithRSAR(SolverType& solver, std::unique_ptr<Candy::CNFProblem> problem, co
     auto gateAnalyzer = createGateAnalyzer(*problem, localGateRecognitionArgs);
     gateAnalyzer->analyze();
     
-    std::chrono::milliseconds gateAnalyzerTime = Glucose::cpuTime() - startCPUTime;
+    std::chrono::milliseconds gateAnalyzerTime = cpuTime() - startCPUTime;
     std::cerr << "c Gate recognition time: " << gateAnalyzerTime.count() << " ms" << std::endl;
     
     try {
@@ -315,7 +315,7 @@ solveWithRSAR(SolverType& solver, std::unique_ptr<Candy::CNFProblem> problem, co
                 throw UnsuitableProblemException{"No conjectures found."};
             }
             
-            auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            auto randomSimulationTime = cpuTime() - startCPUTime - gateAnalyzerTime;
             std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
     
@@ -325,7 +325,7 @@ solveWithRSAR(SolverType& solver, std::unique_ptr<Candy::CNFProblem> problem, co
             return lbool(result);
         }
         catch (OutOfTimeException& e) {
-            auto randomSimulationTime = Glucose::cpuTime() - startCPUTime - gateAnalyzerTime;
+            auto randomSimulationTime = cpuTime() - startCPUTime - gateAnalyzerTime;
             std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
             throw UnsuitableProblemException{"Random simulation exceeded the time limit."};

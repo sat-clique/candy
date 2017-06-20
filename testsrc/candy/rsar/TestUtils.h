@@ -27,10 +27,10 @@
 #ifndef X_3D4F7FAE_8852_4861_A031_1808523E1215_TESTUTILS_H
 #define X_3D4F7FAE_8852_4861_A031_1808523E1215_TESTUTILS_H
 
-#include <core/SolverTypes.h>
-#include <simp/SimpSolver.h>
-#include <rsar/Heuristics.h>
-#include <randomsimulation/Conjectures.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/simp/SimpSolver.h>
+#include <candy/rsar/Heuristics.h>
+#include <candy/randomsimulation/Conjectures.h>
 
 #include "SolverMock.h"
 

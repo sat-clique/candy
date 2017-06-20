@@ -28,7 +28,7 @@
 #define X_0816BDE6_14E6_49C2_84A9_47B3DA198C9D_SOLVERMOCK_H
 
 #include <candy/rsar/SolverAdapter.h>
-#include <candy/utils/CNFProblem.h>
+#include <candy/core/CNFProblem.h>
 #include <candy/core/SolverTypes.h>
 
 #include <memory>

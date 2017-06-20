@@ -28,9 +28,9 @@
 
 #define CANDY_EXPOSE_TESTING_INTERFACE
 
-#include <core/SolverTypes.h>
-#include <randomsimulation/Conjectures.h>
-#include <rsar/ApproximationState.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/randomsimulation/Conjectures.h>
+#include <candy/rsar/ApproximationState.h>
 
 #include <unordered_map>
 #include <set>

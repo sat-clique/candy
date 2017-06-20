@@ -31,9 +31,9 @@
 #include <bitset>
 #include <cmath>
 
-#include <randomsimulation/Randomization.h>
-#include <randomsimulation/SimulationVector.h>
-#include <testutils/TestUtils.h>
+#include <candy/randomsimulation/Randomization.h>
+#include <candy/randomsimulation/SimulationVector.h>
+#include <candy/testutils/TestUtils.h>
 
 namespace Candy {
     // TODO: improve documentation

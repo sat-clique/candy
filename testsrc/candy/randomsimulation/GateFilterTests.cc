@@ -25,9 +25,9 @@
  */
 
 #include <gtest/gtest.h>
-#include <randomsimulation/ClauseOrder.h>
+#include <candy/randomsimulation/ClauseOrder.h>
 
-#include <gates/GateAnalyzer.h>
+#include <candy/gates/GateAnalyzer.h>
 #include <candy/testutils/TestGateStructure.h>
 
 namespace Candy {

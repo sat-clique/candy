@@ -27,7 +27,7 @@
 #ifndef X_3EC37B3C_8FFE_4765_8E74_F1177D8BF870_TESTUTILS_H
 #define X_3EC37B3C_8FFE_4765_8E74_F1177D8BF870_TESTUTILS_H
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 #include <unordered_set>
 #include <vector>
 
