@@ -245,8 +245,6 @@ endfunction()
 ### Set up include directories
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
-# for refactoring purposes, TODO: use e.g. candy/core/SolverTypes.h instead of core/SolverTypes.h
-include_directories(${PROJECT_SOURCE_DIR}/src/candy)
 
 set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 
@@ -260,7 +258,7 @@ endif()
 
 add_subdirectory(src)
 
-set(CANDY_OBJECTS $<TARGET_OBJECTS:frontend>
+set(CANDY_OBJECTS
   $<TARGET_OBJECTS:gates>
   $<TARGET_OBJECTS:randomsimulation>
   $<TARGET_OBJECTS:rsil>
@@ -277,10 +275,11 @@ add_subdirectory(lib)
 add_subdirectory(testsrc)
 
 ### Define and link target executables and libraries
-
-add_executable(candy src/candy/Main.cc ${CANDY_OBJECTS})
-candy_executable_customizations(candy)
-target_link_libraries(candy ${CANDY_LIBS})
-
 add_library(candystatic STATIC ${CANDY_OBJECTS})
 target_link_libraries(candystatic ${CANDY_LIBS})
+
+add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
+candy_executable_customizations(candy)
+target_link_libraries(candy candystatic)
+
+

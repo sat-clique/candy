@@ -31,10 +31,10 @@
 #include <unordered_map>
 #include <algorithm>
 
-#include <randomsimulation/ClauseOrder.h>
-#include <randomsimulation/Propagation.h>
-#include <randomsimulation/SimulationVector.h>
-#include <core/SolverTypes.h>
+#include <candy/randomsimulation/ClauseOrder.h>
+#include <candy/randomsimulation/Propagation.h>
+#include <candy/randomsimulation/SimulationVector.h>
+#include <candy/core/SolverTypes.h>
 
 namespace Candy {
     class MockClauseOrder : public ClauseOrder {

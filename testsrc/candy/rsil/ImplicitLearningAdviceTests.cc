@@ -27,8 +27,8 @@
 #include "TestUtils.h"
 
 #include <gtest/gtest.h>
-#include <core/SolverTypes.h>
-#include <rsil/ImplicitLearningAdvice.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/rsil/ImplicitLearningAdvice.h>
 
 #include <iostream>
 

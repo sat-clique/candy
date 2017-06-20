@@ -25,8 +25,8 @@
  */
 
 #include <gtest/gtest.h>
-#include <utils/Runtime.h>
-#include <utils/System.h>
+#include <candy/utils/Runtime.h>
+#include <candy/utils/System.h>
 
 #include <chrono>
 #include <thread>

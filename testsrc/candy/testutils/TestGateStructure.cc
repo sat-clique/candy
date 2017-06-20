@@ -31,7 +31,7 @@
 #include <cassert>
 
 //#include <gtest/gtest.h>
-#include <utils/MemUtils.h>
+#include <candy/utils/MemUtils.h>
 
 namespace Candy {
     

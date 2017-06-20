@@ -10,6 +10,8 @@ add_library(core OBJECT
     Certificate.cc
     Certificate.h
     SolverTypes.h
+    CNFProblem.cc
+    CNFProblem.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)

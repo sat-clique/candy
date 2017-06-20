@@ -27,7 +27,7 @@
 #ifndef X_AAE7E9E3_CD0B_407F_8794_C5A8B42B678A_CONJECTURES_H
 #define X_AAE7E9E3_CD0B_407F_8794_C5A8B42B678A_CONJECTURES_H
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 
 #include <cstdint>
 #include <memory>

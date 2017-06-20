@@ -26,14 +26,14 @@
 
 #include <gtest/gtest.h>
 
-#include <core/SolverTypes.h>
-#include <utils/CNFProblem.h>
+#include <candy/core/SolverTypes.h>
+#include <candy/core/CNFProblem.h>
 
 
-#include <gates/GateAnalyzer.h>
-#include <randomsimulation/ClauseOrder.h>
+#include <candy/gates/GateAnalyzer.h>
+#include <candy/randomsimulation/ClauseOrder.h>
 
-#include <testutils/TestGateStructure.h>
+#include <candy/testutils/TestGateStructure.h>
 #include "TestUtils.h"
 
 #include <unordered_set>

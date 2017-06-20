@@ -25,10 +25,10 @@
  */
 
 #include <gtest/gtest.h>
-#include <simp/SimpSolver.h>
-#include <utils/FastRand.h>
-#include <utils/MemUtils.h>
-#include <rsar/ApproximationState.h>
+#include <candy/simp/SimpSolver.h>
+#include <candy/utils/FastRand.h>
+#include <candy/utils/MemUtils.h>
+#include <candy/rsar/ApproximationState.h>
 
 #include "TestUtils.h"
 #include "HeuristicsMock.h"

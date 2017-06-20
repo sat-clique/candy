@@ -30,7 +30,7 @@
 #include <memory>
 #include <vector>
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 
 namespace Candy {
     class SimulationVectors;

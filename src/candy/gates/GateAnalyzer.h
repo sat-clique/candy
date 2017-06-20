@@ -39,7 +39,7 @@
 
 #include "candy/core/SolverTypes.h"
 #include "candy/utils/Runtime.h"
-#include "candy/utils/CNFProblem.h"
+#include "candy/core/CNFProblem.h"
 
 namespace Candy {
     

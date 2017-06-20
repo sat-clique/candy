@@ -8,7 +8,7 @@
 
 #include "candy/testutils/TestUtils.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/utils/CNFProblem.h"
+#include "candy/core/CNFProblem.h"
 
 using namespace Candy;
 using namespace Glucose;

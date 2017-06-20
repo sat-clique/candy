@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include <core/Statistics.h>
+#include <candy/core/Statistics.h>
 #include "candy/utils/System.h"
 
 namespace Candy {
@@ -75,7 +75,7 @@ void Statistics::printSimplificationStats() {
 }
 
 void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
-    std::chrono::milliseconds cpu_time_millis = Glucose::cpuTime();
+    std::chrono::milliseconds cpu_time_millis = cpuTime();
     double cpu_time = static_cast<double>(cpu_time_millis.count())/1000.0f;
     printf("c ==============================================================================================\n");
 #ifdef SOLVER_STATS

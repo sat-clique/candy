@@ -15,7 +15,6 @@ add_executable(rsar_tests
 )
 
 target_include_directories(rsar_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc)
-target_include_directories(rsar_tests PRIVATE ${PROJECT_SOURCE_DIR}/testsrc/candy)
 
 candy_executable_customizations(rsar_tests)
 

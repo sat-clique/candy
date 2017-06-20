@@ -27,8 +27,8 @@
 
 #include "SolverAdapter.h"
 
-#include <simp/SimpSolver.h>
-#include <utils/MemUtils.h>
+#include <candy/simp/SimpSolver.h>
+#include <candy/utils/MemUtils.h>
 
 namespace Candy {
     SolverAdapter::SolverAdapter() noexcept {

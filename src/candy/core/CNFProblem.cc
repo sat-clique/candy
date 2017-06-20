@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include "candy/utils/CNFProblem.h"
+#include "candy/core/CNFProblem.h"
 
 #include <vector>
 

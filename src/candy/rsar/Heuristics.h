@@ -27,7 +27,7 @@
 #ifndef X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 #define X_5E0BD96A_AF14_4E37_815C_2C72C1D094A5_HEURISTICS_H
 
-#include <core/SolverTypes.h>
+#include <candy/core/SolverTypes.h>
 #include <memory>
 #include <vector>
 
