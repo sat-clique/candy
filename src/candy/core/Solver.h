@@ -73,7 +73,7 @@
 
 #include "sonification/SolverSonification.h"
 
-#define FUTURE_PROPAGATE
+//#define FUTURE_PROPAGATE
 
 namespace Candy {
 
@@ -389,7 +389,7 @@ protected:
     uint64_t curRestart;
     uint32_t nbclausesbeforereduce; // To know when it is time to reduce clause database
     uint16_t incReduceDB;
-    uint16_t specialIncReduceDB;
+    uint16_t persistentLBD;
     uint16_t lbLBDFrozenClause;
 
     // Constant for reducing clause
@@ -586,7 +586,7 @@ namespace SolverOptions {
     
     extern IntOption opt_first_reduce_db;
     extern IntOption opt_inc_reduce_db;
-    extern IntOption opt_spec_inc_reduce_db;
+    extern IntOption opt_persistent_lbd;
     extern IntOption opt_lb_lbd_frozen_clause;
     
     extern IntOption opt_lb_size_minimzing_clause;
@@ -639,7 +639,8 @@ Solver<PickBranchLitT>::Solver() :
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
-    incReduceDB(SolverOptions::opt_inc_reduce_db), specialIncReduceDB(SolverOptions::opt_spec_inc_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
     lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // clause reduction
     lbSizeMinimizingClause(SolverOptions::opt_lb_size_minimzing_clause),
@@ -1203,21 +1204,19 @@ Clause* Solver<PickBranchLitT>::propagate() {
         watchers.cleanAll();
     }
 
-    Clause* conflict = nullptr;
-
     while (qhead < trail_size) {
-        Lit p = trail[qhead++]; // 'p' is enqueued fact to propagate.
+        Lit p = trail[qhead++];
 
         // Propagate binary clauses
-        conflict = future_propagate_clauses<0>(p);
-        if (conflict != nullptr) break;
+        Clause* conflict = future_propagate_clauses<0>(p);
+        if (conflict != nullptr) return conflict;
 
         // Propagate other 2-watched clauses
         conflict = future_propagate_clauses<1>(p);
-        if (conflict != nullptr) break;
+        if (conflict != nullptr) return conflict;
     }
 
-    return conflict;
+    return nullptr;
 }
 
 #else // FUTURE PROPAGATE
@@ -1288,12 +1287,7 @@ void Solver<PickBranchLitT>::reduceDB() {
     
     size_t index = (learnts.size() + persist.size()) / 2;
     if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
-        // We have a lot of "good" clauses, it is difficult to compare them. Keep more !
-        if (specialIncReduceDB == 0) {
-            return;
-        } else {
-            nbclausesbeforereduce += specialIncReduceDB;
-        }
+        return; // We have a lot of "good" clauses, it is difficult to compare them, keep more
     }
     
     // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
@@ -1301,7 +1295,7 @@ void Solver<PickBranchLitT>::reduceDB() {
     size_t limit = std::min(learnts.size(), index);
     for (size_t i = 0; i < limit; i++) {
         Clause* c = learnts[i];
-        if (c->getLBD() <= 2) break; // small lbds come last in sequence (see ordering by reduceDB_lt())
+        if (c->getLBD() <= persistentLBD) break; // small lbds come last in sequence (see ordering by reduceDB_lt())
         if (!c->isFrozen() && (value(c->first()) != l_True || reason(var(c->first())) != c)) {//&& !locked(c)) {
             removeClause(c);
         }
@@ -1759,7 +1753,7 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:    |\n");
         printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d          |\n", lbdQueue.maxSize(), nbclausesbeforereduce, lbSizeMinimizingClause);
         printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |    * lbd  < %3d          |\n", trailQueue.maxSize(), incReduceDB, lbLBDMinimizingClause);
-        printf("c |   * K            : %6.2f      |   * Special   : %6d         |                          |\n", K, specialIncReduceDB);
+        printf("c |   * K            : %6.2f      |   * Persistent: %6d         |                          |\n", K, persistentLBD);
         printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                          |\n", R, lbLBDFrozenClause);
         printf("c |                                |                                |                          |\n");
         printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
