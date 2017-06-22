@@ -478,7 +478,7 @@ protected:
     // Operations on clauses:
     void attachClause(Clause* cr); // Attach a clause to watcher lists.
     void detachClause(Clause* cr, bool strict = false); // Detach a clause to watcher lists.
-    void removeClause(Clause* cr); // Detach and free a clause.
+    void removeClause(Clause* cr, bool strict_detach = false); // Detach and free a clause.
     void freeMarkedClauses(vector<Clause*>& list);
 
     template <typename Iterator>
@@ -831,9 +831,9 @@ void Solver<PickBranchLitT>::detachClause(Clause* cr, bool strict) {
 }
 
 template<class PickBranchLitT>
-void Solver<PickBranchLitT>::removeClause(Clause* cr) {
+void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
     certificate->removed(cr->begin(), cr->end());
-    detachClause(cr);
+    detachClause(cr, strict_detach);
     // Don't leave pointers to free'd memory!
     if (locked(cr)) {
         vardata[var(cr->first())].reason = nullptr;
@@ -1198,9 +1198,9 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t n) 
 #ifndef FUTURE_PROPAGATE
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
-    for (auto& watchers : watches) {
-        watchers.cleanAll();
-    }
+//    for (auto& watchers : watches) {
+//        watchers.cleanAll();
+//    }
 
     while (qhead < trail_size) {
         Lit p = trail[qhead++];
@@ -1221,9 +1221,9 @@ Clause* Solver<PickBranchLitT>::propagate() {
 
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
-    for (auto& watchers : watches) {
-        watchers.cleanAll();
-    }
+//    for (auto& watchers : watches) {
+//        watchers.cleanAll();
+//    }
 
     std::array<uint32_t, NWATCHES> pos;
     pos.fill(qhead);
@@ -1353,6 +1353,11 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
         }
     }
     
+    // cleanup
+    for (auto& watchers : watches) {
+        watchers.cleanAll();
+    }
+
     // restore trail of unary propagation
     for (Lit p : props) {
         if (assigns[var(p)] == l_Undef) {
