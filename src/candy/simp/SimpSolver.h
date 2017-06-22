@@ -566,7 +566,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
 
                 if (l == lit_Undef) {
                     Statistics::getInstance().solverSubsumedInc();
-                    this->removeClause(csi);
+                    this->removeClause(csi, true);
                     elimDetach(csi, false);
                 }
                 else if (l != lit_Error) {
@@ -706,15 +706,14 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         occurs[v].clear();
 
         for (auto& watchers : this->watches) {
-            watchers[mkLit(v)].clear();
-            watchers[~mkLit(v)].clear();
+            watchers.cleanAll();
         }
 
         return backwardSubsumptionCheck();
     }
     else {
         for (Clause* c : cls) {
-            this->removeClause(c);
+            this->removeClause(c, true);
         }
         return false;
     }
