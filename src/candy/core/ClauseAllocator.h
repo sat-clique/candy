@@ -47,8 +47,10 @@ public:
 
     inline void preallocateStorage(std::array<unsigned int, 501> nclauses) {
         for (uint_fast32_t i = 0; i <= NUMBER_OF_POOLS; i++) {
-            pools[i].reserve(pow2roundup(nclauses[i])*2);
-            fillPool(i);
+            if (nclauses[i] > 0) {
+                pools[i].reserve(pow2roundup(nclauses[i])*2);
+                fillPool(i);
+            }
         }
     }
 
