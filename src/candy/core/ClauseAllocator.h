@@ -32,14 +32,7 @@ public:
         pools(),
         pages(),
         pages_nelem()
-    {
-        for (uint_fast32_t i = 0; i < NUMBER_OF_POOLS; i++) {
-            pools[i].reserve(initialNumberOfElements(i));
-            fillPool(i);
-        }
-        pools[XXL_POOL_INDEX].reserve(1024);
-        fillPool(XXL_POOL_INDEX);
-    }
+    { }
 
     ~ClauseAllocator() {
         for (auto pages : this->pages) {
@@ -51,6 +44,13 @@ public:
 
     ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&)  = delete;
+
+    inline void preallocateStorage(std::array<unsigned int, 501> nclauses) {
+        for (uint_fast32_t i = 0; i <= NUMBER_OF_POOLS; i++) {
+            pools[i].reserve(pow2roundup(nclauses[i])*2);
+            fillPool(i);
+        }
+    }
 
     inline void* allocate(uint_fast32_t length) {
         if (length > XXL_POOL_ONE_SIZE) {
@@ -68,7 +68,11 @@ public:
             }
 
             if (pool.size() == 0) {
-                pool.reserve(std::min(pool.capacity()*2, (size_t)PAGE_MAX_ELEMENTS));
+                if (pool.capacity() == 0) {
+                    pool.reserve(initialNumberOfElements(index));
+                } else {
+                    pool.reserve(pool.capacity()*2);
+                }
                 fillPool(index);
             }
 
@@ -119,6 +123,16 @@ private:
             return PAGE_MAX_ELEMENTS >> (index / 10);
         }
         return 256;
+    }
+
+    inline unsigned int pow2roundup(unsigned int x) {
+        --x;
+        x |= x >> 1;
+        x |= x >> 2;
+        x |= x >> 4;
+        x |= x >> 8;
+        x |= x >> 16;
+        return x+1;
     }
 
     template <unsigned int N> struct SortHelperClause {
