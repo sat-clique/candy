@@ -119,9 +119,9 @@ private:
     }
 
     inline uint_fast32_t initialNumberOfElements(uint_fast32_t index) {
-        if (index < 100) {
-            return PAGE_MAX_ELEMENTS >> (index / 10);
-        }
+//        if (index < 100) {
+//            return PAGE_MAX_ELEMENTS >> (index / 10);
+//        }
         return 256;
     }
 
