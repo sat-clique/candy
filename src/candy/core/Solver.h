@@ -768,6 +768,12 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
             Statistics::getInstance().solverDecisionVariablesInc();
         }
     }
+    std::array<unsigned int, 501> nclauses;
+    nclauses.fill(0);
+    for (vector<Lit>* clause : problem) {
+        nclauses[std::min(clause->size(), (size_t)501)-1]++;
+    }
+    allocator.preallocateStorage(nclauses);
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
         if (!ok) return;
