@@ -752,7 +752,7 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
         elimAttach(c);
     }
     for (Clause* c : this->learnts) {
-        if (c->getLBD() <= 2) {
+        if (c->getLBD() <= this->persistentLBD) {
             elimAttach(c);
         }
     }
