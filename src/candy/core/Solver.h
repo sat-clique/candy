@@ -1643,6 +1643,13 @@ lbool Solver<PickBranchLitT>::search() {
                         for (size_t v = 0; v < nVars(); v++) {
                             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
                             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
+                                for (size_t i = 1; i < watches.size()-1; i++) {
+                                    sort(watches[i][l].begin(), watches[i][l].end(), [](Watcher w1, Watcher w2) {
+                                        Clause& c1 = *w1.cref;
+                                        Clause& c2 = *w2.cref;
+                                        return c1.activity() > c2.activity();
+                                    });
+                                }
                                 sort(watches.back()[l].begin(), watches.back()[l].end(), [](Watcher w1, Watcher w2) {
                                     Clause& c1 = *w1.cref;
                                     Clause& c2 = *w2.cref;
