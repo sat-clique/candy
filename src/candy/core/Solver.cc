@@ -73,7 +73,7 @@ IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average 
 
 IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
 IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
-IntOption opt_persistent_lbd(_cred, "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 2, IntRange(0, INT16_MAX));
+IntOption opt_persistent_lbd(_cred, "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT16_MAX));
 IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30, IntRange(0, INT16_MAX));
 
 IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT16_MAX));

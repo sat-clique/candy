@@ -1198,10 +1198,6 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t n) 
 #ifndef FUTURE_PROPAGATE
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
-//    for (auto& watchers : watches) {
-//        watchers.cleanAll();
-//    }
-
     while (qhead < trail_size) {
         Lit p = trail[qhead++];
 
@@ -1221,10 +1217,6 @@ Clause* Solver<PickBranchLitT>::propagate() {
 
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
-//    for (auto& watchers : watches) {
-//        watchers.cleanAll();
-//    }
-
     std::array<uint32_t, NWATCHES> pos;
     pos.fill(qhead);
 
