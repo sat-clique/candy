@@ -132,7 +132,6 @@ private:
         return 256;
     }
 
-
     template <unsigned int N> struct SortHelperClause {
         uint16_t length;
         uint16_t header;
@@ -140,51 +139,7 @@ private:
         Lit literals[N];
     };
 
-    template <unsigned int N> inline std::vector<Clause*> revampPages() {
-        uint16_t index = getPoolIndex(N);
-        std::vector<void*>& pool = pools[index];
-        std::vector<char*>& page = pages[index];
-        std::vector<size_t>& nelem = pages_nelem[index];
-        pool.clear();
-
-        char* new_page = page[0];
-        size_t total_nelems = nelem[0];
-        if (page.size() > 1) {
-            total_nelems = std::accumulate(nelem.begin(), nelem.end(), (size_t)0);
-            new_page = (char*)calloc(total_nelems, sizeof(SortHelperClause<N>));
-            SortHelperClause<N>* pos = reinterpret_cast<SortHelperClause<N>*>(new_page);
-            for (size_t i = 0; i < page.size(); i++) {
-                SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(page[i]);
-                memcpy(pos, begin, nelem[i] * sizeof(SortHelperClause<N>));
-                pos += nelem[i];
-            }
-
-            for (size_t i = 0; i < page.size(); i++) {
-                delete page[i];
-            }
-            page.clear();
-            nelem.clear();
-            page.push_back(new_page);
-            nelem.push_back(total_nelems);
-        }
-
-        SortHelperClause<N>* begin = reinterpret_cast<SortHelperClause<N>*>(new_page);
-        SortHelperClause<N>* end = reinterpret_cast<SortHelperClause<N>*>(new_page) + total_nelems;
-        std::sort(begin, end, [](SortHelperClause<N> c1, SortHelperClause<N> c2) { return c1.act > c2.act; });
-
-        std::vector<Clause*> revamped;
-        for (SortHelperClause<N>* iter = begin; iter < end; iter++) {
-            Clause* clause = (Clause*)iter;
-            assert(clause->size() == 0 || clause->size() == N);
-            if (!clause->isDeleted() && clause->size() > 0) {
-                revamped.push_back(clause);
-            } else {
-                pool.push_back(clause);
-            }
-        }
-
-        return revamped;
-    }
+    template <unsigned int N> inline std::vector<Clause*> revampPages();
 
 };
 
