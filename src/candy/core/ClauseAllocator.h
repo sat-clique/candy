@@ -33,7 +33,7 @@ public:
         pages(),
         pages_nelem()
     {
-        for (uint32_t i = 0; i < NUMBER_OF_POOLS; i++) {
+        for (uint_fast32_t i = 0; i < NUMBER_OF_POOLS; i++) {
             pools[i].reserve(initialNumberOfElements(i));
             fillPool(i);
         }
@@ -52,13 +52,13 @@ public:
     ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&)  = delete;
 
-    inline void* allocate(uint32_t length) {
+    inline void* allocate(uint_fast32_t length) {
         if (length > XXL_POOL_ONE_SIZE) {
             Statistics::getInstance().allocatorBeyondMallocdInc();
             return malloc(clauseBytes(length));
         }
         else {
-            uint16_t index = getPoolIndex(length);
+            uint_fast16_t index = getPoolIndex(length);
             std::vector<void*>& pool = pools[index];
 
             if (index < NUMBER_OF_POOLS) {
@@ -84,7 +84,7 @@ public:
             free((void*)clause);
         }
         else {
-            uint16_t index = getPoolIndex(clause->size());
+            uint_fast16_t index = getPoolIndex(clause->size());
             clause->activity() = 0;
             pools[index].push_back(clause);
 
@@ -96,18 +96,7 @@ public:
         }
     }
 
-    std::vector<Clause*> revampPages(size_t i) {
-        assert(i > 2);
-        assert(i <= REVAMPABLE_PAGES_MAX_SIZE);
-
-        switch (i) {
-        case 3: return revampPages<3>();
-        case 4: return revampPages<4>();
-        case 5: return revampPages<5>();
-        case 6: return revampPages<6>();
-        default: return std::vector<Clause*>();
-        }
-    }
+    std::vector<Clause*> revampPages(size_t i);
 
 private:
     std::array<std::vector<void*>, NUMBER_OF_POOLS+1> pools;
@@ -115,17 +104,17 @@ private:
     std::array<std::vector<char*>, REVAMPABLE_PAGES_MAX_SIZE+1> pages;
     std::array<std::vector<size_t>, REVAMPABLE_PAGES_MAX_SIZE> pages_nelem;
 
-    void fillPool(uint16_t index);
+    void fillPool(uint_fast16_t index);
 
-    inline uint32_t clauseBytes(uint32_t length) {
+    inline uint_fast32_t clauseBytes(uint_fast32_t length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
     }
 
-    inline uint16_t getPoolIndex(uint32_t size) const {
-        return std::min(size-1, (uint32_t)XXL_POOL_INDEX);
+    inline uint_fast16_t getPoolIndex(uint_fast32_t size) const {
+        return std::min(size-1, (uint_fast32_t)XXL_POOL_INDEX);
     }
 
-    uint32_t initialNumberOfElements(uint32_t index) {
+    inline uint_fast32_t initialNumberOfElements(uint_fast32_t index) {
         if (index < 100) {
             return PAGE_MAX_ELEMENTS >> (index / 10);
         }
@@ -139,7 +128,7 @@ private:
         Lit literals[N];
     };
 
-    template <unsigned int N> inline std::vector<Clause*> revampPages();
+    template <unsigned int N> std::vector<Clause*> revampPages();
 
 };
 

@@ -11,12 +11,12 @@
 
 namespace Candy {
 
-void ClauseAllocator::fillPool(uint16_t index) {
-    const uint32_t nElem = pools[index].capacity();
-    uint16_t nLits = 1 + index;
+void ClauseAllocator::fillPool(uint_fast16_t index) {
+    const uint_fast32_t nElem = pools[index].capacity();
+    uint_fast16_t nLits = 1 + index;
     if (index == XXL_POOL_INDEX) nLits = XXL_POOL_ONE_SIZE;
     const uint16_t clause_bytes = clauseBytes(nLits);
-    const uint32_t bytes_total = clause_bytes * nElem;
+    const uint_fast32_t bytes_total = clause_bytes * nElem;
     char* page = (char*)calloc(nElem, clause_bytes);
     if (index < REVAMPABLE_PAGES_MAX_SIZE) {
         pages[index].push_back(page);
@@ -24,13 +24,13 @@ void ClauseAllocator::fillPool(uint16_t index) {
     } else {
         pages[REVAMPABLE_PAGES_MAX_SIZE].push_back(page);
     }
-    for (uint32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
+    for (uint_fast32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
         pools[index].push_back(page + pos);
     }
 }
 
-template <unsigned int N> inline std::vector<Clause*> ClauseAllocator::revampPages() {
-    uint16_t index = getPoolIndex(N);
+template <unsigned int N> std::vector<Clause*> ClauseAllocator::revampPages() {
+    uint_fast16_t index = getPoolIndex(N);
     std::vector<void*>& pool = pools[index];
     std::vector<char*>& page = pages[index];
     std::vector<size_t>& nelem = pages_nelem[index];
@@ -73,6 +73,19 @@ template <unsigned int N> inline std::vector<Clause*> ClauseAllocator::revampPag
     }
 
     return revamped;
+}
+
+std::vector<Clause*> ClauseAllocator::revampPages(size_t i) {
+    assert(i > 2);
+    assert(i <= REVAMPABLE_PAGES_MAX_SIZE);
+
+    switch (i) {
+    case 3: return revampPages<3>();
+    case 4: return revampPages<4>();
+    case 5: return revampPages<5>();
+    case 6: return revampPages<6>();
+    default: return std::vector<Clause*>();
+    }
 }
 
 } /* namespace Candy */
