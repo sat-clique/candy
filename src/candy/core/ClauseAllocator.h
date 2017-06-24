@@ -18,10 +18,11 @@
 #include <candy/core/Statistics.h>
 
 #define NUMBER_OF_POOLS 500
+#define DEFAULT_POOL_SIZE 167
+#define POOL_GROWTH_FACTOR 2.31
+#define XXL_POOL_INDEX 500u
 #define XXL_POOL_ONE_SIZE 1000
-#define XXL_POOL_INDEX NUMBER_OF_POOLS
 #define REVAMPABLE_PAGES_MAX_SIZE 6
-#define PAGE_MAX_ELEMENTS 262144
 
 namespace Candy {
 
@@ -46,21 +47,17 @@ public:
     void operator=(ClauseAllocator const&)  = delete;
 
     inline void preallocateStorage(std::array<unsigned int, 501>& nclauses) {
-        for (uint_fast32_t i = 0; i <= NUMBER_OF_POOLS; i++) {
+        for (unsigned int i = 1; i < pools.size(); i++) {
             if (nclauses[i] > 0) {
-                pools[i].reserve(pow2roundup(nclauses[i])*2);
+                pools[i].reserve(nclauses[i] * POOL_GROWTH_FACTOR);
                 fillPool(i);
             }
         }
     }
 
-    inline void* allocate(uint_fast32_t length) {
-        if (length > XXL_POOL_ONE_SIZE) {
-            Statistics::getInstance().allocatorBeyondMallocdInc();
-            return malloc(clauseBytes(length));
-        }
-        else {
-            uint_fast16_t index = getPoolIndex(length);
+    inline void* allocate(unsigned int length) {
+        if (length <= XXL_POOL_ONE_SIZE) {
+            unsigned int index = getPoolIndex(length);
             std::vector<void*>& pool = pools[index];
 
             if (index < NUMBER_OF_POOLS) {
@@ -70,10 +67,10 @@ public:
             }
 
             if (pool.size() == 0) {
-                if (pool.capacity() == 0) {
-                    pool.reserve(initialNumberOfElements(index));
+                if (pool.capacity() > 0) {
+                    pool.reserve(pool.capacity() * POOL_GROWTH_FACTOR);
                 } else {
-                    pool.reserve(pool.capacity()*2);
+                    pool.reserve(DEFAULT_POOL_SIZE);
                 }
                 fillPool(index);
             }
@@ -82,15 +79,15 @@ public:
             pool.pop_back();
             return clause;
         }
+        else {
+            Statistics::getInstance().allocatorBeyondMallocdInc();
+            return malloc(clauseBytes(length));
+        }
     }
 
     inline void deallocate(Clause* clause) {
-        if (clause->size() > XXL_POOL_ONE_SIZE) {
-            Statistics::getInstance().allocatorBeyondMallocdDec();
-            free((void*)clause);
-        }
-        else {
-            uint_fast16_t index = getPoolIndex(clause->size());
+        if (clause->size() <= XXL_POOL_ONE_SIZE) {
+            unsigned int index = getPoolIndex(clause->size());
             clause->activity() = 0;
             pools[index].push_back(clause);
 
@@ -99,6 +96,10 @@ public:
             } else {
                 Statistics::getInstance().allocatorXXLPoolAllocdDec();
             }
+        }
+        else {
+            Statistics::getInstance().allocatorBeyondMallocdDec();
+            free((void*)clause);
         }
     }
 
@@ -110,31 +111,14 @@ private:
     std::array<std::vector<char*>, REVAMPABLE_PAGES_MAX_SIZE+1> pages;
     std::array<std::vector<size_t>, REVAMPABLE_PAGES_MAX_SIZE> pages_nelem;
 
-    void fillPool(uint_fast16_t index);
+    void fillPool(unsigned int index);
 
-    inline uint_fast32_t clauseBytes(uint_fast32_t length) {
+    inline unsigned int clauseBytes(unsigned int length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
     }
 
-    inline uint_fast16_t getPoolIndex(uint_fast32_t size) const {
-        return std::min(size-1, (uint_fast32_t)XXL_POOL_INDEX);
-    }
-
-    inline uint_fast32_t initialNumberOfElements(uint_fast32_t index) {
-//        if (index < 100) {
-//            return PAGE_MAX_ELEMENTS >> (index / 10);
-//        }
-        return 256;
-    }
-
-    inline unsigned int pow2roundup(unsigned int x) {
-        --x;
-        x |= x >> 1;
-        x |= x >> 2;
-        x |= x >> 4;
-        x |= x >> 8;
-        x |= x >> 16;
-        return x+1;
+    inline unsigned int getPoolIndex(unsigned int size) const {
+        return std::min(size-1, XXL_POOL_INDEX);
     }
 
     template <unsigned int N> struct SortHelperClause {
