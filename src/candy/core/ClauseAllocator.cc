@@ -11,12 +11,11 @@
 
 namespace Candy {
 
-void ClauseAllocator::fillPool(uint_fast16_t index) {
-    const uint_fast32_t nElem = pools[index].capacity();
-    uint_fast16_t nLits = 1 + index;
-    if (index == XXL_POOL_INDEX) nLits = XXL_POOL_ONE_SIZE;
-    const uint16_t clause_bytes = clauseBytes(nLits);
-    const uint_fast32_t bytes_total = clause_bytes * nElem;
+void ClauseAllocator::fillPool(unsigned int index) {
+    const unsigned int nElem = pools[index].capacity() - pools[index].size();
+    const unsigned int nLits = index != XXL_POOL_INDEX ? 1 + index : XXL_POOL_ONE_SIZE;
+    const unsigned int clause_bytes = clauseBytes(nLits);
+    const unsigned int bytes_total = clause_bytes * nElem;
     char* page = (char*)calloc(nElem, clause_bytes);
     if (index < REVAMPABLE_PAGES_MAX_SIZE) {
         pages[index].push_back(page);
@@ -30,7 +29,7 @@ void ClauseAllocator::fillPool(uint_fast16_t index) {
 }
 
 template <unsigned int N> std::vector<Clause*> ClauseAllocator::revampPages() {
-    uint_fast16_t index = getPoolIndex(N);
+    unsigned int index = getPoolIndex(N);
     std::vector<void*>& pool = pools[index];
     std::vector<char*>& page = pages[index];
     std::vector<size_t>& nelem = pages_nelem[index];
