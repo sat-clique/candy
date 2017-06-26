@@ -6,6 +6,9 @@
  */
 
 #include <candy/core/ClauseAllocator.h>
+#include <emmintrin.h>
+#include <xmmintrin.h>
+#include <mmintrin.h>
 
 #include <iostream>
 

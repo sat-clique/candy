@@ -37,17 +37,17 @@ Statistics::~Statistics() { }
 void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations) {
     printf("c---------- Glucose Stats -------------------------\n");
 #ifdef SOLVER_STATS
-    printf("c restarts              : %" PRIu64"\n", starts);
+    printf("c restarts              : %llu\n", starts);
 
-    printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
-    printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
-    printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
-    printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
-    printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
+    printf("c nb ReduceDB           : %llu\n", nbReduceDB);
+    printf("c nb removed Clauses    : %llu\n", nbRemovedClauses);
+    printf("c nb learnts DL2        : %llu\n", nbDL2);
+    printf("c nb learnts size 2     : %llu\n", nbBin);
+    printf("c nb learnts size 1     : %llu\n", nbUn);
 
-    printf("c conflicts             : %" PRIu64"\n", conflicts);
-    printf("c decisions             : %" PRIu64"\n", decisions);
-    printf("c propagations          : %" PRIu64"\n", propagations);
+    printf("c conflicts             : %llu\n", conflicts);
+    printf("c decisions             : %llu\n", decisions);
+    printf("c propagations          : %llu\n", propagations);
 #endif
 #ifdef INCREMENTAL_STATS
     printf("\nc SAT Calls             : %d\n", nbSatCalls);
@@ -69,7 +69,7 @@ void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uin
 
 void Statistics::printSimplificationStats() {
 #if defined SOLVER_STATS
-    printf("c simplification        : %" PRIu64" subsumed, %" PRIu64" deleted literals)\n", subsumed, deleted);
+    printf("c simplification        : %llu subsumed, %llu deleted literals)\n", subsumed, deleted);
 #endif
 }
 
@@ -78,21 +78,21 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     double cpu_time = static_cast<double>(cpu_time_millis.count())/1000.0f;
     printf("c ==============================================================================================\n");
 #ifdef SOLVER_STATS
-    printf("c restarts              : %" PRIu64" (%" PRIu64" conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
-    printf("c blocked restarts      : %" PRIu64" (multiple: %" PRIu64") \n", nbstopsrestarts, nbstopsrestartssame);
-    printf("c last block at restart : %" PRIu64"\n", lastblockatrestart);
+    printf("c restarts              : %llu (%llu conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
+    printf("c blocked restarts      : %llu (multiple: %llu)\n", nbstopsrestarts, nbstopsrestartssame);
+    printf("c last block at restart : %llu\n", lastblockatrestart);
 
-    printf("c nb ReduceDB           : %" PRIu64"\n", nbReduceDB);
-    printf("c nb removed Clauses    : %" PRIu64"\n", nbRemovedClauses);
-    printf("c nb reduced Clauses    : %" PRIu64"\n", nbReducedClauses);
-    printf("c nb learnts DL2        : %" PRIu64"\n", nbDL2);
-    printf("c nb learnts size 2     : %" PRIu64"\n", nbBin);
-    printf("c nb learnts size 1     : %" PRIu64"\n", nbUn);
+    printf("c nb ReduceDB           : %llu\n", nbReduceDB);
+    printf("c nb removed Clauses    : %llu\n", nbRemovedClauses);
+    printf("c nb reduced Clauses    : %llu\n", nbReducedClauses);
+    printf("c nb learnts DL2        : %llu\n", nbDL2);
+    printf("c nb learnts size 2     : %llu\n", nbBin);
+    printf("c nb learnts size 1     : %llu\n", nbUn);
 
-    printf("c conflicts             : %-12" PRIu64"   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
-    printf("c decisions             : %-12" PRIu64"   (%.0f /sec)\n", decisions, decisions / cpu_time);
-    printf("c propagations          : %-12" PRIu64"   (%.0f /sec)\n", propagations, propagations / cpu_time);
-    printf("c conflict literals     : %-12" PRIu64"   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals) * 100 / (double) max_literals);
+    printf("c conflicts             : %-12llu   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
+    printf("c decisions             : %-12llu   (%.0f /sec)\n", decisions, decisions / cpu_time);
+    printf("c propagations          : %-12llu   (%.0f /sec)\n", propagations, propagations / cpu_time);
+    printf("c conflict literals     : %-12llu   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals) * 100 / (double) max_literals);
 #endif// SOLVER_STATS
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {
@@ -103,18 +103,10 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
 
 void Statistics::printAllocatorStatistics() {
 #ifdef ALLOCATOR_STATS
-    printf("\n========= [Pools usage] =========\n");
-    for (size_t i = 0; i < stats_number_of_pools; i++) {
-        printf("%u;", stats_pool_allocd[i]);
+    printf("\n========= [Pool Usage] =========\n");
+    for (size_t i = 0; i < stats_pool_allocs.size(); i++) {
+        printf("Allocs %u; Deallocs %u; Used %u\n", stats_pool_allocs[i], stats_pool_deallocs[i], stats_pool_allocs[i] - stats_pool_deallocs[i]);
     }
-    printf("\n========= [Pools maximum] =========\n");
-    for (size_t i = 0; i < stats_number_of_pools; i++) {
-        printf("%zu;", stats_pool_hwm[i]);
-    }
-    printf("\n========= [Clauses in XXL Pool] =========\n");
-    printf("%u\n", stats_xxl_pool_allocd);
-    printf("\n========= [Clauses Beyond Pool] =========\n");
-    printf("%u\n", stats_beyond_mallocd);
 #endif
 }
 

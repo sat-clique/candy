@@ -1227,7 +1227,8 @@ Clause* Solver<PickBranchLitT>::propagate() {
     pos.fill(qhead);
 
     while (pos[0] < trail_size) {
-        for (uint_fast8_t i = 0; i < pos.size(); i++) {
+        for (unsigned int i = 0; i < pos.size(); i++) {
+            if (i > 0 && i < 5) allocator.prefetchPage(i + 2);
             while (pos[i] < trail_size) {
                 Lit p = trail[pos[i]++];
                 Clause* conflict = future_propagate_clauses(p, i);

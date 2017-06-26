@@ -93,6 +93,22 @@ public:
         }
     }
 
+    inline void prefetchPage(unsigned int clause_size) {
+#ifdef SOFTWARE_PREFETCHING
+        assert(clause_size > 2);
+        assert(clause_size <= REVAMPABLE_PAGES_MAX_SIZE);
+        unsigned int index = getPoolIndex(clause_size);
+        if (pages[index].size() > 0) {
+            char* start = pages[index][0];
+            char* end = start + clauseBytes(clause_size) * pages_nelem[index][0];
+            for(char* adr = start; adr < end; adr += 64) {
+                //_mm_prefetch(adr, _MM_HINT_T1);
+                __builtin_prefetch(adr, 0, 2);
+            };
+        }
+#endif
+    }
+
     std::vector<Clause*> revampPages(size_t i);
 
 private:
