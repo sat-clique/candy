@@ -42,9 +42,7 @@ class Statistics {
 #endif// INCREMENTAL_STATS
 
 #ifdef ALLOCATOR_STATS
-    std::vector<uint32_t> stats_pool_allocd, stats_pool_hwm;
-    uint32_t stats_number_of_pools, stats_xxl_pool_allocd, stats_beyond_mallocd;
-    uint32_t stats_xxl_pool_hwm, stats_beyond_hwm;
+    std::array<uint32_t, 502> stats_pool_allocs, stats_pool_deallocs;
 #endif// ALLOCATOR_STATS
     char stats;
 
@@ -159,53 +157,17 @@ public:
     void printRuntimes() { }
 #endif// RUNTIME_STATS
 #ifdef ALLOCATOR_STATS
-    inline void allocatorNumberOfPoolsSet(uint32_t nPools) {
-        stats_number_of_pools = nPools;
-        stats_pool_allocd.resize(nPools, 0);
-        stats_pool_hwm.resize(nPools, 0);
-    }
-    inline void allocatorPoolAllocdInc(uint32_t index) {
+    inline void allocatorPoolAlloc(uint32_t index) {
         assert(index < stats_number_of_pools);
-        ++stats_pool_allocd[index];
-        stats_pool_hwm[index] = std::max(stats_pool_hwm[index], stats_pool_allocd[index]);
+        ++stats_pool_allocs[index];
     }
-    inline void allocatorXXLPoolAllocdInc() {
-        ++stats_xxl_pool_allocd;
-        stats_xxl_pool_hwm = std::max(stats_xxl_pool_hwm, stats_xxl_pool_allocd);
-    }
-    inline void allocatorBeyondMallocdInc() {
-        ++stats_beyond_mallocd;
-        stats_beyond_hwm = std::max(stats_beyond_hwm, stats_beyond_mallocd);
-    }
-    inline void allocatorPoolAllocdDec(uint32_t index) { assert(index < stats_number_of_pools); --stats_pool_allocd[index]; }
-    inline void allocatorXXLPoolAllocdDec() { --stats_xxl_pool_allocd; }
-    inline void allocatorBeyondMallocdDec() { --stats_beyond_mallocd; }
-
-    // keep statistics intact (although clause now leaks one literal)
-    inline void allocatorStrengthenClause(uint32_t length) {
-        uint16_t index = length-1;
-        if (index < NUMBER_OF_POOLS) {
-            allocatorPoolAllocdDec(index);
-            allocatorPoolAllocdInc(index-1);
-        }
-        else if (index < XXL_POOL_ONE_SIZE && index-1 < NUMBER_OF_POOLS) {
-            allocatorXXLPoolAllocdDec();
-            allocatorPoolAllocdInc(index-1);
-        }
-        else if (index-1 < XXL_POOL_ONE_SIZE) {
-            allocatorBeyondMallocdDec();
-            allocatorXXLPoolAllocdInc();
-        }
+    inline void allocatorPoolDealloc(uint32_t index) {
+        assert(index < stats_number_of_pools);
+        ++stats_pool_deallocs[index];
     }
 #else
-    inline void allocatorNumberOfPoolsSet(uint32_t nPools) { (void)(nPools); }
-    inline void allocatorPoolAllocdInc(uint32_t index) { (void)(index); }
-    inline void allocatorXXLPoolAllocdInc() { }
-    inline void allocatorBeyondMallocdInc() { }
-    inline void allocatorPoolAllocdDec(uint32_t index) { (void)(index); }
-    inline void allocatorXXLPoolAllocdDec() { }
-    inline void allocatorBeyondMallocdDec() { }
-    inline void allocatorStrengthenClause(uint32_t length) { (void)(length); }
+    inline void allocatorPoolAlloc(uint32_t index) { (void)(index); }
+    inline void allocatorPoolDealloc(uint32_t index) { (void)(index); }
 #endif// ALLOCATOR_STATS
 
 };

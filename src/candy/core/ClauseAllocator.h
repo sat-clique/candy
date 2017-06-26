@@ -18,8 +18,8 @@
 #include <candy/core/Statistics.h>
 
 #define NUMBER_OF_POOLS 500
-#define DEFAULT_POOL_SIZE 167
-#define POOL_GROWTH_FACTOR 2.31
+#define DEFAULT_POOL_SIZE 70
+#define POOL_GROWTH_FACTOR 2
 #define XXL_POOL_INDEX 500u
 #define XXL_POOL_ONE_SIZE 1000
 #define REVAMPABLE_PAGES_MAX_SIZE 6
@@ -29,11 +29,11 @@ namespace Candy {
 class ClauseAllocator {
 
 public:
-    ClauseAllocator() :
-        pools(),
-        pages(),
-        pages_nelem()
-    { }
+    ClauseAllocator() : pools(), pages(), pages_nelem() {
+        for (auto& pool : pools) {
+            pool.reserve(DEFAULT_POOL_SIZE);
+        }
+    }
 
     ~ClauseAllocator() {
         for (auto pages : this->pages) {
@@ -51,6 +51,9 @@ public:
             if (nclauses[i] > 0) {
                 pools[i].reserve(nclauses[i] * POOL_GROWTH_FACTOR);
                 fillPool(i);
+            } else if (i < REVAMPABLE_PAGES_MAX_SIZE) {
+                pools[i].reserve(DEFAULT_POOL_SIZE);
+                fillPool(i);
             }
         }
     }
@@ -60,18 +63,10 @@ public:
             unsigned int index = getPoolIndex(length);
             std::vector<void*>& pool = pools[index];
 
-            if (index < NUMBER_OF_POOLS) {
-                Statistics::getInstance().allocatorPoolAllocdInc(index);
-            } else {
-                Statistics::getInstance().allocatorXXLPoolAllocdInc();
-            }
+            Statistics::getInstance().allocatorPoolAlloc(index);
 
             if (pool.size() == 0) {
-                if (pool.capacity() > 0) {
-                    pool.reserve(pool.capacity() * POOL_GROWTH_FACTOR);
-                } else {
-                    pool.reserve(DEFAULT_POOL_SIZE);
-                }
+                pool.reserve(pool.capacity() * POOL_GROWTH_FACTOR);
                 fillPool(index);
             }
 
@@ -80,7 +75,7 @@ public:
             return clause;
         }
         else {
-            Statistics::getInstance().allocatorBeyondMallocdInc();
+            Statistics::getInstance().allocatorPoolAlloc(501);
             return malloc(clauseBytes(length));
         }
     }
@@ -90,16 +85,11 @@ public:
             unsigned int index = getPoolIndex(clause->size());
             clause->activity() = 0;
             pools[index].push_back(clause);
-
-            if (index < NUMBER_OF_POOLS) {
-                Statistics::getInstance().allocatorPoolAllocdDec(index);
-            } else {
-                Statistics::getInstance().allocatorXXLPoolAllocdDec();
-            }
+            Statistics::getInstance().allocatorPoolDealloc(index);
         }
         else {
-            Statistics::getInstance().allocatorBeyondMallocdDec();
             free((void*)clause);
+            Statistics::getInstance().allocatorPoolDealloc(501);
         }
     }
 
