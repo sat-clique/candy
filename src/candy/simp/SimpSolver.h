@@ -790,6 +790,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->rebuildOrderHeap();
 
     // cleanup strengthened clauses in pool
+    this->allocator.announceClauses(strengthened_clauses);
     for (Clause* clause : strengthened_clauses) {
         size_t size = strengthened_sizes[clause];
         if (!clause->isDeleted()) {

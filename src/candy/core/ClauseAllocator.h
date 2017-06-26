@@ -21,7 +21,7 @@
 #define DEFAULT_POOL_SIZE 70
 #define POOL_GROWTH_FACTOR 2
 #define XXL_POOL_INDEX 500u
-#define XXL_POOL_ONE_SIZE 1000
+#define XXL_POOL_ONE_SIZE 1020
 #define REVAMPABLE_PAGES_MAX_SIZE 6
 
 namespace Candy {
@@ -46,17 +46,11 @@ public:
     ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&)  = delete;
 
-    inline void preallocateStorage(std::array<unsigned int, 501>& nclauses) {
-        for (unsigned int i = 1; i < pools.size(); i++) {
-            if (nclauses[i] > 0) {
-                pools[i].reserve(nclauses[i] * POOL_GROWTH_FACTOR);
-                fillPool(i);
-            } else if (i < REVAMPABLE_PAGES_MAX_SIZE) {
-                pools[i].reserve(DEFAULT_POOL_SIZE);
-                fillPool(i);
-            }
-        }
-    }
+    /**
+     * Preallocate additional storage for given list of clauses.
+     */
+    void announceClauses(const std::vector<std::vector<Lit>*>& problem);
+    void announceClauses(const std::vector<Clause*>& clauses);
 
     inline void* allocate(unsigned int length) {
         if (length <= XXL_POOL_ONE_SIZE) {
@@ -118,6 +112,7 @@ private:
     std::array<std::vector<size_t>, REVAMPABLE_PAGES_MAX_SIZE> pages_nelem;
 
     void fillPool(unsigned int index);
+    void preallocateStorage(std::array<unsigned int, 501>& nclauses);
 
     inline unsigned int clauseBytes(unsigned int length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
