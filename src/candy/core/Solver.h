@@ -741,7 +741,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
 
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
-    const vector<vector<Lit>*>& problem = dimacs.getProblem();
+    const std::vector<std::vector<Lit>*>& problem = dimacs.getProblem();
     size_t curVars = this->nVars();
     size_t maxVars = (size_t)dimacs.nVars();
     if (maxVars > curVars) {
@@ -757,7 +757,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         activity.resize(maxVars, 0.0);
         polarity.resize(maxVars, true);
         if (sort_variables) {
-            vector<double> occ = dimacs.getLiteralRelativeOccurrences();
+            std::vector<double> occ = dimacs.getLiteralRelativeOccurrences();
             for (size_t i = curVars; i < maxVars; i++) {
                 activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
                 polarity[i] = occ[mkLit(i, true)] > occ[mkLit(i, false)];
@@ -768,12 +768,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
             Statistics::getInstance().solverDecisionVariablesInc();
         }
     }
-    std::array<unsigned int, 501> nclauses;
-    nclauses.fill(0);
-    for (vector<Lit>* clause : problem) {
-        nclauses[std::min(clause->size(), (size_t)501)-1]++;
-    }
-    allocator.preallocateStorage(nclauses);
+    allocator.announceClauses(problem);
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
         if (!ok) return;
@@ -1426,6 +1421,7 @@ bool Solver<PickBranchLitT>::strengthen() {
         }
     }
 
+    allocator.announceClauses(strengthened_clauses);
     for (Clause* clause : strengthened_clauses) {
         if (clause->size() == 1) {
             Lit p = clause->first();

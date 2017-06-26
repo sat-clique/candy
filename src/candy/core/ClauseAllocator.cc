@@ -14,6 +14,36 @@
 
 namespace Candy {
 
+void ClauseAllocator::preallocateStorage(std::array<unsigned int, 501>& nclauses) {
+    for (unsigned int i = 1; i < pools.size(); i++) {
+        if (nclauses[i] > 0) {
+            pools[i].reserve(nclauses[i] * POOL_GROWTH_FACTOR);
+            fillPool(i);
+        } else if (i < REVAMPABLE_PAGES_MAX_SIZE) {
+            pools[i].reserve(DEFAULT_POOL_SIZE);
+            fillPool(i);
+        }
+    }
+}
+
+void ClauseAllocator::announceClauses(const std::vector<std::vector<Lit>*>& problem) {
+    std::array<unsigned int, 501> nclauses;
+    nclauses.fill(0);
+    for (std::vector<Lit>* clause : problem) {
+        nclauses[std::min(clause->size(), (size_t)501)-1]++;
+    }
+    this->preallocateStorage(nclauses);
+}
+
+void ClauseAllocator::announceClauses(const std::vector<Clause*>& clauses) {
+    std::array<unsigned int, 501> nclauses;
+    nclauses.fill(0);
+    for (Clause* clause : clauses) {
+        nclauses[std::min(clause->size(), (uint16_t)501)-1]++;
+    }
+    this->preallocateStorage(nclauses);
+}
+
 void ClauseAllocator::fillPool(unsigned int index) {
     const unsigned int nElem = pools[index].capacity() - pools[index].size();
     const unsigned int nLits = index != XXL_POOL_INDEX ? 1 + index : XXL_POOL_ONE_SIZE;
