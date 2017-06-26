@@ -26,7 +26,7 @@ void ClauseAllocator::fillPool(unsigned int index) {
     } else {
         pages[REVAMPABLE_PAGES_MAX_SIZE].push_back(page);
     }
-    for (uint_fast32_t pos = 0; pos < bytes_total; pos += clause_bytes) {
+    for (unsigned int pos = 0; pos < bytes_total; pos += clause_bytes) {
         pools[index].push_back(page + pos);
     }
 }
@@ -51,7 +51,7 @@ template <unsigned int N> std::vector<Clause*> ClauseAllocator::revampPages() {
         }
 
         for (size_t i = 0; i < page.size(); i++) {
-            delete page[i];
+            free(page[i]);
         }
         page.clear();
         nelem.clear();
