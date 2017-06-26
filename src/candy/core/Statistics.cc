@@ -25,8 +25,7 @@ Statistics::Statistics() :
     nbUnsatCalls(0),
 #endif
 #ifdef ALLOCATOR_STATS
-    stats_number_of_pools(0), stats_pool_allocd(), stats_xxl_pool_allocd(0), stats_beyond_mallocd(0),
-    stats_pool_hwm(), stats_xxl_pool_hwm(0), stats_beyond_hwm(0),
+    stats_pool_allocs(0), stats_pool_deallocs(0),
 #endif
     stats(0)
 {

@@ -238,7 +238,6 @@ public:
 
     inline void strengthen(Lit p) {
         if (std::remove(begin(), end(), p) != end()) {
-            Statistics::getInstance().allocatorStrengthenClause(length);
             --length;
         }
     }
