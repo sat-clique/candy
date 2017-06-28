@@ -32,7 +32,7 @@
 namespace Candy {
     template <>
     Lit Solver<RSILBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail_abstraction.trail, trail_abstraction.trail_size, trail_abstraction.trail_lim, trail_abstraction.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -47,7 +47,7 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILVanishingBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail_abstraction.trail, trail_abstraction.trail_size, trail_abstraction.trail_lim, trail_abstraction.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -62,7 +62,7 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBudgetBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail_abstraction.trail, trail_abstraction.trail_size, trail_abstraction.trail_lim, trail_abstraction.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -77,7 +77,7 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail_abstraction.trail, trail_abstraction.trail_size, trail_abstraction.trail_lim, trail_abstraction.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -92,7 +92,7 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILVanishingBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail_abstraction.trail, trail_abstraction.trail_size, trail_abstraction.trail_lim, trail_abstraction.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -107,7 +107,7 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBudgetBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail_abstraction.trail, trail_abstraction.trail_size, trail_abstraction.trail_lim, trail_abstraction.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }

@@ -10,6 +10,7 @@ add_library(core OBJECT
     Certificate.cc
     Certificate.h
     SolverTypes.h
+    Trail.h
     CNFProblem.cc
     CNFProblem.h
 )

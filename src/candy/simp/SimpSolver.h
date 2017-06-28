@@ -179,7 +179,7 @@ protected:
     inline void updateElimHeap(Var v) {
         // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
         if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v)
-                                    && this->trail_abstraction.value(v) == l_Undef)) {
+                                    && this->trail.value(v) == l_Undef)) {
             elim_heap.update(v);
         }
     }
@@ -375,7 +375,7 @@ void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, Lit lit, bool strict) {
 
 template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
-    assert(this->trail_abstraction.decisionLevel() == 0);
+    assert(this->trail.decisionLevel() == 0);
     
     subsumptionQueueProtectedPush(cr);
 
@@ -396,16 +396,16 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
         elimDetach(cr, unit, true);
         cr->setDeleted();
 
-        if (this->trail_abstraction.value(unit) == l_Undef) {
-            this->trail_abstraction.uncheckedEnqueue(unit);
+        if (this->trail.value(unit) == l_Undef) {
+            this->trail.uncheckedEnqueue(unit);
             return this->propagate() == nullptr;
         }
-        else if (this->trail_abstraction.value(unit) == l_False) {
+        else if (this->trail.value(unit) == l_False) {
             return false;
         }
         else {
-            this->trail_abstraction.vardata[var(unit)].reason = nullptr;
-            this->trail_abstraction.vardata[var(unit)].level = 0;
+            this->trail.vardata[var(unit)].reason = nullptr;
+            this->trail.vardata[var(unit)].level = 0;
             return true;
         }
     }
@@ -525,18 +525,18 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
 // Backward subsumption + backward subsumption resolution
 template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
-    assert(this->trail_abstraction.decisionLevel() == 0);
+    assert(this->trail.decisionLevel() == 0);
 
     Clause bwdsub_tmpunit({ lit_Undef });
     
-    while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_abstraction.trail_size) {
+    while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail.size()) {
         if (this->asynch_interrupt) {
             break;
         }
 
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
-        if (subsumption_queue.size() == 0 && bwdsub_assigns < this->trail_abstraction.trail_size) {
-            Lit l = this->trail_abstraction.trail[bwdsub_assigns++];
+        if (subsumption_queue.size() == 0 && bwdsub_assigns < this->trail.size()) {
+            Lit l = this->trail[bwdsub_assigns++];
             bwdsub_tmpunit[0] = l;
             abstraction[&bwdsub_tmpunit] = 1ull << (var(l) % 64);
             subsumption_queue.push_back(&bwdsub_tmpunit);
@@ -548,7 +548,7 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
             continue;
         }
         
-        assert(cr->size() > 1 || this->trail_abstraction.value(cr->first()) == l_True); // Unit-clauses should have been propagated before this point.
+        assert(cr->size() > 1 || this->trail.value(cr->first()) == l_True); // Unit-clauses should have been propagated before this point.
         
         // Find best variable to scan:
         Var best = var(*std::min_element(cr->begin(), cr->end(), [this] (Lit l1, Lit l2) {
@@ -589,17 +589,17 @@ bool SimpSolver<PickBranchLitT>::backwardSubsumptionCheck() {
 
 template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
-    assert(this->trail_abstraction.decisionLevel() == 0);
+    assert(this->trail.decisionLevel() == 0);
     
-    if (cr->isDeleted() || this->trail_abstraction.satisfied(*cr)) {
+    if (cr->isDeleted() || this->trail.satisfied(*cr)) {
         return true;
     }
     
-    this->trail_abstraction.trail_lim.push_back(this->trail_abstraction.trail_size);
+    this->trail.trail_lim.push_back(this->trail.size());
     Lit l = lit_Undef;
     for (Lit lit : *cr) {
-        if (var(lit) != v && this->trail_abstraction.value(lit) != l_False) {
-            this->trail_abstraction.uncheckedEnqueue(~lit);
+        if (var(lit) != v && this->trail.value(lit) != l_False) {
+            this->trail.uncheckedEnqueue(~lit);
         }
         else {
             l = lit;
@@ -626,7 +626,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     
     vector<Clause*> cls(occurs.lookup(v));
     
-    if (this->trail_abstraction.value(v) != l_Undef || cls.size() == 0)
+    if (this->trail.value(v) != l_Undef || cls.size() == 0)
         return true;
     
     for (Clause* c : cls)
@@ -649,7 +649,7 @@ template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     assert(!isEliminated(v));
     
-    if (this->trail_abstraction.value(v) != l_Undef || frozen[v]) {
+    if (this->trail.value(v) != l_Undef || frozen[v]) {
         return true;
     }
 
@@ -809,8 +809,8 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
             this->attachClause(clean);
             clause->setDeleted();
             this->detachClause(clause);
-            if (this->trail_abstraction.locked(clause)) {
-                this->trail_abstraction.vardata[var(clause->first())].reason = clean;
+            if (this->trail.locked(clause)) {
+                this->trail.vardata[var(clause->first())].reason = clean;
             }
         }
         clause->setSize(size);//restore original size for freeMarkedClauses
@@ -833,23 +833,23 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
 
     // only perform subsumption checks (inprocessing)
     if (!use_asymm && !use_elim) {
-        if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_abstraction.trail_size) {
+        if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail.size()) {
             this->ok = backwardSubsumptionCheck();
         }
     }
     // either asymm or elim are true (preprocessing)
     else {
-        while (n_touched > 0 || bwdsub_assigns < this->trail_abstraction.trail_size || elim_heap.size() > 0) {
+        while (n_touched > 0 || bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) {
             gatherTouchedClauses();
             
-            if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail_abstraction.trail_size) {
+            if (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail.size()) {
                 this->ok = backwardSubsumptionCheck();
             }
 
             while (!elim_heap.empty() && !this->isInConflictingState() && !this->asynch_interrupt) {
                 Var elim = elim_heap.removeMin();
 
-                if (isEliminated(elim) || this->trail_abstraction.value(elim) != l_Undef) {
+                if (isEliminated(elim) || this->trail.value(elim) != l_Undef) {
                     continue;
                 }
 
