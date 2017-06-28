@@ -58,7 +58,7 @@
 #include <memory>
 #include <limits>
 
-#include <candy/core/Statistics.h>
+#include "candy/core/Statistics.h"
 #include "candy/mtl/Heap.h"
 #include "candy/utils/Options.h"
 #include "candy/core/SolverTypes.h"
@@ -70,6 +70,7 @@
 #include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
+#include "candy/core/Trail.h"
 
 #include "sonification/SolverSonification.h"
 
@@ -214,7 +215,7 @@ public:
     }
 
     inline size_t nVars() const {
-        return trail_abstraction.vardata.size();
+        return trail.vardata.size();
     }
 
     inline bool isSelector(Var v) {
@@ -279,15 +280,6 @@ public:
 
 protected:
     // Helper structures:
-    struct VarData {
-        Clause* reason;
-        uint_fast32_t level;
-        VarData() :
-            reason(nullptr), level(0) {}
-        VarData(Clause* _reason, uint_fast32_t _level) :
-            reason(_reason), level(_level) {}
-    };
-
     struct Watcher {
         Clause* cref;
         Lit blocker;
@@ -342,70 +334,7 @@ protected:
 
     std::array<OccLists<Lit, Watcher, WatcherDeleted>, NWATCHES> watches;
 
-    class TrailAbstraction {
-    public:
-        TrailAbstraction() : assigns(), trail(), trail_size(0), qhead(0), vardata(), trail_lim() {
-
-        }
-        vector<lbool> assigns; // The current assignments.
-        vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
-        uint32_t trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
-        uint32_t qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
-        vector<VarData> vardata; // Stores reason and level for each variable.
-        vector<uint32_t> trail_lim; // Separator indices for different decision levels in 'trail'.
-
-        // The current value of a variable.
-        inline lbool value(Var x) const {
-            return assigns[x];
-        }
-
-        // The current value of a literal.
-        inline lbool value(Lit p) const {
-            return assigns[var(p)] ^ sign(p);
-        }
-
-        inline size_t nAssigns() const {
-            return trail_size;
-        }
-
-        // Main internal methods:
-        inline Clause* reason(Var x) const {
-            return vardata[x].reason;
-        }
-
-        inline int level(Var x) const {
-            return vardata[x].level;
-        }
-
-        // Begins a new decision level
-        inline void newDecisionLevel() {
-            trail_lim.push_back(trail_size);
-        }
-
-        // Returns TRUE if a clause is a reason for some implication in the current state.
-        inline bool locked(Clause* cr) const {
-            Clause& c = *cr;
-            if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
-            return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
-        }
-
-        // Returns TRUE if a clause is satisfied in the current state.
-        inline bool satisfied(const Clause& c) const {
-            return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
-        }
-
-        // Gives the current decisionlevel.
-        inline uint32_t decisionLevel() const {
-            return checked_unsigned_cast<size_t, uint32_t>(trail_lim.size());
-        }
-
-        inline void uncheckedEnqueue(Lit p, Clause* from = nullptr) {
-            assert(value(p) == l_Undef);
-            assigns[var(p)] = lbool(!sign(p));
-            vardata[var(p)] = VarData(from, decisionLevel());
-            trail[trail_size++] = p;
-        }
-    } trail_abstraction;
+    Trail trail;
 
     vector<char> polarity; // The preferred polarity of each variable.
     vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
@@ -487,7 +416,7 @@ protected:
     PickBranchLitT pickBranchLitData;
 
     inline uint64_t abstractLevel(Var x) const {
-        return 1ull << (trail_abstraction.level(x) % 64);
+        return 1ull << (trail.level(x) % 64);
     }
 
     // Insert a variable in the decision order priority queue.
@@ -637,7 +566,7 @@ Solver<PickBranchLitT>::Solver() :
     // watchers
     watches(),
     // current assignment
-    trail_abstraction(),
+    trail(),
     polarity(), decision(),
     // assumptions
     assumptions(),
@@ -741,9 +670,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     for (auto& watchers : watches) {
         watchers.init(mkLit(v, true));
     }
-    trail_abstraction.assigns.push_back(l_Undef);
-    trail_abstraction.vardata.emplace_back();
-    trail_abstraction.trail.resize(v + 1);
+    trail.grow();
     seen.push_back(0);
     permDiff.push_back(0);
     decision.push_back(0);
@@ -762,9 +689,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         for (auto& watchers : watches) {
             watchers.init(mkLit(maxVars, true));
         }
-        trail_abstraction.assigns.resize(maxVars, l_Undef);
-        trail_abstraction.vardata.resize(maxVars);
-        trail_abstraction.trail.resize(maxVars);
+        trail.grow(maxVars);
         seen.resize(maxVars, 0);
         permDiff.resize(maxVars, 0);
         decision.resize(maxVars, true);
@@ -793,7 +718,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
 template<class PickBranchLitT>
 template<typename Iterator>
 bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
-    assert(trail_abstraction.decisionLevel() == 0);
+    assert(trail.decisionLevel() == 0);
 
     uint32_t size = static_cast<uint32_t>(std::distance(begin, end));
 
@@ -801,12 +726,12 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
         return ok = false;
     }
     else if (size == 1) {
-        if (trail_abstraction.value(*begin) == l_Undef) {
-            trail_abstraction.uncheckedEnqueue(*begin);
+        if (trail.value(*begin) == l_Undef) {
+            trail.uncheckedEnqueue(*begin);
             return ok = (propagate() == nullptr);
         }
-        else if (trail_abstraction.value(*begin) == l_True) {
-            trail_abstraction.vardata[var(*begin)].reason = nullptr;
+        else if (trail.value(*begin) == l_True) {
+            trail.vardata[var(*begin)].reason = nullptr;
             return ok;
         }
         else {
@@ -850,8 +775,8 @@ void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
     certificate->removed(cr->begin(), cr->end());
     detachClause(cr, strict_detach);
     // Don't leave pointers to free'd memory!
-    if (trail_abstraction.locked(cr)) {
-        trail_abstraction.vardata[var(cr->first())].reason = nullptr;
+    if (trail.locked(cr)) {
+        trail.vardata[var(cr->first())].reason = nullptr;
     }
     cr->setDeleted();
 }
@@ -870,7 +795,7 @@ inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator en
         if (isSelector(var(lit))) {
             continue;
         }
-        int l = trail_abstraction.level(var(lit));
+        int l = trail.level(var(lit));
         if (permDiff[l] != MYFLAG) {
             permDiff[l] = MYFLAG;
             nblevels++;
@@ -893,7 +818,7 @@ bool Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_l
     
     bool minimize = false;
     for (Watcher w : watches[0][~out_learnt[0]]) {
-        if (permDiff[var(w.blocker)] == MYFLAG && trail_abstraction.value(w.blocker) == l_True) {
+        if (permDiff[var(w.blocker)] == MYFLAG && trail.value(w.blocker) == l_True) {
             minimize = true;
             permDiff[var(w.blocker)] = MYFLAG - 1;
         }
@@ -934,7 +859,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     
     // Generate conflict clause:
     out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
-    int index = trail_abstraction.trail_size - 1;
+    int index = trail.size() - 1;
     do {
         assert(confl != nullptr); // (otherwise should be UIP)
         Clause& c = *confl;
@@ -942,8 +867,8 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         claBumpActivity(c);
 
         // Special case for binary clauses: The first one has to be SAT
-        if (asslit != lit_Undef && c.size() == 2 && trail_abstraction.value(c[0]) == l_False) {
-            assert(trail_abstraction.value(c[1]) == l_True);
+        if (asslit != lit_Undef && c.size() == 2 && trail.value(c[0]) == l_False) {
+            assert(trail.value(c[1]) == l_True);
             c.swap(0, 1);
         }
         
@@ -961,16 +886,16 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         
         for (auto it = (asslit == lit_Undef) ? c.begin() : c.begin() + 1; it != c.end(); it++) {
             Var v = var(*it);
-            if (!seen[v] && trail_abstraction.level(v) != 0) {
+            if (!seen[v] && trail.level(v) != 0) {
                 seen[v] = 1;
-                if (trail_abstraction.level(v) >= (int)trail_abstraction.decisionLevel()) {
+                if (trail.level(v) >= (int)trail.decisionLevel()) {
                     pathC++;
-                    if (trail_abstraction.reason(v) != nullptr && trail_abstraction.reason(v)->isLearnt()) {
+                    if (trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
                         lastDecisionLevel.push_back(v);
                     }
                 } else {
                     if (isSelector(v)) {
-                        assert(trail_abstraction.value(*it) == l_False);
+                        assert(trail.value(*it) == l_False);
                         selectors.push_back(*it);
                     } else {
                         out_learnt.push_back(*it);
@@ -981,13 +906,13 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
         }
         
         // Select next clause to look at:
-        while (!seen[var(trail_abstraction.trail[index])]) {
+        while (!seen[var(trail[index])]) {
             index--;
         }
         
-        asslit = trail_abstraction.trail[index];
+        asslit = trail[index];
         seen[var(asslit)] = 0;
-        confl = trail_abstraction.reason(var(asslit));
+        confl = trail.reason(var(asslit));
         pathC--;
     } while (pathC > 0);
     
@@ -1007,7 +932,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     }
     auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
                          [this, abstract_level] (Lit lit) {
-                             return trail_abstraction.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
+                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
                          });
     out_learnt.erase(end, out_learnt.end());
 
@@ -1028,7 +953,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
 
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
     for (Var v : lastDecisionLevel) {
-        if (trail_abstraction.reason(v)->getLBD() < lbd) {
+        if (trail.reason(v)->getLBD() < lbd) {
             varBumpActivity(v);
         }
     }
@@ -1044,20 +969,20 @@ bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
     analyze_stack.push_back(var(lit));
 
     while (analyze_stack.size() > 0) {
-        assert(trail_abstraction.reason(analyze_stack.back()) != nullptr);
+        assert(trail.reason(analyze_stack.back()) != nullptr);
 
-        Clause* clause = trail_abstraction.reason(analyze_stack.back());
+        Clause* clause = trail.reason(analyze_stack.back());
         analyze_stack.pop_back();
 
-        if (clause->size() == 2 && trail_abstraction.value(clause->first()) == l_False) {
-            assert(trail_abstraction.value(clause->second()) == l_True);
+        if (clause->size() == 2 && trail.value(clause->first()) == l_False) {
+            assert(trail.value(clause->second()) == l_True);
             clause->swap(0, 1);
         }
 
         for (Lit imp : *clause) {
             Var v = var(imp);
-            if (!seen[v] && trail_abstraction.level(v) > 0) {
-                if (trail_abstraction.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
+            if (!seen[v] && trail.level(v) > 0) {
+                if (trail.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
                     seen[v] = 1;
                     analyze_stack.push_back(v);
                     analyze_clear.push_back(v);
@@ -1088,21 +1013,21 @@ void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
     out_conflict.clear();
     out_conflict.push_back(p);
     
-    if (trail_abstraction.decisionLevel() == 0)
+    if (trail.decisionLevel() == 0)
         return;
     
     seen[var(p)] = 1;
     
-    for (int i = trail_abstraction.trail_size - 1; i >= (int)trail_abstraction.trail_lim[0]; i--) {
-        Var x = var(trail_abstraction.trail[i]);
+    for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
+        Var x = var(trail[i]);
         if (seen[x]) {
-            if (trail_abstraction.reason(x) == nullptr) {
-                assert(trail_abstraction.level(x) > 0);
-                out_conflict.push_back(~trail_abstraction.trail[i]);
+            if (trail.reason(x) == nullptr) {
+                assert(trail.level(x) > 0);
+                out_conflict.push_back(~trail[i]);
             } else {
-                Clause* c = trail_abstraction.reason(x);
+                Clause* c = trail.reason(x);
                 for (Lit lit : *c) {
-                    if (trail_abstraction.level(var(lit)) > 0) {
+                    if (trail.level(var(lit)) > 0) {
                         seen[var(lit)] = 1;
                     }
                 }
@@ -1116,16 +1041,10 @@ void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::cancelUntil(int level) {
-    if ((int)trail_abstraction.decisionLevel() > level) {
-        for (int c = trail_abstraction.trail_size - 1; c >= (int)trail_abstraction.trail_lim[level]; c--) {
-            Var x = var(trail_abstraction.trail[c]);
-            trail_abstraction.assigns[x] = l_Undef;
-            polarity[x] = sign(trail_abstraction.trail[c]);
-            insertVarOrder(x);
-        }
-        trail_abstraction.qhead = trail_abstraction.trail_lim[level];
-        trail_abstraction.trail_size = trail_abstraction.trail_lim[level];
-        trail_abstraction.trail_lim.erase(trail_abstraction.trail_lim.begin() + level, trail_abstraction.trail_lim.end());
+    vector<Lit> lits = trail.cancelUntil(level);
+    for (Lit lit : lits) {
+        polarity[var(lit)] = sign(lit);
+        insertVarOrder(var(lit));
     }
 }
 
@@ -1148,19 +1067,19 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t n) 
 
     if (n == 0) { // propagate binary clauses
         for (Watcher& watcher : list) {
-            lbool val = trail_abstraction.value(watcher.blocker);
+            lbool val = trail.value(watcher.blocker);
             if (val == l_False) {
                 return watcher.cref;
             }
             if (val == l_Undef) {
-                trail_abstraction.uncheckedEnqueue(watcher.blocker, watcher.cref);
+                trail.uncheckedEnqueue(watcher.blocker, watcher.cref);
             }
         }
     }
     else { // propagate other clauses
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            lbool val = trail_abstraction.value(watcher->blocker);
+            lbool val = trail.value(watcher->blocker);
             if (val != l_True) { // Try to avoid inspecting the clause
                 Clause* clause = watcher->cref;
 
@@ -1170,12 +1089,12 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t n) 
 
                 if (watcher->blocker != clause->first()) {
                     watcher->blocker = clause->first(); // repair blocker (why?)
-                    val = trail_abstraction.value(clause->first());
+                    val = trail.value(clause->first());
                 }
 
                 if (val != l_True) {
                     for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                        if (trail_abstraction.value((*clause)[k]) != l_False) {
+                        if (trail.value((*clause)[k]) != l_False) {
                             clause->swap(1, k);
                             watches[n][~clause->second()].emplace_back(clause, clause->first());
                             goto propagate_skip;
@@ -1188,7 +1107,7 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t n) 
                         return clause;
                     }
                     else { // unit
-                        trail_abstraction.uncheckedEnqueue(clause->first(), clause);
+                        trail.uncheckedEnqueue(clause->first(), clause);
                     }
                 }
             }
@@ -1205,7 +1124,7 @@ Clause* Solver<PickBranchLitT>::future_propagate_clauses(Lit p, uint_fast8_t n) 
 #ifndef FUTURE_PROPAGATE
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
-    while (qhead < trail_size) {
+    while (qhead < trail.trail_size) {
         Lit p = trail[qhead++];
 
         // Propagate binary clauses
@@ -1225,20 +1144,20 @@ Clause* Solver<PickBranchLitT>::propagate() {
 template <class PickBranchLitT>
 Clause* Solver<PickBranchLitT>::propagate() {
     std::array<uint32_t, NWATCHES> pos;
-    pos.fill(trail_abstraction.qhead);
+    pos.fill(trail.qhead);
 
-    while (pos[0] < trail_abstraction.trail_size) {
+    while (pos[0] < trail.size()) {
         for (unsigned int i = 0; i < pos.size(); i++) {
             if (i > 0 && i < 5) allocator.prefetchPage(i + 2);
-            while (pos[i] < trail_abstraction.trail_size) {
-                Lit p = trail_abstraction.trail[pos[i]++];
+            while (pos[i] < trail.size()) {
+                Lit p = trail[pos[i]++];
                 Clause* conflict = future_propagate_clauses(p, i);
                 if (conflict != nullptr) return conflict;
             }
         }
     }
 
-    trail_abstraction.qhead = pos[0];
+    trail.qhead = pos[0];
 
     return nullptr;
 }
@@ -1269,7 +1188,7 @@ void Solver<PickBranchLitT>::reduceDB() {
     for (size_t i = 0; i < limit; i++) {
         Clause* c = learnts[i];
         if (c->getLBD() <= persistentLBD) break; // small lbds come last in sequence (see ordering by reduceDB_lt())
-        if (!c->isFrozen() && (trail_abstraction.value(c->first()) != l_True || trail_abstraction.reason(var(c->first())) != c)) {//&& !locked(c)) {
+        if (!c->isFrozen() && (trail.value(c->first()) != l_True || trail.reason(var(c->first())) != c)) {//&& !locked(c)) {
             removeClause(c);
         }
     }
@@ -1306,7 +1225,7 @@ template <class PickBranchLitT>
 void Solver<PickBranchLitT>::rebuildOrderHeap() {
     vector<Var> vs;
     for (size_t v = 0; v < nVars(); v++) {
-        if (decision[v] && trail_abstraction.value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
+        if (decision[v] && trail.value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
             vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
         }
     }
@@ -1321,18 +1240,18 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     size_t old_learnts_size = learnts.size();
     
     // save trail of unary propagations
-    vector<Lit> props(trail_abstraction.trail.begin(), trail_abstraction.trail.begin() + trail_abstraction.trail_size);
+    vector<Lit> props(trail.begin(), trail.end());
     for (Lit p : props) {
-        trail_abstraction.assigns[var(p)] = l_Undef;
-        trail_abstraction.vardata[var(p)] = VarData(nullptr, 0);
+        trail.assigns[var(p)] = l_Undef;
+        trail.vardata[var(p)] = VarData(nullptr, 0);
     }
-    trail_abstraction.trail_size = 0;
+    trail.trail_size = 0;
 
     // detach and remove clauses
     for (auto list : { &clauses, &learnts }) {
         for (Clause* c : *list) {
             if (c->size() > 2 && c->size() <= upper) {
-                assert(!trail_abstraction.locked(c)); assert(!c->isDeleted());
+                assert(!trail.locked(c)); assert(!c->isDeleted());
                 detachClause(c, true);
             }
         }
@@ -1360,8 +1279,8 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
 
     // restore trail of unary propagation
     for (Lit p : props) {
-        if (trail_abstraction.assigns[var(p)] == l_Undef) {
-            trail_abstraction.uncheckedEnqueue(p);
+        if (trail.assigns[var(p)] == l_Undef) {
+            trail.uncheckedEnqueue(p);
             propagate();
         }
     }
@@ -1382,16 +1301,16 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
  **************************************************************************************************/
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::simplify() {
-    assert(trail_abstraction.decisionLevel() == 0);
+    assert(trail.decisionLevel() == 0);
     
     if (!ok || propagate() != nullptr) {
         return ok = false;
     }
 
     // Remove satisfied clauses:
-    std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (trail_abstraction.satisfied(*c)) removeClause(c); } );
-    std::for_each(persist.begin(), persist.end(), [this] (Clause* c) { if (trail_abstraction.satisfied(*c)) removeClause(c); } );
-    std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (trail_abstraction.satisfied(*c)) removeClause(c); });
+    std::for_each(learnts.begin(), learnts.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); } );
+    std::for_each(persist.begin(), persist.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); } );
+    std::for_each(clauses.begin(), clauses.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); });
 
     // Cleanup:
     for (auto& watchers : watches) {
@@ -1412,13 +1331,13 @@ bool Solver<PickBranchLitT>::strengthen() {
     // Remove false literals:
     std::unordered_map<Clause*, size_t> strengthened_sizes;
     std::vector<Clause*> strengthened_clauses;
-    for (auto list : { clauses, learnts, persist }) {
+    for (auto& list : { clauses, learnts, persist }) {
         for (Clause* clause : list) if (!clause->isDeleted()) {
-            auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail_abstraction.value(lit) == l_False; });
+            auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
             if (pos != clause->end()) {
                 detachClause(clause);
                 certificate->removed(clause->begin(), clause->end());
-                auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail_abstraction.value(lit) == l_False; });
+                auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
                 certificate->added(clause->begin(), end);
                 strengthened_clauses.push_back(clause);
                 strengthened_sizes[clause] = clause->size();
@@ -1431,18 +1350,18 @@ bool Solver<PickBranchLitT>::strengthen() {
     for (Clause* clause : strengthened_clauses) {
         if (clause->size() == 1) {
             Lit p = clause->first();
-            if (trail_abstraction.value(p) == l_True) {
-                trail_abstraction.vardata[var(p)].reason = nullptr;
-                trail_abstraction.vardata[var(p)].level = 0;
+            if (trail.value(p) == l_True) {
+                trail.vardata[var(p)].reason = nullptr;
+                trail.vardata[var(p)].level = 0;
             }
             else {
-                trail_abstraction.uncheckedEnqueue(p);
+                trail.uncheckedEnqueue(p);
             }
         }
         else {
             Clause* clean = new (allocator.allocate(clause->size())) Clause(*clause);
-            if (trail_abstraction.locked(clause)) {
-                trail_abstraction.vardata[var(clause->first())].reason = clean;
+            if (trail.locked(clause)) {
+                trail.vardata[var(clause->first())].reason = clean;
             }
             attachClause(clean);
             if (clean->isLearnt()) {
@@ -1505,19 +1424,19 @@ lbool Solver<PickBranchLitT>::search() {
     Statistics::getInstance().solverRestartInc();
     sonification.restart();
     for (;;) {
-        sonification.decisionLevel(trail_abstraction.decisionLevel(), SolverOptions::opt_sonification_delay);
+        sonification.decisionLevel(trail.decisionLevel(), SolverOptions::opt_sonification_delay);
         
 
-        uint32_t old_qhead = trail_abstraction.qhead;
+        uint32_t old_qhead = trail.qhead;
 
         Clause* confl = propagate();
 
-        nPropagations += trail_abstraction.qhead - old_qhead;
+        nPropagations += trail.qhead - old_qhead;
         
-        sonification.assignmentLevel(static_cast<int>(trail_abstraction.nAssigns()));
+        sonification.assignmentLevel(static_cast<int>(trail.size()));
         
         if (confl != nullptr) { // CONFLICT
-            sonification.conflictLevel(trail_abstraction.decisionLevel());
+            sonification.conflictLevel(trail.decisionLevel());
             
             ++nConflicts;
             
@@ -1526,19 +1445,19 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
-                Statistics::getInstance().printIntermediateStats((int) (trail_abstraction.trail_lim.size() == 0 ? trail_abstraction.trail_size : trail_abstraction.trail_lim[0]),
+                Statistics::getInstance().printIntermediateStats((int) (trail.trail_lim.size() == 0 ? trail.size() : trail.trail_lim[0]),
                     static_cast<int>(nClauses()),
                     static_cast<int>(nLearnts()),
                     static_cast<int>(nConflicts));
             }
-            if (trail_abstraction.decisionLevel() == 0) {
+            if (trail.decisionLevel() == 0) {
                 return l_False;
             }
             
-            trailQueue.push(trail_abstraction.trail_size);
+            trailQueue.push(trail.size());
             
             // BLOCK RESTART (CP 2012 paper)
-            if (nConflicts > 10000 && lbdQueue.isvalid() && trail_abstraction.trail_size > R * trailQueue.getavg()) {
+            if (nConflicts > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
                 Statistics::getInstance().solverStopsRestartsInc();
                 if (!blocked) {
@@ -1582,7 +1501,7 @@ lbool Solver<PickBranchLitT>::search() {
 
             if (learnt_clause.size() == 1) {
                 cancelUntil(0);
-                trail_abstraction.uncheckedEnqueue(learnt_clause[0]);
+                trail.uncheckedEnqueue(learnt_clause[0]);
                 new_unary = true;
             }
             else {
@@ -1598,16 +1517,16 @@ lbool Solver<PickBranchLitT>::search() {
                     int max_i = 1;
                     // Find the first literal assigned at the next-highest level:
                     for (uint_fast16_t i = 2; i < cr->size(); i++)
-                        if (trail_abstraction.level(var((*cr)[i])) > trail_abstraction.level(var((*cr)[max_i])))
+                        if (trail.level(var((*cr)[i])) > trail.level(var((*cr)[max_i])))
                             max_i = i;
                     // Swap-in this literal at index 1:
                     cr->swap(max_i, 1);
                 }
 
-                cancelUntil(trail_abstraction.level(var(cr->second())));
+                cancelUntil(trail.level(var(cr->second())));
 
                 attachClause(cr);
-                trail_abstraction.uncheckedEnqueue(cr->first(), cr);
+                trail.uncheckedEnqueue(cr->first(), cr);
                 claBumpActivity(*cr);
             }
             claDecayActivity();
@@ -1684,13 +1603,13 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             Lit next = lit_Undef;
-            while (trail_abstraction.decisionLevel() < assumptions.size()) {
+            while (trail.decisionLevel() < assumptions.size()) {
                 // Perform user provided assumption:
-                Lit p = assumptions[trail_abstraction.decisionLevel()];
-                if (trail_abstraction.value(p) == l_True) {
+                Lit p = assumptions[trail.decisionLevel()];
+                if (trail.value(p) == l_True) {
                     // Dummy decision level:
-                    trail_abstraction.newDecisionLevel();
-                } else if (trail_abstraction.value(p) == l_False) {
+                    trail.newDecisionLevel();
+                } else if (trail.value(p) == l_False) {
                     analyzeFinal(~p, conflict);
                     return l_False;
                 } else {
@@ -1710,8 +1629,8 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             // Increase decision level and enqueue 'next'
-            trail_abstraction.newDecisionLevel();
-            trail_abstraction.uncheckedEnqueue(next);
+            trail.newDecisionLevel();
+            trail.uncheckedEnqueue(next);
         }
     }
     return l_Undef; // not reached
@@ -1766,7 +1685,7 @@ lbool Solver<PickBranchLitT>::solve() {
         else {
             // check if selectors are used in final conflict
             vector<Lit> finalConflict;
-            analyzeFinal(trail_abstraction.trail[trail_abstraction.trail_size-1], finalConflict);
+            analyzeFinal(trail[trail.size()-1], finalConflict);
             auto pos = find_if(finalConflict.begin(), finalConflict.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
             if (pos == finalConflict.end()) {
                 certificate->proof();
@@ -1783,7 +1702,7 @@ lbool Solver<PickBranchLitT>::solve() {
         Statistics::getInstance().incNBSatCalls();
         
         model.clear();
-        model.insert(model.end(), trail_abstraction.assigns.begin(), trail_abstraction.assigns.end());
+        model.insert(model.end(), trail.assigns.begin(), trail.assigns.end());
 
         sonification.stop(0);
     }
@@ -1803,7 +1722,7 @@ inline Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
     Var next = var_Undef;
     
     // Activity based decision:
-    while (next == var_Undef || trail_abstraction.value(next) != l_Undef || !decision[next]) {
+    while (next == var_Undef || trail.value(next) != l_Undef || !decision[next]) {
         if (order_heap.empty()) {
             next = var_Undef;
             break;
