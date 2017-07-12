@@ -1042,6 +1042,7 @@ void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::cancelUntil(int level) {
     vector<Lit> lits = trail.cancelUntil(level);
+    std::reverse(lits.begin(), lits.end());
     for (Lit lit : lits) {
         polarity[var(lit)] = sign(lit);
         insertVarOrder(var(lit));
