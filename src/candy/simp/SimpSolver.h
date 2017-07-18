@@ -384,7 +384,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
         strengthened_clauses.push_back(cr);
     }
     
-    this->detachClause(cr, true);
+    this->propagator.detachClause(cr, true);
     cr->strengthen(l);
 
     this->certificate->added(cr->begin(), cr->end());
@@ -398,7 +398,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
 
         if (this->trail.value(unit) == l_Undef) {
             this->trail.uncheckedEnqueue(unit);
-            return this->propagate() == nullptr;
+            return this->propagator.propagate(this->trail) == nullptr;
         }
         else if (this->trail.value(unit) == l_False) {
             return false;
@@ -410,7 +410,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
         }
     }
     else {
-        this->attachClause(cr);
+        this->propagator.attachClause(cr);
 
         uint64_t clause_abstraction = 0;
         for (Lit lit : *cr) {
@@ -513,11 +513,11 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
             return false;
         } else if (this->value(lit) != l_False) {
             assert(this->value(lit) == l_Undef);
-            this->uncheckedEnqueue(~lit);
+            this->trail.uncheckedEnqueue(~lit);
         }
     }
     
-    bool result = this->propagate() != nullptr;
+    bool result = this->propagator.propagate(this->trail) != nullptr;
     this->cancelUntil(0);
     return result;
 }
@@ -606,7 +606,7 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
         }
     }
     
-    if (this->propagate() != nullptr) {
+    if (this->propagator.propagate(this->trail) != nullptr) {
         this->cancelUntil(0);
         if (!strengthenClause(cr, l)) {
             return false;
@@ -705,9 +705,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         }
         occurs[v].clear();
 
-        for (auto& watchers : this->watches) {
-            watchers.cleanAll();
-        }
+        this->propagator.cleanupWatchers();
 
         return backwardSubsumptionCheck();
     }
@@ -806,9 +804,9 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
             } else {
                 this->clauses.push_back(clean);
             }
-            this->attachClause(clean);
+            this->propagator.attachClause(clean);
             clause->setDeleted();
-            this->detachClause(clause);
+            this->propagator.detachClause(clause);
             if (this->trail.locked(clause)) {
                 this->trail.vardata[var(clause->first())].reason = clean;
             }
@@ -818,9 +816,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     strengthened_clauses.clear();
     strengthened_sizes.clear();
 
-    for (auto& watchers : this->watches) {
-        watchers.cleanAll();
-    }
+    this->propagator.cleanupWatchers();
     this->freeMarkedClauses(this->clauses);
     this->freeMarkedClauses(this->learnts);
     this->freeMarkedClauses(this->persist);
