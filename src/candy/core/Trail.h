@@ -5,6 +5,9 @@
  *      Author: markus
  */
 
+#ifndef SRC_CANDY_CORE_TRAIL_H_
+#define SRC_CANDY_CORE_TRAIL_H_
+
 #include <vector>
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Clause.h"
@@ -141,3 +144,6 @@ public:
     }
 };
 }
+
+#endif /* SRC_CANDY_CORE_TRAIL_H_ */
+

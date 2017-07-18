@@ -213,10 +213,14 @@ public:
 	OccLists(const Deleted& d) : deleted(d) { }
 
 	void init(const Idx& idx) {
-		if ((int) occs.size() < toInt(idx) + 1)
+		if (size() < toInt(idx) + 1) {
 			occs.resize(toInt(idx) + 1);
-		if ((int) dirty.size() < toInt(idx) + 1)
 			dirty.resize(toInt(idx) + 1, 0);
+		}
+	}
+
+	size_t size() {
+	    return occs.size();
 	}
 
 	std::vector<Elem>& operator[](const Idx& idx) {
