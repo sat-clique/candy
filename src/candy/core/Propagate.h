@@ -14,7 +14,7 @@
 
 #include <array>
 
-#define FUTURE_PROPAGATE
+//#define FUTURE_PROPAGATE
 
 namespace Candy {
 
@@ -194,11 +194,11 @@ public:
             Lit p = trail[trail.qhead++];
 
             // Propagate binary clauses
-            Clause* conflict = future_propagate_clauses(p, 0);
+            Clause* conflict = future_propagate_clauses(trail, p, 0);
             if (conflict != nullptr) return conflict;
 
             // Propagate other 2-watched clauses
-            conflict = future_propagate_clauses(p, 1);
+            conflict = future_propagate_clauses(trail, p, 1);
             if (conflict != nullptr) return conflict;
         }
 
