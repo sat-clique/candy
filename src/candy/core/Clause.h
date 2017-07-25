@@ -17,14 +17,11 @@ namespace Candy {
 // bits 0..11
 #define BITS_LBD 12
 #define LBD_MASK (static_cast<uint16_t>(4095))
-// bit 12
-#define SELECTABLE_MASK (static_cast<uint16_t>(4096))
-// bit 13
-#define LEARNT_MASK (static_cast<uint16_t>(8192))
-// bit 14
-#define DELETED_MASK (static_cast<uint16_t>(16384))
-// bit 15
-#define FROZEN_MASK (static_cast<uint16_t>(32768))
+
+#define SELECTABLE_BIT 12
+#define LEARNT_BIT 13
+#define DELETED_BIT 14
+#define FROZEN_BIT 15
 
 class Clause {
     uint16_t length;
@@ -136,47 +133,35 @@ public:
     }
 
     inline bool isLearnt() const {
-        return (header & LEARNT_MASK) != 0;
+        return (header >> LEARNT_BIT) & 1;
     }
 
-    inline void setLearnt(bool learnt) {
-        if (learnt) {
-            header |= LEARNT_MASK;
-        } else {
-            header &= ~LEARNT_MASK;
-        }
+    inline void setLearnt(bool flag) {
+        header = (header & ~(1 << LEARNT_BIT)) | ((flag ? 1 : 0) << LEARNT_BIT);
     }
 
     inline bool isSelectable() const {
-        return (header & SELECTABLE_MASK) != 0;
+        return (header >> SELECTABLE_BIT) & 1;
     }
 
-    inline void setSelectable(bool hasAssumptions) {
-        if (hasAssumptions) {
-            header |= SELECTABLE_MASK;
-        } else {
-            header &= ~SELECTABLE_MASK;
-        }
+    inline void setSelectable(bool flag) {
+        header = (header & ~(1 << SELECTABLE_BIT)) | ((flag ? 1 : 0) << SELECTABLE_BIT);
     }
 
     inline bool isFrozen() const {
-        return (header & FROZEN_MASK) != 0;
+        return (header >> FROZEN_BIT) & 1;
     }
 
-    inline void setFrozen(bool learnt) {
-        if (learnt) {
-            header |= FROZEN_MASK;
-        } else {
-            header &= ~FROZEN_MASK;
-        }
+    inline void setFrozen(bool flag) {
+        header = (header & ~(1 << FROZEN_BIT)) | ((flag ? 1 : 0) << FROZEN_BIT);
     }
 
     inline bool isDeleted() const {
-        return (header & DELETED_MASK) != 0;
+        return (header >> DELETED_BIT) & 1;
     }
 
     inline void setDeleted() {
-        header |= DELETED_MASK;
+        header |= 1 << DELETED_BIT;
     }
 
     inline uint16_t getLBD() const {
