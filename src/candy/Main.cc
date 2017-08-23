@@ -163,11 +163,20 @@ template<class SolverType>
 static lbool solve(SolverType& S, bool do_preprocess) {
     lbool result = l_Undef;
 
-    if (do_preprocess) {
+    if (S.isInConflictingState()) {
+        if (S.verbosity > 0) {
+            printf("c ==============================================================================================\n");
+            printf("c Solved by propagation\n");
+        }
+        result = l_False;
+        S.certificate->proof();
+    }
+    else if (do_preprocess) {
         Statistics::getInstance().runtimeStart("Preprocessing");
         S.eliminate();
         S.disablePreprocessing();
         Statistics::getInstance().runtimeStop("Preprocessing");
+
         if (S.isInConflictingState()) {
             result = l_False;
             S.certificate->proof();
