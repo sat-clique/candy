@@ -32,6 +32,9 @@ struct Watcher {
     bool operator!=(const Watcher& w) const {
         return cref != w.cref;
     }
+    bool isDeleted() {
+        return cref->isDeleted() == 1;
+    }
 };
 
 struct WatcherDeleted {
