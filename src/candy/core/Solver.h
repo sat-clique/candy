@@ -792,29 +792,27 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     int index = trail.size() - 1;
     do {
         assert(confl != nullptr); // (otherwise should be UIP)
-        Clause& c = *confl;
-        
-        claBumpActivity(c);
+        claBumpActivity(*confl);
 
         // Special case for binary clauses: The first one has to be SAT
-        if (asslit != lit_Undef && c.size() == 2 && trail.value(c[0]) == l_False) {
-            assert(trail.value(c[1]) == l_True);
-            c.swap(0, 1);
+        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
+            assert(trail.value(confl->second()) == l_True);
+            confl->swap(0, 1);
         }
         
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (c.isLearnt() && c.getLBD() > 2) {
-            uint_fast16_t nblevels = computeLBD(c.begin(), c.end());
-            if (nblevels + 1 < c.getLBD()) { // improve the LBD
-                if (c.getLBD() <= lbLBDFrozenClause) {
+        if (confl->isLearnt() && confl->getLBD() > 2) {
+            uint_fast16_t nblevels = computeLBD(confl->begin(), confl->end());
+            if (nblevels + 1 < confl->getLBD()) { // improve the LBD
+                if (confl->getLBD() <= lbLBDFrozenClause) {
                     // seems to be interesting : keep it for the next round
-                    c.setFrozen(true);
+                    confl->setFrozen(true);
                 }
-                c.setLBD(nblevels);
+                confl->setLBD(nblevels);
             }
         }
         
-        for (auto it = (asslit == lit_Undef) ? c.begin() : c.begin() + 1; it != c.end(); it++) {
+        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
             Var v = var(*it);
             if (!seen[v] && trail.level(v) != 0) {
                 seen[v] = 1;
@@ -1157,7 +1155,10 @@ bool Solver<PickBranchLitT>::strengthen() {
 
     allocator.announceClauses(strengthened_clauses);
     for (Clause* clause : strengthened_clauses) {
-        if (clause->size() == 1) {
+        if (clause->size() == 0) {
+            ok = false;
+        }
+        else if (clause->size() == 1) {
             Lit p = clause->first();
             if (trail.value(p) == l_True) {
                 trail.vardata[var(p)].reason = nullptr;
@@ -1196,7 +1197,7 @@ bool Solver<PickBranchLitT>::strengthen() {
 
     rebuildOrderHeap();
 
-    return ok = (propagator.propagate(trail) == nullptr);
+    return ok &= (propagator.propagate(trail) == nullptr);
 }
 
 /**
