@@ -92,10 +92,6 @@ IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate w
     
 }
 
-template <>
-Lit Solver<DefaultPickBranchLit>::pickBranchLit() {
-    return defaultPickBranchLit();
-}
 }
 
 //=================================================================================================

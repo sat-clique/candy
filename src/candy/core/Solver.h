@@ -181,19 +181,6 @@ public:
         return !ok;
     }
 
-    // Declare if a variable should be eligible for selection in the decision heuristic.
-    inline void setDecisionVar(Var v, bool b) {
-        if (decision[v] != static_cast<char>(b)) {
-            decision[v] = b;
-            if (b) {
-                insertVarOrder(v);
-                Statistics::getInstance().solverDecisionVariablesInc();
-            } else {
-                Statistics::getInstance().solverDecisionVariablesDec();
-            }
-        }
-    }
-
     // The value of a variable in the last model. The last call to solve must have been satisfiable.
     lbool modelValue(Var x) const {
         return model[x];
@@ -274,14 +261,6 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-    struct VarOrderLt {
-        const vector<double>& activity;
-        bool operator()(Var x, Var y) const {
-            return activity[x] > activity[y];
-        }
-        VarOrderLt(const vector<double>& act) : activity(act) {}
-    };
-
     struct reduceDB_lt {
         reduceDB_lt() {
         }
@@ -301,16 +280,136 @@ protected:
     Propagate propagator;
     Trail trail;
 
-    vector<char> polarity; // The preferred polarity of each variable.
-    vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
-    vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+    class Branch {
+        struct VarOrderLt {
+            const vector<double>& activity;
+            bool operator()(Var x, Var y) const {
+                return activity[x] > activity[y];
+            }
+            VarOrderLt(const vector<double>& act) : activity(act) {}
+        };
 
-    // for activity based heuristics
-    Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
-    vector<double> activity; // A heuristic measurement of the activity of a variable.
-    double var_inc; // Amount to bump next variable with.
-    double var_decay;
-    double max_var_decay;
+    public:
+		Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
+		vector<double> activity; // A heuristic measurement of the activity of a variable.
+		double var_inc; // Amount to bump next variable with.
+		double var_decay;
+		double max_var_decay;
+		vector<char> polarity; // The preferred polarity of each variable.
+		vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic.
+		Trail* trail;
+
+		Branch(double vd, double mvd, Trail* trail_) :
+    	    polarity(), decision(),
+    	    order_heap(VarOrderLt(activity)),
+    	    activity(),
+    	    var_inc(1), var_decay(vd), max_var_decay(mvd), trail(trail_) {
+
+		}
+
+		inline void grow(bool dvar, bool sign, double act) {
+	        decision.push_back(dvar);
+	        polarity.push_back(sign);
+	        activity.push_back(act);
+	        insertVarOrder(decision.size() - 1);
+		}
+
+		inline void grow(size_t size, bool dvar, bool sign, double act) {
+			int prevSize = decision.size(); // can be negative during initialization
+			if (size > decision.size()) {
+				decision.resize(size, dvar);
+				polarity.resize(size, sign);
+				activity.resize(size, act);
+		        for (int i = prevSize; i < size; i++) {
+		            insertVarOrder(i);
+		            Statistics::getInstance().solverDecisionVariablesInc();
+		        }
+			}
+		}
+
+		inline void initFrom(const CNFProblem& problem) {
+            std::vector<double> occ = problem.getLiteralRelativeOccurrences();
+            for (size_t i = 0; i < decision.size(); i++) {
+                activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
+                polarity[i] = occ[mkLit(i, true)] > occ[mkLit(i, false)];
+            }
+            rebuildOrderHeap();
+		}
+
+	    // Declare if a variable should be eligible for selection in the decision heuristic.
+	    inline void setDecisionVar(Var v, bool b) {
+	        if (decision[v] != static_cast<char>(b)) {
+	            decision[v] = b;
+	            if (b) {
+	                insertVarOrder(v);
+	                Statistics::getInstance().solverDecisionVariablesInc();
+	            } else {
+	                Statistics::getInstance().solverDecisionVariablesDec();
+	            }
+	        }
+	    }
+	    // Insert a variable in the decision order priority queue.
+	    inline void insertVarOrder(Var x) {
+	        if (!order_heap.inHeap(x) && decision[x])
+	            order_heap.insert(x);
+	    }
+
+	    // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
+	    inline void varDecayActivity() {
+	        var_inc *= (1 / var_decay);
+	    }
+
+	    // Increase a variable with the current 'bump' value.
+	    inline void varBumpActivity(Var v) {
+			varBumpActivity(v, var_inc);
+	    }
+
+	    inline void varBumpActivity(Var v, double inc) {
+	        if ((activity[v] += inc) > 1e100) {
+	            varRescaleActivity();
+	        }
+	        if (order_heap.inHeap(v)) {
+	            order_heap.decrease(v); // update order-heap
+	        }
+	    }
+
+	    void varRescaleActivity() {
+	        for (size_t i = 0; i < activity.size(); i++) {
+	            activity[i] *= 1e-100;
+	        }
+	        var_inc *= 1e-100;
+	    }
+
+	    void rebuildOrderHeap() {
+	        vector<Var> vs;
+	        for (size_t v = 0; v < decision.size(); v++) {
+	            if (decision[v] && trail->value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
+	                vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
+	            }
+	        }
+	        order_heap.build(vs);
+	    }
+
+	    inline Lit pickBranchLit() {
+	        Var next = var_Undef;
+
+	        // Activity based decision:
+	        while (next == var_Undef || trail->value(next) != l_Undef || !decision[next]) {
+	            if (order_heap.empty()) {
+	                next = var_Undef;
+	                break;
+	            } else {
+	                next = order_heap.removeMin();
+	            }
+	        }
+
+	        return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+	    }
+    } branch;
+
+	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+
+    // clause activity heuristic
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
 
@@ -384,12 +483,6 @@ protected:
         return 1ull << (trail.level(x) % 64);
     }
 
-    // Insert a variable in the decision order priority queue.
-    inline void insertVarOrder(Var x) {
-        if (!order_heap.inHeap(x) && decision[x])
-            order_heap.insert(x);
-    }
-
     // Operations on clauses:
     void removeClause(Clause* cr, bool strict_detach = false); // Detach and free a clause.
     void freeMarkedClauses(vector<Clause*>& list);
@@ -398,7 +491,11 @@ protected:
     uint_fast16_t computeLBD(Iterator it, Iterator end);
     bool minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
-    Lit pickBranchLit(); // Return the next decision variable.
+    // Return the next decision variable.
+    Lit pickBranchLit() {
+        return branch.pickBranchLit();
+    }
+
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void cancelUntil(int level); // Backtrack until a certain level.
     void analyze(Clause* confl, vector<Lit>& out_learnt, uint_fast16_t &nblevels);
@@ -406,36 +503,7 @@ protected:
     bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
     lbool search(); // Search for a given number of conflicts.
     virtual void reduceDB(); // Reduce the set of learnt clauses.
-    void rebuildOrderHeap();
     void revampClausePool(uint8_t upper);
-
-    // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
-    inline void varDecayActivity() {
-        var_inc *= (1 / var_decay);
-    }
-
-    // Increase a variable with the current 'bump' value.
-    inline void varBumpActivity(Var v) {
-        if (!isSelector(v)) {
-            varBumpActivity(v, var_inc);
-        }
-    }
-
-    inline void varBumpActivity(Var v, double inc) {
-        if ((activity[v] += inc) > 1e100) {
-            varRescaleActivity();
-        }
-        if (order_heap.inHeap(v)) {
-            order_heap.decrease(v); // update order-heap
-        }
-    }
-
-    void varRescaleActivity() {
-        for (size_t i = 0; i < nVars(); i++) {
-            activity[i] *= 1e-100;
-        }
-        var_inc *= 1e-100;
-    }
 
     inline void claDecayActivity() {
         cla_inc *= (1 / clause_decay);
@@ -528,13 +596,10 @@ Solver<PickBranchLitT>::Solver() :
     propagator(),
     // current assignment
     trail(),
-    polarity(), decision(),
     // assumptions
     assumptions(),
-    // for activity based heuristics
-    order_heap(VarOrderLt(activity)),
-    activity(),
-    var_inc(1), var_decay(SolverOptions::opt_var_decay), max_var_decay(SolverOptions::opt_max_var_decay),
+	branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay, &trail),
+    // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
     clauses(), learnts(), persist(),
@@ -628,10 +693,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     trail.grow();
     seen.push_back(0);
     permDiff.push_back(0);
-    decision.push_back(0);
-    activity.push_back(act);
-    polarity.push_back(sign);
-    setDecisionVar(v, dvar);
+    branch.grow(v, dvar, sign, act);
     return v;
 }
 
@@ -645,19 +707,9 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         trail.grow(maxVars);
         seen.resize(maxVars, 0);
         permDiff.resize(maxVars, 0);
-        decision.resize(maxVars, true);
-        activity.resize(maxVars, 0.0);
-        polarity.resize(maxVars, true);
+        branch.grow(maxVars, true, true, 0.0);
         if (sort_variables) {
-            std::vector<double> occ = dimacs.getLiteralRelativeOccurrences();
-            for (size_t i = curVars; i < maxVars; i++) {
-                activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
-                polarity[i] = occ[mkLit(i, true)] > occ[mkLit(i, false)];
-            }
-        }
-        for (size_t i = curVars; i < maxVars; i++) {
-            insertVarOrder(i);
-            Statistics::getInstance().solverDecisionVariablesInc();
+        	branch.initFrom(dimacs);
         }
     }
     allocator.announceClauses(problem);
@@ -829,7 +881,9 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
                         out_learnt.push_back(*it);
                     }
                 }
-                varBumpActivity(v);
+    	        if (!isSelector(v)) {
+    	        	branch.varBumpActivity(v);
+    	        }
             }
         }
         
@@ -882,7 +936,9 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt, uin
     // UPDATEVARACTIVITY trick (see competition'09 companion paper)
     for (Var v : lastDecisionLevel) {
         if (trail.reason(v)->getLBD() < lbd) {
-            varBumpActivity(v);
+	        if (!isSelector(v)) {
+	        	branch.varBumpActivity(v);
+	        }
         }
     }
 }
@@ -972,8 +1028,8 @@ void Solver<PickBranchLitT>::cancelUntil(int level) {
     vector<Lit> lits = trail.cancelUntil(level);
     std::reverse(lits.begin(), lits.end());
     for (Lit lit : lits) {
-        polarity[var(lit)] = sign(lit);
-        insertVarOrder(var(lit));
+    	branch.polarity[var(lit)] = sign(lit);
+    	branch.insertVarOrder(var(lit));
     }
 }
 
@@ -1030,17 +1086,6 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
                                       }
                                   });
     list.erase(new_end, list.end());
-}
-
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::rebuildOrderHeap() {
-    vector<Var> vs;
-    for (size_t v = 0; v < nVars(); v++) {
-        if (decision[v] && trail.value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
-            vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
-        }
-    }
-    order_heap.build(vs);
 }
 
 template <class PickBranchLitT>
@@ -1128,8 +1173,6 @@ bool Solver<PickBranchLitT>::simplify() {
     freeMarkedClauses(persist);
     freeMarkedClauses(clauses);
 
-    rebuildOrderHeap();
-
     return true;
 }
 
@@ -1195,8 +1238,6 @@ bool Solver<PickBranchLitT>::strengthen() {
     freeMarkedClauses(persist);
     freeMarkedClauses(clauses);
 
-    rebuildOrderHeap();
-
     return ok &= (propagator.propagate(trail) == nullptr);
 }
 
@@ -1248,8 +1289,8 @@ lbool Solver<PickBranchLitT>::search() {
             
             ++nConflicts;
             
-            if (nConflicts % 5000 == 0 && var_decay < max_var_decay) {
-                var_decay += 0.01;
+            if (nConflicts % 5000 == 0 && branch.var_decay < branch.max_var_decay) {
+            	branch.var_decay += 0.01;
             }
             
             if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
@@ -1338,7 +1379,7 @@ lbool Solver<PickBranchLitT>::search() {
                 claBumpActivity(*cr);
             }
             claDecayActivity();
-            varDecayActivity();
+            branch.varDecayActivity();
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
@@ -1380,6 +1421,8 @@ lbool Solver<PickBranchLitT>::search() {
                         Statistics::getInstance().runtimeStop("Sort Watches");
                     }
                 }
+
+                branch.rebuildOrderHeap();
                 
                 return l_Undef;
             }
@@ -1506,24 +1549,6 @@ lbool Solver<PickBranchLitT>::solve() {
     
     Statistics::getInstance().runtimeStop("Solver");
     return status;
-}
-
-template <class PickBranchLitT>
-ATTR_ALWAYSINLINE
-inline Lit Solver<PickBranchLitT>::defaultPickBranchLit() {
-    Var next = var_Undef;
-    
-    // Activity based decision:
-    while (next == var_Undef || trail.value(next) != l_Undef || !decision[next]) {
-        if (order_heap.empty()) {
-            next = var_Undef;
-            break;
-        } else {
-            next = order_heap.removeMin();
-        }
-    }
-    
-    return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
 }
 
 }

@@ -32,12 +32,12 @@
 namespace Candy {
     template <>
     Lit Solver<RSILBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultPickBranchLit();
+        Lit candidate = branch.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -47,12 +47,12 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILVanishingBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultPickBranchLit();
+        Lit candidate = branch.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -62,12 +62,12 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBudgetBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultPickBranchLit();
+        Lit candidate = branch.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -77,12 +77,12 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultPickBranchLit();
+        Lit candidate = branch.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -92,12 +92,12 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILVanishingBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultPickBranchLit();
+        Lit candidate = branch.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -107,12 +107,12 @@ namespace Candy {
     
     template <>
     Lit Solver<RSILBudgetBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, decision);
+        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultPickBranchLit();
+        Lit candidate = branch.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
