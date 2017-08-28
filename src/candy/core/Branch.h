@@ -26,16 +26,15 @@ class Branch {
 public:
 	Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
 	std::vector<double> activity; // A heuristic measurement of the activity of a variable.
+	std::vector<char> polarity; // The preferred polarity of each variable.
+	std::vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic
 	double var_inc; // Amount to bump next variable with.
 	double var_decay;
 	double max_var_decay;
-	std::vector<char> polarity; // The preferred polarity of each variable.
-	std::vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic
 
 	Branch(double vd, double mvd) :
-		polarity(), decision(),
 		order_heap(VarOrderLt(activity)),
-		activity(),
+		activity(), polarity(), decision(),
 		var_inc(1), var_decay(vd), max_var_decay(mvd) {
 
 	}
@@ -53,7 +52,7 @@ public:
 			decision.resize(size, dvar);
 			polarity.resize(size, sign);
 			activity.resize(size, act);
-			for (int i = prevSize; i < size; i++) {
+			for (int i = prevSize; i < static_cast<int>(size); i++) {
 				insertVarOrder(i);
 				Statistics::getInstance().solverDecisionVariablesInc();
 			}

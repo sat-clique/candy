@@ -472,9 +472,10 @@ Solver<PickBranchLitT>::Solver() :
     propagator(),
     // current assignment
     trail(),
+	// branching heuristic
+	branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay),
     // assumptions
     assumptions(),
-	branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay),
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
