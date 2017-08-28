@@ -37,7 +37,7 @@ namespace Candy {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit();
+        Lit candidate = branch.pickBranchLit(this->trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -52,7 +52,7 @@ namespace Candy {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit();
+        Lit candidate = branch.pickBranchLit(this->trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -67,7 +67,7 @@ namespace Candy {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit();
+        Lit candidate = branch.pickBranchLit(this->trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -82,7 +82,7 @@ namespace Candy {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit();
+        Lit candidate = branch.pickBranchLit(this->trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -97,7 +97,7 @@ namespace Candy {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit();
+        Lit candidate = branch.pickBranchLit(this->trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -112,7 +112,7 @@ namespace Candy {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit();
+        Lit candidate = branch.pickBranchLit(this->trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;

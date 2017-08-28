@@ -785,7 +785,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     abstraction.clear();
 
     // force full cleanup
-    this->branch.rebuildOrderHeap();
+    this->branch.rebuildOrderHeap(this->trail);
 
     // cleanup strengthened clauses in pool
     this->allocator.announceClauses(strengthened_clauses);
