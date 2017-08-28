@@ -675,7 +675,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     
     // delete and store old clauses:
     eliminated[v] = true;
-    this->setDecisionVar(v, false);
+    this->branch.setDecisionVar(v, false);
     
     if (pos.size() > neg.size()) {
         for (Clause* c : neg) SimpSolverImpl::mkElimClause(elimclauses, v, *c);
@@ -785,7 +785,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     abstraction.clear();
 
     // force full cleanup
-    this->rebuildOrderHeap();
+    this->branch.rebuildOrderHeap();
 
     // cleanup strengthened clauses in pool
     this->allocator.announceClauses(strengthened_clauses);
