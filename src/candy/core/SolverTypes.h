@@ -213,7 +213,7 @@ public:
 	OccLists(const Deleted& d) : deleted(d) { }
 
 	void init(const Idx& idx) {
-		if (size() < toInt(idx) + 1) {
+		if ((int)size() < toInt(idx) + 1) {
 			occs.resize(toInt(idx) + 1);
 			dirty.resize(toInt(idx) + 1, 0);
 		}

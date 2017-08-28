@@ -348,7 +348,7 @@ namespace Candy {
             Var keyVar = var(keyLiteral);
             bool keySign = sign(keyLiteral);
             
-            assert(keyVar < m_advice.size());
+            assert(keyVar < static_cast<int>(m_advice.size()));
             
             // advice entries hold maxSize-1 elements (the size is given including the key)
             assert(m_advice[keyVar].getSize() < (AdviceEntryType::maxSize - 1));
@@ -367,7 +367,7 @@ namespace Candy {
     template<class AdviceEntryType>
     void ImplicitLearningAdvice<AdviceEntryType>::addBackboneConjecture(const Candy::BackboneConjecture &conjecture) {
         Var key = var(conjecture.getLit());
-        assert (key < m_advice.size());
+        assert (key < static_cast<int>(m_advice.size()));
         assert (m_advice[key].getSize() == 0);
         m_advice[key].setBackbone(true);
         m_advice[key].addLiteral(conjecture.getLit());
