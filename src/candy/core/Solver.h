@@ -134,6 +134,9 @@ public:
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
 
+    template<typename Iterator>
+    bool addClauseSanitize(Iterator begin, Iterator end);
+
     inline bool addClause(const vector<Lit>& ps) {
         return addClause(ps.begin(), ps.end());
     }
@@ -627,6 +630,41 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
         propagator.attachClause(cr);
     }
     
+    return ok;
+}
+
+template<class PickBranchLitT>
+template<typename Iterator>
+bool Solver<PickBranchLitT>::addClauseSanitize(Iterator begin, Iterator end) {
+    assert(trail.decisionLevel() == 0);
+
+    std::sort(begin, end);
+    Iterator uend = std::unique(begin, end);
+
+    uint32_t size = static_cast<uint32_t>(std::distance(begin, uend));
+
+    if (size == 0) {
+        return ok = false;
+    }
+    else if (size == 1) {
+        if (trail.value(*begin) == l_Undef) {
+            trail.uncheckedEnqueue(*begin);
+            return ok = (propagator.propagate(trail) == nullptr);
+        }
+        else if (trail.value(*begin) == l_True) {
+            trail.vardata[var(*begin)].reason = nullptr;
+            return ok;
+        }
+        else {
+            return ok = false;
+        }
+    }
+    else {
+        Clause* cr = new (allocator.allocate(size)) Clause(begin, uend);
+        clauses.push_back(cr);
+        propagator.attachClause(cr);
+    }
+
     return ok;
 }
 
