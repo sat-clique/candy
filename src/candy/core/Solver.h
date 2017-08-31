@@ -74,7 +74,7 @@
 #include "candy/core/Propagate.h"
 #include "candy/core/Branch.h"
 
-#include "sonification/SolverSonification.h"
+#include "candy/sonification/SolverSonification.h"
 
 namespace Candy {
 

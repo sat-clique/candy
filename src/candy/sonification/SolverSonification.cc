@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include <sonification/SolverSonification.h>
+#include <candy/sonification/SolverSonification.h>
 
 SolverSonification::SolverSonification()
  : Sonification() {
