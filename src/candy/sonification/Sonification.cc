@@ -5,7 +5,7 @@
  *      Author: markus
  */
 
-#include <sonification/Sonification.h>
+#include <candy/sonification/Sonification.h>
 #ifdef SONIFICATION
 #include <unistd.h>
 #include <chrono>
