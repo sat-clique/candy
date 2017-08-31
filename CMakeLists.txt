@@ -251,7 +251,7 @@ set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include"
 if(CANDY_ENABLE_SONIFICATION)
   # ...at least until we build oscpack via the submodule (TODO):
   include_directories("/usr/local/include")
-  include_directories("/usr/include")
+  link_directories("/usr/local/lib")
 endif()
 
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
@@ -270,6 +270,11 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:utils>)
 
 set(CANDY_LIBS ${ZLIB_LIBRARIES})
+
+if(CANDY_ENABLE_SONIFICATION)
+  # workaround cmake object libraries may not have dependencies:
+  set(CANDY_LIBS ${ZLIB_LIBRARIES} oscpack)
+endif()
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
