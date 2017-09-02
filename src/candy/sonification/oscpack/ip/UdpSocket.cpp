@@ -549,6 +549,7 @@ void SocketReceiveMultiplexer::AsynchronousBreak()
 
 #else
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "WinMM.lib")
 
 #include "UdpSocket.h"
 
