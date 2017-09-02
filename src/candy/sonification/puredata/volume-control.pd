@@ -1,0 +1,46 @@
+#N canvas 449 190 767 548 10;
+#X obj 18 229 udpsend;
+#X obj 47 188 packOSC;
+#X msg 18 -44 connect localhost 7000;
+#X obj 51 -9 hsl 100 15 0.01 1 1 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 0 1;
+#X obj 174 129 hsl 100 15 0.01 1 1 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 0 1;
+#X obj 304 62 hsl 100 15 0.01 1 1 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 1400 1;
+#X obj 112 64 hsl 100 15 0.01 1 1 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 0 1;
+#X obj 206 -7 hsl 100 15 0.01 1 1 0 empty empty empty -2 -8 0 10 -262144
+-1 -1 0 1;
+#X obj 164 -8 bng 15 250 50 0 0 empty empty 17 7 0 10 -262144 -1 -1
+;
+#X obj 318 -7 bng 15 250 50 0 0 empty empty 17 7 0 10 -262144 -1 -1
+;
+#X obj 223 63 bng 15 250 50 0 0 empty empty 17 7 0 10 -262144 -1 -1
+;
+#X obj 414 63 bng 15 250 50 0 0 empty empty 17 7 0 10 -262144 -1 -1
+;
+#X obj 285 130 bng 15 250 50 0 0 empty empty 17 7 0 10 -262144 -1 -1
+;
+#X msg 47 23 send /volume/sampler \$1;
+#X msg 204 20 send /volume/learnt \$1;
+#X msg 110 95 send /volume/conflict \$1;
+#X msg 304 93 send /volume/depth \$1;
+#X msg 170 155 send /volume/eloquence \$1;
+#X connect 1 0 0 0;
+#X connect 2 0 0 0;
+#X connect 3 0 13 0;
+#X connect 4 0 17 0;
+#X connect 5 0 16 0;
+#X connect 6 0 15 0;
+#X connect 7 0 14 0;
+#X connect 8 0 13 0;
+#X connect 9 0 14 0;
+#X connect 10 0 15 0;
+#X connect 11 0 16 0;
+#X connect 12 0 17 0;
+#X connect 13 0 1 0;
+#X connect 14 0 1 0;
+#X connect 15 0 1 0;
+#X connect 16 0 1 0;
+#X connect 17 0 1 0;
