@@ -28,7 +28,7 @@
 	WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#if !defined(_WIN32)
+#if !defined(__WIN32__) && !defined(WIN32) && !defined(WINCE) && !defined(_WIN32)
 
 #include "NetworkingUtils.h"
 
@@ -60,6 +60,8 @@ unsigned long GetHostByName( const char *name )
 }
 
 #else
+#pragma comment(lib, "Ws2_32.lib")
+
 #include "NetworkingUtils.h"
 
 #include <winsock2.h>   // this must come first to prevent errors with MSVC7

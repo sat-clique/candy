@@ -52,7 +52,7 @@
 
 // endianness defined on the command line. nothing to do here.
 
-#elif defined(__WIN32__) || defined(WIN32) || defined(WINCE)
+#elif defined(__WIN32__) || defined(WIN32) || defined(WINCE) || defined(_WIN32)
 
 // assume that __WIN32__ is only defined on little endian systems
 
@@ -119,9 +119,9 @@
 
 #if !defined(OSC_HOST_LITTLE_ENDIAN) && !defined(OSC_HOST_BIG_ENDIAN)
 
-//#error please edit OSCHostEndianness.h or define one of {OSC_HOST_LITTLE_ENDIAN, OSC_HOST_BIG_ENDIAN} to configure endianness
-#define OSC_HOST_LITTLE_ENDIAN 1
-#undef OSC_HOST_BIG_ENDIAN
+#error please edit OSCHostEndianness.h or define one of {OSC_HOST_LITTLE_ENDIAN, OSC_HOST_BIG_ENDIAN} to configure endianness
+//#define OSC_HOST_LITTLE_ENDIAN 1
+//#undef OSC_HOST_BIG_ENDIAN
 
 #endif
 
