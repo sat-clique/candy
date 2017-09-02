@@ -573,7 +573,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     trail.grow();
     seen.push_back(0);
     permDiff.push_back(0);
-    branch.grow(v, dvar, sign, act);
+    branch.grow(dvar, sign, act);
     return v;
 }
 
