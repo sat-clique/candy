@@ -40,6 +40,7 @@ class IPASIRCandy {
 public:
     IPASIRCandy() : fmap(0), nomodel(false) {
         solver.verbosity = 0;
+        solver.disablePreprocessing();
     }
 
     ~IPASIRCandy() {
