@@ -61,6 +61,7 @@ unsigned long GetHostByName( const char *name )
 
 #else
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "WinMM.lib")
 
 #include "NetworkingUtils.h"
 
