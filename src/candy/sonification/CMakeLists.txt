@@ -3,6 +3,8 @@ add_library(sonification OBJECT
     Sonification.h
     SolverSonification.cc
     SolverSonification.h
+    ControllerInterface.cc
+    ControllerInterface.h
     oscpack/ip/IpEndpointName.cpp
     oscpack/ip/IpEndpointName.h
     oscpack/ip/NetworkingUtils.cpp
