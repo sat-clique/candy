@@ -75,6 +75,7 @@
 #include "candy/core/Branch.h"
 
 #include "candy/sonification/SolverSonification.h"
+#include "candy/sonification/ControllerInterface.h"
 
 namespace Candy {
 
@@ -354,6 +355,7 @@ protected:
 
     // Sonification
     SolverSonification sonification;
+    ControllerInterface controller;
     
     // Variables for decisions
     PickBranchLitT pickBranchLitData;
@@ -519,8 +521,11 @@ Solver<PickBranchLitT>::Solver() :
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
     // sonification
     sonification(),
+	controller(),
     pickBranchLitData()
-{ }
+{
+controller.run();
+}
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::~Solver() {
