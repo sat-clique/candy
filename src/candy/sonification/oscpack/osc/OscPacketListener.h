@@ -59,8 +59,7 @@ protected:
         }
     }
 
-    virtual void ProcessMessage( const osc::ReceivedMessage& m, 
-				const IpEndpointName& remoteEndpoint ) = 0;
+    virtual void ProcessMessage(const osc::ReceivedMessage& m, const IpEndpointName& remoteEndpoint) { printf("oscpacketlistener"); }
     
 public:
 	virtual void ProcessPacket( const char *data, int size, 
