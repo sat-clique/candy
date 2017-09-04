@@ -20,6 +20,7 @@
 
 class ControllerInterface : public osc::OscPacketListener {
 
+	ControllerInterface* listener;
 	UdpListeningReceiveSocket* s;
 	std::thread* t;
 
@@ -33,14 +34,13 @@ public:
 
 	void run() {
 #ifdef SONIFICATION
-		ControllerInterface listener;
-		s = new UdpListeningReceiveSocket(IpEndpointName(DEFAULT_LISTEN_ADDRESS, DEFAULT_LISTEN_PORT), &listener);
-		t = new std::thread(&ControllerInterface::thread_run, listener, s);
+		s = new UdpListeningReceiveSocket(IpEndpointName(DEFAULT_LISTEN_ADDRESS, DEFAULT_LISTEN_PORT), this);
+		t = new std::thread(&ControllerInterface::thread_run, this, s);
 #endif
 	}
 
 protected:
-	virtual void ProcessMessage(const osc::ReceivedMessage& m, const IpEndpointName& remoteEndpoint) {
+	virtual void ProcessMessage(const osc::ReceivedMessage& m, const IpEndpointName& remoteEndpoint) override {
 		try {
 			// example of parsing single messages. osc::OsckPacketListener
 			// handles the bundle traversal.
