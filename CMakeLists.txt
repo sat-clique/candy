@@ -103,7 +103,6 @@ option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
 # by a reinterpret_cast.
 option(CANDY_DISABLE_RTTI OFF "Disable RTTI and defines CANDY_HAS_NO_RTTI. Use with caution.")
 
-
 ### Using ctest as a test
 
 enable_testing()
@@ -132,7 +131,26 @@ else()
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -O0")
   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG -Wall -O3")
   if (CANDY_ENABLE_LTO) 
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
+#    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
+#    set( CMAKE_AR "gcc-ar" )
+#    set( CMAKE_NM "gcc-nm" )
+#    set( CMAKE_RANLIB "gcc-ranlib" )
+
+    if( CMAKE_BUILD_TYPE MATCHES Release AND GXX_HAS_LTO_FLAG )
+      find_program(CMAKE_GCC_AR NAMES ${_CMAKE_TOOLCHAIN_PREFIX}gcc-ar${_CMAKE_TOOLCHAIN_SUFFIX} HINTS ${_CMAKE_TOOLCHAIN_LOCATION})
+      find_program(CMAKE_GCC_NM NAMES ${_CMAKE_TOOLCHAIN_PREFIX}gcc-nm HINTS ${_CMAKE_TOOLCHAIN_LOCATION})
+      find_program(CMAKE_GCC_RANLIB NAMES ${_CMAKE_TOOLCHAIN_PREFIX}gcc-ranlib HINTS ${_CMAKE_TOOLCHAIN_LOCATION})
+
+      if( CMAKE_GCC_AR AND CMAKE_GCC_NM AND CMAKE_GCC_RANLIB )
+        set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fno-fat-lto-objects" )
+        set( CMAKE_AR "${CMAKE_GCC_AR}" )
+        set( CMAKE_NM "${CMAKE_GCC_NM}" )
+        set( CMAKE_RANLIB "${CMAKE_GCC_RANLIB}" )
+      else()
+        message( WARNING "GCC indicates LTO support, but binutils wrappers could not be found. Disabling LTO." )
+      endif()
+    endif()
+
   endif()
 endif()
 
@@ -186,7 +204,7 @@ if(CANDY_ENABLE_STATIC_LINKING)
 
   if (NOT MSVC)
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    SET(CMAKE_EXE_LINKER_FLAGS "-static")
+    SET(CMAKE_EXE_LINKER_FLAGS "-static --plugin=$(gcc --print-file-name=liblto_plugin.so)")
   endif()
 endif()
 
