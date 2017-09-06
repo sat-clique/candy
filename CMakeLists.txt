@@ -204,7 +204,7 @@ if(CANDY_ENABLE_STATIC_LINKING)
 
   if (NOT MSVC)
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-    SET(CMAKE_EXE_LINKER_FLAGS "-static --plugin=$(gcc --print-file-name=liblto_plugin.so)")
+    SET(CMAKE_EXE_LINKER_FLAGS "-static")
   endif()
 endif()
 
