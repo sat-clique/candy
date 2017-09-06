@@ -11,6 +11,7 @@
 #include <iostream>
 #include <thread>
 
+#ifdef SONIFICATION
 #include "candy/sonification/oscpack/osc/OscReceivedElements.h"
 #include "candy/sonification/oscpack/osc/OscPacketListener.h"
 #include "candy/sonification/oscpack/ip/UdpSocket.h"
@@ -22,6 +23,7 @@ class ControllerInterface : public osc::OscPacketListener {
 
 	ControllerInterface* listener;
 	UdpListeningReceiveSocket* s;
+
 	std::thread* t;
 
 public:
@@ -33,10 +35,8 @@ public:
 	}
 
 	void run() {
-#ifdef SONIFICATION
 		s = new UdpListeningReceiveSocket(IpEndpointName(DEFAULT_LISTEN_ADDRESS, DEFAULT_LISTEN_PORT), this);
 		t = new std::thread(&ControllerInterface::thread_run, this, s);
-#endif
 	}
 
 protected:
@@ -76,7 +76,17 @@ protected:
 			std::cout << "error while parsing message: " << m.AddressPattern() << ": " << e.what() << "\n";
 		}
 	}
+
 };
+#else
+class ControllerInterface {
+public:
+    ControllerInterface();
+    virtual ~ControllerInterface();
+    void run() { }
+};
+
+#endif
 
 #endif /* SRC_CANDY_SONIFICATION_CONTROLLERINTERFACE_H_ */
 
