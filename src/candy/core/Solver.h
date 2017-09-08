@@ -731,7 +731,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
     
     // Generate conflict clause:
     out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
-    int index = trail.size() - 1;
+    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
     do {
         assert(confl != nullptr); // (otherwise should be UIP)
         claBumpActivity(*confl);
@@ -772,7 +772,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
     	        	branch.varBumpActivity(v);
                     if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
                         // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    	// bump twice, removed condition: reason-lbd < learnt-lbd
+                    	// bump twice, temporarily removed condition: reason-lbd < learnt-lbd
                     	branch.varBumpActivity(v);
                     }
     	        }
@@ -780,13 +780,13 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
         }
         
         // Select next clause to look at:
-        while (!seen[var(trail[index])]) {
-            index--;
+        while (!seen[var(*trail_iterator)]) {
+            trail_iterator++;
         }
-        
-        asslit = trail[index];
-        seen[var(asslit)] = 0;
-        confl = trail.reason(var(asslit));
+
+        asslit = *trail_iterator;
+        seen[var(*trail_iterator)] = 0;
+        confl = trail.reason(var(*trail_iterator));
         pathC--;
     } while (pathC > 0);
     
