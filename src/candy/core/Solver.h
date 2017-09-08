@@ -743,7 +743,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
         }
         
         // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (confl->isLearnt() && confl->getLBD() > 2) {
+        if (confl->isLearnt() && confl->getLBD() > persistentLBD) {
             uint_fast16_t nblevels = computeLBD(confl->begin(), confl->end());
             if (nblevels + 1 < confl->getLBD()) { // improve the LBD
                 if (confl->getLBD() <= lbLBDFrozenClause) {
