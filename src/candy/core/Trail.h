@@ -46,6 +46,8 @@ public:
 
     typedef std::vector<Lit>::iterator iterator;
     typedef std::vector<Lit>::const_iterator const_iterator;
+    typedef std::vector<Lit>::reverse_iterator reverse_iterator;
+    typedef std::vector<Lit>::const_reverse_iterator const_reverse_iterator;
 
     inline const_iterator begin() const {
         return trail.begin();
@@ -61,6 +63,22 @@ public:
 
     inline iterator end() {
         return trail.begin() + trail_size;
+    }
+
+    inline const_reverse_iterator rbegin() const {
+        return trail.rbegin() + (trail.size() - trail_size);
+    }
+
+    inline const_reverse_iterator rend() const {
+        return trail.rend();
+    }
+
+    inline reverse_iterator rbegin() {
+        return trail.rbegin() + (trail.size() - trail_size);
+    }
+
+    inline reverse_iterator rend() {
+        return trail.rend();
     }
 
     inline unsigned int size() const {
