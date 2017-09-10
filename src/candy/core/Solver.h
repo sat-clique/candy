@@ -378,7 +378,8 @@ protected:
 
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void cancelUntil(int level); // Backtrack until a certain level.
-    void analyze(Clause* confl, vector<Lit>& out_learnt);
+    void conflict_analysis_generate_clause(Clause* confl, vector<Lit>& out_learnt);
+    void conflict_anlysis_dynamic_heuristics(Clause* confl, unsigned int learnt_lbd);
     void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
     bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
     lbool search(); // Search for a given number of conflicts.
@@ -724,36 +725,23 @@ void Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_l
  *
  ***************************************************************************************************/
 template <class PickBranchLitT>
-void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
+void Solver<PickBranchLitT>::conflict_analysis_generate_clause(Clause* confl, vector<Lit>& out_learnt) {
     int pathC = 0;
     Lit asslit = lit_Undef;
     vector<Lit> selectors;
-    
+
     // Generate conflict clause:
     out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
     Trail::const_reverse_iterator trail_iterator = trail.rbegin();
     do {
         assert(confl != nullptr); // (otherwise should be UIP)
-        claBumpActivity(*confl);
 
         // Special case for binary clauses: The first one has to be SAT
         if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
             assert(trail.value(confl->second()) == l_True);
             confl->swap(0, 1);
         }
-        
-        // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
-        if (confl->isLearnt() && confl->getLBD() > persistentLBD) {
-            uint_fast16_t nblevels = computeLBD(confl->begin(), confl->end());
-            if (nblevels + 1 < confl->getLBD()) { // improve the LBD
-                if (confl->getLBD() <= lbLBDFrozenClause) {
-                    // seems to be interesting : keep it for the next round
-                    confl->setFrozen(true);
-                }
-                confl->setLBD(nblevels);
-            }
-        }
-        
+
         for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
             Var v = var(*it);
             if (!seen[v] && trail.level(v) != 0) {
@@ -768,17 +756,9 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
                         out_learnt.push_back(*it);
                     }
                 }
-    	        if (!isSelector(v)) {
-    	        	branch.varBumpActivity(v);
-                    if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
-                        // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    	// bump twice, temporarily removed condition: reason-lbd < learnt-lbd
-                    	branch.varBumpActivity(v);
-                    }
-    	        }
             }
         }
-        
+
         // Select next clause to look at:
         while (!seen[var(*trail_iterator)]) {
             trail_iterator++;
@@ -789,9 +769,9 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
         confl = trail.reason(var(*trail_iterator));
         pathC--;
     } while (pathC > 0);
-    
+
     out_learnt[0] = ~asslit;
-    
+
     // Simplify conflict clause:
     out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
     Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
@@ -812,7 +792,7 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
 
     // clear seen[]
     for_each(analyze_clear.begin(), analyze_clear.end(), [this] (Var v) { seen[v] = 0; });
-    
+
     assert(out_learnt[0] == ~asslit);
 
     if (out_learnt.size() <= lbSizeMinimizingClause) {
@@ -820,6 +800,71 @@ void Solver<PickBranchLitT>::analyze(Clause* confl, vector<Lit>& out_learnt) {
     }
 
     Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
+}
+
+template <class PickBranchLitT>
+void Solver<PickBranchLitT>::conflict_anlysis_dynamic_heuristics(Clause* confl, unsigned int learnt_lbd) {
+    int pathC = 0;
+    Lit asslit = lit_Undef;
+    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
+    analyze_clear.clear();
+    do {
+        assert(confl != nullptr); // (otherwise should be UIP)
+        claBumpActivity(*confl);
+
+        // Special case for binary clauses: The first one has to be SAT
+        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
+            assert(trail.value(confl->second()) == l_True);
+            confl->swap(0, 1);
+        }
+
+        // DYNAMIC NBLEVEL trick (see competition'09 companion paper)
+        if (confl->isLearnt() && confl->getLBD() > persistentLBD) {
+            uint_fast16_t nblevels = computeLBD(confl->begin(), confl->end());
+            if (nblevels + 1 < confl->getLBD()) { // improve the LBD
+                if (confl->getLBD() <= lbLBDFrozenClause) {
+                    // seems to be interesting : keep it for the next round
+                    confl->setFrozen(true);
+                }
+                confl->setLBD(nblevels);
+            }
+        }
+
+        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
+            Var v = var(*it);
+            if (!seen[v] && trail.level(v) != 0) {
+                seen[v] = 1;
+                if (trail.level(v) >= (int)trail.decisionLevel()) {
+                    pathC++;
+                }
+                else {
+                	analyze_clear.push_back(v);
+                }
+    	        if (!isSelector(v)) {
+    	        	branch.varBumpActivity(v);
+                    if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
+                        // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+                    	// bump twice, temporarily removed condition: reason-lbd < learnt-lbd
+                    	if (trail.reason(v)->getLBD() < learnt_lbd) {
+                    		branch.varBumpActivity(v);
+                    	}
+                    }
+    	        }
+            }
+        }
+
+        // Select next clause to look at:
+        while (!seen[var(*trail_iterator)]) {
+            trail_iterator++;
+        }
+
+        asslit = *trail_iterator;
+        seen[var(*trail_iterator)] = 0;
+        confl = trail.reason(var(*trail_iterator));
+        pathC--;
+    } while (pathC > 0);
+    for_each(analyze_clear.begin(), analyze_clear.end(), [this] (Var v) { seen[v] = 0; });
+//    std::fill(seen.begin(), seen.end(), 0);
 }
 
 // Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
@@ -1197,7 +1242,7 @@ lbool Solver<PickBranchLitT>::search() {
             
             learnt_clause.clear();
             
-            analyze(confl, learnt_clause);
+            conflict_analysis_generate_clause(confl, learnt_clause);
             
             if (learntCallback != nullptr && (int)learnt_clause.size() <= learntCallbackMaxLength) {
                 vector<int> clause(learnt_clause.size() + 1);
@@ -1222,6 +1267,8 @@ lbool Solver<PickBranchLitT>::search() {
             }
 
             nblevels = computeLBD(learnt_clause.begin(), learnt_clause.end());
+
+            conflict_anlysis_dynamic_heuristics(confl, nblevels);
 
             if (nblevels <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
