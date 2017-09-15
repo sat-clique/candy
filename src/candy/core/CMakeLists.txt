@@ -13,6 +13,9 @@ add_library(core OBJECT
     Trail.h
     CNFProblem.cc
     CNFProblem.h
+    Propagate.h
+    Branch.h
+    Stamp.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)

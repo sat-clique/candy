@@ -73,6 +73,7 @@
 #include "candy/core/Trail.h"
 #include "candy/core/Propagate.h"
 #include "candy/core/Branch.h"
+#include "candy/core/Stamp.h"
 
 #include "candy/sonification/SolverSonification.h"
 #include "candy/sonification/ControllerInterface.h"
@@ -332,8 +333,7 @@ protected:
     uint32_t inprocessingFrequency;
 
     // lbd
-    vector<uint32_t> permDiff; // permDiff[var] contains the current conflict number... Used to count the number of  LBD
-    uint32_t MYFLAG;
+    Stamp<uint32_t> stamp;
 
     // temporaries (to reduce allocation overhead)
     vector<char> seen;
@@ -509,7 +509,7 @@ Solver<PickBranchLitT>::Solver() :
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
     // lbd computation
-    permDiff(), MYFLAG(0),
+    stamp(),
     // temporaries
     seen(), analyze_clear(), analyze_stack(),
     // resource constraints and other interrupt related
@@ -576,7 +576,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     propagator.init(nVars());
     trail.grow();
     seen.push_back(0);
-    permDiff.push_back(0);
+    stamp.incSize();
     branch.grow(dvar, sign, act);
     return v;
 }
@@ -590,7 +590,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         propagator.init(maxVars);
         trail.grow(maxVars);
         seen.resize(maxVars, 0);
-        permDiff.resize(maxVars, 0);
+        stamp.incSize(maxVars);
         branch.grow(maxVars, true, true, 0.0);
         if (sort_variables) {
         	branch.initFrom(dimacs);
@@ -664,7 +664,7 @@ template<class PickBranchLitT>
 template <typename Iterator>
 inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator end) {
     uint_fast16_t nblevels = 0;
-    MYFLAG++;
+    stamp.clearStamped();
     
     for (; it != end; it++) {
         Lit lit = *it;
@@ -672,8 +672,8 @@ inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator en
             continue;
         }
         int l = trail.level(var(lit));
-        if (permDiff[l] != MYFLAG) {
-            permDiff[l] = MYFLAG;
+        if (!stamp.isStamped(l)) {
+            stamp.setStamped(l);
             nblevels++;
         }
     }
@@ -686,22 +686,22 @@ inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator en
  ******************************************************************/
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
-    MYFLAG++;
+    stamp.clearStamped();
 
     for (auto it = out_learnt.begin()+1; it != out_learnt.end(); it++) {
-        permDiff[var(*it)] = MYFLAG;
+        stamp.setStamped(var(*it));
     }
     
     bool minimize = false;
     for (Watcher w : propagator.getBinaryWatchers(~out_learnt[0])) {
-        if (permDiff[var(w.blocker)] == MYFLAG && trail.value(w.blocker) == l_True) {
+        if (stamp.isStamped(var(w.blocker)) && trail.value(w.blocker) == l_True) {
             minimize = true;
-            permDiff[var(w.blocker)] = MYFLAG - 1;
+            stamp.unsetStamped(var(w.blocker));
         }
     }
 
     if (minimize) {
-        auto end = std::remove_if(out_learnt.begin()+1, out_learnt.end(), [this] (Lit lit) { return permDiff[var(lit)] != MYFLAG; } );
+        auto end = std::remove_if(out_learnt.begin()+1, out_learnt.end(), [this] (Lit lit) { return !stamp.isStamped(var(lit)); } );
         Statistics::getInstance().solverReducedClausesInc(std::distance(end, out_learnt.end()));
         out_learnt.erase(end, out_learnt.end());
     }
@@ -844,7 +844,6 @@ void Solver<PickBranchLitT>::conflict_anlysis_dynamic_heuristics(Clause* confl, 
     	        	branch.varBumpActivity(v);
                     if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
                         // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    	// bump twice, temporarily removed condition: reason-lbd < learnt-lbd
                     	if (trail.reason(v)->getLBD() < learnt_lbd) {
                     		branch.varBumpActivity(v);
                     	}
