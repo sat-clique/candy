@@ -22,6 +22,11 @@ public:
 		stamp = std::numeric_limits<T>::min();
 	}
 
+	Stamp(unsigned int size) {
+		stamped.resize(size, std::numeric_limits<T>::min());
+		stamp = std::numeric_limits<T>::min();
+	}
+
 	~Stamp() { }
 
 	void incSize() {
@@ -53,7 +58,7 @@ public:
 	}
 
 	bool isStamped(unsigned int index) {
-		return stamped[index];
+		return stamped[index] == stamp;
 	}
 };
 
