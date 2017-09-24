@@ -39,7 +39,7 @@ public:
 		}
 	}
 
-	void clearStamped() {
+	void clear() {
 		if (stamp < std::numeric_limits<T>::max()) {
 			stamp++;
 		}
@@ -49,15 +49,22 @@ public:
 		}
 	}
 
-	void unsetStamped(unsigned int index) {
+	void unset(unsigned int index) {
+        assert(index < stamped.size());
 		stamped[index] = std::numeric_limits<T>::min();
 	}
 
-	void setStamped(unsigned int index) {
+	void set(unsigned int index) {
+        assert(index < stamped.size());
 		stamped[index] = stamp;
 	}
 
-	bool isStamped(unsigned int index) {
+    inline bool operator [](unsigned int index) const {
+        assert(index < stamped.size());
+        return isStamped(index);
+    }
+
+	bool isStamped(unsigned int index) const {
 		return stamped[index] == stamp;
 	}
 };
