@@ -776,6 +776,7 @@ void Solver<PickBranchLitT>::conflict_analysis_generate_clause(Clause* confl, ve
     Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
 
     // minimize clause
+    analyze_clear.clear();
     uint64_t abstract_level = 0;
     for (uint_fast16_t i = 1; i < out_learnt.size(); i++) {
         abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
@@ -799,6 +800,8 @@ void Solver<PickBranchLitT>::conflict_analysis_generate_clause(Clause* confl, ve
 // visiting literals at levels that cannot be removed later.
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
+	size_t top = analyze_clear.size();
+
     analyze_stack.clear();
     analyze_stack.push_back(var(lit));
 
@@ -821,8 +824,9 @@ bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
                     analyze_stack.push_back(v);
                     analyze_clear.push_back(v);
                 } else {
-                    for_each(analyze_clear.begin(), analyze_clear.end(), [this](Var v) { stamp.unset(v); });
-                    analyze_clear.clear();
+                	auto begin = analyze_clear.begin() + top;
+                	for_each(begin, analyze_clear.end(), [this](Var v) { stamp.unset(v); });
+                	analyze_clear.erase(begin, analyze_clear.end());
                     return false;
                 }
             }
