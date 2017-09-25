@@ -18,7 +18,7 @@ TEST (StampTestPatterns, initializationTest) {
 	EXPECT_TRUE(stamp.isStamped(0));
 	EXPECT_TRUE(stamp.isStamped(1));
 	EXPECT_TRUE(stamp.isStamped(2));
-	stamp.clearStamped();
+	stamp.clear();
 	EXPECT_FALSE(stamp.isStamped(0));
 	EXPECT_FALSE(stamp.isStamped(1));
 	EXPECT_FALSE(stamp.isStamped(2));
@@ -26,8 +26,8 @@ TEST (StampTestPatterns, initializationTest) {
 
 TEST (StampTestPatterns, stampWorks) {
 	Stamp<uint32_t> stamp(3);
-	stamp.clearStamped();
-	stamp.setStamped(1);
+	stamp.clear();
+	stamp.set(1);
 	EXPECT_FALSE(stamp.isStamped(0));
 	EXPECT_TRUE(stamp.isStamped(1));
 	EXPECT_FALSE(stamp.isStamped(2));
@@ -35,9 +35,9 @@ TEST (StampTestPatterns, stampWorks) {
 
 TEST (StampPatterns, unstampWorks) {
 	Stamp<uint32_t> stamp(3);
-	stamp.clearStamped();
-	stamp.setStamped(1);
-	stamp.unsetStamped(1);
+	stamp.clear();
+	stamp.set(1);
+	stamp.unset(1);
 	EXPECT_FALSE(stamp.isStamped(0));
 	EXPECT_FALSE(stamp.isStamped(1));
 	EXPECT_FALSE(stamp.isStamped(2));
@@ -46,12 +46,12 @@ TEST (StampPatterns, unstampWorks) {
 TEST (StampTestPatterns, overflowTest) {
 	Stamp<bool> stamp(1);
 	EXPECT_TRUE(stamp.isStamped(0));
-	stamp.clearStamped();
+	stamp.clear();
 	EXPECT_FALSE(stamp.isStamped(0));
-	stamp.setStamped(0);
+	stamp.set(0);
 	EXPECT_TRUE(stamp.isStamped(0));
-	stamp.clearStamped();
+	stamp.clear();
 	EXPECT_FALSE(stamp.isStamped(0));
-	stamp.setStamped(0);
+	stamp.set(0);
 	EXPECT_TRUE(stamp.isStamped(0));
 }
