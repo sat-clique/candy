@@ -1,3 +1,14 @@
+|        Linux        |       Windows       |       Coverage       |
+|:-------------------:|:-------------------:|:--------------------:|
+| [![travisCI][1]][2] | [![appveyor][3]][4] | [![coveralls][5]][6] |
+
+[1]: https://travis-ci.org/Udopia/candy-kingdom.svg?branch=master
+[2]: https://travis-ci.org/Udopia/candy-kingdom
+[3]: https://ci.appveyor.com/api/projects/status/f82s06j62stkseuyksb0
+[4]: https://ci.appveyor.com/project/Udopia/candy-kingdom/branch/master
+[5]: https://coveralls.io/repos/github/Udopia/candy-kingdom/badge.svg?branch=master
+[6]: https://coveralls.io/github/Udopia/candy-kingdom?branch=master
+
 # candy-kingdom
 
 Candy has a dependency on the "googletest" API. In order to build candy with tests you need to init and build the googletest submodule like this:
