@@ -11,6 +11,7 @@
 #include <vector>
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Clause.h"
+#include "candy/core/Stamp.h"
 
 namespace Candy {
 
@@ -25,7 +26,7 @@ struct VarData {
 
 class Trail {
 public:
-    Trail() : trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim() { }
+    Trail() : trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() { }
 
     unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
     unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
@@ -33,6 +34,7 @@ public:
     std::vector<lbool> assigns; // The current assignments.
     std::vector<VarData> vardata; // Stores reason and level for each variable.
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
+    Stamp<uint32_t> stamp;
 
     inline Lit& operator [](unsigned int i) {
         assert(i < trail_size);
@@ -89,6 +91,7 @@ public:
         assigns.push_back(l_Undef);
         vardata.emplace_back();
         trail.push_back(lit_Undef);
+        stamp.incSize();
     }
 
     inline void grow(size_t size) {
@@ -96,6 +99,7 @@ public:
             assigns.resize(size, l_Undef);
             vardata.resize(size);
             trail.resize(size);
+            stamp.incSize(size);
         }
     }
 
@@ -159,6 +163,26 @@ public:
             trail_lim.erase(trail_lim.begin() + level, trail_lim.end());
         }
         return result;
+    }
+
+    /**
+     * Count the number of decision levels in which the given list of literals was assigned
+     */
+    template <typename Iterator>
+    inline uint_fast16_t computeLBD(Iterator it, Iterator end) {
+        uint_fast16_t nblevels = 0;
+        stamp.clear();
+
+        for (; it != end; it++) {
+        	Lit lit = *it;
+            int l = level(var(lit));
+            if (!stamp[l]) {
+                stamp.set(l);
+                nblevels++;
+            }
+        }
+
+        return nblevels;
     }
 };
 }
