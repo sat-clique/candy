@@ -16,6 +16,7 @@ add_library(core OBJECT
     Propagate.h
     Branch.h
     Stamp.h
+    ConflictAnalysis.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)
