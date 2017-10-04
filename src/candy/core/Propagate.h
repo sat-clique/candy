@@ -11,6 +11,7 @@
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Clause.h"
 #include "candy/core/Trail.h"
+#include "candy/utils/CheckedCast.h"
 
 #include <array>
 
