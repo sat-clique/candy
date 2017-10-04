@@ -66,7 +66,8 @@
 #include "candy/core/Clause.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/ClauseAllocator.h"
-#include <candy/core/CNFProblem.h>
+#include "candy/core/CNFProblem.h"
+#include "candy/core/ConflictAnalysis.h"
 #include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
@@ -285,8 +286,8 @@ protected:
 
     Propagate propagator;
     Trail trail;
-
     Branch branch;
+    ConflictAnalysis conflict_analysis;
 
 	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
@@ -313,9 +314,6 @@ protected:
     uint16_t persistentLBD;
     uint16_t lbLBDFrozenClause;
 
-    // Constant for reducing clause
-    uint16_t lbSizeMinimizingClause;
-
     // constants for memory reorganization
     uint8_t revamp;
     bool sort_watches;
@@ -331,13 +329,6 @@ protected:
     // inprocessing
     uint64_t lastRestartWithInprocessing;
     uint32_t inprocessingFrequency;
-
-    // lbd
-    Stamp<uint32_t> stamp;
-
-    // temporaries (to reduce allocation overhead)
-    vector<Var> analyze_clear;
-    vector<Var> analyze_stack;
 
     // Resource contraints and other interrupts
     uint32_t conflict_budget;    // 0 means no budget.
@@ -358,17 +349,9 @@ protected:
     // Variables for decisions
     PickBranchLitT pickBranchLitData;
 
-    inline uint64_t abstractLevel(Var x) const {
-        return 1ull << (trail.level(x) % 64);
-    }
-
     // Operations on clauses:
     void removeClause(Clause* cr, bool strict_detach = false); // Detach and free a clause.
     void freeMarkedClauses(vector<Clause*>& list);
-
-    template <typename Iterator>
-    uint_fast16_t computeLBD(Iterator it, Iterator end);
-    void minimisationWithBinaryResolution(vector<Lit> &out_learnt);
 
     // Return the next decision variable.
     Lit pickBranchLit() {
@@ -377,10 +360,7 @@ protected:
 
     Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void cancelUntil(int level); // Backtrack until a certain level.
-    void conflict_analysis_generate_clause(Clause* confl, vector<Lit>& out_learnt, vector<Clause*>& involved_clauses);
-    void conflict_anlysis_dynamic_heuristics(vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
-    void analyzeFinal(Lit p, vector<Lit>& out_conflict); // COULD THIS BE IMPLEMENTED BY THE ORDINARIY "analyze" BY SOME REASONABLE GENERALIZATION?
-    bool litRedundant(Lit p, uint64_t abstract_levels); // (helper method for 'analyze()')
+    void updateActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
     lbool search(); // Search for a given number of conflicts.
     virtual void reduceDB(); // Reduce the set of learnt clauses.
     void revampClausePool(uint8_t upper);
@@ -478,6 +458,8 @@ Solver<PickBranchLitT>::Solver() :
     trail(),
 	// branching heuristic
 	branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay),
+	// conflict analysis module
+	conflict_analysis(&trail, &propagator, SolverOptions::opt_lb_size_minimzing_clause),
     // assumptions
     assumptions(),
     // clause activity based heuristic
@@ -492,8 +474,6 @@ Solver<PickBranchLitT>::Solver() :
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     persistentLBD(SolverOptions::opt_persistent_lbd),
     lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
-    // clause reduction
-    lbSizeMinimizingClause(SolverOptions::opt_lb_size_minimzing_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -507,10 +487,6 @@ Solver<PickBranchLitT>::Solver() :
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
-    // lbd computation
-    stamp(),
-    // temporaries
-    analyze_clear(), analyze_stack(),
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
@@ -574,7 +550,7 @@ Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
     int v = static_cast<int>(nVars());
     propagator.init(nVars());
     trail.grow();
-    stamp.incSize();
+    conflict_analysis.incSize();
     branch.grow(dvar, sign, act);
     return v;
 }
@@ -587,7 +563,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     if (maxVars > curVars) {
         propagator.init(maxVars);
         trail.grow(maxVars);
-        stamp.incSize(maxVars);
+        conflict_analysis.incSize(maxVars);
         branch.grow(maxVars, true, true, 0.0);
         if (sort_variables) {
         	branch.initFrom(dimacs);
@@ -654,214 +630,22 @@ void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
     cr->setDeleted();
 }
 
-/************************************************************
- * Compute LBD functions
- *************************************************************/
-template<class PickBranchLitT>
-template <typename Iterator>
-inline uint_fast16_t Solver<PickBranchLitT>::computeLBD(Iterator it, Iterator end) {
-    uint_fast16_t nblevels = 0;
-    stamp.clear();
-    
-    for (; it != end; it++) {
-        Lit lit = *it;
-        if (isSelector(var(lit))) {
-            continue;
-        }
-        int l = trail.level(var(lit));
-        if (!stamp[l]) {
-            stamp.set(l);
-            nblevels++;
-        }
-    }
-    
-    return nblevels;
-}
-
-/******************************************************************
- * Minimisation with binary clauses of the asserting clause
- ******************************************************************/
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::minimisationWithBinaryResolution(vector<Lit>& out_learnt) {
-    stamp.clear();
-
-    for (auto it = out_learnt.begin()+1; it != out_learnt.end(); it++) {
-        stamp.set(var(*it));
-    }
-    
-    bool minimize = false;
-    for (Watcher w : propagator.getBinaryWatchers(~out_learnt[0])) {
-        if (stamp[var(w.blocker)] && trail.value(w.blocker) == l_True) {
-            minimize = true;
-            stamp.unset(var(w.blocker));
-        }
-    }
-
-    if (minimize) {
-        auto end = std::remove_if(out_learnt.begin()+1, out_learnt.end(), [this] (Lit lit) { return !stamp[var(lit)]; } );
-        Statistics::getInstance().solverReducedClausesInc(std::distance(end, out_learnt.end()));
-        out_learnt.erase(end, out_learnt.end());
-    }
-}
-
-/**************************************************************************************************
- *
- *  analyze : (confl : Clause*) (out_learnt : vector<Lit>&) (out_btlevel : int&)  ->  [void]
- *
- *  Description:
- *    Analyze conflict and produce a reason clause.
- *
- *    Pre-conditions:
- *      - 'out_learnt' is assumed to be cleared.
- *      - Current decision level must be greater than root level.
- *
- *    Post-conditions:
- *      - 'out_learnt[0]' is the asserting literal at level 'out_btlevel'.
- *      - If out_learnt.size() > 1 then 'out_learnt[1]' has the greatest decision level of the
- *        rest of literals. There may be others from the same level though.
- *
- ***************************************************************************************************/
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::conflict_analysis_generate_clause(Clause* confl, vector<Lit>& out_learnt, vector<Clause*>& involved_clauses) {
-    int pathC = 0;
-    Lit asslit = lit_Undef;
-    vector<Lit> selectors;
-    stamp.clear();
-
-    // Generate conflict clause:
-    out_learnt.push_back(lit_Undef); // (leave room for the asserting literal)
-    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
-    do {
-        assert(confl != nullptr); // (otherwise should be UIP)
-        involved_clauses.push_back(confl);
-
-        // Special case for binary clauses: The first one has to be SAT
-        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
-            assert(trail.value(confl->second()) == l_True);
-            confl->swap(0, 1);
-        }
-
-        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
-            Var v = var(*it);
-            if (!stamp[v] && trail.level(v) != 0) {
-                stamp.set(v);
-                if (trail.level(v) >= (int)trail.decisionLevel()) {
-                    pathC++;
-                } else {
-                    if (isSelector(v)) {
-                        assert(trail.value(*it) == l_False);
-                        selectors.push_back(*it);
-                    } else {
-                        out_learnt.push_back(*it);
-                    }
-                }
-            }
-        }
-
-        // Select next clause to look at:
-        while (!stamp[var(*trail_iterator)]) {
-            trail_iterator++;
-        }
-
-        asslit = *trail_iterator;
-        stamp.unset(var(*trail_iterator));
-        confl = trail.reason(var(*trail_iterator));
-        pathC--;
-    } while (pathC > 0);
-
-    out_learnt[0] = ~asslit;
-
-    // Simplify conflict clause:
-    out_learnt.insert(out_learnt.end(), selectors.begin(), selectors.end());
-    Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
-
-    // minimize clause
-    analyze_clear.clear();
-    uint64_t abstract_level = 0;
-    for (uint_fast16_t i = 1; i < out_learnt.size(); i++) {
-        abstract_level |= abstractLevel(var(out_learnt[i])); // (maintain an abstraction of levels involved in conflict)
-    }
-    auto end = remove_if(out_learnt.begin()+1, out_learnt.end(),
-                         [this, abstract_level] (Lit lit) {
-                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
-                         });
-    out_learnt.erase(end, out_learnt.end());
-
-    assert(out_learnt[0] == ~asslit);
-
-    if (out_learnt.size() <= lbSizeMinimizingClause) {
-        minimisationWithBinaryResolution(out_learnt);
-    }
-
-    Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(out_learnt)>::type::size_type, unsigned int>(out_learnt.size()));
-}
-
-// Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
-// visiting literals at levels that cannot be removed later.
-template <class PickBranchLitT>
-bool Solver<PickBranchLitT>::litRedundant(Lit lit, uint64_t abstract_levels) {
-	size_t top = analyze_clear.size();
-
-    analyze_stack.clear();
-    analyze_stack.push_back(var(lit));
-
-    while (analyze_stack.size() > 0) {
-        assert(trail.reason(analyze_stack.back()) != nullptr);
-
-        Clause* clause = trail.reason(analyze_stack.back());
-        analyze_stack.pop_back();
-
-        if (clause->size() == 2 && trail.value(clause->first()) == l_False) {
-            assert(trail.value(clause->second()) == l_True);
-            clause->swap(0, 1);
-        }
-
-        for (Lit imp : *clause) {
-            Var v = var(imp);
-            if (!stamp[v] && trail.level(v) > 0) {
-                if (trail.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
-                    stamp.set(v);
-                    analyze_stack.push_back(v);
-                    analyze_clear.push_back(v);
-                } else {
-                	auto begin = analyze_clear.begin() + top;
-                	for_each(begin, analyze_clear.end(), [this](Var v) { stamp.unset(v); });
-                	analyze_clear.erase(begin, analyze_clear.end());
-                    return false;
-                }
-            }
-        }
-    }
-
-    return true;
-}
 
 template <class PickBranchLitT>
-void Solver<PickBranchLitT>::conflict_anlysis_dynamic_heuristics(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
-	stamp.clear();
+void Solver<PickBranchLitT>::updateActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
+	vector<Var> involved_variables;
+
     for (Clause* clause : involved_clauses) {
         claBumpActivity(*clause);
 
         for (Lit lit : *clause) {
             Var v = var(lit);
-            if (!stamp[v]) {
-                stamp.set(v);
-    	        if (!isSelector(v) && trail.level(v) != 0) {
-    	        	branch.varBumpActivity(v);
-                    if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
-                        // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    	if (trail.reason(v)->getLBD() < learnt_lbd) {
-                    		branch.varBumpActivity(v);
-                    	}
-                    }
-    	        }
-            }
+            involved_variables.push_back(v);
         }
-    }
-    for (Clause* clause : involved_clauses) {
-		// DYNAMIC NBLEVEL trick (see competition'09 companion paper)
+
+		// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
 		if (clause->isLearnt() && clause->getLBD() > persistentLBD) {
-			uint_fast16_t nblevels = computeLBD(clause->begin(), clause->end());
+			uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
 			if (nblevels + 1 < clause->getLBD()) { // improve the LBD
 				if (clause->getLBD() <= lbLBDFrozenClause) {
 					// seems to be interesting : keep it for the next round
@@ -870,48 +654,21 @@ void Solver<PickBranchLitT>::conflict_anlysis_dynamic_heuristics(vector<Clause*>
 				clause->setLBD(nblevels);
 			}
 		}
-	}
-}
-
-/**************************************************************************************************
- *
- *  analyzeFinal : (p : Lit)  ->  [void]
- *
- *  Description:
- *    Specialized analysis procedure to express the final conflict in terms of assumptions.
- *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
- *    stores the result in 'out_conflict'.
- |*************************************************************************************************/
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::analyzeFinal(Lit p, vector<Lit>& out_conflict) {
-    out_conflict.clear();
-    out_conflict.push_back(p);
-    
-    if (trail.decisionLevel() == 0)
-        return;
-    
-    stamp.clear();
-
-    stamp.set(var(p));
-    
-    for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
-        Var x = var(trail[i]);
-        if (stamp[x]) {
-            if (trail.reason(x) == nullptr) {
-                assert(trail.level(x) > 0);
-                out_conflict.push_back(~trail[i]);
-            } else {
-                Clause* c = trail.reason(x);
-                for (Lit lit : *c) {
-                    if (trail.level(var(lit)) > 0) {
-                        stamp.set(var(lit));
-                    }
-                }
-            }
-            stamp.unset(x);
-        }
     }
-    stamp.unset(var(p));
+
+    std::sort(involved_variables.begin(), involved_variables.end());
+    involved_variables.erase(std::unique(involved_variables.begin(), involved_variables.end()), involved_variables.end());
+    for (Var v : involved_variables) {
+    	if (!isSelector(v) && trail.level(v) != 0) {
+			branch.varBumpActivity(v);
+			if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
+				// UPDATEVARACTIVITY trick (see competition'09 companion paper)
+				if (trail.reason(v)->getLBD() < learnt_lbd) {
+					branch.varBumpActivity(v);
+				}
+			}
+    	}
+    }
 }
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
@@ -1158,9 +915,6 @@ template <class PickBranchLitT>
 lbool Solver<PickBranchLitT>::search() {
     assert(ok);
     
-    vector<Lit> learnt_clause;
-    vector<Clause*> involved_clauses;
-    uint_fast16_t nblevels;
     bool blocked = false;
     bool reduced = false;
     Statistics::getInstance().solverRestartInc();
@@ -1209,35 +963,39 @@ lbool Solver<PickBranchLitT>::search() {
                 }
             }
             
-            learnt_clause.clear();
-            involved_clauses.clear();
-            conflict_analysis_generate_clause(confl, learnt_clause, involved_clauses);
+            conflict_analysis.analyze(confl);
+            vector<Lit>* learnt_clause = conflict_analysis.getLearntClause();
+            if (incremental) {
+            	// sort selectors to back (but keep asserting literal upfront: begin+1)
+            	std::sort(learnt_clause->begin()+1, learnt_clause->end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
+            }
+            vector<Clause*>* involved_clauses = conflict_analysis.getInvolvedClauses();
             
-            if (learntCallback != nullptr && (int)learnt_clause.size() <= learntCallbackMaxLength) {
-                vector<int> clause(learnt_clause.size() + 1);
-                for (Lit lit : learnt_clause) {
+            if (learntCallback != nullptr && (int)learnt_clause->size() <= learntCallbackMaxLength) {
+                vector<int> clause(learnt_clause->size() + 1);
+                for (Lit lit : *learnt_clause) {
                     clause.push_back((var(lit)+1)*(sign(lit)?-1:1));
                 }
                 clause.push_back(0);
                 learntCallback(learntCallbackState, &clause[0]);
             }
 
-            sonification.learntSize(static_cast<int>(learnt_clause.size()));
+            sonification.learntSize(static_cast<int>(learnt_clause->size()));
 
-            if (learnt_clause.size() == 1) {
+            if (learnt_clause->size() == 1) {
                 Statistics::getInstance().solverUnariesInc();
             }
-            if (learnt_clause.size() == 2) {
+            if (learnt_clause->size() == 2) {
                 Statistics::getInstance().solverBinariesInc();
             }
 
-            if (!isSelector(learnt_clause.back())) {
-                certificate->added(learnt_clause.begin(), learnt_clause.end());
+            if (!isSelector(learnt_clause->back())) {
+                certificate->added(learnt_clause->begin(), learnt_clause->end());
             }
 
-            nblevels = computeLBD(learnt_clause.begin(), learnt_clause.end());
-
-            conflict_anlysis_dynamic_heuristics(involved_clauses, nblevels);
+            // TODO: exclude selectors from lbd computation
+            uint_fast16_t nblevels = trail.computeLBD(learnt_clause->begin(), learnt_clause->end());
+            updateActivitiesAndLBD(*involved_clauses, nblevels);
 
             if (nblevels <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
@@ -1246,14 +1004,14 @@ lbool Solver<PickBranchLitT>::search() {
             lbdQueue.push(nblevels);
             sumLBD += nblevels;
 
-            if (learnt_clause.size() == 1) {
+            if (learnt_clause->size() == 1) {
                 cancelUntil(0);
-                trail.uncheckedEnqueue(learnt_clause[0]);
+                trail.uncheckedEnqueue((*learnt_clause)[0]);
                 new_unary = true;
             }
             else {
-                uint32_t clauseLength = checked_unsigned_cast<decltype(learnt_clause)::size_type, uint32_t>(learnt_clause.size());
-                Clause* cr = new (allocator.allocate(clauseLength)) Clause(learnt_clause, nblevels);
+                uint32_t clauseLength = static_cast<uint32_t>(learnt_clause->size());
+                Clause* cr = new (allocator.allocate(clauseLength)) Clause(*learnt_clause, nblevels);
 
                 if (clauseLength == 2) {
                     persist.push_back(cr);
@@ -1343,7 +1101,8 @@ lbool Solver<PickBranchLitT>::search() {
                     // Dummy decision level:
                     trail.newDecisionLevel();
                 } else if (trail.value(p) == l_False) {
-                    analyzeFinal(~p, conflict);
+                    conflict_analysis.analyzeFinal(~p);
+                    conflict.insert(conflict.end(), conflict_analysis.getLearntClause()->begin(), conflict_analysis.getLearntClause()->end());
                     return l_False;
                 } else {
                     next = p;
@@ -1386,8 +1145,8 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c | however, if you find better choices, please let us known...                                |\n");
         printf("c |--------------------------------------------------------------------------------------------|\n");
         printf("c |                                |                                |                          |\n");
-        printf("c | - Restarts:                    | - Reduce Clause DB:            | - Minimize Asserting:    |\n");
-        printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |    * size < %3d          |\n", lbdQueue.maxSize(), nbclausesbeforereduce, lbSizeMinimizingClause);
+        printf("c | - Restarts:                    | - Reduce Clause DB:            |                          |\n");
+        printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |                          |\n", lbdQueue.maxSize(), nbclausesbeforereduce);
         printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |                          |\n", trailQueue.maxSize(), incReduceDB);
         printf("c |   * K            : %6.2f      |   * Persistent: %6d         |                          |\n", K, persistentLBD);
         printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                          |\n", R, lbLBDFrozenClause);
@@ -1417,10 +1176,9 @@ lbool Solver<PickBranchLitT>::solve() {
         }
         else {
             // check if selectors are used in final conflict
-            vector<Lit> finalConflict;
-            analyzeFinal(trail[trail.size()-1], finalConflict);
-            auto pos = find_if(finalConflict.begin(), finalConflict.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
-            if (pos == finalConflict.end()) {
+            conflict_analysis.analyzeFinal(trail[trail.size()-1]);
+            auto pos = find_if(conflict_analysis.getLearntClause()->begin(), conflict_analysis.getLearntClause()->end(), [this] (Lit lit) { return isSelector(var(lit)); } );
+            if (pos == conflict_analysis.getLearntClause()->end()) {
                 certificate->proof();
             }
         }
