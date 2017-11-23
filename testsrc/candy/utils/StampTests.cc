@@ -55,3 +55,14 @@ TEST (StampTestPatterns, overflowTest) {
 	stamp.set(0);
 	EXPECT_TRUE(stamp.isStamped(0));
 }
+
+TEST (StampTestPatterns, rigidOverflowTest) {
+	Stamp<uint8_t> stamp(1);
+	EXPECT_TRUE(stamp.isStamped(0));
+	for (int i = 0; i < 258; i++) {
+		stamp.clear();
+		EXPECT_FALSE(stamp.isStamped(0));
+		stamp.set(0);
+		EXPECT_TRUE(stamp.isStamped(0));
+	}
+}
