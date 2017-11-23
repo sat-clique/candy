@@ -69,4 +69,10 @@ public:
 	}
 };
 
+template<>
+inline void Stamp<bool>::clear() {
+	std::fill(stamped.begin(), stamped.end(), false);
+	stamp = true;
+}
+
 #endif /* SRC_CANDY_CORE_STAMP_H_ */
