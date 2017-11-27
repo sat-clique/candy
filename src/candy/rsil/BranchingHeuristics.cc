@@ -25,98 +25,98 @@
  */
 
 #include "BranchingHeuristics.h"
-#include <candy/core/Solver.h>
+#include <candy/core/Trail.h>
 
 #include <algorithm>
 
 namespace Candy {
     template <>
-    Lit Solver<RSILBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
+    Lit RSILBranchingHeuristic3::pickBranchLit(Trail& trail) {
+        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit(this->trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
         }
-        return pickBranchLitData.getSignAdvice(candidate);
+        return getSignAdvice(candidate);
     }
     
     template <>
-    Lit Solver<RSILVanishingBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
+    Lit RSILVanishingBranchingHeuristic3::pickBranchLit(Trail& trail) {
+        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit(this->trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
         }
-        return pickBranchLitData.getSignAdvice(candidate);
+        return getSignAdvice(candidate);
     }
     
     template <>
-    Lit Solver<RSILBudgetBranchingHeuristic3>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
+    Lit RSILBudgetBranchingHeuristic3::pickBranchLit(Trail& trail) {
+        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit(this->trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
         }
-        return pickBranchLitData.getSignAdvice(candidate);
+        return getSignAdvice(candidate);
     }
     
     template <>
-    Lit Solver<RSILBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
+    Lit RSILBranchingHeuristic2::pickBranchLit(Trail& trail) {
+        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit(this->trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
         }
-        return pickBranchLitData.getSignAdvice(candidate);
+        return getSignAdvice(candidate);
     }
     
     template <>
-    Lit Solver<RSILVanishingBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
+    Lit RSILVanishingBranchingHeuristic2::pickBranchLit(Trail& trail) {
+        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit(this->trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
         }
-        return pickBranchLitData.getSignAdvice(candidate);
+        return getSignAdvice(candidate);
     }
     
     template <>
-    Lit Solver<RSILBudgetBranchingHeuristic2>::pickBranchLit() {
-        Lit rsilAdvice = pickBranchLitData.getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, branch.decision);
+    Lit RSILBudgetBranchingHeuristic2::pickBranchLit(Trail& trail) {
+        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = branch.pickBranchLit(this->trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
         }
-        return pickBranchLitData.getSignAdvice(candidate);
+        return getSignAdvice(candidate);
     }
 }

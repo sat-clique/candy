@@ -36,7 +36,7 @@ namespace Candy {
 GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool semantic, bool holistic,
         bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget,
         std::chrono::milliseconds timeout) :
-            problem (dimacs), solver (backported_std::make_unique<DefaultSolver>()),
+            problem (dimacs), solver (backported_std::make_unique<Solver<>>()),
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
             lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)

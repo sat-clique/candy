@@ -40,6 +40,7 @@
 #include "candy/core/SolverTypes.h"
 #include "candy/utils/Runtime.h"
 #include "candy/core/CNFProblem.h"
+#include "candy/core/CandySolverInterface.h"
 
 namespace Candy {
     
@@ -47,8 +48,6 @@ namespace Candy {
  * \defgroup Gates
  */
     
-class DefaultSolver;
-
 typedef struct Gate {
     Lit out = lit_Undef;
     For fwd, bwd;
@@ -127,7 +126,7 @@ public:
 private:
     // problem to analyze:
     CNFProblem& problem;
-    std::unique_ptr<DefaultSolver> solver;
+    std::unique_ptr<CandySolverInterface> solver;
     std::vector<Lit> assumptions;
 
     // control structures:

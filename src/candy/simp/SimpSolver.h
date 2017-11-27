@@ -71,14 +71,15 @@ namespace Candy {
  *    - PickBranchLitT must be move-assignable.
  *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
  */
-template<class PickBranchLitT=DefaultPickBranchLit>
+template<class PickBranchLitT=Branch>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:
-    SimpSolver();
+	SimpSolver();
+    SimpSolver(typename PickBranchLitT::Parameters params);
     virtual ~SimpSolver();
 
     // Problem specification:
-    virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0); // Add a new variable with parameters specifying variable mode.
+    virtual Var newVar();
     virtual void addClauses(const CNFProblem& dimacs);
 
     bool eliminate() {
@@ -89,11 +90,11 @@ public:
 
     virtual lbool solve();
 
-    inline void enablePreprocessing() {
+    void enablePreprocessing() {
         preprocessing_enabled = true;
     }
 
-    inline void disablePreprocessing() {
+    void disablePreprocessing() {
         preprocessing_enabled = false;
     }
 
@@ -215,13 +216,6 @@ protected:
     bool implied(const vector<Lit>& c);
 };
 
-/**
-  * \brief A readily forward-declarable SimpSolver<>
-  */
-class DefaultSimpSolver : public SimpSolver<> {
-
-};
-
 //******************************************************************************
 // SimpSolver<PickBranchLitT> implementation
 //******************************************************************************
@@ -243,8 +237,11 @@ extern IntOption opt_subsumption_lim;
 // Constructor/Destructor:
 
 template<class PickBranchLitT>
-SimpSolver<PickBranchLitT>::SimpSolver() :
-    Solver<PickBranchLitT>(),
+SimpSolver<PickBranchLitT>::SimpSolver() : SimpSolver<PickBranchLitT>::SimpSolver(typename PickBranchLitT::Parameters()) { }
+
+template<class PickBranchLitT>
+SimpSolver<PickBranchLitT>::SimpSolver(typename PickBranchLitT::Parameters params) :
+    Solver<PickBranchLitT>(params),
     subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
     clause_lim(SimpSolverOptions::opt_clause_lim),
     grow(SimpSolverOptions::opt_grow),
@@ -272,8 +269,8 @@ SimpSolver<PickBranchLitT>::~SimpSolver() {
 }
 
 template<class PickBranchLitT>
-Var SimpSolver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
-    Var v = Solver<PickBranchLitT>::newVar(sign, dvar, act);
+Var SimpSolver<PickBranchLitT>::newVar() {
+    Var v = Solver<PickBranchLitT>::newVar();
     frozen.push_back((char) false);
     eliminated.push_back((char) false);
     return v;
@@ -785,7 +782,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     abstraction.clear();
 
     // force full cleanup
-    this->branch.rebuildOrderHeap(this->trail);
+    this->branch.notify_restarted(this->trail); // former rebuildOrderHeap
 
     // cleanup strengthened clauses in pool
     this->allocator.announceClauses(strengthened_clauses);

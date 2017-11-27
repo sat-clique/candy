@@ -14,6 +14,7 @@ add_library(core OBJECT
     CNFProblem.cc
     CNFProblem.h
     Propagate.h
+    Branch.cc
     Branch.h
     Stamp.h
     ConflictAnalysis.h

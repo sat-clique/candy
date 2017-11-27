@@ -75,26 +75,12 @@
 #include "candy/core/Propagate.h"
 #include "candy/core/Branch.h"
 #include "candy/core/Stamp.h"
+#include "candy/core/CandySolverInterface.h"
 
 #include "candy/sonification/SolverSonification.h"
 #include "candy/sonification/ControllerInterface.h"
 
 namespace Candy {
-
-class DefaultPickBranchLit {
-public:
-    class Parameters {
-        
-    };
-    
-    DefaultPickBranchLit() noexcept {
-        
-    }
-    
-    explicit DefaultPickBranchLit(const Parameters& params) noexcept {
-        (void)params;
-    }
-};
 
 /**
  * \tparam PickBranchLitT   the PickBranchLit type used to choose a
@@ -109,30 +95,28 @@ public:
  *    - PickBranchLitT must be move-constructible.
  *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
  */
-template<class PickBranchLitT = DefaultPickBranchLit>
-class Solver {
+template<class PickBranchLitT = Branch>
+class Solver : public CandySolverInterface {
     static_assert(std::is_class<PickBranchLitT>::value, "PickBranchLitT must be a class");
     static_assert(std::is_class<typename PickBranchLitT::Parameters>::value, "PickBranchLitT::Parameters must be a class");
-    static_assert(std::is_constructible<PickBranchLitT>::value, "PickBranchLitT must have a constructor without arguments");
-    static_assert(std::is_move_assignable<PickBranchLitT>::value, "PickBranchLitT must be move-assignable");
-    static_assert(std::is_move_constructible<PickBranchLitT>::value, "PickBranchLitT must be move-constructible");
+    //static_assert(std::is_constructible<PickBranchLitT>::value, "PickBranchLitT must have a constructor without arguments");
+    //static_assert(std::is_move_assignable<PickBranchLitT>::value, "PickBranchLitT must be move-assignable");
+    //static_assert(std::is_move_constructible<PickBranchLitT>::value, "PickBranchLitT must be move-constructible");
 
     friend class SolverConfiguration;
 
 public:
     using PickBranchLitType = PickBranchLitT;
-    
+
     Solver();
+    Solver(typename PickBranchLitT::Parameters params);
     virtual ~Solver();
     
-    /// Reinitializes the decision literal picking strategy using the given parameters.
-    void initializePickBranchLit(const typename PickBranchLitT::Parameters& params);
-    
     // Add a new variable with parameters specifying variable mode.
-    virtual Var newVar(bool polarity = true, bool dvar = true, double activity = 0.0);
+    virtual Var newVar();
 
     // Add clauses to the solver
-    virtual void addClauses(const CNFProblem& dimacs);
+    virtual void addClauses(const CNFProblem& problem);
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
@@ -140,15 +124,15 @@ public:
     template<typename Iterator>
     bool addClauseSanitize(Iterator begin, Iterator end);
 
-    inline bool addClause(const vector<Lit>& ps) {
-        return addClause(ps.begin(), ps.end());
+    bool addClause(const vector<Lit>& lits) {
+        return addClause(lits.begin(), lits.end());
     }
 
     inline bool addClause(std::initializer_list<Lit> lits) {
         return addClause(lits.begin(), lits.end());
     }
 
-    inline void printDIMACS() {
+    void printDIMACS() {
         printf("p cnf %zu %zu\n", nVars(), clauses.size());
         for (auto clause : clauses) {
             clause->print();
@@ -168,23 +152,29 @@ public:
     // Solving:
     bool simplify(); // remove satisfied clauses
     bool strengthen(); // remove false literals from clauses
-    virtual bool eliminate(bool use_asymm, bool use_elim);  // Perform variable elimination based simplification.
+    virtual bool eliminate() { return true; }; // Perform variable elimination based simplification.
+    virtual bool eliminate(bool use_asymm, bool use_elim) { return true; }; // Perform variable elimination based simplification.
+    virtual void enablePreprocessing() {};
+    virtual void disablePreprocessing() {};
+    virtual bool isEliminated(Var v) const { return false; };
+    virtual void setFrozen(Var v, bool freeze) {};
+
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
 
-    inline lbool solve(std::initializer_list<Lit> assumps) {
+    lbool solve(std::initializer_list<Lit> assumps) {
         assumptions.clear();
         assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
         return solve();
     }
 
-    inline lbool solve(const vector<Lit>& assumps) {
+    lbool solve(const vector<Lit>& assumps) {
         assumptions.clear();
         assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
         return solve();
     }
 
     // true means solver is in a conflicting state
-    inline bool isInConflictingState() const {
+    bool isInConflictingState() const {
         return !ok;
     }
 
@@ -196,18 +186,23 @@ public:
     lbool modelValue(Lit p) const {
         return model[var(p)] ^ sign(p);
     }
-    inline size_t nClauses() const {
+    size_t nClauses() const {
         return clauses.size();
     }
-    inline size_t nLearnts() const {
+    size_t nLearnts() const {
         return learnts.size() + persist.size();
     }
-
-    inline size_t nVars() const {
+    size_t nVars() const {
         return trail.vardata.size();
     }
+    size_t getConflictCount() const {
+        return nConflicts;
+    }
+    size_t getPropagationCount() const {
+        return nPropagations;
+    }
 
-    inline bool isSelector(Var v) {
+    bool isSelector(Var v) {
         return (incremental && (uint32_t)v >= nbVarsInitialFormula);
     }
 
@@ -246,10 +241,18 @@ public:
         this->certificate = &certificate;
     }
 
-    void setVerbosities(int verbEveryConflicts, int verbosity) {
+    Certificate* getCertificate() {
+    	return certificate;
+    }
+
+    void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) {
         assert(verbosity == 0 || verbEveryConflicts > 0);
         this->verbEveryConflicts = verbEveryConflicts;
         this->verbosity = verbosity;
+    }
+
+    unsigned int getVerbosity() {
+    	return verbosity;
     }
 
     // Certified UNSAT (Thanks to Marijn Heule)
@@ -260,8 +263,8 @@ public:
     uint64_t nConflicts, nPropagations;
 
     // Control verbosity
-    int verbEveryConflicts;
-    int verbosity;
+    unsigned int verbEveryConflicts;
+    unsigned int verbosity;
 
     // Extra results: (read-only member variable)
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
@@ -286,7 +289,7 @@ protected:
 
     Propagate propagator;
     Trail trail;
-    Branch branch;
+    PickBranchLitT branch;
     ConflictAnalysis conflict_analysis;
 
 	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
@@ -346,19 +349,10 @@ protected:
     SolverSonification sonification;
     ControllerInterface controller;
     
-    // Variables for decisions
-    PickBranchLitT pickBranchLitData;
-
     // Operations on clauses:
     void removeClause(Clause* cr, bool strict_detach = false); // Detach and free a clause.
     void freeMarkedClauses(vector<Clause*>& list);
 
-    // Return the next decision variable.
-    Lit pickBranchLit() {
-        return branch.pickBranchLit(trail);
-    }
-
-    Lit defaultPickBranchLit(); // Return the next decision variable (default implementation).
     void cancelUntil(int level); // Backtrack until a certain level.
     void updateActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
     lbool search(); // Search for a given number of conflicts.
@@ -389,16 +383,6 @@ protected:
                 && (conflict_budget == 0 || nConflicts < conflict_budget) && (propagation_budget == 0 || nPropagations < propagation_budget);
     }
 };
-
-/**
- * \brief A readily forward-declarable Solver<>
- */
-class DefaultSolver : public Solver<> {
-
-};
-
-
-
 
 //******************************************************************************
 // Solver<PickBranchLitT> implementation
@@ -439,7 +423,12 @@ namespace SolverOptions {
 }
 
 template<class PickBranchLitT>
-Solver<PickBranchLitT>::Solver() :
+Solver<PickBranchLitT>::Solver() : Solver<PickBranchLitT>::Solver(typename PickBranchLitT::Parameters()) {
+
+}
+
+template<class PickBranchLitT>
+Solver<PickBranchLitT>::Solver(typename PickBranchLitT::Parameters params) :
     // default certificate, used when none other is set
     defaultCertificate(nullptr, false),
     // unsat certificate
@@ -457,7 +446,7 @@ Solver<PickBranchLitT>::Solver() :
     // current assignment
     trail(),
 	// branching heuristic
-	branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay),
+	branch(params),
 	// conflict analysis module
 	conflict_analysis(&trail, &propagator, SolverOptions::opt_lb_size_minimzing_clause),
     // assumptions
@@ -495,8 +484,7 @@ Solver<PickBranchLitT>::Solver() :
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
     // sonification
     sonification(),
-	controller(),
-    pickBranchLitData()
+	controller()
 {
 controller.run();
 }
@@ -512,11 +500,6 @@ Solver<PickBranchLitT>::~Solver() {
     for (Clause* c : persist) {
         allocator.deallocate(c);
     }
-}
-
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::initializePickBranchLit(const typename PickBranchLitT::Parameters& params) {
-    pickBranchLitData = PickBranchLitT(params);
 }
 
 /****************************************************************
@@ -546,12 +529,12 @@ bool Solver<PickBranchLitT>::isIncremental() {
  * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
  ***/
 template<class PickBranchLitT>
-Var Solver<PickBranchLitT>::newVar(bool sign, bool dvar, double act) {
+Var Solver<PickBranchLitT>::newVar() {
     int v = static_cast<int>(nVars());
     propagator.init(nVars());
     trail.grow();
     conflict_analysis.incSize();
-    branch.grow(dvar, sign, act);
+    branch.grow();
     return v;
 }
 
@@ -564,10 +547,9 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         propagator.init(maxVars);
         trail.grow(maxVars);
         conflict_analysis.incSize(maxVars);
-        branch.grow(maxVars, true, true, 0.0);
+        branch.grow(maxVars);
         if (sort_variables) {
         	branch.initFrom(dimacs);
-        	branch.rebuildOrderHeap(trail);
         }
     }
     allocator.announceClauses(problem);
@@ -658,17 +640,7 @@ void Solver<PickBranchLitT>::updateActivitiesAndLBD(vector<Clause*>& involved_cl
 
     std::sort(involved_variables.begin(), involved_variables.end());
     involved_variables.erase(std::unique(involved_variables.begin(), involved_variables.end()), involved_variables.end());
-    for (Var v : involved_variables) {
-    	if (!isSelector(v) && trail.level(v) != 0) {
-			branch.varBumpActivity(v);
-			if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
-				// UPDATEVARACTIVITY trick (see competition'09 companion paper)
-				if (trail.reason(v)->getLBD() < learnt_lbd) {
-					branch.varBumpActivity(v);
-				}
-			}
-    	}
-    }
+    branch.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
 }
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
@@ -676,10 +648,7 @@ template <class PickBranchLitT>
 void Solver<PickBranchLitT>::cancelUntil(int level) {
     vector<Lit> lits = trail.cancelUntil(level);
     std::reverse(lits.begin(), lits.end());
-    for (Lit lit : lits) {
-    	branch.polarity[var(lit)] = sign(lit);
-    	branch.insertVarOrder(var(lit));
-    }
+    branch.notify_backtracked(lits);
 }
 
 /**************************************************************************************************
@@ -890,14 +859,6 @@ bool Solver<PickBranchLitT>::strengthen() {
     return ok &= (propagator.propagate(trail) == nullptr);
 }
 
-/**
- * Dummy virtual method for inprocessing
- */
-template<class PickBranchLitT>
-bool Solver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
-    return true;
-}
-
 /**************************************************************************************************
  *
  *  search : (nof*conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -921,10 +882,8 @@ lbool Solver<PickBranchLitT>::search() {
     sonification.restart();
     for (;;) {
         sonification.decisionLevel(trail.decisionLevel(), SolverOptions::opt_sonification_delay);
-        
 
         uint32_t old_qhead = trail.qhead;
-
         Clause* confl = propagator.propagate(trail);
 
         nPropagations += trail.qhead - old_qhead;
@@ -935,10 +894,6 @@ lbool Solver<PickBranchLitT>::search() {
             sonification.conflictLevel(trail.decisionLevel());
             
             ++nConflicts;
-            
-            if (nConflicts % 5000 == 0 && branch.var_decay < branch.max_var_decay) {
-            	branch.var_decay += 0.01;
-            }
             
             if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
                 Statistics::getInstance().printIntermediateStats((int) (trail.trail_lim.size() == 0 ? trail.size() : trail.trail_lim[0]),
@@ -1035,7 +990,6 @@ lbool Solver<PickBranchLitT>::search() {
                 claBumpActivity(*cr);
             }
             claDecayActivity();
-            branch.varDecayActivity();
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
@@ -1078,7 +1032,7 @@ lbool Solver<PickBranchLitT>::search() {
                     }
                 }
 
-                branch.rebuildOrderHeap(trail);
+                branch.notify_restarted(trail);
                 
                 return l_Undef;
             }
@@ -1113,7 +1067,7 @@ lbool Solver<PickBranchLitT>::search() {
             if (next == lit_Undef) {
                 // New variable decision:
                 Statistics::getInstance().solverDecisionsInc();
-                next = pickBranchLit();
+                next = branch.pickBranchLit(trail);
                 if (next == lit_Undef) {
                     // Model found:
                     return l_True;

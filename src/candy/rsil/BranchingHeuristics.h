@@ -28,6 +28,7 @@
 #define X_66055FCA_E0CE_46B3_9E4C_7F093C37330B_BRANCHINGHEURISTICS_H
 
 #include <candy/core/SolverTypes.h>
+#include <candy/core/Branch.h>
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/FastRand.h>
@@ -108,6 +109,41 @@ namespace Candy {
           "AdviceType must have an inner type BasicType");
         
     public:
+        /**
+         * A few definitions to make that compatible with the new direct design
+         */
+        Branch defaultBranchingHeuristic;
+
+        Lit pickBranchLit(Trail& trail);
+
+    	void setDecisionVar(Var v, bool b) {
+    		defaultBranchingHeuristic.setDecisionVar(v, b);
+    	}
+
+    	void initFrom(const CNFProblem& problem) {
+    		defaultBranchingHeuristic.initFrom(problem);
+    	}
+
+    	void grow() {
+    		defaultBranchingHeuristic.grow();
+    	}
+
+    	void grow(size_t size) {
+    		defaultBranchingHeuristic.grow(size);
+    	}
+
+    	void notify_conflict(vector<Var>& involved_variables, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
+    		defaultBranchingHeuristic.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
+    	}
+
+    	void notify_backtracked(vector<Lit> lits) {
+    		defaultBranchingHeuristic.notify_backtracked(lits);
+    	}
+
+    	void notify_restarted(Trail& trail) {
+    		defaultBranchingHeuristic.notify_restarted(trail);
+    	}
+
         /// The type of the underlying solver's trail data structure
         using TrailType = typename SolverTypes::TrailType;
         
@@ -276,6 +312,41 @@ namespace Candy {
     class RSILBudgetBranchingHeuristic : public RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>, SolverTypes> {
         static_assert(tAdviceSize > 1, "advice size must be >= 2");
     public:
+        /**
+         * A few definitions to make that compatible with the new direct design
+         */
+        Branch defaultBranchingHeuristic;
+
+        Lit pickBranchLit(Trail& trail);
+
+    	void setDecisionVar(Var v, bool b) {
+    		defaultBranchingHeuristic.setDecisionVar(v, b);
+    	}
+
+    	void initFrom(const CNFProblem& problem) {
+    		defaultBranchingHeuristic.initFrom(problem);
+    	}
+
+    	void grow() {
+    		defaultBranchingHeuristic.grow();
+    	}
+
+    	void grow(size_t size) {
+    		defaultBranchingHeuristic.grow(size);
+    	}
+
+    	void notify_conflict(vector<Var>& involved_variables, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
+    		defaultBranchingHeuristic.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
+    	}
+
+    	void notify_backtracked(vector<Lit> lits) {
+    		defaultBranchingHeuristic.notify_backtracked(lits);
+    	}
+
+    	void notify_restarted(Trail& trail) {
+    		defaultBranchingHeuristic.notify_restarted(trail);
+    	}
+
         /// A type used for recognition of RSILBudgetBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBudgetBranchingHeuristic<3>;
@@ -350,6 +421,41 @@ namespace Candy {
     template<class AdviceType, typename SolverTypes = CandyDefaultSolverTypes>
     class RSILVanishingBranchingHeuristic {
     public:
+        /**
+         * A few definitions to make that compatible with the new direct design
+         */
+        Branch defaultBranchingHeuristic;
+
+        Lit pickBranchLit(Trail& trail);
+
+    	void setDecisionVar(Var v, bool b) {
+    		defaultBranchingHeuristic.setDecisionVar(v, b);
+    	}
+
+    	void initFrom(const CNFProblem& problem) {
+    		defaultBranchingHeuristic.initFrom(problem);
+    	}
+
+    	void grow() {
+    		defaultBranchingHeuristic.grow();
+    	}
+
+    	void grow(size_t size) {
+    		defaultBranchingHeuristic.grow(size);
+    	}
+
+    	void notify_conflict(vector<Var>& involved_variables, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
+    		defaultBranchingHeuristic.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
+    	}
+
+    	void notify_backtracked(vector<Lit> lits) {
+    		defaultBranchingHeuristic.notify_backtracked(lits);
+    	}
+
+    	void notify_restarted(Trail& trail) {
+    		defaultBranchingHeuristic.notify_restarted(trail);
+    	}
+
         // See the documentation of RSILBranchingHeuristic for the following 4 types.
         using TrailType = typename RSILBranchingHeuristic<AdviceType>::TrailType;
         using TrailLimType = typename RSILBranchingHeuristic<AdviceType>::TrailLimType;
@@ -547,14 +653,14 @@ namespace Candy {
     
     template<class AdviceType, typename SolverTypes>
     RSILBranchingHeuristic<AdviceType, SolverTypes>::RSILBranchingHeuristic()
-    : m_advice(),
+    : defaultBranchingHeuristic(), m_advice(),
     m_rng(0xFFFF),
     m_backbonesEnabled(false) {
     }
     
     template<class AdviceType, typename SolverTypes>
     RSILBranchingHeuristic<AdviceType, SolverTypes>::RSILBranchingHeuristic(const Parameters& params)
-    : m_advice(params.conjectures,
+    : defaultBranchingHeuristic(), m_advice(params.conjectures,
                BranchingHeuristicsImpl::getMaxVar(params.conjectures)),
     m_rng(0xFFFF),
     m_backbonesEnabled(params.backbonesEnabled) {
@@ -643,12 +749,12 @@ namespace Candy {
     
     template<unsigned int tAdviceSize, typename SolverTypes>
     RSILBudgetBranchingHeuristic<tAdviceSize, SolverTypes>::RSILBudgetBranchingHeuristic()
-    : RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>() {
+    : defaultBranchingHeuristic(), RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>() {
     }
     
     template<unsigned int tAdviceSize, typename SolverTypes>
     RSILBudgetBranchingHeuristic<tAdviceSize, SolverTypes>::RSILBudgetBranchingHeuristic(const Parameters& params)
-    : RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(params.rsilParameters) {
+    : defaultBranchingHeuristic(), RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(params.rsilParameters) {
         for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
             auto& advice = this->m_advice.getAdvice(i);
             for (size_t j = 0; j < advice.getSize(); ++j) {
@@ -665,13 +771,9 @@ namespace Candy {
     // canUseAdvice() for BudgetAdviceEntry - see the BranchingHeuristicsImpl namespace
     // for further details.
     
-    
-    
-    
-    
     template<class AdviceType, typename SolverTypes>
     RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::RSILVanishingBranchingHeuristic()
-    : m_callCounter(1ull),
+    : defaultBranchingHeuristic(), m_callCounter(1ull),
     m_mask(0ull),
     m_probHalfLife(1ull),
     m_rsilHeuristic(){
@@ -679,7 +781,7 @@ namespace Candy {
     
     template<class AdviceType, typename SolverTypes>
     RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::RSILVanishingBranchingHeuristic(const Parameters& params)
-    : m_callCounter(params.probHalfLife),
+    : defaultBranchingHeuristic(), m_callCounter(params.probHalfLife),
     m_mask(0ull),
     m_probHalfLife(params.probHalfLife),
     m_rsilHeuristic(params.rsilParameters) {
