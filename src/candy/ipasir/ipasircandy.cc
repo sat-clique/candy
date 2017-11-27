@@ -11,7 +11,7 @@ using namespace Candy;
 
 class IPASIRCandy {
 
-    SimpSolver<> solver;
+    SimpSolver<Branch> solver;
 
     vector<Lit> assumptions;
     vector<Lit> clause;
@@ -38,7 +38,7 @@ class IPASIRCandy {
     }
 
 public:
-    IPASIRCandy() : fmap(0), nomodel(false) {
+    IPASIRCandy() : solver(), fmap(0), nomodel(false) {
         solver.verbosity = 0;
         solver.disablePreprocessing();
     }

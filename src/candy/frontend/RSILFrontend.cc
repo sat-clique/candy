@@ -57,4 +57,45 @@ namespace Candy {
             throw std::invalid_argument("Error: unknown RSIL mode " + mode);
         }
     }
+
+    template<class BranchingHeuristic>
+    RSILBranchingHeuristic3::Parameters
+	RSILSolverFactory<BranchingHeuristic>::getDefaultHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+    	bool useBackbones = !conjectures.getBackbones().empty();
+		std::shared_ptr<RefinementHeuristic> filterHeuristic = nullptr;
+
+		if (rsilArgs.filterByInputDependencies) {
+			auto maxInputs = static_cast<unsigned long>(rsilArgs.filterByInputDependenciesMax);
+			auto heuristic = createInputDepCountRefinementHeuristic(analyzer, {maxInputs, 0});
+			heuristic->beginRefinementStep();
+			filterHeuristic = shared_ptr<RefinementHeuristic>(heuristic.release());
+		}
+
+		return typename RSILBranchingHeuristic3::Parameters{conjectures,
+			useBackbones,
+			rsilArgs.filterByInputDependencies,
+			filterHeuristic,
+			rsilArgs.filterOnlyBackbones};
+    }
+
+
+	template<>
+	RSILBranchingHeuristic3::Parameters
+	RSILSolverFactory<RSILBranchingHeuristic3>::getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+		return getDefaultHeuristicParameters(conjectures, rsilArgs, analyzer);
+	}
+
+	template<>
+	inline RSILVanishingBranchingHeuristic3::Parameters
+	RSILSolverFactory<RSILVanishingBranchingHeuristic3>::getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+		auto conf = getDefaultHeuristicParameters(conjectures, rsilArgs, analyzer);
+		return {conf, rsilArgs.vanishing_probabilityHalfLife};
+	}
+
+//    template<>
+//    RSILBudgetBranchingHeuristic3::Parameters
+//    RSILSolverFactory<RSILBranchingHeuristic3>::getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+//    	auto conf = getDefaultHeuristicParameters(conjectures, rsilArgs, analyzer);
+//    	return {conf, rsilArgs.impbudget_initialBudget};
+//    }
 }

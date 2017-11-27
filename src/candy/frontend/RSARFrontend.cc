@@ -87,9 +87,9 @@ namespace Candy {
     }
     
     std::unique_ptr<Candy::ARSolver> createARSolver(const GateAnalyzer& analyzer,
-                                                    DefaultSimpSolver& satSolver,
-                                                    std::unique_ptr<Conjectures> conjectures,
-                                                    const RSARArguments& rsarArguments) {
+    		CandySolverInterface& satSolver,
+            std::unique_ptr<Conjectures> conjectures,
+            const RSARArguments& rsarArguments) {
         if (rsarArguments.simplificationHandlingMode == SimplificationHandlingMode::FREEZE) {
             throw std::runtime_error("The FREEZE simplification handling mode is temporarily unavailable");
         }

@@ -90,7 +90,7 @@ namespace Candy {
      *   instance to the caller).
      */
     std::unique_ptr<Candy::ARSolver> createARSolver(const GateAnalyzer& analyzer,
-                                                    DefaultSimpSolver& satSolver,
+                                                    CandySolverInterface& satSolver,
                                                     std::unique_ptr<Conjectures> conjectures,
                                                     const RSARArguments& rsarArguments);
 }

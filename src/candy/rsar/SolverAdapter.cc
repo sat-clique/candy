@@ -27,7 +27,7 @@
 
 #include "SolverAdapter.h"
 
-#include <candy/simp/SimpSolver.h>
+#include <candy/core/CandySolverInterface.h>
 #include <candy/utils/MemUtils.h>
 
 namespace Candy {
@@ -131,11 +131,11 @@ namespace Candy {
         
         GlucoseAdapter()
         : SolverAdapter(),
-        m_ownedSolver(backported_std::make_unique<DefaultSimpSolver>()),
+        m_ownedSolver(backported_std::make_unique<SimpSolver<Branch>>()),
         m_solver(*m_ownedSolver) {
         }
         
-        explicit GlucoseAdapter(DefaultSimpSolver& solver)
+        explicit GlucoseAdapter(CandySolverInterface& solver)
         : SolverAdapter(),
         m_ownedSolver(nullptr),
         m_solver(solver) {
@@ -145,15 +145,15 @@ namespace Candy {
         GlucoseAdapter& operator= (const GlucoseAdapter& other) = delete;
         
     private:
-        std::unique_ptr<DefaultSimpSolver> m_ownedSolver;
-        DefaultSimpSolver& m_solver;
+        std::unique_ptr<SimpSolver<Branch>> m_ownedSolver;
+        CandySolverInterface& m_solver;
     };
     
     std::unique_ptr<SolverAdapter> createGlucoseAdapter() {
         return backported_std::make_unique<GlucoseAdapter>();
     }
     
-    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(DefaultSimpSolver& solver) {
+    std::unique_ptr<SolverAdapter> createNonowningGlucoseAdapter(CandySolverInterface& solver) {
         return backported_std::make_unique<GlucoseAdapter>(solver);
     }
 
