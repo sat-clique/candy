@@ -425,9 +425,8 @@ namespace Candy {
         auto conjectures = randomSimulator->run(1ull << 16);
         
         typename Heuristic::Parameters rsilParameters{conjectures};
-        Solver<Heuristic> solver;
+        Solver<Heuristic> solver(rsilParameters);
         solver.addClauses(problem);
-        solver.initializePickBranchLit(rsilParameters);
         EXPECT_TRUE((expectedResult ? l_True : l_False) == solver.solve());
     }
     
