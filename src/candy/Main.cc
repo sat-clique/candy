@@ -73,10 +73,10 @@
 #include "candy/frontend/RandomSimulationFrontend.h"
 #include "candy/frontend/RSARFrontend.h"
 #include "candy/frontend/CandyCommandLineParser.h"
+#include "candy/frontend/SolverFactory.h"
 
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/rsar/ARSolver.h"
-#include "candy/rsar/SolverAdapter.h"
 #include "candy/rsar/Heuristics.h"
 
 
@@ -103,13 +103,6 @@ static void SIGINT_interrupt(int signum) {
 // functions are guarded by locks for multithreaded use).
 static void SIGINT_exit(int signum) {
     printf("\n*** INTERRUPTED ***\n");
-//TODO: in interrupt, decide in the solver if further output comes:
-//    if (solverIsVerbose && solverIsVerbose()) {
-//        assert(solverGetNConflictsAndProps);
-//        auto statistics = solverGetNConflictsAndProps();
-//        Statistics::getInstance().printFinalStats(statistics.first /* conflicts */,
-//                                                  statistics.second /* propagations */);
-//    }
     _exit(1);
 }
 
@@ -319,10 +312,9 @@ lbool solveWithRSAR(CandySolverInterface* solver, std::unique_ptr<Candy::CNFProb
             std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
             
     
-            auto arSolver = createARSolver(*gateAnalyzer, *solver, std::move(conjectures), rsarArguments);
-            auto result = arSolver->solve();
+            CandySolverInterface* arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
 
-            return lbool(result);
+            return arSolver->solve();
         }
         catch (OutOfTimeException& e) {
             auto randomSimulationTime = cpuTime() - startCPUTime - gateAnalyzerTime;
@@ -383,28 +375,6 @@ int executeSolver(const GlucoseArguments& args, CandySolverInterface* solver, st
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
 }
 
-static CandySolverInterface* createRSILSolver(const GlucoseArguments& args, std::unique_ptr<Candy::CNFProblem> problem) {
-    if(args.rsilArgs.mode == RSILMode::UNRESTRICTED) {
-        return (RSILSolverFactory<RSILBranchingHeuristic3>()).createRSILSolver(args.gateRecognitionArgs,
-                args.randomSimulationArgs,
-                args.rsilArgs, *problem);
-    }
-    
-    if (args.rsilArgs.mode == RSILMode::VANISHING) {
-        return (RSILSolverFactory<RSILBranchingHeuristic3>()).createRSILSolver(args.gateRecognitionArgs,
-                args.randomSimulationArgs,
-                args.rsilArgs, *problem);
-    }
-    
-    if (args.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
-        return (RSILSolverFactory<RSILBranchingHeuristic3>()).createRSILSolver(args.gateRecognitionArgs,
-                args.randomSimulationArgs,
-                args.rsilArgs, *problem);
-    }
-    
-    throw std::invalid_argument{"RSIL mode not implemented"};
-}
-
 //=================================================================================================
 // Main:
 int main(int argc, char** argv) {
@@ -448,8 +418,9 @@ int main(int argc, char** argv) {
 
     CandySolverInterface* solver;
     if (args.rsilArgs.useRSIL) {
+    	SolverFactory* factory = new SolverFactory(args);
     	try {
-        	solver = createRSILSolver(args, std::move(problem));
+        	solver = factory->createRSILSolver(*std::move(problem));
         }
         catch(UnsuitableProblemException& e) {
             std::cerr << "c Aborting RSIL: " << e.what() << std::endl;

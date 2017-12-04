@@ -18,7 +18,6 @@ class CandySolverInterface {
 public:
 	virtual ~CandySolverInterface() {}
 
-
     virtual void setCertificate(Certificate& certificate) = 0;
     virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) = 0;
     virtual void enablePreprocessing() = 0;

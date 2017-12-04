@@ -25,25 +25,13 @@
  */
 
 #include "SolverMock.h"
+#include "candy/rsar/ARSolver.h"
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <iostream>
 
 namespace Candy {
-    
-
-    lbool SolverMock::solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) {
-        /*for (auto lit : assumptions) {
-            std::cout << var(lit) << std::endl;
-        }*/
-        EXPECT_TRUE(std::all_of(assumptions.begin(), assumptions.end(),
-                                [this](Lit l) { return var(l) >= m_minAssumptionVar; }));
-        EXPECT_TRUE(std::all_of(assumptions.begin(), assumptions.end(),
-                                [this](Lit l) { return !this->isEliminated(var(l)); }));
-        m_lastAssumptionLits = assumptions;
-        return solve();
-    }
     
     lbool SolverMock::solve() {
         // TODO: clear assumption lits if appropriate
@@ -75,7 +63,7 @@ namespace Candy {
         return true;
     }
     
-    void SolverMock::insertClauses(const CNFProblem &problem) {
+    void SolverMock::addClauses(const CNFProblem &problem) {
         // TODO: fix the unscrupolously non-const CNFProblem interface to update
         // m_nClausesAddedSinceLastSolve
         m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
@@ -93,7 +81,7 @@ namespace Candy {
         }
     }
     
-    bool SolverMock::simplify(const std::vector<Lit>& assumptions) {
+    bool SolverMock::simplify() {
         m_eventLog.push_back(SolverMockEvent::SIMPLIFY);
         if (m_callOnSimplify) {
             m_callOnSimplify(m_nInvocations);
@@ -101,7 +89,7 @@ namespace Candy {
         return true;
     }
     
-    bool SolverMock::isEliminated(Var var) {
+    bool SolverMock::isEliminated(Var var) const {
         return m_eliminatedVars.find(var) != m_eliminatedVars.end();
     }
         
@@ -114,7 +102,7 @@ namespace Candy {
         m_minAssumptionVar = n;
     }
     
-    const std::vector<Lit>& SolverMock::getConflict() {
+    std::vector<Lit>& SolverMock::getConflict() {
         return m_conflictLits;
     }
     
@@ -122,7 +110,7 @@ namespace Candy {
         return ++m_maxCreatedVar;
     }
     
-    int SolverMock::getNVars() const {
+    size_t SolverMock::nVars() const {
         return m_maxCreatedVar+1;
     }
     
@@ -211,7 +199,7 @@ namespace Candy {
     }
 
     
-    SolverMock::SolverMock() noexcept : SolverAdapter(),
+    SolverMock::SolverMock() noexcept :
     m_nInvocations(0),
     m_maxCreatedVar(-1),
     m_conflictLits(),
@@ -234,7 +222,4 @@ namespace Candy {
         
     }
     
-    std::unique_ptr<SolverMock> createSolverMock() {
-        return std::unique_ptr<SolverMock>(new SolverMock());
-    }
 }

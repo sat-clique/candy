@@ -27,9 +27,10 @@
 #ifndef X_0816BDE6_14E6_49C2_84A9_47B3DA198C9D_SOLVERMOCK_H
 #define X_0816BDE6_14E6_49C2_84A9_47B3DA198C9D_SOLVERMOCK_H
 
-#include <candy/rsar/SolverAdapter.h>
 #include <candy/core/CNFProblem.h>
 #include <candy/core/SolverTypes.h>
+#include "candy/core/CandySolverInterface.h"
+#include "candy/rsar/ARSolver.h"
 
 #include <memory>
 #include <vector>
@@ -60,24 +61,62 @@ namespace Candy {
      *
      * A mock Glucose, intended for testing ARSolver.
      */
-    class SolverMock : public SolverAdapter {
+    class SolverMock : public CandySolverInterface {
     public:
-        lbool solve(const std::vector<Lit> &assumptions, bool doSimp, bool turnOffSimp) override;
-        lbool solve() override;
-        bool addClause(const Cl &clause) override;
-        void insertClauses(const CNFProblem &problem) override;
-        void setFrozen(Var variable, bool frozen) override;
-        bool simplify(const std::vector<Lit>& assumptions) override;
-        bool isEliminated(Var var) override;
         
-        void setIncrementalMode() override;
-        void initNbInitialVars(int n) override;
-        int getNVars() const override;
-        bool isInConflictingState() const override;
-        
-        const std::vector<Lit>& getConflict() override;
-        Var newVar() override;
-        
+        virtual void setCertificate(Certificate& certificate) override {}
+        virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {}
+        virtual void enablePreprocessing() override {}
+        virtual void disablePreprocessing() override {}
+
+        virtual Certificate* getCertificate() override { return nullptr; }
+        virtual unsigned int getVerbosity() override { return 0; }
+
+        virtual Var newVar() override;
+
+        virtual void addClauses(const CNFProblem& problem) override;
+        virtual bool addClause(const std::vector<Lit>& lits) override;
+        virtual bool addClause(std::initializer_list<Lit> lits) override { return false; }
+
+        virtual bool simplify() override; // remove satisfied clauses
+        virtual bool strengthen() override { return true; } // remove false literals from clauses
+        virtual bool eliminate() override { return true; }  // Perform variable elimination based simplification.
+        virtual bool eliminate(bool use_asymm, bool use_elim) override { return true; }  // Perform variable elimination based simplification.
+        virtual bool isEliminated(Var v) const override;
+        virtual void setFrozen(Var v, bool freeze) override;
+
+    	virtual lbool solve() override;
+    	virtual lbool solve(std::initializer_list<Lit> assumps) override { return solve(); }
+    	virtual lbool solve(const std::vector<Lit>& assumps) override { return solve(); }
+
+    	virtual void setConfBudget(uint64_t x) override { }
+    	virtual void setPropBudget(uint64_t x) override { }
+    	virtual void setInterrupt(bool value) override { }
+    	virtual void budgetOff() override { }
+
+    	virtual void printDIMACS() override { }
+
+    	// The value of a variable in the last model. The last call to solve must have been satisfiable.
+    	virtual lbool modelValue(Var x) const override { return l_Undef; }
+    	virtual lbool modelValue(Lit p) const override { return l_Undef; }
+
+    	// true means solver is in a conflicting state
+    	virtual bool isInConflictingState() const override;
+    	virtual std::vector<Lit>& getConflict() override;
+
+    	virtual size_t nClauses() const override { return 0; }
+    	virtual size_t nLearnts() const override { return 0; }
+    	virtual size_t nVars() const override;
+        virtual size_t getConflictCount() const override { return 0; }
+        virtual size_t getPropagationCount() const override { return 0; }
+
+    	virtual bool isSelector(Var v) override { return false; }
+
+    	// Incremental mode
+    	virtual void setIncrementalMode() override;
+    	virtual void initNbInitialVars(int nb) override;
+    	virtual bool isIncremental() override { return true; }
+
         /** Sets the literals returned by getConflict(). */
         void mockctrl_setConflictLits(const std::vector<Lit> &conflictLits);
         
@@ -164,12 +203,6 @@ namespace Candy {
         std::vector<SolverMockEvent> m_eventLog;
     };
     
-    /**
-     * \ingroup RS_AbstractionRefinement_Tests
-     *
-     * Creates a SolverMock instance.
-     */
-    std::unique_ptr<SolverMock> createSolverMock();
 }
 
 #endif

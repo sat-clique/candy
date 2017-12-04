@@ -31,7 +31,6 @@
 #include <candy/utils/StringUtils.h>
 #include <candy/rsar/ARSolver.h>
 #include <candy/rsar/Heuristics.h>
-#include <candy/rsar/SolverAdapter.h>
 #include <candy/randomsimulation/Conjectures.h>
 
 namespace Candy {
@@ -86,8 +85,8 @@ namespace Candy {
         return limits;
     }
     
-    std::unique_ptr<Candy::ARSolver> createARSolver(const GateAnalyzer& analyzer,
-    		CandySolverInterface& satSolver,
+    CandySolverInterface* createARSolver(const GateAnalyzer& analyzer,
+    		CandySolverInterface* satSolver,
             std::unique_ptr<Conjectures> conjectures,
             const RSARArguments& rsarArguments) {
         if (rsarArguments.simplificationHandlingMode == SimplificationHandlingMode::FREEZE) {
@@ -98,7 +97,7 @@ namespace Candy {
         arSolverBuilder->withConjectures(std::move(conjectures));
         arSolverBuilder->withMaxRefinementSteps(rsarArguments.maxRefinementSteps);
         arSolverBuilder->withSimplificationHandlingMode(rsarArguments.simplificationHandlingMode);
-        arSolverBuilder->withSolver(createNonowningGlucoseAdapter(satSolver));
+        arSolverBuilder->withSolver(satSolver);
         
         if (rsarArguments.withInputDepCountHeuristic) {
             auto limits = getARInputDepCountHeuristicLimits(rsarArguments.inputDepCountHeuristicConfiguration);

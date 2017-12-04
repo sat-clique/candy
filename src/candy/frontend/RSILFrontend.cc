@@ -94,7 +94,7 @@ namespace Candy {
 
 //    template<>
 //    RSILBudgetBranchingHeuristic3::Parameters
-//    RSILSolverFactory<RSILBranchingHeuristic3>::getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
+//    RSILSolverFactory<RSILBudgetBranchingHeuristic3>::getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer) {
 //    	auto conf = getDefaultHeuristicParameters(conjectures, rsilArgs, analyzer);
 //    	return {conf, rsilArgs.impbudget_initialBudget};
 //    }

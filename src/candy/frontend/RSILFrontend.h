@@ -126,8 +126,7 @@ namespace Candy {
 			double gateOutputs = analyzer->getGateCount();
 
 			if (analyzer->hasTimeout() || runtime.hasTimeout()) {
-				// Abort RSIL, since the probability is too high that this run
-				// is not reproducible if we continue
+				// Abort RSIL, since the probability is too high that this run is not reproducible if we continue
 				throw UnsuitableProblemException{"gate analysis exceeded the preprocessing time limit."};
 			}
 
@@ -137,16 +136,8 @@ namespace Candy {
 				throw UnsuitableProblemException{errorMessage};
 			}
 
-			if (rsilArgs.useRSILOnlyForMiters) {
-				bool isMiter = hasPossiblyMiterStructure(*analyzer);
-				std::cerr << "c Miter recognition time: " << runtime.lap().count() << " ms" << std::endl;
-
-				if (runtime.hasTimeout()) {
-					throw UnsuitableProblemException{"miter detection exceeded the preprocessing time limit."};
-				}
-				if (!isMiter) {
-					throw UnsuitableProblemException{"problem heuristically determined not to be a miter problem."};
-				}
+			if (rsilArgs.useRSILOnlyForMiters && !hasPossiblyMiterStructure(*analyzer)) {
+				throw UnsuitableProblemException{"problem heuristically determined not to be a miter problem."};
 			}
 
 			std::unique_ptr<Conjectures> conjectures;

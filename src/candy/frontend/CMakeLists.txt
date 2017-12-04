@@ -1,4 +1,6 @@
 add_library(frontend OBJECT
+    SolverFactory.h
+    SolverFactory.cc
     RSILFrontend.h
     RSILFrontend.cc
     Exceptions.h
