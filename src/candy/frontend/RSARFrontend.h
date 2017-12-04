@@ -89,8 +89,8 @@ namespace Candy {
      * \returns a unique_pointer to the new ARSolver instance (transferring ownership of the ARSolver
      *   instance to the caller).
      */
-    std::unique_ptr<Candy::ARSolver> createARSolver(const GateAnalyzer& analyzer,
-                                                    CandySolverInterface& satSolver,
+    CandySolverInterface* createARSolver(const GateAnalyzer& analyzer,
+                                                    CandySolverInterface* satSolver,
                                                     std::unique_ptr<Conjectures> conjectures,
                                                     const RSARArguments& rsarArguments);
 }

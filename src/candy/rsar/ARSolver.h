@@ -30,6 +30,11 @@
 #include <candy/core/SolverTypes.h>
 #include <candy/core/CNFProblem.h>
 #include <candy/core/CandySolverInterface.h>
+#include "candy/rsar/Heuristics.h"
+#include "candy/rsar/Refinement.h"
+#include "candy/randomsimulation/Conjectures.h"
+#include <unordered_map>
+#include <unordered_set>
 
 #include <vector>
 #include <memory>
@@ -37,11 +42,13 @@
 namespace Candy {
     class Conjectures;
     class RefinementHeuristic;
-    class SolverAdapter;
-    
-    /**
-     * \defgroup RS_AbstractionRefinement
-     */
+
+    enum class SimplificationHandlingMode {
+        DISABLE, /// Disable problem simplification entirely
+        RESTRICT, /// Simplify the SAT problem after creating the first approximation
+        FREEZE, /// like RESTRICT, but freeze the variables occuring involved in the first approximation
+        FULL /// Simplify the problem first, then compute the approximations using the remaining variables
+    };
     
     /**
      * \class ARSolver
@@ -52,32 +59,198 @@ namespace Candy {
      *
      * TODO: detailed description
      */
-    class ARSolver {
+    class ARSolver : public CandySolverInterface {
     public:
-        /** 
-         * Returns true iff the given SAT problem instance is satifsiable.
-         */
-        virtual lbool solve(CNFProblem &problem) = 0;
-        
-        /**
-         * Returns true iff the SAT problem instance with which the underlying
-         * SAT solver has been instantiated is satisfiable.
-         */
-        virtual lbool solve() = 0;
-        
-        ARSolver() noexcept;
+
+        // from CandySolverInterface:
+        virtual void setCertificate(Certificate& certificate) override {
+        	m_solver->setCertificate(certificate);
+        }
+        virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {
+        	m_solver->setVerbosities(verbEveryConflicts, verbosity);
+        }
+        virtual void enablePreprocessing() override {
+        	m_solver->enablePreprocessing();
+        }
+        virtual void disablePreprocessing() override {
+        	m_solver->disablePreprocessing();
+        }
+
+        virtual Certificate* getCertificate() override {
+        	return m_solver->getCertificate();
+        }
+        virtual unsigned int getVerbosity() override {
+        	return m_solver->getVerbosity();
+        }
+
+        virtual Var newVar() override {
+        	return m_solver->newVar();
+        }
+
+        virtual void addClauses(const CNFProblem& problem) override {
+        	m_solver->addClauses(problem);
+        }
+        virtual bool addClause(const std::vector<Lit>& lits) override {
+        	return m_solver->addClause(lits);
+        }
+        virtual bool addClause(std::initializer_list<Lit> lits) override {
+        	return m_solver->addClause(lits);
+        }
+
+
+        /** Runs the underlying SAT solver's simplification system. This method may only be called
+         * before clauses containing assumptions have been added to the solver. */
+        virtual bool simplify() override {
+        	return m_solver->simplify(); // remove satisfied clauses
+        }
+
+        virtual bool strengthen() override {
+        	return m_solver->strengthen(); // remove false literals from clauses
+        }
+        virtual bool eliminate() override {
+        	return m_solver->eliminate();// Perform variable elimination based simplification.
+        }
+        virtual bool eliminate(bool use_asymm, bool use_elim) override {
+        	return m_solver->eliminate(use_asymm, use_elim);  // Perform variable elimination based simplification.
+        }
+        virtual bool isEliminated(Var v) const override {
+        	return m_solver->isEliminated(v);
+        }
+        virtual void setFrozen(Var v, bool freeze) override {
+        	m_solver->setFrozen(v, freeze);
+        }
+
+    	virtual lbool solve() override;
+    	virtual lbool solve(std::initializer_list<Lit> assumps) override {
+    		assert(0 && "unsupported");
+    		return l_Undef;
+    	}
+    	virtual lbool solve(const std::vector<Lit>& assumps) override {
+    		assert(0 && "unsupported");
+    		return l_Undef;
+    	}
+
+    	virtual void setConfBudget(uint64_t x) override {
+    		m_solver->setConfBudget(x);
+    	}
+    	virtual void setPropBudget(uint64_t x) override {
+    		m_solver->setPropBudget(x);
+    	}
+    	virtual void setInterrupt(bool value) override {
+    		m_solver->setInterrupt(value);
+    	}
+    	virtual void budgetOff() override {
+    		m_solver->budgetOff();
+    	}
+
+    	virtual void printDIMACS() override {
+    		m_solver->printDIMACS();
+    	}
+
+    	// The value of a variable in the last model. The last call to solve must have been satisfiable.
+    	virtual lbool modelValue(Var x) const override {
+    		return m_solver->modelValue(x);
+    	}
+    	virtual lbool modelValue(Lit p) const override {
+    		return m_solver->modelValue(p);
+    	}
+
+    	// true means solver is in a conflicting state
+    	virtual bool isInConflictingState() const override {
+    		return m_solver->isInConflictingState();
+    	}
+    	virtual std::vector<Lit>& getConflict() override {
+    		return m_solver->getConflict();
+    	}
+
+    	virtual size_t nClauses() const override {
+    		return m_solver->nClauses();
+    	}
+    	virtual size_t nLearnts() const override {
+    		return m_solver->nLearnts();
+    	}
+    	virtual size_t nVars() const override {
+    		return m_solver->nVars();
+    	}
+        virtual size_t getConflictCount() const override {
+        	return m_solver->getConflictCount();
+        }
+
+        virtual size_t getPropagationCount() const override {
+        	return m_solver->getPropagationCount();
+        }
+
+    	virtual bool isSelector(Var v) override {
+    		return m_solver->isSelector(v);
+    	}
+
+    	// Incremental mode
+    	virtual void setIncrementalMode() override {
+    		m_solver->setIncrementalMode();
+    	}
+    	virtual void initNbInitialVars(int nb) override {
+    		m_solver->initNbInitialVars(nb);
+    	}
+    	virtual bool isIncremental() override {
+    		return m_solver->isIncremental();
+    	}
+
+    	ARSolver();
+
+        ARSolver(std::unique_ptr<Conjectures> conjectures,
+        			 CandySolverInterface* solver,
+                     int maxRefinementSteps,
+                     std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
+                     SimplificationHandlingMode simpHandlingMode);
+
         virtual ~ARSolver();
         ARSolver(const ARSolver& other) = delete;
         ARSolver& operator=(const ARSolver& other) = delete;
+
+    private:
+        /**
+         * Initializes the abstraction refinement system and performs
+         * initialization-time simplification.
+         */
+        void init();
+
+        /** Removes eliminated variables from the conjectures. */
+        void reduceConjectures();
+
+        /**
+         * Adds the new clauses contained in the approximation delta, performing
+         * simplification as needed.
+         */
+        void addInitialApproximationClauses(EncodedApproximationDelta& delta);
+
+        /** Adds the new clauses contained in the approximation delta. */
+        void addApproximationClauses(EncodedApproximationDelta& delta);
+
+        /** Calls the underlying SAT solver using the given assumption literals. */
+        lbool underlyingSolve(const std::vector<Lit>& assumptions);
+
+        /**
+         * Creates a function returning the set of literals contained in clauses
+         * activated by the assumption literals whose activeness provoked
+         * unsatisfiability at the previous SAT solver invocation's final conflict.
+         */
+        std::function<std::unique_ptr<std::unordered_set<Var>>()> createConflictGetter();
+
+        std::unique_ptr<Conjectures> m_conjectures;
+        CandySolverInterface* m_solver;
+        int m_maxRefinementSteps;
+        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> m_heuristics;
+        SimplificationHandlingMode m_simpHandlingMode;
+
+        std::unique_ptr<RefinementStrategy> m_refinementStrategy;
+
+        /**
+         * Problem literals by assumption literal. For backbone encodings, the
+         * literals of the rsp. pair are equal.
+         */
+        std::unordered_map<Lit, std::pair<Lit, Lit>> m_approxLitsByAssumption;
     };
-    
-    enum class SimplificationHandlingMode {
-        DISABLE, /// Disable problem simplification entirely
-        RESTRICT, /// Simplify the SAT problem after creating the first approximation
-        FREEZE, /// like RESTRICT, but freeze the variables occuring involved in the first approximation
-        FULL /// Simplify the problem first, then compute the approximations using the remaining variables
-    };
-    
+
     /**
      * \class ARSolverBuilder
      *
@@ -94,7 +267,7 @@ namespace Candy {
          * solving process to plain SAT solving.
          */
         virtual ARSolverBuilder& withConjectures(std::unique_ptr<Conjectures> conjectures) noexcept = 0;
-        
+
         /**
          * Sets the incremental SAT solver to be used. By default, a default-constructed
          * instance of Glucose::SimpSolver is used.
@@ -102,21 +275,21 @@ namespace Candy {
          *  - no clauses have been added yet
          *  - it is possible to call solve(...) functions
          */
-        virtual ARSolverBuilder& withSolver(std::unique_ptr<SolverAdapter> solver) noexcept = 0;
-        
+        virtual ARSolverBuilder& withSolver(CandySolverInterface* solver) noexcept = 0;
+
         /**
          * Sets the maximum amount of refinement steps to be performed. A negative maximum
          * causes removes the bound on the maximum amount of refinement steps. By default,
          * no such bound is used.
          */
         virtual ARSolverBuilder& withMaxRefinementSteps(int maxRefinementSteps) noexcept = 0;
-        
+
         /**
          * Adds the given heuristic to the set of refinement heuristics to be used to compute
          * approximations of the SAT problem instance.
          */
         virtual ARSolverBuilder& addRefinementHeuristic(std::unique_ptr<RefinementHeuristic> heuristic) = 0;
-        
+
         /**
          * Sets the simplification handling mode to be used (see the documentation of
          * SimplificationHandlingMode). The default is SimplificationHandlingMode::RESTRICT.
@@ -125,19 +298,19 @@ namespace Candy {
          * refactoring of the simplification code in SimpSolver.
          */
         virtual ARSolverBuilder& withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept = 0;
-        
+
         /**
          * Builds the ARSolver instance. Can be called only once.
          */
-        virtual std::unique_ptr<ARSolver> build() = 0;
-        
+        virtual ARSolver* build() = 0;
+
         ARSolverBuilder() noexcept;
         virtual ~ARSolverBuilder();
         ARSolverBuilder(const ARSolverBuilder& other) = delete;
         ARSolverBuilder& operator= (const ARSolverBuilder& other) = delete;
     };
-    
-    /** 
+
+    /**
      * \ingroup RS_AbstractionRefinement
      *
      * creates an ARSolverBuilder instance.

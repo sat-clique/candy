@@ -43,9 +43,9 @@ namespace Candy {
         Var var1 = underTest.newVar();
         Var var2 = underTest.newVar();
         
-        underTest.insertClauses(problem);
+        underTest.addClauses(problem);
         underTest.addClause(Cl{mkLit(var1,0)});
-        underTest.simplify({});
+        underTest.simplify();
         underTest.addClause(Cl{mkLit(var2,0)});
         underTest.solve();
         
@@ -68,9 +68,9 @@ namespace Candy {
             ++numCallbackInvocs;
         });
         
-        underTest.solve({}, true, false);
+        underTest.solve();
         ++callN;
-        underTest.simplify({});
+        underTest.simplify();
         underTest.initNbInitialVars(0);
         underTest.solve();
         ++callN;
@@ -91,10 +91,10 @@ namespace Candy {
             ++numCallbackInvocs;
         });
         
-        underTest.simplify({});
+        underTest.simplify();
         ++callN;
         underTest.solve();
-        underTest.simplify({});
+        underTest.simplify();
         ++callN;
         
         EXPECT_EQ(numCallbackInvocs, 2);
@@ -121,10 +121,10 @@ namespace Candy {
         underTest.mockctrl_setResultInInvocation(1, false);
         underTest.mockctrl_setResultInInvocation(2, false);
         
-        EXPECT_EQ(underTest.solve({}, true, false), l_False);
-        EXPECT_EQ(underTest.solve({}, true, false), l_False);
-        EXPECT_EQ(underTest.solve({}, true, false), l_False);
-        EXPECT_EQ(underTest.solve({}, true, false), l_True);
-        EXPECT_EQ(underTest.solve({}, true, false), l_True);
+        EXPECT_EQ(underTest.solve(), l_False);
+        EXPECT_EQ(underTest.solve(), l_False);
+        EXPECT_EQ(underTest.solve(), l_False);
+        EXPECT_EQ(underTest.solve(), l_True);
+        EXPECT_EQ(underTest.solve(), l_True);
     }
 }

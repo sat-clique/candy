@@ -198,6 +198,12 @@ namespace Candy {
         bool foundSecond = false;
         
         for (auto event : events) {
+        	switch (event) {
+        	case SolverMockEvent::ADD_CLAUSE: printf("clause;"); break;
+        	case SolverMockEvent::ADD_PROBLEM: printf("problem;"); break;
+        	case SolverMockEvent::SIMPLIFY: printf("simplify;"); break;
+        	case SolverMockEvent::SOLVE: printf("solve;"); break;
+        	}
             if ((event == first) && foundSecond) {
                 return false;
             }

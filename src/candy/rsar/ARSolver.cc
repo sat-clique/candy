@@ -26,27 +26,20 @@
 
 #include "ARSolver.h"
 
+#include "candy/core/CandySolverInterface.h"
+
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/MemUtils.h>
 #include <candy/utils/System.h>
 
 #include "Heuristics.h"
 #include "Refinement.h"
-#include "SolverAdapter.h"
 
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
 
 namespace Candy {
-    ARSolver::ARSolver() noexcept {
-        
-    }
-    
-    ARSolver::~ARSolver() {
-        
-    }
-    
     ARSolverBuilder::ARSolverBuilder() noexcept {
         
     }
@@ -120,11 +113,6 @@ namespace Candy {
         }
     }
     
-    
-    
-    
-    
-    
     class ARSolverGarbageCollectorHeuristic : public RefinementHeuristic {
     public:
         
@@ -132,18 +120,18 @@ namespace Candy {
         void markRemovals(EquivalenceImplications& equivalence) override;
         void markRemovals(Backbones& backbones) override;
         
-        ARSolverGarbageCollectorHeuristic(SolverAdapter& solver, bool stopAfterSecondRound) noexcept;
+        ARSolverGarbageCollectorHeuristic(CandySolverInterface* solver, bool stopAfterSecondRound) noexcept;
         virtual ~ARSolverGarbageCollectorHeuristic();
         ARSolverGarbageCollectorHeuristic(const ARSolverGarbageCollectorHeuristic &other) = delete;
         ARSolverGarbageCollectorHeuristic& operator= (const ARSolverGarbageCollectorHeuristic &other) = delete;
         
     private:
-        SolverAdapter &m_solver;
+        CandySolverInterface* m_solver;
         bool m_stopAfterSecondRound;
         int m_round;
     };
     
-    ARSolverGarbageCollectorHeuristic::ARSolverGarbageCollectorHeuristic(SolverAdapter& solver,
+    ARSolverGarbageCollectorHeuristic::ARSolverGarbageCollectorHeuristic(CandySolverInterface* solver,
                                                                         bool stopAfterSecondRound) noexcept
     : RefinementHeuristic(),
     m_solver(solver),
@@ -163,7 +151,7 @@ namespace Candy {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Implication impl : equivalence) {
                 Var first = var(impl.first);
-                if (m_solver.isEliminated(first)) {
+                if (m_solver->isEliminated(first)) {
                     equivalence.addVariableRemovalToWorkQueue(first);
                 }
             }
@@ -174,89 +162,24 @@ namespace Candy {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Lit bbLit : backbones) {
                 Var first = var(bbLit);
-                if (m_solver.isEliminated(first)) {
+                if (m_solver->isEliminated(first)) {
                     backbones.addVariableRemovalToWorkQueue(first);
                 }
             }
         }
     }
     
-    /* -- ARSolver implementation --------------------------------------------------------- */
+    ARSolver::ARSolver() {
+
+    }
     
-    class ARSolverImpl : public ARSolver {
-    public:
-        lbool solve(CNFProblem &problem) override;
-        lbool solve() override;
-        
-        ARSolverImpl(std::unique_ptr<Conjectures> conjectures,
-                     std::unique_ptr<SolverAdapter> solver,
-                     int maxRefinementSteps,
-                     std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
-                     SimplificationHandlingMode simpHandlingMode);
-        
-        virtual ~ARSolverImpl();
-        ARSolverImpl(const ARSolverImpl& other) = delete;
-        ARSolverImpl& operator=(const ARSolverImpl& other) = delete;
-        
-    private:
-        /**
-         * Initializes the abstraction refinement system and performs
-         * initialization-time simplification.
-         */
-        void init();
-        
-        /** Runs the underlying SAT solver's simplification system. This method may only be called
-         * before clauses containing assumptions have been added to the solver. */
-        void simplify();
-        
-        /** Runs the underlying SAT solver's simplification system. */
-        void simplify(const std::vector<Lit>& assumptions);
-        
-        /** Removes eliminated variables from the conjectures. */
-        void reduceConjectures();
-        
-        /** 
-         * Adds the new clauses contained in the approximation delta, performing
-         * simplification as needed.
-         */
-        void addInitialApproximationClauses(EncodedApproximationDelta& delta);
-        
-        /** Adds the new clauses contained in the approximation delta. */
-        void addApproximationClauses(EncodedApproximationDelta& delta);
-        
-        /** Calls the underlying SAT solver using the given assumption literals. */
-        lbool underlyingSolve(const std::vector<Lit>& assumptions);
-        
-        /**
-         * Creates a function returning the set of literals contained in clauses
-         * activated by the assumption literals whose activeness provoked
-         * unsatisfiability at the previous SAT solver invocation's final conflict.
-         */
-        std::function<std::unique_ptr<std::unordered_set<Var>>()> createConflictGetter();
-        
-        std::unique_ptr<Conjectures> m_conjectures;
-        std::unique_ptr<SolverAdapter> m_solver;
-        int m_maxRefinementSteps;
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> m_heuristics;
-        SimplificationHandlingMode m_simpHandlingMode;
-        
-        std::unique_ptr<RefinementStrategy> m_refinementStrategy;
-        
-        /** 
-         * Problem literals by assumption literal. For backbone encodings, the
-         * literals of the rsp. pair are equal.
-         */
-        std::unordered_map<Lit, std::pair<Lit, Lit>> m_approxLitsByAssumption;
-    };
-    
-    ARSolverImpl::ARSolverImpl(std::unique_ptr<Conjectures> conjectures,
-                               std::unique_ptr<SolverAdapter> solver,
-                               int maxRefinementSteps,
-                               std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
-                               SimplificationHandlingMode simpHandlingMode)
-    : ARSolver(),
-    m_conjectures(std::move(conjectures)),
-    m_solver(std::move(solver)),
+    ARSolver::ARSolver(std::unique_ptr<Conjectures> conjectures,
+    							CandySolverInterface* solver,
+                                int maxRefinementSteps,
+                                std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
+                                SimplificationHandlingMode simpHandlingMode)
+    : m_conjectures(std::move(conjectures)),
+    m_solver(solver),
     m_maxRefinementSteps(maxRefinementSteps),
     m_heuristics(std::move(heuristics)),
     m_simpHandlingMode(simpHandlingMode),
@@ -264,18 +187,18 @@ namespace Candy {
     m_approxLitsByAssumption() {
     }
     
-    ARSolverImpl::~ARSolverImpl() {
+    ARSolver::~ARSolver() {
     }
     
-    lbool ARSolverImpl::underlyingSolve(const std::vector<Lit>& assumptions) {
+    lbool ARSolver::underlyingSolve(const std::vector<Lit>& assumptions) {
         assert(!m_solver->isInConflictingState());
         std::chrono::milliseconds cpuTime = Candy::cpuTime();
         double cpuTimeSec = static_cast<double>(cpuTime.count())/1000.0f;
         std::cout << "c ARSAT: invoking the underlying solver, elapsed CPU time: " << cpuTimeSec << std::endl;
-        return m_solver->solve(assumptions, false, true);
+        return m_solver->solve(assumptions);
     }
     
-    void ARSolverImpl::addApproximationClauses(EncodedApproximationDelta& delta) {
+    void ARSolver::addApproximationClauses(EncodedApproximationDelta& delta) {
         assert(!m_solver->isInConflictingState());
         for (auto&& clause : delta.getNewClauses()) {
             auto assumptionLit = getAssumptionLit(clause);
@@ -300,7 +223,7 @@ namespace Candy {
         }
     }
     
-    void ARSolverImpl::addInitialApproximationClauses(EncodedApproximationDelta& delta) {
+    void ARSolver::addInitialApproximationClauses(EncodedApproximationDelta& delta) {
         if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
             // freeze the variables occuring in the delta, so that they won't be eliminated
             // due to simplification.
@@ -322,7 +245,9 @@ namespace Candy {
             for (auto&& clause : delta.getNewClauses()) {
                 assumptions.push_back(activatedAssumptionLit(var(getAssumptionLit(clause))));
             }
-            simplify(assumptions);
+            simplify();
+            strengthen();
+            eliminate(); // <- this is the fish
         }
         
         if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
@@ -342,16 +267,8 @@ namespace Candy {
         }
         return result;
     }
-    
-    void ARSolverImpl::simplify() {
-        simplify({});
-    }
-    
-    void ARSolverImpl::simplify(const std::vector<Lit>& assumptions) {
-        m_solver->simplify(assumptions);
-    }
-    
-    void ARSolverImpl::reduceConjectures() {
+
+    void ARSolver::reduceConjectures() {
         auto newConjectures = std::unique_ptr<Conjectures>(new Conjectures());
         for (auto&& equivalenceConj : m_conjectures->getEquivalences()) {
             EquivalenceConjecture copy;
@@ -374,7 +291,7 @@ namespace Candy {
         m_conjectures = std::move(newConjectures);
     }
     
-    std::function<std::unique_ptr<std::unordered_set<Var>>()> ARSolverImpl::createConflictGetter() {
+    std::function<std::unique_ptr<std::unordered_set<Var>>()> ARSolver::createConflictGetter() {
         return [this]() {
             auto result = std::unique_ptr<std::unordered_set<Var>>(new std::unordered_set<Var>());
             
@@ -389,10 +306,10 @@ namespace Candy {
         };
     }
     
-    void ARSolverImpl::init() {
+    void ARSolver::init() {
         // Set up the underlying SAT solver
         m_solver->setIncrementalMode();
-        m_solver->initNbInitialVars(m_solver->getNVars());
+        m_solver->initNbInitialVars(m_solver->nVars());
         
         // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
         // approximation computation system.
@@ -405,7 +322,7 @@ namespace Candy {
         // first approximation. Eliminated variables may linger on in the approximation
         // computation system. Therefore, eliminated variables are removed during the first
         // two approximation computation stages.
-        auto gcHeuristic = std::unique_ptr<RefinementHeuristic>(new ARSolverGarbageCollectorHeuristic(*m_solver, true));
+        auto gcHeuristic = std::unique_ptr<RefinementHeuristic>(new ARSolverGarbageCollectorHeuristic(m_solver, true));
         m_heuristics->push_back(std::move(gcHeuristic));
         
         // Always remove equivalencies and backbones of which it is known that they are
@@ -416,22 +333,14 @@ namespace Candy {
         
         
         // set up the refinement strategy
-        auto solverPtr = m_solver.get();
         m_refinementStrategy = createDefaultRefinementStrategy(*m_conjectures,
                                                                std::move(m_heuristics),
-                                                               [solverPtr]() {
-                                                                   auto newVar = solverPtr->newVar();
-                                                                   return newVar;
+                                                               [this]() {
+                                                                   return m_solver->newVar();
                                                                });
     }
-
     
-    lbool ARSolverImpl::solve(Candy::CNFProblem &problem) {
-        m_solver->insertClauses(problem);
-        return solve();
-    }
-    
-    lbool ARSolverImpl::solve() {
+    lbool ARSolver::solve() {
         if (m_maxRefinementSteps == 0) {
             // no refinement allowed -> use plain sat solving
             return m_solver->solve();
@@ -485,20 +394,17 @@ namespace Candy {
         return sat;
     }
     
-
-    
-    
     /* -- ARSolverBuilder implementation --------------------------------------------------------- */
     
     class ARSolverBuilderImpl : public ARSolverBuilder {
     public:
         ARSolverBuilderImpl& withConjectures(std::unique_ptr<Conjectures> conjectures) noexcept override;
-        ARSolverBuilderImpl& withSolver(std::unique_ptr<SolverAdapter> solver) noexcept override;
+        ARSolverBuilderImpl& withSolver(CandySolverInterface* solver) noexcept override;
         ARSolverBuilderImpl& withMaxRefinementSteps(int maxRefinementSteps) noexcept override;
         ARSolverBuilderImpl& addRefinementHeuristic(std::unique_ptr<RefinementHeuristic> heuristic) override;
         ARSolverBuilderImpl& withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept override;
         
-        std::unique_ptr<ARSolver> build() override;
+        ARSolver* build() override;
         
         ARSolverBuilderImpl() noexcept;
         virtual ~ARSolverBuilderImpl();
@@ -507,7 +413,7 @@ namespace Candy {
         
     private:
         std::unique_ptr<Conjectures> m_conjectures;
-        std::unique_ptr<SolverAdapter> m_solver;
+        CandySolverInterface* m_solver;
         int m_maxRefinementSteps;
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> m_heuristics;
         SimplificationHandlingMode m_simpHandlingMode;
@@ -535,8 +441,8 @@ namespace Candy {
         return *this;
     }
     
-    ARSolverBuilderImpl& ARSolverBuilderImpl::withSolver(std::unique_ptr<SolverAdapter> solver) noexcept {
-        m_solver = std::move(solver);
+    ARSolverBuilderImpl& ARSolverBuilderImpl::withSolver(CandySolverInterface* solver) noexcept {
+        m_solver = solver;
         return *this;
     }
     
@@ -555,7 +461,7 @@ namespace Candy {
         return *this;
     }
     
-    std::unique_ptr<ARSolver> ARSolverBuilderImpl::build() {
+    ARSolver* ARSolverBuilderImpl::build() {
         assert(!m_called);
         m_called = true;
         
@@ -563,22 +469,16 @@ namespace Candy {
         if (usedConjectures.get() == nullptr) {
             usedConjectures.reset(new Conjectures());
         }
-        
-        std::unique_ptr<SolverAdapter> usedSolver = std::move(m_solver);
-        if (usedSolver.get() == nullptr) {
-            usedSolver = createGlucoseAdapter();
-        }
-        
-        std::unique_ptr<ARSolver> result;
-        result = backported_std::make_unique<ARSolverImpl>(std::move(usedConjectures),
-                                                           std::move(usedSolver),
+
+        ARSolver* result = new ARSolver(std::move(usedConjectures),
+                                                           m_solver,
                                                            m_maxRefinementSteps,
                                                            std::move(m_heuristics),
                                                            m_simpHandlingMode);
         return result;
     }
 
-    
+
     std::unique_ptr<ARSolverBuilder> createARSolverBuilder() {
         return backported_std::make_unique<ARSolverBuilderImpl>();
     }

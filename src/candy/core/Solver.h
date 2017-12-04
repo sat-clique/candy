@@ -1157,6 +1157,10 @@ lbool Solver<PickBranchLitT>::solve() {
     
     cancelUntil(0);
     
+    if (verbosity >= 1) {
+    	Statistics::getInstance().printFinalStats(nConflicts, nPropagations);
+    }
+
     Statistics::getInstance().runtimeStop("Solver");
     return status;
 }
