@@ -265,73 +265,6 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
     return result;
 }
 
-lbool solveWithRSAR(CandySolverInterface* solver, std::unique_ptr<Candy::CNFProblem> problem, const GateRecognitionArguments& gateRecognitionArgs,
-                const RandomSimulationArguments& rsArguments, const RSARArguments& rsarArguments) {
-    // TODO: the CPU time code was inserted in quite a hurry and
-    // needs to be refactored.
-    
-    std::chrono::milliseconds startCPUTime = cpuTime();
-    
-    GateRecognitionArguments localGateRecognitionArgs = gateRecognitionArgs;
-    if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
-        localGateRecognitionArgs.opt_gr_timeout = std::min(gateRecognitionArgs.opt_gr_timeout,
-                                                           rsArguments.preprocessingTimeLimit);
-    }
-
-    auto gateAnalyzer = createGateAnalyzer(*problem, localGateRecognitionArgs);
-    gateAnalyzer->analyze();
-    
-    std::chrono::milliseconds gateAnalyzerTime = cpuTime() - startCPUTime;
-    std::cerr << "c Gate recognition time: " << gateAnalyzerTime.count() << " ms" << std::endl;
-    
-    try {
-        if (gateAnalyzer->hasTimeout()
-            || (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}
-                && gateAnalyzerTime > rsArguments.preprocessingTimeLimit)) {
-            throw UnsuitableProblemException{"Gate recognition exceeded the time limit."};
-        }
-        
-        
-        if (gateAnalyzer->getGateCount() < rsarArguments.minGateCount) {
-            throw UnsuitableProblemException{std::string{"Insufficient gate count "}
-                + std::to_string(gateAnalyzer->getGateCount())};
-        }
-        
-        std::chrono::milliseconds rsTimeLimit = std::chrono::milliseconds{-1};
-        if (rsArguments.preprocessingTimeLimit >= std::chrono::milliseconds{0}) {
-            rsTimeLimit = rsArguments.preprocessingTimeLimit - gateAnalyzerTime;
-        }
-        
-        try {
-            auto conjectures = performRandomSimulation(*gateAnalyzer, rsArguments, rsTimeLimit);
-            if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
-                throw UnsuitableProblemException{"No conjectures found."};
-            }
-            
-            auto randomSimulationTime = cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
-            
-    
-            CandySolverInterface* arSolver = createARSolver(*gateAnalyzer, solver, std::move(conjectures), rsarArguments);
-
-            return arSolver->solve();
-        }
-        catch (OutOfTimeException& e) {
-            auto randomSimulationTime = cpuTime() - startCPUTime - gateAnalyzerTime;
-            std::cerr << "c Random simulation time: " << randomSimulationTime.count() << " ms" << std::endl;
-            
-            throw UnsuitableProblemException{"Random simulation exceeded the time limit."};
-        }
-    }
-    catch (UnsuitableProblemException& e) {
-        std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
-        std::cerr << "c Falling back to unmodified Candy." << std::endl;
-        gateAnalyzer.reset();
-        return solve(solver, true); // TODO: use the do_preprocess parameter here.
-    }
-}
-
-
 /**
  * Run Propagate and Simplify, then output the simplified CNF Problem
  */
@@ -346,33 +279,6 @@ static lbool simplifyAndPrintProblem(CandySolverInterface* solver) {
     solver->printDIMACS();
 
     return result;
-}
-
-int executeSolver(const GlucoseArguments& args, CandySolverInterface* solver, std::unique_ptr<CNFProblem> problem) {
-    Statistics::getInstance().runtimeStart("Initialization");
-    solver->addClauses(*problem);
-    Statistics::getInstance().runtimeStop("Initialization");
-    
-    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-    installSignalHandlers(true, solver);
-    
-    lbool result;
-    if (args.do_simp_out) {
-        result = simplifyAndPrintProblem(solver);
-    } else if (!args.rsarArgs.useRSAR) {
-        problem.reset(nullptr); // free clauses
-        result = solve(solver, args.do_preprocess);
-    } else {
-        result = solveWithRSAR(solver, std::move(problem), args.gateRecognitionArgs, args.randomSimulationArgs, args.rsarArgs);
-    }
-    
-    if (!args.do_simp_out) {
-        const char* statsFilename = args.output_filename;
-        printResult(solver, result, args.mod, statsFilename);
-    }
-    
-    exit((result == l_True ? 10 : result == l_False ? 20 : 0));
-    return (result == l_True ? 10 : result == l_False ? 20 : 0);
 }
 
 //=================================================================================================
@@ -417,8 +323,8 @@ int main(int argc, char** argv) {
     }
 
     CandySolverInterface* solver;
+	SolverFactory* factory = new SolverFactory(args);
     if (args.rsilArgs.useRSIL) {
-    	SolverFactory* factory = new SolverFactory(args);
     	try {
         	solver = factory->createRSILSolver(*std::move(problem));
         }
@@ -428,11 +334,25 @@ int main(int argc, char** argv) {
             solver = new SimpSolver<Branch>(Branch::Parameters(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay));
         }
     }
+    else if (args.rsarArgs.useRSAR) {
+    	try {
+			solver = factory->createRSARSolver(*std::move(problem));
+		}
+		catch(UnsuitableProblemException& e) {
+			std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
+			std::cerr << "c Falling back to unmodified Candy." << std::endl;
+			solver = new SimpSolver<Branch>(Branch::Parameters(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay));
+		}
+    }
     else {
         solver = new SimpSolver<Branch>(Branch::Parameters(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay));
     }
     solver->setVerbosities(args.vv, args.verb);
     solver->setCertificate(*certificate);
+    solver->addClauses(*problem);
+
+    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+    installSignalHandlers(true, solver);
     Statistics::getInstance().runtimeStop("Initialization");
 
     try {
@@ -447,7 +367,19 @@ int main(int argc, char** argv) {
 	        printf("c |                                                                                            |\n");
 	    }
 
-		return executeSolver(args, solver, std::move(problem));
+	    lbool result;
+	    if (args.do_simp_out) {
+	        return simplifyAndPrintProblem(solver) == l_True ? 10 : result == l_False ? 20 : 0;
+	    }
+
+	    problem.reset(nullptr); // free clauses
+	    result = solve(solver, args.do_preprocess);
+
+	    const char* statsFilename = args.output_filename;
+	    printResult(solver, result, args.mod, statsFilename);
+
+	    exit((result == l_True ? 10 : result == l_False ? 20 : 0));
+	    return (result == l_True ? 10 : result == l_False ? 20 : 0);
 
 	} catch (std::bad_alloc& ba) {
 		//printf("c Bad_Alloc Caught: %s\n", ba.what());
