@@ -64,46 +64,4 @@ namespace Candy {
         throw std::invalid_argument(str + ": Unknown simplification handling mode");
     }
     
-    
-    
-    static std::vector<size_t> getARInputDepCountHeuristicLimits(const std::string& limitsString) {
-        
-        /* TODO: user input validation is currently broken.
-         
-         std::regex unsignedIntRegex { "^(\\s*[0-9]+\\s*)+$" };
-         if (!std::regex_match(limitsString, unsignedIntRegex)) {
-         throw std::invalid_argument(limitsString + ": invalid limits");
-         }
-         */
-        
-        std::vector<size_t> limits = Candy::tokenizeByWhitespace<size_t>(limitsString);
-        
-        if (limits.size() == 0) {
-            throw std::invalid_argument(limitsString + ": invalid limits");
-        }
-        
-        return limits;
-    }
-    
-    CandySolverInterface* createARSolver(const GateAnalyzer& analyzer,
-    		CandySolverInterface* satSolver,
-            std::unique_ptr<Conjectures> conjectures,
-            const RSARArguments& rsarArguments) {
-        if (rsarArguments.simplificationHandlingMode == SimplificationHandlingMode::FREEZE) {
-            throw std::runtime_error("The FREEZE simplification handling mode is temporarily unavailable");
-        }
-        
-        auto arSolverBuilder = Candy::createARSolverBuilder();
-        arSolverBuilder->withConjectures(std::move(conjectures));
-        arSolverBuilder->withMaxRefinementSteps(rsarArguments.maxRefinementSteps);
-        arSolverBuilder->withSimplificationHandlingMode(rsarArguments.simplificationHandlingMode);
-        arSolverBuilder->withSolver(satSolver);
-        
-        if (rsarArguments.withInputDepCountHeuristic) {
-            auto limits = getARInputDepCountHeuristicLimits(rsarArguments.inputDepCountHeuristicConfiguration);
-            arSolverBuilder->addRefinementHeuristic(createInputDepCountRefinementHeuristic(analyzer, limits));
-        }
-        
-        return arSolverBuilder->build();
-    }
 }
