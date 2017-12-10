@@ -258,8 +258,7 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
     }
 
     if (result == l_Undef) {
-        vector<Lit> assumptions;
-        result = solver->solve(assumptions);
+        result = solver->solve();
     }
 
     return result;
