@@ -33,12 +33,3 @@ To build and execute unit-tests (takes a few minutes) type:
 make
 ctest
 ```
-
-To support my independence as a developer, and thus my work on Candy Solver, send Bitcoin to 
-```
-1K4urtiPrFjXwgNodcDYUyLAe8fwyHxbyJ
-```
-or Ethereum to
-```
-0x9fb6036A7812DA01B441706B6e681F7c24c17714
-```
