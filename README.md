@@ -28,11 +28,13 @@ cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release ..
 make candy
 ```
 
-To build candy with all tests (takes a few minutes) type:
+To build and execute unit-tests (takes a few minutes) type:
 ```
 make
-```
-To execute all tests type:
-```
 ctest
+```
+
+To support my independence as a developer, and thus my work on Candy Solver, send Bitcoin to the following address: 
+```
+1K4urtiPrFjXwgNodcDYUyLAe8fwyHxbyJ
 ```
