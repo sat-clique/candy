@@ -57,6 +57,8 @@ public:
   For& getProblem();
   const For& getProblem() const;
 
+  bool hasEmptyClause();
+
   inline int nVars() const {
       return maxVars;
   }

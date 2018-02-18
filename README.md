@@ -49,13 +49,5 @@ Candy offers a multitude of options, like paramaters to tune heuristics and thre
 
 ## Support
 
-If you like Candy and in case you want to support me investing time in building the Candy Kingdom, you can send Crypto Juice to one of my addresses listed below or just plain old [cash](https://www.paypal.me/markusiser/1).
-
-Currency		| Address 
-:---			|:---
-Ethereum	| `0x118b032be2c45f9a74301e0432d67dbbcdf7b6f0` 
-ZCash 		| `t1PWs26aA9BMLWnPHVrQkur4ecwCt5uDXiK` 
-Bitcoin		| `37kV4SYeBoEQ2f2CWgHfsJs2qV7F58pYZw`
-Monero		| `44MaszZqqRaFcQKjQbpXUB1CjGovuyi7Qf1Cmv714s4rZQHNtapeXH7WbwaVe4vUMveKAzAiA4j8xgUi29TpKXpm41qZuEo` 
-Dash		| `XuFDFWra2e4rTpGmudDV6nC8g8S3d4ihZs` 
+If you like Candy and in case you want to support building of the Candy Kingdom, you can send Ethereum to the following address **0x118b032be2c45f9a74301e0432d67dbbcdf7b6f0**
 

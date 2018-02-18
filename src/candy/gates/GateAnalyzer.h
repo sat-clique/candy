@@ -121,6 +121,8 @@ public:
         return roots;
     }
     
+    Lit normalizeRoots();
+
     bool hasTimeout() const;
 
 private:
