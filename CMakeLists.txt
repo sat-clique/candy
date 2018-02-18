@@ -291,7 +291,9 @@ add_library(candystatic STATIC ${CANDY_OBJECTS})
 target_link_libraries(candystatic ${CANDY_LIBS})
 
 add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
+add_executable(cnf2aig src/candy/cnf2aig.cc $<TARGET_OBJECTS:frontend>)
 candy_executable_customizations(candy)
 target_link_libraries(candy candystatic)
+target_link_libraries(cnf2aig candystatic)
 
 

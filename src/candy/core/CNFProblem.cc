@@ -33,6 +33,13 @@ const For& CNFProblem::getProblem() const {
     return problem;
 }
 
+bool CNFProblem::hasEmptyClause() {
+    for (Cl* clause : problem) {
+        if (clause->size() == 0) return true;
+    }
+    return false;
+}
+
 bool CNFProblem::readDimacsFromStdout() {
     gzFile in = gzdopen(0, "rb");
     if (in == NULL) {

@@ -195,6 +195,35 @@ vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, bool s
     return frontier;
 }
 
+/**
+ * Execute after analysis in order to
+ * tronsform many roots to one big and gate with one output
+ * Side-effect: introduces a fresh variable
+ */
+Lit GateAnalyzer::normalizeRoots() {
+    if (roots.size() > 1 || (*roots.begin())->size() > 1) {
+        Var root = problem.nVars();
+        // grow data-structures
+        gates.resize(problem.nVars() + 1);
+        inputs.resize(2 * problem.nVars() + 2, false);
+        // create gate
+        gates[root].out = mkLit(root, false);
+        gates[root].notMono = false;
+        set<Lit> inp;
+        for (Cl* c : roots) {
+            inp.insert(c->begin(), c->end());
+            c->push_back(mkLit(root, true));
+        }
+        gates[root].fwd.swap(roots);
+        gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
+        roots.push_back(new Cl(root));
+        return mkLit(root, false);
+    }
+    else {
+        return *(*roots.begin())->begin();
+    }
+}
+
 
 void GateAnalyzer::analyze(vector<Lit>& candidates) {
     if (useIntensification) {
