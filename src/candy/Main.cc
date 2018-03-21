@@ -67,6 +67,7 @@
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
 #include "candy/simp/SimpSolver.h"
+#include "candy/minimizer/Minimizer.h"
 
 #include "candy/frontend/GateAnalyzerFrontend.h"
 #include "candy/frontend/RSILFrontend.h"
@@ -183,7 +184,7 @@ static void printModel(FILE* f, CandySolverInterface* solver) {
 /**
  * Prints statistics about the problem to be solved.
  */
-static void printProblemStatistics(std::unique_ptr<CNFProblem> problem) {
+static void printProblemStatistics(CNFProblem* problem) {
     printf("c ====================================[ Problem Statistics ]====================================\n");
     printf("c |                                                                                            |\n");
     printf("c |  Number of variables:  %12zu                                                        |\n", problem->nVars());
@@ -309,7 +310,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<Certificate> certificate = backported_std::make_unique<Certificate>(args.opt_certified_file,
                                                                                         args.do_certified);
 
-    std::unique_ptr<Candy::CNFProblem> problem = backported_std::make_unique<Candy::CNFProblem>(*certificate);
+    CNFProblem* problem = new CNFProblem(*certificate);
     if (args.read_from_stdin) {
         printf("c Reading from standard input... Use '--help' for help.\n");
         if (!problem->readDimacsFromStdout()) {
@@ -325,7 +326,7 @@ int main(int argc, char** argv) {
 	SolverFactory* factory = new SolverFactory(args);
     if (args.rsilArgs.useRSIL) {
     	try {
-        	solver = factory->createRSILSolver(*std::move(problem));
+            solver = factory->createRSILSolver(*problem);
         }
         catch(UnsuitableProblemException& e) {
             std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
@@ -335,7 +336,7 @@ int main(int argc, char** argv) {
     }
     else if (args.rsarArgs.useRSAR) {
     	try {
-			solver = factory->createRSARSolver(*std::move(problem));
+            solver = factory->createRSARSolver(*problem);
 		}
 		catch(UnsuitableProblemException& e) {
 			std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
@@ -351,7 +352,6 @@ int main(int argc, char** argv) {
     solver->addClauses(*problem);
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-    installSignalHandlers(true, solver);
     Statistics::getInstance().runtimeStop("Initialization");
 
     try {
@@ -361,7 +361,7 @@ int main(int argc, char** argv) {
 		}
 
 	    if (args.verb > 0) {
-	        printProblemStatistics(std::move(problem));
+            printProblemStatistics(problem);
 	        Statistics::getInstance().printRuntime("Initialization");
 	        printf("c |                                                                                            |\n");
 	    }
@@ -371,11 +371,23 @@ int main(int argc, char** argv) {
 	        return simplifyAndPrintProblem(solver) == l_True ? 10 : result == l_False ? 20 : 0;
 	    }
 
-	    problem.reset(nullptr); // free clauses
+        //problem.reset(nullptr); // free clauses
+        installSignalHandlers(true, solver);
 	    result = solve(solver, args.do_preprocess);
+        installSignalHandlers(false, solver);
+
+        if (result == l_True && args.do_minimize > 0) {
+            Minimizer minimizer(problem);
+            Cl minimalModel = minimizer.computeMinimalModel(solver->getModel(), args.do_minimize == 2);
+            for (Lit lit : minimalModel) {
+                printLiteral(lit);
+            }
+        }
 
 	    const char* statsFilename = args.output_filename;
 	    printResult(solver, result, args.mod, statsFilename);
+
+        delete problem;
 
 	    exit((result == l_True ? 10 : result == l_False ? 20 : 0));
 	    return (result == l_True ? 10 : result == l_False ? 20 : 0);

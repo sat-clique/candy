@@ -122,8 +122,8 @@ public:
     bool contains(const Lit lit) const;
     bool contains(const Var var) const;
 
-    void print() const;
-    void print(std::vector<lbool> values) const;
+    void printDIMACS() const;
+    void printDIMACS(std::vector<lbool> values) const;
 
     inline void swap(uint16_t pos1, uint16_t pos2) {
         assert(pos1 < length && pos2 < length);

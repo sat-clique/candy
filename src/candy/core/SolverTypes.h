@@ -187,15 +187,25 @@ inline lbool toLbool(int v) {
 	return lbool((uint8_t) v);
 }
 
+typedef std::vector<Lit> Cl;
+typedef std::vector<Cl*> For;
+
 
 // Output Helper Functions
 inline void printLiteral(Lit lit) {
-    printf("%s%i", sign(lit)?"-":"", var(lit)+1);
+    printf("%s%i ", sign(lit)?"-":"", var(lit)+1);
 }
 
 inline void printLiteral(Lit lit, std::vector<lbool> values) {
     lbool value = values[var(lit)] ^ sign(lit);
-    printf("%s%d:%c", sign(lit) ? "-" : "", var(lit) + 1, value == l_True ? '1' : (value == l_False ? '0' : 'X'));
+    printf("%s%d:%c ", sign(lit) ? "-" : "", var(lit) + 1, value == l_True ? '1' : (value == l_False ? '0' : 'X'));
+}
+
+inline void printClause(Cl clause) {
+    for (Lit lit : clause) {
+        printLiteral(lit);
+    }
+    printf("\n");
 }
 
 //=================================================================================================
@@ -264,9 +274,6 @@ public:
 		dirties.clear();
 	}
 };
-
-typedef std::vector<Lit> Cl;
-typedef std::vector<Cl*> For;
 
 }
 

@@ -99,6 +99,7 @@ namespace Candy {
     	// The value of a variable in the last model. The last call to solve must have been satisfiable.
     	virtual lbool modelValue(Var x) const override { return l_Undef; }
     	virtual lbool modelValue(Lit p) const override { return l_Undef; }
+        virtual Cl getModel() override { return Cl(); }
 
     	// true means solver is in a conflicting state
     	virtual bool isInConflictingState() const override;

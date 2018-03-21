@@ -135,7 +135,7 @@ public:
     void printDIMACS() {
         printf("p cnf %zu %zu\n", nVars(), clauses.size());
         for (auto clause : clauses) {
-            clause->print();
+            clause->printDIMACS();
         }
     }
 
@@ -185,6 +185,15 @@ public:
     // The value of a literal in the last model. The last call to solve must have been satisfiable.
     lbool modelValue(Lit p) const {
         return model[var(p)] ^ sign(p);
+    }
+    // create a list of literals that reflects the current assignment
+    Cl getModel() override {
+        Cl literals;
+        literals.resize(nVars());
+        for (unsigned int v = 0; v < nVars(); v++) {
+            literals[v] = model[v] == l_True ? mkLit(v, false) : model[v] == l_False ? mkLit(v, true) : lit_Undef;
+        }
+        return literals;
     }
     size_t nClauses() const {
         return clauses.size();
@@ -565,6 +574,8 @@ template<typename Iterator>
 bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
     assert(trail.decisionLevel() == 0);
 
+//    Iterator end = std::remove_if(begin, end, [this](Lit lit) { return trail.value(lit) == l_False; });
+
     uint32_t size = static_cast<uint32_t>(std::distance(begin, end));
 
     if (size == 0) {
@@ -588,7 +599,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
         clauses.push_back(cr);
         propagator.attachClause(cr);
     }
-    
+
     return ok;
 }
 
