@@ -154,6 +154,9 @@ namespace Candy {
     	virtual lbool modelValue(Lit p) const override {
     		return m_solver->modelValue(p);
     	}
+        virtual Cl getModel() {
+            return m_solver->getModel();
+        }
 
     	// true means solver is in a conflicting state
     	virtual bool isInConflictingState() const override {

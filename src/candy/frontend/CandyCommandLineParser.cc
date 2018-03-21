@@ -100,6 +100,7 @@ namespace Candy {
         BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
         BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
         BoolOption do_simp_out("METHOD", "simp-out", "Simplify only and output dimacs.", false);
+        IntOption do_minimize("MAIN", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
         
         StringOption opt_certified_file("CERTIFIED UNSAT", "certified-output", "Certified UNSAT output file", "NULL");
         
@@ -212,6 +213,7 @@ namespace Candy {
             do_certified,
             do_gaterecognition,
             do_simp_out,
+            do_minimize,
             opt_certified_file,
             wait_for_user,
             readFromStdIn,

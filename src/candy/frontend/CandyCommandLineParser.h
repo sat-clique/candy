@@ -75,6 +75,8 @@ namespace Candy {
         const bool do_certified;
         const bool do_gaterecognition;
         const bool do_simp_out;
+
+        const int do_minimize;
         
         const char *opt_certified_file;
         

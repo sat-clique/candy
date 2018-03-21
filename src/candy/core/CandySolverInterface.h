@@ -53,6 +53,7 @@ public:
 	// The value of a variable in the last model. The last call to solve must have been satisfiable.
 	virtual lbool modelValue(Var x) const = 0;
 	virtual lbool modelValue(Lit p) const = 0;
+    virtual Cl getModel() = 0;
 
 	// true means solver is in a conflicting state
 	virtual bool isInConflictingState() const = 0;

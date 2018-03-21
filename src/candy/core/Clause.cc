@@ -20,7 +20,7 @@ bool Clause::contains(const Var v) const {
     return std::find_if(begin(), end(), [v](Lit lit) { return var(lit) == v; }) != end();
 }
 
-void Clause::print() const {
+void Clause::printDIMACS() const {
   for (Lit it : *this) {
     printLiteral(it);
     printf(" ");
@@ -28,7 +28,7 @@ void Clause::print() const {
   printf("0\n");
 }
 
-void Clause::print(std::vector<lbool> values) const {
+void Clause::printDIMACS(std::vector<lbool> values) const {
     for (Lit it : *this) {
         printLiteral(it, values);
         printf(" ");

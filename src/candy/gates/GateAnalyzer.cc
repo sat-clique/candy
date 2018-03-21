@@ -30,6 +30,7 @@
 #include "candy/utils/MemUtils.h"
 
 #include <iterator>
+#include <vector>
 
 namespace Candy {
 
@@ -224,8 +225,47 @@ Lit GateAnalyzer::normalizeRoots() {
     }
 }
 
+vector<Lit> GateAnalyzer::getRootLiterals() {
+    vector<Lit> literals;
 
-void GateAnalyzer::analyze(vector<Lit>& candidates) {
+    for (Cl* c : getRoots()) {
+        literals.insert(literals.end(), c->begin(), c->end());
+    }
+    std::sort(literals.begin(), literals.end());
+    auto last = std::unique(literals.begin(), literals.end());
+    literals.erase(last, literals.end());
+
+    return literals;
+}
+
+/**
+ * @brief GateAnalyzer::getPrunedProblem
+ * @param model
+ * @return clauses of all satisfied branches
+ */
+For GateAnalyzer::getPrunedProblem(Cl model) {
+    For result(this->roots.begin(), this->roots.end());
+
+    std::vector<Lit> literals = getRootLiterals();
+    std::vector<int> visited(model.size(), -1);
+
+    while (literals.size() > 0) {
+        Lit o = literals.back();
+        literals.pop_back();
+
+        if (model[var(o)] == o && visited[var(o)] != o) {
+            Gate gate = gates[var(o)];
+            result.insert(result.end(), gate.fwd.begin(), gate.fwd.end());
+            result.insert(result.end(), gate.bwd.begin(), gate.bwd.end());
+            literals.insert(literals.end(), gate.inp.begin(), gate.inp.end());
+            visited[var(o)] = o;
+        }
+    }
+
+    return result;
+}
+
+void GateAnalyzer::analyze(std::vector<Lit>& candidates) {
     if (useIntensification) {
         std::vector<Lit> remainder;
         bool patterns = false, semantic = false, lookahead = false, restart = false;
@@ -301,6 +341,9 @@ void GateAnalyzer::analyze() {
     runtime.stop();
 }
 
+/**
+  * Experimental: Tries to detect a common sub-gate in order to decode a gate
+  */
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     // generate set of non-tautological resolvents
