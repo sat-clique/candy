@@ -60,7 +60,7 @@ project(Candy)
 cmake_minimum_required(VERSION 3.5)
 
 # Temporary solution for shared lib
-set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+#set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 ### Options
 
@@ -300,19 +300,12 @@ target_link_libraries(candy candystatic)
 target_link_libraries(cnf2aig candystatic)
 
 ### Define dynamic library
-add_library(candynamic SHARED ${CANDY_OBJECTS})
-#set_property(TARGET candynamic PROPERTY POSITION_INDEPENDENT_CODE ON)
-set_target_properties(candynamic PROPERTIES PUBLIC_HEADER $<TARGET_OBJECTS:ipasir>)
-#set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-all-symbols")
-set_target_properties(candynamic PROPERTIES LINKER_LANGUAGE CXX)
-target_include_directories(candynamic PRIVATE src)
+# todo: add second run for pic objects
+#add_library(candyshared SHARED ${CANDY_OBJECTS})
+#set_property(TARGET candyshared PROPERTY POSITION_INDEPENDENT_CODE ON)
+#set_target_properties(candyshared PROPERTIES PUBLIC_HEADER $<TARGET_OBJECTS:ipasir>)
+#target_link_libraries(candyshared ${CANDY_LIBS})
+#set_target_properties(candyshared PROPERTIES LINKER_LANGUAGE CXX)
+#target_include_directories(candyshared PRIVATE src)
 
-# By default, symbols provided by the sublibs that are not used by mainlib (which is all of them in this case)
-# are not used. This changes that.
-#if (WIN32)
-#    set_target_properties(candynamic PROPERTIES LINK_FLAGS "/WHOLEARCHIVE")
-#elseif (APPLE)
-#    set_target_properties(candynamic PROPERTIES LINK_FLAGS "-Wl,-all_load")
-#else ()
-#    set_target_properties(candynamic PROPERTIES LINK_FLAGS "-Wl,--whole-archive")
-#endif ()
+
