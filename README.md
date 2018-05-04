@@ -1,6 +1,6 @@
-|        Linux        |       Windows       |       Coverage       |
-|:-------------------:|:-------------------:|:--------------------:|
-| [![travisCI][1]][2] | [![appveyor][3]][4] | [![coveralls][5]][6] |
+|        Linux        |       Windows       |       Coverage       |     Metrics      |
+|:-------------------:|:-------------------:|:--------------------:|:----------------:|
+| [![travisCI][1]][2] | [![appveyor][3]][4] | [![coveralls][5]][6] | [![tokei][7]][8] |
 
 [1]: https://travis-ci.org/Udopia/candy-kingdom.svg?branch=master
 [2]: https://travis-ci.org/Udopia/candy-kingdom
@@ -8,6 +8,8 @@
 [4]: https://ci.appveyor.com/project/Udopia/candy-kingdom/branch/master
 [5]: https://coveralls.io/repos/github/Udopia/candy-kingdom/badge.svg?branch=master
 [6]: https://coveralls.io/github/Udopia/candy-kingdom?branch=master
+[7]: https://tokei.rs/b1/github/udopia/candy-kingdom?category=code
+[8]: https://github.com/Aaronepower/tokei#badges
 
 # Candy Kingdom
 
@@ -21,7 +23,7 @@ git submodule init
 git submodule update
 cd lib/googletest
 cmake .
-make
+cmake --build .
 ```
 
 Then you can build Candy like this:
@@ -29,12 +31,12 @@ Then you can build Candy like this:
 mkdir release
 cd release
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release ..
-make candy
+cmake --build . --target candy
 ```
 
 In order to build and execute unit-tests execute:
 ```bash
-make
+cmake --build .
 ctest
 ```
 
@@ -49,5 +51,4 @@ Candy offers a multitude of options, like paramaters to tune heuristics and thre
 
 ## Support
 
-If you like Candy and in case you want to support building of the Candy Kingdom, you can send Ethereum to the following address **0x118b032be2c45f9a74301e0432d67dbbcdf7b6f0**
-
+If you like Candy and in case you want to support building of the Candy Kingdom, you can send Ethereum to the following address: **0x118b032be2c45f9a74301e0432d67dbbcdf7b6f0**
