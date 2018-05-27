@@ -101,7 +101,7 @@ public:
 		std::vector<double> occ = problem.getLiteralRelativeOccurrences();
 		for (size_t i = 0; i < decision.size(); i++) {
 			activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
-			polarity[i] = occ[mkLit(i, true)] > occ[mkLit(i, false)];
+            		polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
 		}
 		rebuildOrderHeap();
 	}
