@@ -1,28 +1,29 @@
 language: cpp
 compiler:
-  - gcc
-  - clang
-
+- gcc
+- clang
 os:
-  - linux
-  - osx
-
+- linux
+- osx
 git:
   depth: 1
-
 dist: trusty
 sudo: required
 
+addons:
+  sonarcloud:
+    organization: "Candy" # the key of the org you chose at step #3
+    token:
+      secure: GrbWKHIKVnrVdRrKFhyj2lG5qLjbSODPAyrHaH4CFxSGrLxcQcL/X+dl1njGIkLviznkiOC0bm8ZaFwsRelhOiy+FqtcWbKYAyYVgEXU2rKRWm14U2ggr5TVW9EbtAwGym3dkvbgnYoYSC0JPkCc4UPOPP+V5ye6XoFIYimLhLh6zWrTcMK7Hu11hnFHF2RxU9TH9JflhKQpNQdTNk8azQJhrgm+xWLHgkPzZT1p5k+Px2wk3lrxXiUxxSYigFh+5YJypeHxgR/iNyq7TVKUEpzG38OfH768jXF8Dp/gfht+I8wmYUxeUFcrFhZG7LK+J2c/KMlYnHqwUcRFOKqLTNHyLuoRWehbFpC2occYJtbxEWY7nOv7dOO0+AsLPh8yUk5Xb7KgtpX+9kYxTr6PDSIv4e6dzmjnWvBeRZYtbmXXfodMnfdIHGSjsBWhEVSCpe+hyQqRkSu30ustXb3bC/STvLFdHD065mOqJtTkV2jKBM6aUZoZ2PuCXxCmtj/WYOH4soFNNt1fwpd5BowciZk/Of2gUi6iq83vDvTiFOszM5ARDopawTUxdW67nI0Gfi5lSyprUcuSsinqm0FrU0wtHnyrpw+JnB9H340Aspd30ZYHOT6CWHrd9+mAnljFdC1GI/AXqoAIVeT6LZCBfuIKmGbIU/mvW8ok6FIblwc=
+
 env:
   matrix:
-    - CANDY_MODE=REGULAR
-    - CANDY_MODE=COVERAGE
-    - CANDY_MODE=SANITIZERS
-
+  - CANDY_MODE=REGULAR
+  - CANDY_MODE=COVERAGE
+  - CANDY_MODE=SANITIZERS
 matrix:
   global:
-    - ASAN_OPTIONS="detect_leaks=1"
-  # Coverage only on Linux/gcc
+  - ASAN_OPTIONS="detect_leaks=1"
   exclude:
   - os: osx
     env: CANDY_MODE=COVERAGE
@@ -34,47 +35,29 @@ matrix:
   - os: linux
     compiler: clang
     env: CANDY_MODE=SANITIZERS
-
   allow_failures:
-  # Travis' clang on Linux is too old: doesn't support the required builtins
   - os: linux
     compiler: clang
-
 before_script:
-  - if [ `uname` = "Linux" ]; then
-      sudo add-apt-repository -y ppa:ubuntu-sdk-team/ppa ;
-      sudo add-apt-repository -y ppa:josh-bialkowski/cmake ;
-      sudo apt-get update ;
-      sudo apt-get install -y --force-yes cmake zlib1g-dev ;
-    fi
-  - if [ "$CANDY_MODE" = "COVERAGE" ]; then
-      gem install coveralls-lcov ;
-      sudo apt-get install lcov ;
-    fi
-
+- if [ `uname` = "Linux" ]; then sudo add-apt-repository -y ppa:ubuntu-sdk-team/ppa
+  ; sudo add-apt-repository -y ppa:josh-bialkowski/cmake ; sudo apt-get update ; sudo
+  apt-get install -y --force-yes cmake zlib1g-dev ; fi
+- if [ "$CANDY_MODE" = "COVERAGE" ]; then gem install coveralls-lcov ; sudo apt-get
+  install lcov ; fi
 script:
-  - mkdir -p ../build
-  - cd ../build
-
-  - if [ "$CANDY_MODE" = "REGULAR" ]; then
-      cmake -DCMAKE_BUILD_TYPE=Release $TRAVIS_BUILD_DIR ;
-    fi
-  - if [ "$CANDY_MODE" = "COVERAGE" ]; then
-      cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_COVERAGE=ON $TRAVIS_BUILD_DIR ;
-    fi
-  - if [ "$CANDY_MODE" = "SANITIZERS" ]; then
-      cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_ADDRESS_SANITIZER=ON $TRAVIS_BUILD_DIR ;
-    fi
-
-  - cmake --build . --config Release -- -j2
-  - ctest -V
-
+- mkdir -p ../build
+- cd ../build
+- if [ "$CANDY_MODE" = "REGULAR" ]; then cmake -DCMAKE_BUILD_TYPE=Release $TRAVIS_BUILD_DIR
+  ; fi
+- if [ "$CANDY_MODE" = "COVERAGE" ]; then cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_COVERAGE=ON
+  $TRAVIS_BUILD_DIR ; fi
+- if [ "$CANDY_MODE" = "SANITIZERS" ]; then cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_ADDRESS_SANITIZER=ON
+  $TRAVIS_BUILD_DIR ; fi
+- cmake --build . --config Release -- -j2
+- ctest -V
+- sonar-scanner
 after_success:
- - if [ "$CANDY_MODE" = "COVERAGE" ]; then
-     cd $TRAVIS_BUILD_DIR/../build ;
-     lcov --directory . --capture --output-file coverage.info ;
-     lcov --remove coverage.info 'lib/*' 'testsrc/*' '/usr/*' --output-file coverage.info ;
-     lcov --list coverage.info ;
-     cd $TRAVIS_BUILD_DIR ;
-     coveralls-lcov ../build/coverage.info ;
-   fi
+- if [ "$CANDY_MODE" = "COVERAGE" ]; then cd $TRAVIS_BUILD_DIR/../build ; lcov --directory
+  . --capture --output-file coverage.info ; lcov --remove coverage.info 'lib/*' 'testsrc/*'
+  '/usr/*' --output-file coverage.info ; lcov --list coverage.info ; cd $TRAVIS_BUILD_DIR
+  ; coveralls-lcov ../build/coverage.info ; fi
