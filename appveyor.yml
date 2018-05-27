@@ -17,7 +17,9 @@ environment:
 configuration:
   - Release
 
-build_script:
+# This is a workaround: AppVeyor tries to directly invoke MSBuild unless
+# "build: false" is set, which causes the build script to be ignored.
+install:
   # Build and install zlib in INSTALLATION_DIR
   - cd %REPO_DIR%
   - git clone https://github.com/madler/zlib
@@ -41,7 +43,6 @@ build_script:
   - cmake --build . --config %CONFIGURATION%
   - ctest -V -C %CONFIGURATION%
 
-build:
-  verbosity: minimal
+build: false
 
 test: off
