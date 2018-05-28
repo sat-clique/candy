@@ -55,9 +55,13 @@ script:
   $TRAVIS_BUILD_DIR ; fi
 - cmake --build . --config Release -- -j2
 - ctest -V
-- sonar-scanner
+- sonar-scanner -X
 after_success:
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then cd $TRAVIS_BUILD_DIR/../build ; lcov --directory
   . --capture --output-file coverage.info ; lcov --remove coverage.info 'lib/*' 'testsrc/*'
   '/usr/*' --output-file coverage.info ; lcov --list coverage.info ; cd $TRAVIS_BUILD_DIR
   ; coveralls-lcov ../build/coverage.info ; fi
+  
+cache:
+  directories:
+  - '$HOME/.sonar/cache'
