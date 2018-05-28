@@ -1,6 +1,6 @@
-|        Linux        |       Windows       |       Coverage       |     Metrics      |
-|:-------------------:|:-------------------:|:--------------------:|:----------------:|
-| [![travisCI][1]][2] | [![appveyor][3]][4] | [![coveralls][5]][6] | [![tokei][7]][8] |
+|        Linux        |       Windows       |       Coverage       |     Metrics      |    Sonarcloud     |
+|:-------------------:|:-------------------:|:--------------------:|:----------------:|:-----------------:|
+| [![travisCI][1]][2] | [![appveyor][3]][4] | [![coveralls][5]][6] | [![tokei][7]][8] | [![sonar][9]][10] |
 
 [1]: https://travis-ci.org/Udopia/candy-kingdom.svg?branch=master
 [2]: https://travis-ci.org/Udopia/candy-kingdom
@@ -10,6 +10,8 @@
 [6]: https://coveralls.io/github/Udopia/candy-kingdom?branch=master
 [7]: https://tokei.rs/b1/github/udopia/candy-kingdom?category=code
 [8]: https://github.com/Aaronepower/tokei#badges
+[9]: https://sonarcloud.io/api/project_badges/measure?project=candy&metric=alert_status
+[10]: https://sonarcloud.io/dashboard?id=candy
 
 # Candy Kingdom
 
