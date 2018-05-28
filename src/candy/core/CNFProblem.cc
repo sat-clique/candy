@@ -94,10 +94,10 @@ void CNFProblem::parse_DIMACS(gzFile input_stream) {
         skipWhitespace(in);
     }
     if (headerVars != maxVars) {
-        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables.\n");
+        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, maxVars);
     }
     if (headerClauses != (int)problem.size()) {
-        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses.\n");
+        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses (declared %i, found %i).\n", headerClauses, (int)problem.size());
     }
 }
 

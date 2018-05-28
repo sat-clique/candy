@@ -1,0 +1,109 @@
+\documentclass[conference]{IEEEtran}
+
+\pagestyle{headings}
+
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[ruled,linesnumbered,vlined]{algorithm2e}
+\usepackage{color}
+\usepackage{tabularx}
+\usepackage{todonotes}
+\usepackage{tabto}
+\usepackage{url}
+\usepackage{csquotes}
+\usepackage[T1]{fontenc} 
+\usepackage[utf8]{inputenc}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows,chains,matrix,fit,backgrounds,calc}
+
+\usepackage{mathtools}
+\DeclarePairedDelimiter\ceil{\lceil}{\rceil}
+\DeclarePairedDelimiter\floor{\lfloor}{\rfloor}
+
+\usepackage{cite}
+
+\newcommand{\assign}{\ensuremath{\leftarrow }}
+
+\newcommand{\underapp}[1]{\ensuremath{#1^\downarrow}}
+\newcommand{\overapp}[1]{\ensuremath{#1^\uparrow}}
+
+\newcommand{\True}{\ensuremath{\top}}
+\newcommand{\False}{\ensuremath{\bot}}
+\newcommand{\Undef}{\ensuremath{\mathbf{U}}}
+\newcommand{\SAT}{\ensuremath{\mathsf{SAT}}}
+\newcommand{\UNSAT}{\ensuremath{\mathsf{UNSAT}}}
+\newcommand{\UNDEF}{\ensuremath{\mathsf{UNDEF}}}
+
+\newcommand{\Vars}[1]{\mathsf{vars}(#1)}
+\newcommand{\Lits}[1]{\mathsf{lits}(#1)}
+\newcommand{\Enc}[1]{\mathsf{enc}(#1)}
+
+\makeatletter
+\def\blfootnote{\gdef\@thefnmark{}\@footnotetext}
+\makeatother
+
+\title{System Description of Candy Kingdom --\\ A Sweet Family of SAT Solvers}
+\author{\IEEEauthorblockN{Markus Iser\IEEEauthorrefmark{1}
+and Felix Kutzner\IEEEauthorrefmark{2}}
+\IEEEauthorblockA{Institute for Theoretical Computer Science,
+Karlsruhe Institute of Technology\\
+Karlsruhe, Germany\\
+Email: \IEEEauthorrefmark{1}markus.iser@kit.edu,
+\IEEEauthorrefmark{2}felix.kutzner@qpr-technologies.de}}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Candy is a branch of the Glucose 3 SAT solver and started as a refactoring effort towards modern C++.
+We replaced most of its custom lowest-level data structures and algorithms by their C++ standard library equivalents and improved or reimplemented several of its components.
+New functionality in Candy is based on gate structure analysis and random simulation. 
+\end{abstract}
+
+\section{Introduction}
+
+The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose,Niklas:2003:Minisat} CDCL SAT solver (version 3.0).
+With Candy, we aim to facilitate the solver's development by refactoring the Glucose source code towards modern C++ and by reducing dependencies within the source code.
+This involved replacing most custom lowest-level data structures and algorithms by their C++ standard library equivalents.
+The refactoring effort enabled high-level optimizations of the solver such as inprocessing and cache-efficient clause memory management.
+We also increased the extensibility of Candy via static polymorphism, e.g. allowing the solver's decision heuristic to be customized without incurring the overhead of dynamic polymorphism. This enabled us to efficiently implement variants of the Candy solver.
+Furthermore, we modularized the source code of Candy to make its subsystems reusable.
+The quality of Candy is assured by automated testing, with the functionality of Candy tested on different compilers (Clang, GCC, Microsoft C/C++) and operating systems (Linux, Apple macOS, Microsoft Windows) using continuous integration systems.
+
+\section{Clause Memory Management}
+\label{sec:clauses}
+
+Unlike Glucose, we use regular pointers to reference clauses in Candy. To reduce the memory access overhead, we introduced a dedicated cache-optimized clause storage system.
+To this end, we reduced the memory footprint of clauses by shrinking the clause header, in which only the clause's size, activity and LBD values as well as a minimal amount of flags are stored.
+For clauses containing $500$ literals or less, our new clause allocator preallocates clauses in buckets of same-sized clauses.
+Clauses larger than $500$ literals are individually allocated on the heap.
+Buckets containing small clauses are regularly sorted by their activity in descending order to group frequently-accessed clauses, thereby concentrating memory accesses to smaller memory regions.
+Moreover, the watchers are regularly sorted by clause size and activity.
+
+\section{Improved Incremental Mode}
+
+We enabled several clause simplifications in Candy's incremental mode that had been deactivated in Glucose's incremental mode.
+Also, certificates for unsatisfiability can be generated in incremental mode for sub-formulas not containing assumption literals.
+This is achieved by suppressing the emission of learnt clauses containing assumption literals as well as the output of the empty clause until no assumptions are used in the resolution steps by which unsatisfiability is deduced.
+
+\section{Inprocessing}
+
+We improved the architecture of clause simplification such that Candy can now perform simplification based on clause subsumption and self-subsuming resolution during search.
+The original problem's clauses are included as well as learnt clauses that are persistent in the learnt clause database, i.e. clauses of size 2 and clauses with an LBD value no larger than 2.
+
+\section{Improvments Candy 2018}
+
+The approach to modularize the Glucose codebase was further pursued and realized. We improved a lot in separation of concerns and building of separate components for heuristics and algorithmic methods. 
+
+Candy now initializes variable ordering based on problem structure by default. This should make its default heuristic configuration more stable against problem scrambling. 
+
+
+\bibliographystyle{splncs03}
+%\bibliographystyle{abbrv}
+\IEEEtriggeratref{3}
+\bibliography{main}
+
+\end{document}
