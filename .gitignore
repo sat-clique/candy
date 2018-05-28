@@ -1,4 +1,9 @@
 *~
+*.o
+lib/
+bin/
+debug/
+release/
 
 
 *#
