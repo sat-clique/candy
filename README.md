@@ -4,7 +4,7 @@
 
 [1]: https://travis-ci.org/Udopia/candy-kingdom.svg?branch=master
 [2]: https://travis-ci.org/Udopia/candy-kingdom
-[3]: https://ci.appveyor.com/api/projects/status/f82s06j62stkseuyksb0?svg=true
+[3]: https://ci.appveyor.com/api/projects/status/s9w7la4p8pdi5cja?svg=true
 [4]: https://ci.appveyor.com/project/Udopia/candy-kingdom/branch/master
 [5]: https://coveralls.io/repos/github/Udopia/candy-kingdom/badge.svg?branch=master
 [6]: https://coveralls.io/github/Udopia/candy-kingdom?branch=master
