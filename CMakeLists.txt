@@ -260,11 +260,10 @@ function(candy_executable_customizations targetname)
   endif()
 endfunction()
 
-
-
 ### Set up include directories
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/lib/oscpack)
 
 set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 
@@ -284,7 +283,10 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:sonification>
   $<TARGET_OBJECTS:utils>)
 
-set(CANDY_LIBS ${ZLIB_LIBRARIES})
+### OSCPack
+link_directories(${CMAKE_BINARY_DIR}/lib/oscpack)
+
+set(CANDY_LIBS ${ZLIB_LIBRARIES} oscpack)
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)

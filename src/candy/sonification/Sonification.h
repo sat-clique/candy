@@ -9,8 +9,8 @@
 #define SRC_SONIFICATION_SONIFICATION_H_
 
 #ifdef SONIFICATION
-#include <candy/sonification/oscpack/osc/OscOutboundPacketStream.h>
-#include <candy/sonification/oscpack/ip/UdpSocket.h>
+#include <osc/OscOutboundPacketStream.h>
+#include <ip/UdpSocket.h>
 #include <chrono>
 #endif
 

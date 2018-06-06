@@ -12,9 +12,9 @@
 #include <thread>
 
 #ifdef SONIFICATION
-#include "candy/sonification/oscpack/osc/OscReceivedElements.h"
-#include "candy/sonification/oscpack/osc/OscPacketListener.h"
-#include "candy/sonification/oscpack/ip/UdpSocket.h"
+#include "osc/OscReceivedElements.h"
+#include "osc/OscPacketListener.h"
+#include "ip/UdpSocket.h"
 
 #define DEFAULT_LISTEN_ADDRESS "127.0.0.1"
 #define DEFAULT_LISTEN_PORT 7001
