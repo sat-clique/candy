@@ -5,3 +5,4 @@ if(MSVC)
 endif()
 
 add_subdirectory(googletest)
+add_subdirectory(oscpack)
