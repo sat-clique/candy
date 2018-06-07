@@ -93,6 +93,12 @@ public:
       readClause(cl.begin(), cl.end());
   }
 
+  inline void readClauses(std::initializer_list<std::initializer_list<Lit>> f) {
+      for (std::initializer_list<Lit> c : f) {
+          readClause(c);
+      }
+  }
+
   inline void readClauses(For& f) {
       for (Cl* c : f) {
           readClause(c->begin(), c->end());

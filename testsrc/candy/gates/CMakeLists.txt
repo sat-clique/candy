@@ -1,4 +1,5 @@
 add_executable(gates_tests
+    GateAnalyzerTests.cc
     GateDFSTraversalTests.cc
     MiterDetectorTests.cc
     ${CANDY_OBJECTS}

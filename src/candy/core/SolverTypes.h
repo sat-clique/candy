@@ -91,19 +91,32 @@ struct Lit {
 
 inline Lit mkLit(Var var, bool sign = false) {
 	Lit p;
-	p.x = var + var + (int) sign;
+    p.x = var + var + (sign ? 1 : 0);
 	return p;
 }
+
+inline Var operator"" _V(unsigned long long n) {
+    assert(n > 0);
+    return static_cast<Var>(n-1);
+}
+
+inline Lit operator"" _L(unsigned long long n) {
+    assert(n > 0);
+    return mkLit(static_cast<int>(n-1), false);
+}
+
 inline Lit operator ~(Lit p) {
 	Lit q;
 	q.x = p.x ^ 1;
 	return q;
 }
+
 inline Lit operator ^(Lit p, bool b) {
 	Lit q;
-	q.x = p.x ^ (unsigned int) b;
+    q.x = p.x ^ (b ? 1 : 0);
 	return q;
 }
+
 inline bool sign(Lit p) {
 	return p.x & 1;
 }
