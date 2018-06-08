@@ -59,4 +59,18 @@ namespace Candy {
         ASSERT_EQ(g.getBackwardClauses().size(), 1);
         ASSERT_EQ(g.getInputs().size(), 2);
     }
+
+    TEST(GateAnalyzerTest, detectSimpleXor) {
+        CNFProblem problem;
+        formula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        problem.readClauses(simple_xor);
+        GateAnalyzer ga(problem);
+        ga.analyze();
+        ASSERT_EQ(ga.getGateCount(), 1);
+        Gate g = ga.getGate(1_L);
+        ASSERT_TRUE(g.isDefined());
+        ASSERT_EQ(g.getForwardClauses().size(), 2);
+        ASSERT_EQ(g.getBackwardClauses().size(), 2);
+        ASSERT_EQ(g.getInputs().size(), 4);
+    }
 }
