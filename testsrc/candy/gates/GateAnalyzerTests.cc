@@ -55,6 +55,7 @@ namespace Candy {
         ASSERT_EQ(ga.getGateCount(), 1);
         Gate g = ga.getGate(1_L);
         ASSERT_TRUE(g.isDefined());
+        ASSERT_FALSE(g.hasNonMonotonousParent());
         ASSERT_EQ(g.getForwardClauses().size(), 2);
         ASSERT_EQ(g.getBackwardClauses().size(), 1);
         ASSERT_EQ(g.getInputs().size(), 2);
@@ -69,6 +70,7 @@ namespace Candy {
         ASSERT_EQ(ga.getGateCount(), 1);
         Gate g = ga.getGate(1_L);
         ASSERT_TRUE(g.isDefined());
+        ASSERT_FALSE(g.hasNonMonotonousParent());
         ASSERT_EQ(g.getForwardClauses().size(), 2);
         ASSERT_EQ(g.getBackwardClauses().size(), 2);
         ASSERT_EQ(g.getInputs().size(), 4);
@@ -87,16 +89,19 @@ namespace Candy {
         ASSERT_EQ(ga.getGateCount(), 3);
         Gate g = ga.getGate(1_L);
         ASSERT_TRUE(g.isDefined());
+        ASSERT_FALSE(g.hasNonMonotonousParent());
         ASSERT_EQ(g.getForwardClauses().size(), 2);
         ASSERT_EQ(g.getBackwardClauses().size(), 2);
         ASSERT_EQ(g.getInputs().size(), 4);
         g = ga.getGate(2_L);
         ASSERT_TRUE(g.isDefined());
+        ASSERT_TRUE(g.hasNonMonotonousParent());
         ASSERT_EQ(g.getForwardClauses().size(), 2);
         ASSERT_EQ(g.getBackwardClauses().size(), 1);
         ASSERT_EQ(g.getInputs().size(), 2);
         g = ga.getGate(3_L);
         ASSERT_TRUE(g.isDefined());
+        ASSERT_TRUE(g.hasNonMonotonousParent());
         ASSERT_EQ(g.getForwardClauses().size(), 2);
         ASSERT_EQ(g.getBackwardClauses().size(), 1);
         ASSERT_EQ(g.getInputs().size(), 2);
