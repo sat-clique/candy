@@ -81,6 +81,53 @@ namespace Candy {
         ASSERT_EQ(ga.getGateCount(), 1);
         Gate g = ga.getGate(1_L);
         ASSERT_TRUE(g.isDefined());
+        ASSERT_FALSE(g.hasNonMonotonousParent());
+        ASSERT_EQ(g.getForwardClauses().size(), 2);
+        ASSERT_EQ(g.getBackwardClauses().size(), 1);
+        ASSERT_EQ(g.getInputs().size(), 2);
+    }
+
+    TEST(GateAnalyzerTest, detectSimpleXor) {
+        CNFProblem problem;
+        formula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        problem.readClauses(simple_xor);
+        GateAnalyzer ga(problem);
+        ga.analyze();
+        ASSERT_EQ(ga.getGateCount(), 1);
+        Gate g = ga.getGate(1_L);
+        ASSERT_TRUE(g.isDefined());
+        ASSERT_FALSE(g.hasNonMonotonousParent());
+        ASSERT_EQ(g.getForwardClauses().size(), 2);
+        ASSERT_EQ(g.getBackwardClauses().size(), 2);
+        ASSERT_EQ(g.getInputs().size(), 4);
+    }
+
+    TEST(GateAnalyzerTest, detectXorOfAnds) {
+        CNFProblem problem;
+        formula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        formula simple_and1 = {{2_L}, {~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
+        formula simple_and2 = {{3_L}, {~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
+        problem.readClauses(simple_xor);
+        problem.readClauses(simple_and1);
+        problem.readClauses(simple_and2);
+        GateAnalyzer ga(problem);
+        ga.analyze();
+        ASSERT_EQ(ga.getGateCount(), 3);
+        Gate g = ga.getGate(1_L);
+        ASSERT_TRUE(g.isDefined());
+        ASSERT_FALSE(g.hasNonMonotonousParent());
+        ASSERT_EQ(g.getForwardClauses().size(), 2);
+        ASSERT_EQ(g.getBackwardClauses().size(), 2);
+        ASSERT_EQ(g.getInputs().size(), 4);
+        g = ga.getGate(2_L);
+        ASSERT_TRUE(g.isDefined());
+        ASSERT_TRUE(g.hasNonMonotonousParent());
+        ASSERT_EQ(g.getForwardClauses().size(), 2);
+        ASSERT_EQ(g.getBackwardClauses().size(), 1);
+        ASSERT_EQ(g.getInputs().size(), 2);
+        g = ga.getGate(3_L);
+        ASSERT_TRUE(g.isDefined());
+        ASSERT_TRUE(g.hasNonMonotonousParent());
         ASSERT_EQ(g.getForwardClauses().size(), 2);
         ASSERT_EQ(g.getBackwardClauses().size(), 1);
         ASSERT_EQ(g.getInputs().size(), 2);
