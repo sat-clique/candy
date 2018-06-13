@@ -43,23 +43,24 @@
 
 namespace Candy {
 
-    typedef std::initializer_list<Lit> IClause;
-    typedef std::initializer_list<IClause> IFormula;
+    typedef std::initializer_list<Lit> ILits;
+    typedef std::initializer_list<ILits> IFormula;
 
-    bool contains(For& super, IClause sub) {
-        bool found = false;
+    bool equals(Cl* clause1, ILits clause2) {
+        if (clause1->size() != clause2.size()) {
+            return false;
+        }
+        for (Lit lit : clause2) {
+            if(std::find(clause1->begin(), clause1->end(), lit) == clause1->end()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool contains(For& super, ILits sub) {
         for (Cl* clause : super) {
-            if (clause->size() != sub.size()) {
-                continue;
-            }
-            found = true;
-            for (Lit lit : sub) {
-                if(std::find(clause->begin(), clause->end(), lit) == clause->end()) {
-                    found = false;
-                    break;
-                }
-            }
-            if (found) {
+            if (equals(clause, sub)) {
                 return true;
             }
         }
@@ -67,9 +68,24 @@ namespace Candy {
     }
 
     bool containsAll(For& super, IFormula sub) {
-        for (IClause clause : sub) {
-            contains(super, clause);
+        for (ILits clause : sub) {
+            if (!contains(super, clause)) {
+                return false;
+            }
         }
+        return true;
+    }
+
+    void assert_gate(GateAnalyzer& ga, Lit output, bool monotonous, IFormula fwd, IFormula bwd, ILits inputs) {
+        Gate g = ga.getGate(output);
+        ASSERT_TRUE(g.isDefined());
+        ASSERT_EQ(monotonous, g.hasNonMonotonousParent());
+        ASSERT_EQ(fwd.size(), g.getForwardClauses().size());
+        ASSERT_EQ(bwd.size(), g.getBackwardClauses().size());
+        ASSERT_EQ(inputs.size(), g.getInputs().size());
+        ASSERT_TRUE(containsAll(g.getForwardClauses(), fwd));
+        ASSERT_TRUE(containsAll(g.getBackwardClauses(), bwd));
+        ASSERT_TRUE(equals(&g.getInputs(), inputs));
     }
 
     TEST(GateAnalyzerTest, detectSimpleAnd) {
@@ -79,12 +95,8 @@ namespace Candy {
         GateAnalyzer ga(problem);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 1);
-        Gate g = ga.getGate(1_L);
-        ASSERT_TRUE(g.isDefined());
-        ASSERT_FALSE(g.hasNonMonotonousParent());
-        ASSERT_EQ(g.getForwardClauses().size(), 2);
-        ASSERT_EQ(g.getBackwardClauses().size(), 1);
-        ASSERT_EQ(g.getInputs().size(), 2);
+        ASSERT_EQ(ga.getRoots().size(), 1);
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L}, {~1_L, 3_L}}, {{1_L, ~2_L, ~3_L}}, {2_L, 3_L});
     }
 
     TEST(GateAnalyzerTest, detectSimpleXor) {
@@ -94,42 +106,65 @@ namespace Candy {
         GateAnalyzer ga(problem);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 1);
+        ASSERT_EQ(ga.getRoots().size(), 1);
         Gate g = ga.getGate(1_L);
-        ASSERT_TRUE(g.isDefined());
-        ASSERT_FALSE(g.hasNonMonotonousParent());
-        ASSERT_EQ(g.getForwardClauses().size(), 2);
-        ASSERT_EQ(g.getBackwardClauses().size(), 2);
-        ASSERT_EQ(g.getInputs().size(), 4);
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
     }
 
     TEST(GateAnalyzerTest, detectXorOfAnds) {
         CNFProblem problem;
         IFormula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
-        IFormula simple_and1 = {{2_L}, {~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
-        IFormula simple_and2 = {{3_L}, {~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
+        IFormula simple_and1 = {{~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
+        IFormula simple_and2 = {{~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
         GateAnalyzer ga(problem);
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
-        Gate g = ga.getGate(1_L);
-        ASSERT_TRUE(g.isDefined());
-        ASSERT_FALSE(g.hasNonMonotonousParent());
-        ASSERT_EQ(g.getForwardClauses().size(), 2);
-        ASSERT_EQ(g.getBackwardClauses().size(), 2);
-        ASSERT_EQ(g.getInputs().size(), 4);
-        g = ga.getGate(2_L);
-        ASSERT_TRUE(g.isDefined());
-        ASSERT_TRUE(g.hasNonMonotonousParent());
-        ASSERT_EQ(g.getForwardClauses().size(), 2);
-        ASSERT_EQ(g.getBackwardClauses().size(), 1);
-        ASSERT_EQ(g.getInputs().size(), 2);
-        g = ga.getGate(3_L);
-        ASSERT_TRUE(g.isDefined());
-        ASSERT_TRUE(g.hasNonMonotonousParent());
-        ASSERT_EQ(g.getForwardClauses().size(), 2);
-        ASSERT_EQ(g.getBackwardClauses().size(), 1);
-        ASSERT_EQ(g.getInputs().size(), 2);
+        ASSERT_EQ(ga.getRoots().size(), 1);
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
+        assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
+        assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
+    }
+
+    TEST(GateAnalyzerTest, detectXorOfAndsPlusStuff) {
+        CNFProblem problem;
+        IFormula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        IFormula simple_and1 = {{~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
+        IFormula simple_and2 = {{~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
+        IFormula stuff = {{6_L, 7_L}};
+        problem.readClauses(simple_xor);
+        problem.readClauses(simple_and1);
+        problem.readClauses(simple_and2);
+        problem.readClauses(stuff);
+        GateAnalyzer ga(problem, 1);
+        ga.analyze();
+        ASSERT_EQ(ga.getGateCount(), 3);
+        ASSERT_EQ(ga.getRoots().size(), 2);
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
+        assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
+        assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
+    }
+
+    TEST(GateAnalyzerTest, detectXorOfAndsPlusStuffAndNormalize) {
+        CNFProblem problem;
+        IFormula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        IFormula simple_and1 = {{~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
+        IFormula simple_and2 = {{~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
+        IFormula stuff = {{6_L, 7_L}};
+        problem.readClauses(simple_xor);
+        problem.readClauses(simple_and1);
+        problem.readClauses(simple_and2);
+        problem.readClauses(stuff);
+        GateAnalyzer ga(problem, 1);
+        ga.analyze();
+        ga.normalizeRoots();
+        ASSERT_EQ(ga.getGateCount(), 4);
+        ASSERT_EQ(ga.getRoots().size(), 1);
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
+        assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
+        assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
+        assert_gate(ga, 8_L, false, {{~8_L, 1_L}, {~8_L, 6_L, 7_L}}, {}, {1_L, 6_L, 7_L});
     }
 }

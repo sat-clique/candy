@@ -208,6 +208,7 @@ Lit GateAnalyzer::normalizeRoots() {
         gates.resize(problem.nVars() + 1);
         inputs.resize(2 * problem.nVars() + 2, false);
         // create gate
+        nGates++;
         gates[root].out = mkLit(root, false);
         gates[root].notMono = false;
         set<Lit> inp;
