@@ -46,12 +46,12 @@ namespace Candy {
     typedef std::initializer_list<Lit> ILits;
     typedef std::initializer_list<ILits> IFormula;
 
-    bool equals(Cl* clause1, ILits clause2) {
-        if (clause1->size() != clause2.size()) {
+    bool equals(Cl clause1, ILits clause2) {
+        if (clause1.size() != clause2.size()) {
             return false;
         }
         for (Lit lit : clause2) {
-            if(std::find(clause1->begin(), clause1->end(), lit) == clause1->end()) {
+            if(std::find(clause1.begin(), clause1.end(), lit) == clause1.end()) {
                 return false;
             }
         }
@@ -60,7 +60,7 @@ namespace Candy {
 
     bool contains(For& super, ILits sub) {
         for (Cl* clause : super) {
-            if (equals(clause, sub)) {
+            if (equals(*clause, sub)) {
                 return true;
             }
         }
@@ -85,7 +85,7 @@ namespace Candy {
         ASSERT_EQ(inputs.size(), g.getInputs().size());
         ASSERT_TRUE(containsAll(g.getForwardClauses(), fwd));
         ASSERT_TRUE(containsAll(g.getBackwardClauses(), bwd));
-        ASSERT_TRUE(equals(&g.getInputs(), inputs));
+        ASSERT_TRUE(equals(g.getInputs(), inputs));
     }
 
     TEST(GateAnalyzerTest, detectSimpleAnd) {
@@ -96,6 +96,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 1);
         ASSERT_EQ(ga.getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L}, {~1_L, 3_L}}, {{1_L, ~2_L, ~3_L}}, {2_L, 3_L});
     }
 
@@ -107,6 +108,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 1);
         ASSERT_EQ(ga.getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
         Gate g = ga.getGate(1_L);
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
     }
@@ -123,6 +125,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
         ASSERT_EQ(ga.getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
@@ -142,6 +145,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
         ASSERT_EQ(ga.getRoots().size(), 2);
+        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L, 6_L, 7_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
@@ -159,9 +163,11 @@ namespace Candy {
         problem.readClauses(stuff);
         GateAnalyzer ga(problem, 1);
         ga.analyze();
-        ga.normalizeRoots();
+        Lit root = ga.normalizeRoots();
+        ASSERT_EQ(root, 8_L);
         ASSERT_EQ(ga.getGateCount(), 4);
         ASSERT_EQ(ga.getRoots().size(), 1);
+        //ASSERT_TRUE(equals(ga.getRootLiterals(), {8_L})); //why the fuck does this not hold? compiler problem? too many constants?
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
