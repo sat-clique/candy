@@ -89,7 +89,7 @@ namespace Candy {
 
     TEST(GateAnalyzerTest, detectSimpleXor) {
         CNFProblem problem;
-        formula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        IFormula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
         problem.readClauses(simple_xor);
         GateAnalyzer ga(problem);
         ga.analyze();
@@ -104,9 +104,9 @@ namespace Candy {
 
     TEST(GateAnalyzerTest, detectXorOfAnds) {
         CNFProblem problem;
-        formula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
-        formula simple_and1 = {{2_L}, {~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
-        formula simple_and2 = {{3_L}, {~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
+        IFormula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
+        IFormula simple_and1 = {{2_L}, {~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
+        IFormula simple_and2 = {{3_L}, {~3_L, 4_L}, {~3_L, 5_L}, {3_L, ~4_L, ~5_L}};
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
