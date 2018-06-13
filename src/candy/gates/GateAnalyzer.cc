@@ -215,11 +215,13 @@ Lit GateAnalyzer::normalizeRoots() {
         for (Cl* c : roots) {
             inp.insert(c->begin(), c->end());
             c->push_back(mkLit(root, true));
+            gates[root].fwd.push_back(c);
         }
-        gates[root].fwd.swap(roots);
         gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
-        roots.push_back(new Cl(root));
-        return mkLit(root, false);
+        roots.clear();
+        roots.push_back(new Cl(gates[root].out));
+        assert(roots.size() == 1);
+        return gates[root].out;
     }
     else {
         return *(*roots.begin())->begin();
