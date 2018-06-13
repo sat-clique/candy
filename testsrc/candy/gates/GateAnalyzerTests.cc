@@ -43,12 +43,38 @@
 
 namespace Candy {
 
-    typedef std::initializer_list<std::initializer_list<Lit>> formula;
+    typedef std::initializer_list<Lit> IClause;
+    typedef std::initializer_list<IClause> IFormula;
 
+    bool contains(For& super, IClause sub) {
+        bool found = false;
+        for (Cl* clause : super) {
+            if (clause->size() != sub.size()) {
+                continue;
+            }
+            found = true;
+            for (Lit lit : sub) {
+                if(std::find(clause->begin(), clause->end(), lit) == clause->end()) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool containsAll(For& super, IFormula sub) {
+        for (IClause clause : sub) {
+            contains(super, clause);
+        }
+    }
 
     TEST(GateAnalyzerTest, detectSimpleAnd) {
         CNFProblem problem;
-        formula simple_and = {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}};
+        IFormula simple_and = {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}};
         problem.readClauses(simple_and);
         GateAnalyzer ga(problem);
         ga.analyze();
