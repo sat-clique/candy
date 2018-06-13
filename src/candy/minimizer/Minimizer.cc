@@ -88,7 +88,6 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
 //    if (solver->nClauses() == 0)
 //    exit(1);
 
-    unsigned int i = 0;
     bool satisfiable = true;
     while (satisfiable) {
         exclude.clear();
