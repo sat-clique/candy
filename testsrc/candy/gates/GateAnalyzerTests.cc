@@ -167,7 +167,7 @@ namespace Candy {
         ASSERT_EQ(root, 8_L);
         ASSERT_EQ(ga.getGateCount(), 4);
         ASSERT_EQ(ga.getRoots().size(), 1);
-        //ASSERT_TRUE(equals(ga.getRootLiterals(), {8_L})); //why the fuck does this not hold? compiler problem? too many constants?
+        ASSERT_EQ(ga.getRootLiterals().front(), 8_L);
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
