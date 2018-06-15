@@ -218,9 +218,11 @@ Lit GateAnalyzer::normalizeRoots() {
             gates[root].fwd.push_back(c);
         }
         gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
-        roots.clear();
-        roots.push_back(new Cl(gates[root].out));
-        assert(roots.size() == 1);
+        this->roots.clear();
+        Cl* rootClause = new Cl(); //leaks. need concept (add to CNFProblem and let it take care of it?)
+        rootClause->push_back(gates[root].out);
+        this->roots.push_back(rootClause);
+        assert(this->roots.size() == 1);
         return gates[root].out;
     }
     else {
