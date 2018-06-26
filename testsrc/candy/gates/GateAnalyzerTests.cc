@@ -173,4 +173,50 @@ namespace Candy {
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 8_L, false, {{~8_L, 1_L}, {~8_L, 6_L, 7_L}}, {}, {1_L, 6_L, 7_L});
     }
+
+    TEST(GateAnalyzerTest, applyPruningToOrOfAnds) {
+        CNFProblem problem;
+        IFormula simple_or = {{1_L}, {~1_L, 2_L, 3_L}, {1_L, ~2_L}, {1_L, ~3_L}};
+        IFormula simple_and1 = {{~2_L, 4_L}, {~2_L, 5_L}, {2_L, ~4_L, ~5_L}};
+        IFormula simple_and2 = {{~3_L, 6_L}, {~3_L, 7_L}, {3_L, ~6_L, ~7_L}};
+        problem.readClauses(simple_or);
+        problem.readClauses(simple_and1);
+        problem.readClauses(simple_and2);
+        GateAnalyzer ga(problem);
+        ga.analyze();
+        ASSERT_EQ(ga.getGateCount(), 3);
+        ASSERT_EQ(ga.getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}}, {{1_L, ~2_L}, {1_L, ~3_L}}, {2_L, 3_L});
+        assert_gate(ga, 2_L, false, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
+        assert_gate(ga, 3_L, false, {{~3_L, 6_L}, {~3_L, 7_L}}, {{3_L, ~6_L, ~7_L}}, {6_L, 7_L});
+        For pp = ga.getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
+        ASSERT_TRUE(containsAll(pp, simple_or));
+        ASSERT_TRUE(containsAll(pp, simple_and1));
+        ASSERT_FALSE(contains(pp, {~3_L, 6_L}));
+        ASSERT_FALSE(contains(pp, {~3_L, 7_L}));
+        ASSERT_FALSE(contains(pp, {3_L, ~6_L, ~7_L}));
+    }
+
+    //todo: fix test-case such that also the commented assertions hold
+    TEST(GateAnalyzerTest, andOfXorAndPartialXorToTriggerSemanticCheck) {
+        CNFProblem problem;
+        IFormula simple_and = {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}};
+        IFormula simple_xor1 = {{~2_L, 4_L, 5_L}, {~2_L, ~4_L, ~5_L}, {2_L, 4_L, ~5_L}, {2_L, ~4_L, 5_L}};
+        IFormula simple_eq = {{~3_L, 6_L, ~7_L}, {~3_L, ~6_L, 7_L}, {3_L, 6_L, 7_L}, {3_L, ~6_L, ~7_L}};
+        IFormula simple_xor2 = {{~6_L, 4_L, 5_L}, {~6_L, ~4_L, ~5_L}};
+        problem.readClauses(simple_and);
+        problem.readClauses(simple_xor1);
+        problem.readClauses(simple_eq);
+        problem.readClauses(simple_xor2);
+        GateAnalyzer ga(problem, 3, true, true, true);
+        ga.analyze();
+//        ASSERT_EQ(ga.getGateCount(), 4);
+//        ASSERT_EQ(ga.getRoots().size(), 1);
+//        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
+        assert_gate(ga, 1_L, false, {{~1_L, 2_L}, {~1_L, 3_L}}, {{1_L, ~2_L, ~3_L}}, {2_L, 3_L});
+        assert_gate(ga, 2_L, false, {{~2_L, 4_L, 5_L}, {~2_L, ~4_L, ~5_L}}, {{2_L, 4_L, ~5_L}, {2_L, ~4_L, 5_L}}, {4_L, 5_L, ~4_L, ~5_L});
+        assert_gate(ga, 3_L, false, {{~3_L, 6_L, ~7_L}, {~3_L, ~6_L, 7_L}}, {{3_L, 6_L, 7_L}, {3_L, ~6_L, ~7_L}}, {6_L, 7_L, ~6_L, ~7_L});
+//        assert_gate(ga, 6_L, false, {{~6_L, 4_L, 5_L}, {~6_L, ~4_L, ~5_L}}, {}, {4_L, 5_L, ~4_L, ~5_L});
+    }
 }
