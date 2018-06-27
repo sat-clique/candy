@@ -37,8 +37,6 @@ extern "C" {
 
 namespace Candy {
 
-    typedef std::initializer_list<std::initializer_list<Lit>> formula;
-
     TEST(IpasirTest, ipasir_test_empty_clause) {
         printf("%s", ipasir_signature());
         
@@ -50,6 +48,46 @@ namespace Candy {
 		
         ASSERT_EQ(20, result);
         
+        ipasir_release(solver);
+    }
+
+
+    TEST(IpasirTest, ipasir_test_one_lit) {
+        printf("%s", ipasir_signature());
+
+        void* solver = ipasir_init();
+
+        ipasir_add(solver, 1);
+        ipasir_add(solver, 0);
+
+        int result = ipasir_solve(solver);
+
+        ASSERT_EQ(10, result);
+
+        int value = ipasir_val(solver, 1);
+        ASSERT_EQ(1, value);
+
+        ipasir_release(solver);
+    }
+
+
+    TEST(IpasirTest, ipasir_test_assume) {
+        printf("%s", ipasir_signature());
+
+        void* solver = ipasir_init();
+
+        ipasir_add(solver, 1);
+        ipasir_add(solver, 0);
+
+        ipasir_assume(solver, -1);
+        int result = ipasir_solve(solver);
+        ASSERT_EQ(20, result);
+
+        result = ipasir_solve(solver);
+        ASSERT_EQ(10, result);
+        int value = ipasir_val(solver, 1);
+        ASSERT_EQ(1, value);
+
         ipasir_release(solver);
     }
     
