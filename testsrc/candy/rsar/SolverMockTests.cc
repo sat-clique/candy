@@ -71,7 +71,6 @@ namespace Candy {
         underTest.solve();
         ++callN;
         underTest.simplify();
-        underTest.initNbInitialVars(0);
         underTest.solve();
         ++callN;
         underTest.addClause({});

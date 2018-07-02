@@ -168,7 +168,6 @@ namespace Candy {
         
         auto checker = createEquivalencyChecker();
         checker->createVariables(5);
-        checker->finishedAddingRegularVariables();
         
         
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
@@ -240,8 +239,6 @@ namespace Candy {
         
         auto checker = createEquivalencyChecker();
         checker->createVariables(4);
-        checker->finishedAddingRegularVariables();
-        
         
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
         heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
@@ -340,8 +337,6 @@ namespace Candy {
         
         auto checker = createEquivalencyChecker();
         checker->createVariables(4);
-        checker->finishedAddingRegularVariables();
-        
         
         std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
         heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});

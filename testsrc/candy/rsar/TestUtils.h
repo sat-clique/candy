@@ -70,11 +70,7 @@ namespace Candy {
         
         /** Creates all variables up to the given maximum. */
         virtual void createVariables(Var max) = 0;
-        
-        /** This method needs to be called between adding the "regular" variables and those
-         * used in the assumption literals. */
-        virtual void finishedAddingRegularVariables() = 0;
-        
+
         /** Returns true iff the literals a and b are equivalent wrt. the SAT problem instance
          * given via addClauses(...), with the literals contained in the given collection of
          * assumptions assumed to have the value true.

@@ -95,11 +95,7 @@ namespace Candy {
         
     void SolverMock::setIncrementalMode() {
         m_isIncrementalSet = true;
-    }
-    
-    void SolverMock::initNbInitialVars(int n) {
-        //std::cout << "initnb:" << n << std::endl;
-        m_minAssumptionVar = n;
+        m_minAssumptionVar = m_maxCreatedVar+1;
     }
     
     std::vector<Lit>& SolverMock::getConflict() {

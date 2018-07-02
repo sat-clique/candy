@@ -13,9 +13,7 @@ namespace Candy {
         Var var1 = underTest.newVar();
         Var var2 = underTest.newVar();
         Var assumptionVar = underTest.newVar();
-        
-        underTest.initNbInitialVars(2);
-        
+
         // This problem is satisfiable for any assignment of assumptionVar.
         std::vector<Cl> clauses = {Cl{mkLit(var1, 0), mkLit(var2, 1)},
             Cl{mkLit(assumptionVar, 0), mkLit(var1, 0)},
@@ -37,9 +35,7 @@ namespace Candy {
         Var var1 = underTest.newVar();
         Var var2 = underTest.newVar();
         Var assumptionVar = underTest.newVar();
-        
-        underTest.initNbInitialVars(2);
-        
+
         // This problem is satisfiable for any assignment of assumptionVar.
         std::vector<Cl> clauses = {Cl{mkLit(var1, 0), mkLit(var2, 1)},
             Cl{mkLit(assumptionVar, 0), mkLit(var1, 0)},

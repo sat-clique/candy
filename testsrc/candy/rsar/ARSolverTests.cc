@@ -295,7 +295,6 @@ namespace Candy {
             ASSERT_TRUE(maxVar != -1);
             
             checker->createVariables(maxNonAssumVar);
-            checker->finishedAddingRegularVariables();
             checker->createVariables(maxVar);
             
             checker->addClauses(solverAndMock.glucoseMock->mockctrl_getAddedClauses());
