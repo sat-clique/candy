@@ -174,26 +174,13 @@ namespace Candy {
     	}
     	virtual size_t nVars() const override {
     		return m_solver->nVars();
-    	}
-        virtual size_t getConflictCount() const override {
-        	return m_solver->getConflictCount();
         }
-
-        virtual size_t getPropagationCount() const override {
-        	return m_solver->getPropagationCount();
-        }
-
-    	virtual bool isSelector(Var v) override {
-    		return m_solver->isSelector(v);
-    	}
 
     	// Incremental mode
     	virtual void setIncrementalMode() override {
     		m_solver->setIncrementalMode();
-    	}
-    	virtual void initNbInitialVars(int nb) override {
-    		m_solver->initNbInitialVars(nb);
-    	}
+        }
+
     	virtual bool isIncremental() override {
     		return m_solver->isIncremental();
     	}

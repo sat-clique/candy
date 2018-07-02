@@ -107,15 +107,10 @@ namespace Candy {
 
     	virtual size_t nClauses() const override { return 0; }
     	virtual size_t nLearnts() const override { return 0; }
-    	virtual size_t nVars() const override;
-        virtual size_t getConflictCount() const override { return 0; }
-        virtual size_t getPropagationCount() const override { return 0; }
-
-    	virtual bool isSelector(Var v) override { return false; }
+        virtual size_t nVars() const override;
 
     	// Incremental mode
-    	virtual void setIncrementalMode() override;
-    	virtual void initNbInitialVars(int nb) override;
+        virtual void setIncrementalMode() override;
     	virtual bool isIncremental() override { return true; }
 
         /** Sets the literals returned by getConflict(). */

@@ -199,12 +199,6 @@ static void printProblemStatistics(CNFProblem* problem) {
  * \p outputFilename. The target file gets truncated.
  */
 static void printResult(CandySolverInterface* solver, lbool result, bool showModel, const char* outputFilename = nullptr) {
-    if (solver->getVerbosity() > 0) {
-        Statistics::getInstance().printFinalStats(solver->getConflictCount(), solver->getPropagationCount());
-        Statistics::getInstance().printAllocatorStatistics();
-        Statistics::getInstance().printRuntimes();
-    }
-
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     FILE* res = outputFilename != nullptr ? fopen(outputFilename, "wb") : nullptr;

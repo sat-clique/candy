@@ -204,20 +204,13 @@ public:
     size_t nVars() const {
         return trail.vardata.size();
     }
-    size_t getConflictCount() const {
-        return nConflicts;
-    }
-    size_t getPropagationCount() const {
-        return nPropagations;
-    }
 
     bool isSelector(Var v) {
-        return (incremental && (uint32_t)v >= nbVarsInitialFormula);
+        return false;
     }
 
     // Incremental mode
     void setIncrementalMode();
-    void initNbInitialVars(int nb);
     bool isIncremental();
 
     // Resource constraints:
@@ -336,7 +329,6 @@ protected:
 
     // Variables added for incremental mode
     bool incremental; // Use incremental SAT Solver
-    uint32_t nbVarsInitialFormula; // nb VAR in formula without assumptions (incremental SAT)
 
     // inprocessing
     uint64_t lastRestartWithInprocessing;
@@ -481,7 +473,7 @@ Solver<PickBranchLitT>::Solver(typename PickBranchLitT::Parameters params) :
     // conflict state
     ok(true),
     // incremental mode
-    incremental(false), nbVarsInitialFormula(INT32_MAX),
+    incremental(false),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -520,12 +512,6 @@ Solver<PickBranchLitT>::~Solver() {
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::setIncrementalMode() {
     incremental = true;
-}
-
-// Number of variables without selectors
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::initNbInitialVars(int nb) {
-    nbVarsInitialFormula = nb;
 }
 
 template<class PickBranchLitT>
@@ -1167,9 +1153,11 @@ lbool Solver<PickBranchLitT>::solve() {
     }
     
     cancelUntil(0);
-    
-    if (verbosity >= 1) {
+
+    if (verbosity > 0) {
     	Statistics::getInstance().printFinalStats(nConflicts, nPropagations);
+        Statistics::getInstance().printAllocatorStatistics();
+        Statistics::getInstance().printRuntimes();
     }
 
     Statistics::getInstance().runtimeStop("Solver");

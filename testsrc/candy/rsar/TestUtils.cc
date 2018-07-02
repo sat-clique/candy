@@ -51,7 +51,6 @@ namespace Candy {
         void addClauses(const std::vector<Cl>& clauses) override;
         Var createVariable() override;
         void createVariables(Var max) override;
-        void finishedAddingRegularVariables() override;
         bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) override;
         bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits) override;
         bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) override;
@@ -92,10 +91,6 @@ namespace Candy {
         while (m_maxVar < max) {
             createVariable();
         }
-    }
-    
-    void EquivalencyCheckerImpl::finishedAddingRegularVariables() {
-        m_solver->initNbInitialVars(m_maxVar+1);
     }
     
     bool EquivalencyCheckerImpl::isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) {
@@ -157,9 +152,7 @@ namespace Candy {
         auto checker = createEquivalencyChecker();
         
         checker->createVariables(3);
-        
-        checker->finishedAddingRegularVariables();
-        
+
         checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
             {mkLit(1, 0), mkLit(0, 1)},
             {mkLit(2, 0), mkLit(3, 1)}});
@@ -173,7 +166,6 @@ namespace Candy {
         auto checker = createEquivalencyChecker();
         
         checker->createVariables(2);
-        checker->finishedAddingRegularVariables();
         checker->createVariables(3);
 
         checker->addClauses({

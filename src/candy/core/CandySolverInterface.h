@@ -61,15 +61,10 @@ public:
 
 	virtual size_t nClauses() const = 0;
 	virtual size_t nLearnts() const = 0;
-	virtual size_t nVars() const = 0;
-    virtual size_t getConflictCount() const = 0;
-    virtual size_t getPropagationCount() const = 0;
-
-	virtual bool isSelector(Var v) = 0;
+    virtual size_t nVars() const = 0;
 
 	// Incremental mode
-	virtual void setIncrementalMode() = 0;
-	virtual void initNbInitialVars(int nb) = 0;
+    virtual void setIncrementalMode() = 0;
 	virtual bool isIncremental() = 0;
 };
 

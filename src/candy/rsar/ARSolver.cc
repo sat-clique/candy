@@ -309,7 +309,6 @@ namespace Candy {
     void ARSolver::init() {
         // Set up the underlying SAT solver
         m_solver->setIncrementalMode();
-        m_solver->initNbInitialVars(m_solver->nVars());
         
         // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
         // approximation computation system.
