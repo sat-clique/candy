@@ -39,15 +39,15 @@ CandySolverInterface* SolverFactory::createRSILSolver(CNFProblem& problem) {
                 generalArgs.randomSimulationArgs, generalArgs.rsilArgs, problem);
     }
 
-//    if (generalArgs.rsilArgs.mode == RSILMode::VANISHING) {
-//        return (RSILSolverFactory<RSILVanishingBranchingHeuristic3>()).createRSILSolver(generalArgs.gateRecognitionArgs,
-//                generalArgs.randomSimulationArgs, generalArgs.rsilArgs, problem);
-//    }
+    if (generalArgs.rsilArgs.mode == RSILMode::VANISHING) {
+        return (RSILSolverFactory<RSILVanishingBranchingHeuristic3>()).createRSILSolver(generalArgs.gateRecognitionArgs,
+                generalArgs.randomSimulationArgs, generalArgs.rsilArgs, problem);
+    }
 
-//    if (generalArgs.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
-//        return (RSILSolverFactory<RSILBudgetBranchingHeuristic3>()).createRSILSolver(generalArgs.gateRecognitionArgs,
-//                generalArgs.randomSimulationArgs, generalArgs.rsilArgs, problem);
-//    }
+    if (generalArgs.rsilArgs.mode == RSILMode::IMPLICATIONBUDGETED) {
+        return (RSILSolverFactory<RSILBudgetBranchingHeuristic3>()).createRSILSolver(generalArgs.gateRecognitionArgs,
+                generalArgs.randomSimulationArgs, generalArgs.rsilArgs, problem);
+    }
 
     throw std::invalid_argument{"RSIL mode not implemented"};
 }
