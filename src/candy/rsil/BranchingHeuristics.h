@@ -495,6 +495,8 @@ namespace Candy {
         }
     }
     
+    template <>
+    RSILBranchingHeuristic3::Parameters RSILBranchingHeuristic3::defaultParameters;
 
     template<class AdviceType>
     RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic()
@@ -503,7 +505,7 @@ namespace Candy {
                m_rng(0xFFFF),
                m_backbonesEnabled(RSILBranchingHeuristic3::defaultParameters.backbonesEnabled) {
         if (RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic) {
-            assert (params.RSARHeuristic.get() != nullptr);
+            assert (RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.get() != nullptr);
             std::vector<RefinementHeuristic*> heuristics;
             heuristics.push_back(RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.get());
             filterWithRSARHeuristics(heuristics, m_advice, RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones);

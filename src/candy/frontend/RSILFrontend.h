@@ -133,7 +133,6 @@ namespace Candy {
             RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic = false;
             RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones = false;
             RSILBranchingHeuristic3::defaultParameters.RSARHeuristic = nullptr;
-            assert(!rsilArgs.filterByInputDependencies); // GateAnalyzer needed
             RSILBranchingHeuristic3::defaultParameters.initialBudget = 10000ull;
             RSILBranchingHeuristic3::defaultParameters.probHalfLife = false;
         }
