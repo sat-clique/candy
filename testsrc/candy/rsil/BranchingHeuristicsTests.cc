@@ -85,8 +85,8 @@ namespace Candy {
     static void test_givesAdviceForSingleEquivalence() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        RSILArguments args = { true, RSILMode::UNRESTRICTED, 0, 10000ull, false, 0, false, 0.0, false };
-        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData, args);
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
         Heuristic underTest;
         
         typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
@@ -115,8 +115,8 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        RSILArguments args = { true, RSILMode::UNRESTRICTED, 0, 10000ull, false, 0, false, 0.0, false };
-        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData, args);
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
         Heuristic underTest;
         
         typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
@@ -144,8 +144,8 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        RSILArguments args = { true, RSILMode::UNRESTRICTED, 0, 10000ull, false, 0, false, 0.0, false };
-        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData, args);
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
         Heuristic underTest;
         
         typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
@@ -173,8 +173,7 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        RSILArguments args = { true, RSILMode::UNRESTRICTED, 0, 10000ull, false, 0, false, 0.0, false };
-        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData, args);
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
         Heuristic underTest;
         
         typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(4,0)};
@@ -202,8 +201,7 @@ namespace Candy {
     static void test_givesAdviceForSingleEquivalenceSize3() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-        RSILArguments args = { true, RSILMode::UNRESTRICTED, 0, 10000ull, false, 0, false, 0.0, false };
-        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData, args);
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
         Heuristic underTest;
         
         typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0)};
@@ -337,8 +335,7 @@ namespace Candy {
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        RSILArguments args = { true, RSILMode::UNRESTRICTED, 0, 10000ull, false, 0, false, 0.0, false };
-        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData, args);
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
         TestedRSILVanishingBranchingHeuristic underTest;
         
         CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
