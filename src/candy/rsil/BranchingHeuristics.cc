@@ -30,6 +30,10 @@
 #include <algorithm>
 
 namespace Candy {
+
+    template <>
+    RSILBranchingHeuristic3::Parameters RSILBranchingHeuristic3::defaultParameters = RSILBranchingHeuristic3::Parameters();
+
     template <>
     Lit RSILBranchingHeuristic3::pickBranchLit(Trail& trail) {
         Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);

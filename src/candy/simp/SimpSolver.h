@@ -74,8 +74,7 @@ namespace Candy {
 template<class PickBranchLitT=Branch>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:
-	SimpSolver();
-    SimpSolver(typename PickBranchLitT::Parameters params);
+    SimpSolver();
     virtual ~SimpSolver();
 
     // Problem specification:
@@ -237,11 +236,7 @@ extern IntOption opt_subsumption_lim;
 // Constructor/Destructor:
 
 template<class PickBranchLitT>
-SimpSolver<PickBranchLitT>::SimpSolver() : SimpSolver<PickBranchLitT>::SimpSolver(typename PickBranchLitT::Parameters()) { }
-
-template<class PickBranchLitT>
-SimpSolver<PickBranchLitT>::SimpSolver(typename PickBranchLitT::Parameters params) :
-    Solver<PickBranchLitT>(params),
+SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
     clause_lim(SimpSolverOptions::opt_clause_lim),
     grow(SimpSolverOptions::opt_grow),
