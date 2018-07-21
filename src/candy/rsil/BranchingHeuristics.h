@@ -81,34 +81,16 @@ namespace Candy {
      *                       storages of conjectures about literal equivalencies and may
      *                       carry further information about these conjectures, e.g. usage
      *                       budgets.
-     *
-     * \tparam SolverTypes   The types of solver data structures used for RSILBranchingHeuristic.
-     *                       SolverTypes must provide the following types:
-     *                         - SolverTypes::TrailType
-     *                         - SolverTypes::TrailLimType
-     *                         - SolverTypes::DecisionType
-     *                         - SolverTypes::AssignsType<br>
-     *                       All four types must provide operator[], a type size_type (being
-     *                       the argument type of operator[]), and a method size_type size().<br>
-     *                         - TrailType is the type of the solver's trail data structure type (with
-     *                           Lit& operator[](n) returning the n'th assigned literal)
-     *                         - TrailLimType is the solver's trail limits data structure type (with
-     *                           operator[](n) returning the begin index of the n'th decision level
-     *                           in the solver's trail)
-     *                         - DecisionType is the solver's decision variable marker data structure type
-     *                           (with operator[](v) being an integral value which is 0 iff variable v may
-     *                           not be a branching variable)),
-     *                         - AssignsType is the solver's variable assignment data structure type
-     *                           (with operator[](v) being an lbool value representing the current assignment
-     *                           of v).
      */
-    template<class AdviceType,
-             typename SolverTypes = CandyDefaultSolverTypes>
+    template<class AdviceType>
     class RSILBranchingHeuristic {
-        static_assert(std::is_class<typename AdviceType::BasicType>::value,
-          "AdviceType must have an inner type BasicType");
+
+        static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
     public:
+        /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
+        const Conjectures& conjectures;
+
         /**
          * A few definitions to make that compatible with the new direct design
          */
@@ -142,20 +124,8 @@ namespace Candy {
 
     	void notify_restarted(Trail& trail) {
     		defaultBranchingHeuristic.notify_restarted(trail);
-    	}
+        }
 
-        /// The type of the underlying solver's trail data structure
-        using TrailType = typename SolverTypes::TrailType;
-        
-        /// The type of the underlying solver's trail limits data structure
-        using TrailLimType = typename SolverTypes::TrailLimType;
-        
-        /// The type of the underlying solver's container marking decision variables
-        using DecisionType = typename SolverTypes::DecisionType;
-        
-        /// The type of the underlying solver's assignment data structure
-        using AssignsType = typename SolverTypes::AssignsType;
-        
         /// A type used for recognition of RSILBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBranchingHeuristic<AdviceEntry<3>>;
@@ -165,37 +135,47 @@ namespace Candy {
          */
         class Parameters {
         public:
-            /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
-            const Conjectures& conjectures;
+            /// RSIL Common: Iff true, conjectures about backbone variables are taken into consideration for implicit learning.
+            bool backbonesEnabled;
             
-            /// Iff true, conjectures about backbone variables are taken into consideration for implicit learning.
-            const bool backbonesEnabled;
-            
-            /// Iff true, the RSARHeuristic given by this parameter struct is used to filter the conjectures
+            /// RSIL Common: Iff true, the RSARHeuristic given by this parameter struct is used to filter the conjectures
             /// before running RSIL.
-            const bool filterByRSARHeuristic;
+            bool filterByRSARHeuristic;
             
-            /// An RSARHeuristic used to filter the conjectures before running RSIL. May contain nullptr if
+            /// RSIL Common: An RSARHeuristic used to filter the conjectures before running RSIL. May contain nullptr if
             /// filterByRSARHeuristic == false.
             std::shared_ptr<RefinementHeuristic> RSARHeuristic;
-            
-            /// Iff true, the RSARHeuristic is only used to filter backbone conjectures.
-            const bool filterOnlyBackbones;
-            
-            Parameters(const Conjectures& conjectures_,
+
+            /// RSIL Common: Iff true, the RSARHeuristic is only used to filter backbone conjectures.
+            bool filterOnlyBackbones;
+
+            /// RSIL Vanishing: The intervention probability half-life.
+            uint64_t probHalfLife;
+
+            /// RSIL Budget: The initial implication budget.
+            uint64_t initialBudget;
+
+            /// The conjecures to be used by this conflict seeking branching heuristic
+            Conjectures conjectures;
+
+            Parameters(Conjectures conjectures_ = Conjectures{},
                        bool backbonesEnabled_ = false,
                        bool filterByRSARHeuristic_ = false,
                        std::shared_ptr<RefinementHeuristic> RSARHeuristic_ = nullptr,
-                       bool filterOnlyBackbones_ = false)
-            : conjectures(conjectures_),
-            backbonesEnabled(backbonesEnabled_),
+                       bool filterOnlyBackbones_ = false,
+                       bool probHalfLife_ = false,
+                       uint64_t initialBudget_ = 10000ull)
+            : backbonesEnabled(backbonesEnabled_),
             filterByRSARHeuristic(filterByRSARHeuristic_),
             RSARHeuristic(RSARHeuristic_),
-            filterOnlyBackbones(filterOnlyBackbones_) {
+            filterOnlyBackbones(filterOnlyBackbones_),
+            probHalfLife(probHalfLife_),
+            initialBudget(initialBudget_) {
+                conjectures = std::move(conjectures_);
             }
-            
-            Parameters() = default;
         };
+
+        static RSILBranchingHeuristic::Parameters defaultParameters;
         
         /**
          * \brief Constructs a new RSILBranchingHeuristic instance with a default configuration
@@ -206,13 +186,6 @@ namespace Candy {
          *
          */
         RSILBranchingHeuristic();
-        
-        /**
-         * \brief Constructs a new RSILBranchingHeuristic instance using the given parameters.
-         *
-         * \param params    The RSIL parameter object used to configure the constructed object.
-         */
-        explicit RSILBranchingHeuristic(const Parameters& params);
         RSILBranchingHeuristic(RSILBranchingHeuristic&& other) = default;
         RSILBranchingHeuristic& operator=(RSILBranchingHeuristic&& other) = default;
         
@@ -238,11 +211,11 @@ namespace Candy {
          *
          * \returns a literal chosen via implicit learning or lit_Undef.
          */
-        Lit getAdvice(const TrailType& trail,
+        Lit getAdvice(const std::vector<Lit>& trail,
                       uint64_t trailSize,
-                      const TrailLimType& trailLimits,
-                      const AssignsType& assigns,
-                      const DecisionType& decision) noexcept;
+                      const std::vector<uint32_t>& trailLimits,
+                      const std::vector<lbool>& assigns,
+                      const std::vector<char>& decision) noexcept;
         
         /**
          * \brief Gets a branching literal sign advice using implicit learning.
@@ -308,44 +281,12 @@ namespace Candy {
      * \tParam tAdviceSize      The maximum of size equivalence conjectures taken into account
      * \tParam SolverTypes      See the SolverTypes template parameter of RSILBranchingHeuristic
      */
-    template<unsigned int tAdviceSize, typename SolverTypes = CandyDefaultSolverTypes>
-    class RSILBudgetBranchingHeuristic : public RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>, SolverTypes> {
+    template<unsigned int tAdviceSize>
+    class RSILBudgetBranchingHeuristic : public RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>> {
         static_assert(tAdviceSize > 1, "advice size must be >= 2");
     public:
-        /**
-         * A few definitions to make that compatible with the new direct design
-         */
-        Branch defaultBranchingHeuristic;
 
         Lit pickBranchLit(Trail& trail);
-
-    	void setDecisionVar(Var v, bool b) {
-    		defaultBranchingHeuristic.setDecisionVar(v, b);
-    	}
-
-    	void initFrom(const CNFProblem& problem) {
-    		defaultBranchingHeuristic.initFrom(problem);
-    	}
-
-    	void grow() {
-    		defaultBranchingHeuristic.grow();
-    	}
-
-    	void grow(size_t size) {
-    		defaultBranchingHeuristic.grow(size);
-    	}
-
-    	void notify_conflict(vector<Var>& involved_variables, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
-    		defaultBranchingHeuristic.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
-    	}
-
-    	void notify_backtracked(vector<Lit> lits) {
-    		defaultBranchingHeuristic.notify_backtracked(lits);
-    	}
-
-    	void notify_restarted(Trail& trail) {
-    		defaultBranchingHeuristic.notify_restarted(trail);
-    	}
 
         /// A type used for recognition of RSILBudgetBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
@@ -354,34 +295,7 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
-        /**
-         * \class
-         * \brief RSILBudgetBranchingHeuristic parameters.
-         */
-        class Parameters {
-        public:
-            /// The parameters for the underlying RSILBranchingHeuristic.
-            typename RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>::Parameters rsilParameters;
-            
-            /// The initial implication budget.
-            uint64_t initialBudget;
-            
-            Parameters() = default;
-            Parameters(const typename UnderlyingHeuristicType::Parameters& rsilParameters_,
-                       uint64_t initialBudget_ = 10000ull)
-            : rsilParameters(rsilParameters_),
-            initialBudget(initialBudget_) {
-            }
-            
-            Parameters(const Conjectures& conjectures_,
-                                uint64_t initialBudget_ = 10000ull)
-            : rsilParameters(typename UnderlyingHeuristicType::Parameters{conjectures_}),
-            initialBudget(initialBudget_) {
-            }
-        };
-        
         RSILBudgetBranchingHeuristic();
-        explicit RSILBudgetBranchingHeuristic(const Parameters& params);
         RSILBudgetBranchingHeuristic(RSILBudgetBranchingHeuristic&& other) = default;
         RSILBudgetBranchingHeuristic& operator=(RSILBudgetBranchingHeuristic&& other) = default;
     };
@@ -418,50 +332,11 @@ namespace Candy {
      * \tParam AdviceType       See the AdviceType template parameter of RSILBranchingHeuristic
      * \tParam SolverTypes      See the SolverTypes template parameter of RSILBranchingHeuristic
      */
-    template<class AdviceType, typename SolverTypes = CandyDefaultSolverTypes>
-    class RSILVanishingBranchingHeuristic {
+    template<class AdviceType>
+    class RSILVanishingBranchingHeuristic : public RSILBranchingHeuristic<AdviceType> {
     public:
-        /**
-         * A few definitions to make that compatible with the new direct design
-         */
-        Branch defaultBranchingHeuristic;
 
         Lit pickBranchLit(Trail& trail);
-
-    	void setDecisionVar(Var v, bool b) {
-    		defaultBranchingHeuristic.setDecisionVar(v, b);
-    	}
-
-    	void initFrom(const CNFProblem& problem) {
-    		defaultBranchingHeuristic.initFrom(problem);
-    	}
-
-    	void grow() {
-    		defaultBranchingHeuristic.grow();
-    	}
-
-    	void grow(size_t size) {
-    		defaultBranchingHeuristic.grow(size);
-    	}
-
-    	void notify_conflict(vector<Var>& involved_variables, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
-    		defaultBranchingHeuristic.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
-    	}
-
-    	void notify_backtracked(vector<Lit> lits) {
-    		defaultBranchingHeuristic.notify_backtracked(lits);
-    	}
-
-    	void notify_restarted(Trail& trail) {
-    		defaultBranchingHeuristic.notify_restarted(trail);
-    	}
-
-        // See the documentation of RSILBranchingHeuristic for the following 4 types.
-        using TrailType = typename RSILBranchingHeuristic<AdviceType>::TrailType;
-        using TrailLimType = typename RSILBranchingHeuristic<AdviceType>::TrailLimType;
-        using DecisionType = typename RSILBranchingHeuristic<AdviceType>::DecisionType;
-        using AssignsType = typename RSILBranchingHeuristic<AdviceType>::AssignsType;
-        
         
         /// A type used for recognition of RSILVanishingBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
@@ -470,36 +345,7 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
         
-        /**
-         * RSILVanishingBranchingHeuristic parameters.
-         */
-        class Parameters {
-        public:
-            /// The parameters for the underlying RSILBranchingHeuristic.
-            typename RSILBranchingHeuristic<AdviceType>::Parameters rsilParameters;
-            
-            /// The intervention probability half-life.
-            uint64_t probHalfLife;
-            
-            Parameters() = default;
-            
-            explicit Parameters(const Conjectures& conjectures_)
-            : rsilParameters(typename UnderlyingHeuristicType::Parameters{conjectures_}), probHalfLife(100ull) {
-            }
-            
-            Parameters(const Conjectures& conjectures_, uint64_t probHalfLife_)
-            : rsilParameters(typename UnderlyingHeuristicType::Parameters{conjectures_}),
-            probHalfLife(probHalfLife_) {}
-            
-            Parameters(const typename UnderlyingHeuristicType::Parameters& rsilParameters_,
-                       uint64_t probHalfLife_)
-            : rsilParameters(rsilParameters_),
-            probHalfLife(probHalfLife_) {
-            }
-        };
-        
         RSILVanishingBranchingHeuristic();
-        explicit RSILVanishingBranchingHeuristic(const Parameters& params);
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
         
@@ -525,11 +371,11 @@ namespace Candy {
          *
          * \returns a literal chosen via implicit learning or lit_Undef.
          */
-        Lit getAdvice(const TrailType& trail,
+        Lit getAdvice(const std::vector<Lit>& trail,
                       uint64_t trailSize,
-                      const TrailLimType& trailLimits,
-                      const AssignsType& assigns,
-                      const DecisionType& decision) noexcept;
+                      const std::vector<uint32_t>& trailLimits,
+                      const std::vector<lbool>& assigns,
+                      const std::vector<char>& decision) noexcept;
         
         /**
          * \brief Gets a branching literal sign advice using implicit learning.
@@ -649,41 +495,35 @@ namespace Candy {
         }
     }
     
-    
-    
-    template<class AdviceType, typename SolverTypes>
-    RSILBranchingHeuristic<AdviceType, SolverTypes>::RSILBranchingHeuristic()
-    : defaultBranchingHeuristic(), m_advice(),
-    m_rng(0xFFFF),
-    m_backbonesEnabled(false) {
-    }
-    
-    template<class AdviceType, typename SolverTypes>
-    RSILBranchingHeuristic<AdviceType, SolverTypes>::RSILBranchingHeuristic(const Parameters& params)
-    : defaultBranchingHeuristic(), m_advice(params.conjectures,
-               BranchingHeuristicsImpl::getMaxVar(params.conjectures)),
-    m_rng(0xFFFF),
-    m_backbonesEnabled(params.backbonesEnabled) {
-        if (params.filterByRSARHeuristic) {
-            assert (params.RSARHeuristic.get() != nullptr);
+    template <>
+    RSILBranchingHeuristic3::Parameters RSILBranchingHeuristic3::defaultParameters;
+
+    template<class AdviceType>
+    RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic()
+    : conjectures(RSILBranchingHeuristic3::defaultParameters.conjectures), defaultBranchingHeuristic(), m_advice(RSILBranchingHeuristic3::defaultParameters.conjectures,
+               BranchingHeuristicsImpl::getMaxVar(RSILBranchingHeuristic3::defaultParameters.conjectures)),
+               m_rng(0xFFFF),
+               m_backbonesEnabled(RSILBranchingHeuristic3::defaultParameters.backbonesEnabled) {
+        if (RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic) {
+            assert (RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.get() != nullptr);
             std::vector<RefinementHeuristic*> heuristics;
-            heuristics.push_back(params.RSARHeuristic.get());
-            filterWithRSARHeuristics(heuristics, m_advice, params.filterOnlyBackbones);
+            heuristics.push_back(RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.get());
+            filterWithRSARHeuristics(heuristics, m_advice, RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones);
         }
     }
     
-    template<class AdviceType, typename SolverTypes>
-    inline FastRandomNumberGenerator& RSILBranchingHeuristic<AdviceType, SolverTypes>::getRandomNumberGenerator() noexcept {
+    template<class AdviceType>
+    inline FastRandomNumberGenerator& RSILBranchingHeuristic<AdviceType>::getRandomNumberGenerator() noexcept {
         return m_rng;
     }
     
-    template<class AdviceType, typename SolverTypes>
+    template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILBranchingHeuristic<AdviceType, SolverTypes>::getAdvice(const TrailType& trail,
+    inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice(const std::vector<Lit>& trail,
                                                                           uint64_t trailSize,
-                                                                          const TrailLimType& trailLimits,
-                                                                          const AssignsType& assigns,
-                                                                          const DecisionType& decision) noexcept {
+                                                                          const std::vector<uint32_t>& trailLimits,
+                                                                          const std::vector<lbool>& assigns,
+                                                                          const std::vector<char>& decision) noexcept {
         if (trailLimits.size() == 0) {
             return lit_Undef;
         }
@@ -726,9 +566,9 @@ namespace Candy {
         return lit_Undef;
     }
     
-    template<class AdviceType, typename SolverTypes>
+    template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILBranchingHeuristic<AdviceType, SolverTypes>::getSignAdvice(Lit literal) noexcept {
+    inline Lit RSILBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
         if (m_backbonesEnabled) {
             Var decisionVariable = var(literal);
             if (m_advice.hasPotentialAdvice(decisionVariable)) {
@@ -745,20 +585,15 @@ namespace Candy {
         }
         return literal;
     }
-    
-    
-    template<unsigned int tAdviceSize, typename SolverTypes>
-    RSILBudgetBranchingHeuristic<tAdviceSize, SolverTypes>::RSILBudgetBranchingHeuristic()
-    : defaultBranchingHeuristic(), RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>() {
-    }
-    
-    template<unsigned int tAdviceSize, typename SolverTypes>
-    RSILBudgetBranchingHeuristic<tAdviceSize, SolverTypes>::RSILBudgetBranchingHeuristic(const Parameters& params)
-    : defaultBranchingHeuristic(), RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(params.rsilParameters) {
+
+
+    template<unsigned int tAdviceSize>
+    RSILBudgetBranchingHeuristic<tAdviceSize>::RSILBudgetBranchingHeuristic()
+    : RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>() {
         for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
             auto& advice = this->m_advice.getAdvice(i);
             for (size_t j = 0; j < advice.getSize(); ++j) {
-                advice.setBudget(j, params.initialBudget);
+                advice.setBudget(j, RSILBranchingHeuristic3::defaultParameters.initialBudget);
             }
         }
     }
@@ -771,31 +606,23 @@ namespace Candy {
     // canUseAdvice() for BudgetAdviceEntry - see the BranchingHeuristicsImpl namespace
     // for further details.
     
-    template<class AdviceType, typename SolverTypes>
-    RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::RSILVanishingBranchingHeuristic()
-    : defaultBranchingHeuristic(), m_callCounter(1ull),
+    template<class AdviceType>
+    RSILVanishingBranchingHeuristic<AdviceType>::RSILVanishingBranchingHeuristic()
+        : m_callCounter(RSILBranchingHeuristic3::defaultParameters.probHalfLife),
     m_mask(0ull),
-    m_probHalfLife(1ull),
-    m_rsilHeuristic(){
-    }
-    
-    template<class AdviceType, typename SolverTypes>
-    RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::RSILVanishingBranchingHeuristic(const Parameters& params)
-    : defaultBranchingHeuristic(), m_callCounter(params.probHalfLife),
-    m_mask(0ull),
-    m_probHalfLife(params.probHalfLife),
-    m_rsilHeuristic(params.rsilParameters) {
+    m_probHalfLife(RSILBranchingHeuristic3::defaultParameters.probHalfLife),
+    m_rsilHeuristic() {
         assert(m_probHalfLife > 0);
     }
     
-    template<class AdviceType, typename SolverTypes>
-    inline bool RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::isRSILEnabled() noexcept {
+    template<class AdviceType>
+    inline bool RSILVanishingBranchingHeuristic<AdviceType>::isRSILEnabled() noexcept {
         auto randomNumber = m_rsilHeuristic.getRandomNumberGenerator()();
         return (randomNumber & m_mask) == 0ull;
     }
     
-    template<class AdviceType, typename SolverTypes>
-    inline void RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::updateCallCounter() noexcept {
+    template<class AdviceType>
+    inline void RSILVanishingBranchingHeuristic<AdviceType>::updateCallCounter() noexcept {
         assert(m_callCounter > 0);
         --m_callCounter;
         if (m_callCounter == 0) {
@@ -804,21 +631,21 @@ namespace Candy {
         }
     }
     
-    template<class AdviceType, typename SolverTypes>
+    template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::getAdvice(const TrailType& trail,
-                                                                                   uint64_t trailSize,
-                                                                                   const TrailLimType& trailLimits,
-                                                                                   const AssignsType& assigns,
-                                                                                   const DecisionType& decision) noexcept {
+    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice(const std::vector<Lit>& trail,
+                                                                       uint64_t trailSize,
+                                                                       const std::vector<uint32_t>& trailLimits,
+                                                                       const std::vector<lbool>& assigns,
+                                                                       const std::vector<char>& decision) noexcept {
         auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailSize, trailLimits, assigns, decision) : lit_Undef;
         updateCallCounter();
         return result;
     }
     
-    template<class AdviceType, typename SolverTypes>
+    template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILVanishingBranchingHeuristic<AdviceType, SolverTypes>::getSignAdvice(Lit literal) noexcept {
+    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
         auto result = isRSILEnabled() ? m_rsilHeuristic.getSignAdvice(literal) : literal;
         updateCallCounter();
         return result;
