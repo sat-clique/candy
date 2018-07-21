@@ -133,6 +133,8 @@ public:
 
     bool hasTimeout() const;
 
+    Runtime runtime;
+
 private:
     // problem to analyze:
     CNFProblem& problem;
@@ -152,7 +154,6 @@ private:
     bool useIntensification = false;
     int lookaheadThreshold = 10;
     unsigned int semanticConflictBudget = 0;
-    Runtime runtime;
 
     // analyzer output:
     std::vector<Cl*> roots; // top-level clauses
