@@ -278,11 +278,10 @@ static lbool simplifyAndPrintProblem(CandySolverInterface* solver) {
 //=================================================================================================
 // Main:
 int main(int argc, char** argv) {
-    std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
-    
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
     
     if (args.verb > 0) {
+        std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
         std::cout << args << std::endl;
     }
 

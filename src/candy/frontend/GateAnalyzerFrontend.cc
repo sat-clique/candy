@@ -65,18 +65,12 @@ namespace Candy {
         Statistics::getInstance().runtimeStart("Gate analysis");
         auto gates = createGateAnalyzer(problem, recognitionArgs);
         gates->analyze();
-        Statistics::getInstance().runtimeStop("Gate analysis");
-        printf("c =====================================[ Problem Statistics ]===================================\n");
-        printf("c |                                                                                            |\n");
-        printf("c |  Number of gates:        %12d                                                      |\n",
-               gates->getGateCount());
-        printf("c |  Number of variables:    %12d                                                      |\n",
-               problem.nVars());
-        printf("c |  Number of clauses:      %12d                                                      |\n",
-               problem.nClauses());
-        Statistics::getInstance().printRuntime("Gate analysis");
-        printf("c |                                                                                            |\n");
-        printf("c ==============================================================================================\n");
+        //Statistics::getInstance().runtimeStop("Gate analysis");
+        std::cout << "gates:" << gates->getGateCount() << std::endl;
+        std::cout << "variables:" << problem.nVars() << std::endl;
+        std::cout << "clauses:" << problem.nClauses() << std::endl;
+        std::cout << "analyzer-runtime:" << gates->runtime.getRuntime().count() / 1000 << std::endl;
+        //Statistics::getInstance().printRuntime("Gate analysis");
         if (recognitionArgs.opt_print_gates) {
             gates->printGates();
         }
