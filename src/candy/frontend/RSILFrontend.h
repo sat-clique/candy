@@ -100,9 +100,42 @@ namespace Candy {
     	RSILSolverFactory() { }
     	~RSILSolverFactory() { }
 
-    	RSILBranchingHeuristic3::Parameters getDefaultHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer);
+        void setRSILArgs(Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer)  {
+            RSILBranchingHeuristic3::defaultParameters.conjectures = std::move(conjectures);
+            RSILBranchingHeuristic3::defaultParameters.backbonesEnabled = !conjectures.getBackbones().empty();
+            RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic = rsilArgs.filterByInputDependencies;
+            RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones = rsilArgs.filterOnlyBackbones;
+            RSILBranchingHeuristic3::defaultParameters.RSARHeuristic = nullptr;
+            if (rsilArgs.filterByInputDependencies) {
+                auto maxInputs = static_cast<unsigned long>(rsilArgs.filterByInputDependenciesMax);
+                auto heuristic = createInputDepCountRefinementHeuristic(analyzer, {maxInputs, 0});
+                heuristic->beginRefinementStep();
+                RSILBranchingHeuristic3::defaultParameters.RSARHeuristic = shared_ptr<RefinementHeuristic>(heuristic.release());
+            }
+            RSILBranchingHeuristic3::defaultParameters.initialBudget = rsilArgs.impbudget_initialBudget;
+            RSILBranchingHeuristic3::defaultParameters.probHalfLife = rsilArgs.vanishing_probabilityHalfLife;
+        }
 
-		typename BranchingHeuristic::Parameters getRSILHeuristicParameters(const Conjectures& conjectures, const RSILArguments& rsilArgs, GateAnalyzer& analyzer);
+        void setRSILArgs(Conjectures& conjectures, const RSILArguments& rsilArgs) {
+            RSILBranchingHeuristic3::defaultParameters.conjectures = std::move(conjectures);
+            RSILBranchingHeuristic3::defaultParameters.backbonesEnabled = !conjectures.getBackbones().empty();
+            RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic = rsilArgs.filterByInputDependencies;
+            RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones = rsilArgs.filterOnlyBackbones;
+            RSILBranchingHeuristic3::defaultParameters.RSARHeuristic = nullptr;
+            assert(!rsilArgs.filterByInputDependencies); // GateAnalyzer needed
+            RSILBranchingHeuristic3::defaultParameters.initialBudget = rsilArgs.impbudget_initialBudget;
+            RSILBranchingHeuristic3::defaultParameters.probHalfLife = rsilArgs.vanishing_probabilityHalfLife;
+        }
+
+        void setRSILArgs(Conjectures& conjectures) {
+            RSILBranchingHeuristic3::defaultParameters.conjectures = std::move(conjectures);
+            RSILBranchingHeuristic3::defaultParameters.backbonesEnabled = !conjectures.getBackbones().empty();
+            RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic = false;
+            RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones = false;
+            RSILBranchingHeuristic3::defaultParameters.RSARHeuristic = nullptr;
+            RSILBranchingHeuristic3::defaultParameters.initialBudget = 10000ull;
+            RSILBranchingHeuristic3::defaultParameters.probHalfLife = false;
+        }
 
 		SimpSolver<BranchingHeuristic>*
 		createRSILSolver(const GateRecognitionArguments& gateRecognitionArgs,
@@ -162,8 +195,8 @@ namespace Candy {
 				throw UnsuitableProblemException{"no conjectures found."};
 			}
 
-			auto heuristicParameters = getRSILHeuristicParameters(*conjectures, rsilArgs, *analyzer);
-			return new SimpSolver<BranchingHeuristic>(heuristicParameters);
+            setRSILArgs(*conjectures, rsilArgs, *analyzer);
+            return new SimpSolver<BranchingHeuristic>();
 		}
     };
 }

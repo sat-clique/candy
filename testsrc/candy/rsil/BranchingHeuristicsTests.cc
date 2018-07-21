@@ -33,6 +33,7 @@
 #include <candy/randomsimulation/RandomSimulator.h>
 #include <candy/gates/GateAnalyzer.h>
 #include <candy/rsar/Heuristics.h>
+#include <candy/frontend/RSILFrontend.h>
 
 namespace Candy {
     
@@ -62,8 +63,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_emptyInitializedHeuristicReturnsUndefForMinInput() {
         Conjectures empty{};
-        typename Heuristic::Parameters params{empty};
-        Heuristic underTest{params};
+        Heuristic underTest;
         
         auto result = underTest.getAdvice({mkLit(0)}, 1ull, {0}, {}, {0});
         EXPECT_EQ(result, lit_Undef);
@@ -85,13 +85,14 @@ namespace Candy {
     static void test_givesAdviceForSingleEquivalence() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        typename Heuristic::Parameters params{testData};
-        Heuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        Heuristic underTest;
         
-        typename Heuristic::TrailType testTrail {mkLit(1,0)};
-        typename Heuristic::TrailLimType testTrailLim {0};
-        typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename Heuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
@@ -114,13 +115,14 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        typename Heuristic::Parameters params{testData};
-        Heuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        Heuristic underTest;
         
-        typename Heuristic::TrailType testTrail {mkLit(1,0)};
-        typename Heuristic::TrailLimType testTrailLim {0};
-        typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename Heuristic::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
+        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         EXPECT_EQ(result, lit_Undef);
@@ -142,13 +144,14 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        typename Heuristic::Parameters params{testData};
-        Heuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        Heuristic underTest;
         
-        typename Heuristic::TrailType testTrail {mkLit(1,0)};
-        typename Heuristic::TrailLimType testTrailLim {0};
-        typename Heuristic::DecisionType testDecisionVars {1, 1, 0, 1, 1};
-        typename Heuristic::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
+        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 0, 1, 1};
+        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         EXPECT_EQ(result, lit_Undef);
@@ -170,13 +173,14 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        typename Heuristic::Parameters params{testData};
-        Heuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        Heuristic underTest;
         
-        typename Heuristic::TrailType testTrail {mkLit(4,0)};
-        typename Heuristic::TrailLimType testTrailLim {0};
-        typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename Heuristic::AssignsType testAssigns {l_True, l_True, l_Undef, l_Undef, l_False};
+        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(4,0)};
+        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_True, l_Undef, l_Undef, l_False};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         EXPECT_EQ(result, lit_Undef);
@@ -198,13 +202,14 @@ namespace Candy {
     static void test_givesAdviceForSingleEquivalenceSize3() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-        typename Heuristic::Parameters params{testData};
-        Heuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        Heuristic underTest;
         
-        typename Heuristic::TrailType testTrail {mkLit(3,0)};
-        typename Heuristic::TrailLimType testTrailLim {0};
-        typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename Heuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_Undef};
+        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0)};
+        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_Undef};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
@@ -228,13 +233,14 @@ namespace Candy {
     static void test_travelsUpTrail() {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-        typename Heuristic::Parameters params{testData};
-        Heuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        Heuristic underTest;
         
-        typename Heuristic::TrailType testTrail {mkLit(3,0), mkLit(4,0)};
-        typename Heuristic::TrailLimType testTrailLim {0};
-        typename Heuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename Heuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False};
+        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0), mkLit(4,0)};
+        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         ASSERT_NE(result, lit_Undef);
@@ -273,17 +279,17 @@ namespace Candy {
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
         testData.addEquivalence(EquivalenceConjecture{{mkLit(4, 0), mkLit(5,1)}});
-        
-        std::shared_ptr<RefinementHeuristic> mockRSARHeuristicPtr;
-        mockRSARHeuristicPtr.reset(mockRSARHeuristic);
-        TestedRSILBranchingHeuristic::Parameters params{testData, true, true, mockRSARHeuristicPtr, false};
-        TestedRSILBranchingHeuristic underTest{params};
-        
-        
-        TestedRSILBranchingHeuristic::TrailType testTrail {mkLit(3,0)};
-        TestedRSILBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1, 1};
-        TestedRSILBranchingHeuristic::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False, l_Undef};
+
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic = true;
+        RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.reset(mockRSARHeuristic);
+
+        TestedRSILBranchingHeuristic underTest;
+                
+        CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0)};
+        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1, 1};
+        CandyDefaultSolverTypes::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False, l_Undef};
         
         auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
         
@@ -301,9 +307,9 @@ namespace Candy {
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
         testData.addBackbone(BackboneConjecture {mkLit(3,0)});
         testData.addBackbone(BackboneConjecture {mkLit(4,1)});
-        
-        TestedRSILBranchingHeuristic::Parameters params{testData, false, false, nullptr, false};
-        TestedRSILBranchingHeuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        TestedRSILBranchingHeuristic underTest;
         
         // backbone used here if backbone-usage would be activated:
         EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,0));
@@ -317,9 +323,9 @@ namespace Candy {
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
         testData.addBackbone(BackboneConjecture {mkLit(3,0)});
         testData.addBackbone(BackboneConjecture {mkLit(4,1)});
-        
-        TestedRSILBranchingHeuristic::Parameters params{testData, true, false, nullptr, false};
-        TestedRSILBranchingHeuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.backbonesEnabled = true;
+        TestedRSILBranchingHeuristic underTest;
         
         // backbone used here:
         EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,1));
@@ -330,15 +336,15 @@ namespace Candy {
     
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
         Conjectures testData;
-        
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        TestedRSILVanishingBranchingHeuristic::Parameters params{testData, 100ull};
-        TestedRSILVanishingBranchingHeuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = 1000ull;
+        TestedRSILVanishingBranchingHeuristic underTest;
         
-        TestedRSILVanishingBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
-        TestedRSILVanishingBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILVanishingBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        TestedRSILVanishingBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         int calls = 0;
         for (int i = 0; i < 100; ++i) {
@@ -348,21 +354,21 @@ namespace Candy {
         }
     }
     
-    TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {
+    TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {        
         Conjectures testData;
-        
+
         const unsigned long long halfLife = 1000ull;
         const int stages = 20;
-        
+
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        TestedRSILVanishingBranchingHeuristic::Parameters params{testData};
-        params.probHalfLife = halfLife;
-        TestedRSILVanishingBranchingHeuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.probHalfLife = halfLife;
+        TestedRSILVanishingBranchingHeuristic underTest;
         
-        TestedRSILVanishingBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
-        TestedRSILVanishingBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILVanishingBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        TestedRSILVanishingBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         std::unordered_map<uint8_t, double> distribution;
         std::unordered_map<uint8_t, double> referenceDistribution;
@@ -387,13 +393,14 @@ namespace Candy {
         
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-        TestedRSILBudgetBranchingHeuristic::Parameters params{testData, budget};
-        TestedRSILBudgetBranchingHeuristic underTest{params};
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(testData);
+        RSILBranchingHeuristic3::defaultParameters.initialBudget = budget;
+        TestedRSILBudgetBranchingHeuristic underTest;
         
-        TestedRSILBudgetBranchingHeuristic::TrailType testTrail {mkLit(1,0)};
-        TestedRSILBudgetBranchingHeuristic::TrailLimType testTrailLim {0};
-        TestedRSILBudgetBranchingHeuristic::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        TestedRSILBudgetBranchingHeuristic::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
         for (uint64_t i = 0; i <= budget+2; ++i) {
             Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
@@ -413,8 +420,7 @@ namespace Candy {
     }
     
     template<class Heuristic>
-    static void test_acceptanceTest(std::string filename,
-                                    bool expectedResult) {
+    static void test_acceptanceTest(std::string filename, bool expectedResult) {
         CNFProblem problem;
         problem.readDimacsFromFile(filename.c_str());
         ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
@@ -423,9 +429,11 @@ namespace Candy {
         gateAnalyzer.analyze();
         auto randomSimulator = createDefaultRandomSimulator(gateAnalyzer);
         auto conjectures = randomSimulator->run(1ull << 16);
-        
-        typename Heuristic::Parameters rsilParameters{conjectures};
-        Solver<Heuristic> solver(rsilParameters);
+
+        RSILArguments args = { true, RSILMode::UNRESTRICTED, 1ull << 16, 0, false, 0, false, 0.0, false };
+        (RSILSolverFactory<RSILBranchingHeuristic3>()).setRSILArgs(conjectures, args);
+
+        Solver<Heuristic> solver;
         solver.addClauses(problem);
         EXPECT_TRUE((expectedResult ? l_True : l_False) == solver.solve());
     }

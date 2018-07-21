@@ -109,7 +109,6 @@ public:
     using PickBranchLitType = PickBranchLitT;
 
     Solver();
-    Solver(typename PickBranchLitT::Parameters params);
     virtual ~Solver();
     
     // Add a new variable with parameters specifying variable mode.
@@ -424,12 +423,7 @@ namespace SolverOptions {
 }
 
 template<class PickBranchLitT>
-Solver<PickBranchLitT>::Solver() : Solver<PickBranchLitT>::Solver(typename PickBranchLitT::Parameters()) {
-
-}
-
-template<class PickBranchLitT>
-Solver<PickBranchLitT>::Solver(typename PickBranchLitT::Parameters params) :
+Solver<PickBranchLitT>::Solver() :
     // default certificate, used when none other is set
     defaultCertificate(nullptr, false),
     // unsat certificate
@@ -447,7 +441,7 @@ Solver<PickBranchLitT>::Solver(typename PickBranchLitT::Parameters params) :
     // current assignment
     trail(),
 	// branching heuristic
-	branch(params),
+    branch(),
 	// conflict analysis module
 	conflict_analysis(&trail, &propagator, SolverOptions::opt_lb_size_minimzing_clause),
     // assumptions

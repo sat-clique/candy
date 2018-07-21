@@ -19,13 +19,14 @@ namespace Candy {
 
 class Branch {
 public:
-	class Parameters {
-	public:
+    struct Parameters {
 		double var_decay;
 		double max_var_decay;
 		Parameters() : Parameters(0.8, 0.95) {}
 		Parameters(double vdecay, double mvdecay) : var_decay(vdecay), max_var_decay(mvdecay) {}
 	};
+
+    static Branch::Parameters defaultParameters;
 
 	struct VarOrderLt {
 		const std::vector<double>& activity;
@@ -45,14 +46,14 @@ public:
 	const bool initial_polarity = true;
 	const double initial_activity = 0.0;
 
-	Branch() : Branch(Parameters()) {
+    Branch() : Branch(defaultParameters.var_decay, defaultParameters.max_var_decay) {
 
 	}
 
-	Branch(const Parameters params) :
+    Branch(double _var_decay, double _max_var_decay) :
 		order_heap(VarOrderLt(activity)),
 		activity(), polarity(), decision(),
-		var_inc(1), var_decay(params.var_decay), max_var_decay(params.max_var_decay) {
+        var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay) {
 
 	}
 
