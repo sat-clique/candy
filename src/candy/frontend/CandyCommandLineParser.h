@@ -54,7 +54,7 @@
 #include <iostream>
 #include <candy/frontend/GateAnalyzerFrontend.h>
 #include <candy/frontend/RandomSimulationFrontend.h>
-#include <candy/frontend/RSILFrontend.h>
+#include <candy/frontend/RSILSolverBuilder.h>
 #include <candy/frontend/RSARFrontend.h>
 
 namespace Candy {

@@ -135,6 +135,10 @@ public:
 
     Runtime runtime;
 
+    CNFProblem& getProblem() {
+        return problem;
+    }
+
 private:
     // problem to analyze:
     CNFProblem& problem;

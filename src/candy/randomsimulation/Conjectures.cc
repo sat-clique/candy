@@ -82,6 +82,19 @@ namespace Candy {
     const std::vector<BackboneConjecture> &Conjectures::getBackbones() const {
         return m_backbones;
     }
+
+    Var Conjectures::getMaxVar() const {
+        Var result = 0;
+        for (auto& c : getBackbones()) {
+            result = std::max(result, var(c.getLit()));
+        }
+        for (auto& c : getEquivalences()) {
+            for (auto literal : c) {
+                result = std::max(result, var(literal));
+            }
+        }
+        return result;
+    }
     
     std::uint64_t countLiteralEquivalences(const Conjectures& conjectures) {
         std::uint64_t result = 0;

@@ -18,7 +18,7 @@
 #include "candy/frontend/GateAnalyzerFrontend.h"
 #include "candy/frontend/RandomSimulationFrontend.h"
 #include "candy/frontend/RSARFrontend.h"
-#include "candy/frontend/RSILFrontend.h"
+#include "candy/frontend/RSILSolverBuilder.h"
 
 namespace Candy {
 
@@ -30,6 +30,8 @@ private:
 	const RSARArguments& rsarArgs;
 	const RSILArguments& rsilArgs;
 
+    std::unique_ptr<Conjectures> generateConjectures(CNFProblem& problem);
+
 public:
 	SolverFactory(GlucoseArguments& args) :
 		generalArgs(args),
@@ -39,7 +41,7 @@ public:
 		rsilArgs(args.rsilArgs)
 	{ }
 
-	virtual ~SolverFactory() {}
+    ~SolverFactory() {}
 
 	std::unique_ptr<GateAnalyzer> createGateAnalyzer(CNFProblem& problem);
 
