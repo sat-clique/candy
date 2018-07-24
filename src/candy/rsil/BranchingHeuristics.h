@@ -322,10 +322,10 @@ namespace Candy {
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
 
         RSILVanishingBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
-                                        RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 1000ull) :
+                                        RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 10000ull) :
                                     RSILBranchingHeuristic<AdviceType>(std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
                                     m_callCounter(m_probHalfLife_),
-                                    m_probHalfLife(m_probHalfLife_),
+                                    m_probHalfLife(m_probHalfLife_), m_mask(0ull),
                                     m_rsilHeuristic(std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_)
         {}
 

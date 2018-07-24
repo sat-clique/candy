@@ -230,12 +230,12 @@ namespace Candy {
         test_givesAdviceForSingleEquivalenceSize3<TestedRSILBranchingHeuristic>(std::move(heuristic));
     }
     
-//    TEST(RSILVanishingBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
-//        Conjectures testData;
-//        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-//        RSILVanishingBranchingHeuristic3 heuristic(std::move(testData));
-//        test_givesAdviceForSingleEquivalenceSize3<TestedRSILVanishingBranchingHeuristic>(std::move(heuristic));
-//    }
+    TEST(RSILVanishingBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        RSILVanishingBranchingHeuristic3 heuristic(std::move(testData));
+        test_givesAdviceForSingleEquivalenceSize3<TestedRSILVanishingBranchingHeuristic>(std::move(heuristic));
+    }
     
     TEST(RSILBudgetBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
         Conjectures testData;
@@ -264,12 +264,12 @@ namespace Candy {
         test_travelsUpTrail<TestedRSILBranchingHeuristic>(std::move(heuristic));
     }
     
-//    TEST(RSILVanishingBranchingHeuristicsTests, travelsUpTrail) {
-//        Conjectures testData;
-//        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-//        RSILVanishingBranchingHeuristic3 heuristic(std::move(testData));
-//        test_travelsUpTrail<TestedRSILVanishingBranchingHeuristic>(std::move(heuristic));
-//    }
+    TEST(RSILVanishingBranchingHeuristicsTests, travelsUpTrail) {
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        RSILVanishingBranchingHeuristic3 heuristic(std::move(testData));
+        test_travelsUpTrail<TestedRSILVanishingBranchingHeuristic>(std::move(heuristic));
+    }
     
     TEST(RSILBudgetBranchingHeuristicsTests, travelsUpTrail) {
         Conjectures testData;
@@ -348,57 +348,57 @@ namespace Candy {
         EXPECT_EQ(underTest.getSignAdvice(mkLit(1,0)), mkLit(1,0));
     }
     
-//    TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
-//        Conjectures testData;
-//        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+    TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
+        Conjectures testData;
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
-//        TestedRSILVanishingBranchingHeuristic underTest(std::move(testData));
+        TestedRSILVanishingBranchingHeuristic underTest(std::move(testData));
         
-//        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-//        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-//        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-//        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
-//        int calls = 0;
-//        for (int i = 0; i < 100; ++i) {
-//            auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
-//            ++calls;
-//            EXPECT_NE(result, lit_Undef) << "Unexpected undef at call " << calls;
-//        }
-//    }
+        int calls = 0;
+        for (int i = 0; i < 100; ++i) {
+            auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+            ++calls;
+            EXPECT_NE(result, lit_Undef) << "Unexpected undef at call " << calls;
+        }
+    }
     
-//    TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {
-//        Conjectures testData;
+    TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {
+        Conjectures testData;
 
-//        const unsigned long long halfLife = 1000ull;
-//        const int stages = 20;
+        const unsigned long long halfLife = 1000ull;
+        const int stages = 20;
 
-//        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
-//        TestedRSILVanishingBranchingHeuristic underTest(std::move(testData), false, nullptr, false, halfLife);
+        TestedRSILVanishingBranchingHeuristic underTest(std::move(testData), false, nullptr, false, halfLife);
         
-//        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-//        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-//        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-//        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
+        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
+        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
+        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
         
-//        std::unordered_map<uint8_t, double> distribution;
-//        std::unordered_map<uint8_t, double> referenceDistribution;
+        std::unordered_map<uint8_t, double> distribution;
+        std::unordered_map<uint8_t, double> referenceDistribution;
         
-//        for (int stage = 0; stage < stages; ++stage) {
-//            uint32_t definedResultCounter = 0;
-//            for (auto i = decltype(halfLife){0}; i < halfLife; ++i) {
-//                Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
-//                definedResultCounter += (result == lit_Undef) ? 0 : 1;
-//            }
-//            distribution[stage] = static_cast<double>(definedResultCounter) / static_cast<double>(halfLife);
-//            referenceDistribution[stage] = 1.0f/static_cast<double>(1 << stage);
-//        }
+        for (int stage = 0; stage < stages; ++stage) {
+            uint32_t definedResultCounter = 0;
+            for (auto i = decltype(halfLife){0}; i < halfLife; ++i) {
+                Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+                definedResultCounter += (result == lit_Undef) ? 0 : 1;
+            }
+            distribution[stage] = static_cast<double>(definedResultCounter) / static_cast<double>(halfLife);
+            referenceDistribution[stage] = 1.0f/static_cast<double>(1 << stage);
+        }
         
-//        // simple Kolomogorov-Smirnov test
-//        double maxAbsDiff = getMaxAbsDifference(distribution, referenceDistribution);
-//        EXPECT_LE(maxAbsDiff, 0.05f);
-//    }
+        // simple Kolomogorov-Smirnov test
+        double maxAbsDiff = getMaxAbsDifference(distribution, referenceDistribution);
+        EXPECT_LE(maxAbsDiff, 0.05f);
+    }
     
     TEST(RSILBudgetBranchingHeuristicsTests, producesUndefWhenBudgetIsDepleted) {
         const uint64_t budget = 4ull;
