@@ -98,7 +98,6 @@ namespace Candy {
 template<class PickBranchLitT = Branch>
 class Solver : public CandySolverInterface {
     static_assert(std::is_class<PickBranchLitT>::value, "PickBranchLitT must be a class");
-    static_assert(std::is_class<typename PickBranchLitT::Parameters>::value, "PickBranchLitT::Parameters must be a class");
     //static_assert(std::is_constructible<PickBranchLitT>::value, "PickBranchLitT must have a constructor without arguments");
     //static_assert(std::is_move_assignable<PickBranchLitT>::value, "PickBranchLitT must be move-assignable");
     //static_assert(std::is_move_constructible<PickBranchLitT>::value, "PickBranchLitT must be move-constructible");
@@ -109,6 +108,7 @@ public:
     using PickBranchLitType = PickBranchLitT;
 
     Solver();
+    Solver(PickBranchLitT branch_);
     virtual ~Solver();
     
     // Add a new variable with parameters specifying variable mode.
@@ -151,12 +151,12 @@ public:
     // Solving:
     bool simplify(); // remove satisfied clauses
     bool strengthen(); // remove false literals from clauses
-    virtual bool eliminate() { return true; }; // Perform variable elimination based simplification.
-    virtual bool eliminate(bool use_asymm, bool use_elim) { return true; }; // Perform variable elimination based simplification.
-    virtual void enablePreprocessing() {};
-    virtual void disablePreprocessing() {};
-    virtual bool isEliminated(Var v) const { return false; };
-    virtual void setFrozen(Var v, bool freeze) {};
+    virtual bool eliminate() { return true; } // Perform variable elimination based simplification.
+    virtual bool eliminate(bool use_asymm, bool use_elim) { return true; } // Perform variable elimination based simplification.
+    virtual void enablePreprocessing() {}
+    virtual void disablePreprocessing() {}
+    virtual bool isEliminated(Var v) const { return false; }
+    virtual void setFrozen(Var v, bool freeze) {}
 
     virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
 
@@ -420,6 +420,11 @@ namespace SolverOptions {
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
     extern IntOption opt_inprocessing;
+}
+
+template<class PickBranchLitT>
+Solver<PickBranchLitT>::Solver(PickBranchLitT branch_) : Solver<PickBranchLitT>::Solver() {
+    branch = std::move(branch_);
 }
 
 template<class PickBranchLitT>

@@ -89,10 +89,10 @@ namespace Candy {
         
     public:
         /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
-        const Conjectures& conjectures;
+        Conjectures conjectures;
 
         /**
-         * A few definitions to make that compatible with the new direct design
+         * A few definitions for the PickBranchLitT concept
          */
         Branch defaultBranchingHeuristic;
 
@@ -129,54 +129,7 @@ namespace Candy {
         /// A type used for recognition of RSILBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBranchingHeuristic<AdviceEntry<3>>;
-        
-        /**
-         * \brief RSILBranchingHeuristic parameters.
-         */
-        class Parameters {
-        public:
-            /// RSIL Common: Iff true, conjectures about backbone variables are taken into consideration for implicit learning.
-            bool backbonesEnabled;
-            
-            /// RSIL Common: Iff true, the RSARHeuristic given by this parameter struct is used to filter the conjectures
-            /// before running RSIL.
-            bool filterByRSARHeuristic;
-            
-            /// RSIL Common: An RSARHeuristic used to filter the conjectures before running RSIL. May contain nullptr if
-            /// filterByRSARHeuristic == false.
-            std::shared_ptr<RefinementHeuristic> RSARHeuristic;
 
-            /// RSIL Common: Iff true, the RSARHeuristic is only used to filter backbone conjectures.
-            bool filterOnlyBackbones;
-
-            /// RSIL Vanishing: The intervention probability half-life.
-            uint64_t probHalfLife;
-
-            /// RSIL Budget: The initial implication budget.
-            uint64_t initialBudget;
-
-            /// The conjecures to be used by this conflict seeking branching heuristic
-            Conjectures conjectures;
-
-            Parameters(Conjectures conjectures_ = Conjectures{},
-                       bool backbonesEnabled_ = false,
-                       bool filterByRSARHeuristic_ = false,
-                       std::shared_ptr<RefinementHeuristic> RSARHeuristic_ = nullptr,
-                       bool filterOnlyBackbones_ = false,
-                       bool probHalfLife_ = false,
-                       uint64_t initialBudget_ = 10000ull)
-            : backbonesEnabled(backbonesEnabled_),
-            filterByRSARHeuristic(filterByRSARHeuristic_),
-            RSARHeuristic(RSARHeuristic_),
-            filterOnlyBackbones(filterOnlyBackbones_),
-            probHalfLife(probHalfLife_),
-            initialBudget(initialBudget_) {
-                conjectures = std::move(conjectures_);
-            }
-        };
-
-        static RSILBranchingHeuristic::Parameters defaultParameters;
-        
         /**
          * \brief Constructs a new RSILBranchingHeuristic instance with a default configuration
          *        and no literal-equivalency/backbone conjectures.
@@ -185,7 +138,20 @@ namespace Candy {
          * getAdvice(...) always returns lit_Undef and getSignAdvice(L) returns L.
          *
          */
-        RSILBranchingHeuristic();
+        RSILBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+                               RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false) :
+                                  conjectures(std::move(conjectures_)),
+                                  defaultBranchingHeuristic(),
+                                  m_advice(conjectures, conjectures.getMaxVar()),
+                                  m_rng(0xFFFF),
+                                  m_backbonesEnabled(m_backbonesEnabled_) {
+            if (rsar_filter_ != nullptr) {
+                std::vector<RefinementHeuristic*> heuristics;
+                heuristics.push_back(rsar_filter_);
+                filterWithRSARHeuristics(heuristics, m_advice, filterOnlyBackbones_);
+            }
+        }
+
         RSILBranchingHeuristic(RSILBranchingHeuristic&& other) = default;
         RSILBranchingHeuristic& operator=(RSILBranchingHeuristic&& other) = default;
         
@@ -295,7 +261,17 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
-        RSILBudgetBranchingHeuristic();
+        RSILBudgetBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+                                     RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t initialBudget_ = 10000ull) :
+                                        RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
+            for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
+                auto& advice = this->m_advice.getAdvice(i);
+                for (size_t j = 0; j < advice.getSize(); ++j) {
+                    advice.setBudget(j, initialBudget_);
+                }
+            }
+        }
+
         RSILBudgetBranchingHeuristic(RSILBudgetBranchingHeuristic&& other) = default;
         RSILBudgetBranchingHeuristic& operator=(RSILBudgetBranchingHeuristic&& other) = default;
     };
@@ -344,8 +320,15 @@ namespace Candy {
         
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
-        
-        RSILVanishingBranchingHeuristic();
+
+        RSILVanishingBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+                                        RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 1000ull) :
+                                    RSILBranchingHeuristic<AdviceType>(std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
+                                    m_callCounter(m_probHalfLife_),
+                                    m_probHalfLife(m_probHalfLife_),
+                                    m_rsilHeuristic(std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_)
+        {}
+
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
         
@@ -435,27 +418,11 @@ namespace Candy {
      * A specialization of RSILVanishingBranchingHeuristic<n> with n=2.
      */
     using RSILVanishingBranchingHeuristic2 = RSILVanishingBranchingHeuristic<AdviceEntry<2>>;
-    
-    
-    
-    
+
     
     //******* Implementation ************************************************************
      
     namespace BranchingHeuristicsImpl {
-        static inline Var getMaxVar(const Conjectures& conj) {
-            Var result = 0;
-            for (auto& c : conj.getBackbones()) {
-                result = std::max(result, var(c.getLit()));
-            }
-            for (auto& c : conj.getEquivalences()) {
-                for (auto literal : c) {
-                    result = std::max(result, var(literal));
-                }
-            }
-            return result;
-        }
-        
         // The following provides an implementation of usedAdvice() and canUseAdvice() for each supported advice entry
         // type, via SFINAE. It is required that ...AdviceEntry<n>::BasicType == ...AdviceEntry<m>::BasicType for all
         // admissible values of n and m. Therefore, it suffices to compare types with ...AdviceEntry<2>::BasicType.
@@ -492,23 +459,6 @@ namespace Candy {
         canUseAdvice(AdviceType& advice, size_t index) noexcept {
             assert (index < advice.getSize());
             return advice.getBudget(index) > 0;
-        }
-    }
-    
-    template <>
-    RSILBranchingHeuristic3::Parameters RSILBranchingHeuristic3::defaultParameters;
-
-    template<class AdviceType>
-    RSILBranchingHeuristic<AdviceType>::RSILBranchingHeuristic()
-    : conjectures(RSILBranchingHeuristic3::defaultParameters.conjectures), defaultBranchingHeuristic(), m_advice(RSILBranchingHeuristic3::defaultParameters.conjectures,
-               BranchingHeuristicsImpl::getMaxVar(RSILBranchingHeuristic3::defaultParameters.conjectures)),
-               m_rng(0xFFFF),
-               m_backbonesEnabled(RSILBranchingHeuristic3::defaultParameters.backbonesEnabled) {
-        if (RSILBranchingHeuristic3::defaultParameters.filterByRSARHeuristic) {
-            assert (RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.get() != nullptr);
-            std::vector<RefinementHeuristic*> heuristics;
-            heuristics.push_back(RSILBranchingHeuristic3::defaultParameters.RSARHeuristic.get());
-            filterWithRSARHeuristics(heuristics, m_advice, RSILBranchingHeuristic3::defaultParameters.filterOnlyBackbones);
         }
     }
     
@@ -587,17 +537,6 @@ namespace Candy {
     }
 
 
-    template<unsigned int tAdviceSize>
-    RSILBudgetBranchingHeuristic<tAdviceSize>::RSILBudgetBranchingHeuristic()
-    : RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>() {
-        for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
-            auto& advice = this->m_advice.getAdvice(i);
-            for (size_t j = 0; j < advice.getSize(); ++j) {
-                advice.setBudget(j, RSILBranchingHeuristic3::defaultParameters.initialBudget);
-            }
-        }
-    }
-    
     
     // Note: The RSILBudgetBranchingHeuristic implementation itself is not concerned with
     // actually updating the AdviceEntry objects, and does not directly alter the behaviour
@@ -605,15 +544,6 @@ namespace Candy {
     // updating advice entries) are realized by specializations of usedAdvice() and
     // canUseAdvice() for BudgetAdviceEntry - see the BranchingHeuristicsImpl namespace
     // for further details.
-    
-    template<class AdviceType>
-    RSILVanishingBranchingHeuristic<AdviceType>::RSILVanishingBranchingHeuristic()
-        : m_callCounter(RSILBranchingHeuristic3::defaultParameters.probHalfLife),
-    m_mask(0ull),
-    m_probHalfLife(RSILBranchingHeuristic3::defaultParameters.probHalfLife),
-    m_rsilHeuristic() {
-        assert(m_probHalfLife > 0);
-    }
     
     template<class AdviceType>
     inline bool RSILVanishingBranchingHeuristic<AdviceType>::isRSILEnabled() noexcept {

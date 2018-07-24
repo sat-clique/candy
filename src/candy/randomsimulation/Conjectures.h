@@ -114,6 +114,12 @@ namespace Candy {
          * Adds a backbone conjecture (by copying).
          */
         void addBackbone(const BackboneConjecture &conj);
+
+        /**
+         * @brief getMaxVar
+         * @return maximum variable used in wrapped conjectures
+         */
+        Var getMaxVar() const;
         
         Conjectures(Conjectures&& other) = default;
         Conjectures& operator=(Conjectures&& other) = default;

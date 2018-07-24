@@ -75,6 +75,7 @@ template<class PickBranchLitT=Branch>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:
     SimpSolver();
+    SimpSolver(PickBranchLitT branch_);
     virtual ~SimpSolver();
 
     // Problem specification:
@@ -234,6 +235,30 @@ extern IntOption opt_subsumption_lim;
 
 //=================================================================================================
 // Constructor/Destructor:
+
+template<class PickBranchLitT>
+SimpSolver<PickBranchLitT>::SimpSolver(PickBranchLitT branch_) : Solver<PickBranchLitT>(std::move(branch_)),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
 
 template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),

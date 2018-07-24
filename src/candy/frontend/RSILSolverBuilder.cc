@@ -24,7 +24,7 @@
  
  */
 
-#include "RSILFrontend.h"
+#include "RSILSolverBuilder.h"
 
 namespace Candy {
     std::ostream& operator <<(std::ostream& stream, const RSILArguments& arguments) {
