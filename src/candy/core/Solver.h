@@ -795,14 +795,17 @@ bool Solver<PickBranchLitT>::strengthen() {
     // Remove false literals:
     std::unordered_map<Clause*, size_t> strengthened_sizes;
     std::vector<Clause*> strengthened_clauses;
+    std::vector<Lit> backup;
     for (auto& list : { clauses, learnts, persist }) {
         for (Clause* clause : list) if (!clause->isDeleted()) {
             auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
             if (pos != clause->end()) {
                 propagator.detachClause(clause);
-                certificate->removed(clause->begin(), clause->end());
+                backup.insert(backup.end(), clause->begin(), clause->end());
                 auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
                 certificate->added(clause->begin(), end);
+                certificate->removed(backup.begin(), backup.end());
+                backup.clear();
                 strengthened_clauses.push_back(clause);
                 strengthened_sizes[clause] = clause->size();
                 clause->setSize(std::distance(clause->begin(), end));

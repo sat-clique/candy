@@ -151,8 +151,8 @@ public:
         trail[trail_size++] = p;
     }
 
-    inline vector<Lit> cancelUntil(unsigned int level) {
-        vector<Lit> result;
+    inline std::vector<Lit> cancelUntil(unsigned int level) {
+        std::vector<Lit> result;
         if (decisionLevel() > level) {
             result.insert(result.end(), begin() + trail_lim[level], end());
             for (Lit lit : result) {

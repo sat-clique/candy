@@ -47,6 +47,14 @@ public:
         }
     }
 
+    void added(std::initializer_list<Lit> list) {
+        added(list.begin(), list.end());
+    }
+
+    void removed(std::initializer_list<Lit> list) {
+        removed(list.begin(), list.end());
+    }
+
     template<typename Iterator>
     void added(Iterator it, Iterator end) {
         if (active) {
