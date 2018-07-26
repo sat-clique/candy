@@ -611,15 +611,8 @@ void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
 
 template <class PickBranchLitT>
 void Solver<PickBranchLitT>::updateActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
-	vector<Var> involved_variables;
-
     for (Clause* clause : involved_clauses) {
         claBumpActivity(*clause);
-
-        for (Lit lit : *clause) {
-            Var v = var(lit);
-            involved_variables.push_back(v);
-        }
 
 		// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
 		if (clause->isLearnt() && clause->getLBD() > persistentLBD) {
@@ -634,9 +627,7 @@ void Solver<PickBranchLitT>::updateActivitiesAndLBD(vector<Clause*>& involved_cl
 		}
     }
 
-    std::sort(involved_variables.begin(), involved_variables.end());
-    involved_variables.erase(std::unique(involved_variables.begin(), involved_variables.end()), involved_variables.end());
-    branch.notify_conflict(involved_variables, trail, learnt_lbd, nConflicts);
+    branch.notify_conflict(involved_clauses, trail, learnt_lbd, nConflicts);
 }
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
