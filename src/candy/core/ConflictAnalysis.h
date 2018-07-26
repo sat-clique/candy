@@ -23,8 +23,8 @@ class ConflictAnalysis {
 private:
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
-    vector<Var> analyze_clear;
-    vector<Var> analyze_stack;
+    std::vector<Var> analyze_clear;
+    std::vector<Var> analyze_stack;
 
     /* analysis result is stored here */
     std::vector<Lit> learnt_clause;

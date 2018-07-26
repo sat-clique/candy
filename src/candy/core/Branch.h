@@ -40,6 +40,7 @@ public:
     std::vector<double> activity; // A heuristic measurement of the activity of a variable.
     std::vector<char> polarity; // The preferred polarity of each variable.
     std::vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic
+    Stamp<uint32_t> stamp;
     double var_inc; // Amount to bump next variable with.
     double var_decay;
     double max_var_decay;
@@ -102,6 +103,7 @@ public:
         decision.push_back(true);
         polarity.push_back(initial_polarity);
         activity.push_back(initial_activity);
+        stamp.incSize();
         insertVarOrder(decision.size() - 1);
     }
 
@@ -111,6 +113,7 @@ public:
             decision.resize(size, true);
             polarity.resize(size, initial_polarity);
             activity.resize(size, initial_activity);
+            stamp.incSize(size);
             for (int i = prevSize; i < static_cast<int>(size); i++) {
                 insertVarOrder(i);
                 Statistics::getInstance().solverDecisionVariablesInc();
@@ -122,7 +125,7 @@ public:
         std::vector<double> occ = problem.getLiteralRelativeOccurrences();
         for (size_t i = 0; i < decision.size(); i++) {
             activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
-                    polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
+            polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
         }
         rebuildOrderHeap();
     }
@@ -180,21 +183,28 @@ public:
     }
 
 
-    void notify_conflict(vector<Var>& involved_variables, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
+    void notify_conflict(vector<Clause*>& involved_clauses, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
         if (nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
-        for (Var v : involved_variables) {
-            if (trail.level(v) > 0) {
-                varBumpActivity(v);
-                if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
-                    // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                    if (trail.reason(v)->getLBD() < learnt_lbd) {
-                        varBumpActivity(v);
+
+        stamp.clear();
+        for (Clause* clause : involved_clauses) {
+            for (Lit lit : *clause) {
+                Var v = var(lit);
+                if (!stamp[v] && trail.level(v) > 0) {
+                    stamp.set(v);
+                    varBumpActivity(v);
+                    if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
+                        // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+                        if (trail.reason(v)->getLBD() < learnt_lbd) {
+                            varBumpActivity(v);
+                        }
                     }
                 }
             }
         }
+
         varDecayActivity();
     }
 
