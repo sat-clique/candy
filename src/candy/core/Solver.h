@@ -354,7 +354,7 @@ protected:
     void freeMarkedClauses(vector<Clause*>& list);
 
     void cancelUntil(int level); // Backtrack until a certain level.
-    void updateActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
+    void updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
     lbool search(); // Search for a given number of conflicts.
     virtual void reduceDB(); // Reduce the set of learnt clauses.
     void revampClausePool(uint8_t upper);
@@ -610,7 +610,7 @@ void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
 
 
 template <class PickBranchLitT>
-void Solver<PickBranchLitT>::updateActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
+void Solver<PickBranchLitT>::updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
     for (Clause* clause : involved_clauses) {
         claBumpActivity(*clause);
 
@@ -626,8 +626,6 @@ void Solver<PickBranchLitT>::updateActivitiesAndLBD(vector<Clause*>& involved_cl
 			}
 		}
     }
-
-    branch.notify_conflict(involved_clauses, trail, learnt_lbd, nConflicts);
 }
 
 // Revert to the state at given level (keeping all assignment at 'level' but not beyond).
@@ -940,7 +938,8 @@ lbool Solver<PickBranchLitT>::search() {
 
             // TODO: exclude selectors from lbd computation
             uint_fast16_t nblevels = trail.computeLBD(learnt_clause->begin(), learnt_clause->end());
-            updateActivitiesAndLBD(*involved_clauses, nblevels);
+            updateClauseActivitiesAndLBD(*involved_clauses, nblevels);
+            branch.notify_conflict(*involved_clauses, trail, nblevels, nConflicts);
 
             if (nblevels <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
