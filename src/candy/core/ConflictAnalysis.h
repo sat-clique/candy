@@ -19,6 +19,26 @@
 
 namespace Candy {
 
+	struct AnalysisResult {
+
+		AnalysisResult() : 
+			nConflicts(0), learnt_clause(), involved_clauses() 
+		{
+
+		}
+
+		uint64_t nConflicts;
+		std::vector<Lit> learnt_clause;
+		std::vector<Clause*> involved_clauses;
+
+		void newConflict() {
+			++nConflicts;
+			learnt_clause.clear();
+			involved_clauses.clear();
+		}
+
+	};
+
 class ConflictAnalysis {
 private:
 	/* some helper data-structures */
@@ -27,8 +47,7 @@ private:
     std::vector<Var> analyze_stack;
 
     /* analysis result is stored here */
-    std::vector<Lit> learnt_clause;
-    std::vector<Clause*> involved_clauses;
+	AnalysisResult result;
 
     /* pointers to solver state */
     Trail* trail;
@@ -86,12 +105,12 @@ private:
 	void minimisationWithBinaryResolution() {
 	    stamp.clear();
 
-	    for (auto it = learnt_clause.begin()+1; it != learnt_clause.end(); it++) {
+	    for (auto it = result.learnt_clause.begin()+1; it != result.learnt_clause.end(); it++) {
 	        stamp.set(var(*it));
 	    }
 
 	    bool minimize = false;
-	    for (Watcher w : propagate->getBinaryWatchers(~learnt_clause[0])) {
+	    for (Watcher w : propagate->getBinaryWatchers(~result.learnt_clause[0])) {
 	        if (stamp[var(w.blocker)] && trail->value(w.blocker) == l_True) {
 	            minimize = true;
 	            stamp.unset(var(w.blocker));
@@ -99,9 +118,9 @@ private:
 	    }
 
 	    if (minimize) {
-	        auto end = std::remove_if(learnt_clause.begin()+1, learnt_clause.end(), [this] (Lit lit) { return !stamp[var(lit)]; } );
-	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, learnt_clause.end()));
-	        learnt_clause.erase(end, learnt_clause.end());
+	        auto end = std::remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(), [this] (Lit lit) { return !stamp[var(lit)]; } );
+	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, result.learnt_clause.end()));
+	        result.learnt_clause.erase(end, result.learnt_clause.end());
 	    }
 	}
 
@@ -110,8 +129,7 @@ public:
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),
-		learnt_clause(),
-		involved_clauses(),
+		result(),
 		trail(trail_),
 		propagate(propagate_),
 		lbSizeMinimizingClause(lbSizeMinimizingClause_)
@@ -123,20 +141,16 @@ public:
 
 	}
 
-	std::vector<Lit>* getLearntClause() {
-		return &learnt_clause;
-	}
-
-	std::vector<Clause*>* getInvolvedClauses() {
-		return &involved_clauses;
-	}
-
 	void incSize() {
 		stamp.incSize();
 	}
 
 	void incSize(size_t size) {
 		stamp.incSize(size);
+	}
+
+    AnalysisResult getResult() const {
+		return result;
 	}
 
 	/**************************************************************************************************
@@ -156,19 +170,18 @@ public:
 	 *        rest of literals. There may be others from the same level though.
 	 *
 	 ***************************************************************************************************/
-	void analyze(Clause* confl) {
+	AnalysisResult analyze(Clause* confl) {
 	    int pathC = 0;
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
-	    learnt_clause.clear(),
-	    involved_clauses.clear();
+	    result.newConflict();
 
 	    // Generate conflict clause:
-	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
+	    result.learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    Trail::const_reverse_iterator trail_iterator = trail->rbegin();
 	    do {
 	        assert(confl != nullptr); // (otherwise should be UIP)
-	        involved_clauses.push_back(confl);
+	        result.involved_clauses.push_back(confl);
 
 	        // Special case for binary clauses: The first one has to be SAT
 	        if (asslit != lit_Undef && confl->size() == 2 && trail->value(confl->first()) == l_False) {
@@ -183,7 +196,7 @@ public:
 	                if (trail->level(v) >= (int)trail->decisionLevel()) {
 	                    pathC++;
 	                } else {
-	                    learnt_clause.push_back(*it);
+	                    result.learnt_clause.push_back(*it);
 	                }
 	            }
 	        }
@@ -199,30 +212,27 @@ public:
 	        pathC--;
 	    } while (pathC > 0);
 
-	    learnt_clause[0] = ~asslit;
+	    result.learnt_clause[0] = ~asslit;
 
-	    // Simplify conflict clause:
-	    Statistics::getInstance().solverMaxLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(learnt_clause)>::type::size_type, unsigned int>(learnt_clause.size()));
-
-	    // minimize clause
+	    // Minimize conflict clause:
 	    analyze_clear.clear();
 	    uint64_t abstract_level = 0;
-	    for (uint_fast16_t i = 1; i < learnt_clause.size(); i++) {
-	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
+	    for (uint_fast16_t i = 1; i < result.learnt_clause.size(); i++) {
+	        abstract_level |= abstractLevel(var(result.learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
 	    }
-	    auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
+	    auto end = remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(),
 	                         [this, abstract_level] (Lit lit) {
 	                             return trail->reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
 	                         });
-	    learnt_clause.erase(end, learnt_clause.end());
+	    result.learnt_clause.erase(end, result.learnt_clause.end());
 
-	    assert(learnt_clause[0] == ~asslit);
+	    assert(result.learnt_clause[0] == ~asslit);
 
-	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
+	    if (result.learnt_clause.size() <= lbSizeMinimizingClause) {
 	        minimisationWithBinaryResolution();
 	    }
 
-	    Statistics::getInstance().solverTotLiteralsInc(checked_unsigned_cast<std::remove_reference<decltype(learnt_clause)>::type::size_type, unsigned int>(learnt_clause.size()));
+		return result;
 	}
 
 	/**************************************************************************************************
@@ -234,12 +244,12 @@ public:
 	 *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
-	void analyzeFinal(Lit p) {
-	    learnt_clause.clear();
-	    learnt_clause.push_back(p);
+	AnalysisResult analyzeFinal(Lit p) {
+	    result.newConflict();	
+	    result.learnt_clause.push_back(p);
 
 	    if (trail->decisionLevel() == 0)
-	        return;
+            return result;
 
 	    stamp.clear();
 
@@ -250,7 +260,7 @@ public:
 	        if (stamp[x]) {
 	            if (trail->reason(x) == nullptr) {
 	                assert(trail->level(x) > 0);
-	                learnt_clause.push_back(~(*trail)[i]);
+	                result.learnt_clause.push_back(~(*trail)[i]);
 	            } else {
 	                Clause* c = trail->reason(x);
 	                for (Lit lit : *c) {
@@ -263,6 +273,7 @@ public:
 	        }
 	    }
 	    stamp.unset(var(p));
+		return result;
 	}
 
 };

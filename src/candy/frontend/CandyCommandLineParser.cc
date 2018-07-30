@@ -198,7 +198,7 @@ namespace Candy {
             opt_rsil_onlyMiters
         };
 
-        Branch::defaultParameters = Branch::Parameters(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
+//        Branch::defaultParameters = Branch::Parameters(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
         
         const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
         bool readFromStdIn = (argc == 1);
