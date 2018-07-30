@@ -30,6 +30,7 @@
 #include <candy/rsil/BranchingHeuristics.h>
 #include <candy/testutils/TestUtils.h>
 #include <candy/core/Solver.h>
+#include <candy/core/Trail.h>
 #include <candy/randomsimulation/RandomSimulator.h>
 #include <candy/gates/GateAnalyzer.h>
 #include <candy/rsar/Heuristics.h>
@@ -44,7 +45,12 @@ namespace Candy {
     template<class Heuristic>
     static void test_uninitializedHeuristicReturnsUndefForMinInput() {
         Heuristic underTest;
-        auto result = underTest.getAdvice({mkLit(0)}, 1ull, {0}, {}, {0});
+
+        Trail trail(1);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(1_L);
+        auto result = underTest.getAdvice(trail);
+
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -65,7 +71,11 @@ namespace Candy {
         Conjectures empty{};
         Heuristic underTest;
         
-        auto result = underTest.getAdvice({mkLit(0)}, 1ull, {0}, {}, {0});
+        Trail trail(1);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(1_L);
+        auto result = underTest.getAdvice(trail);
+
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -83,12 +93,12 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesAdviceForSingleEquivalence(Heuristic underTest) {
-        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(2_L);
+        underTest.grow(5);
+        auto result = underTest.getAdvice(trail);
+
         ASSERT_NE(result, lit_Undef);
         EXPECT_EQ(result, mkLit(2, 0));
     }
@@ -116,12 +126,14 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned(Heuristic underTest) {
-        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(1_L);
+        trail.uncheckedEnqueue(2_L);
+        trail.uncheckedEnqueue(3_L);
+        underTest.grow(5);
+        auto result = underTest.getAdvice(trail);
+
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -148,12 +160,13 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision(Heuristic underTest) {
-        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 0, 1, 1};
-        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_True, l_Undef, l_Undef};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(2_L);
+        underTest.grow(5);
+        underTest.setDecisionVar(3_V, false);
+        auto result = underTest.getAdvice(trail);
+
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -180,12 +193,12 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant(Heuristic underTest) {
-        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(4,0)};
-        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_True, l_Undef, l_Undef, l_False};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(5_L);
+        underTest.grow(5);
+        auto result = underTest.getAdvice(trail);
+
         EXPECT_EQ(result, lit_Undef);
     }
     
@@ -212,14 +225,13 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesAdviceForSingleEquivalenceSize3(Heuristic underTest) {
-        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0)};
-        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_Undef};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
-        ASSERT_NE(result, lit_Undef);
-        
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(4_L);
+        underTest.grow(5);
+        auto result = underTest.getAdvice(trail);
+
+        ASSERT_NE(result, lit_Undef);        
         EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
     }
     
@@ -246,14 +258,14 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_travelsUpTrail(Heuristic underTest) {
-        typename CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0), mkLit(4,0)};
-        typename CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        typename CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        typename CandyDefaultSolverTypes::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
-        ASSERT_NE(result, lit_Undef);
-        
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(4_L);
+        trail.uncheckedEnqueue(5_L);
+        underTest.grow(5);
+        auto result = underTest.getAdvice(trail);
+
+        ASSERT_NE(result, lit_Undef);        
         EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
     }
     
@@ -299,19 +311,19 @@ namespace Candy {
         testData.addEquivalence(EquivalenceConjecture{{mkLit(4, 0), mkLit(5,1)}});
 
         TestedRSILBranchingHeuristic underTest(std::move(testData), false, mockRSARHeuristic);
-                
-        CandyDefaultSolverTypes::TrailType testTrail {mkLit(3,0)};
-        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1, 1};
-        CandyDefaultSolverTypes::AssignsType testAssigns {l_Undef, l_Undef, l_Undef, l_False, l_False, l_Undef};
-        
-        auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+
+        Trail trail(6);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(4_L);
+        underTest.grow(6);
+        auto result = underTest.getAdvice(trail);
         
         ASSERT_EQ(result, lit_Undef);
         
-        testTrail = {mkLit(4,0)};
-        
-        result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        trail.cancelUntil(0);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(5_L);
+        result = underTest.getAdvice(trail);
         
         ASSERT_EQ(result, mkLit(5,0));
 
@@ -353,15 +365,15 @@ namespace Candy {
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
         TestedRSILVanishingBranchingHeuristic underTest(std::move(testData));
-        
-        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(2_L);
+        underTest.grow(5);
         
         int calls = 0;
         for (int i = 0; i < 100; ++i) {
-            auto result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+            auto result = underTest.getAdvice(trail);
             ++calls;
             EXPECT_NE(result, lit_Undef) << "Unexpected undef at call " << calls;
         }
@@ -376,11 +388,12 @@ namespace Candy {
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
         TestedRSILVanishingBranchingHeuristic underTest(std::move(testData), false, nullptr, false, halfLife);
-        
-        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
+
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(1_L);
+        trail.uncheckedEnqueue(~2_L);
+        underTest.grow(5);
         
         std::unordered_map<uint8_t, double> distribution;
         std::unordered_map<uint8_t, double> referenceDistribution;
@@ -388,7 +401,7 @@ namespace Candy {
         for (int stage = 0; stage < stages; ++stage) {
             uint32_t definedResultCounter = 0;
             for (auto i = decltype(halfLife){0}; i < halfLife; ++i) {
-                Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+                Lit result = underTest.getAdvice(trail);
                 definedResultCounter += (result == lit_Undef) ? 0 : 1;
             }
             distribution[stage] = static_cast<double>(definedResultCounter) / static_cast<double>(halfLife);
@@ -408,13 +421,13 @@ namespace Candy {
 
         TestedRSILBudgetBranchingHeuristic underTest(std::move(testData), false, nullptr, false, budget);
         
-        CandyDefaultSolverTypes::TrailType testTrail {mkLit(1,0)};
-        CandyDefaultSolverTypes::TrailLimType testTrailLim {0};
-        CandyDefaultSolverTypes::DecisionType testDecisionVars {1, 1, 1, 1, 1};
-        CandyDefaultSolverTypes::AssignsType testAssigns {l_True, l_False, l_Undef, l_Undef, l_Undef};
-        
+        Trail trail(5);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(2_L);
+        underTest.grow(5);
+
         for (uint64_t i = 0; i <= budget+2; ++i) {
-            Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+            Lit result = underTest.getAdvice(trail);
             if (i < budget) {
                 ASSERT_NE(result, lit_Undef) << "Budgets should not have been depleted in round " << i+1;
             }
@@ -423,10 +436,11 @@ namespace Candy {
             }
         }
         
-        testTrail[0] = mkLit(2, 0);
-        testAssigns[1] = l_Undef;
-        testAssigns[2] = l_False;
-        Lit result = underTest.getAdvice(testTrail, testTrail.size(), testTrailLim, testAssigns, testDecisionVars);
+        trail.cancelUntil(0);
+        trail.newDecisionLevel();
+        trail.uncheckedEnqueue(3_L);
+
+        Lit result = underTest.getAdvice(trail);
         ASSERT_NE(result, lit_Undef) << "The back implication's budget should not be depleted in this test";
     }
 

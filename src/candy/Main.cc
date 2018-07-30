@@ -324,7 +324,7 @@ int main(int argc, char** argv) {
         catch(UnsuitableProblemException& e) {
             std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
             std::cerr << "c Falling back to unmodified Candy" << std::endl;
-            solver = new SimpSolver<Branch>();
+            solver = new SimpSolver<VSIDS>();
         }
     }
     else if (args.rsarArgs.useRSAR) {
@@ -334,12 +334,12 @@ int main(int argc, char** argv) {
 		catch(UnsuitableProblemException& e) {
 			std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
 			std::cerr << "c Falling back to unmodified Candy." << std::endl;
-            solver = new SimpSolver<Branch>();
+            solver = new SimpSolver<VSIDS>();
 		}
     }
     else {
-        Branch branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
-        solver = new SimpSolver<Branch>(std::move(branch));
+        VSIDS branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
+        solver = new SimpSolver<VSIDS>(std::move(branch));
     }
     solver->setVerbosities(args.vv, args.verb);
     solver->setCertificate(*certificate);

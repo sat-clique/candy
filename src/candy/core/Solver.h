@@ -73,7 +73,7 @@
 #include "candy/utils/CheckedCast.h"
 #include "candy/core/Trail.h"
 #include "candy/core/Propagate.h"
-#include "candy/core/Branch.h"
+#include "candy/core/branching/VSIDS.h"
 #include "candy/core/Stamp.h"
 #include "candy/core/CandySolverInterface.h"
 
@@ -95,7 +95,7 @@ namespace Candy {
  *    - PickBranchLitT must be move-constructible.
  *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
  */
-template<class PickBranchLitT = Branch>
+template<class PickBranchLitT = VSIDS>
 class Solver : public CandySolverInterface {
     static_assert(std::is_class<PickBranchLitT>::value, "PickBranchLitT must be a class");
     //static_assert(std::is_constructible<PickBranchLitT>::value, "PickBranchLitT must have a constructor without arguments");

@@ -28,7 +28,7 @@
 #define X_66055FCA_E0CE_46B3_9E4C_7F093C37330B_BRANCHINGHEURISTICS_H
 
 #include <candy/core/SolverTypes.h>
-#include <candy/core/Branch.h>
+#include <candy/core/branching/VSIDS.h>
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/FastRand.h>
@@ -38,32 +38,7 @@
 
 #include <type_traits>
 
-namespace Candy {
-    /**
-     * \defgroup RS_ImplicitLearning
-     */
-    
-    /**
-     * \class CandyDefaultSolverTypes
-     *
-     * \ingroup RS_ImplicitLearning
-     *
-     * \brief Solver datastructure types for Candy's core solver.
-     */
-    struct CandyDefaultSolverTypes {
-        /// The type of the underlying solver's trail data structure
-        using TrailType = std::vector<Lit>;
-        
-        /// The type of the underlying solver's trail limits data structure
-        using TrailLimType = std::vector<uint32_t>;
-        
-        /// The type of the underlying solver's container marking decision variables
-        using DecisionType = std::vector<char>;
-        
-        /// The type of the underlying solver's assignment data structure
-        using AssignsType = std::vector<lbool>;
-    };
-    
+namespace Candy {    
     /**
      * \class RSILBranchingHeuristic
      *
@@ -83,7 +58,7 @@ namespace Candy {
      *                       budgets.
      */
     template<class AdviceType>
-    class RSILBranchingHeuristic {
+    class RSILBranchingHeuristic : BranchingInterface<RSILBranchingHeuristic<AdviceType>> {
 
         static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
@@ -94,12 +69,16 @@ namespace Candy {
         /**
          * A few definitions for the PickBranchLitT concept
          */
-        Branch defaultBranchingHeuristic;
+        VSIDS defaultBranchingHeuristic;
 
         Lit pickBranchLit(Trail& trail);
 
     	void setDecisionVar(Var v, bool b) {
     		defaultBranchingHeuristic.setDecisionVar(v, b);
+    	}
+
+    	bool isDecisionVar(Var v) {
+    		return defaultBranchingHeuristic.isDecisionVar(v);
     	}
 
     	void initFrom(const CNFProblem& problem) {
@@ -177,11 +156,7 @@ namespace Candy {
          *
          * \returns a literal chosen via implicit learning or lit_Undef.
          */
-        Lit getAdvice(const std::vector<Lit>& trail,
-                      uint64_t trailSize,
-                      const std::vector<uint32_t>& trailLimits,
-                      const std::vector<lbool>& assigns,
-                      const std::vector<char>& decision) noexcept;
+        Lit getAdvice(Trail& trail) noexcept;
         
         /**
          * \brief Gets a branching literal sign advice using implicit learning.
@@ -354,11 +329,7 @@ namespace Candy {
          *
          * \returns a literal chosen via implicit learning or lit_Undef.
          */
-        Lit getAdvice(const std::vector<Lit>& trail,
-                      uint64_t trailSize,
-                      const std::vector<uint32_t>& trailLimits,
-                      const std::vector<lbool>& assigns,
-                      const std::vector<char>& decision) noexcept;
+        Lit getAdvice(Trail& trail) noexcept;
         
         /**
          * \brief Gets a branching literal sign advice using implicit learning.
@@ -370,7 +341,24 @@ namespace Candy {
          * \returns a literal L having the same variable as \p literal.
          */
         Lit getSignAdvice(Lit literal) noexcept;
+
+    	void grow() {
+    		RSILBranchingHeuristic<AdviceType>::grow();
+            m_rsilHeuristic.grow();
+    	}
+
+    	void grow(size_t size) {
+    		RSILBranchingHeuristic<AdviceType>::grow(size);
+            m_rsilHeuristic.grow(size);
+    	}
         
+        void setDecisionVar(Var v, bool b) {
+    		m_rsilHeuristic.setDecisionVar(v, b);
+    	}
+
+    	bool isDecisionVar(Var v) {
+    		return m_rsilHeuristic.isDecisionVar(v);
+    	}        
         
     private:
         /**
@@ -469,18 +457,14 @@ namespace Candy {
     
     template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice(const std::vector<Lit>& trail,
-                                                                          uint64_t trailSize,
-                                                                          const std::vector<uint32_t>& trailLimits,
-                                                                          const std::vector<lbool>& assigns,
-                                                                          const std::vector<char>& decision) noexcept {
-        if (trailLimits.size() == 0) {
+    inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice(Trail& trail) noexcept {
+        if (trail.trail_lim.size() == 0) {
             return lit_Undef;
         }
         
-        auto trailStart = trailLimits.back();
-        auto scanLen = trailSize - trailStart;
-        auto randomNumber = trailLimits.size(); // decision level "randomness" suffices here
+        auto trailStart = trail.trail_lim.back();
+        auto scanLen = trail.size() - trailStart;
+        auto randomNumber = trail.trail_lim.size(); // decision level "randomness" suffices here
         
         for (decltype(scanLen) j = 0; j < scanLen; ++j) {
             auto i = trailStart + j;
@@ -503,8 +487,8 @@ namespace Candy {
                 auto idx = (randomNumber + a) % adviceSize;
                 
                 auto advisedLit = advice.getLiteral(idx);
-                if (assigns[var(advisedLit)] == l_Undef
-                    && decision[var(advisedLit)]
+                if (trail.value(var(advisedLit)) == l_Undef
+                    && this->isDecisionVar(var(advisedLit))
                     && BranchingHeuristicsImpl::canUseAdvice(advice, idx)) {
                     BranchingHeuristicsImpl::usedAdvice(advice, idx);
                     auto result = sign(cursor) ? ~advisedLit : advisedLit;
@@ -563,12 +547,8 @@ namespace Candy {
     
     template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice(const std::vector<Lit>& trail,
-                                                                       uint64_t trailSize,
-                                                                       const std::vector<uint32_t>& trailLimits,
-                                                                       const std::vector<lbool>& assigns,
-                                                                       const std::vector<char>& decision) noexcept {
-        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail, trailSize, trailLimits, assigns, decision) : lit_Undef;
+    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice(Trail& trail) noexcept {
+        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail) : lit_Undef;
         updateCallCounter();
         return result;
     }
