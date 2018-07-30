@@ -11,7 +11,7 @@ using namespace Candy;
 
 class IPASIRCandy {
 
-    SimpSolver<Branch> solver;
+    SimpSolver<VSIDS> solver;
 
     vector<Lit> assumptions;
     vector<Lit> clause;

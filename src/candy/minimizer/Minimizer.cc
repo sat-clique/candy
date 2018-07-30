@@ -56,7 +56,7 @@ Cl Minimizer::computeMinimalModel(Cl model, bool pruningActivated) {
         normalizedClauses = generateHittingSetProblem(clauses->getProblem(), model);
     }
 
-    CandySolverInterface* solver = new Solver<Branch>();
+    CandySolverInterface* solver = new Solver<VSIDS>();
     solver->addClauses(*normalizedClauses);
 //    solver->printDIMACS();
 

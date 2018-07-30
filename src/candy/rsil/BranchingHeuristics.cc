@@ -33,7 +33,7 @@ namespace Candy {
 
     template <>
     Lit RSILBranchingHeuristic3::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
+        Lit rsilAdvice = getAdvice(trail);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -48,7 +48,7 @@ namespace Candy {
     
     template <>
     Lit RSILVanishingBranchingHeuristic3::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
+        Lit rsilAdvice = getAdvice(trail);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -63,7 +63,7 @@ namespace Candy {
     
     template <>
     Lit RSILBudgetBranchingHeuristic3::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
+        Lit rsilAdvice = getAdvice(trail);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -78,7 +78,7 @@ namespace Candy {
     
     template <>
     Lit RSILBranchingHeuristic2::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
+        Lit rsilAdvice = getAdvice(trail);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -93,7 +93,7 @@ namespace Candy {
     
     template <>
     Lit RSILVanishingBranchingHeuristic2::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
+        Lit rsilAdvice = getAdvice(trail);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
@@ -108,7 +108,7 @@ namespace Candy {
     
     template <>
     Lit RSILBudgetBranchingHeuristic2::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail.trail, trail.trail_size, trail.trail_lim, trail.assigns, defaultBranchingHeuristic.decision);
+        Lit rsilAdvice = getAdvice(trail);
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }

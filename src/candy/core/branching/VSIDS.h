@@ -5,8 +5,8 @@
  *      Author: markus
  */
 
-#ifndef SRC_CANDY_CORE_BRANCH_H_
-#define SRC_CANDY_CORE_BRANCH_H_
+#ifndef SRC_CANDY_CORE_VSIDS_H_
+#define SRC_CANDY_CORE_VSIDS_H_
 
 #include <vector>
 
@@ -15,10 +15,11 @@
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/core/ConflictAnalysis.h"
+#include "candy/core/branching/BranchingInterface.h"
 
 namespace Candy {
 
-class Branch {
+class VSIDS : public BranchingInterface<VSIDS> {
 public:
     struct VarOrderLt {
         std::vector<double>& activity;
@@ -39,23 +40,24 @@ public:
     bool initial_polarity = true;
     double initial_activity = 0.0;
 
-    Branch(double _var_decay = 0.8, double _max_var_decay = 0.95) :
+    VSIDS(double _var_decay = 0.8, double _max_var_decay = 0.95) :
         order_heap(VarOrderLt(activity)),
-        activity(), polarity(), decision(),
+        activity(), polarity(), decision(), stamp(), 
         var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay) {
 
     }
 
-    Branch(Branch&& other) : order_heap(VarOrderLt(activity)) {
+    VSIDS(VSIDS&& other) : order_heap(VarOrderLt(activity)) {
         activity = std::move(other.activity);
         polarity = std::move(other.polarity);
         decision = std::move(other.decision);
 		var_inc = other.var_inc;
 		var_decay = other.var_decay;
         max_var_decay = other.max_var_decay;
+        stamp.incSize(other.stamp.size());
 	}
 
-    Branch& operator=(Branch&& other) {
+    VSIDS& operator=(VSIDS&& other) {
 //        order_heap(VarOrderLt(activity));
         activity = std::move(other.activity);
         polarity = std::move(other.polarity);
@@ -63,6 +65,7 @@ public:
         var_inc = other.var_inc;
         var_decay = other.var_decay;
         max_var_decay = other.max_var_decay;
+        stamp.incSize(other.stamp.size());
 		return *this;
     }
 
@@ -75,7 +78,7 @@ public:
     }
 
     // Declare if a variable should be eligible for selection in the decision heuristic.
-    inline void setDecisionVar(Var v, bool b) {
+    void setDecisionVar(Var v, bool b) {
         if (decision[v] != static_cast<char>(b)) {
             decision[v] = b;
             if (b) {
@@ -87,7 +90,11 @@ public:
         }
     }
 
-    inline void grow() {
+    bool isDecisionVar(Var v) {
+        return decision[v]; 
+    }
+
+    void grow() {
         decision.push_back(true);
         polarity.push_back(initial_polarity);
         activity.push_back(initial_activity);
@@ -95,7 +102,7 @@ public:
         insertVarOrder(decision.size() - 1);
     }
 
-    inline void grow(size_t size) {
+    void grow(size_t size) {
         int prevSize = decision.size(); // can be negative during initialization
         if (size > decision.size()) {
             decision.resize(size, true);
@@ -196,7 +203,7 @@ public:
         varDecayActivity();
     }
 
-    void notify_backtracked(vector<Lit> lits) {
+    void notify_backtracked(std::vector<Lit> lits) {
         for (Lit lit : lits) {
             polarity[var(lit)] = sign(lit);
             insertVarOrder(var(lit));
@@ -225,4 +232,4 @@ public:
 };
 
 }
-#endif /* SRC_CANDY_CORE_BRANCH_H_ */
+#endif /* SRC_CANDY_CORE_VSIDS_H_ */

@@ -14,8 +14,8 @@ add_library(core OBJECT
     CNFProblem.cc
     CNFProblem.h
     Propagate.h
-    Branch.cc
-    Branch.h
+    branching/BranchingInterface.h
+    branching/VSIDS.h
     Stamp.h
     ConflictAnalysis.h
 )

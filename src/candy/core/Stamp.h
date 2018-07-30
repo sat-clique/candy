@@ -18,11 +18,11 @@ private:
 	T stamp;
 
 public:
-	Stamp() {
+	Stamp() : stamped() {
 		stamp = std::numeric_limits<T>::min();
 	}
 
-	Stamp(unsigned int size) {
+	Stamp(unsigned int size) : Stamp() {
 		stamped.resize(size, std::numeric_limits<T>::min());
 		stamp = std::numeric_limits<T>::min();
 	}
@@ -37,6 +37,10 @@ public:
 		if (stamped.size() < size) {
 			stamped.resize(size, std::numeric_limits<T>::min());
 		}
+	}
+
+	size_t size() {
+		return stamped.size();
 	}
 
 	void clear() {

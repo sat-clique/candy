@@ -374,7 +374,7 @@ namespace Candy {
         solverBuilder->withSimplificationHandlingMode(simpMode);
         solverBuilder->withConjectures(std::move(randomConjectures));
         solverBuilder->addRefinementHeuristic(std::move(randomHeuristic));
-        solverBuilder->withSolver(new SimpSolver<Branch>());
+        solverBuilder->withSolver(new SimpSolver<VSIDS>());
         
         auto solver = solverBuilder->build();
         solver->addClauses(problem);

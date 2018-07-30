@@ -26,7 +26,17 @@ struct VarData {
 
 class Trail {
 public:
-    Trail() : trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() { }
+    Trail() : 
+        trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() 
+    { 
+
+    }
+
+    Trail(uint32_t size) : 
+        Trail() 
+    { 
+        grow(size); 
+    }
 
     unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
     unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).

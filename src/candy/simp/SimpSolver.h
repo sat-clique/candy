@@ -71,7 +71,7 @@ namespace Candy {
  *    - PickBranchLitT must be move-assignable.
  *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
  */
-template<class PickBranchLitT=Branch>
+template<class PickBranchLitT = VSIDS>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:
     SimpSolver();
