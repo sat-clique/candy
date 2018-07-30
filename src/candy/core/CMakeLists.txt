@@ -16,6 +16,7 @@ add_library(core OBJECT
     Propagate.h
     branching/BranchingInterface.h
     branching/VSIDS.h
+    branching/LRB.h
     Stamp.h
     ConflictAnalysis.h
 )
