@@ -14,20 +14,12 @@
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
+#include "candy/core/ConflictAnalysis.h"
 
 namespace Candy {
 
 class Branch {
 public:
-    struct Parameters {
-        double var_decay;
-        double max_var_decay;
-        Parameters() : Parameters(0.8, 0.95) {}
-        Parameters(double vdecay, double mvdecay) : var_decay(vdecay), max_var_decay(mvdecay) {}
-    };
-
-    static Branch::Parameters defaultParameters;
-
     struct VarOrderLt {
         std::vector<double>& activity;
         bool operator()(Var x, Var y) const {
@@ -47,11 +39,7 @@ public:
     bool initial_polarity = true;
     double initial_activity = 0.0;
 
-    Branch() : Branch(defaultParameters.var_decay, defaultParameters.max_var_decay) {
-
-    }
-
-    Branch(double _var_decay, double _max_var_decay) :
+    Branch(double _var_decay = 0.8, double _max_var_decay = 0.95) :
         order_heap(VarOrderLt(activity)),
         activity(), polarity(), decision(),
         var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay) {
@@ -183,13 +171,13 @@ public:
     }
 
 
-    void notify_conflict(vector<Clause*>& involved_clauses, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
-        if (nConflicts % 5000 == 0 && var_decay < max_var_decay) {
+    void notify_conflict(AnalysisResult ana, Trail& trail, unsigned int learnt_lbd) {
+        if (ana.nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
 
         stamp.clear();
-        for (Clause* clause : involved_clauses) {
+        for (Clause* clause : ana.involved_clauses) {
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {

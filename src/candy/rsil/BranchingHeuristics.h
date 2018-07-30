@@ -114,8 +114,8 @@ namespace Candy {
     		defaultBranchingHeuristic.grow(size);
     	}
 
-        void notify_conflict(vector<Clause*>& involved_clauses, Trail& trail, unsigned int learnt_lbd, uint64_t nConflicts) {
-            defaultBranchingHeuristic.notify_conflict(involved_clauses, trail, learnt_lbd, nConflicts);
+        void notify_conflict(AnalysisResult result, Trail& trail, unsigned int learnt_lbd) {
+            defaultBranchingHeuristic.notify_conflict(result, trail, learnt_lbd);
     	}
 
     	void notify_backtracked(vector<Lit> lits) {

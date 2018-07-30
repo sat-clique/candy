@@ -12,7 +12,7 @@ namespace Candy {
 
 Statistics::Statistics() :
 #ifdef SOLVER_STATS
-    decisions(0), dec_vars(0), max_literals(0), tot_literals(0),
+    decisions(0), dec_vars(0),
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
     subsumed(0), deleted(0),
@@ -92,7 +92,6 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     printf("c conflicts             : %-12llu   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
     printf("c decisions             : %-12llu   (%.0f /sec)\n", decisions, decisions / cpu_time);
     printf("c propagations          : %-12llu   (%.0f /sec)\n", propagations, propagations / cpu_time);
-    printf("c conflict literals     : %-12llu   (%4.2f %% deleted)\n", tot_literals, (max_literals - tot_literals) * 100 / (double) max_literals);
 #endif// SOLVER_STATS
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {

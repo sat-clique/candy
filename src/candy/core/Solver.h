@@ -203,6 +203,9 @@ public:
     size_t nVars() const {
         return trail.vardata.size();
     }
+    size_t nConflicts() const {
+        return conflict_analysis.getResult().nConflicts;
+    }
 
     bool isSelector(Var v) {
         return false;
@@ -214,7 +217,7 @@ public:
 
     // Resource constraints:
     void setConfBudget(uint64_t x) {
-        conflict_budget = nConflicts + x;
+        conflict_budget = nConflicts() + x;
     }
     void setPropBudget(uint64_t x) {
         propagation_budget = nPropagations + x;
@@ -261,7 +264,7 @@ public:
     Certificate* certificate;
 
     // a few stats are used for heuristics control, keep them here
-    uint64_t nConflicts, nPropagations;
+    uint64_t nPropagations;
 
     // Control verbosity
     unsigned int verbEveryConflicts;
@@ -380,7 +383,7 @@ protected:
 
     inline bool withinBudget() {
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
-                && (conflict_budget == 0 || nConflicts < conflict_budget) && (propagation_budget == 0 || nPropagations < propagation_budget);
+                && (conflict_budget == 0 || nConflicts() < conflict_budget) && (propagation_budget == 0 || nPropagations < propagation_budget);
     }
 };
 
@@ -434,7 +437,7 @@ Solver<PickBranchLitT>::Solver() :
     // unsat certificate
     certificate(&defaultCertificate),
     // stats for heuristic control
-    nConflicts(0), nPropagations(0),
+    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -880,14 +883,12 @@ lbool Solver<PickBranchLitT>::search() {
         
         if (confl != nullptr) { // CONFLICT
             sonification.conflictLevel(trail.decisionLevel());
-            
-            ++nConflicts;
-            
-            if (verbosity >= 1 && nConflicts % verbEveryConflicts == 0) {
+                        
+            if (verbosity >= 1 && nConflicts() % verbEveryConflicts == 0) {
                 Statistics::getInstance().printIntermediateStats((int) (trail.trail_lim.size() == 0 ? trail.size() : trail.trail_lim[0]),
                     static_cast<int>(nClauses()),
                     static_cast<int>(nLearnts()),
-                    static_cast<int>(nConflicts));
+                    static_cast<int>(nConflicts()));
             }
             if (trail.decisionLevel() == 0) {
                 return l_False;
@@ -896,7 +897,7 @@ lbool Solver<PickBranchLitT>::search() {
             trailQueue.push(trail.size());
             
             // BLOCK RESTART (CP 2012 paper)
-            if (nConflicts > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
+            if (nConflicts() > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
                 lbdQueue.fastclear();
                 Statistics::getInstance().solverStopsRestartsInc();
                 if (!blocked) {
@@ -906,40 +907,38 @@ lbool Solver<PickBranchLitT>::search() {
                 }
             }
             
-            conflict_analysis.analyze(confl);
-            vector<Lit>* learnt_clause = conflict_analysis.getLearntClause();
+            AnalysisResult conflictInfo = conflict_analysis.analyze(confl);
             if (incremental) {
             	// sort selectors to back (but keep asserting literal upfront: begin+1)
-            	std::sort(learnt_clause->begin()+1, learnt_clause->end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
+            	std::sort(conflictInfo.learnt_clause.begin()+1, conflictInfo.learnt_clause.end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
             }
-            vector<Clause*>* involved_clauses = conflict_analysis.getInvolvedClauses();
             
-            if (learntCallback != nullptr && (int)learnt_clause->size() <= learntCallbackMaxLength) {
-                vector<int> clause(learnt_clause->size() + 1);
-                for (Lit lit : *learnt_clause) {
+            if (learntCallback != nullptr && (int)conflictInfo.learnt_clause.size() <= learntCallbackMaxLength) {
+                vector<int> clause(conflictInfo.learnt_clause.size() + 1);
+                for (Lit lit : conflictInfo.learnt_clause) {
                     clause.push_back((var(lit)+1)*(sign(lit)?-1:1));
                 }
                 clause.push_back(0);
                 learntCallback(learntCallbackState, &clause[0]);
             }
 
-            sonification.learntSize(static_cast<int>(learnt_clause->size()));
+            sonification.learntSize(static_cast<int>(conflictInfo.learnt_clause.size()));
 
-            if (learnt_clause->size() == 1) {
+            if (conflictInfo.learnt_clause.size() == 1) {
                 Statistics::getInstance().solverUnariesInc();
             }
-            if (learnt_clause->size() == 2) {
+            if (conflictInfo.learnt_clause.size() == 2) {
                 Statistics::getInstance().solverBinariesInc();
             }
 
-            if (!isSelector(learnt_clause->back())) {
-                certificate->added(learnt_clause->begin(), learnt_clause->end());
+            if (!isSelector(conflictInfo.learnt_clause.back())) {
+                certificate->added(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
             }
 
             // TODO: exclude selectors from lbd computation
-            uint_fast16_t nblevels = trail.computeLBD(learnt_clause->begin(), learnt_clause->end());
-            updateClauseActivitiesAndLBD(*involved_clauses, nblevels);
-            branch.notify_conflict(*involved_clauses, trail, nblevels, nConflicts);
+            uint_fast16_t nblevels = trail.computeLBD(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
+            updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, nblevels);
+            branch.notify_conflict(conflictInfo, trail, nblevels);
 
             if (nblevels <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
@@ -948,14 +947,14 @@ lbool Solver<PickBranchLitT>::search() {
             lbdQueue.push(nblevels);
             sumLBD += nblevels;
 
-            if (learnt_clause->size() == 1) {
+            if (conflictInfo.learnt_clause.size() == 1) {
                 cancelUntil(0);
-                trail.uncheckedEnqueue((*learnt_clause)[0]);
+                trail.uncheckedEnqueue(conflictInfo.learnt_clause[0]);
                 new_unary = true;
             }
             else {
-                uint32_t clauseLength = static_cast<uint32_t>(learnt_clause->size());
-                Clause* cr = new (allocator.allocate(clauseLength)) Clause(*learnt_clause, nblevels);
+                uint32_t clauseLength = static_cast<uint32_t>(conflictInfo.learnt_clause.size());
+                Clause* cr = new (allocator.allocate(clauseLength)) Clause(conflictInfo.learnt_clause, nblevels);
 
                 if (clauseLength == 2) {
                     persist.push_back(cr);
@@ -982,7 +981,7 @@ lbool Solver<PickBranchLitT>::search() {
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
-            if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts)))) {
+            if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts())))) {
                 lbdQueue.fastclear();
                 
                 cancelUntil(0);
@@ -1027,9 +1026,9 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             // Perform clause database reduction !
-            if (nConflicts >= (curRestart * nbclausesbeforereduce)) {
+            if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
                 if (learnts.size() > 0) {
-                    curRestart = (nConflicts / nbclausesbeforereduce) + 1;
+                    curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
                     reduceDB();
                     reduced = true;
                     nbclausesbeforereduce += incReduceDB;
@@ -1044,8 +1043,8 @@ lbool Solver<PickBranchLitT>::search() {
                     // Dummy decision level:
                     trail.newDecisionLevel();
                 } else if (trail.value(p) == l_False) {
-                    conflict_analysis.analyzeFinal(~p);
-                    conflict.insert(conflict.end(), conflict_analysis.getLearntClause()->begin(), conflict_analysis.getLearntClause()->end());
+                    AnalysisResult result = conflict_analysis.analyzeFinal(~p);
+                    conflict.insert(conflict.end(), result.learnt_clause.begin(), result.learnt_clause.end());
                     return l_False;
                 } else {
                     next = p;
@@ -1119,9 +1118,9 @@ lbool Solver<PickBranchLitT>::solve() {
         }
         else {
             // check if selectors are used in final conflict
-            conflict_analysis.analyzeFinal(trail[trail.size()-1]);
-            auto pos = find_if(conflict_analysis.getLearntClause()->begin(), conflict_analysis.getLearntClause()->end(), [this] (Lit lit) { return isSelector(var(lit)); } );
-            if (pos == conflict_analysis.getLearntClause()->end()) {
+            AnalysisResult result = conflict_analysis.analyzeFinal(trail[trail.size()-1]);
+            auto pos = find_if(result.learnt_clause.begin(), result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
+            if (pos == result.learnt_clause.end()) {
                 certificate->proof();
             }
         }
@@ -1147,7 +1146,7 @@ lbool Solver<PickBranchLitT>::solve() {
     cancelUntil(0);
 
     if (verbosity > 0) {
-    	Statistics::getInstance().printFinalStats(nConflicts, nPropagations);
+    	Statistics::getInstance().printFinalStats(nConflicts(), nPropagations);
         Statistics::getInstance().printAllocatorStatistics();
         Statistics::getInstance().printRuntimes();
     }

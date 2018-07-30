@@ -338,7 +338,8 @@ int main(int argc, char** argv) {
 		}
     }
     else {
-        solver = new SimpSolver<Branch>();
+        Branch branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
+        solver = new SimpSolver<Branch>(std::move(branch));
     }
     solver->setVerbosities(args.vv, args.verb);
     solver->setCertificate(*certificate);
