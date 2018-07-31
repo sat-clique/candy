@@ -12,7 +12,7 @@ namespace Candy {
 
 Statistics::Statistics() :
 #ifdef SOLVER_STATS
-    decisions(0), dec_vars(0),
+    decisions(0), 
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
     subsumed(0), deleted(0),
@@ -60,9 +60,8 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
 void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
 #if defined SOLVER_STATS
-    printf("c |%5llu %8llu %4llu |%9d %10d |%5llu %10d %7llu %6llu %5llu %10llu |\n",
-            starts, nbstopsrestarts, (conflicts / starts),
-            (int)dec_vars - trail, clauses,
+    printf("c |%5llu %8llu %4llu | %18d |%5llu %10d %7llu %6llu %5llu %10llu |\n",
+            starts, nbstopsrestarts, (conflicts / starts), clauses,
             nbReduceDB, learnts, nbBin, nbUn, nbDL2, nbRemovedClauses);
 #endif
 }

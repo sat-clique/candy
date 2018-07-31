@@ -83,9 +83,6 @@ public:
             decision[v] = b;
             if (b) {
                 insertVarOrder(v);
-                Statistics::getInstance().solverDecisionVariablesInc();
-            } else {
-                Statistics::getInstance().solverDecisionVariablesDec();
             }
         }
     }
@@ -111,7 +108,6 @@ public:
             stamp.incSize(size);
             for (int i = prevSize; i < static_cast<int>(size); i++) {
                 insertVarOrder(i);
-                Statistics::getInstance().solverDecisionVariablesInc();
             }
         }
     }
