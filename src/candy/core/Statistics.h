@@ -26,7 +26,7 @@ namespace Candy {
 
 class Statistics {
 #ifdef SOLVER_STATS
-    uint64_t decisions, dec_vars;
+    uint64_t decisions;
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
     uint64_t subsumed, deleted;
@@ -64,8 +64,6 @@ public:
 
 #ifdef SOLVER_STATS
     inline void solverDecisionsInc() { ++decisions; }
-    inline void solverDecisionVariablesInc() { ++dec_vars; }
-    inline void solverDecisionVariablesDec() { --dec_vars; }
 
     inline void solverRestartInc() { ++starts; }
     inline void solverStopsRestartsInc() { ++nbstopsrestarts; }
@@ -84,8 +82,6 @@ public:
 #else
     inline void solverDecisionsInc() { }
     inline void solverRandomDecisionsInc() { }
-    inline void solverDecisionVariablesInc() { }
-    inline void solverDecisionVariablesDec() { }
 
     inline void solverRestartInc() { }
     inline void solverStopsRestartsInc() { }
