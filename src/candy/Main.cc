@@ -66,6 +66,8 @@
 #include "candy/utils/ParseUtils.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
+#include "candy/core/branching/VSIDS.h"
+#include "candy/core/branching/LRB.h"
 #include "candy/simp/SimpSolver.h"
 #include "candy/minimizer/Minimizer.h"
 
@@ -337,7 +339,12 @@ int main(int argc, char** argv) {
             solver = new SimpSolver<VSIDS>();
 		}
     }
+    else if (SolverOptions::opt_use_lrb) {
+        std::cerr << "Using LRB Branching Heuristic" << std::endl;
+        solver = new SimpSolver<LRB>();
+    }
     else {
+        std::cerr << "Using VSIDS Branching Heuristic" << std::endl;
         VSIDS branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
         solver = new SimpSolver<VSIDS>(std::move(branch));
     }

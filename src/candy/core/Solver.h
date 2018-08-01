@@ -412,6 +412,8 @@ namespace SolverOptions {
     extern IntOption opt_lb_size_minimzing_clause;
     extern IntOption opt_lb_lbd_minimzing_clause;
     
+    extern BoolOption opt_use_lrb;
+
     extern DoubleOption opt_var_decay;
     extern DoubleOption opt_max_var_decay;
     extern DoubleOption opt_clause_decay;
