@@ -5,8 +5,8 @@
  *      Author: markus
  */
 
-#ifndef SRC_CANDY_CORE_VSIDS_H_
-#define SRC_CANDY_CORE_VSIDS_H_
+#ifndef SRC_CANDY_CORE_LRB_H_
+#define SRC_CANDY_CORE_LRB_H_
 
 #include <vector>
 
@@ -32,7 +32,7 @@ public:
     LRB(double _step_size = 0.4) :
         order_heap(VarOrderLt(weight)),
         weight(), polarity(), decision(), stamp(), 
-        assigned(), participated(), learnt_counter(0), 
+        interval_assigned(), participated(), 
         step_size(_step_size) {
 
     }
@@ -41,10 +41,9 @@ public:
         weight = std::move(other.weight);
         polarity = std::move(other.polarity);
         decision = std::move(other.decision);
-        assigned = std::move(other.assigned);
+        interval_assigned = std::move(other.interval_assigned);
         participated = std::move(other.participated);
 		step_size = other.step_size;
-        learnt_counter = other.learnt_counter;
         stamp.incSize(other.stamp.size());
 	}
 
@@ -52,10 +51,9 @@ public:
         weight = std::move(other.weight);
         polarity = std::move(other.polarity);
         decision = std::move(other.decision);
-        assigned = std::move(other.assigned);
+        interval_assigned = std::move(other.interval_assigned);
         participated = std::move(other.participated);
         step_size = other.step_size;
-        learnt_counter = other.learnt_counter;
         stamp.incSize(other.stamp.size());
 		return *this;
     }
@@ -78,7 +76,7 @@ public:
         decision.push_back(true);
         polarity.push_back(initial_polarity);
         weight.push_back(initial_weight);
-        assigned.push_back(0);
+        interval_assigned.push_back(0);
         participated.push_back(0);
         stamp.incSize();
         insertVarOrder(decision.size() - 1);
@@ -90,7 +88,7 @@ public:
             decision.resize(size, true);
             polarity.resize(size, initial_polarity);
             weight.resize(size, initial_weight);
-            assigned.resize(size, 0);
+            interval_assigned.resize(size, 0);
             participated.resize(size, 0);
             stamp.incSize(size);
             for (int i = prevSize; i < static_cast<int>(size); i++) {
@@ -130,12 +128,13 @@ public:
     }
 
     void notify_backtracked(std::vector<Lit> lits) {
+        double inv_step_size = 1.0 - step_size;
         for (Lit lit : lits) {
             Var v = var(lit);
             polarity[v] = sign(lit);
 
-            if (interval > 0) {
-                weight[v] = (1.0 - step_size) * weight[v] + step_size * (participated[v] / interval_assigned[v]);
+            if (interval_assigned[v] > 0) {
+                weight[v] = inv_step_size * weight[v] + step_size * (participated[v] / interval_assigned[v]);
                 interval_assigned[v] = 0;
                 participated[v] = 0;
             }
@@ -208,4 +207,4 @@ private:
 };
 
 }
-#endif /* SRC_CANDY_CORE_VSIDS_H_ */
+#endif /* SRC_CANDY_CORE_LRB_H_ */
