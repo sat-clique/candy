@@ -25,16 +25,17 @@ struct VarData {
 };
 
 class Trail {
+private:
+    std::vector<Lit> backtracked;
+
 public:
     Trail() : 
-        trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() 
+        backtracked(), trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() 
     { 
 
     }
 
-    Trail(uint32_t size) : 
-        Trail() 
-    { 
+    Trail(uint32_t size) : Trail() { 
         grow(size); 
     }
 
@@ -45,6 +46,10 @@ public:
     std::vector<VarData> vardata; // Stores reason and level for each variable.
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
+
+    inline std::vector<Lit> getBacktracked() {
+        return backtracked;
+    }
 
     inline Lit& operator [](unsigned int i) {
         assert(i < trail_size);
@@ -123,6 +128,10 @@ public:
         return assigns[var(p)] ^ sign(p);
     }
 
+    inline bool isAssigned(Var v) const {
+        return assigns[v] != l_Undef;
+    }
+
     // Main internal methods:
     inline Clause* reason(Var x) const {
         return vardata[x].reason;
@@ -161,18 +170,17 @@ public:
         trail[trail_size++] = p;
     }
 
-    inline std::vector<Lit> cancelUntil(unsigned int level) {
-        std::vector<Lit> result;
+    inline void cancelUntil(unsigned int level) {
+        backtracked.clear();
         if (decisionLevel() > level) {
-            result.insert(result.end(), begin() + trail_lim[level], end());
-            for (Lit lit : result) {
+            backtracked.insert(backtracked.end(), begin() + trail_lim[level], end());
+            for (Lit lit : backtracked) {
                 assigns[var(lit)] = l_Undef;
             }
             qhead = trail_lim[level];
             trail_size = trail_lim[level];
             trail_lim.erase(trail_lim.begin() + level, trail_lim.end());
         }
-        return result;
     }
 
     /**

@@ -58,7 +58,6 @@ public:
 	}
 
     VSIDS& operator=(VSIDS&& other) {
-//        order_heap(VarOrderLt(activity));
         activity = std::move(other.activity);
         polarity = std::move(other.polarity);
         decision = std::move(other.decision);
@@ -166,7 +165,7 @@ public:
     void rebuildOrderHeap(Trail& trail) {
         vector<Var> vs;
         for (size_t v = 0; v < decision.size(); v++) {
-            if (decision[v] && trail.value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
+            if (decision[v] && !trail.isAssigned(v)) {
                 vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
             }
         }

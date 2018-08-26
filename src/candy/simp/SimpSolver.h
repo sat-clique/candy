@@ -526,7 +526,7 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
     this->trail_lim.push_back(this->trail_size);
     for (Lit lit : c) {
         if (this->value(lit) == l_True) {
-            this->cancelUntil(0);
+            this->trail.cancelUntil(0);
             return false;
         } else if (this->value(lit) != l_False) {
             assert(this->value(lit) == l_Undef);
@@ -535,7 +535,7 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
     }
     
     bool result = this->propagator.propagate(this->trail) != nullptr;
-    this->cancelUntil(0);
+    this->trail.cancelUntil(0);
     return result;
 }
 
@@ -624,12 +624,12 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
     }
     
     if (this->propagator.propagate(this->trail) != nullptr) {
-        this->cancelUntil(0);
+        this->trail.cancelUntil(0);
         if (!strengthenClause(cr, l)) {
             return false;
         }
     } else {
-        this->cancelUntil(0);
+        this->trail.cancelUntil(0);
     }
     
     return true;
