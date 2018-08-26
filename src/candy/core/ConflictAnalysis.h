@@ -31,8 +31,7 @@ namespace Candy {
 		std::vector<Lit> learnt_clause;
 		std::vector<Clause*> involved_clauses;
 
-		void newConflict() {
-			++nConflicts;
+		void clear() {
 			learnt_clause.clear();
 			involved_clauses.clear();
 		}
@@ -170,11 +169,12 @@ public:
 	 *        rest of literals. There may be others from the same level though.
 	 *
 	 ***************************************************************************************************/
-	AnalysisResult analyze(Clause* confl) {
+	void analyze(Clause* confl) {
 	    int pathC = 0;
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
-	    result.newConflict();
+	    result.clear();
+		result.nConflicts++;
 
 	    // Generate conflict clause:
 	    result.learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
@@ -231,8 +231,6 @@ public:
 	    if (result.learnt_clause.size() <= lbSizeMinimizingClause) {
 	        minimisationWithBinaryResolution();
 	    }
-
-		return result;
 	}
 
 	/**************************************************************************************************
@@ -244,12 +242,12 @@ public:
 	 *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
-	AnalysisResult analyzeFinal(Lit p) {
-	    result.newConflict();	
+	void analyzeFinal(Lit p) {
+	    result.clear();	
 	    result.learnt_clause.push_back(p);
 
 	    if (trail->decisionLevel() == 0)
-            return result;
+            return;
 
 	    stamp.clear();
 
@@ -273,7 +271,6 @@ public:
 	        }
 	    }
 	    stamp.unset(var(p));
-		return result;
 	}
 
 };

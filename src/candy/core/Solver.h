@@ -633,14 +633,6 @@ void Solver<PickBranchLitT>::updateClauseActivitiesAndLBD(vector<Clause*>& invol
     }
 }
 
-// Revert to the state at given level (keeping all assignment at 'level' but not beyond).
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::cancelUntil(int level) {
-    vector<Lit> lits = trail.cancelUntil(level);
-    std::reverse(lits.begin(), lits.end());
-    branch.notify_backtracked(lits);
-}
-
 /**************************************************************************************************
  *
  *  reduceDB : ()  ->  [void]
@@ -909,7 +901,8 @@ lbool Solver<PickBranchLitT>::search() {
                 }
             }
             
-            AnalysisResult conflictInfo = conflict_analysis.analyze(confl);
+            conflict_analysis.analyze(confl);
+            AnalysisResult conflictInfo = conflict_analysis.getResult();
             if (incremental) {
             	// sort selectors to back (but keep asserting literal upfront: begin+1)
             	std::sort(conflictInfo.learnt_clause.begin()+1, conflictInfo.learnt_clause.end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
@@ -950,7 +943,8 @@ lbool Solver<PickBranchLitT>::search() {
             sumLBD += nblevels;
 
             if (conflictInfo.learnt_clause.size() == 1) {
-                cancelUntil(0);
+                trail.cancelUntil(0);
+                branch.notify_backtracked(trail.getBacktracked());
                 trail.uncheckedEnqueue(conflictInfo.learnt_clause[0]);
                 new_unary = true;
             }
@@ -973,7 +967,8 @@ lbool Solver<PickBranchLitT>::search() {
                     cr->swap(max_i, 1);
                 }
 
-                cancelUntil(trail.level(var(cr->second())));
+                trail.cancelUntil(trail.level(var(cr->second())));
+                branch.notify_backtracked(trail.getBacktracked());
 
                 propagator.attachClause(cr);
                 trail.uncheckedEnqueue(cr->first(), cr);
@@ -986,7 +981,7 @@ lbool Solver<PickBranchLitT>::search() {
             if ((lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts())))) {
                 lbdQueue.fastclear();
                 
-                cancelUntil(0);
+                trail.cancelUntil(0);
                 
                 // every restart after reduce-db
                 if (reduced) {
@@ -1045,7 +1040,8 @@ lbool Solver<PickBranchLitT>::search() {
                     // Dummy decision level:
                     trail.newDecisionLevel();
                 } else if (trail.value(p) == l_False) {
-                    AnalysisResult result = conflict_analysis.analyzeFinal(~p);
+                    conflict_analysis.analyzeFinal(~p);
+                    AnalysisResult result = conflict_analysis.getResult();
                     conflict.insert(conflict.end(), result.learnt_clause.begin(), result.learnt_clause.end());
                     return l_False;
                 } else {
@@ -1120,7 +1116,8 @@ lbool Solver<PickBranchLitT>::solve() {
         }
         else {
             // check if selectors are used in final conflict
-            AnalysisResult result = conflict_analysis.analyzeFinal(trail[trail.size()-1]);
+            conflict_analysis.analyzeFinal(trail[trail.size()-1]);
+            AnalysisResult result = conflict_analysis.getResult();
             auto pos = find_if(result.learnt_clause.begin(), result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
             if (pos == result.learnt_clause.end()) {
                 certificate->proof();
@@ -1145,7 +1142,7 @@ lbool Solver<PickBranchLitT>::solve() {
         sonification.stop(-1);
     }
     
-    cancelUntil(0);
+    trail.cancelUntil(0);
 
     if (verbosity > 0) {
     	Statistics::getInstance().printFinalStats(nConflicts(), nPropagations);
