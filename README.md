@@ -15,7 +15,7 @@
 
 # Candy Kingdom
 
-**Candy Kingdom** is a growing collection of SAT solvers and tools for structure analysis in SAT problems. The original **Candy** solver is a branch of the famous SAT solver **[Glucose](http://www.labri.fr/perso/lsimon/glucose/)**. Several new approaches (e.g. rsar and rsil-variants) in Candy focus on explicit exploitation of structure analysis in SAT solving. Furthermore the core of Glucose has been completely reworked in order to increase *readability* and *maintainability* of the code itself. Much work was done for increasing the *independence* and *exchangeability* of components in the core solver. The allocation model of clauses was revisited with a focus on cache efficient *memory management*. A new *sonification* module provides *[Ear Candy](https://www.youtube.com/watch?v=iupgZGlzMCQ)*, you can now also listen to solver runs. 
+**Candy Kingdom** is a modular collection of SAT solvers and tools for structure analysis in SAT problems. The original **Candy** solver is a branch of the famous SAT solver **[Glucose](http://www.labri.fr/perso/lsimon/glucose/)**. Several new approaches (e.g. rsar and rsil-variants) in Candy focus on explicit exploitation of structure analysis in SAT solving. The core of Glucose has been completely reworked with a strong focus on the *independence* and *exchangeability* of components in the core solver, while increasing the *readability* and *maintainability* of the code. The allocation model of clauses was revisited with a focus on cache efficient *memory management*. A new *sonification* module provides *[Ear Candy](https://www.youtube.com/watch?v=iupgZGlzMCQ)*, you can now also listen to solver runs. 
 
 ## Build
 
