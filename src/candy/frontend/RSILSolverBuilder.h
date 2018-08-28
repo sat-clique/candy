@@ -179,30 +179,24 @@ namespace Candy {
         CandySolverInterface* build() {
             if (size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    RSILBranchingHeuristic3 heuristic(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones);
-                    return new SimpSolver<RSILBranchingHeuristic3>(std::move(heuristic));
+                    return new SimpSolver<RSILBranchingHeuristic3>(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones);
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    RSILVanishingBranchingHeuristic3 heuristic(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
-                    return new SimpSolver<RSILVanishingBranchingHeuristic3>(std::move(heuristic));
+                    return new SimpSolver<RSILVanishingBranchingHeuristic3>(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    RSILBudgetBranchingHeuristic3 heuristic(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
-                    return new SimpSolver<RSILBudgetBranchingHeuristic3>(std::move(heuristic));
+                    return new SimpSolver<RSILBudgetBranchingHeuristic3>(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
                 }
             }
             else if (size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    RSILBranchingHeuristic2 heuristic(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones);
-                    return new SimpSolver<RSILBranchingHeuristic2>(std::move(heuristic));
+                    return new SimpSolver<RSILBranchingHeuristic2>(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones);
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    RSILVanishingBranchingHeuristic2 heuristic(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
-                    return new SimpSolver<RSILVanishingBranchingHeuristic2>(std::move(heuristic));
+                    return new SimpSolver<RSILVanishingBranchingHeuristic2>(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    RSILBudgetBranchingHeuristic2 heuristic(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
-                    return new SimpSolver<RSILBudgetBranchingHeuristic2>(std::move(heuristic));
+                    return new SimpSolver<RSILBudgetBranchingHeuristic2>(std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
                 }
             }
             throw std::invalid_argument{"RSIL mode not implemented"};

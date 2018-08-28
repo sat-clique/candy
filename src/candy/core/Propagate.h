@@ -52,11 +52,14 @@ struct WatcherDeleted {
 #endif
 
 class Propagate {
+private:
+
+    Trail& trail;
 
     std::array<OccLists<Lit, Watcher, WatcherDeleted>, NWATCHES> watches;
 
 public:
-    Propagate() : watches() {
+    Propagate(Trail& _trail) : trail(_trail), watches() {
         for (auto& watchers : watches) {
             watchers = OccLists<Lit, Watcher, WatcherDeleted>();
         }
@@ -131,7 +134,7 @@ public:
      *    Post-conditions:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
-    inline Clause* future_propagate_clauses(Trail& trail, Lit p, uint_fast8_t n) {
+    inline Clause* future_propagate_clauses(Lit p, uint_fast8_t n) {
         assert(n < watches.size());
 
         std::vector<Watcher>& list = watches[n][p];
@@ -193,16 +196,16 @@ public:
     }
 
     #ifndef FUTURE_PROPAGATE
-    Clause* propagate(Trail& trail) {
+    Clause* propagate() {
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
 
             // Propagate binary clauses
-            Clause* conflict = future_propagate_clauses(trail, p, 0);
+            Clause* conflict = future_propagate_clauses(p, 0);
             if (conflict != nullptr) return conflict;
 
             // Propagate other 2-watched clauses
-            conflict = future_propagate_clauses(trail, p, 1);
+            conflict = future_propagate_clauses(p, 1);
             if (conflict != nullptr) return conflict;
         }
 
@@ -211,7 +214,7 @@ public:
 
     #else // FUTURE PROPAGATE
 
-    Clause* propagate(Trail& trail) {
+    Clause* propagate() {
         std::array<uint32_t, NWATCHES> pos;
         pos.fill(trail.qhead);
 
@@ -219,7 +222,7 @@ public:
             for (unsigned int i = 0; i < pos.size(); i++) {
                 while (pos[i] < trail.size()) {
                     Lit p = trail[pos[i]++];
-                    Clause* conflict = future_propagate_clauses(trail, p, i);
+                    Clause* conflict = future_propagate_clauses(p, i);
                     if (conflict != nullptr) return conflict;
                 }
             }

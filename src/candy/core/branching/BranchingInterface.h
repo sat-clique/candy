@@ -34,20 +34,20 @@ public:
 
     // }
 
-    void notify_conflict(AnalysisResult ana, Trail& trail, unsigned int learnt_lbd) {
-        static_cast<BranchingMethod *>(this)->notify_conflict(ana, trail, learnt_lbd);
+    void notify_conflict() {
+        static_cast<BranchingMethod *>(this)->notify_conflict();
     }
 
-    void notify_backtracked(std::vector<Lit> lits) {
-        static_cast<BranchingMethod *>(this)->notify_backtracked(lits);
+    void notify_backtracked() {
+        static_cast<BranchingMethod *>(this)->notify_backtracked();
     }
 
-    void notify_restarted(Trail& trail) {
-        static_cast<BranchingMethod *>(this)->notify_restarted(trail);
+    void notify_restarted() {
+        static_cast<BranchingMethod *>(this)->notify_restarted();
     }
 
-    inline Lit pickBranchLit(Trail& trail) {
-        return static_cast<BranchingMethod *>(this)->pickBranchLit(trail);
+    inline Lit pickBranchLit() {
+        return static_cast<BranchingMethod *>(this)->pickBranchLit();
     }
 
     void setDecisionVar(Var v, bool b) {

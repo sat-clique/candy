@@ -20,6 +20,10 @@
 namespace Candy {
 
 class VSIDS : public BranchingInterface<VSIDS> {
+private:
+    Trail& trail;
+    ConflictAnalysis& analysis;
+
 public:
     struct VarOrderLt {
         std::vector<double>& activity;
@@ -40,21 +44,24 @@ public:
     bool initial_polarity = true;
     double initial_activity = 0.0;
 
-    VSIDS(double _var_decay = 0.8, double _max_var_decay = 0.95) :
+    VSIDS(Trail& _trail, ConflictAnalysis& _analysis, double _var_decay = 0.8, double _max_var_decay = 0.95) :
+        trail(_trail), analysis(_analysis), 
         order_heap(VarOrderLt(activity)),
         activity(), polarity(), decision(), stamp(), 
         var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay) {
 
     }
 
-    VSIDS(VSIDS&& other) : order_heap(VarOrderLt(activity)) {
-        activity = std::move(other.activity);
-        polarity = std::move(other.polarity);
-        decision = std::move(other.decision);
-		var_inc = other.var_inc;
-		var_decay = other.var_decay;
-        max_var_decay = other.max_var_decay;
-        stamp.incSize(other.stamp.size());
+    VSIDS(VSIDS&& other) :
+        trail(other.trail), analysis(other.analysis), 
+        order_heap(VarOrderLt(activity)) {
+            activity = std::move(other.activity);
+            polarity = std::move(other.polarity);
+            decision = std::move(other.decision);
+            var_inc = other.var_inc;
+            var_decay = other.var_decay;
+            max_var_decay = other.max_var_decay;
+            stamp.incSize(other.stamp.size());
 	}
 
     VSIDS& operator=(VSIDS&& other) {
@@ -155,16 +162,6 @@ public:
     void rebuildOrderHeap() {
         vector<Var> vs;
         for (size_t v = 0; v < decision.size(); v++) {
-            if (decision[v]) {
-                vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
-            }
-        }
-        order_heap.build(vs);
-    }
-
-    void rebuildOrderHeap(Trail& trail) {
-        vector<Var> vs;
-        for (size_t v = 0; v < decision.size(); v++) {
             if (decision[v] && !trail.isAssigned(v)) {
                 vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
             }
@@ -172,14 +169,13 @@ public:
         order_heap.build(vs);
     }
 
-
-    void notify_conflict(AnalysisResult ana, Trail& trail, unsigned int learnt_lbd) {
-        if (ana.nConflicts % 5000 == 0 && var_decay < max_var_decay) {
+    void notify_conflict() {
+        if (analysis.getResult().nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
 
         stamp.clear();
-        for (Clause* clause : ana.involved_clauses) {
+        for (Clause* clause : analysis.getResult().involved_clauses) {
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {
@@ -187,7 +183,7 @@ public:
                     varBumpActivity(v);
                     if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
                         // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                        if (trail.reason(v)->getLBD() < learnt_lbd) {
+                        if (trail.reason(v)->getLBD() < analysis.getResult().lbd) {
                             varBumpActivity(v);
                         }
                     }
@@ -198,18 +194,18 @@ public:
         varDecayActivity();
     }
 
-    void notify_backtracked(std::vector<Lit> lits) {
-        for (Lit lit : lits) {
+    void notify_backtracked() {
+        for (Lit lit : trail.getBacktracked()) {
             polarity[var(lit)] = sign(lit);
             insertVarOrder(var(lit));
         }
     }
 
-    void notify_restarted(Trail& trail) {
-        rebuildOrderHeap(trail);
+    void notify_restarted() {
+        rebuildOrderHeap();
     }
 
-    inline Lit pickBranchLit(Trail& trail) {
+    inline Lit pickBranchLit() {
         Var next = var_Undef;
 
         // Activity based decision:

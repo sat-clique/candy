@@ -31,6 +31,8 @@ namespace Candy {
 		std::vector<Lit> learnt_clause;
 		std::vector<Clause*> involved_clauses;
 
+		uint_fast16_t lbd;
+
 		void clear() {
 			learnt_clause.clear();
 			involved_clauses.clear();
@@ -49,14 +51,14 @@ private:
 	AnalysisResult result;
 
     /* pointers to solver state */
-    Trail* trail;
-    Propagate* propagate;
+    Trail& trail;
+    Propagate& propagate;
 
     /* Constant for reducing clause */
     unsigned int lbSizeMinimizingClause;
 
     inline uint64_t abstractLevel(Var x) const {
-        return 1ull << (trail->level(x) % 64);
+        return 1ull << (trail.level(x) % 64);
     }
 
 	// Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
@@ -68,20 +70,20 @@ private:
 	    analyze_stack.push_back(var(lit));
 
 	    while (analyze_stack.size() > 0) {
-	        assert(trail->reason(analyze_stack.back()) != nullptr);
+	        assert(trail.reason(analyze_stack.back()) != nullptr);
 
-	        Clause* clause = trail->reason(analyze_stack.back());
+	        Clause* clause = trail.reason(analyze_stack.back());
 	        analyze_stack.pop_back();
 
-	        if (clause->size() == 2 && trail->value(clause->first()) == l_False) {
-	            assert(trail->value(clause->second()) == l_True);
+	        if (clause->size() == 2 && trail.value(clause->first()) == l_False) {
+	            assert(trail.value(clause->second()) == l_True);
 	            clause->swap(0, 1);
 	        }
 
 	        for (Lit imp : *clause) {
 	            Var v = var(imp);
-	            if (!stamp[v] && trail->level(v) > 0) {
-	                if (trail->reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
+	            if (!stamp[v] && trail.level(v) > 0) {
+	                if (trail.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
 	                    stamp.set(v);
 	                    analyze_stack.push_back(v);
 	                    analyze_clear.push_back(v);
@@ -109,8 +111,8 @@ private:
 	    }
 
 	    bool minimize = false;
-	    for (Watcher w : propagate->getBinaryWatchers(~result.learnt_clause[0])) {
-	        if (stamp[var(w.blocker)] && trail->value(w.blocker) == l_True) {
+	    for (Watcher w : propagate.getBinaryWatchers(~result.learnt_clause[0])) {
+	        if (stamp[var(w.blocker)] && trail.value(w.blocker) == l_True) {
 	            minimize = true;
 	            stamp.unset(var(w.blocker));
 	        }
@@ -124,21 +126,17 @@ private:
 	}
 
 public:
-	ConflictAnalysis(Trail* trail_, Propagate* propagate_, unsigned int lbSizeMinimizingClause_) :
+	ConflictAnalysis(Trail& _trail, Propagate& _propagate, unsigned int _lbSizeMinimizingClause) :
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),
 		result(),
-		trail(trail_),
-		propagate(propagate_),
-		lbSizeMinimizingClause(lbSizeMinimizingClause_)
-	{
+		trail(_trail),
+		propagate(_propagate),
+		lbSizeMinimizingClause(_lbSizeMinimizingClause)
+	{ }
 
-	}
-
-	~ConflictAnalysis() {
-
-	}
+	~ConflictAnalysis() { }
 
 	void incSize() {
 		stamp.incSize();
@@ -178,22 +176,22 @@ public:
 
 	    // Generate conflict clause:
 	    result.learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
-	    Trail::const_reverse_iterator trail_iterator = trail->rbegin();
+	    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
 	    do {
 	        assert(confl != nullptr); // (otherwise should be UIP)
 	        result.involved_clauses.push_back(confl);
 
 	        // Special case for binary clauses: The first one has to be SAT
-	        if (asslit != lit_Undef && confl->size() == 2 && trail->value(confl->first()) == l_False) {
-	            assert(trail->value(confl->second()) == l_True);
+	        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
+	            assert(trail.value(confl->second()) == l_True);
 	            confl->swap(0, 1);
 	        }
 
 	        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
 	            Var v = var(*it);
-	            if (!stamp[v] && trail->level(v) != 0) {
+	            if (!stamp[v] && trail.level(v) != 0) {
 	                stamp.set(v);
-	                if (trail->level(v) >= (int)trail->decisionLevel()) {
+	                if (trail.level(v) >= (int)trail.decisionLevel()) {
 	                    pathC++;
 	                } else {
 	                    result.learnt_clause.push_back(*it);
@@ -208,7 +206,7 @@ public:
 
 	        asslit = *trail_iterator;
 	        stamp.unset(var(*trail_iterator));
-	        confl = trail->reason(var(*trail_iterator));
+	        confl = trail.reason(var(*trail_iterator));
 	        pathC--;
 	    } while (pathC > 0);
 
@@ -222,7 +220,7 @@ public:
 	    }
 	    auto end = remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(),
 	                         [this, abstract_level] (Lit lit) {
-	                             return trail->reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
+	                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
 	                         });
 	    result.learnt_clause.erase(end, result.learnt_clause.end());
 
@@ -231,6 +229,8 @@ public:
 	    if (result.learnt_clause.size() <= lbSizeMinimizingClause) {
 	        minimisationWithBinaryResolution();
 	    }
+
+		result.lbd = trail.computeLBD(result.learnt_clause.begin(), result.learnt_clause.end());
 	}
 
 	/**************************************************************************************************
@@ -246,23 +246,23 @@ public:
 	    result.clear();	
 	    result.learnt_clause.push_back(p);
 
-	    if (trail->decisionLevel() == 0)
+	    if (trail.decisionLevel() == 0)
             return;
 
 	    stamp.clear();
 
 	    stamp.set(var(p));
 
-	    for (int i = trail->size() - 1; i >= (int)trail->trail_lim[0]; i--) {
-	        Var x = var((*trail)[i]);
+	    for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
+	        Var x = var(trail[i]);
 	        if (stamp[x]) {
-	            if (trail->reason(x) == nullptr) {
-	                assert(trail->level(x) > 0);
-	                result.learnt_clause.push_back(~(*trail)[i]);
+	            if (trail.reason(x) == nullptr) {
+	                assert(trail.level(x) > 0);
+	                result.learnt_clause.push_back(~trail[i]);
 	            } else {
-	                Clause* c = trail->reason(x);
+	                Clause* c = trail.reason(x);
 	                for (Lit lit : *c) {
-	                    if (trail->level(var(lit)) > 0) {
+	                    if (trail.level(var(lit)) > 0) {
 	                        stamp.set(var(lit));
 	                    }
 	                }

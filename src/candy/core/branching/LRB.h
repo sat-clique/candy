@@ -20,6 +20,10 @@
 namespace Candy {
 
 class LRB : public BranchingInterface<LRB> {
+private:
+    Trail& trail;
+    ConflictAnalysis& analysis;
+
 public:
     struct VarOrderLt {
         std::vector<double>& weight;
@@ -29,7 +33,8 @@ public:
         VarOrderLt(std::vector<double>& act) : weight(act) {}
     };
 
-    LRB(double _step_size = 0.4) :
+    LRB(Trail& _trail, ConflictAnalysis& _analysis, double _step_size = 0.4) :
+        trail(_trail), analysis(_analysis), 
         order_heap(VarOrderLt(weight)),
         weight(), polarity(), decision(), stamp(), 
         interval_assigned(), participated(), 
@@ -37,14 +42,16 @@ public:
 
     }
 
-    LRB(LRB&& other) : order_heap(VarOrderLt(weight)) {
-        weight = std::move(other.weight);
-        polarity = std::move(other.polarity);
-        decision = std::move(other.decision);
-        interval_assigned = std::move(other.interval_assigned);
-        participated = std::move(other.participated);
-		step_size = other.step_size;
-        stamp.incSize(other.stamp.size());
+    LRB(LRB&& other) :
+        trail(other.trail), analysis(other.analysis), 
+        order_heap(VarOrderLt(weight)) {
+            weight = std::move(other.weight);
+            polarity = std::move(other.polarity);
+            decision = std::move(other.decision);
+            interval_assigned = std::move(other.interval_assigned);
+            participated = std::move(other.participated);
+            step_size = other.step_size;
+            stamp.incSize(other.stamp.size());
 	}
 
     LRB& operator=(LRB&& other) {
@@ -107,9 +114,9 @@ public:
     }
 
 
-    void notify_conflict(AnalysisResult ana, Trail& trail, unsigned int learnt_lbd) {
+    void notify_conflict() {
         stamp.clear();
-        for (Clause* clause : ana.involved_clauses) {
+        for (Clause* clause : analysis.getResult().involved_clauses) {
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {
@@ -127,9 +134,9 @@ public:
         //Todo: penalize all var not on trail
     }
 
-    void notify_backtracked(std::vector<Lit> lits) {
+    void notify_backtracked() {
         double inv_step_size = 1.0 - step_size;
-        for (Lit lit : lits) {
+        for (Lit lit : trail.getBacktracked()) {
             Var v = var(lit);
             polarity[v] = sign(lit);
 
@@ -143,13 +150,13 @@ public:
         }
     }
 
-    void notify_restarted(Trail& trail) {
+    void notify_restarted() {
         std::fill(participated.begin(), participated.end(), 0);
         std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
-        rebuildOrderHeap(trail);
+        rebuildOrderHeap();
     }
 
-    inline Lit pickBranchLit(Trail& trail) {
+    inline Lit pickBranchLit() {
         Var next = var_Undef;
 
         // Activity based decision:
@@ -188,17 +195,7 @@ private:
     void rebuildOrderHeap() {
         vector<Var> vs;
         for (size_t v = 0; v < decision.size(); v++) {
-            if (decision[v]) {
-                vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
-            }
-        }
-        order_heap.build(vs);
-    }
-
-    void rebuildOrderHeap(Trail& trail) {
-        vector<Var> vs;
-        for (size_t v = 0; v < decision.size(); v++) {
-            if (decision[v] && trail.value(checked_unsignedtosigned_cast<size_t, Var>(v)) == l_Undef) {
+            if (decision[v] && !trail.isAssigned(v)) {
                 vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
             }
         }

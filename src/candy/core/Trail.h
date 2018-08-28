@@ -31,9 +31,7 @@ private:
 public:
     Trail() : 
         backtracked(), trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() 
-    { 
-
-    }
+    { }
 
     Trail(uint32_t size) : Trail() { 
         grow(size); 
