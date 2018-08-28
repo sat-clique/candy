@@ -53,13 +53,14 @@ struct WatcherDeleted {
 
 class Propagate {
 private:
-
     Trail& trail;
 
     std::array<OccLists<Lit, Watcher, WatcherDeleted>, NWATCHES> watches;
 
 public:
-    Propagate(Trail& _trail) : trail(_trail), watches() {
+    uint64_t nPropagations;
+
+    Propagate(Trail& _trail) : trail(_trail), watches(), nPropagations(0) {
         for (auto& watchers : watches) {
             watchers = OccLists<Lit, Watcher, WatcherDeleted>();
         }
@@ -197,19 +198,23 @@ public:
 
     #ifndef FUTURE_PROPAGATE
     Clause* propagate() {
+        Clause* conflict = nullptr;
+        unsigned int old_qhead = trail.qhead;
+
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
-
+            
             // Propagate binary clauses
-            Clause* conflict = future_propagate_clauses(p, 0);
-            if (conflict != nullptr) return conflict;
+            conflict = future_propagate_clauses(p, 0);
+            if (conflict != nullptr) break;
 
             // Propagate other 2-watched clauses
             conflict = future_propagate_clauses(p, 1);
-            if (conflict != nullptr) return conflict;
+            if (conflict != nullptr) break;
         }
 
-        return nullptr;
+        nPropagations += trail.qhead - old_qhead;
+        return conflict;
     }
 
     #else // FUTURE PROPAGATE

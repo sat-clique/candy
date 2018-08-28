@@ -102,8 +102,6 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -163,8 +161,6 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -224,8 +220,6 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -289,8 +283,6 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -350,8 +342,6 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -411,8 +401,6 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
