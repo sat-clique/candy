@@ -20,14 +20,14 @@ Certificate::~Certificate() {
 
 void Certificate::reset(const char* target) {
     if (target == nullptr) {
-        if (out->is_open()) out->close();
+        if (out && out->is_open()) out->close();
         active = false;
     }
     else {
         std::unique_ptr<std::ofstream> new_out = backported_std::make_unique<std::ofstream>(target, std::ofstream::out);
 
         if (new_out->is_open()) {
-            if (out->is_open()) out->close();
+            if (out && out->is_open()) out->close();
             this->out = std::move(new_out);
             this->active = true;
         }

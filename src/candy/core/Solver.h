@@ -566,7 +566,7 @@ template<typename Iterator>
 bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
     assert(trail.decisionLevel() == 0);
 
-    static Cl copy(cbegin, cend);
+    std::vector<Lit> copy{cbegin, cend};
 
     std::sort(copy.begin(), copy.end());
     copy.erase(std::unique(copy.begin(), copy.end()), copy.end());

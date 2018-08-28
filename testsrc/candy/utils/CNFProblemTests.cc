@@ -19,15 +19,17 @@ TEST (CNFProblemTestPatterns, clausePersistance) {
     EXPECT_TRUE(containsClause(problem.getProblem(), {mkLit(0, 0), mkLit(1, 0)}));
 }
 
-TEST (CNFProblemTestPatterns, redundandLiteralRemoval) {
-    CNFProblem problem;
-    problem.readClause({mkLit(0, 0), mkLit(1, 0), mkLit(0, 0)});
-    EXPECT_TRUE(containsClause(problem.getProblem(), {mkLit(0, 0), mkLit(1, 0)}));
-}
+// CNFProblem does not take care of clause-sanitation any longer:
 
-TEST (CNFProblemTestPatterns, tautologicClauseRemoval) {
-    CNFProblem problem;
-    problem.readClause({mkLit(0, 0), mkLit(1, 0), mkLit(0, 1)});
-    ASSERT_EQ(problem.getProblem().size(), 0);
-}
+// TEST (CNFProblemTestPatterns, redundandLiteralRemoval) {
+//     CNFProblem problem;
+//     problem.readClause({mkLit(0, 0), mkLit(1, 0), mkLit(0, 0)});
+//     EXPECT_TRUE(containsClause(problem.getProblem(), {mkLit(0, 0), mkLit(1, 0)}));
+// }
+
+// TEST (CNFProblemTestPatterns, tautologicClauseRemoval) {
+//     CNFProblem problem;
+//     problem.readClause({mkLit(0, 0), mkLit(1, 0), mkLit(0, 1)});
+//     ASSERT_EQ(problem.getProblem().size(), 0);
+// }
 
