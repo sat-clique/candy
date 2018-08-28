@@ -124,9 +124,19 @@ public:
     bool addClause(Iterator begin, Iterator end);
 
     template<typename Iterator>
-    bool addClauseSanitize(Iterator begin, Iterator end);
+    bool isClauseTautological(Iterator begin, Iterator end) {
+        if (begin == end) {
+            return false;
+        }
+        for (Iterator it1 = begin, it2 = begin+1; it2 != end; it1++, it2++) {
+            if (*it1 == ~(*it2)) {
+                return true; // reject tautological clauses
+            }
+        }
+        return false;
+    }
 
-    bool addClause(const vector<Lit>& lits) {
+    inline bool addClause(const vector<Lit>& lits) {
         return addClause(lits.begin(), lits.end());
     }
 
@@ -247,12 +257,8 @@ public:
         this->learntCallback = learntCallback;
     }
 
-    void setCertificate(Certificate& certificate) {
-        this->certificate = &certificate;
-    }
-
-    Certificate* getCertificate() {
-    	return certificate;
+    void resetCertificate(const char* targetFilename) {
+        this->certificate.reset(targetFilename);
     }
 
     void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) {
@@ -265,9 +271,7 @@ public:
     	return verbosity;
     }
 
-    // Certified UNSAT (Thanks to Marijn Heule)
-    Certificate defaultCertificate;
-    Certificate* certificate;
+    Certificate certificate;
 
     // Control verbosity
     unsigned int verbEveryConflicts;
@@ -432,10 +436,8 @@ namespace SolverOptions {
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -553,35 +555,45 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         if (!ok) return;
     }
     ok = simplify() && strengthen();
+    
+    if (!ok) {
+        certificate.proof();
+    }
 }
 
 template<class PickBranchLitT>
 template<typename Iterator>
-bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
+bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
     assert(trail.decisionLevel() == 0);
 
-//    Iterator end = std::remove_if(begin, end, [this](Lit lit) { return trail.value(lit) == l_False; });
+    static Cl copy(cbegin, cend);
 
-    uint32_t size = static_cast<uint32_t>(std::distance(begin, end));
+    std::sort(copy.begin(), copy.end());
+    copy.erase(std::unique(copy.begin(), copy.end()), copy.end());
 
-    if (size == 0) {
+    if (isClauseTautological(copy.begin(), copy.end())) {
+        return ok;
+    }
+
+    if (copy.size() == 0) {
         return ok = false;
     }
-    else if (size == 1) {
-        if (trail.value(*begin) == l_Undef) {
-            trail.uncheckedEnqueue(*begin);
+    
+    if (copy.size() == 1) {
+        Lit lit = copy.front();
+        if (trail.value(lit) == l_Undef) {
+            trail.uncheckedEnqueue(lit);
             return ok = (propagator.propagate() == nullptr);
         }
-        else if (trail.value(*begin) == l_True) {
-            trail.vardata[var(*begin)].reason = nullptr;
+        if (trail.value(lit) == l_True) {
+            trail.vardata[var(copy.front())].reason = nullptr;
             return ok;
         }
-        else {
-            return ok = false;
-        }
+        // l_False:
+        return ok = false;
     }
     else {
-        Clause* cr = new (allocator.allocate(size)) Clause(begin, end);
+        Clause* cr = new (allocator.allocate(copy.size())) Clause(copy.begin(), copy.end());
         clauses.push_back(cr);
         propagator.attachClause(cr);
     }
@@ -590,17 +602,8 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
 }
 
 template<class PickBranchLitT>
-template<typename Iterator>
-bool Solver<PickBranchLitT>::addClauseSanitize(Iterator begin, Iterator end) {
-    std::sort(begin, end);
-    Iterator uend = std::unique(begin, end);
-
-    return addClause(begin, uend);
-}
-
-template<class PickBranchLitT>
 void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
-    certificate->removed(cr->begin(), cr->end());
+    certificate.removed(cr->begin(), cr->end());
     propagator.detachClause(cr, strict_detach);
     // Don't leave pointers to free'd memory!
     if (trail.locked(cr)) {
@@ -785,8 +788,8 @@ bool Solver<PickBranchLitT>::strengthen() {
                 propagator.detachClause(clause);
                 backup.insert(backup.end(), clause->begin(), clause->end());
                 auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
-                certificate->added(clause->begin(), end);
-                certificate->removed(backup.begin(), backup.end());
+                certificate.added(clause->begin(), end);
+                certificate.removed(backup.begin(), backup.end());
                 backup.clear();
                 strengthened_clauses.push_back(clause);
                 strengthened_sizes[clause] = clause->size();
@@ -920,7 +923,7 @@ lbool Solver<PickBranchLitT>::search() {
             }
 
             if (!isSelector(conflictInfo.learnt_clause.back())) {
-                certificate->added(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
+                certificate.added(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
             }
 
             // TODO: exclude selectors from lbd computation
@@ -1103,7 +1106,7 @@ lbool Solver<PickBranchLitT>::solve() {
         Statistics::getInstance().incNBUnsatCalls();
         
         if (!incremental) {
-            certificate->proof();
+            certificate.proof();
         }
         else {
             // check if selectors are used in final conflict
@@ -1111,7 +1114,7 @@ lbool Solver<PickBranchLitT>::solve() {
             AnalysisResult result = conflict_analysis.getResult();
             auto pos = find_if(result.learnt_clause.begin(), result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
             if (pos == result.learnt_clause.end()) {
-                certificate->proof();
+                certificate.proof();
             }
         }
         

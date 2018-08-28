@@ -381,7 +381,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
     this->propagator.detachClause(cr, true);
     cr->strengthen(l);
 
-    this->certificate->added(cr->begin(), cr->end());
+    this->certificate.added(cr->begin(), cr->end());
 
     elimDetach(cr, l, true);
     
@@ -684,7 +684,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     // produce clauses in cross product
     for (Clause* pc : pos) for (Clause* nc : neg) {
         if (merge(*pc, *nc, v, resolvent)) {
-            this->certificate->added(resolvent.begin(), resolvent.end());
+            this->certificate.added(resolvent.begin(), resolvent.end());
             this->addClause(resolvent);
         }
     }
@@ -863,6 +863,10 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     }
 
     cleanupEliminate();
+
+    if (!this->ok) {
+        this->certificate.proof();
+    }
     
     return this->ok;
 }

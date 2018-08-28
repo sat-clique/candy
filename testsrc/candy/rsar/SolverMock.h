@@ -64,12 +64,11 @@ namespace Candy {
     class SolverMock : public CandySolverInterface {
     public:
         
-        virtual void setCertificate(Certificate& certificate) override {}
+        virtual void resetCertificate(const char* target) override {}
         virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {}
         virtual void enablePreprocessing() override {}
         virtual void disablePreprocessing() override {}
 
-        virtual Certificate* getCertificate() override { return nullptr; }
         virtual unsigned int getVerbosity() override { return 0; }
 
         virtual Var newVar() override;

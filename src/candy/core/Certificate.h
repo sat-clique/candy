@@ -34,12 +34,14 @@ private:
     }
 
 public:
-    Certificate(const char* _out, const bool _active);
+    Certificate(const char* _out);
     ~Certificate();
 
     bool isActive() {
         return active;
     }
+
+    void reset(const char* target);
 
     void proof() {
         if (active) {
