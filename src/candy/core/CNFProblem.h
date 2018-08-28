@@ -32,94 +32,98 @@ namespace Candy {
 class CNFProblem {
 
 private:
-  For problem;
+    For problem;
 
-  Certificate* certificate;
+    Certificate* certificate;
 
-  int maxVars = 0;
+    int maxVars = 0;
 
-  int headerVars = 0;
-  int headerClauses = 0;
+    int headerVars = 0;
+    int headerClauses = 0;
 
 public:
-  CNFProblem() : certificate(nullptr) {
-  }
+    CNFProblem() : certificate(nullptr) {
+    }
 
-  explicit CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
-  }
-    
-  ~CNFProblem() {
-      for (Cl* clause : problem) {
-          delete clause;
-      }
-  }
+    explicit CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
+    }
 
-  For& getProblem();
-  const For& getProblem() const;
+    ~CNFProblem() {
+        for (Cl* clause : problem) {
+            delete clause;
+        }
+    }
 
-  bool hasEmptyClause();
+    For& getProblem();
+    const For& getProblem() const;
 
-  inline int nVars() const {
-      return maxVars;
-  }
+    bool hasEmptyClause();
 
-  inline int nClauses() const {
-      return (int)problem.size();
-  }
+    inline int nVars() const {
+        return maxVars;
+    }
 
-  inline int newVar() {
-      maxVars++;
-      return maxVars-1;
-  }
+    inline int nClauses() const {
+        return (int)problem.size();
+    }
 
-  std::vector<double> getLiteralRelativeOccurrences() const;
+    inline int newVar() {
+        maxVars++;
+        return maxVars-1;
+    }
 
-  bool readDimacsFromStdout();
-  bool readDimacsFromFile(const char* filename);
+    std::vector<double> getLiteralRelativeOccurrences() const;
 
-  inline void readClause(Lit plit) {
-      readClause({plit});
-  }
+    bool readDimacsFromStdout();
+    bool readDimacsFromFile(const char* filename);
 
-  inline void readClause(Lit plit1, Lit plit2) {
-      readClause({plit1, plit2});
-  }
+    inline void readClause(Lit plit) {
+        readClause({plit});
+    }
 
-  inline void readClause(std::initializer_list<Lit> list) {
-      readClause(list.begin(), list.end());
-  }
+    inline void readClause(Lit plit1, Lit plit2) {
+        readClause({plit1, plit2});
+    }
 
-  inline void readClause(Cl cl) {
-      readClause(cl.begin(), cl.end());
-  }
+    inline void readClause(std::initializer_list<Lit> list) {
+        readClause(list.begin(), list.end());
+    }
 
-  inline void readClauses(std::initializer_list<std::initializer_list<Lit>> f) {
-      for (std::initializer_list<Lit> c : f) {
-          readClause(c);
-      }
-  }
+    inline void readClause(Cl cl) {
+        readClause(cl.begin(), cl.end());
+    }
 
-  inline void readClauses(For& f) {
-      for (Cl* c : f) {
-          readClause(c->begin(), c->end());
-      }
-  }
+    inline void readClauses(std::initializer_list<std::initializer_list<Lit>> f) {
+        for (std::initializer_list<Lit> c : f) {
+            readClause(c);
+        }
+    }
 
-  template <typename Iterator>
-  inline void readClause(Iterator begin, Iterator end) {
-      problem.push_back(new Cl(begin, end));
-  }
+    inline void readClauses(For& f) {
+        for (Cl* c : f) {
+            readClause(c->begin(), c->end());
+        }
+    }
 
-  // CNFProblem can only be moved, not copied
-  CNFProblem(const CNFProblem& other) = delete;
-  CNFProblem& operator=(const CNFProblem& other) = delete;
-  CNFProblem& operator=(CNFProblem&& other) = default;
-  CNFProblem(CNFProblem&& other) = default;
+    template <typename Iterator>
+    inline void readClause(Iterator begin, Iterator end) {
+        Cl* clause = new Cl(begin, end);
+        for (Lit lit : *clause) {
+            maxVars = std::max(maxVars, 1 + var(lit));
+        }
+        problem.push_back(clause);
+    }
+
+    // CNFProblem can only be moved, not copied
+    CNFProblem(const CNFProblem& other) = delete;
+    CNFProblem& operator=(const CNFProblem& other) = delete;
+    CNFProblem& operator=(CNFProblem&& other) = default;
+    CNFProblem(CNFProblem&& other) = default;
 
 private:
 
-  void readClause(Glucose::StreamBuffer& in);
-  void parse_DIMACS(gzFile input_stream);
+    void readClause(Glucose::StreamBuffer& in);
+    void parse_DIMACS(gzFile input_stream);
 
 };
 
