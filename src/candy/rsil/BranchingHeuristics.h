@@ -383,14 +383,14 @@ namespace Candy {
         /// intervention probability half-life.
         uint64_t m_callCounter;
         
+        /// The intervention probability half-life (in terms of overall performed decisions)
+        uint64_t m_probHalfLife;
+        
         /// The mask used on a pseudorandom number for deciding whether to use implicit learning:
         /// If the current probability of using IL is 2^{-P}, the P lowest bits of m_mask are set
         /// to 1. To decide whether to use IL, a pseudorandom number X is generated; if X & m_mask
         /// is 0, implicit learning is used, otherwise not.
         fastnextrand_state_t m_mask;
-        
-        /// The intervention probability half-life (in terms of overall performed decisions)
-        uint64_t m_probHalfLife;
         
         /// The underlying RSIL branching heuristic used for computing implicit learning advice.
         RSILBranchingHeuristic<AdviceType> m_rsilHeuristic;

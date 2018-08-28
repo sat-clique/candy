@@ -227,9 +227,9 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
         if (solver->getVerbosity() > 0) {
             printf("c ==============================================================================================\n");
             printf("c Solved by propagation\n");
+            printf("c |                                                                                            |\n");
         }
         result = l_False;
-        solver->getCertificate()->proof();
     }
     else if (do_preprocess) {
         Statistics::getInstance().runtimeStart("Preprocessing");
@@ -240,18 +240,15 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
 
         if (solver->isInConflictingState()) {
             result = l_False;
-            solver->getCertificate()->proof();
         }
         if (solver->getVerbosity() > 0) {
             Statistics::getInstance().printRuntime("Preprocessing");
             if (result == l_False) {
                 printf("c ==============================================================================================\n");
                 printf("c Solved by simplification\n");
+                printf("c |                                                                                            |\n");
             }
         }
-    }
-    if (solver->getVerbosity() > 0) {
-        printf("c |                                                                                            |\n");
     }
 
     if (result == l_Undef) {
@@ -302,10 +299,7 @@ int main(int argc, char** argv) {
 
     Statistics::getInstance().runtimeStart("Initialization");
 
-    std::unique_ptr<Certificate> certificate = backported_std::make_unique<Certificate>(args.opt_certified_file,
-                                                                                        args.do_certified);
-
-    CNFProblem* problem = new CNFProblem(*certificate);
+    CNFProblem* problem = new CNFProblem();
     if (args.read_from_stdin) {
         printf("c Reading from standard input... Use '--help' for help.\n");
         if (!problem->readDimacsFromStdout()) {
@@ -348,7 +342,9 @@ int main(int argc, char** argv) {
         solver = new SimpSolver<VSIDS>();
     }
     solver->setVerbosities(args.vv, args.verb);
-    solver->setCertificate(*certificate);
+    if (args.do_certified) {
+        solver->resetCertificate(args.opt_certified_file);
+    }
     solver->addClauses(*problem);
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily

@@ -63,9 +63,6 @@ namespace Candy {
     public:
 
         // from CandySolverInterface:
-        virtual void setCertificate(Certificate& certificate) override {
-        	m_solver->setCertificate(certificate);
-        }
         virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {
         	m_solver->setVerbosities(verbEveryConflicts, verbosity);
         }
@@ -76,8 +73,8 @@ namespace Candy {
         	m_solver->disablePreprocessing();
         }
 
-        virtual Certificate* getCertificate() override {
-        	return m_solver->getCertificate();
+        virtual void resetCertificate(const char* targetFilename) override {
+        	return m_solver->resetCertificate(targetFilename);
         }
         virtual unsigned int getVerbosity() override {
         	return m_solver->getVerbosity();

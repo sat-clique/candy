@@ -18,12 +18,11 @@ class CandySolverInterface {
 public:
 	virtual ~CandySolverInterface() {}
 
-    virtual void setCertificate(Certificate& certificate) = 0;
+    virtual void resetCertificate(const char* targetFilename) = 0;
     virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) = 0;
     virtual void enablePreprocessing() = 0;
     virtual void disablePreprocessing() = 0;
 
-    virtual Certificate* getCertificate() = 0;
     virtual unsigned int getVerbosity() = 0;
 
     virtual Var newVar() = 0;

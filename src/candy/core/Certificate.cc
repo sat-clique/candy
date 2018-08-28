@@ -10,23 +10,27 @@
 
 namespace Candy {
 
-Certificate::Certificate(const char* _out, const bool _active) :
-                active(_out != nullptr && _active)
-{
-    if (active) {
-        out = backported_std::make_unique<std::ofstream>(_out, std::ofstream::out);
-        if (!out->is_open()) {
-            active = false;
-        }
-    }
-    else {
-        out = backported_std::make_unique<std::ofstream>();
-    }
+Certificate::Certificate(const char* _out) : active(false) {
+    reset(_out);
 }
 
 Certificate::~Certificate() {
-    if (active) {
-        out->close();
+    reset(nullptr);
+}
+
+void Certificate::reset(const char* target) {
+    if (target == nullptr) {
+        if (out->is_open()) out->close();
+        active = false;
+    }
+    else {
+        std::unique_ptr<std::ofstream> new_out = backported_std::make_unique<std::ofstream>(target, std::ofstream::out);
+
+        if (new_out->is_open()) {
+            if (out->is_open()) out->close();
+            this->out = std::move(new_out);
+            this->active = true;
+        }
     }
 }
 

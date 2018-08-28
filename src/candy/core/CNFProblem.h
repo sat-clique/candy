@@ -107,36 +107,7 @@ public:
 
   template <typename Iterator>
   inline void readClause(Iterator begin, Iterator end) {
-      Cl* clause = new Cl(begin, end);
-      std::sort(clause->begin(), clause->end());
-      Lit prev = lit_Undef;
-      auto insertion_point = clause->begin();
-      for (Lit lit : *clause) {
-          if (lit == ~prev) {
-              delete clause;
-              if (certificate) {
-                  certificate->removed(begin, end);
-              }
-              return; // reject tautological clauses
-          }
-          else if (lit != prev) {
-              maxVars = std::max(maxVars, var(lit)+1);
-              prev = lit;
-              *insertion_point = lit;
-              insertion_point++;
-          }
-          else {
-              // skip redundant literals
-          }
-      }
-      if (insertion_point != clause->end()) {
-          if (certificate) {
-              certificate->added(clause->begin(), insertion_point);
-              certificate->removed(begin, end);
-          }
-          clause->erase(insertion_point, clause->end());
-      }
-      problem.push_back(clause);
+      problem.push_back(new Cl(begin, end));
   }
 
   // CNFProblem can only be moved, not copied

@@ -98,10 +98,8 @@ IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate w
 // Constructor/Destructor:
 
 template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -157,10 +155,8 @@ controller.run();
 }
 
 template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -216,10 +212,8 @@ controller.run();
 }
 
 template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -279,10 +273,8 @@ controller.run();
 // Constructor/Destructor:
 
 template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -338,10 +330,8 @@ controller.run();
 }
 
 template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -397,10 +387,8 @@ controller.run();
 }
 
 template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) :
-    // default certificate, used when none other is set
-    defaultCertificate(nullptr, false),
     // unsat certificate
-    certificate(&defaultCertificate),
+    certificate(nullptr),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
