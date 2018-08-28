@@ -76,6 +76,8 @@
 #include "candy/core/branching/VSIDS.h"
 #include "candy/core/Stamp.h"
 #include "candy/core/CandySolverInterface.h"
+#include "candy/randomsimulation/Conjectures.h"
+#include "candy/rsar/Refinement.h"
 
 #include "candy/sonification/SolverSonification.h"
 #include "candy/sonification/ControllerInterface.h"
@@ -108,7 +110,8 @@ public:
     using PickBranchLitType = PickBranchLitT;
 
     Solver();
-    Solver(PickBranchLitT branch_);
+    Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_);
+    Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t number);
     virtual ~Solver();
     
     // Add a new variable with parameters specifying variable mode.
@@ -291,10 +294,10 @@ protected:
 
     ClauseAllocator allocator;
 
-    Propagate propagator;
     Trail trail;
-    PickBranchLitT branch;
+    Propagate propagator;
     ConflictAnalysis conflict_analysis;
+    PickBranchLitT branch;
 
 	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
@@ -428,11 +431,6 @@ namespace SolverOptions {
 }
 
 template<class PickBranchLitT>
-Solver<PickBranchLitT>::Solver(PickBranchLitT branch_) : Solver<PickBranchLitT>::Solver() {
-    branch = std::move(branch_);
-}
-
-template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :
     // default certificate, used when none other is set
     defaultCertificate(nullptr, false),
@@ -446,14 +444,14 @@ Solver<PickBranchLitT>::Solver() :
     model(), conflict(),
     // clause allocator
     allocator(),
-    // propagate
-    propagator(),
     // current assignment
     trail(),
-	// branching heuristic
-    branch(),
+    // propagate
+    propagator(trail),
 	// conflict analysis module
-	conflict_analysis(&trail, &propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis),
     // assumptions
     assumptions(),
     // clause activity based heuristic
@@ -574,7 +572,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator begin, Iterator end) {
     else if (size == 1) {
         if (trail.value(*begin) == l_Undef) {
             trail.uncheckedEnqueue(*begin);
-            return ok = (propagator.propagate(trail) == nullptr);
+            return ok = (propagator.propagate() == nullptr);
         }
         else if (trail.value(*begin) == l_True) {
             trail.vardata[var(*begin)].reason = nullptr;
@@ -735,7 +733,7 @@ void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
     for (Lit p : props) {
         if (trail.assigns[var(p)] == l_Undef) {
             trail.uncheckedEnqueue(p);
-            propagator.propagate(trail);
+            propagator.propagate();
         }
     }
     
@@ -757,7 +755,7 @@ template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::simplify() {
     assert(trail.decisionLevel() == 0);
     
-    if (!ok || propagator.propagate(trail) != nullptr) {
+    if (!ok || propagator.propagate() != nullptr) {
         return ok = false;
     }
 
@@ -841,7 +839,7 @@ bool Solver<PickBranchLitT>::strengthen() {
     freeMarkedClauses(persist);
     freeMarkedClauses(clauses);
 
-    return ok &= (propagator.propagate(trail) == nullptr);
+    return ok &= (propagator.propagate() == nullptr);
 }
 
 /**************************************************************************************************
@@ -869,7 +867,7 @@ lbool Solver<PickBranchLitT>::search() {
         sonification.decisionLevel(trail.decisionLevel(), SolverOptions::opt_sonification_delay);
 
         uint32_t old_qhead = trail.qhead;
-        Clause* confl = propagator.propagate(trail);
+        Clause* confl = propagator.propagate();
 
         nPropagations += trail.qhead - old_qhead;
         
@@ -931,26 +929,25 @@ lbool Solver<PickBranchLitT>::search() {
             }
 
             // TODO: exclude selectors from lbd computation
-            uint_fast16_t nblevels = trail.computeLBD(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
-            updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, nblevels);
-            branch.notify_conflict(conflictInfo, trail, nblevels);
+            updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, conflictInfo.lbd);
+            branch.notify_conflict();
 
-            if (nblevels <= 2) {
+            if (conflictInfo.lbd <= 2) {
                 Statistics::getInstance().solverLBD2Inc();
             }
 
-            lbdQueue.push(nblevels);
-            sumLBD += nblevels;
+            lbdQueue.push(conflictInfo.lbd);
+            sumLBD += conflictInfo.lbd;
 
             if (conflictInfo.learnt_clause.size() == 1) {
                 trail.cancelUntil(0);
-                branch.notify_backtracked(trail.getBacktracked());
+                branch.notify_backtracked();
                 trail.uncheckedEnqueue(conflictInfo.learnt_clause[0]);
                 new_unary = true;
             }
             else {
                 uint32_t clauseLength = static_cast<uint32_t>(conflictInfo.learnt_clause.size());
-                Clause* cr = new (allocator.allocate(clauseLength)) Clause(conflictInfo.learnt_clause, nblevels);
+                Clause* cr = new (allocator.allocate(clauseLength)) Clause(conflictInfo.learnt_clause, conflictInfo.lbd);
 
                 if (clauseLength == 2) {
                     persist.push_back(cr);
@@ -968,7 +965,7 @@ lbool Solver<PickBranchLitT>::search() {
                 }
 
                 trail.cancelUntil(trail.level(var(cr->second())));
-                branch.notify_backtracked(trail.getBacktracked());
+                branch.notify_backtracked();
 
                 propagator.attachClause(cr);
                 trail.uncheckedEnqueue(cr->first(), cr);
@@ -982,6 +979,7 @@ lbool Solver<PickBranchLitT>::search() {
                 lbdQueue.fastclear();
                 
                 trail.cancelUntil(0);
+                branch.notify_restarted();
                 
                 // every restart after reduce-db
                 if (reduced) {
@@ -1016,8 +1014,6 @@ lbool Solver<PickBranchLitT>::search() {
                         Statistics::getInstance().runtimeStop("Sort Watches");
                     }
                 }
-
-                branch.notify_restarted(trail);
                 
                 return l_Undef;
             }
@@ -1053,7 +1049,7 @@ lbool Solver<PickBranchLitT>::search() {
             if (next == lit_Undef) {
                 // New variable decision:
                 Statistics::getInstance().solverDecisionsInc();
-                next = branch.pickBranchLit(trail);
+                next = branch.pickBranchLit();
                 if (next == lit_Undef) {
                     // Model found:
                     return l_True;

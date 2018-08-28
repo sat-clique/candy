@@ -345,8 +345,7 @@ int main(int argc, char** argv) {
     }
     else {
         std::cerr << "Using VSIDS Branching Heuristic" << std::endl;
-        VSIDS branch(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
-        solver = new SimpSolver<VSIDS>(std::move(branch));
+        solver = new SimpSolver<VSIDS>();
     }
     solver->setVerbosities(args.vv, args.verb);
     solver->setCertificate(*certificate);

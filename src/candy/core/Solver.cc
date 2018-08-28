@@ -51,6 +51,7 @@
 #include <string>
 #include <candy/core/Solver.h>
 #include <candy/utils/System.h>
+#include <candy/rsil/BranchingHeuristics.h>
 
 using namespace Glucose;
 using namespace Candy;
@@ -93,8 +94,377 @@ IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate w
     
 }
 
+//=================================================================================================
+// Constructor/Destructor:
+
+template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
+    // unsat certificate
+    certificate(&defaultCertificate),
+    // stats for heuristic control
+    nPropagations(0),
+    // verbosity flags
+    verbEveryConflicts(10000), verbosity(0),
+    // results
+    model(), conflict(),
+    // clause allocator
+    allocator(),
+    // current assignment
+    trail(),
+    // propagate
+    propagator(trail),
+	// conflict analysis module
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
+    // assumptions
+    assumptions(),
+    // clause activity based heuristic
+    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
+    // clauses
+    clauses(), learnts(), persist(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
+    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
+    // memory reorganization
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // simplify
+    new_unary(false),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(),
+	controller()
+{
+controller.run();
 }
+
+template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
+    // unsat certificate
+    certificate(&defaultCertificate),
+    // stats for heuristic control
+    nPropagations(0),
+    // verbosity flags
+    verbEveryConflicts(10000), verbosity(0),
+    // results
+    model(), conflict(),
+    // clause allocator
+    allocator(),
+    // current assignment
+    trail(),
+    // propagate
+    propagator(trail),
+	// conflict analysis module
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
+    // assumptions
+    assumptions(),
+    // clause activity based heuristic
+    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
+    // clauses
+    clauses(), learnts(), persist(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
+    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
+    // memory reorganization
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // simplify
+    new_unary(false),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(),
+	controller()
+{
+controller.run();
+}
+
+template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
+    // unsat certificate
+    certificate(&defaultCertificate),
+    // stats for heuristic control
+    nPropagations(0),
+    // verbosity flags
+    verbEveryConflicts(10000), verbosity(0),
+    // results
+    model(), conflict(),
+    // clause allocator
+    allocator(),
+    // current assignment
+    trail(),
+    // propagate
+    propagator(trail),
+	// conflict analysis module
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
+    // assumptions
+    assumptions(),
+    // clause activity based heuristic
+    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
+    // clauses
+    clauses(), learnts(), persist(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
+    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
+    // memory reorganization
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // simplify
+    new_unary(false),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(),
+	controller()
+{
+controller.run();
+}
+
 
 //=================================================================================================
 // Constructor/Destructor:
 
+template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
+    // unsat certificate
+    certificate(&defaultCertificate),
+    // stats for heuristic control
+    nPropagations(0),
+    // verbosity flags
+    verbEveryConflicts(10000), verbosity(0),
+    // results
+    model(), conflict(),
+    // clause allocator
+    allocator(),
+    // current assignment
+    trail(),
+    // propagate
+    propagator(trail),
+	// conflict analysis module
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
+    // assumptions
+    assumptions(),
+    // clause activity based heuristic
+    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
+    // clauses
+    clauses(), learnts(), persist(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
+    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
+    // memory reorganization
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // simplify
+    new_unary(false),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(),
+	controller()
+{
+controller.run();
+}
+
+template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
+    // unsat certificate
+    certificate(&defaultCertificate),
+    // stats for heuristic control
+    nPropagations(0),
+    // verbosity flags
+    verbEveryConflicts(10000), verbosity(0),
+    // results
+    model(), conflict(),
+    // clause allocator
+    allocator(),
+    // current assignment
+    trail(),
+    // propagate
+    propagator(trail),
+	// conflict analysis module
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
+    // assumptions
+    assumptions(),
+    // clause activity based heuristic
+    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
+    // clauses
+    clauses(), learnts(), persist(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
+    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
+    // memory reorganization
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // simplify
+    new_unary(false),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(),
+	controller()
+{
+controller.run();
+}
+
+template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) :
+    // default certificate, used when none other is set
+    defaultCertificate(nullptr, false),
+    // unsat certificate
+    certificate(&defaultCertificate),
+    // stats for heuristic control
+    nPropagations(0),
+    // verbosity flags
+    verbEveryConflicts(10000), verbosity(0),
+    // results
+    model(), conflict(),
+    // clause allocator
+    allocator(),
+    // current assignment
+    trail(),
+    // propagate
+    propagator(trail),
+	// conflict analysis module
+	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	// branching heuristic
+    branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
+    // assumptions
+    assumptions(),
+    // clause activity based heuristic
+    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
+    // clauses
+    clauses(), learnts(), persist(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    persistentLBD(SolverOptions::opt_persistent_lbd),
+    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
+    // memory reorganization
+    revamp(SolverOptions::opt_revamp),
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // simplify
+    new_unary(false),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // inprocessing
+    lastRestartWithInprocessing(0),
+    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(),
+	controller()
+{
+controller.run();
+}
+
+}

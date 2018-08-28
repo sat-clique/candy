@@ -63,6 +63,9 @@ namespace Candy {
         static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
     public:
+        Trail& trail;
+        ConflictAnalysis& analysis;
+
         /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
         Conjectures conjectures;
 
@@ -71,7 +74,7 @@ namespace Candy {
          */
         VSIDS defaultBranchingHeuristic;
 
-        Lit pickBranchLit(Trail& trail);
+        Lit pickBranchLit();
 
     	void setDecisionVar(Var v, bool b) {
     		defaultBranchingHeuristic.setDecisionVar(v, b);
@@ -93,16 +96,16 @@ namespace Candy {
     		defaultBranchingHeuristic.grow(size);
     	}
 
-        void notify_conflict(AnalysisResult result, Trail& trail, unsigned int learnt_lbd) {
-            defaultBranchingHeuristic.notify_conflict(result, trail, learnt_lbd);
+        void notify_conflict() {
+            defaultBranchingHeuristic.notify_conflict();
     	}
 
-    	void notify_backtracked(vector<Lit> lits) {
-    		defaultBranchingHeuristic.notify_backtracked(lits);
+    	void notify_backtracked() {
+    		defaultBranchingHeuristic.notify_backtracked();
     	}
 
-    	void notify_restarted(Trail& trail) {
-    		defaultBranchingHeuristic.notify_restarted(trail);
+    	void notify_restarted() {
+    		defaultBranchingHeuristic.notify_restarted();
         }
 
         /// A type used for recognition of RSILBranchingHeuristic types in template metaprogramming.
@@ -117,11 +120,11 @@ namespace Candy {
          * getAdvice(...) always returns lit_Undef and getSignAdvice(L) returns L.
          *
          */
-        RSILBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILBranchingHeuristic(Trail& trail_, ConflictAnalysis& analysis_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false) :
-                                  conjectures(std::move(conjectures_)),
-                                  defaultBranchingHeuristic(),
-                                  m_advice(conjectures, conjectures.getMaxVar()),
+                                  trail(trail_), analysis(analysis_), 
+                                  defaultBranchingHeuristic(trail_, analysis_),
+                                  m_advice(conjectures_, conjectures_.getMaxVar()),
                                   m_rng(0xFFFF),
                                   m_backbonesEnabled(m_backbonesEnabled_) {
             if (rsar_filter_ != nullptr) {
@@ -156,7 +159,7 @@ namespace Candy {
          *
          * \returns a literal chosen via implicit learning or lit_Undef.
          */
-        Lit getAdvice(Trail& trail) noexcept;
+        Lit getAdvice() noexcept;
         
         /**
          * \brief Gets a branching literal sign advice using implicit learning.
@@ -227,7 +230,7 @@ namespace Candy {
         static_assert(tAdviceSize > 1, "advice size must be >= 2");
     public:
 
-        Lit pickBranchLit(Trail& trail);
+        Lit pickBranchLit();
 
         /// A type used for recognition of RSILBudgetBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
@@ -236,9 +239,9 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
-        RSILBudgetBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILBudgetBranchingHeuristic(Trail& trail_, ConflictAnalysis& analysis_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                      RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t initialBudget_ = 10000ull) :
-                                        RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
+                RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(trail_, analysis_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
             for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
                 auto& advice = this->m_advice.getAdvice(i);
                 for (size_t j = 0; j < advice.getSize(); ++j) {
@@ -287,7 +290,7 @@ namespace Candy {
     class RSILVanishingBranchingHeuristic : public RSILBranchingHeuristic<AdviceType> {
     public:
 
-        Lit pickBranchLit(Trail& trail);
+        Lit pickBranchLit();
         
         /// A type used for recognition of RSILVanishingBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
@@ -296,12 +299,12 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
 
-        RSILVanishingBranchingHeuristic(Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILVanishingBranchingHeuristic(Trail& trail_, ConflictAnalysis& analysis_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                         RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 10000ull) :
-                                    RSILBranchingHeuristic<AdviceType>(std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
+                RSILBranchingHeuristic<AdviceType>(trail_, analysis_, std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
                                     m_callCounter(m_probHalfLife_),
                                     m_probHalfLife(m_probHalfLife_), m_mask(0ull),
-                                    m_rsilHeuristic(std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_)
+                                    m_rsilHeuristic(trail_, analysis_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_)
         {}
 
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
@@ -329,7 +332,7 @@ namespace Candy {
          *
          * \returns a literal chosen via implicit learning or lit_Undef.
          */
-        Lit getAdvice(Trail& trail) noexcept;
+        Lit getAdvice() noexcept;
         
         /**
          * \brief Gets a branching literal sign advice using implicit learning.
@@ -457,7 +460,7 @@ namespace Candy {
     
     template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice(Trail& trail) noexcept {
+    inline Lit RSILBranchingHeuristic<AdviceType>::getAdvice() noexcept {
         if (trail.trail_lim.size() == 0) {
             return lit_Undef;
         }
@@ -547,8 +550,8 @@ namespace Candy {
     
     template<class AdviceType>
     ATTR_ALWAYSINLINE
-    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice(Trail& trail) noexcept {
-        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice(trail) : lit_Undef;
+    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice() noexcept {
+        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice() : lit_Undef;
         updateCallCounter();
         return result;
     }

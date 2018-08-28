@@ -75,7 +75,8 @@ template<class PickBranchLitT = VSIDS>
 class SimpSolver: public Solver<PickBranchLitT> {
 public:
     SimpSolver();
-    SimpSolver(PickBranchLitT branch_);
+    SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_);
+    SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t number);
     virtual ~SimpSolver();
 
     // Problem specification:
@@ -237,30 +238,6 @@ extern IntOption opt_subsumption_lim;
 // Constructor/Destructor:
 
 template<class PickBranchLitT>
-SimpSolver<PickBranchLitT>::SimpSolver(PickBranchLitT branch_) : Solver<PickBranchLitT>(std::move(branch_)),
-    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
-    clause_lim(SimpSolverOptions::opt_clause_lim),
-    grow(SimpSolverOptions::opt_grow),
-    use_asymm(SimpSolverOptions::opt_use_asymm),
-    use_rcheck(SimpSolverOptions::opt_use_rcheck),
-    use_elim(SimpSolverOptions::opt_use_elim),
-    preprocessing_enabled(true),
-    occurs(ClauseDeleted()),
-    elim_heap(ElimLt(n_occ)),
-    subsumption_queue(),
-    subsumption_queue_contains(),
-    frozen(),
-    eliminated(),
-    bwdsub_assigns(0),
-    n_touched(0),
-    resolvent(),
-    freezes(),
-    strengthened_clauses(),
-    strengthened_sizes(),
-    abstraction() {
-}
-
-template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
     clause_lim(SimpSolverOptions::opt_clause_lim),
@@ -415,7 +392,7 @@ bool SimpSolver<PickBranchLitT>::strengthenClause(Clause* cr, Lit l) {
 
         if (this->trail.value(unit) == l_Undef) {
             this->trail.uncheckedEnqueue(unit);
-            return this->propagator.propagate(this->trail) == nullptr;
+            return this->propagator.propagate() == nullptr;
         }
         else if (this->trail.value(unit) == l_False) {
             return false;
@@ -623,7 +600,7 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
         }
     }
     
-    if (this->propagator.propagate(this->trail) != nullptr) {
+    if (this->propagator.propagate() != nullptr) {
         this->trail.cancelUntil(0);
         if (!strengthenClause(cr, l)) {
             return false;
@@ -802,7 +779,7 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     abstraction.clear();
 
     // force full cleanup
-    this->branch.notify_restarted(this->trail); // former rebuildOrderHeap
+    this->branch.notify_restarted(); // former rebuildOrderHeap
 
     // cleanup strengthened clauses in pool
     this->allocator.announceClauses(strengthened_clauses);

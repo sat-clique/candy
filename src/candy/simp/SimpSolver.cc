@@ -49,6 +49,7 @@
 
 #include <candy/simp/SimpSolver.h>
 #include <candy/utils/System.h>
+#include <candy/rsil/BranchingHeuristics.h>
 
 using namespace Candy;
 using namespace Glucose;
@@ -94,6 +95,150 @@ void mkElimClause(vector<uint32_t>& elimclauses, Var v, Clause& c) {
     // Store the length of the clause last:
     elimclauses.push_back(c.size());
 }
-
 }
+
+template<> SimpSolver<RSILBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) : 
+                Solver<RSILBranchingHeuristic3>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
+
+template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) : 
+                Solver<RSILBudgetBranchingHeuristic3>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
+
+template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) : 
+                Solver<RSILVanishingBranchingHeuristic3>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
+
+template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) : 
+                Solver<RSILBranchingHeuristic2>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
+
+template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) : 
+                Solver<RSILBudgetBranchingHeuristic2>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
+
+template<> SimpSolver<RSILVanishingBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) : 
+                Solver<RSILVanishingBranchingHeuristic2>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
+    subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    clause_lim(SimpSolverOptions::opt_clause_lim),
+    grow(SimpSolverOptions::opt_grow),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    preprocessing_enabled(true),
+    occurs(ClauseDeleted()),
+    elim_heap(ElimLt(n_occ)),
+    subsumption_queue(),
+    subsumption_queue_contains(),
+    frozen(),
+    eliminated(),
+    bwdsub_assigns(0),
+    n_touched(0),
+    resolvent(),
+    freezes(),
+    strengthened_clauses(),
+    strengthened_sizes(),
+    abstraction() {
+}
+
 }

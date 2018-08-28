@@ -32,13 +32,13 @@
 namespace Candy {
 
     template <>
-    Lit RSILBranchingHeuristic3::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail);
+    Lit RSILBranchingHeuristic3::pickBranchLit() {
+        Lit rsilAdvice = getAdvice();
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -47,13 +47,13 @@ namespace Candy {
     }
     
     template <>
-    Lit RSILVanishingBranchingHeuristic3::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail);
+    Lit RSILVanishingBranchingHeuristic3::pickBranchLit() {
+        Lit rsilAdvice = getAdvice();
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -62,13 +62,13 @@ namespace Candy {
     }
     
     template <>
-    Lit RSILBudgetBranchingHeuristic3::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail);
+    Lit RSILBudgetBranchingHeuristic3::pickBranchLit() {
+        Lit rsilAdvice = getAdvice();
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -77,13 +77,13 @@ namespace Candy {
     }
     
     template <>
-    Lit RSILBranchingHeuristic2::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail);
+    Lit RSILBranchingHeuristic2::pickBranchLit() {
+        Lit rsilAdvice = getAdvice();
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -92,13 +92,13 @@ namespace Candy {
     }
     
     template <>
-    Lit RSILVanishingBranchingHeuristic2::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail);
+    Lit RSILVanishingBranchingHeuristic2::pickBranchLit() {
+        Lit rsilAdvice = getAdvice();
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
@@ -107,13 +107,13 @@ namespace Candy {
     }
     
     template <>
-    Lit RSILBudgetBranchingHeuristic2::pickBranchLit(Trail& trail) {
-        Lit rsilAdvice = getAdvice(trail);
+    Lit RSILBudgetBranchingHeuristic2::pickBranchLit() {
+        Lit rsilAdvice = getAdvice();
         if (rsilAdvice != lit_Undef) {
             return rsilAdvice;
         }
         
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit(trail);
+        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
         
         if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
             return candidate;
