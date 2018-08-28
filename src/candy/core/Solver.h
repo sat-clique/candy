@@ -209,6 +209,9 @@ public:
     size_t nConflicts() const {
         return conflict_analysis.getResult().nConflicts;
     }
+    size_t nPropagations() const {
+        return propagator.nPropagations;
+    }
 
     bool isSelector(Var v) {
         return false;
@@ -223,7 +226,7 @@ public:
         conflict_budget = nConflicts() + x;
     }
     void setPropBudget(uint64_t x) {
-        propagation_budget = nPropagations + x;
+        propagation_budget = nPropagations() + x;
     }
     void setInterrupt(bool value) {
         asynch_interrupt = value;
@@ -265,9 +268,6 @@ public:
     // Certified UNSAT (Thanks to Marijn Heule)
     Certificate defaultCertificate;
     Certificate* certificate;
-
-    // a few stats are used for heuristics control, keep them here
-    uint64_t nPropagations;
 
     // Control verbosity
     unsigned int verbEveryConflicts;
@@ -386,7 +386,7 @@ protected:
 
     inline bool withinBudget() {
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
-                && (conflict_budget == 0 || nConflicts() < conflict_budget) && (propagation_budget == 0 || nPropagations < propagation_budget);
+                && (conflict_budget == 0 || nConflicts() < conflict_budget) && (propagation_budget == 0 || nPropagations() < propagation_budget);
     }
 };
 
@@ -436,8 +436,6 @@ Solver<PickBranchLitT>::Solver() :
     defaultCertificate(nullptr, false),
     // unsat certificate
     certificate(&defaultCertificate),
-    // stats for heuristic control
-    nPropagations(0),
     // verbosity flags
     verbEveryConflicts(10000), verbosity(0),
     // results
@@ -866,10 +864,7 @@ lbool Solver<PickBranchLitT>::search() {
     for (;;) {
         sonification.decisionLevel(trail.decisionLevel(), SolverOptions::opt_sonification_delay);
 
-        uint32_t old_qhead = trail.qhead;
         Clause* confl = propagator.propagate();
-
-        nPropagations += trail.qhead - old_qhead;
         
         sonification.assignmentLevel(static_cast<int>(trail.size()));
         
@@ -1141,7 +1136,7 @@ lbool Solver<PickBranchLitT>::solve() {
     trail.cancelUntil(0);
 
     if (verbosity > 0) {
-    	Statistics::getInstance().printFinalStats(nConflicts(), nPropagations);
+    	Statistics::getInstance().printFinalStats(nConflicts(), nPropagations());
         Statistics::getInstance().printAllocatorStatistics();
         Statistics::getInstance().printRuntimes();
     }
