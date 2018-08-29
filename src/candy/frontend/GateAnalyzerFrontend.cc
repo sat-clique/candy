@@ -28,6 +28,7 @@
 
 #include <candy/utils/MemUtils.h>
 #include <candy/gates/GateAnalyzer.h>
+#include <candy/core/Statistics.h>
 
 namespace Candy {
     

@@ -33,6 +33,8 @@
 
 #include <candy/utils/MemUtils.h>
 
+#include <iostream>
+
 namespace Candy {
     std::unique_ptr<Candy::Conjectures> performRandomSimulation(const Candy::GateAnalyzer &analyzer,
                                                                 const RandomSimulationArguments& rsArguments,
