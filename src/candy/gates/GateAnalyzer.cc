@@ -40,7 +40,8 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
             problem (dimacs), solver (backported_std::make_unique<Solver<>>()),
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
-            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout)
+            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), runtime(timeout),
+            artificialRoot(nullptr)
 {
     runtime.start();
     gates.resize(problem.nVars());
@@ -52,6 +53,9 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
 }
 
 GateAnalyzer::~GateAnalyzer() {
+    if (hasArtificialRoot()) {
+        delete artificialRoot;
+    }
 }
 
 std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
@@ -218,9 +222,9 @@ Lit GateAnalyzer::normalizeRoots() {
         }
         gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
         this->roots.clear();
-        Cl* rootClause = new Cl(); //leaks. need concept (add to CNFProblem and let it take care of it?)
-        rootClause->push_back(gates[root].out);
-        this->roots.push_back(rootClause);
+        artificialRoot = new Cl();
+        artificialRoot->push_back(gates[root].out);
+        this->roots.push_back(artificialRoot);
         assert(this->roots.size() == 1);
         return gates[root].out;
     }

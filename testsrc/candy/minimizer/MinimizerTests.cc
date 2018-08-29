@@ -48,13 +48,14 @@ namespace Candy {
         CNFProblem problem;
         formula simple_and = {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}};
         problem.readClauses(simple_and);
-        Minimizer minimi(&problem);
-        CNFProblem* hittingSet = minimi.generateHittingSetProblem(problem.getProblem(), vector<Lit>({ 1_L, 2_L, 3_L }));
+        Minimizer minimi(problem, vector<Lit>({ 1_L, 2_L, 3_L }));
+        minimi.generateHittingSetProblem(problem.getProblem());
+        CNFProblem& hittingSet = minimi.getHittingSetProblem();
 
-        ASSERT_EQ(hittingSet->nClauses(), 4);
-        ASSERT_EQ(hittingSet->nVars(), 3);
+        ASSERT_EQ(hittingSet.nClauses(), 4);
+        ASSERT_EQ(hittingSet.nVars(), 3);
 
-        for (Cl* cl : hittingSet->getProblem()) {
+        for (Cl* cl : hittingSet.getProblem()) {
             ASSERT_EQ(cl->size(), 1);
         }
     }
@@ -63,8 +64,8 @@ namespace Candy {
         CNFProblem problem;
         formula simple_or = {{1_L}, {~1_L, 2_L, 3_L}, {1_L, ~2_L}, {1_L, ~3_L}};
         problem.readClauses(simple_or);
-        Minimizer minimi(&problem);
-        Cl minimized = minimi.computeMinimalModel(vector<Lit>({ 1_L, 2_L, 3_L }), false);
+        Minimizer minimi(problem, vector<Lit>({ 1_L, 2_L, 3_L }));
+        Cl minimized = minimi.computeMinimalModel(false);
 
         ASSERT_EQ(minimized.size(), 2);
 

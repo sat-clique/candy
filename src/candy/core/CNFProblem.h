@@ -34,18 +34,13 @@ class CNFProblem {
 private:
     For problem;
 
-    Certificate* certificate;
-
     int maxVars = 0;
 
     int headerVars = 0;
     int headerClauses = 0;
 
 public:
-    CNFProblem() : certificate(nullptr) {
-    }
-
-    explicit CNFProblem(Certificate& _certificate) : certificate(&_certificate) {
+    CNFProblem() {
     }
 
     ~CNFProblem() {

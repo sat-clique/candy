@@ -18,7 +18,10 @@ namespace Candy {
 class Minimizer {
 
 private:
-  CNFProblem* clauses;
+  CNFProblem& problem;
+  Cl model;
+
+  CNFProblem hittingSetProblem;
 
   /**
    * creates a sat-instance that models the set-cover-problem
@@ -30,12 +33,13 @@ private:
   Cl iterativeMinimization(CandySolverInterface* solver, Cl model);
 
 public:
-  Minimizer(CNFProblem* problem);
+  Minimizer(CNFProblem& _problem, Cl _model);
   virtual ~Minimizer();
 
-  CNFProblem* generateHittingSetProblem(For clauses, Cl model);
+  void generateHittingSetProblem(For& clauses);
+  CNFProblem& getHittingSetProblem();
 
-  Cl computeMinimalModel(Cl model, bool pruningActivated);
+  Cl computeMinimalModel(bool pruningActivated);
 
 };
 
