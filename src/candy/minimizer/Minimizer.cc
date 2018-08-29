@@ -19,14 +19,11 @@ namespace Candy {
 /**
  * Maximize the number of don't cares in the given model relative to the given projection
  */
-Minimizer::Minimizer(CNFProblem* problem) {
-    this->clauses = problem;
-}
+Minimizer::Minimizer(CNFProblem& _problem, Cl _model) : problem(_problem), model(_model), hittingSetProblem() { }
 
 Minimizer::~Minimizer() { }
 
-CNFProblem* Minimizer::generateHittingSetProblem(For clauses, Cl model) {
-    CNFProblem* normalizedProblem = new CNFProblem();
+void Minimizer::generateHittingSetProblem(For& clauses) {
     for (Cl* clause : clauses) {
         // create clause containing all satified literals (purified)
         Cl normalizedClause;
@@ -35,29 +32,27 @@ CNFProblem* Minimizer::generateHittingSetProblem(For clauses, Cl model) {
                 normalizedClause.push_back(mkLit(var(lit), false));
             }
         }
-
-        normalizedProblem->readClause(normalizedClause);
+        hittingSetProblem.readClause(normalizedClause);
     }
-
-    return normalizedProblem;
 }
 
-Cl Minimizer::computeMinimalModel(Cl model, bool pruningActivated) {
-    CNFProblem* normalizedClauses;
+CNFProblem& Minimizer::getHittingSetProblem() {
+    return hittingSetProblem;
+}
 
+Cl Minimizer::computeMinimalModel(bool pruningActivated) {
     if (pruningActivated) {
-        GateAnalyzer gateAnalyzer(*clauses);
+        GateAnalyzer gateAnalyzer(problem);
         gateAnalyzer.analyze();
-
-        For newClauses = gateAnalyzer.getPrunedProblem(model);
-        normalizedClauses = generateHittingSetProblem(newClauses, model);
+        For clauses = gateAnalyzer.getPrunedProblem(model);
+        generateHittingSetProblem(clauses);
     }
     else {
-        normalizedClauses = generateHittingSetProblem(clauses->getProblem(), model);
+        generateHittingSetProblem(problem.getProblem());
     }
 
     CandySolverInterface* solver = new Solver<VSIDS>();
-    solver->addClauses(*normalizedClauses);
+    solver->addClauses(hittingSetProblem);
 //    solver->printDIMACS();
 
     Cl normalizedModel;
@@ -75,7 +70,6 @@ Cl Minimizer::computeMinimalModel(Cl model, bool pruningActivated) {
     }
 
     delete solver;
-    delete normalizedClauses;
 
     return denormalizedModel;
 }
