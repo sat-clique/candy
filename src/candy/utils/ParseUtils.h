@@ -87,6 +87,12 @@ static void skipWhitespace(B& in) {
 }
 
 template<class B>
+static void skipBlankspace(B& in) {
+  while (*in == 9 || *in == 32)
+    ++in;
+}
+
+template<class B>
 static void skipLine(B& in) {
   for (;;) {
     if (isEof(in))
@@ -106,7 +112,7 @@ static double parseDouble(B& in) { // only in the form X.XXXXXe-XX
   double currentExponent = 1;
   int exponent;
 
-  skipWhitespace(in);
+  skipBlankspace(in);
   if (*in == EOF)
     return 0;
   if (*in == '-')
@@ -135,7 +141,7 @@ template<class B>
 static int parseInt(B& in) {
   int val = 0;
   bool neg = false;
-  skipWhitespace(in);
+  skipBlankspace(in);
   if (*in == '-')
     neg = true, ++in;
   else if (*in == '+')

@@ -23,7 +23,6 @@
 
 #include "candy/utils/ParseUtils.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Certificate.h"
 
 #include <vector>
 

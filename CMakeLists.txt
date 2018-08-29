@@ -33,6 +33,9 @@
 #    export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
 #    ASAN_OPTIONS=symbolize=1 ./candy ...
 #
+#  Generate a fuzzer build:
+#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=afl-gcc -DCMAKE_CXX_COMPILER=afl-g++ -DCMAKE_BUILD_TYPE=Debug path/to/sources
+#
 #  Generate a release build:
 #    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release path/to/sources
 #

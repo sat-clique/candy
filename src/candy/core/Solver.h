@@ -554,7 +554,8 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         addClause(*clause);
         if (!ok) return;
     }
-    ok = simplify() && strengthen();
+    
+    ok = (propagator.propagate() == nullptr) && simplify() && strengthen();
     
     if (!ok) {
         certificate.proof();
@@ -798,7 +799,7 @@ bool Solver<PickBranchLitT>::strengthen() {
         }
     }
 
-    allocator.announceClauses(strengthened_clauses);
+    allocator.announceClauses(strengthened_clauses);    
     for (Clause* clause : strengthened_clauses) {
         if (clause->size() == 0) {
             ok = false;
@@ -808,6 +809,9 @@ bool Solver<PickBranchLitT>::strengthen() {
             if (trail.value(p) == l_True) {
                 trail.vardata[var(p)].reason = nullptr;
                 trail.vardata[var(p)].level = 0;
+            }
+            else if (trail.value(p) == l_False) {
+                ok = false;
             }
             else {
                 trail.uncheckedEnqueue(p);
