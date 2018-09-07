@@ -27,6 +27,10 @@
 #ifndef X_C68DAB8D_F573_4EEB_90C7_B7B0CC7795B9_H
 #define X_C68DAB8D_F573_4EEB_90C7_B7B0CC7795B9_H
 
+#include <string>
+#include <sstream>
+#include <iostream>
+
 #include <candy/rsar/ARSolver.h>
 
 namespace Candy {
