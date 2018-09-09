@@ -79,6 +79,9 @@ void CNFProblem::parse_DIMACS(gzFile input_stream) {
             if (eagerMatch(in, "p cnf")) {
                 headerVars = parseInt(in);
                 headerClauses = parseInt(in);
+                if (headerVars < 0 || headerClauses < 0) {
+                    printf("PARSE ERROR! Expected positive occurence count in header but got %i vars and %i clauses\n", headerVars, headerClauses), exit(3); 
+                }
                 problem.reserve(headerClauses);
             }
             else {
