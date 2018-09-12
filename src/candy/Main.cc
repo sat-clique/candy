@@ -63,7 +63,6 @@
 #include "candy/core/Statistics.h"
 #include "candy/core/ClauseAllocator.h"
 #include "candy/utils/System.h"
-#include "candy/utils/ParseUtils.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
 #include "candy/core/branching/VSIDS.h"
@@ -302,7 +301,7 @@ int main(int argc, char** argv) {
     CNFProblem problem{};
     if (args.read_from_stdin) {
         printf("c Reading from standard input... Use '--help' for help.\n");
-        if (!problem.readDimacsFromStdout()) {
+        if (!problem.readDimacsFromStdin()) {
             return 1;
         }
     } else {

@@ -25,8 +25,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <math.h>
 #include <string.h>
 
-#include "candy/utils/ParseUtils.h"
-
 #include <stdint.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -44,6 +42,18 @@ namespace Glucose {
 //==================================================================================================
 // Top-level option parse/help functions:
 
+// String matching: in case of a match the input iterator will be advanced the corresponding
+// number of characters.
+static bool match(const char* in, const char* str) {
+  int i;
+  for (i = 0; str[i] != '\0'; i++)
+    if (in[i] != str[i])
+      return false;
+
+  in += i;
+
+  return true;
+}
 
 extern void parseOptions     (int& argc, char** argv, bool strict = false);
 extern void printUsageAndExit(int  argc, char** argv, bool verbose = false);
