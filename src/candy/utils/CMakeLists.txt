@@ -7,7 +7,8 @@ add_library(utils OBJECT
     FastRand.h
     FastRand.cc
     MemUtils.h
-    ParseUtils.h
+    StreamBuffer.h
+    StreamBuffer.cc
     StringUtils.h
     CheckedCast.h)
 

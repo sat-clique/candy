@@ -21,7 +21,7 @@
 #ifndef CNFProblem_h
 #define CNFProblem_h
 
-#include "candy/utils/ParseUtils.h"
+#include "candy/utils/StreamBuffer.h"
 #include "candy/core/SolverTypes.h"
 
 #include <vector>
@@ -68,45 +68,18 @@ public:
 
     std::vector<double> getLiteralRelativeOccurrences() const;
 
-    bool readDimacsFromStdout();
+    bool readDimacsFromStdin();
     bool readDimacsFromFile(const char* filename);
 
-    inline void readClause(Lit plit) {
-        readClause({plit});
-    }
-
-    inline void readClause(Lit plit1, Lit plit2) {
-        readClause({plit1, plit2});
-    }
-
-    inline void readClause(std::initializer_list<Lit> list) {
-        readClause(list.begin(), list.end());
-    }
-
-    inline void readClause(Cl cl) {
-        readClause(cl.begin(), cl.end());
-    }
-
-    inline void readClauses(std::initializer_list<std::initializer_list<Lit>> f) {
-        for (std::initializer_list<Lit> c : f) {
-            readClause(c);
-        }
-    }
-
-    inline void readClauses(For& f) {
-        for (Cl* c : f) {
-            readClause(c->begin(), c->end());
-        }
-    }
+    void readClause(Lit plit);
+    void readClause(Lit plit1, Lit plit2);
+    void readClause(std::initializer_list<Lit> list);
+    void readClause(Cl cl);
+    void readClauses(std::initializer_list<std::initializer_list<Lit>> f);
+    void readClauses(For& f);
 
     template <typename Iterator>
-    inline void readClause(Iterator begin, Iterator end) {
-        Cl* clause = new Cl(begin, end);
-        for (Lit lit : *clause) {
-            maxVars = std::max(maxVars, 1 + var(lit));
-        }
-        problem.push_back(clause);
-    }
+    void readClause(Iterator begin, Iterator end);
 
     // CNFProblem can only be moved, not copied
     CNFProblem(const CNFProblem& other) = delete;
@@ -116,8 +89,7 @@ public:
 
 private:
 
-    void readClause(Glucose::StreamBuffer& in);
-    void parse_DIMACS(gzFile input_stream);
+    void readDimacs(gzFile input_stream);
 
 };
 
