@@ -115,10 +115,10 @@ public:
     virtual ~Solver();
     
     // Add a new variable with parameters specifying variable mode.
-    virtual Var newVar();
+    virtual Var newVar() override;
 
     // Add clauses to the solver
-    virtual void addClauses(const CNFProblem& problem);
+    virtual void addClauses(const CNFProblem& problem) override;
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
@@ -136,15 +136,15 @@ public:
         return false;
     }
 
-    inline bool addClause(const vector<Lit>& lits) {
+    inline bool addClause(const vector<Lit>& lits) override {
         return addClause(lits.begin(), lits.end());
     }
 
-    inline bool addClause(std::initializer_list<Lit> lits) {
+    inline bool addClause(std::initializer_list<Lit> lits) override {
         return addClause(lits.begin(), lits.end());
     }
 
-    void printDIMACS() {
+    void printDIMACS() override {
         printf("p cnf %zu %zu\n", nVars(), clauses.size());
         for (auto clause : clauses) {
             clause->printDIMACS();
@@ -157,45 +157,45 @@ public:
         return *clauses[pos];
     }
 
-    vector<Lit>& getConflict() {
+    vector<Lit>& getConflict() override {
         return conflict;
     }
 
     // Solving:
-    bool simplify(); // remove satisfied clauses
-    bool strengthen(); // remove false literals from clauses
-    virtual bool eliminate() { return true; } // Perform variable elimination based simplification.
-    virtual bool eliminate(bool use_asymm, bool use_elim) { return true; } // Perform variable elimination based simplification.
-    virtual void enablePreprocessing() {}
-    virtual void disablePreprocessing() {}
-    virtual bool isEliminated(Var v) const { return false; }
-    virtual void setFrozen(Var v, bool freeze) {}
+    bool simplify() override; // remove satisfied clauses
+    bool strengthen() override; // remove false literals from clauses
+    virtual bool eliminate() override { return true; } // Perform variable elimination based simplification.
+    virtual bool eliminate(bool use_asymm, bool use_elim) override { return true; } // Perform variable elimination based simplification.
+    virtual void enablePreprocessing() override {}
+    virtual void disablePreprocessing() override {}
+    virtual bool isEliminated(Var v) const override { return false; }
+    virtual void setFrozen(Var v, bool freeze) override {}
 
-    virtual lbool solve(); // Main solve method (assumptions given in 'assumptions').
+    virtual lbool solve() override; // Main solve method (assumptions given in 'assumptions').
 
-    lbool solve(std::initializer_list<Lit> assumps) {
+    lbool solve(std::initializer_list<Lit> assumps) override {
         assumptions.clear();
         assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
         return solve();
     }
 
-    lbool solve(const vector<Lit>& assumps) {
+    lbool solve(const vector<Lit>& assumps) override {
         assumptions.clear();
         assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
         return solve();
     }
 
     // true means solver is in a conflicting state
-    bool isInConflictingState() const {
+    bool isInConflictingState() const override {
         return !ok;
     }
 
     // The value of a variable in the last model. The last call to solve must have been satisfiable.
-    lbool modelValue(Var x) const {
+    lbool modelValue(Var x) const override {
         return model[x];
     }
     // The value of a literal in the last model. The last call to solve must have been satisfiable.
-    lbool modelValue(Lit p) const {
+    lbool modelValue(Lit p) const override {
         return model[var(p)] ^ sign(p);
     }
     // create a list of literals that reflects the current assignment
@@ -207,13 +207,13 @@ public:
         }
         return literals;
     }
-    size_t nClauses() const {
+    size_t nClauses() const override {
         return clauses.size();
     }
-    size_t nLearnts() const {
+    size_t nLearnts() const override {
         return learnts.size() + persist.size();
     }
-    size_t nVars() const {
+    size_t nVars() const override {
         return trail.vardata.size();
     }
     size_t nConflicts() const {
@@ -228,20 +228,20 @@ public:
     }
 
     // Incremental mode
-    void setIncrementalMode();
-    bool isIncremental();
+    void setIncrementalMode() override;
+    bool isIncremental() override;
 
     // Resource constraints:
-    void setConfBudget(uint64_t x) {
+    void setConfBudget(uint64_t x) override {
         conflict_budget = nConflicts() + x;
     }
-    void setPropBudget(uint64_t x) {
+    void setPropBudget(uint64_t x) override {
         propagation_budget = nPropagations() + x;
     }
-    void setInterrupt(bool value) {
+    void setInterrupt(bool value) override {
         asynch_interrupt = value;
     }
-    void budgetOff() {
+    void budgetOff() override {
         conflict_budget = propagation_budget = 0;
     }
 
@@ -257,17 +257,17 @@ public:
         this->learntCallback = learntCallback;
     }
 
-    void resetCertificate(const char* targetFilename) {
+    void resetCertificate(const char* targetFilename) override {
         this->certificate.reset(targetFilename);
     }
 
-    void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) {
+    void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {
         assert(verbosity == 0 || verbEveryConflicts > 0);
         this->verbEveryConflicts = verbEveryConflicts;
         this->verbosity = verbosity;
     }
 
-    unsigned int getVerbosity() {
+    unsigned int getVerbosity() override {
     	return verbosity;
     }
 
