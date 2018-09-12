@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <limits>
+#include <algorithm>
 
 #include "candy/utils/StreamBuffer.h"
 
