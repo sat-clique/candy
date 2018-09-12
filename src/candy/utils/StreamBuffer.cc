@@ -1,5 +1,7 @@
-#include "candy/utils/StreamBuffer.h"
 #include <stdexcept>
+#include <limits>
+
+#include "candy/utils/StreamBuffer.h"
 
 namespace Candy {
 
@@ -31,7 +33,7 @@ namespace Candy {
         char* str = reinterpret_cast<char*>(&buf[pos]);
         long number = strtol(str, &end, 10);
         if (end != str) {
-            if (errno == ERANGE || number <= INT_MIN || number >= INT_MAX) {
+            if (errno == ERANGE || number <= std::numeric_limits<int>::min() || number >= std::numeric_limits<int>::max()) {
                 fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n"), exit(3);
             }
             if (errno != 0 && errno != 25) {
