@@ -42,7 +42,7 @@ namespace Candy {
                 throw std::runtime_error("");
             }
 
-            incPos(reinterpret_cast<intptr_t>(end - str));
+            incPos(static_cast<intptr_t>(end - str));
 
             return static_cast<int>(number);
         }
