@@ -77,7 +77,7 @@ namespace Candy {
             while (buf[size - offset - 1] != '\n') {
                 offset++;
             }
-            fprintf(stderr, "After all: pos %i, offset %i, size %i\n", pos, offset, size);
+            //fprintf(stderr, "After all: pos %i, offset %i, size %i\n", pos, offset, size);
         }
     }
 
