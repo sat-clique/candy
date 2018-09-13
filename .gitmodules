@@ -4,3 +4,6 @@
 [submodule "lib/oscpack"]
 	path = lib/oscpack
 	url = ../oscpack.git
+[submodule "lib/minisat"]
+	path = lib/minisat
+	url = https://github.com/niklasso/minisat.git

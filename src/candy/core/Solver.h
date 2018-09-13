@@ -303,16 +303,16 @@ protected:
     ConflictAnalysis conflict_analysis;
     PickBranchLitT branch;
 
-	vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
     // clause activity heuristic
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
 
     // Clauses
-    vector<Clause*> clauses; // List of problem clauses.
-    vector<Clause*> learnts; // List of learnt clauses.
-    vector<Clause*> persist; // List of binary learnt clauses.
+    std::vector<Clause*> clauses; // List of problem clauses.
+    std::vector<Clause*> learnts; // List of learnt clauses.
+    std::vector<Clause*> persist; // List of binary learnt clauses.
 
     // Constants For restarts
     double K;
