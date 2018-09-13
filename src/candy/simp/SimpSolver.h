@@ -679,7 +679,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
         SimpSolverImpl::mkElimClause(elimclauses, ~mkLit(v));
     }
     
-    size_t size = this->clauses.size();
+    size_t size = this->clause_db.clauses.size();
 
     // produce clauses in cross product
     for (Clause* pc : pos) for (Clause* nc : neg) {
@@ -690,7 +690,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     }
     
     if (!this->isInConflictingState()) {
-        for (auto it = this->clauses.begin() + size; it != this->clauses.end(); it++) {
+        for (auto it = this->clause_db.clauses.begin() + size; it != this->clause_db.clauses.end(); it++) {
             elimAttach(*it);
         }
         for (Clause* c : cls) {
@@ -740,15 +740,15 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     occurs.init(this->nVars());
 
     // include persistent learnt clauses
-    for (Clause* c : this->persist) {
+    for (Clause* c : this->clause_db.persist) {
         elimAttach(c);
     }
-    for (Clause* c : this->learnts) {
+    for (Clause* c : this->clause_db.learnts) {
         if (c->getLBD() <= this->persistentLBD) {
             elimAttach(c);
         }
     }
-    for (Clause* c : this->clauses) {
+    for (Clause* c : this->clause_db.clauses) {
         elimAttach(c);
     }
 
@@ -782,21 +782,21 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->branch.notify_restarted(); // former rebuildOrderHeap
 
     // cleanup strengthened clauses in pool
-    this->allocator.announceClauses(strengthened_clauses);
+    this->clause_db.allocator.announceClauses(strengthened_clauses);
     for (Clause* clause : strengthened_clauses) {
         size_t size = strengthened_sizes[clause];
         if (!clause->isDeleted()) {
             // create clause in correct pool
-            Clause* clean = new (this->allocator.allocate(clause->size())) Clause(*clause);
+            Clause* clean = new (this->clause_db.allocator.allocate(clause->size())) Clause(*clause);
             if (clean->isLearnt()) {
                 if (clean->size() == 2) {
-                    this->persist.push_back(clean);
+                    this->clause_db.persist.push_back(clean);
                 } else {
                     clean->setLBD(std::min(clean->getLBD(), clean->size()));
-                    this->learnts.push_back(clean);
+                    this->clause_db.learnts.push_back(clean);
                 }
             } else {
-                this->clauses.push_back(clean);
+                this->clause_db.clauses.push_back(clean);
             }
             this->propagator.attachClause(clean);
             clause->setDeleted();
@@ -811,9 +811,9 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     strengthened_sizes.clear();
 
     this->propagator.cleanupWatchers();
-    this->freeMarkedClauses(this->clauses);
-    this->freeMarkedClauses(this->learnts);
-    this->freeMarkedClauses(this->persist);
+    this->freeMarkedClauses(this->clause_db.clauses);
+    this->freeMarkedClauses(this->clause_db.learnts);
+    this->freeMarkedClauses(this->clause_db.persist);
 }
 
 template<class PickBranchLitT>
