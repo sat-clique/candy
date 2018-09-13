@@ -93,6 +93,9 @@ option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 # Enable Link Time Optimization in Release Builds
 option(CANDY_ENABLE_LTO "Enable linking time optimization" ON)
 
+# Enable Build of Candy Fuzzing Binary (depends on minisat library)
+option(CANDY_FUZZING "Enable build of candy fuzzing binary (depends on minisat library)" OFF)
+
 # Enable checked casts in debug mode
 option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
 
@@ -293,6 +296,10 @@ set(CANDY_LIBS ${ZLIB_LIBRARIES} oscpack)
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
+
+if (CANDY_FUZZING)
+  add_subdirectory(fuzzing)
+endif()
 
 ### Define and link target executables and libraries
 add_library(candystatic STATIC ${CANDY_OBJECTS})
