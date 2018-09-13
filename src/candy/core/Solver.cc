@@ -104,8 +104,6 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
-    // clause allocator
-    allocator(),
     // current assignment
     trail(),
     // propagate
@@ -119,7 +117,7 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), persist(),
+    clause_db(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -161,8 +159,6 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
-    // clause allocator
-    allocator(),
     // current assignment
     trail(),
     // propagate
@@ -176,7 +172,7 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), persist(),
+    clause_db(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -218,8 +214,6 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
-    // clause allocator
-    allocator(),
     // current assignment
     trail(),
     // propagate
@@ -233,7 +227,7 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), persist(),
+    clause_db(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -279,8 +273,6 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
-    // clause allocator
-    allocator(),
     // current assignment
     trail(),
     // propagate
@@ -294,7 +286,7 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), persist(),
+    clause_db(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -336,8 +328,6 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
-    // clause allocator
-    allocator(),
     // current assignment
     trail(),
     // propagate
@@ -351,7 +341,7 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), persist(),
+    clause_db(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -393,8 +383,6 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
-    // clause allocator
-    allocator(),
     // current assignment
     trail(),
     // propagate
@@ -408,7 +396,7 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     // clause activity based heuristic
     cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clauses(), learnts(), persist(),
+    clause_db(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
