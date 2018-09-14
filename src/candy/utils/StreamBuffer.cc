@@ -37,8 +37,9 @@ namespace Candy {
             if (errno == ERANGE || number <= std::numeric_limits<int>::min() || number >= std::numeric_limits<int>::max()) {
                 fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n"), exit(3);
             }
-            if (errno != 0 && errno != 25) {
-                // For reasons unknown ERRNO=25 when acceptance tests are run from gTest
+            if (errno != 0 && errno != 25 && errno != 29) {
+                // After strtol, for reasons unknown, ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
+                // After strtol, for reasons unknown, ERRNO=29 ('Illegal seek') when reading from stdin
                 fprintf(stderr, "PARSE ERROR! ERRNO=%i, in 'strtol' while reading '%.8s ..'\n", errno, buf.get()+pos);
                 throw std::runtime_error("");
             }
