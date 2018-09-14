@@ -4,11 +4,11 @@ add_executable(candy_fuzz
 
 candy_executable_customizations(candy_fuzz)
 
-ADD_LIBRARY(minisat STATIC IMPORTED)
-SET_TARGET_PROPERTIES(candy_fuzz minisat PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/minisat/build/release/lib/libminisat.a)
+target_include_directories(candy_fuzz PUBLIC ${PROJECT_SOURCE_DIR}/lib/minisat)
 
-link_directories(${CMAKE_BINARY_DIR}/lib/minisat/build/release/lib)
+add_library(minisat STATIC IMPORTED)
+set_target_properties(minisat PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/minisat/libminisat.a)
 
-target_include_directories(candy_fuzz PUBLIC ${PROJECT_SOURCE_DIR}/lib/minisat/minisat/core)
+link_directories(${CMAKE_BINARY_DIR}/lib/minisat)
 
 target_link_libraries(candy_fuzz ${CANDY_LIBS} minisat)
