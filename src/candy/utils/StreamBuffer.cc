@@ -35,7 +35,8 @@ namespace Candy {
         long number = strtol(str, &end, 10);
         if (end != str) {
             if (errno == ERANGE || number <= std::numeric_limits<int>::min() || number >= std::numeric_limits<int>::max()) {
-                fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n"), exit(3);
+                fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n");
+                exit(3);
             }
             if (errno != 0 && errno != 25 && errno != 29) {
                 // After strtol, for reasons unknown, ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
@@ -57,8 +58,7 @@ namespace Candy {
             throw std::runtime_error("");
         }
         else {
-            fprintf(stderr, "PARSE ERROR! Expected integer but got unexpected char\n");
-            throw std::runtime_error("");
+            fprintf(stderr, "PARSE ERROR! Expected integer but got unexpected char while attempting to read '%.8s ..'\n", buf.get()+pos);
             exit(3);
         }
     }
