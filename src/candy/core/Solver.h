@@ -283,30 +283,12 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-    struct reduceDB_lt {
-        reduceDB_lt() {
-        }
-
-        bool operator()(Clause* x, Clause* y) {
-    //        // XMiniSat paper, alternate ordering
-    //        const uint8_t reduceOnSizeSize = 12;
-    //        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
-    //        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
-    //        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
-            return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
-        }
-    };
-
     Trail trail;
     Propagate propagator;
     ConflictAnalysis conflict_analysis;
     PickBranchLitT branch;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-
-    // clause activity heuristic
-    double cla_inc; // Amount to bump next clause with.
-    double clause_decay;
 
     // Clauses
     ClauseDatabase clause_db;
@@ -322,8 +304,6 @@ protected:
     uint64_t curRestart;
     uint32_t nbclausesbeforereduce; // To know when it is time to reduce clause database
     uint16_t incReduceDB;
-    uint16_t persistentLBD;
-    uint16_t lbLBDFrozenClause;
 
     // constants for memory reorganization
     uint8_t revamp;
@@ -361,29 +341,8 @@ protected:
     void freeMarkedClauses(vector<Clause*>& list);
 
     void cancelUntil(int level); // Backtrack until a certain level.
-    void updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
     lbool search(); // Search for a given number of conflicts.
-    virtual void reduceDB(); // Reduce the set of learnt clauses.
     void revampClausePool(uint8_t upper);
-
-    inline void claDecayActivity() {
-        cla_inc *= (1 / clause_decay);
-    }
-
-    inline void claBumpActivity(Clause& c) {
-        if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
-            claRescaleActivity();
-        }
-    }
-
-    void claRescaleActivity() {
-        for (auto container : { clause_db.clauses, clause_db.learnts, clause_db.persist }) {
-            for (Clause* clause : container) {
-                clause->activity() *= 1e-20f;
-            }
-        }
-        cla_inc *= 1e-20;
-    }
 
     inline bool withinBudget() {
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
@@ -410,8 +369,6 @@ namespace SolverOptions {
     
     extern IntOption opt_first_reduce_db;
     extern IntOption opt_inc_reduce_db;
-    extern IntOption opt_persistent_lbd;
-    extern IntOption opt_lb_lbd_frozen_clause;
     
     extern IntOption opt_lb_size_minimzing_clause;
     extern IntOption opt_lb_lbd_minimzing_clause;
@@ -420,7 +377,6 @@ namespace SolverOptions {
 
     extern DoubleOption opt_var_decay;
     extern DoubleOption opt_max_var_decay;
-    extern DoubleOption opt_clause_decay;
     extern IntOption opt_phase_saving;
     
     extern IntOption opt_sonification_delay;
@@ -449,18 +405,14 @@ Solver<PickBranchLitT>::Solver() :
     branch(trail, conflict_analysis),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -597,64 +549,6 @@ void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
         trail.vardata[var(cr->first())].reason = nullptr;
     }
     cr->setDeleted();
-}
-
-
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
-    for (Clause* clause : involved_clauses) {
-        claBumpActivity(*clause);
-
-		// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-		if (clause->isLearnt() && clause->getLBD() > persistentLBD) {
-			uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
-			if (nblevels + 1 < clause->getLBD()) { // improve the LBD
-				if (clause->getLBD() <= lbLBDFrozenClause) {
-					// seems to be interesting : keep it for the next round
-					clause->setFrozen(true);
-				}
-				clause->setLBD(nblevels);
-			}
-		}
-    }
-}
-
-/**************************************************************************************************
- *
- *  reduceDB : ()  ->  [void]
- *
- *  Description:
- *    Remove half of the learnt clauses, minus the clauses locked by the current assignment. Locked
- *    clauses are clauses that are reason to some assignment. Binary clauses are never removed.
- **************************************************************************************************/
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::reduceDB() {
-    Statistics::getInstance().solverReduceDBInc();
-    std::sort(clause_db.learnts.begin(), clause_db.learnts.end(), reduceDB_lt());
-    
-    size_t index = (clause_db.learnts.size() + clause_db.persist.size()) / 2;
-    if (index >= clause_db.learnts.size() || clause_db.learnts[index]->getLBD() <= 3) {
-        return; // We have a lot of "good" clauses, it is difficult to compare them, keep more
-    }
-    
-    // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
-    // Keep clauses which seem to be useful (i.e. their lbd was reduce during this sequence => frozen)
-    size_t limit = std::min(clause_db.learnts.size(), index);
-    for (size_t i = 0; i < limit; i++) {
-        Clause* c = clause_db.learnts[i];
-        if (c->getLBD() <= persistentLBD) break; // small lbds come last in sequence (see ordering by reduceDB_lt())
-        if (!c->isFrozen() && (trail.value(c->first()) != l_True || trail.reason(var(c->first())) != c)) {//&& !locked(c)) {
-            removeClause(c);
-        }
-    }
-
-    propagator.cleanupWatchers();
-    size_t old_size = clause_db.learnts.size();
-    freeMarkedClauses(clause_db.learnts);
-    Statistics::getInstance().solverRemovedClausesInc(old_size - clause_db.learnts.size());
-    for (Clause* c : clause_db.learnts) { // "unfreeze" remaining clauses
-        c->setFrozen(false);
-    }
 }
 
 /**
@@ -917,7 +811,7 @@ lbool Solver<PickBranchLitT>::search() {
             }
 
             // TODO: exclude selectors from lbd computation
-            updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, conflictInfo.lbd);
+            clause_db.updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, conflictInfo.lbd);
             branch.notify_conflict();
 
             if (conflictInfo.lbd <= 2) {
@@ -957,9 +851,9 @@ lbool Solver<PickBranchLitT>::search() {
 
                 propagator.attachClause(cr);
                 trail.uncheckedEnqueue(cr->first(), cr);
-                claBumpActivity(*cr);
+                clause_db.claBumpActivity(*cr);
             }
-            claDecayActivity();
+            clause_db.claDecayActivity();
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
@@ -1010,7 +904,16 @@ lbool Solver<PickBranchLitT>::search() {
             if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
                 if (clause_db.learnts.size() > 0) {
                     curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
-                    reduceDB();
+                    clause_db.reduceDB();
+
+                    for (Clause* clause : clause_db.removed) {
+                        certificate.removed(clause->begin(), clause->end());
+                        propagator.detachClause(clause, false);
+                        clause->setDeleted();
+                    }
+                    propagator.cleanupWatchers();
+                    freeMarkedClauses(clause_db.learnts);
+
                     reduced = true;
                     nbclausesbeforereduce += incReduceDB;
                 }
@@ -1072,8 +975,8 @@ lbool Solver<PickBranchLitT>::solve() {
         printf("c | - Restarts:                    | - Reduce Clause DB:            |                          |\n");
         printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |                          |\n", lbdQueue.maxSize(), nbclausesbeforereduce);
         printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |                          |\n", trailQueue.maxSize(), incReduceDB);
-        printf("c |   * K            : %6.2f      |   * Persistent: %6d         |                          |\n", K, persistentLBD);
-        printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< %2d     |                          |\n", R, lbLBDFrozenClause);
+        printf("c |   * K            : %6.2f      |   * Persistent: ??????         |                          |\n", K);
+        printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< ??     |                          |\n", R);
         printf("c |                                |                                |                          |\n");
         printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
         printf("c |                                                                                            |\n");

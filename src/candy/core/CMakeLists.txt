@@ -7,6 +7,8 @@ add_library(core OBJECT
     Clause.h
     ClauseAllocator.cc
     ClauseAllocator.h
+    ClauseDatabase.cc
+    ClauseDatabase.h
     Certificate.cc
     Certificate.h
     SolverTypes.h

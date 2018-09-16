@@ -744,7 +744,7 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
         elimAttach(c);
     }
     for (Clause* c : this->clause_db.learnts) {
-        if (c->getLBD() <= this->persistentLBD) {
+        if (c->getLBD() <= this->clause_db.getPersistentLBD()) {
             elimAttach(c);
         }
     }

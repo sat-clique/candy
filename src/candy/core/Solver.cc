@@ -74,14 +74,11 @@ IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average 
 
 IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
 IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
-IntOption opt_persistent_lbd(_cred, "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT16_MAX));
-IntOption opt_lb_lbd_frozen_clause(_cred, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30, IntRange(0, INT16_MAX));
 
 IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT16_MAX));
 
 DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
-DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
 
 BoolOption opt_use_lrb("MEMORY LAYOUT", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
 
@@ -114,18 +111,14 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -169,18 +162,14 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -224,18 +213,14 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -283,18 +268,14 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -338,18 +319,14 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
@@ -393,18 +370,14 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     // assumptions
     assumptions(),
-    // clause activity based heuristic
-    cla_inc(1), clause_decay(SolverOptions::opt_clause_decay),
     // clauses
-    clause_db(),
+    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    persistentLBD(SolverOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(SolverOptions::opt_lb_lbd_frozen_clause),
     // memory reorganization
     revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
