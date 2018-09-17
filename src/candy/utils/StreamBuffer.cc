@@ -33,11 +33,12 @@ namespace Candy {
         char* end = NULL;
         char* str = reinterpret_cast<char*>(&buf[pos]);
         long number = strtol(str, &end, 10);
-        if (end != str) {
+        if (end > str) {
             if (errno == ERANGE || number <= std::numeric_limits<int>::min() || number >= std::numeric_limits<int>::max()) {
                 fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n");
                 exit(3);
             }
+
             if (errno != 0 && errno != 25 && errno != 29) {
                 // After strtol, for reasons unknown, ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
                 // After strtol, for reasons unknown, ERRNO=29 ('Illegal seek') when reading from stdin
@@ -78,7 +79,7 @@ namespace Candy {
                 return;
             }
             // make sure buffer ends with newline (assert: does not cut a number)
-            while (buf[size - offset - 1] != '\n') {
+            while (buf[size - offset - 1] != '\n' && offset < size) {
                 offset++;
             }
             //fprintf(stderr, "After all: pos %i, offset %i, size %i\n", pos, offset, size);

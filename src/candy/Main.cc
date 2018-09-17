@@ -333,11 +333,11 @@ int main(int argc, char** argv) {
 		}
     }
     else if (SolverOptions::opt_use_lrb) {
-        std::cerr << "Using LRB Branching Heuristic" << std::endl;
+        std::cerr << "c Using LRB Branching Heuristic" << std::endl;
         solver = new SimpSolver<LRB>();
     }
     else {
-        std::cerr << "Using VSIDS Branching Heuristic" << std::endl;
+        std::cerr << "c Using VSIDS Branching Heuristic" << std::endl;
         solver = new SimpSolver<VSIDS>();
     }
     solver->setVerbosities(args.vv, args.verb);
