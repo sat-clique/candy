@@ -1,9 +1,16 @@
 #include "candy/simp/Subsumption.h"
 #include "candy/core/Clause.h"
+#include "candy/utils/Options.h"
 
 #include <assert.h>
 
 namespace Candy {
+
+namespace SubsumptionOptions {
+const char* _cat = "SIMP";
+
+IntOption opt_subsumption_lim(_cat, "sub-lim", "Do not check if subsumption against a clause larger than this.", 1000, IntRange(0, INT32_MAX));
+}
 
 void Subsumption::subsumptionQueueProtectedPush(Clause* clause) {
     if (!subsumption_queue_contains[clause]) {
@@ -53,38 +60,39 @@ void Subsumption::rememberSizeBeforeStrengthening(Clause* clause) {
 }
 
 bool Subsumption::strengthenClause(Clause* clause, Lit l) {
-    assert(this->trail.decisionLevel() == 0);
+    assert(trail.decisionLevel() == 0);
     
     subsumptionQueueProtectedPush(clause);
     rememberSizeBeforeStrengthening(clause);        
     
-    this->propagator.detachClause(clause, true);
+    propagator.detachClause(clause, true);
     clause->strengthen(l);
 
-    this->certificate.added(clause->begin(), clause->end());
+    certificate.added(clause->begin(), clause->end());
 
-    elimDetach(clause, l, true);
+    detach(clause, l, true);
+    removed.push_back(clause);
     
     if (clause->size() == 1) {
         Lit unit = clause->first();
-        elimDetach(clause, unit, true);
+        detach(clause, unit, true);
         clause->setDeleted();
 
-        if (this->trail.value(unit) == l_Undef) {
-            this->trail.uncheckedEnqueue(unit);
-            return this->propagator.propagate() == nullptr;
+        if (trail.value(unit) == l_Undef) {
+            trail.uncheckedEnqueue(unit);
+            return propagator.propagate() == nullptr;
         }
-        else if (this->trail.value(unit) == l_False) {
+        else if (trail.value(unit) == l_False) {
             return false;
         }
         else {
-            this->trail.vardata[var(unit)].reason = nullptr;
-            this->trail.vardata[var(unit)].level = 0;
+            trail.vardata[var(unit)].reason = nullptr;
+            trail.vardata[var(unit)].level = 0;
             return true;
         }
     }
     else {
-        this->propagator.attachClause(clause);
+        propagator.attachClause(clause);
 
         calcAbstraction(clause);
 
@@ -98,10 +106,10 @@ bool Subsumption::backwardSubsumptionCheck() {
 
     Clause bwdsub_tmpunit({ lit_Undef });
     
-    while (subsumption_queue.size() > 0 || bwdsub_assigns < this->trail.size()) {
+    while (subsumption_queue.size() > 0 || bwdsub_assigns < trail.size()) {
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
-        if (subsumption_queue.size() == 0 && bwdsub_assigns < this->trail.size()) {
-            Lit l = this->trail[bwdsub_assigns++];
+        if (subsumption_queue.size() == 0 && bwdsub_assigns < trail.size()) {
+            Lit l = trail[bwdsub_assigns++];
             bwdsub_tmpunit[0] = l;
             abstraction[&bwdsub_tmpunit] = 1ull << (var(l) % 64);
             subsumption_queue.push_back(&bwdsub_tmpunit);
@@ -113,7 +121,7 @@ bool Subsumption::backwardSubsumptionCheck() {
             continue;
         }
         
-        assert(clause->size() > 1 || this->trail.value(clause->first()) == l_True); // Unit-clauses should have been propagated before this point.
+        assert(clause->size() > 1 || trail.value(clause->first()) == l_True); // Unit-clauses should have been propagated before this point.
         
         // Find best variable to scan:
         Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
@@ -131,8 +139,15 @@ bool Subsumption::backwardSubsumptionCheck() {
 
                 if (l == lit_Undef) {
                     Statistics::getInstance().solverSubsumedInc();
-                    this->removeClause(csi, true);
-                    elimDetach(csi, false);
+                    certificate.removed(csi->begin(), csi->end());
+                    propagator.detachClause(csi, true);
+                    if (trail.locked(csi)) {
+                        trail.vardata[var(csi->first())].reason = nullptr;
+                    }
+                    csi->setDeleted();
+                    // this->removeClause(csi, true);
+                    for (Lit lit : *csi) detach(csi, lit, false);
+                    removed.push_back(csi);
                 }
                 else if (l != lit_Error) {
                     Statistics::getInstance().solverDeletedInc();
