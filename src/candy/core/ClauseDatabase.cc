@@ -33,7 +33,7 @@ ClauseDatabase::~ClauseDatabase() {
     }
 }
 
-void ClauseDatabase::reduceDB() {
+void ClauseDatabase::reduce() {
     Statistics::getInstance().solverReduceDBInc();
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
     
