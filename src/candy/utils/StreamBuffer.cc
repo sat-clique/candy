@@ -55,7 +55,7 @@ namespace Candy {
         }
         else if (eof()) {
             fprintf(stderr, "PARSE ERROR! Unexpected end of file\n");
-            throw std::runtime_error("");
+            exit(3);
         }
         else {
             fprintf(stderr, "PARSE ERROR! Expected integer but got unexpected char while attempting to read '%.8s ..'\n", buf.get()+pos);
