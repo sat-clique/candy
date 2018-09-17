@@ -4,8 +4,19 @@
 
 #include "candy/core/Clause.h"
 #include "candy/core/Trail.h"
+#include "candy/core/Propagate.h"
+#include "candy/core/Certificate.h"
+#include "candy/utils/Options.h"
 
 namespace Candy {
+
+namespace SubsumptionOptions {
+using namespace Glucose;
+
+extern const char* _cat;
+
+extern IntOption opt_subsumption_lim;
+}
 
 class Subsumption {
     struct ClauseDeleted {
@@ -16,9 +27,12 @@ class Subsumption {
     };
 
 public:         
-    Subsumption(Trail& trail) : 
-        trail(trail),
-        subsumption_lim(SimpSolverOptions::opt_subsumption_lim),
+    Subsumption(Trail& trail_, Propagate& propagator_, Certificate& certificate_) : 
+        trail(trail_),
+        propagator(propagator_),
+        certificate(certificate_),
+        removed(),
+        subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         occurs(ClauseDeleted()),
         subsumption_queue(),
         subsumption_queue_contains(),
@@ -29,6 +43,10 @@ public:
     {}
 
     Trail& trail;
+    Propagate& propagator;
+    Certificate& certificate;
+
+    vector<Clause*> removed;
 
     uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 

@@ -222,7 +222,11 @@ public:
 
 
     inline void strengthen(Lit p) {
-        if (std::remove(begin(), end(), p) != end()) {
+        Lit* pos = std::find(begin(), end(), p);
+        if (pos != end()) {
+            Lit tmp = *pos;
+            *pos = literals[length-1];
+            literals[length-1] = tmp;
             --length;
         }
     }

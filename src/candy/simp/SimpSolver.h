@@ -73,7 +73,6 @@ extern BoolOption opt_use_rcheck;
 extern BoolOption opt_use_elim;
 extern IntOption opt_grow;
 extern IntOption opt_clause_lim;
-extern IntOption opt_subsumption_lim;
 }
 
 /**
@@ -202,8 +201,29 @@ protected:
     void cleanupEliminate();
 
     inline void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
-    inline void elimDetach(Clause* cr, bool strict); // Detach a clause from occurrence lists for eliminate
-    inline void elimDetach(Clause* cr, Lit lit); // Detach a clause from lit's occurrence lists for eliminate
+    inline void elimDetach(Clause* cr); // Detach a clause from occurrence lists for eliminate
+
+    inline void elimDetach(Clause* cr, Lit lit) {
+        if (n_occ.size() > 0) { // elim initialized
+            n_occ[toInt(lit)]--;
+            updateElimHeap(var(lit));
+        }
+    }
+
+    inline void elimDetachAfterSubsumption() {
+        for (Clause* clause : subsumption.removed) {
+            if (clause->isDeleted()) {
+                elimDetach(clause);
+            }
+            else {
+                size_t old_size = subsumption.strengthened_sizes[clause];
+                for (auto it = clause->end(); it != clause->begin() + old_size; it++) {
+                    elimDetach(clause, *it);
+                }
+            }
+        }
+        subsumption.removed.clear();
+    }
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
@@ -221,7 +241,7 @@ protected:
 
 template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
-    subsumption(this->trail), 
+    subsumption(this->trail, this->propagator, this->certificate), 
     clause_lim(SimpSolverOptions::opt_clause_lim),
     grow(SimpSolverOptions::opt_grow),
     use_asymm(SimpSolverOptions::opt_use_asymm),
@@ -287,9 +307,8 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
         assert(!isEliminated(var(lit)));
     }
 #endif
-    subsumption.attach(cr);
-    for (Lit lit : *cr) {
-        if (n_occ.size() > 0) { // elim initialized
+    if (n_occ.size() > 0) { // elim initialized
+        for (Lit lit : *cr) {
             n_occ[toInt(lit)]++;
             touched[var(lit)] = 1;
             n_touched++;
@@ -301,18 +320,9 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, bool strict) {
-    for (Lit lit : *cr) {
-        subsumption.detach(cr, lit, strict);
+void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr) {
+    if (n_occ.size() > 0) for (Lit lit : *cr) {
         elimDetach(cr, lit);
-    }
-}
-
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr, Lit lit) {
-    if (n_occ.size() > 0) { // elim initialized
-        n_occ[toInt(lit)]--;
-        updateElimHeap(var(lit));
     }
 }
 
@@ -436,7 +446,9 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
     
     if (this->propagator.propagate() != nullptr) {
         this->trail.cancelUntil(0);
-        if (!subsumption.strengthenClause(cr, l)) {
+        bool strengthen_ok = subsumption.strengthenClause(cr, l);
+        elimDetachAfterSubsumption();
+        if (!strengthen_ok) {
             return false;
         }
     } else {
@@ -462,6 +474,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
             return false;
     
     bool ret = subsumption.backwardSubsumptionCheck();
+    elimDetachAfterSubsumption();
     frozen[v] = was_frozen;
     return ret;
 }
@@ -526,20 +539,36 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     if (!this->isInConflictingState()) {
         for (auto it = this->clause_db.clauses.begin() + size; it != this->clause_db.clauses.end(); it++) {
             elimAttach(*it);
+            subsumption.attach(*it);
         }
         for (Clause* c : cls) {
-            this->removeClause(c);
-            elimDetach(c, false);
+            this->certificate.removed(c->begin(), c->end());
+            this->propagator.detachClause(c, false);
+            if (this->trail.locked(c)) {
+                this->trail.vardata[var(c->first())].reason = nullptr;
+            }
+            c->setDeleted();
+            //this->removeClause(c);
+            elimDetach(c);
+            for (Lit lit : *c) subsumption.detach(c, lit, false);
         }
         subsumption.occurs[v].clear();
 
         this->propagator.cleanupWatchers();
 
-        return subsumption.backwardSubsumptionCheck();
+        bool ret = subsumption.backwardSubsumptionCheck();
+        elimDetachAfterSubsumption();
+        return ret;
     }
     else {
         for (Clause* c : cls) {
-            this->removeClause(c, true);
+            this->certificate.removed(c->begin(), c->end());
+            this->propagator.detachClause(c, false);
+            if (this->trail.locked(c)) {
+                this->trail.vardata[var(c->first())].reason = nullptr;
+            }
+            c->setDeleted();
+            // this->removeClause(c, true);
         }
         return false;
     }
@@ -575,14 +604,17 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
 
     // include persistent learnt clauses
     for (Clause* c : this->clause_db.persist) {
+        subsumption.attach(c);
         elimAttach(c);
     }
     for (Clause* c : this->clause_db.learnts) {
         if (c->getLBD() <= this->clause_db.getPersistentLBD()) {
+            subsumption.attach(c);
             elimAttach(c);
         }
     }
     for (Clause* c : this->clause_db.clauses) {
+        subsumption.attach(c);
         elimAttach(c);
     }
 
@@ -659,6 +691,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     if (!use_asymm && !use_elim) {
         if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
             this->ok = subsumption.backwardSubsumptionCheck();
+            elimDetachAfterSubsumption();
         }
     }
     // either asymm or elim are true (preprocessing)
@@ -668,6 +701,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
             
             if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
                 this->ok = subsumption.backwardSubsumptionCheck();
+                elimDetachAfterSubsumption();
             }
 
             while (!elim_heap.empty() && !this->isInConflictingState() && !this->asynch_interrupt) {
