@@ -300,7 +300,7 @@ protected:
     // Bounded queues for restarts
     bqueue<uint32_t> lbdQueue, trailQueue;
 
-    // used for reduceDB
+    // used for reduce
     uint64_t curRestart;
     uint32_t nbclausesbeforereduce; // To know when it is time to reduce clause database
     uint16_t incReduceDB;
@@ -904,7 +904,7 @@ lbool Solver<PickBranchLitT>::search() {
             if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
                 if (clause_db.learnts.size() > 0) {
                     curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
-                    clause_db.reduceDB();
+                    clause_db.reduce();
 
                     for (Clause* clause : clause_db.removed) {
                         certificate.removed(clause->begin(), clause->end());
@@ -967,17 +967,6 @@ lbool Solver<PickBranchLitT>::solve() {
     conflict.clear();
     
     if (!incremental && verbosity >= 1) {
-        printf("c =====================================[ MAGIC CONSTANTS ]======================================\n");
-        printf("c | Constants are supposed to work well together :-)                                           |\n");
-        printf("c | however, if you find better choices, please let us known...                                |\n");
-        printf("c |--------------------------------------------------------------------------------------------|\n");
-        printf("c |                                |                                |                          |\n");
-        printf("c | - Restarts:                    | - Reduce Clause DB:            |                          |\n");
-        printf("c |   * LBD Queue    : %6d      |   * First     : %6d         |                          |\n", lbdQueue.maxSize(), nbclausesbeforereduce);
-        printf("c |   * Trail  Queue : %6d      |   * Inc       : %6d         |                          |\n", trailQueue.maxSize(), incReduceDB);
-        printf("c |   * K            : %6.2f      |   * Persistent: ??????         |                          |\n", K);
-        printf("c |   * R            : %6.2f      |   * Protected :  (lbd)< ??     |                          |\n", R);
-        printf("c |                                |                                |                          |\n");
         printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
         printf("c |                                                                                            |\n");
         printf("c |      RESTARTS      |       ORIGINAL      |                     LEARNT                      |\n");

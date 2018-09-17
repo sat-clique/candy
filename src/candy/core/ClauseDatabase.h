@@ -51,7 +51,7 @@ public:
     ClauseDatabase(Trail& trail_);
     ~ClauseDatabase();
 
-    void reduceDB();
+    void reduce();
     void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
 
     inline uint_fast16_t getPersistentLBD() {// access is temporary
