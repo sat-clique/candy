@@ -146,7 +146,7 @@ public:
     }
 
     void printDIMACS() override {
-        printf("p cnf %zu %zu\n", nVars(), clause_db.clauses.size());
+        printf("p cnf %zu %zu\n", nVars(), nClauses());
         for (auto clause : clause_db.clauses) {
             clause->printDIMACS();
         }

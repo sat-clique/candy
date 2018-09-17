@@ -27,6 +27,7 @@
 #include <errno.h>
 #include <zlib.h>
 #include <memory>
+#include <assert.h>
 
 namespace Candy {
 
@@ -62,6 +63,7 @@ void skipWhitespace();
 bool skipString(const char* str);
 
 void incPos(unsigned int inc) {
+    assert(inc > 0);
     pos += inc;
     assureLookahead();
 }

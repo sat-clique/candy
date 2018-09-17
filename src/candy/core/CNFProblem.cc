@@ -90,6 +90,9 @@ void CNFProblem::readDimacs(gzFile input_stream) {
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(mkLit(abs(plit)-1, plit < 0));
+                if (in.eof()) {
+                    printf("PARSE ERROR! Expected clause but got unexpected char: %c\n", *in), exit(3);
+                }
             }
             readClause(lits.begin(), lits.end());
         }
