@@ -306,7 +306,6 @@ protected:
     uint16_t incReduceDB;
 
     // constants for memory reorganization
-    uint8_t revamp;
     bool sort_watches;
     bool sort_variables;
 
@@ -342,7 +341,6 @@ protected:
 
     void cancelUntil(int level); // Backtrack until a certain level.
     lbool search(); // Search for a given number of conflicts.
-    void revampClausePool(uint8_t upper);
 
     inline bool withinBudget() {
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
@@ -381,7 +379,6 @@ namespace SolverOptions {
     
     extern IntOption opt_sonification_delay;
     
-    extern IntOption opt_revamp;
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
     extern IntOption opt_inprocessing;
@@ -414,7 +411,6 @@ Solver<PickBranchLitT>::Solver() :
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
@@ -566,63 +562,6 @@ void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
                                       }
                                   });
     list.erase(new_end, list.end());
-}
-
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::revampClausePool(uint_fast8_t upper) {
-    assert(upper <= REVAMPABLE_PAGES_MAX_SIZE);
-    
-    size_t old_clauses_size = clause_db.clauses.size();
-    size_t old_learnts_size = clause_db.learnts.size();
-    
-    // save trail of unary propagations
-    vector<Lit> props(trail.begin(), trail.end());
-    for (Lit p : props) {
-        trail.assigns[var(p)] = l_Undef;
-        trail.vardata[var(p)] = VarData(nullptr, 0);
-    }
-    trail.trail_size = 0;
-
-    // detach and remove clauses
-    for (auto list : { &clause_db.clauses, &clause_db.learnts }) {
-        for (Clause* c : *list) {
-            if (c->size() > 2 && c->size() <= upper) {
-                assert(!trail.locked(c)); assert(!c->isDeleted());
-                propagator.detachClause(c, true);
-            }
-        }
-        list->erase(std::remove_if(list->begin(), list->end(), [this,upper](Clause* c) {
-                return (c->size() > 2 && c->size() <= upper); } ), list->end());
-    }
-    
-    // revamp and re-attach clauses
-    for (uint_fast8_t k = 3; k <= upper; k++) {
-        vector<Clause*> revamped = clause_db.allocator.revampPages(k);
-        for (Clause* clause : revamped) {
-            propagator.attachClause(clause);
-            if (clause->isLearnt()) {
-                clause_db.learnts.push_back(clause);
-            } else {
-                clause_db.clauses.push_back(clause);
-            }
-        }
-    }
-    
-    // cleanup
-    propagator.cleanupWatchers();
-
-    // restore trail of unary propagation
-    for (Lit p : props) {
-        if (trail.assigns[var(p)] == l_Undef) {
-            trail.uncheckedEnqueue(p);
-            propagator.propagate();
-        }
-    }
-    
-    assert(old_learnts_size == clause_db.learnts.size());
-    assert(old_clauses_size == clause_db.clauses.size());
-    (void)(old_learnts_size);
-    (void)(old_clauses_size);
 }
 
 /**************************************************************************************************
@@ -882,12 +821,6 @@ lbool Solver<PickBranchLitT>::search() {
                             return l_False;
                         }
                         Statistics::getInstance().runtimeStop("Simplify");
-                    }
-
-                    if (revamp > 2) {
-                        Statistics::getInstance().runtimeStart("Revamp");
-                        revampClausePool(revamp);
-                        Statistics::getInstance().runtimeStop("Revamp");
                     }
                     
                     if (sort_watches) {
