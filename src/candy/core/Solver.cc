@@ -84,7 +84,6 @@ BoolOption opt_use_lrb("MEMORY LAYOUT", "use-lrb", "use LRB branching heuristic 
 
 IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
 
-IntOption opt_revamp("MEMORY LAYOUT", "revamp", "reorganize memory to keep active clauses close", 6, IntRange(2, REVAMPABLE_PAGES_MAX_SIZE));
 BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
 BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
 IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
@@ -120,7 +119,6 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
@@ -171,7 +169,6 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
@@ -222,7 +219,6 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
@@ -277,7 +273,6 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
@@ -328,7 +323,6 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
@@ -379,7 +373,6 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
-    revamp(SolverOptions::opt_revamp),
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
     // simplify
