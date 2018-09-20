@@ -31,7 +31,7 @@ private:
     unsigned char* memory;
 
     inline void newPage() {
-        memory = (unsigned char*)realloc(memory, page_size);
+        memory = (unsigned char*)std::malloc(page_size);
         pages.push_back(memory);
         cursor = 0;
     }
