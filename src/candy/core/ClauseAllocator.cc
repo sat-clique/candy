@@ -36,16 +36,7 @@ std::vector<Clause*> ClauseAllocator::defrag(std::vector<Clause*> keep) {
     memory = (unsigned char*)std::malloc(page_size);
     pages.push_back(memory);
     cursor = 0;
-    unsigned int counter = 0;
     for (Clause* clause : keep) {
-        // BEWARE OF STACK CORRUPTIONS:
-        // unsigned char* pos = memory + cursor;
-        // unsigned int size = clauseBytes(clause->size());
-        // memcpy((void*)pos, (void*)clause, size);
-        // assert(*clause == *reinterpret_cast<Clause*>(pos));
-        // keep2.push_back(reinterpret_cast<Clause*>(pos));
-        // assert(*clause == *keep2.back());
-        // cursor += size;
         Clause* clause2 = new (allocate(clause->size())) Clause((const Clause&)*clause);
         keep2.push_back(clause2);
     }
