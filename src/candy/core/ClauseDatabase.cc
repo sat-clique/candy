@@ -28,6 +28,8 @@ ClauseDatabase::~ClauseDatabase() {
 
 void ClauseDatabase::reduce() {
     Statistics::getInstance().solverReduceDBInc();
+    
+    removed.clear();
 
     std::vector<Clause*> learnts;
     copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [](Clause* clause) { return clause->isLearnt() && clause->size() > 2; });
@@ -40,7 +42,6 @@ void ClauseDatabase::reduce() {
     
     // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
     // Keep clauses which seem to be useful (i.e. their lbd was reduce during this sequence => frozen)
-    removed.clear();
     for (Clause* c : learnts) {
         if (c->isFrozen()) {
             c->setFrozen(false); // reset flag
