@@ -145,7 +145,6 @@ bool Subsumption::backwardSubsumptionCheck() {
                         trail.vardata[var(csi->first())].reason = nullptr;
                     }
                     csi->setDeleted();
-                    // this->removeClause(csi, true);
                     for (Lit lit : *csi) detach(csi, lit, false);
                     removed.push_back(csi);
                 }
