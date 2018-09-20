@@ -132,7 +132,7 @@ class DoubleOption : public Option {
     virtual bool parse(const char* str) {
         const char* span = strstr(str, pattern); 
 
-        if (span != nullptr) {
+        if (span == str) {
             char* end;
             double tmp = strtod(span, &end);
 
@@ -187,7 +187,7 @@ class IntOption : public Option {
     virtual bool parse(const char* str) {
         const char* span = strstr(str, pattern);
 
-        if (span != nullptr) {
+        if (span == str) {
             char* end;
             int32_t tmp = strtol(span, &end, 10);
 
@@ -249,7 +249,7 @@ class Int64Option : public Option {
     virtual bool parse(const char* str) {
         const char* span = strstr(str, pattern); 
 
-        if (span != nullptr) {
+        if (span == str) {
             char* end;
             int64_t tmp = strtoll(span, &end, 10);
 
@@ -307,7 +307,7 @@ class StringOption : public Option {
     virtual bool parse(const char* str) {
         const char* span = strstr(str, pattern); 
 
-        if (span != nullptr) {
+        if (span == str) {
             value = span;
             return true;
         }
@@ -345,13 +345,13 @@ class BoolOption : public Option {
     virtual bool parse(const char* str) {
         const char* span = strstr(str, yes_pattern); 
 
-        if (span != nullptr) {
+        if (span == str) {
             value = true;
             return true;
         }
 
         span = strstr(str, no_pattern);
-        if (span != nullptr) {
+        if (span == str) {
             value = false;
             return true;
         }
