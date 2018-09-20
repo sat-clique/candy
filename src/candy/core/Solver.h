@@ -334,9 +334,6 @@ protected:
     // Sonification
     SolverSonification sonification;
     ControllerInterface controller;
-    
-    // Operations on clauses:
-    void removeClause(Clause* cr, bool strict_detach = false); // Detach and free a clause.
 
     void cancelUntil(int level); // Backtrack until a certain level.
     lbool search(); // Search for a given number of conflicts.
@@ -535,17 +532,6 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
     return ok;
 }
 
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
-    certificate.removed(cr->begin(), cr->end());
-    propagator.detachClause(cr, strict_detach);
-    // Don't leave pointers to free'd memory!
-    if (trail.locked(cr)) {
-        trail.vardata[var(cr->first())].reason = nullptr;
-    }
-    cr->setDeleted();
-}
-
 /**************************************************************************************************
  *
  *  simplify : [void]  ->  [bool]
@@ -562,8 +548,20 @@ bool Solver<PickBranchLitT>::simplify() {
         return ok = false;
     }
 
+    std::vector<Clause*> satisfied {};
+
     // Remove satisfied clauses:
-    std::for_each(clause_db.clauses.begin(), clause_db.clauses.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); });
+    std::copy_if(clause_db.clauses.begin(), clause_db.clauses.end(), std::back_inserter(satisfied), [this] (Clause* c) { return trail.satisfied(*c); });
+
+    for (Clause* clause : satisfied) {
+        certificate.removed(clause->begin(), clause->end());
+        propagator.detachClause(clause, false);
+        // Don't leave pointers to free'd memory!
+        if (trail.locked(clause)) {
+            trail.vardata[var(clause->first())].reason = nullptr;
+        }
+        clause->setDeleted();
+    }
 
     // Cleanup:
     propagator.cleanupWatchers();

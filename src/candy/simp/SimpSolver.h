@@ -539,7 +539,6 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
                 this->trail.vardata[var(c->first())].reason = nullptr;
             }
             c->setDeleted();
-            //this->removeClause(c);
             elimDetach(c);
             for (Lit lit : *c) subsumption.detach(c, lit, false);
         }
@@ -559,7 +558,6 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
                 this->trail.vardata[var(c->first())].reason = nullptr;
             }
             c->setDeleted();
-            // this->removeClause(c, true);
         }
         return false;
     }
