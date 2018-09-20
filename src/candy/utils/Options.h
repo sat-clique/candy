@@ -88,8 +88,6 @@ class Option {
 
 //==================================================================================================
 // Range classes with specialization for floating types:
-
-
 struct IntRange {
     int begin;
     int end;
@@ -113,8 +111,6 @@ struct DoubleRange {
 
 //==================================================================================================
 // Double options:
-
-
 class DoubleOption : public Option {
     char pattern[100]; 
 
@@ -134,9 +130,7 @@ class DoubleOption : public Option {
     DoubleOption& operator=(double x)   { value = x; return *this; }
 
     virtual bool parse(const char* str) {
-        const char* span = str; 
-
-        span = strstr(span, pattern); 
+        const char* span = strstr(str, pattern); 
 
         if (span != nullptr) {
             char* end;
@@ -173,8 +167,6 @@ class DoubleOption : public Option {
 
 //==================================================================================================
 // Int options:
-
-
 class IntOption : public Option {
     char pattern[100]; 
 
@@ -193,9 +185,7 @@ class IntOption : public Option {
     IntOption& operator= (int32_t x)  { value = x; return *this; }
 
     virtual bool parse(const char* str) {
-        const char* span = str; 
-
-        span = strstr(span, pattern); 
+        const char* span = strstr(str, pattern);
 
         if (span != nullptr) {
             char* end;
@@ -257,9 +247,7 @@ class Int64Option : public Option {
     Int64Option& operator= (int64_t x)  { value = x; return *this; }
 
     virtual bool parse(const char* str) {
-        const char* span = str; 
-
-        span = strstr(span, pattern); 
+        const char* span = strstr(str, pattern); 
 
         if (span != nullptr) {
             char* end;
@@ -302,8 +290,6 @@ class Int64Option : public Option {
 
 //==================================================================================================
 // String option:
-
-
 class StringOption : public Option {
     char pattern[100]; 
     const char* value;
@@ -319,9 +305,7 @@ class StringOption : public Option {
     StringOption& operator=    (const char* x)  { value = x; return *this; }
 
     virtual bool parse(const char* str) {
-        const char* span = str; 
-
-        span = strstr(span, pattern); 
+        const char* span = strstr(str, pattern); 
 
         if (span != nullptr) {
             value = span;
@@ -359,15 +343,14 @@ class BoolOption : public Option {
     BoolOption& operator=(bool b)     { value = b; return *this; }
 
     virtual bool parse(const char* str) {
-        const char* span = str;
-        span = strstr(span, yes_pattern); 
+        const char* span = strstr(str, yes_pattern); 
+
         if (span != nullptr) {
             value = true;
             return true;
         }
 
-        span = str;
-        span = strstr(span, no_pattern); 
+        span = strstr(str, no_pattern);
         if (span != nullptr) {
             value = false;
             return true;
@@ -384,7 +367,7 @@ class BoolOption : public Option {
     }
 };
 
-//=================================================================================================
+
 }
 
 #endif
