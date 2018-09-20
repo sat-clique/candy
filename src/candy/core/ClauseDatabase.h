@@ -43,8 +43,6 @@ public:
     ClauseAllocator allocator;
  
     std::vector<Clause*> clauses; // List of problem clauses.
-    std::vector<Clause*> learnts; // List of learnt clauses.
-    std::vector<Clause*> persist; // List of binary learnt clauses.
 
     std::vector<Clause*> removed; // List of clauses to be removed
 
@@ -52,6 +50,11 @@ public:
     ~ClauseDatabase();
 
     void reduce();
+    void defrag();
+    void freeMarkedClauses();
+
+    size_t nLearnts() const;
+
     void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
 
     inline uint_fast16_t getPersistentLBD() {// access is temporary

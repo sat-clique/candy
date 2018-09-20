@@ -11,6 +11,7 @@
 #include "candy/core/SolverTypes.h"
 #include <candy/core/Statistics.h>
 #include <iostream>
+#include <initializer_list>
 
 namespace Candy {
 
@@ -85,6 +86,14 @@ public:
 
     inline const Lit operator [](int i) const {
         return literals[i];
+    }
+
+    inline const bool operator ==(Clause clause) const {
+        bool equal = (length == clause.length);
+        for (unsigned int i = 0; i < length && equal; i++) {
+            equal &= (literals[i] == clause[i]);
+        }
+        return equal;
     }
 
     inline const_iterator begin() const {
@@ -220,19 +229,11 @@ public:
         return ret;
     }
 
-
-    inline void strengthen(Lit p) {
-        Lit* pos = std::find(begin(), end(), p);
-        if (pos != end()) {
-            Lit tmp = *pos;
-            *pos = literals[length-1];
-            literals[length-1] = tmp;
-            --length;
-        }
-    }
-
-    void setSize(uint16_t size) {//use only if you know what you are doing (only to be used after strengthen calls)
-        length = size;
+    inline std::vector<Lit> strengthen(Lit p) {
+        std::vector<Lit> previous(begin(), end());
+        std::remove(begin(), end(), p);
+        --length;
+        return previous;
     }
 
 private:

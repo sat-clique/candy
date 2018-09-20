@@ -5,66 +5,55 @@
  *      Author: markus
  */
 
+#include "candy/core/Clause.h"
 #include <candy/core/ClauseAllocator.h>
 
+#include <vector>
 #include <iostream>
 #include <algorithm>
 
 namespace Candy {
 
-constexpr unsigned int ClauseAllocator::DEFAULT_POOL_SIZE;
-constexpr unsigned int ClauseAllocator::NUMBER_OF_POOLS;
-constexpr unsigned int ClauseAllocator::POOL_GROWTH_FACTOR;
-constexpr unsigned int ClauseAllocator::XXL_POOL_INDEX;
-constexpr unsigned int ClauseAllocator::XXL_POOL_ONE_SIZE;
+constexpr unsigned int ClauseAllocator::INITIAL_PAGE_SIZE;
 
-ClauseAllocator::ClauseAllocator() : pools(), pages() {
-    for (auto& pool : pools) {
-        pool.reserve(ClauseAllocator::DEFAULT_POOL_SIZE);
-    }
+ClauseAllocator::ClauseAllocator() : pages(), cursor(0), page_size(INITIAL_PAGE_SIZE) {
+    memory = (unsigned char*)std::malloc(INITIAL_PAGE_SIZE);
+    pages.push_back(memory);
 }
 
 ClauseAllocator::~ClauseAllocator() {
-    for (char* page : pages) {
-        free(page);
+    for (unsigned char* page : pages) {
+        std::free((void*)page);
     }
 }
 
-void ClauseAllocator::preallocateStorage(std::array<unsigned int, 501>& nclauses) {
-    for (unsigned int i = 1; i < pools.size(); i++) {
-        pools[i].reserve(std::max(ClauseAllocator::DEFAULT_POOL_SIZE, nclauses[i] * ClauseAllocator::POOL_GROWTH_FACTOR));
-        fillPool(i);
+std::vector<Clause*> ClauseAllocator::defrag(std::vector<Clause*> keep) {
+    std::vector<Clause*> keep2 {};
+    keep2.reserve(keep.size());
+    page_size *= 2*pages.size();
+    std::vector<unsigned char*> oldpages;
+    oldpages.swap(pages);
+    memory = (unsigned char*)std::malloc(page_size);
+    pages.push_back(memory);
+    cursor = 0;
+    unsigned int counter = 0;
+    for (Clause* clause : keep) {
+        // BEWARE OF STACK CORRUPTIONS:
+        // unsigned char* pos = memory + cursor;
+        // unsigned int size = clauseBytes(clause->size());
+        // memcpy((void*)pos, (void*)clause, size);
+        // assert(*clause == *reinterpret_cast<Clause*>(pos));
+        // keep2.push_back(reinterpret_cast<Clause*>(pos));
+        // assert(*clause == *keep2.back());
+        // cursor += size;
+        Clause* clause2 = new (allocate(clause->size())) Clause((const Clause&)*clause);
+        keep2.push_back(clause2);
     }
-}
-
-void ClauseAllocator::announceClauses(const std::vector<std::vector<Lit>*>& problem) {
-    std::array<unsigned int, 501> nclauses;
-    nclauses.fill(0);
-    for (std::vector<Lit>* clause : problem) {
-        nclauses[std::min(clause->size(), (size_t)501)-1]++;
+    for (unsigned char* page : oldpages) {
+        free((void*)page);
     }
-    this->preallocateStorage(nclauses);
-}
-
-void ClauseAllocator::announceClauses(const std::vector<Clause*>& clauses) {
-    std::array<unsigned int, 501> nclauses;
-    nclauses.fill(0);
-    for (Clause* clause : clauses) {
-        nclauses[std::min(clause->size(), (uint16_t)501)-1]++;
-    }
-    this->preallocateStorage(nclauses);
-}
-
-void ClauseAllocator::fillPool(unsigned int index) {
-    const unsigned int nElem = pools[index].capacity() - pools[index].size();
-    const unsigned int nLits = index != XXL_POOL_INDEX ? 1 + index : ClauseAllocator::XXL_POOL_ONE_SIZE;
-    const unsigned int clause_bytes = clauseBytes(nLits);
-    const unsigned int bytes_total = clause_bytes * nElem;
-    char* page = (char*)calloc(nElem, clause_bytes);
-    pages.push_back(page);
-    for (unsigned int pos = 0; pos < bytes_total; pos += clause_bytes) {
-        pools[index].push_back(page + pos);
-    }
+    assert(pages.size() == 1);
+    return keep2;
 }
 
 } /* namespace Candy */

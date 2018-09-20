@@ -166,16 +166,13 @@ protected:
     };
 
     // Solver state:
-    vector<uint32_t> elimclauses;
-    vector<char> touched;
-    vector<int> n_occ;
+    std::vector<uint32_t> elimclauses;
+    std::vector<char> touched;
+    std::vector<int> n_occ;
     Glucose::Heap<ElimLt> elim_heap;
-    vector<char> frozen;
-    vector<char> eliminated;
+    Stamp<uint8_t> frozen;
+    std::vector<char> eliminated;
     uint32_t n_touched;
-
-    // temporary
-    std::vector<Lit> resolvent;
 
     // set these variables to frozen on init
     std::vector<Var> freezes;
@@ -186,14 +183,6 @@ protected:
         if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v)
                                     && this->trail.value(v) == l_Undef)) {
             elim_heap.update(v);
-        }
-    }
-
-    // If a variable is frozen it will not be eliminated
-    inline void setFrozenIntern(Var v, bool b) {
-        frozen[v] = (char) b;
-        if (!b) {
-            updateElimHeap(v);
         }
     }
 
@@ -252,7 +241,6 @@ SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 
@@ -263,7 +251,7 @@ SimpSolver<PickBranchLitT>::~SimpSolver() {
 template<class PickBranchLitT>
 Var SimpSolver<PickBranchLitT>::newVar() {
     Var v = Solver<PickBranchLitT>::newVar();
-    frozen.push_back((char) false);
+    frozen.incSize();
     eliminated.push_back((char) false);
     return v;
 }
@@ -272,7 +260,7 @@ template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     Solver<PickBranchLitT>::addClauses(dimacs);
     if (frozen.size() < this->nVars()) {
-        frozen.resize(this->nVars(), (char) false);
+        frozen.incSize(this->nVars());
         eliminated.resize(this->nVars(), (char) false);
     }
 }
@@ -447,6 +435,7 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
     if (this->propagator.propagate() != nullptr) {
         this->trail.cancelUntil(0);
         bool strengthen_ok = subsumption.strengthenClause(cr, l);
+
         elimDetachAfterSubsumption();
         if (!strengthen_ok) {
             return false;
@@ -462,7 +451,7 @@ template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     // Temporarily freeze variable. Otherwise, it would immediately end up on the queue again:
     bool was_frozen = frozen[v];
-    frozen[v] = true;
+    frozen.set(v);
     
     vector<Clause*> cls(subsumption.occurs.lookup(v));
     
@@ -475,7 +464,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     
     bool ret = subsumption.backwardSubsumptionCheck();
     elimDetachAfterSubsumption();
-    frozen[v] = was_frozen;
+    if (!was_frozen) frozen.unset(v);
     return ret;
 }
 
@@ -529,6 +518,8 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     size_t size = this->clause_db.clauses.size();
 
     // produce clauses in cross product
+    static std::vector<Lit> resolvent;
+    resolvent.clear();
     for (Clause* pc : pos) for (Clause* nc : neg) {
         if (merge(*pc, *nc, v, resolvent)) {
             this->certificate.added(resolvent.begin(), resolvent.end());
@@ -603,16 +594,6 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     subsumption.occurs.init(this->nVars());
 
     // include persistent learnt clauses
-    for (Clause* c : this->clause_db.persist) {
-        subsumption.attach(c);
-        elimAttach(c);
-    }
-    for (Clause* c : this->clause_db.learnts) {
-        if (c->getLBD() <= this->clause_db.getPersistentLBD()) {
-            subsumption.attach(c);
-            elimAttach(c);
-        }
-    }
     for (Clause* c : this->clause_db.clauses) {
         subsumption.attach(c);
         elimAttach(c);
@@ -620,22 +601,16 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
 
     // freeze assumptions and other externally set frozen variables
     for (Lit lit : this->assumptions) {
-        setFrozenIntern(var(lit), true);
+        frozen.set(var(lit));
     }
     for (Var var : freezes) {
-        setFrozenIntern(var, true);
+        frozen.set(var);
     }
 }
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::cleanupEliminate() {
-    for (Lit lit : this->assumptions) {
-        setFrozenIntern(var(lit), false);
-    }
-    for (Var var : freezes) {
-        setFrozenIntern(var, false);
-    }
-
+    frozen.clear();
     n_occ.clear();
     touched.clear();
     elim_heap.clear();
@@ -647,39 +622,11 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     // force full cleanup
     this->branch.notify_restarted(); // former rebuildOrderHeap
 
-    // cleanup strengthened clauses in pool
-    this->clause_db.allocator.announceClauses(subsumption.strengthened_clauses);
-    for (Clause* clause : subsumption.strengthened_clauses) {
-        size_t size = subsumption.strengthened_sizes[clause];
-        if (!clause->isDeleted()) {
-            // create clause in correct pool
-            Clause* clean = new (this->clause_db.allocator.allocate(clause->size())) Clause(*clause);
-            if (clean->isLearnt()) {
-                if (clean->size() == 2) {
-                    this->clause_db.persist.push_back(clean);
-                } else {
-                    clean->setLBD(std::min(clean->getLBD(), clean->size()));
-                    this->clause_db.learnts.push_back(clean);
-                }
-            } else {
-                this->clause_db.clauses.push_back(clean);
-            }
-            this->propagator.attachClause(clean);
-            clause->setDeleted();
-            this->propagator.detachClause(clause);
-            if (this->trail.locked(clause)) {
-                this->trail.vardata[var(clause->first())].reason = clean;
-            }
-        }
-        clause->setSize(size);//restore original size for freeMarkedClauses
-    }
     subsumption.strengthened_clauses.clear();
     subsumption.strengthened_sizes.clear();
 
     this->propagator.cleanupWatchers();
-    this->freeMarkedClauses(this->clause_db.clauses);
-    this->freeMarkedClauses(this->clause_db.learnts);
-    this->freeMarkedClauses(this->clause_db.persist);
+    this->clause_db.freeMarkedClauses();
 }
 
 template<class PickBranchLitT>

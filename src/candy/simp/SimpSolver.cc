@@ -109,7 +109,6 @@ template<> SimpSolver<RSILBranchingHeuristic3>::SimpSolver(Conjectures conjectur
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 
@@ -126,7 +125,6 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures con
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 
@@ -143,7 +141,6 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures 
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 
@@ -160,7 +157,6 @@ template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectur
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 
@@ -177,7 +173,6 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures con
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 
@@ -194,7 +189,6 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic2>::SimpSolver(Conjectures 
     frozen(),
     eliminated(),
     n_touched(0),
-    resolvent(),
     freezes() {
 }
 

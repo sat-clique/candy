@@ -17,46 +17,69 @@ ClauseDatabase::ClauseDatabase(Trail& trail_) :
     persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
     lbLBDFrozenClause(ClauseDatabaseOptions::opt_lb_lbd_frozen_clause),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
-    allocator(), clauses(), learnts(), persist() {
+    allocator(), 
+    clauses(), 
+    removed() {
 
 }
 
 ClauseDatabase::~ClauseDatabase() {
-    for (Clause* c : clauses) {
-        allocator.deallocate(c);
-    }
-    for (Clause* c : learnts) {
-        allocator.deallocate(c);
-    }
-    for (Clause* c : persist) {
-        allocator.deallocate(c);
-    }
 }
 
 void ClauseDatabase::reduce() {
     Statistics::getInstance().solverReduceDBInc();
+
+    std::vector<Clause*> learnts;
+    copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [](Clause* clause) { return clause->isLearnt() && clause->size() > 2; });
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
-    
-    size_t index = (learnts.size() + persist.size()) / 2;
-    if (index >= learnts.size() || learnts[index]->getLBD() <= 3) {
+
+    learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());    
+    if (learnts.size() == 0 || learnts.back()->getLBD() <= persistentLBD) {
         return; // We have a lot of "good" clauses, it is difficult to compare them, keep more
     }
     
     // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
     // Keep clauses which seem to be useful (i.e. their lbd was reduce during this sequence => frozen)
     removed.clear();
-    size_t limit = std::min(learnts.size(), index);
-    for (size_t i = 0; i < limit && learnts[i]->getLBD() > persistentLBD; i++) {
-        Clause* c = learnts[i];
+    for (Clause* c : learnts) {
         if (c->isFrozen()) {
             c->setFrozen(false); // reset flag
         }
         else if (trail.reason(var(c->first())) != c) {
             removed.push_back(c);
+            c->setDeleted();
         }
     }
 
     Statistics::getInstance().solverRemovedClausesInc(removed.size());
+}
+
+/**
+ * Make sure all references are updated after all clauses reside in a new adress space
+ */
+void ClauseDatabase::defrag() {
+    vector<Clause*> reallocated = allocator.defrag(clauses);
+    clauses.swap(reallocated);
+}
+
+/**
+ * Make sure all references are cleared before space is handed back to ClauseAllocator
+ */
+void ClauseDatabase::freeMarkedClauses() {
+    auto new_end = std::remove_if(clauses.begin(), clauses.end(),
+                                  [this](Clause* c) {
+                                      if (c->isDeleted()) {
+                                          this->allocator.deallocate(c);
+                                          return true;
+                                      } else {
+                                          return false;
+                                      }
+                                  });
+    clauses.erase(new_end, clauses.end());
+}
+
+size_t ClauseDatabase::nLearnts() const {
+    return count_if(clauses.begin(), clauses.end(), [](Clause* clause) { return clause->isLearnt(); });
 }
 
 void ClauseDatabase::updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
@@ -78,10 +101,8 @@ void ClauseDatabase::updateClauseActivitiesAndLBD(vector<Clause*>& involved_clau
 }
 
 void ClauseDatabase::claRescaleActivity() {
-    for (auto container : { clauses, learnts, persist }) {
-        for (Clause* clause : container) {
-            clause->activity() *= 1e-20f;
-        }
+    for (Clause* clause : clauses) {
+        clause->activity() *= 1e-20f;
     }
     cla_inc *= 1e-20;
 }
