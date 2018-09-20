@@ -97,6 +97,12 @@ public:
         }
     }
 
+    void detachAll() {
+        for (auto& watchers : watches) {
+            watchers.clear();
+        }
+    }
+
     void cleanupWatchers() {
         for (auto& watchers : watches) {
             watchers.cleanAll();

@@ -282,8 +282,7 @@ public:
 		for (auto& v : occs) {
 			v.clear();
 		}
-		occs.clear();
-		dirty.clear();
+		std::fill(dirty.begin(), dirty.end(), false);
 		dirties.clear();
 	}
 };

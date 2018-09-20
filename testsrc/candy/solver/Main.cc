@@ -69,7 +69,7 @@ TEST (CandyAddClauseTestPatterns, propagateEarly2) {
   formula.readClause(mkLit(1), mkLit(2));
   Solver<> solver;
   solver.addClauses(formula);
-  ASSERT_EQ(solver.nClauses(), 0ul);;
+  ASSERT_EQ(solver.nClauses(), 0ul);
 }
 
 TEST (CandyAddClauseTestPatterns, propagateEarly3) {

@@ -212,7 +212,7 @@ public:
         return clause_db.clauses.size();
     }
     size_t nLearnts() const override {
-        return clause_db.learnts.size() + clause_db.persist.size();
+        return clause_db.nLearnts();
     }
     size_t nVars() const override {
         return trail.vardata.size();
@@ -337,7 +337,6 @@ protected:
     
     // Operations on clauses:
     void removeClause(Clause* cr, bool strict_detach = false); // Detach and free a clause.
-    void freeMarkedClauses(vector<Clause*>& list);
 
     void cancelUntil(int level); // Backtrack until a certain level.
     lbool search(); // Search for a given number of conflicts.
@@ -471,7 +470,7 @@ Var Solver<PickBranchLitT>::newVar() {
 
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
-    const std::vector<std::vector<Lit>*>& problem = dimacs.getProblem();
+    const For& problem = dimacs.getProblem();
     size_t curVars = this->nVars();
     size_t maxVars = (size_t)dimacs.nVars();
     if (maxVars > curVars) {
@@ -483,7 +482,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
         	branch.initFrom(dimacs);
         }
     }
-    clause_db.allocator.announceClauses(problem);
+
     for (vector<Lit>* clause : problem) {
         addClause(*clause);
         if (!ok) return;
@@ -547,23 +546,6 @@ void Solver<PickBranchLitT>::removeClause(Clause* cr, bool strict_detach) {
     cr->setDeleted();
 }
 
-/**
- * Make sure all references are cleared before space is handed back to ClauseAllocator
- */
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::freeMarkedClauses(vector<Clause*>& list) {
-    auto new_end = std::remove_if(list.begin(), list.end(),
-                                  [this](Clause* c) {
-                                      if (c->isDeleted()) {
-                                          this->clause_db.allocator.deallocate(c);
-                                          return true;
-                                      } else {
-                                          return false;
-                                      }
-                                  });
-    list.erase(new_end, list.end());
-}
-
 /**************************************************************************************************
  *
  *  simplify : [void]  ->  [bool]
@@ -581,16 +563,12 @@ bool Solver<PickBranchLitT>::simplify() {
     }
 
     // Remove satisfied clauses:
-    std::for_each(clause_db.learnts.begin(), clause_db.learnts.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); } );
-    std::for_each(clause_db.persist.begin(), clause_db.persist.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); } );
     std::for_each(clause_db.clauses.begin(), clause_db.clauses.end(), [this] (Clause* c) { if (trail.satisfied(*c)) removeClause(c); });
 
     // Cleanup:
     propagator.cleanupWatchers();
 
-    freeMarkedClauses(clause_db.learnts);
-    freeMarkedClauses(clause_db.persist);
-    freeMarkedClauses(clause_db.clauses);
+    clause_db.freeMarkedClauses();
 
     return true;
 }
@@ -598,30 +576,25 @@ bool Solver<PickBranchLitT>::simplify() {
 template <class PickBranchLitT>
 bool Solver<PickBranchLitT>::strengthen() {
     // Remove false literals:
-    std::unordered_map<Clause*, size_t> strengthened_sizes;
     std::vector<Clause*> strengthened_clauses;
-    std::vector<Lit> backup;
-    for (auto& list : { clause_db.clauses, clause_db.learnts, clause_db.persist }) {
-        for (Clause* clause : list) if (!clause->isDeleted()) {
-            auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
-            if (pos != clause->end()) {
-                propagator.detachClause(clause);
-                backup.insert(backup.end(), clause->begin(), clause->end());
-                auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
-                certificate.added(clause->begin(), end);
-                certificate.removed(backup.begin(), backup.end());
-                backup.clear();
-                strengthened_clauses.push_back(clause);
-                strengthened_sizes[clause] = clause->size();
-                clause->setSize(std::distance(clause->begin(), end));
-            }
+    for (Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
+        auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
+        while (pos != clause->end()) {
+            Lit lit = *pos;
+            propagator.detachClause(clause);
+            std::vector<Lit> prev = clause->strengthen(lit);
+            // auto end = remove_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
+            certificate.added(clause->begin(), clause->end());
+            certificate.removed(prev.begin(), prev.end());
+            strengthened_clauses.push_back(clause);
+            pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
         }
     }
 
-    clause_db.allocator.announceClauses(strengthened_clauses);    
     for (Clause* clause : strengthened_clauses) {
         if (clause->size() == 0) {
             ok = false;
+            clause->setDeleted();
         }
         else if (clause->size() == 1) {
             Lit p = clause->first();
@@ -635,33 +608,17 @@ bool Solver<PickBranchLitT>::strengthen() {
             else {
                 trail.uncheckedEnqueue(p);
             }
+            clause->setDeleted();
         }
         else {
-            Clause* clean = new (clause_db.allocator.allocate(clause->size())) Clause(*clause);
-            if (trail.locked(clause)) {
-                trail.vardata[var(clause->first())].reason = clean;
-            }
-            propagator.attachClause(clean);
-            if (clean->isLearnt()) {
-                if (clean->size() == 2) {
-                    clause_db.persist.push_back(clean);
-                } else {
-                    clause_db.learnts.push_back(clean);
-                }
-            } else {
-                clause_db.clauses.push_back(clean);
-            }
+            propagator.attachClause(clause);
         }
-        clause->setSize(strengthened_sizes[clause]); // restore original size for freeMarkedClauses
-        clause->setDeleted();
     }
 
     // Cleanup:
     propagator.cleanupWatchers();
 
-    freeMarkedClauses(clause_db.learnts);
-    freeMarkedClauses(clause_db.persist);
-    freeMarkedClauses(clause_db.clauses);
+    clause_db.freeMarkedClauses();
 
     return ok &= (propagator.propagate() == nullptr);
 }
@@ -770,11 +727,9 @@ lbool Solver<PickBranchLitT>::search() {
                 uint32_t clauseLength = static_cast<uint32_t>(conflictInfo.learnt_clause.size());
                 Clause* cr = new (clause_db.allocator.allocate(clauseLength)) Clause(conflictInfo.learnt_clause, conflictInfo.lbd);
 
-                if (clauseLength == 2) {
-                    clause_db.persist.push_back(cr);
-                }
-                else {
-                    clause_db.learnts.push_back(cr);
+                clause_db.clauses.push_back(cr);
+
+                if (clauseLength > 2) {
                     // Find correct backtrack level:
                     int max_i = 1;
                     // Find the first literal assigned at the next-highest level:
@@ -822,6 +777,12 @@ lbool Solver<PickBranchLitT>::search() {
                         }
                         Statistics::getInstance().runtimeStop("Simplify");
                     }
+
+                    propagator.detachAll();
+                    clause_db.defrag();
+                    for (Clause* clause : clause_db.clauses) {
+                        propagator.attachClause(clause);
+                    }
                     
                     if (sort_watches) {
                         Statistics::getInstance().runtimeStart("Sort Watches");
@@ -834,22 +795,18 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             // Perform clause database reduction !
-            if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
-                if (clause_db.learnts.size() > 0) {
-                    curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
-                    clause_db.reduce();
+            if (nConflicts() >= (curRestart * nbclausesbeforereduce) && nLearnts() > 0) {                
+                curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
 
-                    for (Clause* clause : clause_db.removed) {
-                        certificate.removed(clause->begin(), clause->end());
-                        propagator.detachClause(clause, false);
-                        clause->setDeleted();
-                    }
-                    propagator.cleanupWatchers();
-                    freeMarkedClauses(clause_db.learnts);
-
-                    reduced = true;
-                    nbclausesbeforereduce += incReduceDB;
+                clause_db.reduce();
+                for (Clause* clause : clause_db.removed) {
+                    certificate.removed(clause->begin(), clause->end());
+                    propagator.detachClause(clause);
                 }
+                clause_db.freeMarkedClauses();
+
+                reduced = true;
+                nbclausesbeforereduce += incReduceDB;
             }
             
             Lit next = lit_Undef;
