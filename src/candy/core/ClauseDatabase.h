@@ -5,6 +5,9 @@
 #include "candy/core/Trail.h"
 #include "candy/utils/Options.h"
 
+#ifndef CANDY_CLAUSE_DATABASE
+#define CANDY_CLAUSE_DATABASE
+
 namespace Candy {
 
 namespace ClauseDatabaseOptions {
@@ -59,6 +62,19 @@ public:
         return clause;
     }
 
+    void removeClause(Clause* clause, bool strict = false) {
+        removed.push_back(clause);
+        clause->setDeleted();
+        if (strict) {
+            clauses.erase(std::remove(clauses.begin(), clauses.end(), clause), clauses.end());    
+        }
+    }
+
+    void cleanup() {
+        auto new_end = std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) { return c->isDeleted(); });
+        clauses.erase(new_end, clauses.end());
+    }
+
     size_t nLearnts() const;
 
     void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
@@ -82,3 +98,5 @@ public:
 };
 
 }
+
+#endif

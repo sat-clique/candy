@@ -186,6 +186,25 @@ protected:
         }
     }
 
+    inline bool subsumptionCheck() {
+        size_t n_removed = this->clause_db.removed.size();
+
+        bool ret = subsumption.backwardSubsumptionCheck();
+
+        for (auto it = this->clause_db.removed.begin() + n_removed; it != this->clause_db.removed.end(); it++) {
+            elimDetach(*it);
+        }
+        for (auto it : subsumption.strengthened_clauses) {
+            Clause* clause = it.first;
+            Cl lits = it.second;
+            for (Lit lit : lits) elimDetach(clause, lit);
+        }
+
+        subsumption.strengthened_clauses.clear();
+
+        return ret;
+    }
+
     void setupEliminate(bool full);
     void cleanupEliminate();
 
@@ -197,21 +216,6 @@ protected:
             n_occ[toInt(lit)]--;
             updateElimHeap(var(lit));
         }
-    }
-
-    inline void elimDetachAfterSubsumption() {
-        for (Clause* clause : subsumption.removed) {
-            if (clause->isDeleted()) {
-                elimDetach(clause);
-            }
-            else {
-                size_t old_size = subsumption.strengthened_sizes[clause];
-                for (auto it = clause->end(); it != clause->begin() + old_size; it++) {
-                    elimDetach(clause, *it);
-                }
-            }
-        }
-        subsumption.removed.clear();
     }
 
     bool asymm(Var v, Clause* cr);
@@ -230,7 +234,7 @@ protected:
 
 template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
-    subsumption(this->trail, this->propagator, this->certificate), 
+    subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
     clause_lim(SimpSolverOptions::opt_clause_lim),
     grow(SimpSolverOptions::opt_grow),
     use_asymm(SimpSolverOptions::opt_use_asymm),
@@ -436,7 +440,10 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
         this->trail.cancelUntil(0);
         bool strengthen_ok = subsumption.strengthenClause(cr, l);
 
-        elimDetachAfterSubsumption();
+        if (cr->isDeleted()) elimDetach(cr);
+        else elimDetach(cr, l);
+        subsumption.strengthened_clauses.clear();
+
         if (!strengthen_ok) {
             return false;
         }
@@ -462,9 +469,10 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
         if (!asymm(v, c))
             return false;
     
-    bool ret = subsumption.backwardSubsumptionCheck();
-    elimDetachAfterSubsumption();
+    bool ret = subsumptionCheck();
+
     if (!was_frozen) frozen.unset(v);
+
     return ret;
 }
 
@@ -538,7 +546,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
             if (this->trail.locked(c)) {
                 this->trail.vardata[var(c->first())].reason = nullptr;
             }
-            c->setDeleted();
+            this->clause_db.removeClause(c);
             elimDetach(c);
             for (Lit lit : *c) subsumption.detach(c, lit, false);
         }
@@ -546,9 +554,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
 
         this->propagator.cleanupWatchers();
 
-        bool ret = subsumption.backwardSubsumptionCheck();
-        elimDetachAfterSubsumption();
-        return ret;
+        return subsumptionCheck();
     }
     else {
         for (Clause* c : cls) {
@@ -557,7 +563,7 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
             if (this->trail.locked(c)) {
                 this->trail.vardata[var(c->first())].reason = nullptr;
             }
-            c->setDeleted();
+            this->clause_db.removeClause(c);
         }
         return false;
     }
@@ -619,12 +625,8 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
 
     // force full cleanup
     this->branch.notify_restarted(); // former rebuildOrderHeap
-
-    subsumption.strengthened_clauses.clear();
-    subsumption.strengthened_sizes.clear();
-
     this->propagator.cleanupWatchers();
-    this->clause_db.freeMarkedClauses();
+    this->clause_db.cleanup();
 }
 
 template<class PickBranchLitT>
@@ -635,8 +637,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     // only perform subsumption checks (inprocessing)
     if (!use_asymm && !use_elim) {
         if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
-            this->ok = subsumption.backwardSubsumptionCheck();
-            elimDetachAfterSubsumption();
+            this->ok = subsumptionCheck();
         }
     }
     // either asymm or elim are true (preprocessing)
@@ -645,8 +646,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
             gatherTouchedClauses();
             
             if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
-                this->ok = subsumption.backwardSubsumptionCheck();
-                elimDetachAfterSubsumption();
+                this->ok = subsumptionCheck();
             }
 
             while (!elim_heap.empty() && !this->isInConflictingState() && !this->asynch_interrupt) {

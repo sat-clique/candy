@@ -539,13 +539,12 @@ bool Solver<PickBranchLitT>::simplify() {
         if (trail.locked(clause)) {
             trail.vardata[var(clause->first())].reason = nullptr;
         }
-        clause->setDeleted();
+        clause_db.removeClause(clause); 
     }
 
     // Cleanup:
     propagator.cleanupWatchers();
-
-    clause_db.freeMarkedClauses();
+    clause_db.cleanup();
 
     return true;
 }
@@ -571,11 +570,11 @@ bool Solver<PickBranchLitT>::strengthen() {
     for (Clause* clause : strengthened_clauses) {
         if (clause->size() == 0) {
             ok = false;
-            clause->setDeleted();
+            clause_db.removeClause(clause);
         }
         else if (clause->size() == 1) {
             ok = trail.newFact(clause->first());
-            clause->setDeleted();
+            clause_db.removeClause(clause);
         }
         else {
             propagator.attachClause(clause);
@@ -584,8 +583,7 @@ bool Solver<PickBranchLitT>::strengthen() {
 
     // Cleanup:
     propagator.cleanupWatchers();
-
-    clause_db.freeMarkedClauses();
+    clause_db.cleanup(); 
 
     return ok &= (propagator.propagate() == nullptr);
 }
@@ -758,7 +756,7 @@ lbool Solver<PickBranchLitT>::search() {
                     certificate.removed(clause->begin(), clause->end());
                     propagator.detachClause(clause);
                 }
-                clause_db.freeMarkedClauses();
+                clause_db.cleanup();
 
                 reduced = true;
                 nbclausesbeforereduce += incReduceDB;
