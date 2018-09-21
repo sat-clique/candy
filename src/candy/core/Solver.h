@@ -693,13 +693,6 @@ lbool Solver<PickBranchLitT>::search() {
 
             sonification.learntSize(static_cast<int>(conflictInfo.learnt_clause.size()));
 
-            if (conflictInfo.learnt_clause.size() == 1) {
-                Statistics::getInstance().solverUnariesInc();
-            }
-            if (conflictInfo.learnt_clause.size() == 2) {
-                Statistics::getInstance().solverBinariesInc();
-            }
-
             if (!isSelector(conflictInfo.learnt_clause.back())) {
                 certificate.added(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
             }
@@ -707,10 +700,6 @@ lbool Solver<PickBranchLitT>::search() {
             // TODO: exclude selectors from lbd computation
             clause_db.updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, conflictInfo.lbd);
             branch.notify_conflict();
-
-            if (conflictInfo.lbd <= 2) {
-                Statistics::getInstance().solverLBD2Inc();
-            }
 
             lbdQueue.push(conflictInfo.lbd);
             sumLBD += conflictInfo.lbd;
@@ -722,28 +711,27 @@ lbool Solver<PickBranchLitT>::search() {
                 new_unary = true;
             }
             else {
-                uint32_t clauseLength = static_cast<uint32_t>(conflictInfo.learnt_clause.size());
-                Clause* cr = new (clause_db.allocator.allocate(clauseLength)) Clause(conflictInfo.learnt_clause, conflictInfo.lbd);
+                Clause* clause = clause_db.newClause(conflictInfo.learnt_clause);
+                clause->setLBD(conflictInfo.lbd);
+                clause->setLearnt(true);
 
-                clause_db.clauses.push_back(cr);
-
-                if (clauseLength > 2) {
+                if (clause->size() > 2) {
                     // Find correct backtrack level:
                     int max_i = 1;
                     // Find the first literal assigned at the next-highest level:
-                    for (uint_fast16_t i = 2; i < cr->size(); i++)
-                        if (trail.level(var((*cr)[i])) > trail.level(var((*cr)[max_i])))
+                    for (uint_fast16_t i = 2; i < clause->size(); i++)
+                        if (trail.level(var((*clause)[i])) > trail.level(var((*clause)[max_i])))
                             max_i = i;
                     // Swap-in this literal at index 1:
-                    cr->swap(max_i, 1);
+                    clause->swap(max_i, 1);
                 }
 
-                trail.cancelUntil(trail.level(var(cr->second())));
+                trail.cancelUntil(trail.level(var(clause->second())));
                 branch.notify_backtracked();
 
-                propagator.attachClause(cr);
-                trail.uncheckedEnqueue(cr->first(), cr);
-                clause_db.claBumpActivity(*cr);
+                propagator.attachClause(clause);
+                trail.uncheckedEnqueue(clause->first(), clause);
+                clause_db.claBumpActivity(*clause);
             }
             clause_db.claDecayActivity();
         }
