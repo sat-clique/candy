@@ -14,7 +14,11 @@ addons:
   sonarcloud:
     organization: "udopia-github"
     token:
-      secure: GrbWKHIKVnrVdRrKFhyj2lG5qLjbSODPAyrHaH4CFxSGrLxcQcL/X+dl1njGIkLviznkiOC0bm8ZaFwsRelhOiy+FqtcWbKYAyYVgEXU2rKRWm14U2ggr5TVW9EbtAwGym3dkvbgnYoYSC0JPkCc4UPOPP+V5ye6XoFIYimLhLh6zWrTcMK7Hu11hnFHF2RxU9TH9JflhKQpNQdTNk8azQJhrgm+xWLHgkPzZT1p5k+Px2wk3lrxXiUxxSYigFh+5YJypeHxgR/iNyq7TVKUEpzG38OfH768jXF8Dp/gfht+I8wmYUxeUFcrFhZG7LK+J2c/KMlYnHqwUcRFOKqLTNHyLuoRWehbFpC2occYJtbxEWY7nOv7dOO0+AsLPh8yUk5Xb7KgtpX+9kYxTr6PDSIv4e6dzmjnWvBeRZYtbmXXfodMnfdIHGSjsBWhEVSCpe+hyQqRkSu30ustXb3bC/STvLFdHD065mOqJtTkV2jKBM6aUZoZ2PuCXxCmtj/WYOH4soFNNt1fwpd5BowciZk/Of2gUi6iq83vDvTiFOszM5ARDopawTUxdW67nI0Gfi5lSyprUcuSsinqm0FrU0wtHnyrpw+JnB9H340Aspd30ZYHOT6CWHrd9+mAnljFdC1GI/AXqoAIVeT6LZCBfuIKmGbIU/mvW8ok6FIblwc=
+      secure: $SONAR_TOKEN
+  
+cache:
+  directories:
+  - '$HOME/.sonar/cache'
 
 env:
   matrix:
@@ -56,13 +60,10 @@ script:
 - cmake --build . --config Release -- -j2
 - ctest -V
 - cd $TRAVIS_BUILD_DIR
-- sonar-scanner -X
+- sonar-scanner
 after_success:
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then cd $TRAVIS_BUILD_DIR/../build ; lcov --directory
   . --capture --output-file coverage.info ; lcov --remove coverage.info 'lib/*' 'testsrc/*'
   '/usr/*' --output-file coverage.info ; lcov --list coverage.info ; cd $TRAVIS_BUILD_DIR
   ; coveralls-lcov ../build/coverage.info ; fi
-  
-cache:
-  directories:
-  - '$HOME/.sonar/cache'
+
