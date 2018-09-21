@@ -57,7 +57,7 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
 void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
 #if defined SOLVER_STATS
-    printf("c |%5llu %8llu %4llu | %18d |%5llu %10d %10llu |\n",
+    printf("c |%5llu %8llu %4llu | %11d |%5llu %10d %10llu |\n",
             starts, nbstopsrestarts, (conflicts / starts), clauses,
             nbReduceDB, learnts, nbRemovedClauses);
 #endif
@@ -72,7 +72,7 @@ void Statistics::printSimplificationStats() {
 void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     std::chrono::milliseconds cpu_time_millis = cpuTime();
     double cpu_time = static_cast<double>(cpu_time_millis.count())/1000.0f;
-    printf("c ==============================================================================================\n");
+    printf("c =================================================================\n");
 #ifdef SOLVER_STATS
     printf("c restarts              : %llu (%llu conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
     printf("c blocked restarts      : %llu (multiple: %llu)\n", nbstopsrestarts, nbstopsrestartssame);

@@ -57,7 +57,7 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     
     subsumptionQueueProtectedPush(clause);
 
-    strengthened_clauses[clause].push_back(l);
+    reduced_literals.push_back(l);
 
     propagator.detachClause(clause, true);
     clause->strengthen(l);
@@ -68,6 +68,7 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     
     if (clause->size() == 1) {
         detach(clause, clause->first(), true);
+        reduced_literals.push_back(clause->first());
         clause_db.removeClause(clause);
         return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
     }
@@ -122,6 +123,7 @@ bool Subsumption::backwardSubsumptionCheck() {
                         trail.vardata[var(csi->first())].reason = nullptr;
                     }
                     clause_db.removeClause(csi);
+                    reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
                     for (Lit lit : *csi) detach(csi, lit, false);
                 }
                 else if (l != lit_Error) {
