@@ -810,11 +810,11 @@ lbool Solver<PickBranchLitT>::solve() {
     conflict.clear();
     
     if (!incremental && verbosity >= 1) {
-        printf("c =========================[ Search Statistics (every %6d conflicts) ]=======================\n", verbEveryConflicts);
-        printf("c |                                                                                            |\n");
-        printf("c |      RESTARTS      |       ORIGINAL      |                     LEARNT                      |\n");
-        printf("c |  NB  Blocked  Avg  |  Vars    Clauses    |  Red  Learnts    Binary  Unary  LBD2  Removed   |\n");
-        printf("c ==============================================================================================\n");
+        printf("c =========[ Search Statistics (every %6d conflicts) ]==========\n", verbEveryConflicts);
+        printf("c |                                                               |\n");
+        printf("c |      RESTARTS      |             |       LEARNT               |\n");
+        printf("c |  NB  Blocked  Avg  |   Clauses   |  Red  Learnts    Removed   |\n");
+        printf("c =================================================================\n");
     }
 
     lbool status = l_Undef;

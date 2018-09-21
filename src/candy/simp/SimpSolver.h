@@ -187,20 +187,12 @@ protected:
     }
 
     inline bool subsumptionCheck() {
-        size_t n_removed = this->clause_db.removed.size();
-
         bool ret = subsumption.backwardSubsumptionCheck();
 
-        for (auto it = this->clause_db.removed.begin() + n_removed; it != this->clause_db.removed.end(); it++) {
-            elimDetach(*it);
+        for (Lit lit : subsumption.reduced_literals) {
+            elimDetach(lit);
         }
-        for (auto it : subsumption.strengthened_clauses) {
-            Clause* clause = it.first;
-            Cl lits = it.second;
-            for (Lit lit : lits) elimDetach(clause, lit);
-        }
-
-        subsumption.strengthened_clauses.clear();
+        subsumption.reduced_literals.clear();
 
         return ret;
     }
@@ -210,13 +202,7 @@ protected:
 
     inline void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
     inline void elimDetach(Clause* cr); // Detach a clause from occurrence lists for eliminate
-
-    inline void elimDetach(Clause* cr, Lit lit) {
-        if (n_occ.size() > 0) { // elim initialized
-            n_occ[toInt(lit)]--;
-            updateElimHeap(var(lit));
-        }
-    }
+    inline void elimDetach(Lit lit);
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
@@ -314,7 +300,15 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr) {
     if (n_occ.size() > 0) for (Lit lit : *cr) {
-        elimDetach(cr, lit);
+        elimDetach(lit);
+    }
+}
+
+template<class PickBranchLitT>
+void SimpSolver<PickBranchLitT>::elimDetach(Lit lit) {
+    if (n_occ.size() > 0) { // elim initialized
+        n_occ[toInt(lit)]--;
+        updateElimHeap(var(lit));
     }
 }
 
@@ -440,9 +434,10 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
         this->trail.cancelUntil(0);
         bool strengthen_ok = subsumption.strengthenClause(cr, l);
 
-        if (cr->isDeleted()) elimDetach(cr);
-        else elimDetach(cr, l);
-        subsumption.strengthened_clauses.clear();
+        for (Lit lit : subsumption.reduced_literals) {
+            elimDetach(lit);
+        }
+        subsumption.reduced_literals.clear();
 
         if (!strengthen_ok) {
             return false;

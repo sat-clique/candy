@@ -186,10 +186,10 @@ static void printModel(FILE* f, CandySolverInterface* solver) {
  * Prints statistics about the problem to be solved.
  */
 static void printProblemStatistics(CNFProblem& problem) {
-    printf("c ====================================[ Problem Statistics ]====================================\n");
-    printf("c |                                                                                            |\n");
-    printf("c |  Number of variables:  %12zu                                                        |\n", problem.nVars());
-    printf("c |  Number of clauses:    %12zu                                                        |\n", problem.nClauses());
+    printf("c =====================[ Problem Statistics ]======================\n");
+    printf("c |                                                               |\n");
+    printf("c |  Number of variables:  %12zu                           |\n", problem.nVars());
+    printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
 
 /**
@@ -224,9 +224,8 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
 
     if (solver->isInConflictingState()) {
         if (solver->getVerbosity() > 0) {
-            printf("c ==============================================================================================\n");
+            printf("c =================================================================\n");
             printf("c Solved by propagation\n");
-            printf("c |                                                                                            |\n");
         }
         result = l_False;
     }
@@ -243,9 +242,8 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
         if (solver->getVerbosity() > 0) {
             Statistics::getInstance().printRuntime("Preprocessing");
             if (result == l_False) {
-                printf("c ==============================================================================================\n");
+                printf("c =================================================================\n");
                 printf("c Solved by simplification\n");
-                printf("c |                                                                                            |\n");
             }
         }
     }
@@ -388,7 +386,7 @@ int main(int argc, char** argv) {
 
 	} catch (std::bad_alloc& ba) {
 		//printf("c Bad_Alloc Caught: %s\n", ba.what());
-		printf("c ==============================================================================================\n");
+		printf("c =================================================================\n");
 		printf("s INDETERMINATE\n");
 		return 0;
 	}

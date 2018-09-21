@@ -33,7 +33,7 @@ public:
         trail(trail_),
         propagator(propagator_),
         certificate(certificate_),
-        strengthened_clauses(),
+        reduced_literals(),
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         occurs(ClauseDeleted()),
         subsumption_queue(),
@@ -47,7 +47,7 @@ public:
     Propagate& propagator;
     Certificate& certificate;
 
-    std::unordered_map<Clause*, Cl> strengthened_clauses;
+    std::vector<Lit> reduced_literals;
 
     uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
