@@ -28,7 +28,7 @@ class Statistics {
 #ifdef SOLVER_STATS
     uint64_t decisions;
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
-    uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses, nbDL2, nbBin, nbUn;
+    uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses;
     uint64_t subsumed, deleted;
 #endif// SOLVER_STATS
 
@@ -73,9 +73,6 @@ public:
     inline void solverRemovedClausesInc(unsigned int amount) { nbRemovedClauses += amount; }
     inline void solverReducedClausesInc(unsigned int amount) { nbReducedClauses += amount; }
     inline void solverReduceDBInc() { ++nbReduceDB; }
-    inline void solverUnariesInc() { ++nbUn; }
-    inline void solverBinariesInc() { ++nbBin; }
-    inline void solverLBD2Inc() { ++nbDL2; }
 
     inline void solverSubsumedInc() { ++subsumed; }
     inline void solverDeletedInc() { ++deleted; }
@@ -91,9 +88,6 @@ public:
     inline void solverRemovedClausesInc(unsigned int amount) { (void)(amount); }
     inline void solverReducedClausesInc(unsigned int amount) { (void)(amount); }
     inline void solverReduceDBInc() { }
-    inline void solverUnariesInc() { }
-    inline void solverBinariesInc() { }
-    inline void solverLBD2Inc() { }
 
     inline void solverSubsumedInc() { }
     inline void solverDeletedInc() { }

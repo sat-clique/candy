@@ -53,6 +53,12 @@ public:
     void defrag();
     void freeMarkedClauses();
 
+    Clause* newClause(Cl& lits) {
+        Clause* clause = new (allocator.allocate(lits.size())) Clause(lits);
+        clauses.push_back(clause);
+        return clause;
+    }
+
     size_t nLearnts() const;
 
     void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);

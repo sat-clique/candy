@@ -14,7 +14,7 @@ Statistics::Statistics() :
 #ifdef SOLVER_STATS
     decisions(0), 
     starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
-    nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0), nbDL2(0), nbBin(0), nbUn(0),
+    nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0),
     subsumed(0), deleted(0),
 #endif
 #ifdef RUNTIME_STATS
@@ -41,9 +41,6 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
     printf("c nb ReduceDB           : %llu\n", nbReduceDB);
     printf("c nb removed Clauses    : %llu\n", nbRemovedClauses);
-    printf("c nb learnts DL2        : %llu\n", nbDL2);
-    printf("c nb learnts size 2     : %llu\n", nbBin);
-    printf("c nb learnts size 1     : %llu\n", nbUn);
 
     printf("c conflicts             : %llu\n", conflicts);
     printf("c decisions             : %llu\n", decisions);
@@ -60,9 +57,9 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
 void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
 #if defined SOLVER_STATS
-    printf("c |%5llu %8llu %4llu | %18d |%5llu %10d %7llu %6llu %5llu %10llu |\n",
+    printf("c |%5llu %8llu %4llu | %18d |%5llu %10d %10llu |\n",
             starts, nbstopsrestarts, (conflicts / starts), clauses,
-            nbReduceDB, learnts, nbBin, nbUn, nbDL2, nbRemovedClauses);
+            nbReduceDB, learnts, nbRemovedClauses);
 #endif
 }
 
@@ -84,9 +81,6 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     printf("c nb ReduceDB           : %llu\n", nbReduceDB);
     printf("c nb removed Clauses    : %llu\n", nbRemovedClauses);
     printf("c nb reduced Clauses    : %llu\n", nbReducedClauses);
-    printf("c nb learnts DL2        : %llu\n", nbDL2);
-    printf("c nb learnts size 2     : %llu\n", nbBin);
-    printf("c nb learnts size 1     : %llu\n", nbUn);
 
     printf("c conflicts             : %-12llu   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
     printf("c decisions             : %-12llu   (%.0f /sec)\n", decisions, decisions / cpu_time);
