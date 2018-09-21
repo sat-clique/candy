@@ -68,12 +68,9 @@ namespace Candy {
         if (pos >= size - offset) {
             pos = 0;
             if (offset > 0) {
-                // fprintf(stderr, "Before Copy: %.*s\n", size, buf.get());
                 std::copy(&buf[size - offset], &buf[size], buf.get());
-                // fprintf(stderr, "After Copy: %.*s\n", size, buf.get());
             }
             size = offset + gzread(in, buf.get()+offset, buffer_size-offset);
-            // fprintf(stderr, "After Read: %.*s\n", size, buf.get());
             offset = 0;
             if (size < buffer_size) {
                 return;
@@ -82,7 +79,6 @@ namespace Candy {
             while (buf[size - offset - 1] != '\n' && offset < size) {
                 offset++;
             }
-            //fprintf(stderr, "After all: pos %i, offset %i, size %i\n", pos, offset, size);
         }
     }
 
