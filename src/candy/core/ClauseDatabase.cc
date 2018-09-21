@@ -47,10 +47,11 @@ void ClauseDatabase::reduce() {
             c->setFrozen(false); // reset flag
         }
         else if (trail.reason(var(c->first())) != c) {
-            removed.push_back(c);
-            c->setDeleted();
+            removeClause(c);
         }
     }
+
+    cleanup();
 
     Statistics::getInstance().solverRemovedClausesInc(removed.size());
 }
@@ -61,22 +62,6 @@ void ClauseDatabase::reduce() {
 void ClauseDatabase::defrag() {
     vector<Clause*> reallocated = allocator.defrag(clauses);
     clauses.swap(reallocated);
-}
-
-/**
- * Make sure all references are cleared before space is handed back to ClauseAllocator
- */
-void ClauseDatabase::freeMarkedClauses() {
-    auto new_end = std::remove_if(clauses.begin(), clauses.end(),
-                                  [this](Clause* c) {
-                                      if (c->isDeleted()) {
-                                          this->allocator.deallocate(c);
-                                          return true;
-                                      } else {
-                                          return false;
-                                      }
-                                  });
-    clauses.erase(new_end, clauses.end());
 }
 
 size_t ClauseDatabase::nLearnts() const {

@@ -52,30 +52,23 @@ void Subsumption::calcAbstraction(Clause* clause) {
     abstraction[clause] = clause_abstraction;
 }
 
-void Subsumption::rememberSizeBeforeStrengthening(Clause* clause) {
-    if (strengthened_sizes.count(clause) == 0) { // used to cleanup pages in clause-pool
-        strengthened_sizes[clause] = clause->size();
-        strengthened_clauses.push_back(clause);
-    }
-}
-
 bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     assert(trail.decisionLevel() == 0);
     
     subsumptionQueueProtectedPush(clause);
-    rememberSizeBeforeStrengthening(clause);        
-    
+
+    strengthened_clauses[clause].push_back(l);
+
     propagator.detachClause(clause, true);
     clause->strengthen(l);
 
     certificate.added(clause->begin(), clause->end());
 
     detach(clause, l, true);
-    removed.push_back(clause);
     
     if (clause->size() == 1) {
         detach(clause, clause->first(), true);
-        clause->setDeleted();
+        clause_db.removeClause(clause);
         return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
     }
     else {
@@ -128,9 +121,8 @@ bool Subsumption::backwardSubsumptionCheck() {
                     if (trail.locked(csi)) {
                         trail.vardata[var(csi->first())].reason = nullptr;
                     }
-                    csi->setDeleted();
+                    clause_db.removeClause(csi);
                     for (Lit lit : *csi) detach(csi, lit, false);
-                    removed.push_back(csi);
                 }
                 else if (l != lit_Error) {
                     Statistics::getInstance().solverDeletedInc();
