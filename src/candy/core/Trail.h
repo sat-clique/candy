@@ -161,6 +161,21 @@ public:
         return trail_lim.size();
     }
 
+    inline bool newFact(Lit p) {
+        assert(decisionLevel() == 0);
+
+        if (value(p) == l_False) {
+            return false;
+        }
+        else if (value(p) == l_True) {
+            vardata[var(p)] = VarData(nullptr, 0);
+        }
+        else {
+            uncheckedEnqueue(p);
+        }
+        return true;
+    }
+
     inline void uncheckedEnqueue(Lit p, Clause* from = nullptr) {
         assert(value(p) == l_Undef);
         assigns[var(p)] = lbool(!sign(p));

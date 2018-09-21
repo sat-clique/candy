@@ -74,29 +74,13 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     removed.push_back(clause);
     
     if (clause->size() == 1) {
-        Lit unit = clause->first();
-        detach(clause, unit, true);
+        detach(clause, clause->first(), true);
         clause->setDeleted();
-
-        if (trail.value(unit) == l_Undef) {
-            trail.uncheckedEnqueue(unit);
-            return propagator.propagate() == nullptr;
-        }
-        else if (trail.value(unit) == l_False) {
-            return false;
-        }
-        else {
-            trail.vardata[var(unit)].reason = nullptr;
-            trail.vardata[var(unit)].level = 0;
-            return true;
-        }
+        return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
     }
     else {
         propagator.attachClause(clause);
-
         calcAbstraction(clause);
-
-        assert(clause->size() > 1);
         return true;
     }
 }

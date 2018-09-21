@@ -124,19 +124,6 @@ public:
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
 
-    template<typename Iterator>
-    bool isClauseTautological(Iterator begin, Iterator end) {
-        if (begin == end) {
-            return false;
-        }
-        for (Iterator it1 = begin, it2 = begin+1; it2 != end; it1++, it2++) {
-            if (*it1 == ~(*it2)) {
-                return true; // reject tautological clauses
-            }
-        }
-        return false;
-    }
-
     inline bool addClause(const vector<Lit>& lits) override {
         return addClause(lits.begin(), lits.end());
     }
@@ -481,8 +468,10 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     }
 
     for (vector<Lit>* clause : problem) {
-        addClause(*clause);
-        if (!ok) return;
+        if (!addClause(*clause)) {
+            certificate.proof();
+            return;
+        }
     }
     
     ok = (propagator.propagate() == nullptr) && simplify() && strengthen();
@@ -499,37 +488,27 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
 
     std::vector<Lit> copy{cbegin, cend};
 
+    // remove redundant literals
     std::sort(copy.begin(), copy.end());
     copy.erase(std::unique(copy.begin(), copy.end()), copy.end());
 
-    if (isClauseTautological(copy.begin(), copy.end())) {
+    // skip tatological clause
+    bool isTautological = copy.end() != std::unique(copy.begin(), copy.end(), [](Lit l1, Lit l2) { return var(l1) == var(l2); });
+    if (isTautological) {
         return ok;
     }
 
     if (copy.size() == 0) {
         return ok = false;
     }
-    
-    if (copy.size() == 1) {
-        Lit lit = copy.front();
-        if (trail.value(lit) == l_Undef) {
-            trail.uncheckedEnqueue(lit);
-            return ok = (propagator.propagate() == nullptr);
-        }
-        if (trail.value(lit) == l_True) {
-            trail.vardata[var(copy.front())].reason = nullptr;
-            return ok;
-        }
-        // l_False:
-        return ok = false;
+    else if (copy.size() == 1) {
+        return ok = trail.newFact(copy.front());
     }
     else {
-        Clause* cr = new (clause_db.allocator.allocate(copy.size())) Clause(copy.begin(), copy.end());
-        clause_db.clauses.push_back(cr);
-        propagator.attachClause(cr);
+        Clause* clause = clause_db.newClause(copy);
+        propagator.attachClause(clause);
+        return ok;
     }
-
-    return ok;
 }
 
 /**************************************************************************************************
@@ -595,17 +574,7 @@ bool Solver<PickBranchLitT>::strengthen() {
             clause->setDeleted();
         }
         else if (clause->size() == 1) {
-            Lit p = clause->first();
-            if (trail.value(p) == l_True) {
-                trail.vardata[var(p)].reason = nullptr;
-                trail.vardata[var(p)].level = 0;
-            }
-            else if (trail.value(p) == l_False) {
-                ok = false;
-            }
-            else {
-                trail.uncheckedEnqueue(p);
-            }
+            ok = trail.newFact(clause->first());
             clause->setDeleted();
         }
         else {

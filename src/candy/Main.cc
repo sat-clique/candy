@@ -366,7 +366,6 @@ int main(int argc, char** argv) {
 	        return simplifyAndPrintProblem(solver) == l_True ? 10 : result == l_False ? 20 : 0;
 	    }
 
-        //problem.reset(nullptr); // free clauses
         installSignalHandlers(true, solver);
 	    result = solve(solver, args.do_preprocess);
         installSignalHandlers(false, solver);
