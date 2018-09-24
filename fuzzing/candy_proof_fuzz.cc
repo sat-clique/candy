@@ -1,4 +1,5 @@
 #include "minisat/core/Solver.h"
+#include "drat-trim.h"
 
 #include "candy/core/Solver.h"
 #include "candy/frontend/CandyCommandLineParser.h"
@@ -29,6 +30,7 @@ int main(int argc, char** argv) {
 
     CandySolverInterface* solver = new SimpSolver<VSIDS>();
     solver->addClauses(problem);
+    solver->resetCertificate("proof.drat");
 
     lbool result = l_Undef;
     if (solver->isInConflictingState()) {
@@ -45,5 +47,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    assert (result == minisat_result(problem));
+    lbool reference_result = minisat_result(problem);
+    assert (result == reference_result);
+
+    if (result == l_False) {
+        int proof_result = check_proof((char*)args.input_filename, "proof.drat");
+        assert (0 == proof_result);
+    }
 }
