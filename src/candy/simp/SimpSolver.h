@@ -466,8 +466,8 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
     }
 
     // split the occurrences into positive and negative:
-    vector<Clause*>& cls = subsumption.occurs.lookup(v);
-    vector<Clause*> pos, neg;
+    std::vector<Clause*>& cls = subsumption.occurs.lookup(v);
+    std::vector<Clause*> pos, neg;
     for (Clause* cl : cls) {
         if (cl->contains(mkLit(v))) {
             pos.push_back(cl);
@@ -508,39 +508,30 @@ bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
             this->addClause(resolvent);
         }
     }
-    
-    if (!this->isInConflictingState()) {
-        for (auto it = this->clause_db.clauses.begin() + size; it != this->clause_db.clauses.end(); it++) {
-            elimAttach(*it);
-            subsumption.attach(*it);
-        }
-        for (Clause* c : cls) {
-            this->certificate.removed(c->begin(), c->end());
-            this->propagator.detachClause(c, false);
-            if (this->trail.locked(c)) {
-                this->trail.vardata[var(c->first())].reason = nullptr;
-            }
-            this->clause_db.removeClause(c);
-            elimDetach(c);
-            for (Lit lit : *c) subsumption.detach(c, lit, false);
-        }
-        subsumption.occurs[v].clear();
-
-        this->propagator.cleanupWatchers();
-
-        return subsumptionCheck();
+    for (auto it = this->clause_db.clauses.begin() + size; it != this->clause_db.clauses.end(); it++) {
+        elimAttach(*it);
+        subsumption.attach(*it);
     }
-    else {
-        for (Clause* c : cls) {
-            this->certificate.removed(c->begin(), c->end());
-            this->propagator.detachClause(c, false);
-            if (this->trail.locked(c)) {
-                this->trail.vardata[var(c->first())].reason = nullptr;
-            }
-            this->clause_db.removeClause(c);
+
+    // cleanup clauses to be removed
+    for (Clause* c : cls) {
+        this->certificate.removed(c->begin(), c->end());
+        this->propagator.detachClause(c, false);
+        if (this->trail.locked(c)) {
+            this->trail.vardata[var(c->first())].reason = nullptr;
         }
+        this->clause_db.removeClause(c);
+        elimDetach(c);
+        for (Lit lit : *c) subsumption.detach(c, lit, false);
+    }
+    this->propagator.cleanupWatchers();
+    subsumption.occurs[v].clear();
+    
+    if (this->isInConflictingState()) {
         return false;
     }
+    
+    return subsumptionCheck();
 }
 
 template<class PickBranchLitT>
