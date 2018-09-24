@@ -116,19 +116,19 @@ public:
     virtual ~Solver();
     
     // Add a new variable with parameters specifying variable mode.
-    virtual Var newVar() override;
+    Var newVar() override;
 
     // Add clauses to the solver
-    virtual void addClauses(const CNFProblem& problem) override;
+    void addClauses(const CNFProblem& problem) override;
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
 
-    inline bool addClause(const vector<Lit>& lits) override {
+    bool addClause(const vector<Lit>& lits) override {
         return addClause(lits.begin(), lits.end());
     }
 
-    inline bool addClause(std::initializer_list<Lit> lits) override {
+    bool addClause(std::initializer_list<Lit> lits) override {
         return addClause(lits.begin(), lits.end());
     }
 

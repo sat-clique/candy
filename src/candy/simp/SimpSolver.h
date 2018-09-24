@@ -95,10 +95,6 @@ public:
     SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t number);
     virtual ~SimpSolver();
 
-    // Problem specification:
-    virtual Var newVar();
-    virtual void addClauses(const CNFProblem& dimacs);
-
     bool eliminate() {
         return eliminate(use_asymm, use_elim);
     }
@@ -124,6 +120,7 @@ public:
     }
 
     inline bool isEliminated(Var v) const {
+        if (eliminated.size() < v) return false;
         return eliminated[v];
     }
 
@@ -137,7 +134,6 @@ public:
 
     // Mode of operation:
     Subsumption subsumption;
-
 
     uint8_t clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
     uint8_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
@@ -236,23 +232,6 @@ SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
 
 template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::~SimpSolver() {
-}
-
-template<class PickBranchLitT>
-Var SimpSolver<PickBranchLitT>::newVar() {
-    Var v = Solver<PickBranchLitT>::newVar();
-    frozen.incSize();
-    eliminated.push_back((char) false);
-    return v;
-}
-
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
-    Solver<PickBranchLitT>::addClauses(dimacs);
-    if (frozen.size() < this->nVars()) {
-        frozen.incSize(this->nVars());
-        eliminated.resize(this->nVars(), (char) false);
-    }
 }
 
 template<class PickBranchLitT>
@@ -582,6 +561,13 @@ void SimpSolver<PickBranchLitT>::extendModel() {
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
+    if (frozen.size() < this->nVars()) {
+        frozen.incSize(this->nVars());
+    }
+    if (eliminated.size() < this->nVars()) {
+        eliminated.resize(this->nVars(), (char) false);
+    }
+
     if (full) {
         n_occ.resize(2 * this->nVars(), 0);
         touched.resize(this->nVars(), 0);
