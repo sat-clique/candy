@@ -442,12 +442,10 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     for (Clause* c : cls)
         if (!asymm(v, c))
             return false;
-    
-    bool ret = subsumptionCheck();
 
     if (!was_frozen) frozen.unset(v);
-
-    return ret;
+    
+    return subsumptionCheck();
 }
 
 namespace SimpSolverImpl {
