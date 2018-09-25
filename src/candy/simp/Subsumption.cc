@@ -55,13 +55,8 @@ void Subsumption::attach(Clause* clause) {
     calcAbstraction(clause);
 }
 
-void Subsumption::detach(Clause* clause, Lit lit, bool strict) {
-    if (strict) {
-        occurs[var(lit)].erase(std::remove(occurs[var(lit)].begin(), occurs[var(lit)].end(), clause), occurs[var(lit)].end());
-    }
-    else {
-        occurs.smudge(var(lit));
-    }
+void Subsumption::detach(Clause* clause, Lit lit) {
+    occurs[var(lit)].erase(std::remove(occurs[var(lit)].begin(), occurs[var(lit)].end(), clause), occurs[var(lit)].end());
 }
 
 void Subsumption::init(size_t nVars) {
@@ -101,10 +96,10 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
 
     certificate.added(clause->begin(), clause->end());
 
-    detach(clause, l, true);
+    detach(clause, l);
     
     if (clause->size() == 1) {
-        detach(clause, clause->first(), true);
+        detach(clause, clause->first());
         reduced_literals.push_back(clause->first());
         clause_db.removeClause(clause);
         return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
@@ -161,7 +156,7 @@ bool Subsumption::backwardSubsumptionCheck() {
                     }
                     clause_db.removeClause(csi);
                     reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
-                    for (Lit lit : *csi) detach(csi, lit, false);
+                    for (Lit lit : *csi) detach(csi, lit);
                 }
                 else if (l != lit_Error) {
                     Statistics::getInstance().solverDeletedInc();

@@ -45,10 +45,7 @@ public:
 
     ClauseAllocator allocator;
  
-    std::vector<Clause*> clauses; // List of problem clauses.
-
-    std::vector<Clause*> created; // List of clauses to be removed
-    std::vector<Clause*> removed; // List of clauses to be removed
+    std::vector<Clause*> clauses; // List of problem clauses
 
     ClauseDatabase(Trail& trail_);
     ~ClauseDatabase();
@@ -105,7 +102,6 @@ public:
     }
 
     void removeClause(Clause* clause, bool strict = false) {
-        removed.push_back(clause);
         clause->setDeleted();
         if (strict) {
             clauses.erase(std::remove(clauses.begin(), clauses.end(), clause), clauses.end());    

@@ -759,8 +759,9 @@ lbool Solver<PickBranchLitT>::search() {
             if (nConflicts() >= (curRestart * nbclausesbeforereduce) && nLearnts() > 0) {                
                 curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
 
+                clause_db.cleanup();
                 clause_db.reduce();
-                for (Clause* clause : clause_db.removed) {
+                for (Clause* clause : clause_db) if (clause->isDeleted()) {
                     certificate.removed(clause->begin(), clause->end());
                     propagator.detachClause(clause);
                 }
