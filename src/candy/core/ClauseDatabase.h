@@ -56,6 +56,47 @@ public:
     void defrag();
     void freeMarkedClauses();
 
+    typedef std::vector<Clause*>::iterator iterator;
+    typedef std::vector<Clause*>::const_iterator const_iterator;
+    typedef std::vector<Clause*>::reverse_iterator reverse_iterator;
+    typedef std::vector<Clause*>::const_reverse_iterator const_reverse_iterator;
+
+    inline const_iterator begin() const {
+        return clauses.begin();
+    }
+
+    inline const_iterator end() const {
+        return clauses.end();
+    }
+
+    inline iterator begin() {
+        return clauses.begin();
+    }
+
+    inline iterator end() {
+        return clauses.end();
+    }
+
+    inline const_reverse_iterator rbegin() const {
+        return clauses.rbegin();
+    }
+
+    inline const_reverse_iterator rend() const {
+        return clauses.rend();
+    }
+
+    inline reverse_iterator rbegin() {
+        return clauses.rbegin();
+    }
+
+    inline reverse_iterator rend() {
+        return clauses.rend();
+    }
+
+    inline unsigned int size() const {
+        return clauses.size();
+    }
+
     Clause* newClause(Cl& lits) {
         Clause* clause = new (allocator.allocate(lits.size())) Clause(lits);
         clauses.push_back(clause);
