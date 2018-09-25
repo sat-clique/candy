@@ -104,7 +104,7 @@ bool VariableElimination::merge(const Clause& _ps, const Clause& _qs, Var v, siz
  * Return true if v was eliminated, else false
  */
 bool VariableElimination::eliminateVar(Var v, std::vector<Clause*>& occurences) {
-    assert(!eliminated[v]);
+    assert(!isEliminated(v));
 
     resolvents.clear();
     resolved.clear();
@@ -128,9 +128,6 @@ bool VariableElimination::eliminateVar(Var v, std::vector<Clause*>& occurences) 
         }
     }
     
-    // delete and store old clauses:
-    eliminated[v] = true;
-    
     if (pos.size() > neg.size()) {
         for (Clause* c : neg) mkElimClause(elimclauses, v, *c);
         mkElimClause(elimclauses, mkLit(v));
@@ -138,6 +135,9 @@ bool VariableElimination::eliminateVar(Var v, std::vector<Clause*>& occurences) 
         for (Clause* c : pos) mkElimClause(elimclauses, v, *c);
         mkElimClause(elimclauses, ~mkLit(v));
     }
+
+    // flag v as eliminated
+    setEliminated(v);
     
     // produce clauses in cross product
     static std::vector<Lit> resolvent;
@@ -151,6 +151,34 @@ bool VariableElimination::eliminateVar(Var v, std::vector<Clause*>& occurences) 
     resolved.insert(resolved.end(), occurences.begin(), occurences.end());
 
     return true;
+}
+
+void VariableElimination::extendModel(std::vector<lbool>& model) {
+    Lit x;
+    for (int i = elimclauses.size()-1, j; i > 0; i -= j) {
+        for (j = elimclauses[i--]; j > 1; j--, i--) {
+            Lit p = toLit(elimclauses[i]); 
+            if ((model[var(p)] ^ sign(p)) != l_False)
+                goto next;
+        }
+        x = toLit(elimclauses[i]);
+        model[var(x)] = lbool(!sign(x));
+    next: ;
+    }
+}
+
+bool VariableElimination::isEliminated(Var v) const {
+    if (eliminated.size() < v+1) {
+        return false;
+    }
+    return eliminated[v];
+}
+
+void VariableElimination::setEliminated(Var v) {
+    if (eliminated.size() < v) {
+        eliminated.resize(v+1, (char)false);
+    }
+    eliminated[v] = true;
 }
 
 }

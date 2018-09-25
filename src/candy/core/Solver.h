@@ -154,8 +154,15 @@ public:
     bool strengthen() override; // remove false literals from clauses
     virtual bool eliminate() override { return true; } // Perform variable elimination based simplification.
     virtual bool eliminate(bool use_asymm, bool use_elim) override { return true; } // Perform variable elimination based simplification.
-    virtual void enablePreprocessing() override {}
-    virtual void disablePreprocessing() override {}
+    
+    void enablePreprocessing() override {
+        preprocessing_enabled = true;
+    }
+
+    void disablePreprocessing() override {
+        preprocessing_enabled = false;
+    }
+
     virtual bool isEliminated(Var v) const override { return false; }
     virtual void setFrozen(Var v, bool freeze) override {}
 
@@ -299,8 +306,8 @@ protected:
     bool new_unary; // Indicates whether a unary clause was learnt since the last restart
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
-    // Variables added for incremental mode
     bool incremental; // Use incremental SAT Solver
+    bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
 
     // inprocessing
     uint64_t lastRestartWithInprocessing;
@@ -402,6 +409,7 @@ Solver<PickBranchLitT>::Solver() :
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
