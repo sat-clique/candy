@@ -102,14 +102,6 @@ public:
 
     virtual lbool solve();
 
-    void enablePreprocessing() {
-        preprocessing_enabled = true;
-    }
-
-    void disablePreprocessing() {
-        preprocessing_enabled = false;
-    }
-
     inline lbool solve(std::initializer_list<Lit> assumps) {
         return Solver<PickBranchLitT>::solve(assumps);
     }
@@ -119,8 +111,7 @@ public:
     }
 
     inline bool isEliminated(Var v) const {
-        if (elimination.eliminated.size() < v) return false;
-        return elimination.eliminated[v];
+        return elimination.isEliminated(v);
     }
 
     inline void setFrozen(Var v, bool freeze) {
@@ -137,7 +128,6 @@ public:
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
     bool use_elim;          // Perform variable elimination.
-    bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
 
 protected:
     // Helper structures:
@@ -212,7 +202,6 @@ SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
-    preprocessing_enabled(true),
     elim_heap(ElimLt(n_occ)),
     frozen(),
     n_touched(0),
@@ -231,7 +220,7 @@ lbool SimpSolver<PickBranchLitT>::solve() {
         return l_False;
     }
 
-    if (preprocessing_enabled) {
+    if (this->preprocessing_enabled) {
         result = lbool(eliminate());
     }
     
@@ -341,16 +330,7 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
     
     if (this->propagator.propagate() != nullptr) {
         this->trail.cancelUntil(0);
-        bool strengthen_ok = subsumption.strengthenClause(cr, l);
-
-        for (Lit lit : subsumption.reduced_literals) {
-            elimDetach(lit);
-        }
-        subsumption.reduced_literals.clear();
-
-        if (!strengthen_ok) {
-            return false;
-        }
+        return subsumption.strengthenClause(cr, l);
     } else {
         this->trail.cancelUntil(0);
     }
@@ -373,6 +353,11 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
         if (!asymm(v, c))
             return false;
 
+    for (Lit lit : subsumption.reduced_literals) {
+        elimDetach(lit);
+    }
+    subsumption.reduced_literals.clear();
+
     if (!was_frozen) frozen.unset(v);
     
     return subsumptionCheck();
@@ -380,27 +365,13 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::extendModel() {
-    this->model.resize(this->nVars());
-    
-    Lit x;
-    for (int i = elimination.elimclauses.size()-1, j; i > 0; i -= j) {
-        for (j = elimination.elimclauses[i--]; j > 1; j--, i--)
-            if (this->modelValue(toLit(elimination.elimclauses[i])) != l_False)
-                goto next;
-        
-        x = toLit(elimination.elimclauses[i]);
-        this->model[var(x)] = lbool(!sign(x));
-    next: ;
-    }
+    elimination.extendModel(this->model);
 }
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     if (frozen.size() < this->nVars()) {
         frozen.incSize(this->nVars());
-    }
-    if (elimination.eliminated.size() < this->nVars()) {
-        elimination.eliminated.resize(this->nVars(), (char)false);
     }
 
     if (full) {
@@ -491,9 +462,6 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                         for (Clause* c : elimination.resolved) {
                             this->certificate.removed(c->begin(), c->end());
                             this->propagator.detachClause(c, false);
-                            if (this->trail.locked(c)) {
-                                this->trail.vardata[var(c->first())].reason = nullptr;
-                            }
                             this->clause_db.removeClause(c);
                             elimDetach(c);
                             for (Lit lit : *c) subsumption.detach(c, lit, false);

@@ -127,6 +127,7 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -177,6 +178,7 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -227,6 +229,7 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -281,6 +284,7 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -331,6 +335,7 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -381,6 +386,7 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     ok(true),
     // incremental mode
     incremental(false),
+    preprocessing_enabled(true),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
