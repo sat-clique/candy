@@ -175,7 +175,7 @@ bool VariableElimination::isEliminated(Var v) const {
 }
 
 void VariableElimination::setEliminated(Var v) {
-    if (eliminated.size() < v) {
+    if (eliminated.size() < v+1) {
         eliminated.resize(v+1, (char)false);
     }
     eliminated[v] = true;

@@ -7,6 +7,7 @@
 #include "candy/core/Trail.h"
 #include "candy/core/Propagate.h"
 #include "candy/core/Certificate.h"
+#include "candy/core/Stamp.h"
 #include "candy/utils/Options.h"
 
 namespace Candy {
@@ -20,6 +21,7 @@ extern IntOption opt_subsumption_lim;
 }
 
 class Subsumption {
+private:
     struct ClauseDeleted {
         explicit ClauseDeleted() { }
         inline bool operator()(const Clause* cr) const {
@@ -27,12 +29,22 @@ class Subsumption {
         }
     };
 
+    ClauseDatabase& clause_db;
+    Trail& trail;
+    Propagate& propagator;
+    Certificate& certificate;
+
+    Stamp<uint8_t> touched;
+    uint32_t n_touched;
+
 public:         
     Subsumption(ClauseDatabase& clause_db_, Trail& trail_, Propagate& propagator_, Certificate& certificate_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),
         certificate(certificate_),
+        touched(),
+        n_touched(0),
         reduced_literals(),
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         occurs(ClauseDeleted()),
@@ -41,11 +53,6 @@ public:
         abstraction(),
         bwdsub_assigns(0)
     {}
-
-    ClauseDatabase& clause_db;
-    Trail& trail;
-    Propagate& propagator;
-    Certificate& certificate;
 
     std::vector<Lit> reduced_literals;
 
@@ -59,6 +66,20 @@ public:
 
     void subsumptionQueueProtectedPush(Clause* clause);
     Clause* subsumptionQueueProtectedPop();
+
+    void gatherTouchedClauses();
+
+    inline void touch(Var v) {
+        n_touched++;
+        touched.set(v);
+    }
+
+    inline bool hasTouchedClauses() {
+        return n_touched > 0;
+    }
+
+    void init(size_t nVars);
+    void clear();
 
     void attach(Clause* clause);
     void detach(Clause* clause, Lit lit, bool strict);

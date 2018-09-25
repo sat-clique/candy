@@ -148,11 +148,9 @@ protected:
     };
 
     // Solver state:
-    std::vector<char> touched;
     std::vector<int> n_occ;
     Glucose::Heap<ElimLt> elim_heap;
     Stamp<uint8_t> frozen;
-    uint32_t n_touched;
 
     // set these variables to frozen on init
     std::vector<Var> freezes;
@@ -161,7 +159,7 @@ protected:
     inline void updateElimHeap(Var v) {
         // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
         if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v)
-                                    && this->trail.value(v) == l_Undef)) {
+                                    && !this->trail.isAssigned(v))) {
             elim_heap.update(v);
         }
     }
@@ -204,7 +202,6 @@ SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
@@ -245,8 +242,7 @@ void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
     if (n_occ.size() > 0) { // elim initialized
         for (Lit lit : *cr) {
             n_occ[toInt(lit)]++;
-            touched[var(lit)] = 1;
-            n_touched++;
+            subsumption.touch(var(lit));
             if (elim_heap.inHeap(var(lit))) {
                 elim_heap.increase(var(lit));
             }
@@ -270,26 +266,6 @@ void SimpSolver<PickBranchLitT>::elimDetach(Lit lit) {
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::gatherTouchedClauses() {
-    if (n_touched == 0)
-        return;
-    
-    for (unsigned int i = 0; i < touched.size(); i++) {
-        if (touched[i]) {
-            const vector<Clause*>& cs = subsumption.occurs.lookup(i);
-            for (Clause* c : cs) {
-                if (!c->isDeleted()) {
-                    subsumption.subsumptionQueueProtectedPush(c);
-                }
-            }
-            touched[i] = 0;
-        }
-    }
-
-    n_touched = 0;
-}
-
-template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
     assert(this->decisionLevel() == 0);
     
@@ -298,7 +274,8 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
         if (this->value(lit) == l_True) {
             this->trail.cancelUntil(0);
             return false;
-        } else if (this->value(lit) != l_False) {
+        } 
+        else if (this->value(lit) != l_False) {
             assert(this->value(lit) == l_Undef);
             this->trail.uncheckedEnqueue(~lit);
         }
@@ -346,7 +323,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     
     vector<Clause*> cls(subsumption.occurs.lookup(v));
     
-    if (this->trail.value(v) != l_Undef || cls.size() == 0)
+    if (this->trail.isAssigned(v) || cls.size() == 0)
         return true;
     
     for (Clause* c : cls)
@@ -370,25 +347,7 @@ void SimpSolver<PickBranchLitT>::extendModel() {
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
-    if (frozen.size() < this->nVars()) {
-        frozen.incSize(this->nVars());
-    }
-
-    if (full) {
-        n_occ.resize(2 * this->nVars(), 0);
-        touched.resize(this->nVars(), 0);
-        for (Var v = 0; v < static_cast<int>(this->nVars()); v++) {
-            elim_heap.insert(v);
-        }
-    }
-
-    subsumption.occurs.init(this->nVars());
-
-    // include persistent learnt clauses
-    for (Clause* c : this->clause_db.clauses) {
-        subsumption.attach(c);
-        elimAttach(c);
-    }
+    frozen.incSize(this->nVars());
 
     // freeze assumptions and other externally set frozen variables
     for (Lit lit : this->assumptions) {
@@ -397,18 +356,28 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     for (Var var : freezes) {
         frozen.set(var);
     }
+
+    // include persistent learnt clauses
+    subsumption.init(this->nVars());
+    for (Clause* c : this->clause_db.clauses) {
+        elimAttach(c);
+    }
+
+    if (full) {
+        n_occ.resize(2 * this->nVars(), 0);
+        for (Var v = 0; v < static_cast<int>(this->nVars()); v++) {
+            elim_heap.insert(v);
+        }
+    }
 }
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     frozen.clear();
     n_occ.clear();
-    touched.clear();
     elim_heap.clear();
-    n_touched = 0;
-    subsumption.occurs.clear();
-    subsumption.subsumption_queue.clear();
-    subsumption.abstraction.clear();
+
+    subsumption.clear();
 
     // force full cleanup
     this->branch.notify_restarted(); // former rebuildOrderHeap
@@ -429,8 +398,8 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     }
     // either asymm or elim are true (preprocessing)
     else {
-        while (n_touched > 0 || subsumption.bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) {
-            gatherTouchedClauses();
+        while (subsumption.hasTouchedClauses() || subsumption.bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) { 
+            subsumption.gatherTouchedClauses();
             
             if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
                 this->ok = subsumptionCheck();
