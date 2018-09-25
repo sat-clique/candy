@@ -26,6 +26,26 @@ Clause* Subsumption::subsumptionQueueProtectedPop() {
     return clause;
 }
 
+void Subsumption::gatherTouchedClauses() {
+    if (n_touched == 0) {
+        return;
+    }
+    
+    for (unsigned int i = 0; i < touched.size(); i++) {
+        if (touched[i]) {
+            const vector<Clause*>& cs = occurs.lookup(i);
+            for (Clause* c : cs) {
+                if (!c->isDeleted()) {
+                    subsumptionQueueProtectedPush(c);
+                }
+            }
+        }
+    }
+
+    touched.clear();
+    n_touched = 0;
+}
+
 void Subsumption::attach(Clause* clause) {
     subsumption_queue.push_back(clause);
     subsumption_queue_contains[clause] = true;
@@ -42,6 +62,23 @@ void Subsumption::detach(Clause* clause, Lit lit, bool strict) {
     else {
         occurs.smudge(var(lit));
     }
+}
+
+void Subsumption::init(size_t nVars) {
+    occurs.init(nVars);
+    touched.incSize(nVars);
+    touched.clear();
+    for (Clause* clause : clause_db) {
+        attach(clause);
+    }
+}
+
+void Subsumption::clear() {
+    touched.clear();
+    n_touched = 0;
+    occurs.clear();
+    subsumption_queue.clear();
+    abstraction.clear();
 }
 
 void Subsumption::calcAbstraction(Clause* clause) {

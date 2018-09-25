@@ -77,7 +77,6 @@ template<> SimpSolver<RSILBranchingHeuristic3>::SimpSolver(Conjectures conjectur
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)), 
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
@@ -90,7 +89,6 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures con
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
@@ -103,7 +101,6 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures 
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
@@ -116,7 +113,6 @@ template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectur
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
@@ -129,7 +125,6 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures con
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
@@ -142,7 +137,6 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic2>::SimpSolver(Conjectures 
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    n_touched(0),
     freezes() {
 }
 
