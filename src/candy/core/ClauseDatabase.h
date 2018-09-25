@@ -47,6 +47,7 @@ public:
  
     std::vector<Clause*> clauses; // List of problem clauses.
 
+    std::vector<Clause*> created; // List of clauses to be removed
     std::vector<Clause*> removed; // List of clauses to be removed
 
     ClauseDatabase(Trail& trail_);
