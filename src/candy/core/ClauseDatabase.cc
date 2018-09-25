@@ -18,7 +18,7 @@ ClauseDatabase::ClauseDatabase(Trail& trail_) :
     lbLBDFrozenClause(ClauseDatabaseOptions::opt_lb_lbd_frozen_clause),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
     allocator(), 
-    clauses(), 
+    clauses(),
     removed() {
 
 }

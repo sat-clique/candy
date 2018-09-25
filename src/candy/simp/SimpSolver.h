@@ -54,6 +54,7 @@
 #include "candy/core/Clause.h"
 #include "candy/utils/System.h"
 #include "candy/simp/Subsumption.h"
+#include "candy/simp/VariableElimination.h"
 
 using namespace std;
 
@@ -71,8 +72,6 @@ extern const char* _cat;
 extern BoolOption opt_use_asymm;
 extern BoolOption opt_use_rcheck;
 extern BoolOption opt_use_elim;
-extern IntOption opt_grow;
-extern IntOption opt_clause_lim;
 }
 
 /**
@@ -120,8 +119,8 @@ public:
     }
 
     inline bool isEliminated(Var v) const {
-        if (eliminated.size() < v) return false;
-        return eliminated[v];
+        if (elimination.eliminated.size() < v) return false;
+        return elimination.eliminated[v];
     }
 
     inline void setFrozen(Var v, bool freeze) {
@@ -132,11 +131,8 @@ public:
         }
     }
 
-    // Mode of operation:
     Subsumption subsumption;
-
-    uint8_t clause_lim;        // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
-    uint8_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
+    VariableElimination elimination;
 
     bool use_asymm;         // Shrink clauses by asymmetric branching.
     bool use_rcheck;        // Check if a clause is already implied. Prett costly, and subsumes subsumptions :)
@@ -162,12 +158,10 @@ protected:
     };
 
     // Solver state:
-    std::vector<uint32_t> elimclauses;
     std::vector<char> touched;
     std::vector<int> n_occ;
     Glucose::Heap<ElimLt> elim_heap;
     Stamp<uint8_t> frozen;
-    std::vector<char> eliminated;
     uint32_t n_touched;
 
     // set these variables to frozen on init
@@ -203,9 +197,6 @@ protected:
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
     void gatherTouchedClauses();
-    bool merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause);
-    bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size);
-    bool eliminateVar(Var v);
     void extendModel();
 
     bool implied(const vector<Lit>& c);
@@ -216,16 +207,14 @@ protected:
 
 template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
-    subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
-    clause_lim(SimpSolverOptions::opt_clause_lim),
-    grow(SimpSolverOptions::opt_grow),
+    subsumption(this->clause_db, this->trail, this->propagator, this->certificate),
+    elimination(),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     preprocessing_enabled(true),
     elim_heap(ElimLt(n_occ)),
     frozen(),
-    eliminated(),
     n_touched(0),
     freezes() {
 }
@@ -289,65 +278,6 @@ void SimpSolver<PickBranchLitT>::elimDetach(Lit lit) {
         n_occ[toInt(lit)]--;
         updateElimHeap(var(lit));
     }
-}
-
-// Returns FALSE if clause is always satisfied ('out_clause' should not be used).
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::merge(const Clause& _ps, const Clause& _qs, Var v, vector<Lit>& out_clause) {
-    assert(_ps.contains(v));
-    assert(_qs.contains(v));
-    out_clause.clear();
-    
-    bool ps_smallest = _ps.size() < _qs.size();
-    const Clause& ps = ps_smallest ? _qs : _ps;
-    const Clause& qs = ps_smallest ? _ps : _qs;
-    
-    for (Lit qlit : qs) {
-        if (var(qlit) != v) {
-            auto p = find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return var(plit) == var(qlit); });
-            if (p == ps.end()) {
-                out_clause.push_back(qlit);
-            }
-            else if (*p == ~qlit) {
-                return false;
-            }
-        }
-    }
-    
-    for (Lit plit : ps) {
-        if (var(plit) != v) {
-            out_clause.push_back(plit);
-        }
-    }
-    
-    return true;
-}
-
-// Returns FALSE if clause is always satisfied.
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size) {
-    assert(_ps.contains(v));
-    assert(_qs.contains(v));
-    
-    bool ps_smallest = _ps.size() < _qs.size();
-    const Clause& ps = ps_smallest ? _qs : _ps;
-    const Clause& qs = ps_smallest ? _ps : _qs;
-    
-    size = ps.size() - 1;
-    
-    for (Lit qlit : qs) {
-        if (var(qlit) != v) {
-            auto p = find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return var(plit) == var(qlit); });
-            if (p == ps.end()) {
-                size++;
-            }
-            else if (*p == ~qlit) {
-                return false;
-            }
-        }
-    }
-    
-    return true;
 }
 
 template<class PickBranchLitT>
@@ -448,101 +378,17 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     return subsumptionCheck();
 }
 
-namespace SimpSolverImpl {
-
-void mkElimClause(vector<uint32_t>& elimclauses, Lit x);
-void mkElimClause(vector<uint32_t>& elimclauses, Var v, Clause& c);
-
-}
-
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::eliminateVar(Var v) {
-    assert(!isEliminated(v));
-    
-    if (this->trail.value(v) != l_Undef || frozen[v]) {
-        return true;
-    }
-
-    // split the occurrences into positive and negative:
-    std::vector<Clause*>& cls = subsumption.occurs.lookup(v);
-    std::vector<Clause*> pos, neg;
-    for (Clause* cl : cls) {
-        if (cl->contains(mkLit(v))) {
-            pos.push_back(cl);
-        } else {
-            neg.push_back(cl);
-        }
-    }
-    
-    // increase in number of clauses must stay within the allowed ('grow') and no clause must exceed the limit on the maximal clause size:
-    size_t cnt = 0;
-    for (Clause* pc : pos) for (Clause* nc : neg) {
-        size_t clause_size = 0;
-        if (merge(*pc, *nc, v, clause_size) && (++cnt > cls.size() + grow || (clause_lim > 0 && clause_size > clause_lim))) {
-            return true;
-        }
-    }
-    
-    // delete and store old clauses:
-    eliminated[v] = true;
-    this->branch.setDecisionVar(v, false);
-    
-    if (pos.size() > neg.size()) {
-        for (Clause* c : neg) SimpSolverImpl::mkElimClause(elimclauses, v, *c);
-        SimpSolverImpl::mkElimClause(elimclauses, mkLit(v));
-    } else {
-        for (Clause* c : pos) SimpSolverImpl::mkElimClause(elimclauses, v, *c);
-        SimpSolverImpl::mkElimClause(elimclauses, ~mkLit(v));
-    }
-    
-    size_t size = this->clause_db.clauses.size();
-
-    // produce clauses in cross product
-    static std::vector<Lit> resolvent;
-    resolvent.clear();
-    for (Clause* pc : pos) for (Clause* nc : neg) {
-        if (merge(*pc, *nc, v, resolvent)) {
-            this->certificate.added(resolvent.begin(), resolvent.end());
-            this->addClause(resolvent);
-        }
-    }
-    for (auto it = this->clause_db.clauses.begin() + size; it != this->clause_db.clauses.end(); it++) {
-        elimAttach(*it);
-        subsumption.attach(*it);
-    }
-
-    // cleanup clauses to be removed
-    for (Clause* c : cls) {
-        this->certificate.removed(c->begin(), c->end());
-        this->propagator.detachClause(c, false);
-        if (this->trail.locked(c)) {
-            this->trail.vardata[var(c->first())].reason = nullptr;
-        }
-        this->clause_db.removeClause(c);
-        elimDetach(c);
-        for (Lit lit : *c) subsumption.detach(c, lit, false);
-    }
-    this->propagator.cleanupWatchers();
-    subsumption.occurs[v].clear();
-    
-    if (this->isInConflictingState()) {
-        return false;
-    }
-    
-    return subsumptionCheck();
-}
-
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::extendModel() {
     this->model.resize(this->nVars());
     
     Lit x;
-    for (int i = elimclauses.size()-1, j; i > 0; i -= j) {
-        for (j = elimclauses[i--]; j > 1; j--, i--)
-            if (this->modelValue(toLit(elimclauses[i])) != l_False)
+    for (int i = elimination.elimclauses.size()-1, j; i > 0; i -= j) {
+        for (j = elimination.elimclauses[i--]; j > 1; j--, i--)
+            if (this->modelValue(toLit(elimination.elimclauses[i])) != l_False)
                 goto next;
         
-        x = toLit(elimclauses[i]);
+        x = toLit(elimination.elimclauses[i]);
         this->model[var(x)] = lbool(!sign(x));
     next: ;
     }
@@ -553,8 +399,8 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     if (frozen.size() < this->nVars()) {
         frozen.incSize(this->nVars());
     }
-    if (eliminated.size() < this->nVars()) {
-        eliminated.resize(this->nVars(), (char) false);
+    if (elimination.eliminated.size() < this->nVars()) {
+        elimination.eliminated.resize(this->nVars(), (char)false);
     }
 
     if (full) {
@@ -630,8 +476,38 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                     this->ok = asymmVar(elim);
                 }
 
-                if (use_elim && !this->isInConflictingState()) {
-                    this->ok = eliminateVar(elim);
+                if (use_elim && !this->isInConflictingState() && !this->trail.isAssigned(elim) && !frozen[elim]) {
+                    bool was_eliminated = elimination.eliminateVar(elim, subsumption.occurs.lookup(elim));
+
+                    if (was_eliminated) {
+                        for (Cl& resolvent : elimination.resolvents) {
+                            this->certificate.added(resolvent.begin(), resolvent.end());
+                            this->addClause(resolvent);
+                            elimAttach(this->clause_db.clauses.back());
+                            subsumption.attach(this->clause_db.clauses.back());
+                        }
+
+                        // cleanup clauses to be removed
+                        for (Clause* c : elimination.resolved) {
+                            this->certificate.removed(c->begin(), c->end());
+                            this->propagator.detachClause(c, false);
+                            if (this->trail.locked(c)) {
+                                this->trail.vardata[var(c->first())].reason = nullptr;
+                            }
+                            this->clause_db.removeClause(c);
+                            elimDetach(c);
+                            for (Lit lit : *c) subsumption.detach(c, lit, false);
+                        }
+                        this->propagator.cleanupWatchers();
+                        subsumption.occurs[elim].clear();
+                        this->branch.setDecisionVar(elim, false);
+                        
+                        if (this->isInConflictingState()) {
+                            return false;
+                        }
+                        
+                        this->ok = subsumptionCheck();
+                    }
                 }
             }
 
