@@ -82,7 +82,7 @@ public:
     void clear();
 
     void attach(Clause* clause);
-    void detach(Clause* clause, Lit lit, bool strict);
+    void detach(Clause* clause, Lit lit);
 
     void calcAbstraction(Clause* clause);
 

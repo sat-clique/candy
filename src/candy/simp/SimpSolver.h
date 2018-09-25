@@ -155,15 +155,6 @@ protected:
     // set these variables to frozen on init
     std::vector<Var> freezes;
 
-    // Main internal methods:
-    inline void updateElimHeap(Var v) {
-        // if (!frozen[v] && !isEliminated(v) && value(v) == l_Undef)
-        if (elim_heap.inHeap(v) || (!frozen[v] && !isEliminated(v)
-                                    && !this->trail.isAssigned(v))) {
-            elim_heap.update(v);
-        }
-    }
-
     inline bool subsumptionCheck() {
         bool ret = subsumption.backwardSubsumptionCheck();
 
@@ -184,7 +175,7 @@ protected:
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
-    void gatherTouchedClauses();
+
     void extendModel();
 
     bool implied(const vector<Lit>& c);
@@ -235,9 +226,7 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
 #ifndef NDEBUG
-    for (Lit lit : *cr) {
-        assert(!isEliminated(var(lit)));
-    }
+    for (Lit lit : *cr) assert(!isEliminated(var(lit)));
 #endif
     if (n_occ.size() > 0) { // elim initialized
         for (Lit lit : *cr) {
@@ -261,7 +250,9 @@ template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::elimDetach(Lit lit) {
     if (n_occ.size() > 0) { // elim initialized
         n_occ[toInt(lit)]--;
-        updateElimHeap(var(lit));
+        if (elim_heap.inHeap(var(lit)) || (!frozen[var(lit)] && !isEliminated(var(lit)) && !this->trail.isAssigned(var(lit)))) {
+            elim_heap.update(var(lit));
+        }
     }
 }
 
@@ -398,7 +389,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
     }
     // either asymm or elim are true (preprocessing)
     else {
-        while (subsumption.hasTouchedClauses() || subsumption.bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) { 
+        while (subsumption.hasTouchedClauses() || subsumption.bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) {
             subsumption.gatherTouchedClauses();
             
             if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
@@ -408,7 +399,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
             while (!elim_heap.empty() && !this->isInConflictingState() && !this->asynch_interrupt) {
                 Var elim = elim_heap.removeMin();
 
-                if (isEliminated(elim) || this->trail.value(elim) != l_Undef) {
+                if (isEliminated(elim) || this->trail.isAssigned(elim)) {
                     continue;
                 }
 
@@ -422,21 +413,31 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                     if (was_eliminated) {
                         for (Cl& resolvent : elimination.resolvents) {
                             this->certificate.added(resolvent.begin(), resolvent.end());
+                        }
+                        for (Clause* c : elimination.resolved) {
+                            this->certificate.removed(c->begin(), c->end());
+                        }
+
+                        for (Cl& resolvent : elimination.resolvents) {
                             this->addClause(resolvent);
                             elimAttach(this->clause_db.clauses.back());
                             subsumption.attach(this->clause_db.clauses.back());
                         }
 
                         // cleanup clauses to be removed
+                        subsumption.occurs[elim].clear();
                         for (Clause* c : elimination.resolved) {
-                            this->certificate.removed(c->begin(), c->end());
-                            this->propagator.detachClause(c, false);
+                            for (Lit lit : *c) {
+                                subsumption.detach(c, lit);
+                            }
+                        }
+
+                        for (Clause* c : elimination.resolved) {
                             this->clause_db.removeClause(c);
                             elimDetach(c);
-                            for (Lit lit : *c) subsumption.detach(c, lit, false);
+                            this->propagator.detachClause(c, true);
                         }
-                        this->propagator.cleanupWatchers();
-                        subsumption.occurs[elim].clear();
+
                         this->branch.setDecisionVar(elim, false);
                         
                         if (this->isInConflictingState()) {

@@ -18,8 +18,7 @@ ClauseDatabase::ClauseDatabase(Trail& trail_) :
     lbLBDFrozenClause(ClauseDatabaseOptions::opt_lb_lbd_frozen_clause),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
     allocator(), 
-    clauses(),
-    removed() {
+    clauses() {
 
 }
 
@@ -28,8 +27,6 @@ ClauseDatabase::~ClauseDatabase() {
 
 void ClauseDatabase::reduce() {
     Statistics::getInstance().solverReduceDBInc();
-    
-    removed.clear();
 
     std::vector<Clause*> learnts;
     copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [](Clause* clause) { return clause->isLearnt() && clause->size() > 2; });
@@ -42,18 +39,18 @@ void ClauseDatabase::reduce() {
     
     // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
     // Keep clauses which seem to be useful (i.e. their lbd was reduce during this sequence => frozen)
+    size_t count = 0;
     for (Clause* c : learnts) {
         if (c->isFrozen()) {
             c->setFrozen(false); // reset flag
         }
         else if (trail.reason(var(c->first())) != c) {
+            ++count;
             removeClause(c);
         }
     }
 
-    cleanup();
-
-    Statistics::getInstance().solverRemovedClausesInc(removed.size());
+    Statistics::getInstance().solverRemovedClausesInc(count);
 }
 
 /**
