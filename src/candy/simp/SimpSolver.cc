@@ -76,8 +76,7 @@ template<> SimpSolver<RSILBranchingHeuristic3>::SimpSolver(Conjectures conjectur
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)), 
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) : 
@@ -88,8 +87,7 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures con
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) : 
@@ -100,8 +98,7 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures 
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) : 
@@ -112,8 +109,7 @@ template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectur
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) : 
@@ -124,8 +120,7 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures con
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 template<> SimpSolver<RSILVanishingBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) : 
@@ -136,8 +131,7 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic2>::SimpSolver(Conjectures 
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 }

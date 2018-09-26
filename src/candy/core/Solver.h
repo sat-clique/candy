@@ -164,7 +164,14 @@ public:
     }
 
     virtual bool isEliminated(Var v) const override { return false; }
-    virtual void setFrozen(Var v, bool freeze) override {}
+
+    void setFrozen(Var v, bool freeze) override  {
+        if (freeze) {
+            freezes.push_back(v);
+        } else {
+            freezes.erase(std::remove(freezes.begin(), freezes.end(), v), freezes.end());
+        }
+    }
 
     virtual lbool solve() override; // Main solve method (assumptions given in 'assumptions').
 
@@ -307,7 +314,9 @@ protected:
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
     bool incremental; // Use incremental SAT Solver
+
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
+    std::vector<Var> freezes;
 
     // inprocessing
     uint64_t lastRestartWithInprocessing;
@@ -409,7 +418,9 @@ Solver<PickBranchLitT>::Solver() :
     ok(true),
     // incremental mode
     incremental(false),
+    // preprocessing
     preprocessing_enabled(true),
+    freezes(),
     // inprocessing
     lastRestartWithInprocessing(0),
     inprocessingFrequency(SolverOptions::opt_inprocessing),
