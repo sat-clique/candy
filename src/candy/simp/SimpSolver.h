@@ -114,14 +114,6 @@ public:
         return elimination.isEliminated(v);
     }
 
-    inline void setFrozen(Var v, bool freeze) {
-        if (freeze) {
-            freezes.push_back(v);
-        } else {
-            freezes.erase(std::remove(freezes.begin(), freezes.end(), v), freezes.end());
-        }
-    }
-
     Subsumption subsumption;
     VariableElimination elimination;
 
@@ -151,9 +143,6 @@ protected:
     std::vector<int> n_occ;
     Glucose::Heap<ElimLt> elim_heap;
     Stamp<uint8_t> frozen;
-
-    // set these variables to frozen on init
-    std::vector<Var> freezes;
 
     inline bool subsumptionCheck() {
         bool ret = subsumption.backwardSubsumptionCheck();
@@ -192,8 +181,7 @@ SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
     elim_heap(ElimLt(n_occ)),
-    frozen(),
-    freezes() {
+    frozen() {
 }
 
 template<class PickBranchLitT>
@@ -344,7 +332,7 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     for (Lit lit : this->assumptions) {
         frozen.set(var(lit));
     }
-    for (Var var : freezes) {
+    for (Var var : this->freezes) {
         frozen.set(var);
     }
 
