@@ -524,7 +524,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
         return ok = trail.newFact(copy.front());
     }
     else {
-        Clause* clause = clause_db.newClause(copy);
+        Clause* clause = clause_db.createClause(copy);
         propagator.attachClause(clause);
         return ok;
     }
@@ -697,7 +697,7 @@ lbool Solver<PickBranchLitT>::search() {
                 new_unary = true;
             }
             else {
-                Clause* clause = clause_db.newClause(conflictInfo.learnt_clause);
+                Clause* clause = clause_db.createClause(conflictInfo.learnt_clause);
                 clause->setLBD(conflictInfo.lbd);
                 clause->setLearnt(true);
 

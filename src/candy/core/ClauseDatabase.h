@@ -32,6 +32,13 @@ private:
         }
     };
 
+    struct ClauseDeleted {
+        explicit ClauseDeleted() { }
+        inline bool operator()(const Clause* cr) const {
+            return cr->isDeleted();
+        }
+    };
+
     Trail& trail;
 
     uint_fast16_t persistentLBD;
@@ -40,6 +47,9 @@ private:
     // clause activity heuristic
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
+
+    bool track_literal_occurrence;
+    OccLists<Var, Clause*, ClauseDeleted> variableOccurrences;
 
 public:
 
@@ -53,6 +63,9 @@ public:
     void reduce();
     void defrag();
     void freeMarkedClauses();
+
+    void initOccurrenceTracking(size_t nVars);
+    void stopOccurrenceTracking();
 
     typedef std::vector<Clause*>::iterator iterator;
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -95,22 +108,55 @@ public:
         return clauses.size();
     }
 
-    Clause* newClause(Cl& lits) {
+    Clause* createClause(Cl& lits) {
         Clause* clause = new (allocator.allocate(lits.size())) Clause(lits);
         clauses.push_back(clause);
+
+        if (track_literal_occurrence) {
+            for (Lit lit : *clause) {
+                variableOccurrences[var(lit)].push_back(clause);
+            }
+        }
+        
         return clause;
     }
 
     void removeClause(Clause* clause, bool strict = false) {
         clause->setDeleted();
+
         if (strict) {
-            clauses.erase(std::remove(clauses.begin(), clauses.end(), clause), clauses.end());    
+            clauses.erase(std::remove(clauses.begin(), clauses.end(), clause), clauses.end());  
         }
+
+        if (track_literal_occurrence) {
+            if (strict) {
+                for (Lit lit : *clause) variableOccurrences.remove(var(lit), clause);
+            } 
+            else {
+                for (Lit lit : *clause) variableOccurrences.smudge(var(lit));
+            }
+        }
+    }
+
+    void strengthenClause(Clause* clause, Lit lit) {
+        clause->strengthen(lit);
+
+        if (track_literal_occurrence) {
+            variableOccurrences.remove(var(lit), clause);
+        }
+    }
+
+    inline const std::vector<Clause*>& getOccurenceList(Var v) {
+        return variableOccurrences.lookup(v);
     }
 
     void cleanup() {
         auto new_end = std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) { return c->isDeleted(); });
         clauses.erase(new_end, clauses.end());
+
+        if (track_literal_occurrence) {
+            variableOccurrences.cleanAll();
+        }
     }
 
     size_t nLearnts() const;

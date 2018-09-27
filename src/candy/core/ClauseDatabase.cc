@@ -17,12 +17,29 @@ ClauseDatabase::ClauseDatabase(Trail& trail_) :
     persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
     lbLBDFrozenClause(ClauseDatabaseOptions::opt_lb_lbd_frozen_clause),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
+    track_literal_occurrence(false),
+    variableOccurrences(ClauseDeleted()),
     allocator(), 
     clauses() {
 
 }
 
 ClauseDatabase::~ClauseDatabase() {
+}
+
+void ClauseDatabase::initOccurrenceTracking(size_t nVars) {
+    variableOccurrences.init(nVars);
+    for (Clause* clause : clauses) {
+        for (Lit lit : *clause) {
+            variableOccurrences[var(lit)].push_back(clause);
+        }
+    }
+    track_literal_occurrence = true;
+}
+
+void ClauseDatabase::stopOccurrenceTracking() {
+    variableOccurrences.clear();
+    track_literal_occurrence = false;
 }
 
 void ClauseDatabase::reduce() {
