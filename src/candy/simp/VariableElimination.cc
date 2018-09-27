@@ -9,7 +9,8 @@ namespace VariableEliminationOptions {
     Glucose::IntOption opt_clause_lim("VariableElimination", "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, Glucose::IntRange(0, INT32_MAX));
 }
 
-VariableElimination::VariableElimination() : 
+VariableElimination::VariableElimination(ClauseDatabase& clause_db_) : 
+    clause_db(clause_db_),
     elimclauses(), 
     eliminated(),
     clause_lim(VariableEliminationOptions::opt_clause_lim), 
@@ -103,11 +104,13 @@ bool VariableElimination::merge(const Clause& _ps, const Clause& _qs, Var v, siz
 /**
  * Return true if v was eliminated, else false
  */
-bool VariableElimination::eliminateVar(Var v, std::vector<Clause*>& occurences) {
+bool VariableElimination::eliminateVar(Var v) {
     assert(!isEliminated(v));
 
     resolvents.clear();
     resolved.clear();
+
+    const std::vector<Clause*>& occurences = clause_db.getOccurenceList(v);
 
     // split the occurrences into positive and negative:
     std::vector<Clause*> pos, neg;

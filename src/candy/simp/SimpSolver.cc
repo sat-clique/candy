@@ -71,7 +71,7 @@ BoolOption opt_use_elim(_cat, "elim", "Perform variable elimination.", true);
 template<> SimpSolver<RSILBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) : 
                 Solver<RSILBranchingHeuristic3>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate),
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
@@ -82,7 +82,7 @@ template<> SimpSolver<RSILBranchingHeuristic3>::SimpSolver(Conjectures conjectur
 template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) : 
                 Solver<RSILBudgetBranchingHeuristic3>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
@@ -93,7 +93,7 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic3>::SimpSolver(Conjectures con
 template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) : 
                 Solver<RSILVanishingBranchingHeuristic3>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
@@ -104,7 +104,7 @@ template<> SimpSolver<RSILVanishingBranchingHeuristic3>::SimpSolver(Conjectures 
 template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) : 
                 Solver<RSILBranchingHeuristic2>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
@@ -115,7 +115,7 @@ template<> SimpSolver<RSILBranchingHeuristic2>::SimpSolver(Conjectures conjectur
 template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) : 
                 Solver<RSILBudgetBranchingHeuristic2>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
@@ -126,7 +126,7 @@ template<> SimpSolver<RSILBudgetBranchingHeuristic2>::SimpSolver(Conjectures con
 template<> SimpSolver<RSILVanishingBranchingHeuristic2>::SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) : 
                 Solver<RSILVanishingBranchingHeuristic2>(std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate), 
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),

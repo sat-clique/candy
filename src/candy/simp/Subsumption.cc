@@ -33,7 +33,7 @@ void Subsumption::gatherTouchedClauses() {
     
     for (unsigned int i = 0; i < touched.size(); i++) {
         if (touched[i]) {
-            const vector<Clause*>& cs = occurs.lookup(i);
+            const vector<Clause*>& cs = clause_db.getOccurenceList(i);
             for (Clause* c : cs) {
                 if (!c->isDeleted()) {
                     subsumptionQueueProtectedPush(c);
@@ -49,18 +49,10 @@ void Subsumption::gatherTouchedClauses() {
 void Subsumption::attach(Clause* clause) {
     subsumption_queue.push_back(clause);
     subsumption_queue_contains[clause] = true;
-    for (Lit lit : *clause) {
-        occurs[var(lit)].push_back(clause);
-    }
     calcAbstraction(clause);
 }
 
-void Subsumption::detach(Clause* clause, Lit lit) {
-    occurs[var(lit)].erase(std::remove(occurs[var(lit)].begin(), occurs[var(lit)].end(), clause), occurs[var(lit)].end());
-}
-
 void Subsumption::init(size_t nVars) {
-    occurs.init(nVars);
     touched.incSize(nVars);
     touched.clear();
     for (Clause* clause : clause_db) {
@@ -71,7 +63,6 @@ void Subsumption::init(size_t nVars) {
 void Subsumption::clear() {
     touched.clear();
     n_touched = 0;
-    occurs.clear();
     subsumption_queue.clear();
     abstraction.clear();
 }
@@ -90,18 +81,13 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     subsumptionQueueProtectedPush(clause);
 
     reduced_literals.push_back(l);
-
     propagator.detachClause(clause, true);
-    clause->strengthen(l);
-
     certificate.added(clause->begin(), clause->end());
-
-    detach(clause, l);
+    clause_db.strengthenClause(clause, l);
     
     if (clause->size() == 1) {
-        detach(clause, clause->first());
-        reduced_literals.push_back(clause->first());
         clause_db.removeClause(clause);
+        reduced_literals.push_back(clause->first());
         return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
     }
     else {
@@ -135,11 +121,11 @@ bool Subsumption::backwardSubsumptionCheck() {
         
         // Find best variable to scan:
         Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
-            return occurs[var(l1)].size() < occurs[var(l2)].size();
+            return clause_db.getOccurenceList(var(l1)).size() < clause_db.getOccurenceList(var(l2)).size();
         }));
 
         // Search all candidates:
-        std::vector<Clause*>& cs = occurs.lookup(best);
+        const std::vector<Clause*>& cs = clause_db.getOccurenceList(best);
         for (unsigned int i = 0; i < cs.size(); i++) {
             Clause* csi = cs[i];
             if (csi != clause && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
@@ -156,7 +142,6 @@ bool Subsumption::backwardSubsumptionCheck() {
                     }
                     clause_db.removeClause(csi);
                     reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
-                    for (Lit lit : *csi) detach(csi, lit);
                 }
                 else if (l != lit_Error) {
                     Statistics::getInstance().solverDeletedInc();

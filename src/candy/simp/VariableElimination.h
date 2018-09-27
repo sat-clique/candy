@@ -3,6 +3,7 @@
 
 #include <vector> 
 
+#include "candy/core/ClauseDatabase.h"
 #include "candy/core/Clause.h"
 #include "candy/utils/Options.h"
 
@@ -19,15 +20,17 @@ public:
     std::vector<Cl> resolvents;
     std::vector<Clause*> resolved;
 
-    VariableElimination();
+    VariableElimination(ClauseDatabase& clause_db_);
 
-    bool eliminateVar(Var v, std::vector<Clause*>& occurences);
+    bool eliminateVar(Var v);
 
     void extendModel(std::vector<lbool>& model);
 
     bool isEliminated(Var v) const;
 
 private:
+
+    ClauseDatabase& clause_db;
 
     std::vector<uint32_t> elimclauses;
     std::vector<char> eliminated;

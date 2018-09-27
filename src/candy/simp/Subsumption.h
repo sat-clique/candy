@@ -22,12 +22,6 @@ extern IntOption opt_subsumption_lim;
 
 class Subsumption {
 private:
-    struct ClauseDeleted {
-        explicit ClauseDeleted() { }
-        inline bool operator()(const Clause* cr) const {
-            return cr->isDeleted();
-        }
-    };
 
     ClauseDatabase& clause_db;
     Trail& trail;
@@ -47,7 +41,6 @@ public:
         n_touched(0),
         reduced_literals(),
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
-        occurs(ClauseDeleted()),
         subsumption_queue(),
         subsumption_queue_contains(),
         abstraction(),
@@ -59,7 +52,6 @@ public:
     uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
     std::deque<Clause*> subsumption_queue;
-    OccLists<Var, Clause*, ClauseDeleted> occurs;
     std::unordered_map<Clause*, char> subsumption_queue_contains;
     std::unordered_map<Clause*, uint64_t> abstraction;
     uint32_t bwdsub_assigns;
@@ -82,7 +74,6 @@ public:
     void clear();
 
     void attach(Clause* clause);
-    void detach(Clause* clause, Lit lit);
 
     void calcAbstraction(Clause* clause);
 

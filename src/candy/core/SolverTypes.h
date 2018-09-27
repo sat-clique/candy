@@ -257,6 +257,14 @@ public:
 		return occs[toInt(idx)];
 	}
 
+	void removeAll(const Idx& idx) {
+		occs[toInt(idx)].clear();
+	}
+
+	void remove(const Idx& idx, Elem elem) {
+		occs[toInt(idx)].erase(std::remove(occs[toInt(idx)].begin(), occs[toInt(idx)].end(), elem), occs[toInt(idx)].end());
+	}
+
 	void smudge(const Idx& idx) {
 		if (!dirty[toInt(idx)]) {
 			dirty[toInt(idx)] = true;

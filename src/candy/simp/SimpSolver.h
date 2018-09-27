@@ -176,11 +176,11 @@ protected:
 template<class PickBranchLitT>
 SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate),
-    elimination(),
+    elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
-    elim_heap(ElimLt(n_occ)),
+    elim_heap(ElimLt(n_occ)), 
     frozen() {
 }
 
@@ -300,7 +300,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     bool was_frozen = frozen[v];
     frozen.set(v);
     
-    vector<Clause*> cls(subsumption.occurs.lookup(v));
+    const std::vector<Clause*>& cls = this->clause_db.getOccurenceList(v);
     
     if (this->trail.isAssigned(v) || cls.size() == 0)
         return true;
@@ -337,6 +337,7 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     }
 
     // include persistent learnt clauses
+    this->clause_db.initOccurrenceTracking(this->nVars());
     subsumption.init(this->nVars());
     for (Clause* c : this->clause_db.clauses) {
         elimAttach(c);
@@ -355,6 +356,8 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     frozen.clear();
     n_occ.clear();
     elim_heap.clear();
+
+    this->clause_db.stopOccurrenceTracking();
 
     subsumption.clear();
 
@@ -396,7 +399,7 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                 }
 
                 if (use_elim && !this->isInConflictingState() && !this->trail.isAssigned(elim) && !frozen[elim]) {
-                    bool was_eliminated = elimination.eliminateVar(elim, subsumption.occurs.lookup(elim));
+                    bool was_eliminated = elimination.eliminateVar(elim);
 
                     if (was_eliminated) {
                         for (Cl& resolvent : elimination.resolvents) {
@@ -412,20 +415,13 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                             subsumption.attach(this->clause_db.clauses.back());
                         }
 
-                        // cleanup clauses to be removed
-                        subsumption.occurs[elim].clear();
-                        for (Clause* c : elimination.resolved) {
-                            for (Lit lit : *c) {
-                                subsumption.detach(c, lit);
-                            }
-                        }
-
                         for (Clause* c : elimination.resolved) {
                             this->clause_db.removeClause(c);
                             elimDetach(c);
                             this->propagator.detachClause(c, true);
                         }
 
+                        this->clause_db.cleanup();
                         this->branch.setDecisionVar(elim, false);
                         
                         if (this->isInConflictingState()) {
