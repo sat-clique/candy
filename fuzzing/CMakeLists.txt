@@ -20,10 +20,13 @@ link_directories(${CMAKE_BINARY_DIR}/lib/minisat)
 link_directories(${CMAKE_BINARY_DIR}/lib/drat-trim)
 
 add_library(minisat STATIC IMPORTED)
-set_target_properties(minisat PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/minisat/libminisat.a)
-
 add_library(dt STATIC IMPORTED)
-set_target_properties(dt PROPERTIES IMPORTED_LOCATION ${CMAKE_BINARY_DIR}/lib/drat-trim/libdt.a)
+
+find_library(MINISAT_LIBRARY NAMES minisat PATHS "${CMAKE_BINARY_DIR}/lib/minisat")
+set_target_properties(minisat PROPERTIES IMPORTED_LOCATION ${MINISAT_LIBRARY})
+
+find_library(DT_LIBRARY NAMES dt PATHS "${CMAKE_BINARY_DIR}/lib/drat-trim")
+set_target_properties(dt PROPERTIES IMPORTED_LOCATION ${DT_LIBRARY})
 
 target_link_libraries(candy_fuzz ${CANDY_LIBS} minisat)
 target_link_libraries(candy_proof_fuzz ${CANDY_LIBS} minisat dt)
