@@ -283,6 +283,8 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
             l = lit;
         }
     }
+
+    assert(l != lit_Undef);
     
     if (this->propagator.propagate() != nullptr) {
         this->trail.cancelUntil(0);
@@ -300,7 +302,7 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     bool was_frozen = frozen[v];
     frozen.set(v);
     
-    const std::vector<Clause*>& cls = this->clause_db.getOccurenceList(v);
+    std::vector<Clause*> cls = this->clause_db.getOccurenceList(v);
     
     if (this->trail.isAssigned(v) || cls.size() == 0)
         return true;
