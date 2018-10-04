@@ -86,7 +86,6 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     clause_db.strengthenClause(clause, l);
     
     if (clause->size() == 1) {
-        clause_db.removeClause(clause);
         reduced_literals.push_back(clause->first());
         return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
     }

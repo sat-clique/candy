@@ -121,20 +121,11 @@ public:
         return clause;
     }
 
-    void removeClause(Clause* clause, bool strict = false) {
+    void removeClause(Clause* clause) {
         clause->setDeleted();
 
-        if (strict) {
-            clauses.erase(std::remove(clauses.begin(), clauses.end(), clause), clauses.end());  
-        }
-
         if (track_literal_occurrence) {
-            if (strict) {
-                for (Lit lit : *clause) variableOccurrences.remove(var(lit), clause);
-            } 
-            else {
-                for (Lit lit : *clause) variableOccurrences.smudge(var(lit));
-            }
+            for (Lit lit : *clause) variableOccurrences.smudge(var(lit));
         }
     }
 
@@ -143,6 +134,10 @@ public:
 
         if (track_literal_occurrence) {
             variableOccurrences.remove(var(lit), clause);
+        }
+
+        if (clause->size() < 2) {
+            removeClause(clause); 
         }
     }
 

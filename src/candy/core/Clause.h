@@ -229,11 +229,9 @@ public:
         return ret;
     }
 
-    inline std::vector<Lit> strengthen(Lit p) {
-        std::vector<Lit> previous(begin(), end());
+    inline void strengthen(Lit p) {
         std::remove(begin(), end(), p);
         --length;
-        return previous;
     }
 
 private:
