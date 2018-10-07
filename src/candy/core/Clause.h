@@ -244,6 +244,14 @@ private:
     }
 };
 
+inline std::ostream& operator <<(std::ostream& stream, Clause const& clause) {
+    for (Lit lit : clause) {
+        stream << lit << " ";
+    }
+    stream << std::endl; 
+    return stream;
+}
+
 } /* namespace Candy */
 
 #endif /* SRC_CANDY_CORE_CLAUSE_H_ */
