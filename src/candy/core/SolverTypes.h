@@ -56,6 +56,7 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include <iostream>
 
 namespace Candy {
 
@@ -140,6 +141,7 @@ inline Lit toLit(int i) {
 const Lit lit_Undef = { -2 };  // }- Useful special constants.
 const Lit lit_Error = { -1 };  // }
 
+
 //=================================================================================================
 // Lifted booleans:
 //
@@ -203,22 +205,36 @@ inline lbool toLbool(int v) {
 typedef std::vector<Lit> Cl;
 typedef std::vector<Cl*> For;
 
+inline std::ostream& operator <<(std::ostream& stream, Lit const& lit) {
+	if (sign(lit)) stream << "-";
+	stream << var(lit)+1;
+    return stream;
+}
 
-// Output Helper Functions
+inline std::ostream& operator <<(std::ostream& stream, lbool const& value) {
+	stream << (value == l_True ? '1' : (value == l_False ? '0' : 'X'));
+    return stream;
+}
+
+inline std::ostream& operator <<(std::ostream& stream, Cl const& clause) {
+    for (Lit lit : clause) {
+        stream << lit << " ";
+    }
+    stream << std::endl; 
+    return stream;
+}
+
 inline void printLiteral(Lit lit) {
-    printf("%s%i ", sign(lit)?"-":"", var(lit)+1);
+    std::cout << lit;
 }
 
 inline void printLiteral(Lit lit, std::vector<lbool> values) {
     lbool value = values[var(lit)] ^ sign(lit);
-    printf("%s%d:%c ", sign(lit) ? "-" : "", var(lit) + 1, value == l_True ? '1' : (value == l_False ? '0' : 'X'));
+	std::cout << lit << ":" << value;
 }
 
 inline void printClause(Cl clause) {
-    for (Lit lit : clause) {
-        printLiteral(lit);
-    }
-    printf("\n");
+    std::cout << clause;
 }
 
 //=================================================================================================
