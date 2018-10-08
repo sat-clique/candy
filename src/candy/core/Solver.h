@@ -576,7 +576,7 @@ bool Solver<PickBranchLitT>::strengthen() {
         auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
         while (pos != clause->end()) {
             Lit lit = *pos;
-            propagator.detachClause(clause);
+            propagator.detachClause(clause, true);
             std::vector<Lit> prev(clause->begin(), clause->end());
             clause_db.strengthenClause(clause, lit);
             certificate.added(clause->begin(), clause->end());
