@@ -574,6 +574,9 @@ bool Solver<PickBranchLitT>::strengthen() {
     std::vector<Clause*> strengthened_clauses;
     for (Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
         auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
+        if (pos != clause->end()) {
+            strengthened_clauses.push_back(clause);
+        }
         while (pos != clause->end()) {
             Lit lit = *pos;
             propagator.detachClause(clause, true);
@@ -581,7 +584,6 @@ bool Solver<PickBranchLitT>::strengthen() {
             clause_db.strengthenClause(clause, lit);
             certificate.added(clause->begin(), clause->end());
             certificate.removed(prev.begin(), prev.end());
-            strengthened_clauses.push_back(clause);
             pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
         }
     }
