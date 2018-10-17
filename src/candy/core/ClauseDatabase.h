@@ -109,7 +109,7 @@ public:
     }
 
     Clause* createClause(Cl& lits) {
-        // std::cout << "Creating clause " << lits << std::endl;
+        // std::cout << "Creating clause " << lits;
 
         Clause* clause = new (allocator.allocate(lits.size())) Clause(lits);
         clauses.push_back(clause);
@@ -124,7 +124,7 @@ public:
     }
 
     void removeClause(Clause* clause) {
-        // std::cout << "Removing clause " << *clause << std::endl;
+        // std::cout << "Removing clause " << *clause;
 
         clause->setDeleted();
 
@@ -134,7 +134,7 @@ public:
     }
 
     void strengthenClause(Clause* clause, Lit lit) {
-        // std::cout << "Strengthening literal " << lit << " in clause " << *clause << std::endl;
+        // std::cout << "Strengthening literal " << lit << " in clause " << *clause;
 
         clause->strengthen(lit);
 

@@ -181,12 +181,16 @@ public:
         assigns[var(p)] = lbool(!sign(p));
         vardata[var(p)] = VarData(from, decisionLevel());
         trail[trail_size++] = p;
+        // std::cout << "Assign " << p;
+        // if (from != nullptr) std::cout << " because " << *from;
+        // else std::cout << std::endl;
     }
 
     inline void cancelUntil(unsigned int level) {
         backtracked.clear();
         if (decisionLevel() > level) {
             backtracked.insert(backtracked.end(), begin() + trail_lim[level], end());
+            // std::cout << "Backtrack " << backtracked;
             for (Lit lit : backtracked) {
                 assigns[var(lit)] = l_Undef;
             }
