@@ -34,7 +34,7 @@ namespace Candy {
         char* str = reinterpret_cast<char*>(&buf[pos]);
         long number = strtol(str, &end, 10);
         if (end > str) {
-            if (errno == ERANGE || number <= std::numeric_limits<int>::min() || number >= std::numeric_limits<int>::max()) {
+            if (errno == ERANGE || number <= std::numeric_limits<int>::min()/2 || number >= std::numeric_limits<int>::max()/2) {
                 fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n");
                 exit(3);
             }
