@@ -65,6 +65,14 @@ public:
 		return *this;
     }
 
+    void setPolarity(Var v, bool sign) {
+        polarity[v] = sign;
+    }
+
+    Lit getLastDecision() {
+        return trail[*(trail.trail_lim.rbegin())];
+    }
+
     // Declare if a variable should be eligible for selection in the decision heuristic.
     void setDecisionVar(Var v, bool b) {
         if (decision[v] != static_cast<char>(b)) {

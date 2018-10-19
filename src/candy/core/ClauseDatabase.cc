@@ -49,7 +49,7 @@ void ClauseDatabase::reduce() {
     copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [](Clause* clause) { return clause->isLearnt() && clause->size() > 2; });
     std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
 
-    learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());    
+    learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());
     if (learnts.size() == 0 || learnts.back()->getLBD() <= persistentLBD) {
         return; // We have a lot of "good" clauses, it is difficult to compare them, keep more
     }
@@ -61,7 +61,7 @@ void ClauseDatabase::reduce() {
         if (c->isFrozen()) {
             c->setFrozen(false); // reset flag
         }
-        else if (trail.reason(var(c->first())) != c) {
+        else if (trail.reason(var(c->first())) != c) { // TODO: assert this earlier and get rid of it
             ++count;
             removeClause(c);
         }

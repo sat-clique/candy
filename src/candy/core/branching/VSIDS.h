@@ -75,8 +75,12 @@ public:
 		return *this;
     }
 
-    void setPolarity(Var v, bool pol) {
-        polarity[v] = pol;
+    void setPolarity(Var v, bool sign) {
+        polarity[v] = sign;
+    }
+
+    Lit getLastDecision() {
+        return trail[(*trail.trail_lim.rbegin())];
     }
 
     void setActivity(Var v, double act) {
