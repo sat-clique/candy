@@ -26,13 +26,13 @@ protected:
 
 public:
 
-    // BranchingInterface(BranchingInterface&& other) : BranchingMethod(other) {
-        
-	// }
+    void setPolarity(Var v, bool sign) {
+        static_cast<BranchingMethod *>(this)->setPolarity(v, sign);
+    }
 
-    // BranchingInterface& operator=(BranchingInterface&& other) {
-
-    // }
+    Lit getLastDecision() {
+        return static_cast<BranchingMethod *>(this)->getLastDecision();
+    }
 
     void notify_conflict() {
         static_cast<BranchingMethod *>(this)->notify_conflict();
