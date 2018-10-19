@@ -122,14 +122,14 @@ public:
     void addClauses(const CNFProblem& problem) override;
 
     template<typename Iterator>
-    bool addClause(Iterator begin, Iterator end);
+    bool addClause(Iterator begin, Iterator end, bool learnt = false);
 
-    bool addClause(const vector<Lit>& lits) override {
-        return addClause(lits.begin(), lits.end());
+    bool addClause(const std::vector<Lit>& lits, bool learnt = false) override {
+        return addClause(lits.begin(), lits.end(), learnt);
     }
 
-    bool addClause(std::initializer_list<Lit> lits) override {
-        return addClause(lits.begin(), lits.end());
+    bool addClause(std::initializer_list<Lit> lits, bool learnt = false) override {
+        return addClause(lits.begin(), lits.end(), learnt);
     }
 
     void printDIMACS() override {
@@ -253,7 +253,7 @@ public:
         this->termCallback = termCallback;
     }
 
-    void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) {
+    void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { 
         this->learntCallbackState = state;
         this->learntCallbackMaxLength = max_length;
         this->learntCallback = learntCallback;
@@ -283,7 +283,7 @@ public:
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
-protected:
+protected:    
     Trail trail;
     Propagate propagator;
     ConflictAnalysis conflict_analysis;
@@ -502,7 +502,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
 
 template<class PickBranchLitT>
 template<typename Iterator>
-bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
+bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, bool learnt) {
     assert(trail.decisionLevel() == 0);
 
     std::vector<Lit> copy{cbegin, cend};
@@ -526,6 +526,7 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend) {
     else {
         Clause* clause = clause_db.createClause(copy);
         propagator.attachClause(clause);
+        if (learnt) clause->setLearnt(true);
         return ok;
     }
 }
