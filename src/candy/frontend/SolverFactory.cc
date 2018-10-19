@@ -6,6 +6,7 @@
  */
 
 #include "candy/frontend/SolverFactory.h"
+#include "candy/core/CandySolverInterface.h"
 #include "candy/frontend/RSILSolverBuilder.h"
 #include "candy/utils/MemUtils.h"
 #include "candy/utils/StringUtils.h"

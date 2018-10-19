@@ -16,7 +16,7 @@ namespace Candy {
 
 class CandySolverInterface {
 public:
-	virtual ~CandySolverInterface() {}
+	virtual ~CandySolverInterface() {};
 
     virtual void resetCertificate(const char* targetFilename) = 0;
     virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) = 0;
@@ -28,8 +28,8 @@ public:
     virtual Var newVar() = 0;
 
     virtual void addClauses(const CNFProblem& problem) = 0;
-    virtual bool addClause(const std::vector<Lit>& lits) = 0;
-    virtual bool addClause(std::initializer_list<Lit> lits) = 0;
+    virtual bool addClause(const std::vector<Lit>& lits, bool learnt = false) = 0;
+    virtual bool addClause(std::initializer_list<Lit> lits, bool learnt = false) = 0;
 
     virtual bool simplify() = 0; // remove satisfied clauses
     virtual bool strengthen() = 0; // remove false literals from clauses
@@ -46,6 +46,7 @@ public:
 	virtual void setPropBudget(uint64_t x) = 0;
 	virtual void setInterrupt(bool value) = 0;
 	virtual void budgetOff() = 0;
+	virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) = 0;
 
 	virtual void printDIMACS() = 0;
 

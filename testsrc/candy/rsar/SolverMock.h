@@ -74,8 +74,10 @@ namespace Candy {
         virtual Var newVar() override;
 
         virtual void addClauses(const CNFProblem& problem) override;
-        virtual bool addClause(const std::vector<Lit>& lits) override;
-        virtual bool addClause(std::initializer_list<Lit> lits) override { return false; }
+        virtual bool addClause(const std::vector<Lit>& lits, bool learnt = false) override;
+        virtual bool addClause(std::initializer_list<Lit> lits, bool learnt = false) override { return false; }
+
+        void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
 
         virtual bool simplify() override; // remove satisfied clauses
         virtual bool strengthen() override { return true; } // remove false literals from clauses
