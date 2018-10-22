@@ -31,7 +31,15 @@ namespace Candy {
     : m_what(what) {
     }
     
-    const std::string& UnsuitableProblemException::what() const noexcept {
-        return m_what;
+    const char* UnsuitableProblemException::what() const noexcept {
+        return m_what.c_str();
+    }
+
+    ParserException::ParserException(const std::string& what) noexcept
+    : m_what(what) {
+    }
+    
+    const char* ParserException::what() const noexcept {
+        return m_what.c_str();
     }
 }

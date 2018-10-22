@@ -6,6 +6,7 @@
  */
 
 #include "candy/core/CNFProblem.h"
+#include "candy/frontend/Exceptions.h"
 
 #include <vector>
 
@@ -74,12 +75,12 @@ void CNFProblem::readDimacs(gzFile input_stream) {
                 headerVars = in.readInteger();
                 headerClauses = in.readInteger();
                 if (headerVars < 0 || headerClauses < 0) {
-                    printf("PARSE ERROR! Expected positive occurence count in header but got %i vars and %i clauses\n", headerVars, headerClauses), exit(3); 
+                    throw ParserException("PARSE ERROR! Expected positive occurence count in header but got " + std::to_string(headerVars) + " vars and " + std::to_string(headerClauses) + " clauses");
                 }
                 problem.reserve(headerClauses);
             }
             else {
-                printf("PARSE ERROR! Expected 'p cnf' but got unexpected char: %c\n", *in), exit(3);
+                throw ParserException("PARSE ERROR! Expected 'p cnf' but got unexpected char: " + std::to_string(*in));
             }
         }
         else if (*in == 'c') {
@@ -91,7 +92,7 @@ void CNFProblem::readDimacs(gzFile input_stream) {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(mkLit(abs(plit)-1, plit < 0));
                 if (in.eof()) {
-                    printf("PARSE ERROR! Expected clause but got unexpected char: %c\n", *in), exit(3);
+                    throw ParserException("PARSE ERROR! Expected clause but got unexpected char: " + std::to_string(*in));
                 }
             }
             readClause(lits.begin(), lits.end());
