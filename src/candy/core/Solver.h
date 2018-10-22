@@ -124,6 +124,10 @@ public:
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end, bool learnt = false);
 
+    PickBranchLitT& getBranchingInterface() {
+        return branch;
+    }
+
     bool addClause(const std::vector<Lit>& lits, bool learnt = false) override {
         return addClause(lits.begin(), lits.end(), learnt);
     }
