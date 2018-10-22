@@ -28,6 +28,7 @@
 #define X_295AB8F2_3BF4_4A76_B68B_D31FBF4C2A5B_H
 
 #include <string>
+#include <exception>
 
 namespace Candy {
     /**
@@ -36,10 +37,24 @@ namespace Candy {
      * \brief An exception intended to be thrown when the given problem instance is
      *   not suitable for the algorithm intended to solve it.
      */
-    class UnsuitableProblemException {
+    class UnsuitableProblemException : public std::exception {
     public:
         explicit UnsuitableProblemException(const std::string& what) noexcept;
-        const std::string& what() const noexcept;
+        virtual const char* what() const noexcept;
+        
+    private:
+        std::string m_what;
+    };
+
+    /**
+     * \ingroup CandyFrontend
+     *
+     * \brief An exception intended to be thrown when the given file can not be parsed.
+     */
+    class ParserException : public std::exception {
+    public:
+        explicit ParserException(const std::string& what) noexcept;
+        virtual const char* what() const noexcept;
         
     private:
         std::string m_what;

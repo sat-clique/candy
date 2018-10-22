@@ -12,19 +12,25 @@ int main(int argc, char** argv) {
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
 
     CNFProblem problem{};
-    if (args.read_from_stdin) {
-        printf("c Reading from standard input... Use '--help' for help.\n");
-        if (!problem.readDimacsFromStdin()) {
-            return 1;
+    try {
+        if (args.read_from_stdin) {
+            printf("c Reading from standard input... Use '--help' for help.\n");
+            if (!problem.readDimacsFromStdin()) {
+                return 1;
+            }
+        } else {
+            if (!problem.readDimacsFromFile(args.input_filename)) {
+                return 1;
+            }
         }
-    } else {
-        if (!problem.readDimacsFromFile(args.input_filename)) {
-            return 1;
-        }
+    } 
+    catch (ParserException& e) {
+		printf("Parser Exception\n%s\n", e.what());
+        return 0;
     }
 
     if (problem.nVars() > 100) {
-        exit(3); // concentrate on small problems during fuzzing
+        return 0; // concentrate on small problems during fuzzing
     }
 
     CandySolverInterface* solver = new SimpSolver<VSIDS>();

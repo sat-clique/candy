@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "candy/utils/StreamBuffer.h"
+#include "candy/frontend/Exceptions.h"
 
 namespace Candy {
 
@@ -35,15 +36,15 @@ namespace Candy {
         long number = strtol(str, &end, 10);
         if (end > str) {
             if (errno == ERANGE || number <= std::numeric_limits<int>::min()/2 || number >= std::numeric_limits<int>::max()/2) {
-                fprintf(stderr, "PARSE ERROR! Variable is out of integer-range\n");
-                exit(3);
+                throw ParserException("PARSE ERROR! Variable " + std::to_string(number) + " is out of integer-range");
             }
 
             if (errno != 0 && errno != 25 && errno != 29) {
                 // After strtol, for reasons unknown, ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
                 // After strtol, for reasons unknown, ERRNO=29 ('Illegal seek') when reading from stdin
-                fprintf(stderr, "PARSE ERROR! ERRNO=%i, in 'strtol' while reading '%.8s ..'\n", errno, buf.get()+pos);
-                throw std::runtime_error("");
+                char buffer[1024];
+                std::sprintf(buffer, "PARSE ERROR! ERRNO=%i, in 'strtol' while reading '%.8s ..'\n", errno, buf.get()+pos);
+                throw ParserException(std::string(buffer));
             }
 
             incPos(static_cast<intptr_t>(end - str));
@@ -51,16 +52,17 @@ namespace Candy {
             return static_cast<int>(number);
         }
         else if (errno != 0) {
-            fprintf(stderr, "PARSE ERROR! ERRNO=%i, in 'strtol' while attempting to read '%.8s ..'\n", errno, buf.get()+pos);
-            throw std::runtime_error("");
+            char buffer[1024];
+            std::sprintf(buffer, "PARSE ERROR! ERRNO=%i, in 'strtol' while reading '%.8s ..'\n", errno, buf.get()+pos);
+            throw ParserException(std::string(buffer));
         }
         else if (eof()) {
-            fprintf(stderr, "PARSE ERROR! Unexpected end of file\n");
-            exit(3);
+            throw ParserException("PARSE ERROR! Unexpected end of file");
         }
         else {
-            fprintf(stderr, "PARSE ERROR! Expected integer but got unexpected char while attempting to read '%.8s ..'\n", buf.get()+pos);
-            exit(3);
+            char buffer[1024];
+            std::sprintf(buffer, "PARSE ERROR! Expected integer but got unexpected char while attempting to read '%.8s ..'\n", buf.get()+pos);
+            throw ParserException(std::string(buffer));
         }
     }
 
