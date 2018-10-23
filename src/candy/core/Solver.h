@@ -674,12 +674,13 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             if (learntCallback != nullptr && (int)conflictInfo.learnt_clause.size() <= learntCallbackMaxLength) {
-                vector<int> clause(conflictInfo.learnt_clause.size() + 1);
+                vector<int> clause;
+                clause.reserve(conflictInfo.learnt_clause.size() + 1);
                 for (Lit lit : conflictInfo.learnt_clause) {
                     clause.push_back((var(lit)+1)*(sign(lit)?-1:1));
                 }
                 clause.push_back(0);
-                learntCallback(learntCallbackState, &clause[0]);
+                learntCallback(learntCallbackState, clause.data());
             }
 
             sonification.learntSize(static_cast<int>(conflictInfo.learnt_clause.size()));
