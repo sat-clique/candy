@@ -65,11 +65,8 @@ namespace Candy {
     public:
         
         virtual void resetCertificate(const char* target) override {}
-        virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {}
         virtual void enablePreprocessing() override {}
         virtual void disablePreprocessing() override {}
-
-        virtual unsigned int getVerbosity() override { return 0; }
 
         virtual Var newVar() override;
 
@@ -108,6 +105,8 @@ namespace Candy {
 
     	virtual size_t nClauses() const override { return 0; }
     	virtual size_t nLearnts() const override { return 0; }
+    	virtual size_t nConflicts() const override { return 0; }
+    	virtual size_t nPropagations() const override { return 0; }
         virtual size_t nVars() const override;
 
     	// Incremental mode

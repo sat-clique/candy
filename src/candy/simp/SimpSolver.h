@@ -441,10 +441,6 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
         }
     }
 
-    if (this->verbosity >= 2) {
-        Statistics::getInstance().printSimplificationStats();
-    }
-
     cleanupEliminate();
 
     if (!this->ok) {
