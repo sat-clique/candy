@@ -63,9 +63,6 @@ namespace Candy {
     public:
 
         // from CandySolverInterface:
-        virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {
-        	m_solver->setVerbosities(verbEveryConflicts, verbosity);
-        }
         virtual void enablePreprocessing() override {
         	m_solver->enablePreprocessing();
         }
@@ -75,9 +72,6 @@ namespace Candy {
 
         virtual void resetCertificate(const char* targetFilename) override {
         	return m_solver->resetCertificate(targetFilename);
-        }
-        virtual unsigned int getVerbosity() override {
-        	return m_solver->getVerbosity();
         }
 
         virtual Var newVar() override {
@@ -176,6 +170,12 @@ namespace Candy {
     	virtual size_t nVars() const override {
     		return m_solver->nVars();
         }
+    	virtual size_t nConflicts() const override {
+    		return m_solver->nConflicts();
+    	}
+    	virtual size_t nPropagations() const override {
+    		return m_solver->nPropagations();
+    	}
 
     	// Incremental mode
     	virtual void setIncrementalMode() override {

@@ -39,7 +39,6 @@ class IPASIRCandy {
 
 public:
     IPASIRCandy() : solver(), fmap(0), nomodel(false) {
-        solver.verbosity = 0;
         solver.disablePreprocessing();
     }
 

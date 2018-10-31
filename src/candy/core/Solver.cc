@@ -96,8 +96,6 @@ IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate w
 template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment
@@ -149,8 +147,6 @@ controller.run();
 template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment
@@ -202,8 +198,6 @@ controller.run();
 template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment
@@ -259,8 +253,6 @@ controller.run();
 template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_) :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment
@@ -312,8 +304,6 @@ controller.run();
 template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t initialBudget_) :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment
@@ -365,8 +355,6 @@ controller.run();
 template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t m_probHalfLife_) :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment

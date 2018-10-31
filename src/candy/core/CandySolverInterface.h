@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_CANDYSOLVERINTERFACE_H_
 
 #include "candy/core/SolverTypes.h"
+#include "candy/core/CNFProblem.h"
 
 #include <vector>
 
@@ -19,11 +20,8 @@ public:
 	virtual ~CandySolverInterface() {};
 
     virtual void resetCertificate(const char* targetFilename) = 0;
-    virtual void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) = 0;
-    virtual void enablePreprocessing() = 0;
+	virtual void enablePreprocessing() = 0;
     virtual void disablePreprocessing() = 0;
-
-    virtual unsigned int getVerbosity() = 0;
 
     virtual Var newVar() = 0;
 
@@ -60,8 +58,11 @@ public:
 	virtual std::vector<Lit>& getConflict() = 0;
 
 	virtual size_t nClauses() const = 0;
-	virtual size_t nLearnts() const = 0;
     virtual size_t nVars() const = 0;
+
+	virtual size_t nLearnts() const = 0;
+	virtual size_t nConflicts() const = 0;
+	virtual size_t nPropagations() const = 0;
 
 	// Incremental mode
     virtual void setIncrementalMode() = 0;

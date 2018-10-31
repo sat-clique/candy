@@ -222,10 +222,10 @@ public:
     size_t nVars() const override {
         return trail.vardata.size();
     }
-    size_t nConflicts() const {
+    size_t nConflicts() const override {
         return conflict_analysis.getResult().nConflicts;
     }
-    size_t nPropagations() const {
+    size_t nPropagations() const override {
         return propagator.nPropagations;
     }
 
@@ -267,21 +267,7 @@ public:
         this->certificate.reset(targetFilename);
     }
 
-    void setVerbosities(unsigned int verbEveryConflicts, unsigned int verbosity) override {
-        assert(verbosity == 0 || verbEveryConflicts > 0);
-        this->verbEveryConflicts = verbEveryConflicts;
-        this->verbosity = verbosity;
-    }
-
-    unsigned int getVerbosity() override {
-    	return verbosity;
-    }
-
     Certificate certificate;
-
-    // Control verbosity
-    unsigned int verbEveryConflicts;
-    unsigned int verbosity;
 
     // Extra results: (read-only member variable)
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
@@ -391,8 +377,6 @@ template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :
     // unsat certificate
     certificate(nullptr),
-    // verbosity flags
-    verbEveryConflicts(10000), verbosity(0),
     // results
     model(), conflict(),
     // current assignment
@@ -642,13 +626,7 @@ lbool Solver<PickBranchLitT>::search() {
         
         if (confl != nullptr) { // CONFLICT
             sonification.conflictLevel(trail.decisionLevel());
-                        
-            if (verbosity >= 1 && nConflicts() % verbEveryConflicts == 0) {
-                Statistics::getInstance().printIntermediateStats((int) (trail.trail_lim.size() == 0 ? trail.size() : trail.trail_lim[0]),
-                    static_cast<int>(nClauses()),
-                    static_cast<int>(nLearnts()),
-                    static_cast<int>(nConflicts()));
-            }
+
             if (trail.decisionLevel() == 0) {
                 return l_False;
             }
@@ -698,7 +676,6 @@ lbool Solver<PickBranchLitT>::search() {
 
             if (conflictInfo.learnt_clause.size() == 1) {
                 trail.cancelUntil(0);
-                branch.notify_backtracked();
                 trail.uncheckedEnqueue(conflictInfo.learnt_clause[0]);
                 new_unary = true;
             }
@@ -711,21 +688,23 @@ lbool Solver<PickBranchLitT>::search() {
                     // Find correct backtrack level:
                     int max_i = 1;
                     // Find the first literal assigned at the next-highest level:
-                    for (uint_fast16_t i = 2; i < clause->size(); i++)
-                        if (trail.level(var((*clause)[i])) > trail.level(var((*clause)[max_i])))
+                    for (uint_fast16_t i = 2; i < clause->size(); i++) {
+                        if (trail.level(var((*clause)[i])) > trail.level(var((*clause)[max_i]))) {
                             max_i = i;
+                        }
+                    }
                     // Swap-in this literal at index 1:
                     clause->swap(max_i, 1);
                 }
 
                 trail.cancelUntil(trail.level(var(clause->second())));
-                branch.notify_backtracked();
+                trail.uncheckedEnqueue(clause->first(), clause);
 
                 propagator.attachClause(clause);
-                trail.uncheckedEnqueue(clause->first(), clause);
                 clause_db.claBumpActivity(*clause);
             }
             clause_db.claDecayActivity();
+            branch.notify_backtracked();
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper
@@ -834,14 +813,6 @@ lbool Solver<PickBranchLitT>::solve() {
     
     model.clear();
     conflict.clear();
-    
-    if (!incremental && verbosity >= 1) {
-        printf("c =========[ Search Statistics (every %6d conflicts) ]==========\n", verbEveryConflicts);
-        printf("c |                                                               |\n");
-        printf("c |      RESTARTS      |             |       LEARNT               |\n");
-        printf("c |  NB  Blocked  Avg  |   Clauses   |  Red  Learnts    Removed   |\n");
-        printf("c =================================================================\n");
-    }
 
     lbool status = l_Undef;
     if (isInConflictingState()) {
@@ -888,12 +859,6 @@ lbool Solver<PickBranchLitT>::solve() {
     }
     
     trail.cancelUntil(0);
-
-    if (verbosity > 0) {
-    	Statistics::getInstance().printFinalStats(nConflicts(), nPropagations());
-        Statistics::getInstance().printAllocatorStatistics();
-        Statistics::getInstance().printRuntimes();
-    }
 
     Statistics::getInstance().runtimeStop("Solver");
     return status;

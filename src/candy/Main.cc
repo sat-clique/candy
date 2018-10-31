@@ -219,11 +219,11 @@ static void printResult(CandySolverInterface* solver, lbool result, bool showMod
 /**
  * Runs the SAT solver, performing simplification if \p do_preprocess is true.
  */
-static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
+static lbool solve(CandySolverInterface* solver, int verbosity, bool do_preprocess) {
     lbool result = l_Undef;
 
     if (solver->isInConflictingState()) {
-        if (solver->getVerbosity() > 0) {
+        if (verbosity > 0) {
             printf("c =================================================================\n");
             printf("c Solved by propagation\n");
         }
@@ -236,10 +236,14 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
         solver->disablePreprocessing();
         Statistics::getInstance().runtimeStop("Preprocessing");
 
+        if (verbosity > 1) {
+            Statistics::getInstance().printSimplificationStats();
+        }
+
         if (solver->isInConflictingState()) {
             result = l_False;
         }
-        if (solver->getVerbosity() > 0) {
+        if (verbosity > 0) {
             Statistics::getInstance().printRuntime("Preprocessing");
             if (result == l_False) {
                 printf("c =================================================================\n");
@@ -250,6 +254,13 @@ static lbool solve(CandySolverInterface* solver, bool do_preprocess) {
 
     if (result == l_Undef) {
         result = solver->solve();
+    }
+
+
+    if (verbosity > 0) {
+    	Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+        Statistics::getInstance().printAllocatorStatistics();
+        Statistics::getInstance().printRuntimes();
     }
 
     return result;
@@ -338,7 +349,6 @@ int main(int argc, char** argv) {
         std::cerr << "c Using VSIDS Branching Heuristic" << std::endl;
         solver = new SimpSolver<VSIDS>();
     }
-    solver->setVerbosities(args.vv, args.verb);
     if (args.do_certified) {
         solver->resetCertificate(args.opt_certified_file);
     }
@@ -365,7 +375,7 @@ int main(int argc, char** argv) {
 	    }
 
         installSignalHandlers(true, solver);
-	    result = solve(solver, args.do_preprocess);
+	    result = solve(solver, args.vv, args.do_preprocess);
         installSignalHandlers(false, solver);
 
         if (result == l_True && args.do_minimize > 0) {
