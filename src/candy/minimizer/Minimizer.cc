@@ -108,12 +108,13 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
 
         solver->addClause(exclude);
 
-        satisfiable = solver->simplify() && solver->strengthen() && (solver->solve(assume) == l_True);
-
-        if (satisfiable) {
+        if (solver->solve(assume) == l_True) {
             Cl newModel = solver->getModel();
             pModel.clear();
             pModel.insert(pModel.end(), newModel.begin(), newModel.end());
+        }
+        else {
+            satisfiable = false;
         }
     }
 

@@ -328,7 +328,7 @@ void SimpSolver<PickBranchLitT>::extendModel() {
 
 template<class PickBranchLitT>
 void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
-    frozen.incSize(this->nVars());
+    frozen.grow(this->nVars());
 
     // freeze assumptions and other externally set frozen variables
     for (Lit lit : this->assumptions) {

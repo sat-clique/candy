@@ -53,7 +53,7 @@ void Subsumption::attach(Clause* clause) {
 }
 
 void Subsumption::init(size_t nVars) {
-    touched.incSize(nVars);
+    touched.grow(nVars);
     touched.clear();
     for (Clause* clause : clause_db) {
         attach(clause);

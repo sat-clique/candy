@@ -104,7 +104,7 @@ public:
         assigns.push_back(l_Undef);
         vardata.emplace_back();
         trail.push_back(lit_Undef);
-        stamp.incSize();
+        stamp.grow();
     }
 
     inline void grow(size_t size) {
@@ -112,7 +112,7 @@ public:
             assigns.resize(size, l_Undef);
             vardata.resize(size);
             trail.resize(size);
-            stamp.incSize(size);
+            stamp.grow(size);
         }
     }
 

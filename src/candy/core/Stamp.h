@@ -29,11 +29,11 @@ public:
 
 	~Stamp() { }
 
-	void incSize() {
+	void grow() {
 		stamped.push_back(std::numeric_limits<T>::min());
 	}
 
-	void incSize(size_t size) {
+	void grow(size_t size) {
 		if (stamped.size() < size) {
 			stamped.resize(size, std::numeric_limits<T>::min());
 		}
