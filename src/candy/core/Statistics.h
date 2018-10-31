@@ -19,8 +19,6 @@
 
 #define SOLVER_STATS
 //#define RUNTIME_STATS
-//#define INCREMENTAL_STATS
-//#define ALLOCATOR_STATS
 
 namespace Candy {
 
@@ -30,20 +28,13 @@ class Statistics {
     uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses;
     uint64_t subsumed, deleted;
-#endif// SOLVER_STATS
+#endif
 
 #ifdef RUNTIME_STATS
     std::map<std::string, std::chrono::milliseconds> runtimes;
     std::map<std::string, std::chrono::milliseconds> starttimes;
-#endif// RUNTIME_STATS
+#endif
 
-#ifdef INCREMENTAL_STATS
-    int nbSatCalls, nbUnsatCalls;
-#endif// INCREMENTAL_STATS
-
-#ifdef ALLOCATOR_STATS
-    std::array<uint32_t, 502> stats_pool_allocs, stats_pool_deallocs;
-#endif// ALLOCATOR_STATS
     char stats;
 
 private:
@@ -93,14 +84,6 @@ public:
     inline void solverDeletedInc() { }
 #endif// SOLVER_STATS
 
-
-#ifdef INCREMENTAL_STATS
-    inline void incNBSatCalls() { ++nbSatCalls; }
-    inline void incNBUnsatCalls() { ++nbUnsatCalls; }
-#else
-    inline void incNBSatCalls() { }
-    inline void incNBUnsatCalls() { }
-#endif// INCREMENTAL_STATS
 #ifdef RUNTIME_STATS
     inline void runtimeReset(std::string key) {
         if (!starttimes.count(key)) {
@@ -142,19 +125,6 @@ public:
     void printRuntime(std::string key) { (void)(key); }
     void printRuntimes() { }
 #endif// RUNTIME_STATS
-#ifdef ALLOCATOR_STATS
-    inline void allocatorPoolAlloc(uint32_t index) {
-        assert(index < stats_number_of_pools);
-        ++stats_pool_allocs[index];
-    }
-    inline void allocatorPoolDealloc(uint32_t index) {
-        assert(index < stats_number_of_pools);
-        ++stats_pool_deallocs[index];
-    }
-#else
-    inline void allocatorPoolAlloc(uint32_t index) { (void)(index); }
-    inline void allocatorPoolDealloc(uint32_t index) { (void)(index); }
-#endif// ALLOCATOR_STATS
 
 };
 

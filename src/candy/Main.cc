@@ -259,7 +259,6 @@ static lbool solve(CandySolverInterface* solver, int verbosity, bool do_preproce
 
     if (verbosity > 0) {
     	Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-        Statistics::getInstance().printAllocatorStatistics();
         Statistics::getInstance().printRuntimes();
     }
 
