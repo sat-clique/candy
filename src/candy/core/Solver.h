@@ -825,8 +825,6 @@ lbool Solver<PickBranchLitT>::solve() {
     }
     
     if (status == l_False) {
-        Statistics::getInstance().incNBUnsatCalls();
-        
         if (!incremental) {
             certificate.proof();
         }
@@ -847,9 +845,6 @@ lbool Solver<PickBranchLitT>::solve() {
         sonification.stop(1);
     }
     else if (status == l_True) {
-        Statistics::getInstance().incNBSatCalls();
-        
-        model.clear();
         model.insert(model.end(), trail.assigns.begin(), trail.assigns.end());
 
         sonification.stop(0);

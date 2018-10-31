@@ -20,13 +20,7 @@ Statistics::Statistics() :
 #ifdef RUNTIME_STATS
     runtimes(), starttimes(),
 #endif
-#ifdef INCREMENTAL_STATS
-    nbSatCalls(0),
-    nbUnsatCalls(0),
-#endif
-#ifdef ALLOCATOR_STATS
-    stats_pool_allocs(0), stats_pool_deallocs(0),
-#endif
+
     stats(0)
 {
     (void)stats;
@@ -45,12 +39,6 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
     printf("c conflicts             : %llu\n", conflicts);
     printf("c decisions             : %llu\n", decisions);
     printf("c propagations          : %llu\n", propagations);
-#endif
-#ifdef INCREMENTAL_STATS
-    printf("\nc SAT Calls             : %d\n", nbSatCalls);
-    printf("c UNSAT Calls           : %d\n", nbUnsatCalls);
-
-    printf("c--------------------------------------------------\n");
 #endif
 }
 
@@ -85,21 +73,12 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     printf("c conflicts             : %-12llu   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
     printf("c decisions             : %-12llu   (%.0f /sec)\n", decisions, decisions / cpu_time);
     printf("c propagations          : %-12llu   (%.0f /sec)\n", propagations, propagations / cpu_time);
-#endif// SOLVER_STATS
+#endif
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {
         printf("Memory used           : %.2f MB\n", mem_used);
     }
     printf("c CPU time              : %g s\n\n", cpu_time);
-}
-
-void Statistics::printAllocatorStatistics() {
-#ifdef ALLOCATOR_STATS
-    printf("\n========= [Pool Usage] =========\n");
-    for (size_t i = 0; i < stats_pool_allocs.size(); i++) {
-        printf("Allocs %u; Deallocs %u; Used %u\n", stats_pool_allocs[i], stats_pool_deallocs[i], stats_pool_allocs[i] - stats_pool_deallocs[i]);
-    }
-#endif
 }
 
 } /* namespace Candy */
