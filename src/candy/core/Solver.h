@@ -154,8 +154,8 @@ public:
     }
 
     // Solving:
-    bool simplify() override; // remove satisfied clauses
-    bool strengthen() override; // remove false literals from clauses
+    void simplify() override; // remove satisfied clauses 
+    void strengthen() override; // remove false literals from clauses
     virtual bool eliminate() override { return true; } // Perform variable elimination based simplification.
     virtual bool eliminate(bool use_asymm, bool use_elim) override { return true; } // Perform variable elimination based simplification.
     
@@ -454,36 +454,38 @@ Var Solver<PickBranchLitT>::newVar() {
     int v = static_cast<int>(nVars());
     propagator.init(nVars());
     trail.grow();
-    conflict_analysis.incSize();
+    conflict_analysis.grow();
     branch.grow();
     return v;
 }
 
 template<class PickBranchLitT>
 void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
-    const For& problem = dimacs.getProblem();
-    size_t curVars = this->nVars();
     size_t maxVars = (size_t)dimacs.nVars();
-    if (maxVars > curVars) {
+    if (maxVars > this->nVars()) {
         propagator.init(maxVars);
         trail.grow(maxVars);
-        conflict_analysis.incSize(maxVars);
+        conflict_analysis.grow(maxVars);
         branch.grow(maxVars);
-        if (sort_variables) {
-        	branch.initFrom(dimacs);
-        }
     }
 
-    for (vector<Lit>* clause : problem) {
+    if (sort_variables) {
+        branch.initFrom(dimacs);
+    }
+
+    for (vector<Lit>* clause : dimacs.getProblem()) {
         if (!addClause(*clause)) {
             certificate.proof();
             return;
         }
     }
     
-    ok = (propagator.propagate() == nullptr) && simplify() && strengthen();
-    
-    if (!ok) {
+    if (propagator.propagate() == nullptr) {
+        simplify();
+        strengthen();
+    }
+    else {
+        ok = false; 
         certificate.proof();
     }
 }
@@ -528,72 +530,57 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, bool lear
  *    thing done here is the removal of satisfied clauses, but more things can be put here.
  **************************************************************************************************/
 template <class PickBranchLitT>
-bool Solver<PickBranchLitT>::simplify() {
+void Solver<PickBranchLitT>::simplify() {
     assert(trail.decisionLevel() == 0);
-    
-    if (!ok || propagator.propagate() != nullptr) {
-        return ok = false;
-    }
+    assert(propagator.propagate() == nullptr);
 
-    std::vector<Clause*> satisfied {};
-
-    // Remove satisfied clauses:
-    std::copy_if(clause_db.clauses.begin(), clause_db.clauses.end(), std::back_inserter(satisfied), [this] (Clause* c) { return trail.satisfied(*c); });
-
-    for (Clause* clause : satisfied) {
-        certificate.removed(clause->begin(), clause->end());
-        propagator.detachClause(clause, false);
-        // Don't leave pointers to free'd memory!
-        if (trail.locked(clause)) {
-            trail.vardata[var(clause->first())].reason = nullptr;
+    for (Clause* clause : clause_db.clauses) {
+        if (trail.satisfied(*clause)) {
+            certificate.removed(clause->begin(), clause->end());
+            propagator.detachClause(clause, true);
+            if (trail.locked(clause)) {
+                trail.vardata[var(clause->first())].reason = nullptr;
+            }
+            clause_db.removeClause(clause); 
         }
-        clause_db.removeClause(clause); 
     }
 
-    // Cleanup:
-    propagator.cleanupWatchers();
     clause_db.cleanup();
-
-    return true;
 }
 
 template <class PickBranchLitT>
-bool Solver<PickBranchLitT>::strengthen() {
-    // Remove false literals:
-    std::vector<Clause*> strengthened_clauses;
+void Solver<PickBranchLitT>::strengthen() {
+    assert(trail.decisionLevel() == 0);
+    assert(propagator.propagate() == nullptr);
+
     for (Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
-        auto pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
-        if (pos != clause->end()) {
-            strengthened_clauses.push_back(clause);
+        vector<Lit> copy(clause->begin(), clause->end());
+
+        for (Lit lit : copy) {        
+            if (trail.value(lit) == l_False) {
+                if (clause->size() == copy.size()) { // first match
+                    propagator.detachClause(clause, true);
+                }
+                clause_db.strengthenClause(clause, lit);
+            }
         }
-        while (pos != clause->end()) {
-            Lit lit = *pos;
-            propagator.detachClause(clause, true);
-            std::vector<Lit> prev(clause->begin(), clause->end());
-            clause_db.strengthenClause(clause, lit);
+
+        if (clause->size() < copy.size()) {
+            assert(clause->size() > 0);
+
             certificate.added(clause->begin(), clause->end());
-            certificate.removed(prev.begin(), prev.end());
-            pos = find_if(clause->begin(), clause->end(), [this] (Lit lit) { return trail.value(lit) == l_False; });
+            certificate.removed(copy.begin(), copy.end());
+
+            if (clause->size() == 1) {
+                trail.newFact(clause->first());
+            }
+            else {
+                propagator.attachClause(clause);
+            }
         }
     }
 
-    for (Clause* clause : strengthened_clauses) {
-        if (clause->size() == 0) {
-            ok = false;
-        }
-        else if (clause->size() == 1) {
-            ok = trail.newFact(clause->first());
-        }
-        else {
-            propagator.attachClause(clause);
-        }
-    }
-
-    // Cleanup:
-    propagator.cleanupWatchers();
     clause_db.cleanup(); 
-
-    return ok &= (propagator.propagate() == nullptr);
 }
 
 /**************************************************************************************************
@@ -729,9 +716,8 @@ lbool Solver<PickBranchLitT>::search() {
                     else if (new_unary) {
                         new_unary = false;
                         Statistics::getInstance().runtimeStart("Simplify");
-                        if (!simplify()) {
-                            return l_False;
-                        }
+                        simplify();
+                        strengthen();
                         Statistics::getInstance().runtimeStop("Simplify");
                     }
 

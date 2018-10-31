@@ -29,8 +29,9 @@ public:
     virtual bool addClause(const std::vector<Lit>& lits, bool learnt = false) = 0;
     virtual bool addClause(std::initializer_list<Lit> lits, bool learnt = false) = 0;
 
-    virtual bool simplify() = 0; // remove satisfied clauses
-    virtual bool strengthen() = 0; // remove false literals from clauses
+    virtual void simplify() = 0; // remove satisfied clauses
+    virtual void strengthen() = 0; // remove false literals from clauses
+	
     virtual bool eliminate() = 0;  // Perform variable elimination based simplification.
     virtual bool eliminate(bool use_asymm, bool use_elim) = 0;  // Perform variable elimination based simplification.
     virtual bool isEliminated(Var v) const = 0;
@@ -59,7 +60,6 @@ public:
 
 	virtual size_t nClauses() const = 0;
     virtual size_t nVars() const = 0;
-
 	virtual size_t nLearnts() const = 0;
 	virtual size_t nConflicts() const = 0;
 	virtual size_t nPropagations() const = 0;

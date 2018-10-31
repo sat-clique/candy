@@ -51,7 +51,7 @@ public:
             interval_assigned = std::move(other.interval_assigned);
             participated = std::move(other.participated);
             step_size = other.step_size;
-            stamp.incSize(other.stamp.size());
+            stamp.grow(other.stamp.size());
 	}
 
     LRB& operator=(LRB&& other) {
@@ -61,7 +61,7 @@ public:
         interval_assigned = std::move(other.interval_assigned);
         participated = std::move(other.participated);
         step_size = other.step_size;
-        stamp.incSize(other.stamp.size());
+        stamp.grow(other.stamp.size());
 		return *this;
     }
 
@@ -93,7 +93,7 @@ public:
         weight.push_back(initial_weight);
         interval_assigned.push_back(0);
         participated.push_back(0);
-        stamp.incSize();
+        stamp.grow();
         insertVarOrder(decision.size() - 1);
     }
 
@@ -105,7 +105,7 @@ public:
             weight.resize(size, initial_weight);
             interval_assigned.resize(size, 0);
             participated.resize(size, 0);
-            stamp.incSize(size);
+            stamp.grow(size);
             for (int i = prevSize; i < static_cast<int>(size); i++) {
                 insertVarOrder(i);
             }

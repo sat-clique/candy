@@ -61,7 +61,7 @@ public:
             var_inc = other.var_inc;
             var_decay = other.var_decay;
             max_var_decay = other.max_var_decay;
-            stamp.incSize(other.stamp.size());
+            stamp.grow(other.stamp.size());
 	}
 
     VSIDS& operator=(VSIDS&& other) {
@@ -71,7 +71,7 @@ public:
         var_inc = other.var_inc;
         var_decay = other.var_decay;
         max_var_decay = other.max_var_decay;
-        stamp.incSize(other.stamp.size());
+        stamp.grow(other.stamp.size());
 		return *this;
     }
 
@@ -105,7 +105,7 @@ public:
         decision.push_back(true);
         polarity.push_back(initial_polarity);
         activity.push_back(initial_activity);
-        stamp.incSize();
+        stamp.grow();
         insertVarOrder(decision.size() - 1);
     }
 
@@ -115,7 +115,7 @@ public:
             decision.resize(size, true);
             polarity.resize(size, initial_polarity);
             activity.resize(size, initial_activity);
-            stamp.incSize(size);
+            stamp.grow(size);
             for (int i = prevSize; i < static_cast<int>(size); i++) {
                 insertVarOrder(i);
             }

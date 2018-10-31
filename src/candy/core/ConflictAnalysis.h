@@ -138,12 +138,12 @@ public:
 
 	~ConflictAnalysis() { }
 
-	void incSize() {
-		stamp.incSize();
+	void grow() {
+		stamp.grow();
 	}
 
-	void incSize(size_t size) {
-		stamp.incSize(size);
+	void grow(size_t size) {
+		stamp.grow(size);
 	}
 
     AnalysisResult getResult() const {
