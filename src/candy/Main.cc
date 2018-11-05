@@ -307,15 +307,17 @@ int main(int argc, char** argv) {
     Statistics::getInstance().runtimeStart("Initialization");
 
     CNFProblem problem{};
-    if (args.read_from_stdin) {
-        printf("c Reading from standard input... Use '--help' for help.\n");
-        if (!problem.readDimacsFromStdin()) {
-            return 1;
+    try {
+        if (args.read_from_stdin) {
+            printf("c Reading from standard input... Use '--help' for help.\n");
+            problem.readDimacsFromStdin();
+        } else {
+            problem.readDimacsFromFile(args.input_filename);
         }
-    } else {
-        if (!problem.readDimacsFromFile(args.input_filename)) {
-            return 1;
-        }
+    }
+    catch (ParserException& e) {
+		printf("Caught Parser Exception\n%s\n", e.what());
+        return 0;
     }
 
     CandySolverInterface* solver;
@@ -395,14 +397,10 @@ int main(int argc, char** argv) {
 
 	} 
     catch (std::bad_alloc& ba) {
-		//printf("c Bad_Alloc Caught: %s\n", ba.what());
+		printf("c Caught Bad_Alloc: %s\n", ba.what());
 		printf("c =================================================================\n");
 		printf("s INDETERMINATE\n");
 		return 0;
 	} 
-    catch (ParserException& e) {
-		printf("Parser Exception\n%s\n", e.what());
-        return 0;
-    }
 }
 
