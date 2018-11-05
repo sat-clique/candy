@@ -162,10 +162,6 @@ public:
 
     void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
 
-    inline uint_fast16_t getPersistentLBD() {// access is temporary
-        return persistentLBD;
-    }
-
     inline void claDecayActivity() {
         cla_inc *= (1 / clause_decay);
     }
