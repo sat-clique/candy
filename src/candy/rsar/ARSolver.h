@@ -164,9 +164,6 @@ namespace Candy {
     	virtual size_t nClauses() const override {
     		return m_solver->nClauses();
     	}
-    	virtual size_t nLearnts() const override {
-    		return m_solver->nLearnts();
-    	}
     	virtual size_t nVars() const override {
     		return m_solver->nVars();
         }

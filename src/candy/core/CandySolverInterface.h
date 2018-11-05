@@ -60,7 +60,6 @@ public:
 
 	virtual size_t nClauses() const = 0;
     virtual size_t nVars() const = 0;
-	virtual size_t nLearnts() const = 0;
 	virtual size_t nConflicts() const = 0;
 	virtual size_t nPropagations() const = 0;
 

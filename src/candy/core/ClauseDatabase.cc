@@ -61,7 +61,7 @@ void ClauseDatabase::reduce() {
         if (c->isFrozen()) {
             c->setFrozen(false); // reset flag
         }
-        else if (trail.reason(var(c->first())) != c) { // TODO: assert this earlier and get rid of it
+        else if (trail.reason(var(c->first())) != c) {
             ++count;
             removeClause(c);
         }
@@ -76,10 +76,6 @@ void ClauseDatabase::reduce() {
 void ClauseDatabase::defrag() {
     vector<Clause*> reallocated = allocator.defrag(clauses);
     clauses.swap(reallocated);
-}
-
-size_t ClauseDatabase::nLearnts() const {
-    return count_if(clauses.begin(), clauses.end(), [](Clause* clause) { return clause->isLearnt(); });
 }
 
 void ClauseDatabase::updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {

@@ -216,9 +216,6 @@ public:
     size_t nClauses() const override {
         return clause_db.clauses.size();
     }
-    size_t nLearnts() const override {
-        return clause_db.nLearnts();
-    }
     size_t nVars() const override {
         return trail.vardata.size();
     }
@@ -292,9 +289,10 @@ protected:
     bqueue<uint32_t> lbdQueue, trailQueue;
 
     // used for reduce
-    uint64_t curRestart;
-    uint32_t nbclausesbeforereduce; // To know when it is time to reduce clause database
-    uint16_t incReduceDB;
+    uint_fast64_t curRestart;
+    unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
+    unsigned int incReduceDB;
+    unsigned int nClausesOriginal;
 
     // constants for memory reorganization
     bool sort_watches;
@@ -397,6 +395,7 @@ Solver<PickBranchLitT>::Solver() :
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
+    nClausesOriginal(0),
     // memory reorganization
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
@@ -481,8 +480,8 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     }
     
     if (propagator.propagate() == nullptr) {
-        simplify();
         strengthen();
+        simplify();
     }
     else {
         ok = false; 
@@ -538,10 +537,12 @@ void Solver<PickBranchLitT>::simplify() {
         if (trail.satisfied(*clause)) {
             certificate.removed(clause->begin(), clause->end());
             propagator.detachClause(clause, true);
-            if (trail.locked(clause)) {
-                trail.vardata[var(clause->first())].reason = nullptr;
-            }
             clause_db.removeClause(clause); 
+
+            assert(!trail.locked(clause)); // always strengthen first for this
+            // if (trail.locked(clause)) {
+            //     trail.vardata[var(clause->first())].reason = nullptr;
+            // }
         }
     }
 
@@ -716,8 +717,8 @@ lbool Solver<PickBranchLitT>::search() {
                     else if (new_unary) {
                         new_unary = false;
                         Statistics::getInstance().runtimeStart("Simplify");
-                        simplify();
                         strengthen();
+                        simplify();
                         Statistics::getInstance().runtimeStop("Simplify");
                     }
 
@@ -738,7 +739,7 @@ lbool Solver<PickBranchLitT>::search() {
             }
             
             // Perform clause database reduction !
-            if (nConflicts() >= (curRestart * nbclausesbeforereduce) && nLearnts() > 0) {                
+            if (nConflicts() >= (curRestart * nbclausesbeforereduce) && clause_db.size() > nClausesOriginal) {
                 curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
 
                 clause_db.cleanup();
@@ -799,6 +800,7 @@ lbool Solver<PickBranchLitT>::solve() {
     
     model.clear();
     conflict.clear();
+    nClausesOriginal = clause_db.size(); 
 
     lbool status = l_Undef;
     if (isInConflictingState()) {
