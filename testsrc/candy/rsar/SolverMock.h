@@ -104,7 +104,6 @@ namespace Candy {
     	virtual std::vector<Lit>& getConflict() override;
 
     	virtual size_t nClauses() const override { return 0; }
-    	virtual size_t nLearnts() const override { return 0; }
     	virtual size_t nConflicts() const override { return 0; }
     	virtual size_t nPropagations() const override { return 0; }
         virtual size_t nVars() const override;
