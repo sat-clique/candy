@@ -321,10 +321,10 @@ int main(int argc, char** argv) {
     }
 
     CandySolverInterface* solver;
-	SolverFactory* factory = new SolverFactory(args);
+	SolverFactory factory { args }; 
     if (args.rsilArgs.useRSIL) {
     	try {
-            solver = factory->createRSILSolver(problem);
+            solver = factory.createRSILSolver(problem);
         }
         catch(UnsuitableProblemException& e) {
             std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
     }
     else if (args.rsarArgs.useRSAR) {
     	try {
-            solver = factory->createRSARSolver(problem);
+            solver = factory.createRSARSolver(problem);
 		}
 		catch(UnsuitableProblemException& e) {
 			std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
