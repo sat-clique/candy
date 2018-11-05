@@ -68,8 +68,8 @@ public:
 
     std::vector<double> getLiteralRelativeOccurrences() const;
 
-    bool readDimacsFromStdin();
-    bool readDimacsFromFile(const char* filename);
+    void readDimacsFromStdin();
+    void readDimacsFromFile(const char* filename);
 
     void readClause(Lit plit);
     void readClause(Lit plit1, Lit plit2);

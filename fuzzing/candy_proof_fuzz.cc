@@ -16,17 +16,13 @@ int main(int argc, char** argv) {
     try {
         if (args.read_from_stdin) {
             printf("c Reading from standard input... Use '--help' for help.\n");
-            if (!problem.readDimacsFromStdin()) {
-                return 1;
-            }
+            problem.readDimacsFromStdin();
         } else {
-            if (!problem.readDimacsFromFile(args.input_filename)) {
-                return 1;
-            }
+            problem.readDimacsFromFile(args.input_filename);
         }
     } 
     catch (ParserException& e) {
-		printf("Parser Exception\n%s\n", e.what());
+		printf("Caught Parser Exception\n%s\n", e.what());
         return 0;
     }
 

@@ -45,26 +45,22 @@ bool CNFProblem::hasEmptyClause() {
     return false;
 }
 
-bool CNFProblem::readDimacsFromStdin() {
+void CNFProblem::readDimacsFromStdin() {
     gzFile in = gzdopen(0, "rb");
     if (in == NULL) {
-        printf("ERROR! Could not open file: <stdin>");
-        return false;
+        throw ParserException("ERROR! Could not open file: <stdin>");
     }
     readDimacs(in);
     gzclose(in);
-    return true;
 }
 
-bool CNFProblem::readDimacsFromFile(const char* filename) {
+void CNFProblem::readDimacsFromFile(const char* filename) {
     gzFile in = gzopen(filename, "rb");
     if (in == NULL) {
-        printf("ERROR! Could not open file: %s\n", filename);
-        return false;
+        throw ParserException(std::string("ERROR! Could not open file") + filename);
     }
     readDimacs(in);
     gzclose(in);
-    return true;
 }
 
 void CNFProblem::readDimacs(gzFile input_stream) {
