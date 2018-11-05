@@ -45,17 +45,13 @@ struct WatcherDeleted {
     }
 };
 
-#ifndef FUTURE_PROPAGATE
 #define NWATCHES 2
-#else
-#define NWATCHES 6
-#endif
 
 class Propagate {
 private:
     Trail& trail;
 
-    std::array<OccLists<Lit, Watcher, WatcherDeleted>, NWATCHES> watches;
+    std::array<OccLists<Lit, Watcher, WatcherDeleted>, 2> watches;
 
 public:
     uint64_t nPropagations;
@@ -114,20 +110,27 @@ public:
         for (size_t v = 0; v < nVars; v++) {
             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
-                for (size_t i = 1; i < watches.size()-1; i++) {
-                    sort(watches[i][l].begin(), watches[i][l].end(), [](Watcher w1, Watcher w2) {
-                        Clause& c1 = *w1.cref;
-                        Clause& c2 = *w2.cref;
-                        return c1.activity() > c2.activity();
-                    });
-                }
-                sort(watches.back()[l].begin(), watches.back()[l].end(), [](Watcher w1, Watcher w2) {
+                sort(watches[1][l].begin(), watches[1][l].end(), [](Watcher w1, Watcher w2) {
                     Clause& c1 = *w1.cref;
                     Clause& c2 = *w2.cref;
                     return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
                 });
             }
         }
+    }
+
+    inline Clause* propagate_binary_clauses(Lit p) {
+        std::vector<Watcher>& list = watches[0][p];
+        for (Watcher& watcher : list) {
+            lbool val = trail.value(watcher.blocker);
+            if (val == l_False) {
+                return watcher.cref;
+            }
+            if (val == l_Undef) {
+                trail.uncheckedEnqueue(watcher.blocker, watcher.cref);
+            }
+        }
+        return nullptr;
     }
 
     /**************************************************************************************************
@@ -141,68 +144,52 @@ public:
      *    Post-conditions:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
-    inline Clause* future_propagate_clauses(Lit p, uint_fast8_t n) {
-        assert(n < watches.size());
+    inline Clause* propagate_watched_clauses(Lit p) {
+        std::vector<Watcher>& list = watches[1][p];
 
-        std::vector<Watcher>& list = watches[n][p];
+        auto keep = list.begin();
+        for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
+            lbool val = trail.value(watcher->blocker);
+            if (val != l_True) { // Try to avoid inspecting the clause
+                Clause* clause = watcher->cref;
 
-        if (n == 0) { // propagate binary clauses
-            for (Watcher& watcher : list) {
-                lbool val = trail.value(watcher.blocker);
-                if (val == l_False) {
-                    return watcher.cref;
+                if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                    clause->swap(0, 1);
                 }
-                if (val == l_Undef) {
-                    trail.uncheckedEnqueue(watcher.blocker, watcher.cref);
+
+                if (watcher->blocker != clause->first()) {
+                    watcher->blocker = clause->first(); // repair blocker (why?)
+                    val = trail.value(clause->first());
+                }
+
+                if (val != l_True) {
+                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                        if (trail.value((*clause)[k]) != l_False) {
+                            clause->swap(1, k);
+                            watches[1][~clause->second()].emplace_back(clause, clause->first());
+                            goto propagate_skip;
+                        }
+                    }
+
+                    // did not find watch
+                    if (val == l_False) { // conflict
+                        list.erase(keep, watcher);
+                        return clause;
+                    }
+                    else { // unit
+                        trail.uncheckedEnqueue(clause->first(), clause);
+                    }
                 }
             }
+            *keep = *watcher;
+            keep++;
+            propagate_skip:;
         }
-        else { // propagate other clauses
-            auto keep = list.begin();
-            for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-                lbool val = trail.value(watcher->blocker);
-                if (val != l_True) { // Try to avoid inspecting the clause
-                    Clause* clause = watcher->cref;
-
-                    if (clause->first() == ~p) { // Make sure the false literal is data[1]
-                        clause->swap(0, 1);
-                    }
-
-                    if (watcher->blocker != clause->first()) {
-                        watcher->blocker = clause->first(); // repair blocker (why?)
-                        val = trail.value(clause->first());
-                    }
-
-                    if (val != l_True) {
-                        for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                            if (trail.value((*clause)[k]) != l_False) {
-                                clause->swap(1, k);
-                                watches[n][~clause->second()].emplace_back(clause, clause->first());
-                                goto propagate_skip;
-                            }
-                        }
-
-                        // did not find watch
-                        if (val == l_False) { // conflict
-                            list.erase(keep, watcher);
-                            return clause;
-                        }
-                        else { // unit
-                            trail.uncheckedEnqueue(clause->first(), clause);
-                        }
-                    }
-                }
-                *keep = *watcher;
-                keep++;
-                propagate_skip:;
-            }
-            list.erase(keep, list.end());
-        }
+        list.erase(keep, list.end());
 
         return nullptr;
     }
 
-    #ifndef FUTURE_PROPAGATE
     Clause* propagate() {
         Clause* conflict = nullptr;
         unsigned int old_qhead = trail.qhead;
@@ -211,40 +198,17 @@ public:
             Lit p = trail[trail.qhead++];
             
             // Propagate binary clauses
-            conflict = future_propagate_clauses(p, 0);
+            conflict = propagate_binary_clauses(p);
             if (conflict != nullptr) break;
 
             // Propagate other 2-watched clauses
-            conflict = future_propagate_clauses(p, 1);
+            conflict = propagate_watched_clauses(p);
             if (conflict != nullptr) break;
         }
 
         nPropagations += trail.qhead - old_qhead;
         return conflict;
     }
-
-    #else // FUTURE PROPAGATE
-
-    Clause* propagate() {
-        std::array<uint32_t, NWATCHES> pos;
-        pos.fill(trail.qhead);
-
-        while (pos[0] < trail.size()) {
-            for (unsigned int i = 0; i < pos.size(); i++) {
-                while (pos[i] < trail.size()) {
-                    Lit p = trail[pos[i]++];
-                    Clause* conflict = future_propagate_clauses(p, i);
-                    if (conflict != nullptr) return conflict;
-                }
-            }
-        }
-
-        trail.qhead = pos[0];
-
-        return nullptr;
-    }
-
-    #endif
 };
 
 } /* namespace Candy */

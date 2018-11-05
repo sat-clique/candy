@@ -160,8 +160,6 @@ public:
         }
     }
 
-    size_t nLearnts() const;
-
     void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
 
     inline uint_fast16_t getPersistentLBD() {// access is temporary
