@@ -41,14 +41,13 @@ private:
 
     Trail& trail;
 
-    uint_fast16_t persistentLBD;
-    uint_fast16_t lbLBDFrozenClause;
-
     // clause activity heuristic
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
 
+    uint_fast8_t persistentLBD;
     bool track_literal_occurrence;
+    
     OccLists<Var, Clause*, ClauseDeleted> variableOccurrences;
 
 public:

@@ -7,15 +7,13 @@ namespace Candy {
 namespace ClauseDatabaseOptions {
     const char* _cat = "ClauseDatabase";
 
-    Glucose::IntOption opt_persistent_lbd(_cat, "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, Glucose::IntRange(0, INT16_MAX));
-    Glucose::IntOption opt_lb_lbd_frozen_clause(_cat, "minLBDFrozenClause", "Protect clauses if their LBD decrease and is lower than (for one turn)", 30, Glucose::IntRange(0, INT16_MAX));
+    Glucose::IntOption opt_persistent_lbd(_cat, "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, Glucose::IntRange(0, INT8_MAX));
     Glucose::DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, Glucose::DoubleRange(0, false, 1, false));
 }
 
 ClauseDatabase::ClauseDatabase(Trail& trail_) : 
     trail(trail_), 
     persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
-    lbLBDFrozenClause(ClauseDatabaseOptions::opt_lb_lbd_frozen_clause),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
     track_literal_occurrence(false),
     variableOccurrences(ClauseDeleted()),
