@@ -15,30 +15,35 @@
 #include "candy/core/Propagate.h"
 #include "candy/core/Clause.h"
 #include "candy/utils/CheckedCast.h"
+#include "candy/utils/Options.h"
 #include <vector>
 
 namespace Candy {
 
-	struct AnalysisResult {
+namespace ClauseLearningOptions {
+	extern Glucose::IntOption opt_lb_size_minimzing_clause;
+}
 
-		AnalysisResult() : 
-			nConflicts(0), learnt_clause(), involved_clauses() 
-		{
+struct AnalysisResult {
 
-		}
+	AnalysisResult() : 
+		nConflicts(0), learnt_clause(), involved_clauses() 
+	{
 
-		uint64_t nConflicts;
-		std::vector<Lit> learnt_clause;
-		std::vector<Clause*> involved_clauses;
+	}
 
-		uint_fast16_t lbd;
+	uint64_t nConflicts;
+	std::vector<Lit> learnt_clause;
+	std::vector<Clause*> involved_clauses;
 
-		void clear() {
-			learnt_clause.clear();
-			involved_clauses.clear();
-		}
+	uint_fast16_t lbd;
 
-	};
+	void clear() {
+		learnt_clause.clear();
+		involved_clauses.clear();
+	}
+
+};
 
 class ConflictAnalysis {
 private:
@@ -126,14 +131,14 @@ private:
 	}
 
 public:
-	ConflictAnalysis(Trail& _trail, Propagate& _propagate, unsigned int _lbSizeMinimizingClause) :
+	ConflictAnalysis(Trail& _trail, Propagate& _propagate) :
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),
 		result(),
 		trail(_trail),
 		propagate(_propagate),
-		lbSizeMinimizingClause(_lbSizeMinimizingClause)
+		lbSizeMinimizingClause(ClauseLearningOptions::opt_lb_size_minimzing_clause)
 	{ }
 
 	~ConflictAnalysis() { }
