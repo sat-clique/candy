@@ -292,7 +292,6 @@ protected:
     uint_fast64_t curRestart;
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
-    unsigned int nClausesOriginal;
 
     // constants for memory reorganization
     bool sort_watches;
@@ -392,7 +391,6 @@ Solver<PickBranchLitT>::Solver() :
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
-    nClausesOriginal(0),
     // memory reorganization
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
@@ -700,6 +698,22 @@ lbool Solver<PickBranchLitT>::search() {
                 trail.cancelUntil(0);
                 branch.notify_restarted();
                 
+                // Perform clause database reduction !
+                if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
+                    curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
+
+                    clause_db.cleanup();
+                    clause_db.reduce();
+                    for (Clause* clause : clause_db) if (clause->isDeleted()) {
+                        certificate.removed(clause->begin(), clause->end());
+                        propagator.detachClause(clause);
+                    }
+                    clause_db.cleanup();
+
+                    reduced = true;
+                    nbclausesbeforereduce += incReduceDB;
+                }
+                
                 // every restart after reduce-db
                 if (reduced) {
                     reduced = false;
@@ -734,22 +748,6 @@ lbool Solver<PickBranchLitT>::search() {
                 }
                 
                 return l_Undef;
-            }
-            
-            // Perform clause database reduction !
-            if (nConflicts() >= (curRestart * nbclausesbeforereduce) && clause_db.size() > nClausesOriginal) {
-                curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
-
-                clause_db.cleanup();
-                clause_db.reduce();
-                for (Clause* clause : clause_db) if (clause->isDeleted()) {
-                    certificate.removed(clause->begin(), clause->end());
-                    propagator.detachClause(clause);
-                }
-                clause_db.cleanup();
-
-                reduced = true;
-                nbclausesbeforereduce += incReduceDB;
             }
             
             Lit next = lit_Undef;
@@ -798,7 +796,6 @@ lbool Solver<PickBranchLitT>::solve() {
     
     model.clear();
     conflict.clear();
-    nClausesOriginal = clause_db.size(); 
 
     lbool status = l_Undef;
     if (isInConflictingState()) {
