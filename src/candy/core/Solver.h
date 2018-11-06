@@ -355,9 +355,6 @@ namespace SolverOptions {
     extern IntOption opt_first_reduce_db;
     extern IntOption opt_inc_reduce_db;
     
-    extern IntOption opt_lb_size_minimzing_clause;
-    extern IntOption opt_lb_lbd_minimzing_clause;
-    
     extern BoolOption opt_use_lrb;
 
     extern DoubleOption opt_var_decay;
@@ -382,7 +379,7 @@ Solver<PickBranchLitT>::Solver() :
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis),
     // assumptions
@@ -655,8 +652,9 @@ lbool Solver<PickBranchLitT>::search() {
                 certificate.added(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
             }
 
-            // TODO: exclude selectors from lbd computation
-            clause_db.updateClauseActivitiesAndLBD(conflictInfo.involved_clauses, conflictInfo.lbd);
+            trail.reduceLBDs(conflictInfo.involved_clauses);
+            clause_db.bumpActivities(conflictInfo.involved_clauses); 
+
             branch.notify_conflict();
 
             lbdQueue.push(conflictInfo.lbd);
@@ -689,9 +687,9 @@ lbool Solver<PickBranchLitT>::search() {
                 trail.uncheckedEnqueue(clause->first(), clause);
 
                 propagator.attachClause(clause);
-                clause_db.claBumpActivity(*clause);
+                clause_db.bumpActivity(*clause);
             }
-            clause_db.claDecayActivity();
+            clause_db.decayActivity();
             branch.notify_backtracked();
         }
         else {

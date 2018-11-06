@@ -78,25 +78,13 @@ void ClauseDatabase::defrag() {
     clauses.swap(reallocated);
 }
 
-void ClauseDatabase::updateClauseActivitiesAndLBD(vector<Clause*>& involved_clauses, unsigned int learnt_lbd) {
+void ClauseDatabase::bumpActivities(vector<Clause*>& involved_clauses) {
     for (Clause* clause : involved_clauses) {
-        claBumpActivity(*clause);
-
-		// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-		if (clause->isLearnt() && clause->getLBD() > persistentLBD) {
-			uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
-			if (nblevels + 1 < clause->getLBD()) { // improve the LBD
-				if (clause->getLBD() <= lbLBDFrozenClause) {
-					// seems to be interesting : keep it for the next round
-					clause->setFrozen(true);
-				}
-				clause->setLBD(nblevels);
-			}
-		}
+        bumpActivity(*clause);
     }
 }
 
-void ClauseDatabase::claRescaleActivity() {
+void ClauseDatabase::rescaleActivity() {
     for (Clause* clause : clauses) {
         clause->activity() *= 1e-20f;
     }

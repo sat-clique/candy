@@ -205,6 +205,7 @@ public:
      */
     template <typename Iterator>
     inline uint_fast16_t computeLBD(Iterator it, Iterator end) {
+        // TODO: exclude selectors from lbd computation
         uint_fast16_t nblevels = 0;
         stamp.clear();
 
@@ -219,6 +220,20 @@ public:
 
         return nblevels;
     }
+
+	// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
+    void reduceLBDs(std::vector<Clause*>& involved_clauses) {
+        for (Clause* clause : involved_clauses) {
+            if (clause->isLearnt()) {
+                uint_fast16_t nblevels = computeLBD(clause->begin(), clause->end());
+                if (nblevels + 1 < clause->getLBD()) {
+                    clause->setLBD(nblevels); // improve the LBD
+                    clause->setFrozen(true); // Seems to be interesting, keep it for the next round
+                }
+            }
+        }
+    }
+
 };
 }
 

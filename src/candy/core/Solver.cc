@@ -75,8 +75,6 @@ IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average 
 IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
 IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
 
-IntOption opt_lb_size_minimzing_clause(_cm, "minSizeMinimizingClause", "The min size required to minimize clause", 30, IntRange(3, INT16_MAX));
-
 DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
 DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
 
@@ -103,7 +101,7 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     // assumptions
@@ -154,7 +152,7 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     // assumptions
@@ -205,7 +203,7 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     // assumptions
@@ -260,7 +258,7 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     // assumptions
@@ -311,7 +309,7 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     // assumptions
@@ -362,7 +360,7 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     // propagate
     propagator(trail),
 	// conflict analysis module
-	conflict_analysis(trail, propagator, SolverOptions::opt_lb_size_minimzing_clause),
+	conflict_analysis(trail, propagator),
 	// branching heuristic
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     // assumptions

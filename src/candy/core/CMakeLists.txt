@@ -11,16 +11,17 @@ add_library(core OBJECT
     ClauseDatabase.h
     Certificate.cc
     Certificate.h
-    SolverTypes.h
-    Trail.h
+    ConflictAnalysis.cc
+    ConflictAnalysis.h
     CNFProblem.cc
     CNFProblem.h
+    SolverTypes.h
+    Trail.h
     Propagate.h
     branching/BranchingInterface.h
     branching/VSIDS.h
     branching/LRB.h
     Stamp.h
-    ConflictAnalysis.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)

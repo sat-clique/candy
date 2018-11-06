@@ -160,19 +160,19 @@ public:
         }
     }
 
-    void updateClauseActivitiesAndLBD(std::vector<Clause*>& involved_clauses, unsigned int learnt_lbd);
+    void bumpActivities(std::vector<Clause*>& involved_clauses);
 
-    inline void claDecayActivity() {
+    inline void decayActivity() {
         cla_inc *= (1 / clause_decay);
     }
 
-    inline void claBumpActivity(Clause& c) {
+    inline void bumpActivity(Clause& c) {
         if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
-            claRescaleActivity();
+            rescaleActivity();
         }
     }
 
-    void claRescaleActivity();
+    void rescaleActivity();
 
 };
 

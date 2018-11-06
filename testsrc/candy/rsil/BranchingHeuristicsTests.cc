@@ -46,7 +46,7 @@ namespace Candy {
     static void test_uninitializedHeuristicReturnsUndefForMinInput() {
         Trail trail(1);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis);
 
         trail.newDecisionLevel();
@@ -74,7 +74,7 @@ namespace Candy {
 
         Trail trail(1);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis);
 
         trail.newDecisionLevel();
@@ -100,7 +100,7 @@ namespace Candy {
     static void test_givesAdviceForSingleEquivalence(Conjectures testData) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis, std::move(testData));
         
         trail.newDecisionLevel();
@@ -134,7 +134,7 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned(Conjectures testData) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis, std::move(testData));
 
         trail.newDecisionLevel();
@@ -169,7 +169,7 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision(Conjectures testData) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis, std::move(testData));
 
         trail.newDecisionLevel();
@@ -203,7 +203,7 @@ namespace Candy {
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant(Conjectures testData) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis, std::move(testData));
 
         trail.newDecisionLevel();
@@ -236,7 +236,7 @@ namespace Candy {
     static void test_givesAdviceForSingleEquivalenceSize3(Conjectures testData) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis, std::move(testData));
 
         trail.newDecisionLevel();
@@ -270,7 +270,7 @@ namespace Candy {
     static void test_travelsUpTrail(Conjectures testData) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
         Heuristic underTest(trail, conflict_analysis, std::move(testData));
 
         trail.newDecisionLevel();
@@ -314,7 +314,7 @@ namespace Candy {
     TEST(RSILBranchingHeuristicsTests, givesNoAdviceForFilteredVariable) {
         Trail trail(6);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
 
         MockRSARHeuristic* mockRSARHeuristic = new MockRSARHeuristic;
         
@@ -347,7 +347,7 @@ namespace Candy {
     TEST(RSILBranchingHeuristicsTests, givesNoBackboneAdviceWhenBackbonesDeactivated) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
 
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
@@ -366,7 +366,7 @@ namespace Candy {
     TEST(RSILBranchingHeuristicsTests, givesBackboneAdviceWhenBackbonesActivated) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
 
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
@@ -385,7 +385,7 @@ namespace Candy {
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
 
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
@@ -407,7 +407,7 @@ namespace Candy {
     TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
 
         Conjectures testData;
 
@@ -444,7 +444,7 @@ namespace Candy {
     TEST(RSILBudgetBranchingHeuristicsTests, producesUndefWhenBudgetIsDepleted) {
         Trail trail(5);
         Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator, 30);
+        ConflictAnalysis conflict_analysis(trail, propagator);
 
         const uint64_t budget = 4ull;
         
