@@ -111,20 +111,16 @@ private:
 	void minimisationWithBinaryResolution() {
 	    stamp.clear();
 
-	    for (auto it = result.learnt_clause.begin()+1; it != result.learnt_clause.end(); it++) {
-	        stamp.set(var(*it));
-	    }
-
 	    bool minimize = false;
 	    for (Watcher w : propagate.getBinaryWatchers(~result.learnt_clause[0])) {
-	        if (stamp[var(w.blocker)] && trail.value(w.blocker) == l_True) {
+	        if (trail.satisfies(w.blocker)) {
 	            minimize = true;
-	            stamp.unset(var(w.blocker));
+	            stamp.set(var(w.blocker));
 	        }
 	    }
 
 	    if (minimize) {
-	        auto end = std::remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(), [this] (Lit lit) { return !stamp[var(lit)]; } );
+	        auto end = std::remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(), [this] (Lit lit) { return stamp[var(lit)]; } );
 	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, result.learnt_clause.end()));
 	        result.learnt_clause.erase(end, result.learnt_clause.end());
 	    }

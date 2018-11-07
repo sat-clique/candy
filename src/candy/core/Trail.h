@@ -126,6 +126,10 @@ public:
         return assigns[var(p)] ^ sign(p);
     }
 
+    inline bool satisfies(Lit lit) const {
+        return value(lit) == l_True;
+    }
+
     inline bool isAssigned(Var v) const {
         return assigns[v] != l_Undef;
     }
