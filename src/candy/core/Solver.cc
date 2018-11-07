@@ -96,6 +96,8 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -106,8 +108,6 @@ template<> Solver<RSILBranchingHeuristic3>::Solver(Conjectures conjectures, bool
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -147,6 +147,8 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -157,8 +159,6 @@ template<> Solver<RSILBudgetBranchingHeuristic3>::Solver(Conjectures conjectures
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -198,6 +198,8 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -208,8 +210,6 @@ template<> Solver<RSILVanishingBranchingHeuristic3>::Solver(Conjectures conjectu
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -253,6 +253,8 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -263,8 +265,6 @@ template<> Solver<RSILBranchingHeuristic2>::Solver(Conjectures conjectures, bool
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -304,6 +304,8 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -314,8 +316,6 @@ template<> Solver<RSILBudgetBranchingHeuristic2>::Solver(Conjectures conjectures
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, initialBudget_),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -355,6 +355,8 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -365,8 +367,6 @@ template<> Solver<RSILVanishingBranchingHeuristic2>::Solver(Conjectures conjectu
     branch(trail, conflict_analysis, std::move(conjectures), m_backbonesEnabled, rsar_filter_, filterOnlyBackbones_, m_probHalfLife_),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),

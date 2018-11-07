@@ -93,6 +93,12 @@ public:
         }
     }
 
+    void attachAll(std::vector<Clause*>& clauses) {
+        for (Clause* clause : clauses) {
+            attachClause(clause);
+        }
+    }
+
     void detachAll() {
         for (auto& watchers : watches) {
             watchers.clear();

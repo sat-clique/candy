@@ -39,8 +39,6 @@ private:
         }
     };
 
-    Trail& trail;
-
     // clause activity heuristic
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
@@ -51,12 +49,11 @@ private:
     OccLists<Var, Clause*, ClauseDeleted> variableOccurrences;
 
 public:
-
     ClauseAllocator allocator;
  
     std::vector<Clause*> clauses; // List of problem clauses
 
-    ClauseDatabase(Trail& trail_);
+    ClauseDatabase();
     ~ClauseDatabase();
 
     void reduce();
