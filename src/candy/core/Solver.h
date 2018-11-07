@@ -270,16 +270,14 @@ public:
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
-protected:    
+protected:
+    ClauseDatabase clause_db;
     Trail trail;
     Propagate propagator;
     ConflictAnalysis conflict_analysis;
     PickBranchLitT branch;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-
-    // Clauses
-    ClauseDatabase clause_db;
 
     // Constants For restarts
     double K;
@@ -373,6 +371,8 @@ Solver<PickBranchLitT>::Solver() :
     certificate(nullptr),
     // results
     model(), conflict(),
+    // clauses
+    clause_db(),
     // current assignment
     trail(),
     // propagate
@@ -383,8 +383,6 @@ Solver<PickBranchLitT>::Solver() :
     branch(trail, conflict_analysis),
     // assumptions
     assumptions(),
-    // clauses
-    clause_db(trail),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
     lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
@@ -477,6 +475,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     if (propagator.propagate() == nullptr) {
         strengthen();
         simplify();
+        clause_db.cleanup();
     }
     else {
         ok = false; 
@@ -528,20 +527,13 @@ void Solver<PickBranchLitT>::simplify() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
-    for (Clause* clause : clause_db.clauses) {
+    for (Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
         if (trail.satisfied(*clause)) {
             certificate.removed(clause->begin(), clause->end());
             propagator.detachClause(clause, true);
-            clause_db.removeClause(clause); 
-
-            assert(!trail.locked(clause)); // always strengthen first for this
-            // if (trail.locked(clause)) {
-            //     trail.vardata[var(clause->first())].reason = nullptr;
-            // }
+            clause_db.removeClause(clause);
         }
     }
-
-    clause_db.cleanup();
 }
 
 template <class PickBranchLitT>
@@ -575,8 +567,6 @@ void Solver<PickBranchLitT>::strengthen() {
             }
         }
     }
-
-    clause_db.cleanup(); 
 }
 
 /**************************************************************************************************
@@ -597,7 +587,6 @@ lbool Solver<PickBranchLitT>::search() {
     assert(ok);
     
     bool blocked = false;
-    bool reduced = false;
     Statistics::getInstance().solverRestartInc();
     sonification.restart();
     for (;;) {
@@ -668,20 +657,16 @@ lbool Solver<PickBranchLitT>::search() {
                 clause->setLBD(conflictInfo.lbd);
                 clause->setLearnt(true);
 
-                if (clause->size() > 2) {
-                    // Find correct backtrack level:
-                    int max_i = 1;
-                    // Find the first literal assigned at the next-highest level:
-                    for (uint_fast16_t i = 2; i < clause->size(); i++) {
-                        if (trail.level(var((*clause)[i])) > trail.level(var((*clause)[max_i]))) {
-                            max_i = i;
-                        }
+                unsigned int backtrack_level = trail.level(var(clause->second()));
+                for (unsigned int i = 2; i < clause->size(); i++) {
+                    unsigned int level = trail.level(var((*clause)[i]));
+                    if (level > backtrack_level) {
+                        backtrack_level = level;
+                        clause->swap(1, i);
                     }
-                    // Swap-in this literal at index 1:
-                    clause->swap(max_i, 1);
                 }
 
-                trail.cancelUntil(trail.level(var(clause->second())));
+                trail.cancelUntil(backtrack_level);
                 trail.uncheckedEnqueue(clause->first(), clause);
 
                 propagator.attachClause(clause);
@@ -698,53 +683,39 @@ lbool Solver<PickBranchLitT>::search() {
                 trail.cancelUntil(0);
                 branch.notify_restarted();
                 
-                // Perform clause database reduction !
+                // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
                     curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
 
-                    clause_db.cleanup();
-                    clause_db.reduce();
-                    for (Clause* clause : clause_db) if (clause->isDeleted()) {
-                        certificate.removed(clause->begin(), clause->end());
-                        propagator.detachClause(clause);
-                    }
-                    clause_db.cleanup();
-
-                    reduced = true;
-                    nbclausesbeforereduce += incReduceDB;
-                }
-                
-                // every restart after reduce-db
-                if (reduced) {
-                    reduced = false;
-
                     if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
-                        Statistics::getInstance().runtimeStart("Inprocessing");
                         if (!eliminate(false, false)) {
                             return l_False;
                         }
-                        Statistics::getInstance().runtimeStop("Inprocessing");
-                    }
-                    else if (new_unary) {
-                        new_unary = false;
-                        Statistics::getInstance().runtimeStart("Simplify");
-                        strengthen();
-                        simplify();
-                        Statistics::getInstance().runtimeStop("Simplify");
-                    }
-
-                    propagator.detachAll();
-                    clause_db.defrag();
-                    for (Clause* clause : clause_db.clauses) {
-                        propagator.attachClause(clause);
                     }
                     
-                    if (sort_watches) {
-                        Statistics::getInstance().runtimeStart("Sort Watches");
-                        propagator.sortWatchers();
-                        Statistics::getInstance().runtimeStop("Sort Watches");
+                    // clause database simplification
+                    strengthen();
+                    simplify();
+                    clause_db.cleanup();
+                
+                    // clause database reduction
+                    propagator.detachAll();
+                    clause_db.reduce();
+                    for (Clause* clause : clause_db) {
+                        if (clause->isDeleted()) {
+                            certificate.removed(clause->begin(), clause->end());
+                        }
                     }
+                    clause_db.cleanup();
+                    clause_db.defrag();
+                    propagator.attachAll(clause_db.clauses);
+
+                    if (sort_watches) {
+                        propagator.sortWatchers();
+                    }
+
+                    nbclausesbeforereduce += incReduceDB;
                 }
                 
                 return l_Undef;

@@ -11,8 +11,7 @@ namespace ClauseDatabaseOptions {
     Glucose::DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, Glucose::DoubleRange(0, false, 1, false));
 }
 
-ClauseDatabase::ClauseDatabase(Trail& trail_) : 
-    trail(trail_), 
+ClauseDatabase::ClauseDatabase() : 
     persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
     track_literal_occurrence(false),
@@ -40,6 +39,10 @@ void ClauseDatabase::stopOccurrenceTracking() {
     track_literal_occurrence = false;
 }
 
+/**
+ * In order ot make sure that no clause is locked (reason to an asignment), 
+ * do only call this method at decision level 0 and strengthen all clauses first
+ **/
 void ClauseDatabase::reduce() {
     Statistics::getInstance().solverReduceDBInc();
 
@@ -52,14 +55,11 @@ void ClauseDatabase::reduce() {
         return; // We have a lot of "good" clauses, it is difficult to compare them, keep more
     }
     
-    // Delete clauses from the first half which are not locked. (Binary clauses are kept separately and are not touched here)
-    // Keep clauses which seem to be useful (i.e. their lbd was reduce during this sequence => frozen)
     size_t count = 0;
     for (Clause* c : learnts) {
-        if (c->isFrozen()) {
+        if (c->isFrozen()) { // lbd was reduce during this sequence
             c->setFrozen(false); // reset flag
-        }
-        else if (trail.reason(var(c->first())) != c) {
+        } else {
             ++count;
             removeClause(c);
         }
