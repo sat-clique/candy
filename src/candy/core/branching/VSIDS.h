@@ -179,7 +179,7 @@ public:
         }
 
         stamp.clear();
-        for (Clause* clause : analysis.getResult().involved_clauses) {
+        for (const Clause* clause : analysis.getResult().involved_clauses) {
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {

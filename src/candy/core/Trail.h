@@ -149,8 +149,8 @@ public:
     }
 
     // Returns TRUE if a clause is a reason for some implication in the current state.
-    inline bool locked(Clause* cr) const {
-        Clause& c = *cr;
+    inline bool locked(const Clause* cr) const {
+        const Clause& c = *cr;
         if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
         return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
     }
@@ -185,9 +185,6 @@ public:
         assigns[var(p)] = lbool(!sign(p));
         vardata[var(p)] = VarData(from, decisionLevel());
         trail[trail_size++] = p;
-        // std::cout << "Assign " << p;
-        // if (from != nullptr) std::cout << " because " << *from;
-        // else std::cout << std::endl;
     }
 
     inline void cancelUntil(unsigned int level) {

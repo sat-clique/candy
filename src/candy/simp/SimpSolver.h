@@ -155,12 +155,39 @@ protected:
         return ret;
     }
 
+    inline void elimAttach(const Clause* cr) {
+    #ifndef NDEBUG
+        for (Lit lit : *cr) assert(!isEliminated(var(lit)));
+    #endif
+        if (n_occ.size() > 0) { // elim initialized
+            for (Lit lit : *cr) {
+                n_occ[toInt(lit)]++;
+                subsumption.touch(var(lit));
+                if (elim_heap.inHeap(var(lit))) {
+                    elim_heap.increase(var(lit));
+                }
+            }
+        }
+    }
+
+    inline void elimDetach(const Clause* cr) {
+        if (n_occ.size() > 0) for (Lit lit : *cr) {
+            elimDetach(lit);
+        }
+    }
+
+    inline void elimDetach(Lit lit) {
+        if (n_occ.size() > 0) { // elim initialized
+            n_occ[toInt(lit)]--;
+            if (elim_heap.inHeap(var(lit)) || (!frozen[var(lit)] && !isEliminated(var(lit)) && !this->trail.isAssigned(var(lit)))) {
+                elim_heap.update(var(lit));
+            }
+        }
+    }
+
+
     void setupEliminate(bool full);
     void cleanupEliminate();
-
-    inline void elimAttach(Clause* cr); // Attach a clause to occurrence lists for eliminate
-    inline void elimDetach(Clause* cr); // Detach a clause from occurrence lists for eliminate
-    inline void elimDetach(Lit lit);
 
     bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
@@ -212,39 +239,6 @@ lbool SimpSolver<PickBranchLitT>::solve() {
 }
 
 template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimAttach(Clause* cr) {
-#ifndef NDEBUG
-    for (Lit lit : *cr) assert(!isEliminated(var(lit)));
-#endif
-    if (n_occ.size() > 0) { // elim initialized
-        for (Lit lit : *cr) {
-            n_occ[toInt(lit)]++;
-            subsumption.touch(var(lit));
-            if (elim_heap.inHeap(var(lit))) {
-                elim_heap.increase(var(lit));
-            }
-        }
-    }
-}
-
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimDetach(Clause* cr) {
-    if (n_occ.size() > 0) for (Lit lit : *cr) {
-        elimDetach(lit);
-    }
-}
-
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::elimDetach(Lit lit) {
-    if (n_occ.size() > 0) { // elim initialized
-        n_occ[toInt(lit)]--;
-        if (elim_heap.inHeap(var(lit)) || (!frozen[var(lit)] && !isEliminated(var(lit)) && !this->trail.isAssigned(var(lit)))) {
-            elim_heap.update(var(lit));
-        }
-    }
-}
-
-template<class PickBranchLitT>
 bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
     assert(this->decisionLevel() == 0);
     
@@ -275,7 +269,7 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
     
     this->trail.trail_lim.push_back(this->trail.size());
     Lit l = lit_Undef;
-    for (Lit lit : *cr) {
+    for (Lit lit : (const Clause)*cr) {
         if (var(lit) != v && this->trail.value(lit) != l_False) {
             this->trail.uncheckedEnqueue(~lit);
         }
@@ -404,10 +398,10 @@ bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
                     bool was_eliminated = elimination.eliminateVar(elim);
 
                     if (was_eliminated) {
-                        for (Cl& resolvent : elimination.resolvents) {
+                        for (const Cl& resolvent : elimination.resolvents) {
                             this->certificate.added(resolvent.begin(), resolvent.end());
                         }
-                        for (Clause* c : elimination.resolved) {
+                        for (const Clause* c : elimination.resolved) {
                             this->certificate.removed(c->begin(), c->end());
                         }
 

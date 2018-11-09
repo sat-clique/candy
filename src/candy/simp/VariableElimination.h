@@ -39,7 +39,7 @@ private:
     uint8_t grow;              // Allow a variable elimination step to grow by a number of clauses (default to zero).
 
     void mkElimClause(std::vector<uint32_t>& elimclauses, Lit x);
-    void mkElimClause(std::vector<uint32_t>& elimclauses, Var v, Clause& c);
+    void mkElimClause(std::vector<uint32_t>& elimclauses, Var v, const Clause& c);
 
     bool merge(const Clause& _ps, const Clause& _qs, Var v, std::vector<Lit>& out_clause);
     bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size);

@@ -110,7 +110,7 @@ bool Subsumption::backwardSubsumptionCheck() {
             subsumption_queue.push_back(&bwdsub_tmpunit);
         }
 
-        Clause* clause = subsumptionQueueProtectedPop();
+        const Clause* clause = subsumptionQueueProtectedPop();
         
         if (clause->isDeleted()) {
             continue;
@@ -126,7 +126,7 @@ bool Subsumption::backwardSubsumptionCheck() {
         // Search all candidates:
         const std::vector<Clause*>& cs = clause_db.getOccurenceList(best);
         for (unsigned int i = 0; i < cs.size(); i++) {
-            Clause* csi = cs[i];
+            const Clause* csi = cs[i];
             if (csi != clause && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
                 if ((abstraction[clause] & ~abstraction[csi]) != 0) continue;
 
@@ -139,13 +139,13 @@ bool Subsumption::backwardSubsumptionCheck() {
                     if (trail.locked(csi)) {
                         trail.vardata[var(csi->first())].reason = nullptr;
                     }
-                    clause_db.removeClause(csi);
+                    clause_db.removeClause((Clause*)csi);
                     reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
                 }
                 else if (l != lit_Error) {
                     Statistics::getInstance().solverDeletedInc();
                     // this might modifiy occurs ...
-                    if (!strengthenClause(csi, ~l)) {
+                    if (!strengthenClause((Clause*)csi, ~l)) {
                         return false;
                     }
                     // ... occurs modified, so check candidate at index i again:

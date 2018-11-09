@@ -6,34 +6,33 @@
 
 #include "gtest/gtest.h"
 
+#include "TestClauseFactory.h"
+
 #include "candy/core/Clause.h"
 #include "candy/core/ClauseAllocator.h"
 
 using namespace Candy;
 using namespace Glucose;
 
+TestClauseFactory factory;
+
 TEST (CandyClauseTestPatterns, size1) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
+    Clause* clause = factory.getClause({lit_Undef});
     ASSERT_EQ(clause->size(), 1);
 }
 
 TEST (CandyClauseTestPatterns, size2) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(2)) Clause({lit_Undef, lit_Undef});
+    Clause* clause = factory.getClause({lit_Undef, lit_Undef});
     ASSERT_EQ(clause->size(), 2);
 }
 
 TEST (CandyClauseTestPatterns, size3) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(3)) Clause({lit_Undef, lit_Undef, lit_Undef});
+    Clause* clause = factory.getClause({lit_Undef, lit_Undef, lit_Undef});
     ASSERT_EQ(clause->size(), 3);
 }
 
 TEST (CandyClauseHeaderTestPatterns, setLBD) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setLBD(1);
+    Clause* clause = factory.getClauseWithLBD({lit_Undef}, 1);
     ASSERT_EQ(clause->getLBD(), 1);
     ASSERT_FALSE(clause->isLearnt());
     ASSERT_FALSE(clause->isFrozen());
@@ -41,9 +40,7 @@ TEST (CandyClauseHeaderTestPatterns, setLBD) {
 }
 
 TEST (CandyClauseHeaderTestPatterns, setFrozen) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setFrozen(true);
+    Clause* clause = factory.getClauseFrozen({lit_Undef});
     ASSERT_EQ(clause->getLBD(), 0);
     ASSERT_FALSE(clause->isLearnt());
     ASSERT_TRUE(clause->isFrozen());
@@ -51,9 +48,7 @@ TEST (CandyClauseHeaderTestPatterns, setFrozen) {
 }
 
 TEST (CandyClauseHeaderTestPatterns, setLearnt) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setLearnt(true);
+    Clause* clause = factory.getClauseLearnt({lit_Undef});
     ASSERT_EQ(clause->getLBD(), 0);
     ASSERT_TRUE(clause->isLearnt());
     ASSERT_FALSE(clause->isFrozen());
@@ -61,9 +56,7 @@ TEST (CandyClauseHeaderTestPatterns, setLearnt) {
 }
 
 TEST (CandyClauseHeaderTestPatterns, setDeleted) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setDeleted();
+    Clause* clause = factory.getClauseDeleted({lit_Undef});
     ASSERT_EQ(clause->getLBD(), 0);
     ASSERT_FALSE(clause->isLearnt());
     ASSERT_FALSE(clause->isFrozen());
@@ -71,10 +64,7 @@ TEST (CandyClauseHeaderTestPatterns, setDeleted) {
 }
 
 TEST (CandyClauseHeaderTestPatterns, setFrozenAndLBD) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setFrozen(true);
-    clause->setLBD(255);
+    Clause* clause = factory.getClauseFrozenWithLBD({lit_Undef}, 255);
     ASSERT_EQ(clause->getLBD(), 255);
     ASSERT_FALSE(clause->isLearnt());
     ASSERT_TRUE(clause->isFrozen());
@@ -82,10 +72,7 @@ TEST (CandyClauseHeaderTestPatterns, setFrozenAndLBD) {
 }
 
 TEST (CandyClauseHeaderTestPatterns, setLearntAndLBD) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setLearnt(true);
-    clause->setLBD(255);
+    Clause* clause = factory.getClauseLearntWithLBD({lit_Undef}, 255);
     ASSERT_EQ(clause->getLBD(), 255);
     ASSERT_TRUE(clause->isLearnt());
     ASSERT_FALSE(clause->isFrozen());
@@ -93,10 +80,7 @@ TEST (CandyClauseHeaderTestPatterns, setLearntAndLBD) {
 }
 
 TEST (CandyClauseHeaderTestPatterns, setDeletedAndLBD) {
-    ClauseAllocator allocator;
-    Clause* clause = new (allocator.allocate(1)) Clause({lit_Undef});
-    clause->setDeleted();
-    clause->setLBD(255);
+    Clause* clause = factory.getClauseDeletedWithLBD({lit_Undef}, 255);
     ASSERT_EQ(clause->getLBD(), 255);
     ASSERT_FALSE(clause->isLearnt());
     ASSERT_FALSE(clause->isFrozen());

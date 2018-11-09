@@ -104,10 +104,15 @@ public:
         return clauses.size();
     }
 
-    Clause* createClause(Cl& lits) {
+    Clause* createClause(Cl& lits, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
 
         Clause* clause = new (allocator.allocate(lits.size())) Clause(lits);
+        if (lbd > 0) {
+            clause->setLBD(lbd);
+            clause->setLearnt(true);
+            bumpActivity(*clause);
+        }
         clauses.push_back(clause);
 
         if (track_literal_occurrence) {
