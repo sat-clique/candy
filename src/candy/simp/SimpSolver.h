@@ -55,43 +55,29 @@
 #include "candy/utils/System.h"
 #include "candy/simp/Subsumption.h"
 #include "candy/simp/VariableElimination.h"
+#include "candy/frontend/CLIOptions.h"
 
 using namespace std;
 
 namespace Candy {
 
-//******************************************************************************
-// SimpSolver<PickBranchLitT> implementation
-//******************************************************************************
-
-namespace SimpSolverOptions {
-using namespace Glucose;
-
-extern const char* _cat;
-    
-extern BoolOption opt_use_asymm;
-extern BoolOption opt_use_rcheck;
-extern BoolOption opt_use_elim;
-}
-
 /**
- * \tparam PickBranchLitT   the PickBranchLit type used to choose a
+ * \tparam TBranchingHeuristic   the PickBranchLit type used to choose a
  *   strategy for determining decision (ie. branching) literals.
- *   PickBranchLitT must satisfy the following conditions:
- *    - PickBranchLitT must be a class type.
- *    - PickBranchLitT::Parameters must be a class type.
- *    - PickBranchLitT must have a zero-argument constructor.
- *    - PickBranchLitT must have a constructor taking a single argument of type
+ *   TBranchingHeuristic must satisfy the following conditions:
+ *    - TBranchingHeuristic must be a class type.
+ *    - TBranchingHeuristic::Parameters must be a class type.
+ *    - TBranchingHeuristic must have a zero-argument constructor.
+ *    - TBranchingHeuristic must have a constructor taking a single argument of type
  *        const Parameters& params.
- *    - PickBranchLitT must be move-assignable.
- *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
+ *    - TBranchingHeuristic must be move-assignable.
+ *    - There must be a specialization of Solver::pickBranchLit<TBranchingHeuristic>.
  */
-template<class PickBranchLitT = VSIDS>
-class SimpSolver: public Solver<PickBranchLitT> {
+template<class TClauseDatabase = ClauseDatabase, class TAssignment = Trail, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS>
+class SimpSolver: public Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching> {
 public:
     SimpSolver();
-    SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_);
-    SimpSolver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t number);
+    SimpSolver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br);
     virtual ~SimpSolver();
 
     bool eliminate() {
@@ -103,11 +89,11 @@ public:
     virtual lbool solve();
 
     inline lbool solve(std::initializer_list<Lit> assumps) {
-        return Solver<PickBranchLitT>::solve(assumps);
+        return Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve(assumps);
     }
 
     inline lbool solve(const vector<Lit>& assumps) {
-        return Solver<PickBranchLitT>::solve(assumps);
+        return Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve(assumps);
     }
 
     inline bool isEliminated(Var v) const {
@@ -200,8 +186,9 @@ protected:
 //=================================================================================================
 // Constructor/Destructor:
 
-template<class PickBranchLitT>
-SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::SimpSolver() 
+    : Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>(),
     subsumption(this->clause_db, this->trail, this->propagator, this->certificate),
     elimination(this->clause_db),
     use_asymm(SimpSolverOptions::opt_use_asymm),
@@ -211,12 +198,24 @@ SimpSolver<PickBranchLitT>::SimpSolver() : Solver<PickBranchLitT>(),
     frozen() {
 }
 
-template<class PickBranchLitT>
-SimpSolver<PickBranchLitT>::~SimpSolver() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::SimpSolver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) 
+    : Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>(db, as, pr, le, br),
+    subsumption(this->clause_db, this->trail, this->propagator, this->certificate),
+    elimination(this->clause_db),
+    use_asymm(SimpSolverOptions::opt_use_asymm),
+    use_rcheck(SimpSolverOptions::opt_use_rcheck),
+    use_elim(SimpSolverOptions::opt_use_elim),
+    elim_heap(ElimLt(n_occ)), 
+    frozen() {
 }
 
-template<class PickBranchLitT>
-lbool SimpSolver<PickBranchLitT>::solve() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::~SimpSolver() {
+}
+
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+lbool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve() {
     lbool result = l_True;
     
     if (this->isInConflictingState()) {
@@ -228,7 +227,7 @@ lbool SimpSolver<PickBranchLitT>::solve() {
     }
     
     if (result == l_True) {
-        result = Solver<PickBranchLitT>::solve();
+        result = Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve();
     }
     
     if (result == l_True) {
@@ -238,8 +237,8 @@ lbool SimpSolver<PickBranchLitT>::solve() {
     return result;
 }
 
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::implied(const vector<Lit>& c) {
     assert(this->decisionLevel() == 0);
     
     this->trail_lim.push_back(this->trail_size);
@@ -259,8 +258,8 @@ bool SimpSolver<PickBranchLitT>::implied(const vector<Lit>& c) {
     return result;
 }
 
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::asymm(Var v, Clause* cr) {
     assert(this->trail.decisionLevel() == 0);
     
     if (cr->isDeleted() || this->trail.satisfied(*cr)) {
@@ -290,8 +289,8 @@ bool SimpSolver<PickBranchLitT>::asymm(Var v, Clause* cr) {
     return true;
 }
 
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::asymmVar(Var v) {
     // Temporarily freeze variable. Otherwise, it would immediately end up on the queue again:
     bool was_frozen = frozen[v];
     frozen.set(v);
@@ -315,13 +314,13 @@ bool SimpSolver<PickBranchLitT>::asymmVar(Var v) {
     return subsumptionCheck();
 }
 
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::extendModel() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::extendModel() {
     elimination.extendModel(this->model);
 }
 
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::setupEliminate(bool full) {
     frozen.grow(this->nVars());
 
     // freeze assumptions and other externally set frozen variables
@@ -347,8 +346,8 @@ void SimpSolver<PickBranchLitT>::setupEliminate(bool full) {
     }
 }
 
-template<class PickBranchLitT>
-void SimpSolver<PickBranchLitT>::cleanupEliminate() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::cleanupEliminate() {
     frozen.clear();
     n_occ.clear();
     elim_heap.clear();
@@ -363,8 +362,8 @@ void SimpSolver<PickBranchLitT>::cleanupEliminate() {
     this->clause_db.cleanup();
 }
 
-template<class PickBranchLitT>
-bool SimpSolver<PickBranchLitT>::eliminate(bool use_asymm, bool use_elim) {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::eliminate(bool use_asymm, bool use_elim) {
     // prepare data-structures
     setupEliminate(use_asymm || use_elim);
 

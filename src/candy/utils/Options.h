@@ -35,9 +35,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #endif
 
 #include <vector>
-using namespace std;
 
-namespace Glucose {
+namespace Candy {
 
 //==================================================================================================
 // Top-level option parse/help functions:
@@ -57,7 +56,7 @@ class Option {
     const char* category;
     const char* type_name;
 
-    static vector<Option*>& getOptionList () { static vector<Option*> options; return options; }
+    static std::vector<Option*>& getOptionList () { static std::vector<Option*> options; return options; }
     static const char*&  getUsageString() { static const char* usage_str; return usage_str; }
     static const char*&  getHelpPrefixString() { static const char* help_prefix_str = ""; return help_prefix_str; }
 

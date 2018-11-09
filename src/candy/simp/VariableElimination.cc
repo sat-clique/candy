@@ -4,11 +4,6 @@
 
 namespace Candy {
 
-namespace VariableEliminationOptions {
-    Glucose::IntOption opt_grow("VariableElimination", "grow", "Allow a variable elimination step to grow by a number of clauses.", 0);
-    Glucose::IntOption opt_clause_lim("VariableElimination", "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, Glucose::IntRange(0, INT32_MAX));
-}
-
 VariableElimination::VariableElimination(ClauseDatabase& clause_db_) : 
     clause_db(clause_db_),
     elimclauses(), 
