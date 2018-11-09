@@ -72,24 +72,24 @@ public:
         return watches[0][p];
     }
 
-    void attachClause(Clause* cr) {
-        assert(cr->size() > 1);
-        uint_fast8_t pos = std::min(cr->size()-2, NWATCHES-1);
-        watches[pos][~cr->first()].emplace_back(cr, cr->second());
-        watches[pos][~cr->second()].emplace_back(cr, cr->first());
+    void attachClause(Clause* clause) {
+        assert(clause->size() > 1);
+        uint_fast8_t pos = std::min(clause->size()-2, NWATCHES-1);
+        watches[pos][~clause->first()].emplace_back(clause, clause->second());
+        watches[pos][~clause->second()].emplace_back(clause, clause->first());
     }
 
-    void detachClause(Clause* cr, bool strict = false) {
-        assert(cr->size() > 1);
-        uint_fast8_t pos = std::min(cr->size()-2, NWATCHES-1);
+    void detachClause(const Clause* clause, bool strict = false) {
+        assert(clause->size() > 1);
+        uint_fast8_t pos = std::min(clause->size()-2, NWATCHES-1);
         if (strict) {
-            std::vector<Watcher>& list0 = watches[pos][~cr->first()];
-            std::vector<Watcher>& list1 = watches[pos][~cr->second()];
-            list0.erase(std::remove_if(list0.begin(), list0.end(), [cr](Watcher w){ return w.cref == cr; }), list0.end());
-            list1.erase(std::remove_if(list1.begin(), list1.end(), [cr](Watcher w){ return w.cref == cr; }), list1.end());
+            std::vector<Watcher>& list0 = watches[pos][~clause->first()];
+            std::vector<Watcher>& list1 = watches[pos][~clause->second()];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
         } else {
-            watches[pos].smudge(~cr->first());
-            watches[pos].smudge(~cr->second());
+            watches[pos].smudge(~clause->first());
+            watches[pos].smudge(~clause->second());
         }
     }
 

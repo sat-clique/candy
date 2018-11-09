@@ -122,7 +122,7 @@ public:
     void addClauses(const CNFProblem& problem) override;
 
     template<typename Iterator>
-    bool addClause(Iterator begin, Iterator end, bool learnt = false);
+    bool addClause(Iterator begin, Iterator end, unsigned int lbd = 0);
 
     PickBranchLitT& getBranchingInterface() {
         return branch;
@@ -485,7 +485,7 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
 
 template<class PickBranchLitT>
 template<typename Iterator>
-bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, bool learnt) {
+bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
     assert(trail.decisionLevel() == 0);
 
     std::vector<Lit> copy{cbegin, cend};
@@ -507,9 +507,8 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, bool lear
         return ok = trail.newFact(copy.front());
     }
     else {
-        Clause* clause = clause_db.createClause(copy);
+        Clause* clause = clause_db.createClause(copy, lbd);
         propagator.attachClause(clause);
-        if (learnt) clause->setLearnt(true);
         return ok;
     }
 }
@@ -527,11 +526,11 @@ void Solver<PickBranchLitT>::simplify() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
-    for (Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
+    for (const Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
         if (trail.satisfied(*clause)) {
             certificate.removed(clause->begin(), clause->end());
             propagator.detachClause(clause, true);
-            clause_db.removeClause(clause);
+            clause_db.removeClause((Clause*)clause);
         }
     }
 }
@@ -541,7 +540,7 @@ void Solver<PickBranchLitT>::strengthen() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
-    for (Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
+    for (const Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
         vector<Lit> copy(clause->begin(), clause->end());
 
         for (Lit lit : copy) {        
@@ -549,7 +548,7 @@ void Solver<PickBranchLitT>::strengthen() {
                 if (clause->size() == copy.size()) { // first match
                     propagator.detachClause(clause, true);
                 }
-                clause_db.strengthenClause(clause, lit);
+                clause_db.strengthenClause((Clause*)clause, lit);
             }
         }
 
@@ -563,7 +562,7 @@ void Solver<PickBranchLitT>::strengthen() {
                 trail.newFact(clause->first());
             }
             else {
-                propagator.attachClause(clause);
+                propagator.attachClause((Clause*)clause);
             }
         }
     }
@@ -653,24 +652,21 @@ lbool Solver<PickBranchLitT>::search() {
                 new_unary = true;
             }
             else {
-                Clause* clause = clause_db.createClause(conflictInfo.learnt_clause);
-                clause->setLBD(conflictInfo.lbd);
-                clause->setLearnt(true);
-
-                unsigned int backtrack_level = trail.level(var(clause->second()));
-                for (unsigned int i = 2; i < clause->size(); i++) {
-                    unsigned int level = trail.level(var((*clause)[i]));
+                unsigned int backtrack_level = trail.level(var(conflictInfo.learnt_clause[1]));
+                for (unsigned int i = 2; i < conflictInfo.learnt_clause.size(); i++) {
+                    unsigned int level = trail.level(var(conflictInfo.learnt_clause[i]));
                     if (level > backtrack_level) {
                         backtrack_level = level;
-                        clause->swap(1, i);
+                        std::swap(conflictInfo.learnt_clause[1], conflictInfo.learnt_clause[i]);
                     }
                 }
+
+                Clause* clause = clause_db.createClause(conflictInfo.learnt_clause, conflictInfo.lbd);
 
                 trail.cancelUntil(backtrack_level);
                 trail.uncheckedEnqueue(clause->first(), clause);
 
                 propagator.attachClause(clause);
-                clause_db.bumpActivity(*clause);
             }
             clause_db.decayActivity();
             branch.notify_backtracked();
@@ -702,7 +698,7 @@ lbool Solver<PickBranchLitT>::search() {
                     // clause database reduction
                     propagator.detachAll();
                     clause_db.reduce();
-                    for (Clause* clause : clause_db) {
+                    for (const Clause* clause : clause_db) {
                         if (clause->isDeleted()) {
                             certificate.removed(clause->begin(), clause->end());
                         }

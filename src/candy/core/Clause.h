@@ -32,17 +32,67 @@ class Clause {
 
     Lit literals[1];
 
-public:
-    Clause(const std::vector<Lit>& list, uint16_t lbd) {
-        copyLiterals(list.begin(), list.end(), literals);
-        length = static_cast<decltype(length)>(list.size());
-        header = 0;
-        setLearnt(true); // only learnts have lbd
-        setLBD(lbd);
-        activity_ = 0;
-        assert(std::unique(begin(), end()) == end());
+private:
+    inline Lit& operator [](int i) {
+        return literals[i];
     }
 
+    typedef Lit* iterator;
+
+    inline iterator begin() {
+        return literals;
+    }
+
+    inline iterator end() {
+        return literals + length;
+    }
+
+    inline void swap(uint16_t pos1, uint16_t pos2) {
+        assert(pos1 < length && pos2 < length);
+        Lit tmp = literals[pos1];
+        literals[pos1] = literals[pos2];
+        literals[pos2] = tmp;
+    }
+
+    inline void setLearnt(bool flag) {
+        header = (header & ~(1 << LEARNT_BIT)) | ((flag ? 1 : 0) << LEARNT_BIT);
+    }
+
+    inline void setSelectable(bool flag) {
+        header = (header & ~(1 << SELECTABLE_BIT)) | ((flag ? 1 : 0) << SELECTABLE_BIT);
+    }
+
+    inline void setFrozen(bool flag) {
+        header = (header & ~(1 << FROZEN_BIT)) | ((flag ? 1 : 0) << FROZEN_BIT);
+    }
+
+    inline void setDeleted() {
+        header |= 1 << DELETED_BIT;
+    }
+
+    inline void setLBD(uint16_t i) {
+        uint16_t flags = header & ~LBD_MASK;
+        header = std::min(i, LBD_MASK);
+        header |= flags;
+    }
+
+    inline float& activity() {
+        return activity_;
+    }
+
+    inline void strengthen(Lit p) {
+        std::remove(begin(), end(), p);
+        --length;
+    }
+
+    friend class ClauseDatabase;
+    friend class Propagate;
+    friend class ConflictAnalysis;
+    friend class Trail;
+    friend class Subsumption;
+    friend class TestClauseFactory;
+
+public:
     Clause(std::initializer_list<Lit> list) {
         copyLiterals(list.begin(), list.end(), literals);
         length = static_cast<decltype(length)>(list.size());
@@ -57,34 +107,12 @@ public:
         activity_ = 0;
     }
 
-    template<typename Iterator>
-    Clause(Iterator begin, Iterator end) {
-        copyLiterals(begin, end, literals);
-        length = static_cast<decltype(length)>(std::distance(begin, end));
-        header = 0; // not frozen, not deleted and not learnt; lbd=0
-        activity_ = 0;
-    }
-
-    Clause(const Clause& clause) {
-        copyLiterals(clause.begin(), clause.end(), literals);
-        length = clause.length;
-        header = clause.header;
-        activity_ = clause.activity_;
-    }
-
     ~Clause();
 
     //void* operator new (std::size_t size) = delete;
     void operator delete (void* p) = delete;
 
-    typedef Lit* iterator;
-    typedef const Lit* const_iterator;
-
-    inline Lit& operator [](int i) {
-        return literals[i];
-    }
-
-    inline const Lit operator [](int i) const {
+    inline const Lit& operator [](int i) const {
         return literals[i];
     }
 
@@ -96,19 +124,13 @@ public:
         return equal;
     }
 
+    typedef const Lit* const_iterator;
+
     inline const_iterator begin() const {
         return literals;
     }
 
     inline const_iterator end() const {
-        return literals + length;
-    }
-
-    inline iterator begin() {
-        return literals;
-    }
-
-    inline iterator end() {
         return literals + length;
     }
 
@@ -134,57 +156,24 @@ public:
     void printDIMACS() const;
     void printDIMACS(std::vector<lbool> values) const;
 
-    inline void swap(uint16_t pos1, uint16_t pos2) {
-        assert(pos1 < length && pos2 < length);
-        Lit tmp = literals[pos1];
-        literals[pos1] = literals[pos2];
-        literals[pos2] = tmp;
-    }
-
     inline bool isLearnt() const {
         return (header >> LEARNT_BIT) & 1;
-    }
-
-    inline void setLearnt(bool flag) {
-        header = (header & ~(1 << LEARNT_BIT)) | ((flag ? 1 : 0) << LEARNT_BIT);
     }
 
     inline bool isSelectable() const {
         return (header >> SELECTABLE_BIT) & 1;
     }
 
-    inline void setSelectable(bool flag) {
-        header = (header & ~(1 << SELECTABLE_BIT)) | ((flag ? 1 : 0) << SELECTABLE_BIT);
-    }
-
     inline bool isFrozen() const {
         return (header >> FROZEN_BIT) & 1;
-    }
-
-    inline void setFrozen(bool flag) {
-        header = (header & ~(1 << FROZEN_BIT)) | ((flag ? 1 : 0) << FROZEN_BIT);
     }
 
     inline bool isDeleted() const {
         return (header >> DELETED_BIT) & 1;
     }
 
-    inline void setDeleted() {
-        header |= 1 << DELETED_BIT;
-    }
-
     inline uint16_t getLBD() const {
         return header & LBD_MASK;
-    }
-
-    inline void setLBD(uint16_t i) {
-        uint16_t flags = header & ~LBD_MASK;
-        header = std::min(i, LBD_MASK);
-        header |= flags;
-    }
-
-    inline float& activity() {
-        return activity_;
     }
 
     inline uint16_t getHeader() const {
@@ -227,11 +216,6 @@ public:
         }
 
         return ret;
-    }
-
-    inline void strengthen(Lit p) {
-        std::remove(begin(), end(), p);
-        --length;
     }
 
 private:

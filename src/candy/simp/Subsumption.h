@@ -53,7 +53,7 @@ public:
 
     std::deque<Clause*> subsumption_queue;
     std::unordered_map<Clause*, char> subsumption_queue_contains;
-    std::unordered_map<Clause*, uint64_t> abstraction;
+    std::unordered_map<const Clause*, uint64_t> abstraction;
     uint32_t bwdsub_assigns;
 
     void subsumptionQueueProtectedPush(Clause* clause);

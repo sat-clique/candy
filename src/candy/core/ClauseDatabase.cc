@@ -12,8 +12,8 @@ namespace ClauseDatabaseOptions {
 }
 
 ClauseDatabase::ClauseDatabase() : 
-    persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
+    persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
     track_literal_occurrence(false),
     variableOccurrences(ClauseDeleted()),
     allocator(), 
