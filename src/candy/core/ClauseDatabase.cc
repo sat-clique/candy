@@ -1,15 +1,6 @@
 #include "candy/core/ClauseDatabase.h"
 
-#include "candy/utils/Options.h"
-
 namespace Candy {
-
-namespace ClauseDatabaseOptions {
-    const char* _cat = "ClauseDatabase";
-
-    Glucose::IntOption opt_persistent_lbd(_cat, "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, Glucose::IntRange(0, INT8_MAX));
-    Glucose::DoubleOption opt_clause_decay(_cat, "cla-decay", "The clause activity decay factor", 0.999, Glucose::DoubleRange(0, false, 1, false));
-}
 
 ClauseDatabase::ClauseDatabase() : 
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),

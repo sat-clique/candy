@@ -60,33 +60,6 @@ using namespace Candy;
 // Options:
 
 namespace Candy {
-namespace SolverOptions {
-
-const char* _cat = "CORE";
-const char* _cr = "CORE -- RESTART";
-const char* _cred = "CORE -- REDUCE";
-const char* _cm = "CORE -- MINIMIZE";
-    
-DoubleOption opt_K(_cr, "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
-DoubleOption opt_R(_cr, "R", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
-IntOption opt_size_lbd_queue(_cr, "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT16_MAX));
-IntOption opt_size_trail_queue(_cr, "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
-
-IntOption opt_first_reduce_db(_cred, "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
-IntOption opt_inc_reduce_db(_cred, "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
-
-DoubleOption opt_var_decay(_cat, "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
-DoubleOption opt_max_var_decay(_cat, "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
-
-BoolOption opt_use_lrb("MEMORY LAYOUT", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
-
-IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
-
-BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
-BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
-IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
-    
-}
 
 //=================================================================================================
 // Constructor/Destructor:
