@@ -8,11 +8,6 @@
 #include "candy/utils/Options.h"
 
 namespace Candy {
-
-namespace VariableEliminationOptions {
-    extern Glucose::IntOption opt_clause_lim;
-    extern Glucose::IntOption opt_grow; 
-}
   
 class VariableElimination {
 public:

@@ -3,7 +3,6 @@ add_library(simp OBJECT
     Subsumption.cc
     VariableElimination.h
     VariableElimination.cc
-    SimpSolver.h
-    SimpSolver.cc)
+    SimpSolver.h)
 
 

@@ -1,16 +1,9 @@
 #include "candy/simp/Subsumption.h"
 #include "candy/core/Clause.h"
-#include "candy/utils/Options.h"
 
 #include <assert.h>
 
 namespace Candy {
-
-namespace SubsumptionOptions {
-const char* _cat = "SIMP";
-
-IntOption opt_subsumption_lim(_cat, "sub-lim", "Do not check if subsumption against a clause larger than this.", 1000, IntRange(0, INT32_MAX));
-}
 
 void Subsumption::subsumptionQueueProtectedPush(Clause* clause) {
     if (!subsumption_queue_contains[clause]) {
@@ -33,7 +26,7 @@ void Subsumption::gatherTouchedClauses() {
     
     for (unsigned int i = 0; i < touched.size(); i++) {
         if (touched[i]) {
-            const vector<Clause*>& cs = clause_db.getOccurenceList(i);
+            const std::vector<Clause*>& cs = clause_db.getOccurenceList(i);
             for (Clause* c : cs) {
                 if (!c->isDeleted()) {
                     subsumptionQueueProtectedPush(c);

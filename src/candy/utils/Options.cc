@@ -21,9 +21,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <algorithm>
 
-using namespace Glucose;
+namespace Candy {
 
-void Glucose::parseOptions(int& argc, char** argv, bool strict) {
+void parseOptions(int& argc, char** argv, bool strict) {
     int i, j;
     for (int i = j = 1; i < argc; i++){
         const char* str = argv[i];
@@ -51,9 +51,9 @@ void Glucose::parseOptions(int& argc, char** argv, bool strict) {
 }
 
 
-void Glucose::setUsageHelp      (const char* str){ Option::getUsageString() = str; }
-void Glucose::setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
-void Glucose::printUsageAndExit (int argc, char** argv, bool verbose) {
+void setUsageHelp      (const char* str){ Option::getUsageString() = str; }
+void setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
+void printUsageAndExit (int argc, char** argv, bool verbose) {
     const char* usage = Option::getUsageString();
     if (usage != NULL) {
         fprintf(stderr, usage, argv[0]);
@@ -86,3 +86,4 @@ void Glucose::printUsageAndExit (int argc, char** argv, bool verbose) {
     exit(0);
 }
 
+}

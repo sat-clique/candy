@@ -279,8 +279,8 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:simp>
   $<TARGET_OBJECTS:core>
   $<TARGET_OBJECTS:sonification>
-  $<TARGET_OBJECTS:utils>
-  $<TARGET_OBJECTS:frontend>)
+  $<TARGET_OBJECTS:frontend>
+  $<TARGET_OBJECTS:utils>)
 
 ### OSCPack
 link_directories(${CMAKE_BINARY_DIR}/lib/oscpack)

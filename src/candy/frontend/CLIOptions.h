@@ -6,22 +6,15 @@
 namespace Candy {
 
 namespace ClauseLearningOptions {
-	extern Glucose::IntOption opt_lb_size_minimzing_clause;
+	extern IntOption opt_lb_size_minimzing_clause;
 }
 
 namespace ClauseDatabaseOptions {
-    extern Glucose::IntOption opt_persistent_lbd;
-    extern Glucose::DoubleOption opt_clause_decay;
+    extern IntOption opt_persistent_lbd;
+    extern DoubleOption opt_clause_decay;
 }
 
 namespace SolverOptions {
-    using namespace Glucose;
-    
-    extern const char* _cat;
-    extern const char* _cr;
-    extern const char* _cred;
-    extern const char* _cm;
-    
     extern DoubleOption opt_K;
     extern DoubleOption opt_R;
     extern IntOption opt_size_lbd_queue;
@@ -41,6 +34,21 @@ namespace SolverOptions {
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
     extern IntOption opt_inprocessing;
+}
+
+namespace SimpSolverOptions {
+    extern BoolOption opt_use_asymm;
+    extern BoolOption opt_use_rcheck;
+    extern BoolOption opt_use_elim;
+}
+
+namespace VariableEliminationOptions {
+    extern IntOption opt_clause_lim;
+    extern IntOption opt_grow; 
+}
+
+namespace SubsumptionOptions {
+    extern IntOption opt_subsumption_lim;
 }
 
 };

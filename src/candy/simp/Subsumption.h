@@ -8,17 +8,9 @@
 #include "candy/core/Propagate.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/Stamp.h"
-#include "candy/utils/Options.h"
+#include "candy/frontend/CLIOptions.h"
 
 namespace Candy {
-
-namespace SubsumptionOptions {
-using namespace Glucose;
-
-extern const char* _cat;
-
-extern IntOption opt_subsumption_lim;
-}
 
 class Subsumption {
 private:

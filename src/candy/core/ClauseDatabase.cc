@@ -63,11 +63,11 @@ void ClauseDatabase::reduce() {
  * Make sure all references are updated after all clauses reside in a new adress space
  */
 void ClauseDatabase::defrag() {
-    vector<Clause*> reallocated = allocator.defrag(clauses);
+    std::vector<Clause*> reallocated = allocator.defrag(clauses);
     clauses.swap(reallocated);
 }
 
-void ClauseDatabase::bumpActivities(vector<Clause*>& involved_clauses) {
+void ClauseDatabase::bumpActivities(std::vector<Clause*>& involved_clauses) {
     for (Clause* clause : involved_clauses) {
         bumpActivity(*clause);
     }

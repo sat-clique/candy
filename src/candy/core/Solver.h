@@ -86,33 +86,30 @@
 namespace Candy {
 
 /**
- * \tparam PickBranchLitT   the PickBranchLit type used to choose a
+ * \tparam TBranching   the PickBranchLit type used to choose a
  *   strategy for determining decision (ie. branching) literals.
- *   PickBranchLitT must satisfy the following conditions:
- *    - PickBranchLitT must be a class type.
- *    - PickBranchLitT::Parameters must be a class type.
- *    - PickBranchLitT must have a zero-argument constructor.
- *    - PickBranchLitT must have a constructor taking a single argument of type
+ *   TBranching must satisfy the following conditions:
+ *    - TBranching must be a class type.
+ *    - TBranching::Parameters must be a class type.
+ *    - TBranching must have a zero-argument constructor.
+ *    - TBranching must have a constructor taking a single argument of type
  *        const Parameters& params.
- *    - PickBranchLitT must be move-assignable.
- *    - PickBranchLitT must be move-constructible.
- *    - There must be a specialization of Solver::pickBranchLit<PickBranchLitT>.
+ *    - TBranching must be move-assignable.
+ *    - TBranching must be move-constructible.
+ *    - There must be a specialization of Solver::pickBranchLit<TBranching>.
  */
-template<class PickBranchLitT = VSIDS>
+template<class TClauseDatabase = ClauseDatabase, class TAssignment = Trail, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS>
 class Solver : public CandySolverInterface {
-    static_assert(std::is_class<PickBranchLitT>::value, "PickBranchLitT must be a class");
-    //static_assert(std::is_constructible<PickBranchLitT>::value, "PickBranchLitT must have a constructor without arguments");
-    //static_assert(std::is_move_assignable<PickBranchLitT>::value, "PickBranchLitT must be move-assignable");
-    //static_assert(std::is_move_constructible<PickBranchLitT>::value, "PickBranchLitT must be move-constructible");
+    static_assert(std::is_class<TBranching>::value, "TBranching must be a class");
+    //static_assert(std::is_constructible<TBranching>::value, "TBranching must have a constructor without arguments");
+    //static_assert(std::is_move_assignable<TBranching>::value, "TBranching must be move-assignable");
+    //static_assert(std::is_move_constructible<TBranching>::value, "TBranching must be move-constructible");
 
     friend class SolverConfiguration;
 
 public:
-    using PickBranchLitType = PickBranchLitT;
-
     Solver();
-    Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_);
-    Solver(Conjectures conjectures, bool m_backbonesEnabled, RefinementHeuristic* rsar_filter_, bool filterOnlyBackbones_, uint64_t number);
+    Solver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br);
     virtual ~Solver();
     
     // Add a new variable with parameters specifying variable mode.
@@ -124,7 +121,7 @@ public:
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end, unsigned int lbd = 0);
 
-    PickBranchLitT& getBranchingInterface() {
+    TBranching& getBranchingInterface() {
         return branch;
     }
 
@@ -271,11 +268,11 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-    ClauseDatabase clause_db;
-    Trail trail;
-    Propagate propagator;
-    ConflictAnalysis conflict_analysis;
-    PickBranchLitT branch;
+    ClauseDatabase& clause_db;
+    Trail& trail;
+    Propagate& propagator;
+    TLearning& conflict_analysis;
+    TBranching& branch;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
@@ -295,7 +292,6 @@ protected:
     bool sort_watches;
     bool sort_variables;
 
-    bool new_unary; // Indicates whether a unary clause was learnt since the last restart
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
     bool incremental; // Use incremental SAT Solver
@@ -332,26 +328,18 @@ protected:
     }
 };
 
-//******************************************************************************
-// Solver<PickBranchLitT> implementation
-//******************************************************************************
-
-template<class PickBranchLitT>
-Solver<PickBranchLitT>::Solver() :
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // unsat certificate
     certificate(nullptr),
     // results
     model(), conflict(),
-    // clauses
-    clause_db(),
-    // current assignment
-    trail(),
-    // propagate
-    propagator(trail),
-	// conflict analysis module
-	conflict_analysis(trail, propagator),
-	// branching heuristic
-    branch(trail, conflict_analysis),
+    // Basic Systems
+    clause_db(*new ClauseDatabase()),
+    trail(*new Trail()),
+    propagator(*new Propagate(trail)),
+	conflict_analysis(*new ConflictAnalysis(trail, propagator)),
+    branch(*new VSIDS(trail, conflict_analysis)),
     // assumptions
     assumptions(),
     // restarts
@@ -363,8 +351,6 @@ Solver<PickBranchLitT>::Solver() :
     // memory reorganization
     sort_watches(SolverOptions::opt_sort_watches),
     sort_variables(SolverOptions::opt_sort_variables),
-    // simplify
-    new_unary(false),
     // conflict state
     ok(true),
     // incremental mode
@@ -373,8 +359,7 @@ Solver<PickBranchLitT>::Solver() :
     preprocessing_enabled(true),
     freezes(),
     // inprocessing
-    lastRestartWithInprocessing(0),
-    inprocessingFrequency(SolverOptions::opt_inprocessing),
+    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
@@ -382,14 +367,57 @@ Solver<PickBranchLitT>::Solver() :
     // learnt callback ipasir
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
     // sonification
-    sonification(),
-	controller()
+    sonification(), controller()
 {
 controller.run();
 }
 
-template<class PickBranchLitT>
-Solver<PickBranchLitT>::~Solver() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) : 
+    // unsat certificate
+    certificate(nullptr),
+    // results
+    model(), conflict(),
+    // Basic Systems
+    clause_db(db),
+    trail(as),
+    propagator(pr),
+	conflict_analysis(le),
+    branch(br),
+    // assumptions
+    assumptions(),
+    // restarts
+    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
+    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
+    // reduce db heuristic control
+    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
+    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    // memory reorganization
+    sort_watches(SolverOptions::opt_sort_watches),
+    sort_variables(SolverOptions::opt_sort_variables),
+    // conflict state
+    ok(true),
+    // incremental mode
+    incremental(false),
+    // preprocessing
+    preprocessing_enabled(true),
+    freezes(),
+    // inprocessing
+    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
+    // resource constraints and other interrupt related
+    conflict_budget(0), propagation_budget(0),
+    termCallbackState(nullptr), termCallback(nullptr),
+    asynch_interrupt(false),
+    // learnt callback ipasir
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
+    // sonification
+    sonification(), controller()
+{
+controller.run();
+}
+
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
 }
 
 /****************************************************************
@@ -398,13 +426,13 @@ Solver<PickBranchLitT>::~Solver() {
 
 // This function set the incremental mode to true.
 // You can add special code for this mode here.
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::setIncrementalMode() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::setIncrementalMode() {
     incremental = true;
 }
 
-template<class PickBranchLitT>
-bool Solver<PickBranchLitT>::isIncremental() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::isIncremental() {
     return incremental;
 }
 
@@ -412,8 +440,8 @@ bool Solver<PickBranchLitT>::isIncremental() {
  * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
  * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
  ***/
-template<class PickBranchLitT>
-Var Solver<PickBranchLitT>::newVar() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Var Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
     int v = static_cast<int>(nVars());
     propagator.init(nVars());
     trail.grow();
@@ -422,8 +450,8 @@ Var Solver<PickBranchLitT>::newVar() {
     return v;
 }
 
-template<class PickBranchLitT>
-void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::addClauses(const CNFProblem& dimacs) {
     size_t maxVars = (size_t)dimacs.nVars();
     if (maxVars > this->nVars()) {
         propagator.init(maxVars);
@@ -454,9 +482,9 @@ void Solver<PickBranchLitT>::addClauses(const CNFProblem& dimacs) {
     }
 }
 
-template<class PickBranchLitT>
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 template<typename Iterator>
-bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
+bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
     assert(trail.decisionLevel() == 0);
 
     std::vector<Lit> copy{cbegin, cend};
@@ -492,8 +520,8 @@ bool Solver<PickBranchLitT>::addClause(Iterator cbegin, Iterator cend, unsigned 
  *    Simplify the clause database according to the current top-level assignment. Currently, the only
  *    thing done here is the removal of satisfied clauses, but more things can be put here.
  **************************************************************************************************/
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::simplify() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::simplify() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
@@ -506,8 +534,8 @@ void Solver<PickBranchLitT>::simplify() {
     }
 }
 
-template <class PickBranchLitT>
-void Solver<PickBranchLitT>::strengthen() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::strengthen() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
@@ -552,8 +580,8 @@ void Solver<PickBranchLitT>::strengthen() {
  *    all variables are decision variables, this means that the clause set is satisfiable. 'l*False'
  *    if the clause set is unsatisfiable. 'l*Undef' if the bound on number of conflicts is reached.
  **************************************************************************************************/
-template <class PickBranchLitT>
-lbool Solver<PickBranchLitT>::search() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(ok);
     
     bool blocked = false;
@@ -620,7 +648,6 @@ lbool Solver<PickBranchLitT>::search() {
             if (conflictInfo.learnt_clause.size() == 1) {
                 trail.cancelUntil(0);
                 trail.uncheckedEnqueue(conflictInfo.learnt_clause[0]);
-                new_unary = true;
             }
             else {
                 unsigned int backtrack_level = trail.level(var(conflictInfo.learnt_clause[1]));
@@ -726,8 +753,8 @@ lbool Solver<PickBranchLitT>::search() {
 
 // NOTE: assumptions passed in member-variable 'assumptions'.
 // Parameters are useless in core but useful for SimpSolver....
-template <class PickBranchLitT>
-lbool Solver<PickBranchLitT>::solve() {
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve() {
     Statistics::getInstance().runtimeStart("Solver");
 
     sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));

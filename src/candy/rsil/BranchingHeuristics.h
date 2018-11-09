@@ -46,9 +46,9 @@ namespace Candy {
      *
      * \brief A PickBranchLit type for branching decisions using implicit learning.
      *
-     * A PickBranchLitT type (see candy/core/Solver.h) for plain random-simulation-based
+     * A TBranchingHeuristic type (see candy/core/Solver.h) for plain random-simulation-based
      * implicit learning solvers. A pickBranchLit implementation is provided for the
-     * RSILBranchingHeuristic PickBranchLitT type.
+     * RSILBranchingHeuristic TBranchingHeuristic type.
      *
      * \tparam AdviceType    The advice type used by the branching heuristic. May be any
      *                       type having the same interface as AdviceType defined in the
@@ -70,7 +70,7 @@ namespace Candy {
         Conjectures conjectures;
 
         /**
-         * A few definitions for the PickBranchLitT concept
+         * A few definitions for the TBranchingHeuristic concept
          */
         VSIDS defaultBranchingHeuristic;
 
@@ -275,13 +275,13 @@ namespace Candy {
      *
      * \brief A PickBranchLit type for branching decisions using implicit learning, limited by the amount of performed decisions.
      *
-     * A PickBranchLitT type (see candy/core/Solver.h) for plain random-simulation-based
+     * A TBranchingHeuristic type (see candy/core/Solver.h) for plain random-simulation-based
      * implicit learning solvers. This heuristic produces results with decreased probability,
      * configured via the parameter \p probHalfLife : every \p probHalfLife decisions, the
      * probability of possibly overriding the solver's internal decision heuristic is halved.
      *
      * A pickBranchLit implementation is provided for the RSILVanishingBranchingHeuristic
-     * PickBranchLitT type.
+     * TBranchingHeuristic type.
      *
      * \tParam AdviceType       See the AdviceType template parameter of RSILBranchingHeuristic
      * \tParam SolverTypes      See the SolverTypes template parameter of RSILBranchingHeuristic
