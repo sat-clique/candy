@@ -15,14 +15,10 @@
 #include "candy/core/Propagate.h"
 #include "candy/core/Clause.h"
 #include "candy/utils/CheckedCast.h"
-#include "candy/utils/Options.h"
+#include "candy/frontend/CLIOptions.h"
 #include <vector>
 
 namespace Candy {
-
-namespace ClauseLearningOptions {
-	extern Glucose::IntOption opt_lb_size_minimzing_clause;
-}
 
 struct AnalysisResult {
 

@@ -60,7 +60,7 @@
 
 #include "candy/core/Statistics.h"
 #include "candy/mtl/Heap.h"
-#include "candy/utils/Options.h"
+#include "candy/frontend/CLIOptions.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/ClauseDatabase.h"
 #include "candy/mtl/BoundedQueue.h"
@@ -335,35 +335,6 @@ protected:
 //******************************************************************************
 // Solver<PickBranchLitT> implementation
 //******************************************************************************
-
-namespace SolverOptions {
-    using namespace Glucose;
-    
-    extern const char* _cat;
-    extern const char* _cr;
-    extern const char* _cred;
-    extern const char* _cm;
-    
-    extern DoubleOption opt_K;
-    extern DoubleOption opt_R;
-    extern IntOption opt_size_lbd_queue;
-    extern IntOption opt_size_trail_queue;
-    
-    extern IntOption opt_first_reduce_db;
-    extern IntOption opt_inc_reduce_db;
-    
-    extern BoolOption opt_use_lrb;
-
-    extern DoubleOption opt_var_decay;
-    extern DoubleOption opt_max_var_decay;
-    extern IntOption opt_phase_saving;
-    
-    extern IntOption opt_sonification_delay;
-    
-    extern BoolOption opt_sort_watches;
-    extern BoolOption opt_sort_variables;
-    extern IntOption opt_inprocessing;
-}
 
 template<class PickBranchLitT>
 Solver<PickBranchLitT>::Solver() :

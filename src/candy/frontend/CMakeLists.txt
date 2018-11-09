@@ -1,4 +1,6 @@
 add_library(frontend OBJECT
+    CLIOptions.h
+    CLIOptions.cc
     SolverFactory.h
     SolverFactory.cc
     RSILSolverBuilder.h

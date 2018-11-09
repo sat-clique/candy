@@ -11,12 +11,11 @@ add_library(core OBJECT
     ClauseDatabase.h
     Certificate.cc
     Certificate.h
-    ConflictAnalysis.cc
-    ConflictAnalysis.h
     CNFProblem.cc
     CNFProblem.h
     SolverTypes.h
     Trail.h
+    ConflictAnalysis.h
     Propagate.h
     branching/BranchingInterface.h
     branching/VSIDS.h

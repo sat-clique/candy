@@ -3,18 +3,12 @@
 #include "candy/core/Clause.h"
 #include "candy/core/ClauseAllocator.h"
 #include "candy/core/Trail.h"
-#include "candy/utils/Options.h"
+#include "candy/frontend/CLIOptions.h"
 
 #ifndef CANDY_CLAUSE_DATABASE
 #define CANDY_CLAUSE_DATABASE
 
 namespace Candy {
-
-namespace ClauseDatabaseOptions {
-    extern Glucose::IntOption opt_persistent_lbd;
-    extern Glucose::IntOption opt_lb_lbd_frozen_clause;
-    extern Glucose::DoubleOption opt_clause_decay;
-}
 
 class ClauseDatabase {
 private:
