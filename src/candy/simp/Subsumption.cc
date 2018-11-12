@@ -74,7 +74,7 @@ bool Subsumption::strengthenClause(Clause* clause, Lit l) {
     subsumptionQueueProtectedPush(clause);
 
     reduced_literals.push_back(l);
-    propagator.detachClause(clause, true);
+    propagator.detachClause(clause);
     certificate.added(clause->begin(), clause->end());
     clause_db.strengthenClause(clause, l);
     
@@ -128,7 +128,7 @@ bool Subsumption::backwardSubsumptionCheck() {
                 if (l == lit_Undef) {
                     Statistics::getInstance().solverSubsumedInc();
                     certificate.removed(csi->begin(), csi->end());
-                    propagator.detachClause(csi, true);
+                    propagator.detachClause(csi);
                     if (trail.locked(csi)) {
                         trail.vardata[var(csi->first())].reason = nullptr;
                     }
