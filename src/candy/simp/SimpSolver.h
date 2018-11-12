@@ -356,7 +356,6 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 
     // force full cleanup
     this->branch.notify_restarted(); // former rebuildOrderHeap
-    this->propagator.cleanupWatchers();
     this->clause_db.cleanup();
 }
 
