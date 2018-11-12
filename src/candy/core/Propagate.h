@@ -45,47 +45,56 @@ struct WatcherDeleted {
     }
 };
 
-#define NWATCHES 2
-
 class Propagate {
 private:
     Trail& trail;
 
-    std::array<OccLists<Lit, Watcher, WatcherDeleted>, 2> watches;
+    OccLists<Lit, Watcher, WatcherDeleted> binaryWatchers;
+    OccLists<Lit, Watcher, WatcherDeleted> watchers;
 
 public:
     uint64_t nPropagations;
 
-    Propagate(Trail& _trail) : trail(_trail), watches(), nPropagations(0) {
-        for (auto& watchers : watches) {
-            watchers = OccLists<Lit, Watcher, WatcherDeleted>();
-        }
+    Propagate(Trail& _trail) : trail(_trail), nPropagations(0) {
+        binaryWatchers = OccLists<Lit, Watcher, WatcherDeleted>();
+        watchers = OccLists<Lit, Watcher, WatcherDeleted>();
     }
 
     void init(size_t maxVars) {
-        for (auto& watchers : watches) {
-            watchers.init(mkLit(maxVars, true));
-        }
+        binaryWatchers.init(mkLit(maxVars, true));
+        watchers.init(mkLit(maxVars, true));
     }
 
     std::vector<Watcher>& getBinaryWatchers(Lit p) {
-        return watches[0][p];
+        return binaryWatchers[p];
     }
 
     void attachClause(Clause* clause) {
         assert(clause->size() > 1);
-        uint_fast8_t pos = std::min(clause->size()-2, NWATCHES-1);
-        watches[pos][~clause->first()].emplace_back(clause, clause->second());
-        watches[pos][~clause->second()].emplace_back(clause, clause->first());
+        if (clause->size() == 2) {
+            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
+            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+        } 
+        else {
+            watchers[~clause->first()].emplace_back(clause, clause->second());
+            watchers[~clause->second()].emplace_back(clause, clause->first());
+        }
     }
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
-        uint_fast8_t pos = std::min(clause->size()-2, NWATCHES-1);
-        std::vector<Watcher>& list0 = watches[pos][~clause->first()];
-        std::vector<Watcher>& list1 = watches[pos][~clause->second()];
-        list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-        list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+        if (clause->size() == 2) {
+            std::vector<Watcher>& list0 = binaryWatchers[~clause->first()];
+            std::vector<Watcher>& list1 = binaryWatchers[~clause->second()];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+        } 
+        else {
+            std::vector<Watcher>& list0 = watchers[~clause->first()];
+            std::vector<Watcher>& list1 = watchers[~clause->second()];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+        }
     }
 
     void attachAll(std::vector<Clause*>& clauses) {
@@ -95,17 +104,16 @@ public:
     }
 
     void detachAll() {
-        for (auto& watchers : watches) {
-            watchers.clear();
-        }
+        binaryWatchers.clear();
+        watchers.clear();
     }
 
     void sortWatchers() {
-        size_t nVars = watches[0].size() / 2;
+        size_t nVars = watchers.size() / 2;
         for (size_t v = 0; v < nVars; v++) {
             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
-                sort(watches[1][l].begin(), watches[1][l].end(), [](Watcher w1, Watcher w2) {
+                sort(watchers[l].begin(), watchers[l].end(), [](Watcher w1, Watcher w2) {
                     Clause& c1 = *w1.cref;
                     Clause& c2 = *w2.cref;
                     return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
@@ -115,7 +123,7 @@ public:
     }
 
     inline Clause* propagate_binary_clauses(Lit p) {
-        std::vector<Watcher>& list = watches[0][p];
+        std::vector<Watcher>& list = binaryWatchers[p];
         for (Watcher& watcher : list) {
             lbool val = trail.value(watcher.blocker);
             if (val == l_False) {
@@ -140,7 +148,7 @@ public:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
     inline Clause* propagate_watched_clauses(Lit p) {
-        std::vector<Watcher>& list = watches[1][p];
+        std::vector<Watcher>& list = watchers[p];
 
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
@@ -161,7 +169,7 @@ public:
                     for (uint_fast16_t k = 2; k < clause->size(); k++) {
                         if (trail.value((*clause)[k]) != l_False) {
                             clause->swap(1, k);
-                            watches[1][~clause->second()].emplace_back(clause, clause->first());
+                            watchers[~clause->second()].emplace_back(clause, clause->first());
                             goto propagate_skip;
                         }
                     }
