@@ -180,6 +180,10 @@ public:
         return header;
     }
 
+    inline float getActivity() const {
+        return activity_;
+    }
+
     /**
      *  subsumes : (other : const Clause&)  ->  Lit
      *

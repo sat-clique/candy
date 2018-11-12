@@ -79,18 +79,13 @@ public:
         watches[pos][~clause->second()].emplace_back(clause, clause->first());
     }
 
-    void detachClause(const Clause* clause, bool strict = false) {
+    void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
         uint_fast8_t pos = std::min(clause->size()-2, NWATCHES-1);
-        if (strict) {
-            std::vector<Watcher>& list0 = watches[pos][~clause->first()];
-            std::vector<Watcher>& list1 = watches[pos][~clause->second()];
-            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
-        } else {
-            watches[pos].smudge(~clause->first());
-            watches[pos].smudge(~clause->second());
-        }
+        std::vector<Watcher>& list0 = watches[pos][~clause->first()];
+        std::vector<Watcher>& list1 = watches[pos][~clause->second()];
+        list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
+        list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
     }
 
     void attachAll(std::vector<Clause*>& clauses) {

@@ -560,7 +560,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::si
     for (const Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
         if (trail.satisfied(*clause)) {
             certificate.removed(clause->begin(), clause->end());
-            propagator.detachClause(clause, true);
+            propagator.detachClause(clause);
             clause_db.removeClause((Clause*)clause);
         }
     }
@@ -577,7 +577,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::st
         for (Lit lit : copy) {        
             if (trail.value(lit) == l_False) {
                 if (clause->size() == copy.size()) { // first match
-                    propagator.detachClause(clause, true);
+                    propagator.detachClause(clause);
                 }
                 clause_db.strengthenClause((Clause*)clause, lit);
             }

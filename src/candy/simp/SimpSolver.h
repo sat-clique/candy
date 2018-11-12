@@ -411,7 +411,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                         for (Clause* c : elimination.resolved) {
                             this->clause_db.removeClause(c);
                             elimDetach(c);
-                            this->propagator.detachClause(c, true);
+                            this->propagator.detachClause(c);
                         }
 
                         this->clause_db.cleanup();
