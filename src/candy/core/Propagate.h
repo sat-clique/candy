@@ -100,12 +100,6 @@ public:
         }
     }
 
-    void cleanupWatchers() {
-        for (auto& watchers : watches) {
-            watchers.cleanAll();
-        }
-    }
-
     void sortWatchers() {
         size_t nVars = watches[0].size() / 2;
         for (size_t v = 0; v < nVars; v++) {
