@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
         return 0; // concentrate on small problems during fuzzing
     }
 
-    CandySolverInterface* solver = new SimpSolver<VSIDS>();
+    CandySolverInterface* solver = new SimpSolver<>();
     solver->addClauses(problem);
 
     lbool result = l_Undef;

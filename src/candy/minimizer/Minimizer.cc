@@ -51,7 +51,7 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
         generateHittingSetProblem(problem.getProblem());
     }
 
-    CandySolverInterface* solver = new Solver<VSIDS>();
+    CandySolverInterface* solver = new Solver<>();
     solver->addClauses(hittingSetProblem);
 //    solver->printDIMACS();
 

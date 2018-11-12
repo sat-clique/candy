@@ -183,9 +183,6 @@ protected:
     bool implied(const vector<Lit>& c);
 };
 
-//=================================================================================================
-// Constructor/Destructor:
-
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::SimpSolver() 
     : Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>(),
