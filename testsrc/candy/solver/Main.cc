@@ -49,10 +49,10 @@ TEST (CandyAddClauseTestPatterns, rejectSatisfied) {
 TEST (CandyAddClauseTestPatterns, removeDuplicates) {
   CNFProblem formula;
   formula.readClause({mkLit(1), mkLit(2), mkLit(1)});
-  Solver<> solver;
+  ClauseDatabase* clauses = new ClauseDatabase();
+  Solver<> solver { clauses };
   solver.addClauses(formula);
-  Candy::Clause& clause = solver.getClause(0);
-  ASSERT_EQ(clause.size(), 2ull);
+  ASSERT_EQ((*clauses)[0]->size(), 2ull);
 }
 
 TEST (CandyAddClauseTestPatterns, propagateEarly) {
@@ -76,9 +76,9 @@ TEST (CandyAddClauseTestPatterns, propagateEarly3) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
-  Solver<> solver;
+  ClauseDatabase* clauses = new ClauseDatabase();
+  Solver<> solver { clauses };
   solver.addClauses(formula);
   ASSERT_EQ(solver.nClauses(), 1ul);
-  Candy::Clause& clause = solver.getClause(0);
-  ASSERT_EQ(clause.size(), 2ul);
+  ASSERT_EQ((*clauses)[0]->size(), 2ul);
 }
