@@ -265,7 +265,8 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     
     this->trail.trail_lim.push_back(this->trail.size());
     Lit l = lit_Undef;
-    for (Lit lit : (const Clause)*cr) {
+    const Clause* ccr = cr;
+    for (Lit lit : *ccr) {
         if (var(lit) != v && this->trail.value(lit) != l_False) {
             this->trail.uncheckedEnqueue(~lit);
         }
