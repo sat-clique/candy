@@ -26,8 +26,8 @@ public:
     virtual Var newVar() = 0;
 
     virtual void addClauses(const CNFProblem& problem) = 0;
-    virtual bool addClause(const std::vector<Lit>& lits, bool learnt = false) = 0;
-    virtual bool addClause(std::initializer_list<Lit> lits, bool learnt = false) = 0;
+    virtual bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) = 0;
+    virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) = 0;
 
     virtual void simplify() = 0; // remove satisfied clauses
     virtual void strengthen() = 0; // remove false literals from clauses

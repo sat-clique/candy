@@ -98,6 +98,10 @@ public:
         return clauses.size();
     }
 
+    inline const Clause* operator [](int i) const {
+        return clauses[i];
+    }
+
     Clause* createClause(Cl& lits, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
 

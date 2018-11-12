@@ -80,14 +80,6 @@ std::unique_ptr<Conjectures> SolverFactory::generateConjectures(CNFProblem& prob
     return conjectures;
 }
 
-CandySolverInterface* SolverFactory::createSolver(CNFProblem& problem) {
-	return nullptr;
-}
-
-CandySolverInterface* SolverFactory::createSimpSolver(CNFProblem& problem) {
-	return nullptr;
-}
-
 CandySolverInterface* SolverFactory::createRSILSolver(CNFProblem& problem) {
     Conjectures& conjectures = *generateConjectures(problem).get();
     RSILSolverBuilder builder;
@@ -168,7 +160,7 @@ CandySolverInterface* SolverFactory::createRSARSolver(CNFProblem& problem) {
 			arSolverBuilder->addRefinementHeuristic(createInputDepCountRefinementHeuristic(*gateAnalyzer, limits));
 		}
 
-		arSolverBuilder->withSolver(new SimpSolver<VSIDS>());
+		arSolverBuilder->withSolver(new SimpSolver<>());
 
 		return arSolverBuilder->build();
 	}

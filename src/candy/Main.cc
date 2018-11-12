@@ -76,6 +76,7 @@
 #include "candy/frontend/RSARFrontend.h"
 #include "candy/frontend/CandyCommandLineParser.h"
 #include "candy/frontend/SolverFactory.h"
+#include "candy/frontend/CandyBuilder.h"
 
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/rsar/ARSolver.h"
@@ -329,7 +330,7 @@ int main(int argc, char** argv) {
         catch(UnsuitableProblemException& e) {
             std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
             std::cerr << "c Falling back to unmodified Candy" << std::endl;
-            solver = new SimpSolver<VSIDS>();
+            solver = new SimpSolver<>();
         }
     }
     else if (args.rsarArgs.useRSAR) {
@@ -339,16 +340,16 @@ int main(int argc, char** argv) {
 		catch(UnsuitableProblemException& e) {
 			std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
 			std::cerr << "c Falling back to unmodified Candy." << std::endl;
-            solver = new SimpSolver<VSIDS>();
+            solver = new SimpSolver<>();
 		}
     }
     else if (SolverOptions::opt_use_lrb) {
         std::cerr << "c Using LRB Branching Heuristic" << std::endl;
-        solver = new SimpSolver<LRB>();
+        solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>();
     }
     else {
         std::cerr << "c Using VSIDS Branching Heuristic" << std::endl;
-        solver = new SimpSolver<VSIDS>();
+        solver = new SimpSolver<>();
     }
     if (args.do_certified) {
         solver->resetCertificate(args.opt_certified_file);

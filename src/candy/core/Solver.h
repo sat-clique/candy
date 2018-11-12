@@ -112,25 +112,18 @@ public:
     Solver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br);
     virtual ~Solver();
     
-    // Add a new variable with parameters specifying variable mode.
     Var newVar() override;
-
-    // Add clauses to the solver
     void addClauses(const CNFProblem& problem) override;
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end, unsigned int lbd = 0);
 
-    TBranching& getBranchingInterface() {
-        return branch;
+    bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) override { 
+        return addClause(lits.begin(), lits.end(), lbd);
     }
 
-    bool addClause(const std::vector<Lit>& lits, bool learnt = false) override {
-        return addClause(lits.begin(), lits.end(), learnt);
-    }
-
-    bool addClause(std::initializer_list<Lit> lits, bool learnt = false) override {
-        return addClause(lits.begin(), lits.end(), learnt);
+    bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) override {
+        return addClause(lits.begin(), lits.end(), lbd);
     }
 
     void printDIMACS() override {
@@ -329,18 +322,18 @@ protected:
 };
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
+Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver() : 
     // unsat certificate
     certificate(nullptr),
     // results
     model(), conflict(),
     // Basic Systems
-    clause_db(*new ClauseDatabase()),
-    trail(*new Trail()),
-    propagator(*new Propagate(trail)),
-	conflict_analysis(*new ConflictAnalysis(trail, propagator)),
-    branch(*new VSIDS(trail, conflict_analysis)),
-    // assumptions
+    clause_db(*new TClauseDatabase()),
+    trail(*new TAssignment()),
+    propagator(*new TPropagate(trail)),
+	conflict_analysis(*new TLearning(trail, propagator)),
+    branch(*new TBranching(trail, conflict_analysis)),
+    // assumptions 
     assumptions(),
     // restarts
     K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),

@@ -52,7 +52,7 @@ namespace Candy {
         return lbool(result);
     }
     
-    bool SolverMock::addClause(const Cl &clause, bool learnt) {
+    bool SolverMock::addClause(const Cl &clause, unsigned int lrb) {
         EXPECT_TRUE(std::all_of(clause.begin(), clause.end(),
                                 [this](Lit l) { return var(l) <= m_maxCreatedVar; }));
         EXPECT_TRUE(std::all_of(clause.begin(), clause.end(),
