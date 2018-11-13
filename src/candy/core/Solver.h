@@ -205,7 +205,7 @@ public:
         return trail.vardata.size();
     }
     size_t nConflicts() const override {
-        return conflict_analysis.getResult().nConflicts;
+        return clause_db.getConflictResult().nConflicts;
     }
     size_t nPropagations() const override {
         return propagator.nPropagations;
@@ -325,9 +325,9 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     // Basic Systems
     clause_db(*new TClauseDatabase()),
     trail(*new TAssignment()),
-    propagator(*new TPropagate(trail)),
-	conflict_analysis(*new TLearning(trail, propagator)),
-    branch(*new TBranching(trail, conflict_analysis)),
+    propagator(*new TPropagate(clause_db, trail)),
+	conflict_analysis(*new TLearning(clause_db, trail)),
+    branch(*new TBranching(clause_db, trail)),
     // assumptions 
     assumptions(),
     // restarts
@@ -369,9 +369,9 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     // Basic Systems
     clause_db(*_clause_db),
     trail(*new TAssignment()),
-    propagator(*new TPropagate(trail)),
-	conflict_analysis(*new TLearning(trail, propagator)),
-    branch(*new TBranching(trail, conflict_analysis)),
+    propagator(*new TPropagate(clause_db, trail)),
+	conflict_analysis(*new TLearning(clause_db, trail)),
+    branch(*new TBranching(clause_db, trail)),
     // assumptions 
     assumptions(),
     // restarts
@@ -475,6 +475,7 @@ bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::is
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Var Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
     int v = static_cast<int>(nVars());
+    clause_db.grow(nVars()+1);
     propagator.init(nVars());
     trail.grow();
     conflict_analysis.grow();
@@ -486,6 +487,7 @@ template<class TClauseDatabase, class TAssignment, class TPropagate, class TLear
 void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::addClauses(const CNFProblem& dimacs) {
     size_t maxVars = (size_t)dimacs.nVars();
     if (maxVars > this->nVars()) {
+        clause_db.grow(maxVars);
         propagator.init(maxVars);
         trail.grow(maxVars);
         conflict_analysis.grow(maxVars);
@@ -647,7 +649,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
             }
             
             conflict_analysis.analyze(confl);
-            AnalysisResult conflictInfo = conflict_analysis.getResult();
+            AnalysisResult& conflictInfo = clause_db.getConflictResult();
             if (incremental) {
             	// sort selectors to back (but keep asserting literal upfront: begin+1)
             	std::sort(conflictInfo.learnt_clause.begin()+1, conflictInfo.learnt_clause.end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
@@ -756,7 +758,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                     trail.newDecisionLevel();
                 } else if (trail.value(p) == l_False) {
                     conflict_analysis.analyzeFinal(~p);
-                    AnalysisResult result = conflict_analysis.getResult();
+                    AnalysisResult& result = clause_db.getConflictResult();
                     conflict.insert(conflict.end(), result.learnt_clause.begin(), result.learnt_clause.end());
                     return l_False;
                 } else {
@@ -811,7 +813,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
         else {
             // check if selectors are used in final conflict
             conflict_analysis.analyzeFinal(trail[trail.size()-1]);
-            AnalysisResult result = conflict_analysis.getResult();
+            AnalysisResult& result = clause_db.getConflictResult();
             auto pos = find_if(result.learnt_clause.begin(), result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
             if (pos == result.learnt_clause.end()) {
                 certificate.proof();

@@ -44,10 +44,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_uninitializedHeuristicReturnsUndefForMinInput() {
+        ClauseDatabase clause_db;
         Trail trail(1);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail);
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(1_L);
@@ -72,10 +73,11 @@ namespace Candy {
     static void test_emptyInitializedHeuristicReturnsUndefForMinInput() {
         Conjectures empty{};
 
+        ClauseDatabase clause_db;
         Trail trail(1);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail);
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(1_L);
@@ -98,10 +100,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesAdviceForSingleEquivalence(Conjectures testData) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis, std::move(testData));
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail, std::move(testData));
         
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(2_L);
@@ -132,10 +135,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned(Conjectures testData) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis, std::move(testData));
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail, std::move(testData));
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(1_L);
@@ -167,10 +171,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision(Conjectures testData) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis, std::move(testData));
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail, std::move(testData));
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(2_L);
@@ -201,10 +206,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant(Conjectures testData) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis, std::move(testData));
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail, std::move(testData));
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(5_L);
@@ -234,10 +240,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_givesAdviceForSingleEquivalenceSize3(Conjectures testData) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis, std::move(testData));
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail, std::move(testData));
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(4_L);
@@ -268,10 +275,11 @@ namespace Candy {
     
     template<class Heuristic>
     static void test_travelsUpTrail(Conjectures testData) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
-        Heuristic underTest(trail, conflict_analysis, std::move(testData));
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
+        Heuristic underTest(clause_db, trail, std::move(testData));
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(4_L);
@@ -312,9 +320,10 @@ namespace Candy {
     }
     
     TEST(RSILBranchingHeuristicsTests, givesNoAdviceForFilteredVariable) {
+        ClauseDatabase clause_db;
         Trail trail(6);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
 
         MockRSARHeuristic* mockRSARHeuristic = new MockRSARHeuristic;
         
@@ -325,7 +334,7 @@ namespace Candy {
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
         testData.addEquivalence(EquivalenceConjecture{{mkLit(4, 0), mkLit(5,1)}});
 
-        TestedRSILBranchingHeuristic underTest(trail, conflict_analysis, std::move(testData), false, mockRSARHeuristic);
+        TestedRSILBranchingHeuristic underTest(clause_db, trail, std::move(testData), false, mockRSARHeuristic);
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(4_L);
@@ -345,16 +354,17 @@ namespace Candy {
     }
     
     TEST(RSILBranchingHeuristicsTests, givesNoBackboneAdviceWhenBackbonesDeactivated) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
 
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
         testData.addBackbone(BackboneConjecture {mkLit(3,0)});
         testData.addBackbone(BackboneConjecture {mkLit(4,1)});
 
-        TestedRSILBranchingHeuristic underTest(trail, conflict_analysis, std::move(testData), false);
+        TestedRSILBranchingHeuristic underTest(clause_db, trail, std::move(testData), false);
         
         // backbone used here if backbone-usage would be activated:
         EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,0));
@@ -364,16 +374,17 @@ namespace Candy {
     }
     
     TEST(RSILBranchingHeuristicsTests, givesBackboneAdviceWhenBackbonesActivated) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
 
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
         testData.addBackbone(BackboneConjecture {mkLit(3,0)});
         testData.addBackbone(BackboneConjecture {mkLit(4,1)});
 
-        TestedRSILBranchingHeuristic underTest(trail, conflict_analysis, std::move(testData), true);
+        TestedRSILBranchingHeuristic underTest(clause_db, trail, std::move(testData), true);
         
         // backbone used here:
         EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,1));
@@ -383,14 +394,15 @@ namespace Candy {
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
 
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
-        TestedRSILVanishingBranchingHeuristic underTest(trail, conflict_analysis, std::move(testData));
+        TestedRSILVanishingBranchingHeuristic underTest(clause_db, trail, std::move(testData));
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(2_L);
@@ -405,9 +417,10 @@ namespace Candy {
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
 
         Conjectures testData;
 
@@ -416,7 +429,7 @@ namespace Candy {
 
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
-        TestedRSILVanishingBranchingHeuristic underTest(trail, conflict_analysis, std::move(testData), false, nullptr, false, halfLife);
+        TestedRSILVanishingBranchingHeuristic underTest(clause_db, trail, std::move(testData), false, nullptr, false, halfLife);
 
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(1_L);
@@ -442,16 +455,17 @@ namespace Candy {
     }
     
     TEST(RSILBudgetBranchingHeuristicsTests, producesUndefWhenBudgetIsDepleted) {
+        ClauseDatabase clause_db;
         Trail trail(5);
-        Propagate propagator(trail);
-        ConflictAnalysis conflict_analysis(trail, propagator);
+        Propagate propagator(clause_db, trail);
+        ConflictAnalysis conflict_analysis(clause_db, trail);
 
         const uint64_t budget = 4ull;
         
         Conjectures testData;
         testData.addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
 
-        TestedRSILBudgetBranchingHeuristic underTest(trail, conflict_analysis, std::move(testData), false, nullptr, false, budget);
+        TestedRSILBudgetBranchingHeuristic underTest(clause_db, trail, std::move(testData), false, nullptr, false, budget);
         
         trail.newDecisionLevel();
         trail.uncheckedEnqueue(2_L);

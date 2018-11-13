@@ -184,33 +184,33 @@ namespace Candy {
         CandySolverInterface* build() {
             ClauseDatabase* clause_db = new ClauseDatabase();
             Trail* trail = new Trail();
-            Propagate* propagator = new Propagate(*trail);
-	        ConflictAnalysis* conflict_analysis = new ConflictAnalysis(*trail, *propagator);
+            Propagate* propagator = new Propagate(*clause_db, *trail);
+	        ConflictAnalysis* conflict_analysis = new ConflictAnalysis(*clause_db, *trail);
             if (size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    RSILBranchingHeuristic3* branch = new RSILBranchingHeuristic3(*trail, *conflict_analysis, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones); 
+                    RSILBranchingHeuristic3* branch = new RSILBranchingHeuristic3(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones);
                     return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    RSILVanishingBranchingHeuristic3* branch = new RSILVanishingBranchingHeuristic3(*trail, *conflict_analysis, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
+                    RSILVanishingBranchingHeuristic3* branch = new RSILVanishingBranchingHeuristic3(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
                     return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILVanishingBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    RSILBudgetBranchingHeuristic3* branch = new RSILBudgetBranchingHeuristic3(*trail, *conflict_analysis, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
+                    RSILBudgetBranchingHeuristic3* branch = new RSILBudgetBranchingHeuristic3(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
                     return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBudgetBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
             }
             else if (size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    RSILBranchingHeuristic2* branch = new RSILBranchingHeuristic2(*trail, *conflict_analysis, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones); 
+                    RSILBranchingHeuristic2* branch = new RSILBranchingHeuristic2(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones); 
                     return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    RSILVanishingBranchingHeuristic2* branch = new RSILVanishingBranchingHeuristic2(*trail, *conflict_analysis, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
+                    RSILVanishingBranchingHeuristic2* branch = new RSILVanishingBranchingHeuristic2(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
                     return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILVanishingBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    RSILBudgetBranchingHeuristic2* branch = new RSILBudgetBranchingHeuristic2(*trail, *conflict_analysis, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
+                    RSILBudgetBranchingHeuristic2* branch = new RSILBudgetBranchingHeuristic2(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
                     return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBudgetBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
             }

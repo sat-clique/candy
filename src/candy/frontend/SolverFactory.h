@@ -45,8 +45,6 @@ public:
 
 	std::unique_ptr<GateAnalyzer> createGateAnalyzer(CNFProblem& problem);
 
-	CandySolverInterface* createSolver(CNFProblem& problem);
-	CandySolverInterface* createSimpSolver(CNFProblem& problem);
 	CandySolverInterface* createRSILSolver(CNFProblem& problem);
 	CandySolverInterface* createRSARSolver(CNFProblem& problem);
 

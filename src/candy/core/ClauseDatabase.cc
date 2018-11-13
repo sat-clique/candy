@@ -16,7 +16,6 @@ ClauseDatabase::~ClauseDatabase() {
 }
 
 void ClauseDatabase::initOccurrenceTracking(size_t nVars) {
-    variableOccurrences.init(nVars);
     for (Clause* clause : clauses) {
         for (Lit lit : *clause) {
             variableOccurrences[var(lit)].push_back(clause);
@@ -65,6 +64,15 @@ void ClauseDatabase::reduce() {
 void ClauseDatabase::defrag() {
     std::vector<Clause*> reallocated = allocator.defrag(clauses);
     clauses.swap(reallocated);
+    for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+        watcher.clear();
+    }
+    for (Clause* clause : clauses) {
+        if (clause->size() == 2) {
+            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
+            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+        }
+    }
 }
 
 void ClauseDatabase::bumpActivities(std::vector<Clause*>& involved_clauses) {
