@@ -57,7 +57,6 @@
 #include "candy/simp/VariableElimination.h"
 #include "candy/frontend/CLIOptions.h"
 
-using namespace std;
 
 namespace Candy {
 
@@ -92,7 +91,7 @@ public:
         return Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve(assumps);
     }
 
-    inline lbool solve(const vector<Lit>& assumps) {
+    inline lbool solve(const std::vector<Lit>& assumps) {
         return Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve(assumps);
     }
 
@@ -100,7 +99,7 @@ public:
         return elimination.isEliminated(v);
     }
 
-    Subsumption subsumption;
+    Subsumption<TPropagate> subsumption;
     VariableElimination elimination;
 
     bool use_asymm;         // Shrink clauses by asymmetric branching.
@@ -111,7 +110,7 @@ protected:
     // Helper structures:
     struct ElimLt {
         const vector<int>& n_occ;
-        explicit ElimLt(const vector<int>& no) : n_occ(no) { }
+        explicit ElimLt(const std::vector<int>& no) : n_occ(no) { }
 
         uint64_t cost(Var x) const {
             return (uint64_t) n_occ[toInt(mkLit(x))] * (uint64_t) n_occ[toInt(~mkLit(x))];
@@ -250,7 +249,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
         }
     }
     
-    bool result = this->propagator.propagate(this->trail) != nullptr;
+    bool result = this->propagator.propagate() != nullptr;
     this->trail.cancelUntil(0);
     return result;
 }

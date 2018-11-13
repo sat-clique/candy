@@ -20,32 +20,6 @@
 
 namespace Candy {
 
-// Helper structures:
-struct Watcher {
-    Clause* cref;
-    Lit blocker;
-    Watcher() :
-        cref(nullptr), blocker(lit_Undef) {}
-    Watcher(Clause* cr, Lit p) :
-        cref(cr), blocker(p) {}
-    bool operator==(const Watcher& w) const {
-        return cref == w.cref;
-    }
-    bool operator!=(const Watcher& w) const {
-        return cref != w.cref;
-    }
-    bool isDeleted() {
-        return cref->isDeleted() == 1;
-    }
-};
-
-struct WatcherDeleted {
-    WatcherDeleted() { }
-    inline bool operator()(const Watcher& w) const {
-        return w.cref->isDeleted() == 1;
-    }
-};
-
 struct WatcherTS {
     Clause* cref;
     Lit watch0;
@@ -60,33 +34,21 @@ private:
     ClauseDatabase& clause_db;
     Trail& trail;
 
-    OccLists<Lit, Watcher, WatcherDeleted> binaryWatchers;
     std::vector<std::vector<WatcherTS*>> watchers;
 
 public:
     uint64_t nPropagations;
 
     PropagateThreadSafe(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) {
-        binaryWatchers = OccLists<Lit, Watcher, WatcherDeleted>();
-    }
+        : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) { }
 
     void init(size_t maxVars) {
-        binaryWatchers.init(mkLit(maxVars, true));
         watchers.resize(mkLit(maxVars, true));
-    }
-
-    std::vector<Watcher>& getBinaryWatchers(Lit p) {
-        return binaryWatchers[p];
     }
 
     void attachClause(Clause* clause) {
         assert(clause->size() > 1);
-        if (clause->size() == 2) {
-            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
-        }
-        else {
+        if (clause->size() > 2) {
             WatcherTS* watcher = new WatcherTS(clause, clause->first(), clause->second());
             watchers[~clause->first()].push_back(watcher);
             watchers[~clause->second()].push_back(watcher);
@@ -95,13 +57,7 @@ public:
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
-        if (clause->size() == 2) {
-            for (Lit lit : *clause) {
-                auto newEnd = std::remove_if(binaryWatchers[~lit].begin(), binaryWatchers[~lit].end(), [clause](Watcher w){ return w.cref == clause; });
-                binaryWatchers[~lit].erase(newEnd, binaryWatchers[~lit].end());
-            }
-        }
-        else {
+        if (clause->size() > 2) {
             WatcherTS* watcher;
             for (Lit lit : *clause) {
                 auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
@@ -121,12 +77,13 @@ public:
     }
 
     void detachAll() {
-        binaryWatchers.clear();
-        for (std::vector<WatcherTS*>& ws : watchers) {
-            for (WatcherTS* watcher : ws) {
+        for (unsigned int lit = 0; lit < watchers.size(); lit++) {
+            for (WatcherTS* watcher : watchers[lit]) {
+                Lit other = watcher->watch0 == ~lit ? watcher->watch1 : watcher->watch0;
+                watchers[~other].erase(std::remove(watchers[~other].begin(), watchers[~other].end(), watcher), watchers[~other].end());
                 delete watcher;
             }
-            ws.clear();
+            watchers[lit].clear();
         }
     }
 
@@ -135,9 +92,9 @@ public:
         for (size_t v = 0; v < nVars; v++) {
             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
-                sort(watchers[l].begin(), watchers[l].end(), [](Watcher w1, Watcher w2) {
-                    Clause& c1 = *w1.cref;
-                    Clause& c2 = *w2.cref;
+                sort(watchers[l].begin(), watchers[l].end(), [](WatcherTS* w1, WatcherTS* w2) {
+                    Clause& c1 = *w1->cref;
+                    Clause& c2 = *w2->cref;
                     return c1.size() < c2.size() || (c1.size() == c2.size() && c1.getActivity() > c2.getActivity());
                 });
             }
@@ -145,13 +102,14 @@ public:
     }
 
     inline const Clause* propagate_binary_clauses(Lit p) {
-        for (Watcher& watcher : binaryWatchers[p]) {
-            lbool val = trail.value(watcher.blocker);
+        const std::vector<BinaryWatcher>& list = clause_db.getBinaryWatchers(p);
+        for (BinaryWatcher watcher : list) {
+            lbool val = trail.value(watcher.other);
             if (val == l_False) {
-                return watcher.cref;
+                return watcher.clause;
             }
             if (val == l_Undef) {
-                trail.uncheckedEnqueue(watcher.blocker, watcher.cref);
+                trail.uncheckedEnqueue(watcher.other, watcher.clause);
             }
         }
         return nullptr;
@@ -175,8 +133,7 @@ public:
         for (auto iter = list.begin(); iter != list.end(); iter++) {
             WatcherTS* watcher = *iter;
             if (watcher->watch0 != p) {
-                assert(watcher->watch1 == p);
-                std::swap(watcher->watch0, watcher->watch0);
+                std::swap(watcher->watch0, watcher->watch1);
                 assert(watcher->watch0 == p);
             }
             lbool val = trail.value(watcher->watch1);
@@ -184,7 +141,7 @@ public:
                 const Clause* clause = watcher->cref;
                 
                 for (Lit lit : *clause) {
-                    if (trail.value(lit) != l_False) {
+                    if (lit != watcher->watch0 && lit != watcher->watch1 && trail.value(lit) != l_False) {
                         watcher->watch1 = lit;
                         watchers[~lit].push_back(watcher);
                         goto propagate_skip;

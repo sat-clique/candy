@@ -321,39 +321,64 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    CandySolverInterface* solver;
-	SolverFactory factory { args }; 
-    if (args.rsilArgs.useRSIL) {
-    	try {
-            solver = factory.createRSILSolver(problem);
-        }
-        catch(UnsuitableProblemException& e) {
-            std::cerr << "c Aborting RSIL: " << e.what() << std::endl;
-            std::cerr << "c Falling back to unmodified Candy" << std::endl;
+    CandySolverInterface* solver = nullptr;
+
+	if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
+        SolverFactory factory { args }; 
+        try {
+            if (args.rsilArgs.useRSIL) {
+                solver = factory.createRSILSolver(problem);
+            }
+            else if (args.rsarArgs.useRSAR) {
+                solver = factory.createRSARSolver(problem);
+            }
+        } 
+        catch (UnsuitableProblemException& e) {
+            std::cerr << "c Aborting: " << e.what() << std::endl;
             solver = new SimpSolver<>();
         }
-    }
-    else if (args.rsarArgs.useRSAR) {
-    	try {
-            solver = factory.createRSARSolver(problem);
-		}
-		catch(UnsuitableProblemException& e) {
-			std::cerr << "c Aborting RSAR: " << e.what() << std::endl;
-			std::cerr << "c Falling back to unmodified Candy." << std::endl;
-            solver = new SimpSolver<>();
-		}
-    }
-    else if (SolverOptions::opt_use_lrb) {
-        std::cerr << "c Using LRB Branching Heuristic" << std::endl;
-        solver = new SimpSolver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, LRB>();
     }
     else {
-        std::cerr << "c Using VSIDS Branching Heuristic" << std::endl;
-        solver = new SimpSolver<>();
-    }
+        ClauseDatabase* clause_db = new ClauseDatabase();
+        Trail* assignment = new Trail();
+
+        CandyBuilder<> builder { clause_db, assignment };
+
+        if (SolverOptions::opt_use_lrb) {
+            if (SolverOptions::opt_use_ts_ca) {
+                if (SolverOptions::opt_use_ts_pr) {
+                    solver = builder.branchWithLRB().learnThreadSafe().propagateThreadSafe().build();
+                } else {
+                    solver = builder.branchWithLRB().learnThreadSafe().build();
+                }
+            } else {
+                if (SolverOptions::opt_use_ts_pr) {
+                    solver = builder.branchWithLRB().propagateThreadSafe().build();
+                } else {
+                    solver = builder.branchWithLRB().build();
+                }
+            }
+        } else {
+            if (SolverOptions::opt_use_ts_ca) {
+                if (SolverOptions::opt_use_ts_pr) {
+                    solver = builder.learnThreadSafe().propagateThreadSafe().build();
+                } else {
+                    solver = builder.learnThreadSafe().build();
+                }
+            } else {
+                if (SolverOptions::opt_use_ts_pr) {
+                    solver = builder.propagateThreadSafe().build();
+                } else {
+                    solver = builder.build();
+                }
+            }
+        }
+    } 
+
     if (args.do_certified) {
         solver->resetCertificate(args.opt_certified_file);
     }
+
     solver->addClauses(problem);
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily

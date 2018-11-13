@@ -7,39 +7,40 @@
 #include "candy/core/Trail.h"
 #include "candy/core/Propagate.h"
 #include "candy/core/ConflictAnalysis.h"
+#include "candy/core/PropagateThreadSafe.h"
+#include "candy/core/ConflictAnalysisThreadSafe.h"
 #include "candy/core/branching/LRB.h"
 #include "candy/core/branching/VSIDS.h"
 
 namespace Candy {
 
-template<class TClauseDatabase = ClauseDatabase, class TAssignment = Trail, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS>
+template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS>
 class CandyBuilder {
 public:
-    TClauseDatabase* database = nullptr;
-    TAssignment* assignment = nullptr;
-    TPropagate* propagate = nullptr;
-    TLearning* learning = nullptr;
-    TBranching* branching = nullptr;
+    ClauseDatabase* database = nullptr;
+    Trail* assignment = nullptr;
 
-    constexpr CandyBuilder(TClauseDatabase* db, TAssignment* as, TPropagate* pr, TLearning* le, TBranching* br) 
-        : database(db), assignment(as), propagate(pr), learning(le), branching(br)
-    {}
+    constexpr CandyBuilder(ClauseDatabase* db, Trail* as) : database(db), assignment(as) { }
 
-    constexpr auto branchWithVSIDS(VSIDS* _branching) const -> CandyBuilder<TClauseDatabase, TAssignment, TPropagate, TLearning, VSIDS> {
-        return CandyBuilder(database, assignment, propagate, learning, _branching);
+    constexpr auto branchWithVSIDS() const -> CandyBuilder<TPropagate, TLearning, VSIDS> {
+        return CandyBuilder<TPropagate, TLearning, VSIDS>(database, assignment);
     }
 
-    constexpr auto branchWithLRB(LRB* _branching) const -> CandyBuilder<TClauseDatabase, TAssignment, TPropagate, TLearning, LRB> {
-        return CandyBuilder(database, assignment, propagate, learning, _branching);
+    constexpr auto branchWithLRB() const -> CandyBuilder<TPropagate, TLearning, LRB> {
+        return CandyBuilder<TPropagate, TLearning, LRB>(database, assignment);
     }
 
-    constexpr Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>* build() const {
-        TClauseDatabase* _database = nullptr == database ? new TClauseDatabase() : database;
-        TAssignment* _assignment = nullptr == assignment ? new TAssignment() : assignment;
-        TPropagate* _propagate = nullptr == propagate ? new TPropagate() : propagate;
-        TLearning* _learning = nullptr == learning ? new TLearning() : learning;
-        TBranching* _branching = nullptr == branching ? new TBranching() : branching;
-        return new SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>(*_database, *_assignment, *_propagate, *_learning, *_branching);
+    constexpr auto learnThreadSafe() const -> CandyBuilder<TPropagate, ConflictAnalysisThreadSafe, TBranching> {
+        return CandyBuilder<TPropagate, ConflictAnalysisThreadSafe, TBranching>(database, assignment);
+    }
+
+    constexpr auto propagateThreadSafe() const -> CandyBuilder<PropagateThreadSafe, TLearning, TBranching> {
+        return CandyBuilder<PropagateThreadSafe, TLearning, TBranching>(database, assignment);
+    }
+
+    CandySolverInterface* build() {
+        return new SimpSolver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, 
+            *new TPropagate(*database, *assignment), *new TLearning(*database, *assignment), *new TBranching(*database, *assignment));
     }
 
 };

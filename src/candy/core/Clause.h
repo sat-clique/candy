@@ -89,7 +89,6 @@ private:
     friend class Propagate;
     friend class ConflictAnalysis;
     friend class Trail;
-    friend class Subsumption;
     friend class TestClauseFactory;
 
 public:

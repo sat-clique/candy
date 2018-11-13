@@ -23,7 +23,9 @@ namespace SolverOptions {
     extern IntOption opt_first_reduce_db;
     extern IntOption opt_inc_reduce_db;
     
-    extern BoolOption opt_use_lrb;
+    extern BoolOption opt_use_lrb; // lrb branching
+    extern BoolOption opt_use_ts_ca; // thread-safe conflict analysis
+    extern BoolOption opt_use_ts_pr; // thread-safe propagator
 
     extern DoubleOption opt_var_decay;
     extern DoubleOption opt_max_var_decay;
