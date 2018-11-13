@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_PROPAGATE_THREADSAFE_H_
 
 #include "candy/core/SolverTypes.h"
+#include "candy/core/ClauseDatabase.h"
 #include "candy/core/Clause.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/CheckedCast.h"
@@ -56,6 +57,7 @@ struct WatcherTS {
 
 class PropagateThreadSafe {
 private:
+    ClauseDatabase& clause_db;
     Trail& trail;
 
     OccLists<Lit, Watcher, WatcherDeleted> binaryWatchers;
@@ -64,7 +66,8 @@ private:
 public:
     uint64_t nPropagations;
 
-    PropagateThreadSafe(Trail& _trail) : trail(_trail), watchers(), nPropagations(0) {
+    PropagateThreadSafe(ClauseDatabase& _clause_db, Trail& _trail)
+        : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) {
         binaryWatchers = OccLists<Lit, Watcher, WatcherDeleted>();
     }
 
@@ -99,10 +102,15 @@ public:
             }
         }
         else {
+            WatcherTS* watcher;
             for (Lit lit : *clause) {
-                auto newEnd = std::remove_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ if (w->cref == clause) { delete w; return true; } else return false; });
-                watchers[~lit].erase(newEnd, watchers[~lit].end());
+                auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
+                if (it != watchers[~lit].end()) {
+                    watchers[~lit].erase(std::remove(watchers[~lit].begin(), watchers[~lit].end(), watcher), watchers[~lit].end());
+                    watcher = *it;
+                }
             }
+            delete watcher;
         }
     }
 

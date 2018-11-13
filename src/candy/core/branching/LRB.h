@@ -14,15 +14,15 @@
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
-#include "candy/core/ConflictAnalysis.h"
+#include "candy/core/ClauseDatabase.h"
 #include "candy/core/branching/BranchingInterface.h"
 
 namespace Candy {
 
 class LRB : public BranchingInterface<LRB> {
 private:
+    ClauseDatabase& clause_db;
     Trail& trail;
-    ConflictAnalysis& analysis;
 
 public:
     struct VarOrderLt {
@@ -33,9 +33,9 @@ public:
         VarOrderLt(std::vector<double>& act) : weight(act) {}
     };
 
-    LRB(Trail& _trail, ConflictAnalysis& _analysis, double _step_size = 0.4) :
-        trail(_trail), analysis(_analysis), 
-        order_heap(VarOrderLt(weight)),
+    LRB(ClauseDatabase& _clause_db, Trail& _trail, double _step_size = 0.4) :
+        clause_db(_clause_db), trail(_trail), 
+        order_heap(VarOrderLt(weight)), 
         weight(), polarity(), decision(), stamp(), 
         interval_assigned(), participated(), 
         step_size(_step_size) {
@@ -43,8 +43,8 @@ public:
     }
 
     LRB(LRB&& other) :
-        trail(other.trail), analysis(other.analysis), 
-        order_heap(VarOrderLt(weight)) {
+        clause_db(other.clause_db), trail(other.trail), 
+        order_heap(VarOrderLt(weight)) { 
             weight = std::move(other.weight);
             polarity = std::move(other.polarity);
             decision = std::move(other.decision);
@@ -124,7 +124,7 @@ public:
 
     void notify_conflict() {
         stamp.clear();
-        for (const Clause* clause : analysis.getResult().involved_clauses) {
+        for (const Clause* clause : clause_db.getConflictResult().involved_clauses) { 
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {

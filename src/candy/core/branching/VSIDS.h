@@ -14,15 +14,15 @@
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
-#include "candy/core/ConflictAnalysis.h"
+#include "candy/core/ClauseDatabase.h"
 #include "candy/core/branching/BranchingInterface.h"
 
 namespace Candy {
 
 class VSIDS : public BranchingInterface<VSIDS> {
 private:
+    ClauseDatabase& clause_db;
     Trail& trail;
-    ConflictAnalysis& analysis;
 
 public:
     struct VarOrderLt {
@@ -44,8 +44,8 @@ public:
     bool initial_polarity = true;
     double initial_activity = 0.0;
 
-    VSIDS(Trail& _trail, ConflictAnalysis& _analysis, double _var_decay = 0.8, double _max_var_decay = 0.95) :
-        trail(_trail), analysis(_analysis), 
+    VSIDS(ClauseDatabase& _clause_db, Trail& _trail, double _var_decay = 0.8, double _max_var_decay = 0.95) :
+        clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(activity)),
         activity(), polarity(), decision(), stamp(), 
         var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay) {
@@ -53,7 +53,7 @@ public:
     }
 
     VSIDS(VSIDS&& other) :
-        trail(other.trail), analysis(other.analysis), 
+        clause_db(other.clause_db), trail(other.trail), 
         order_heap(VarOrderLt(activity)) {
             activity = std::move(other.activity);
             polarity = std::move(other.polarity);
@@ -174,12 +174,12 @@ public:
     }
 
     void notify_conflict() {
-        if (analysis.getResult().nConflicts % 5000 == 0 && var_decay < max_var_decay) {
+        if (clause_db.getConflictResult().nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
 
         stamp.clear();
-        for (const Clause* clause : analysis.getResult().involved_clauses) {
+        for (const Clause* clause : clause_db.getConflictResult().involved_clauses) { 
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {
@@ -187,7 +187,7 @@ public:
                     varBumpActivity(v);
                     if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
                         // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                        if (trail.reason(v)->getLBD() < analysis.getResult().lbd) {
+                        if (trail.reason(v)->getLBD() < clause_db.getConflictResult().lbd) {
                             varBumpActivity(v);
                         }
                     }

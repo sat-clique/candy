@@ -10,6 +10,36 @@
 
 namespace Candy {
 
+struct AnalysisResult {
+
+	AnalysisResult() : 
+		nConflicts(0), learnt_clause(), involved_clauses() 
+	{
+
+	}
+
+	uint64_t nConflicts;
+	std::vector<Lit> learnt_clause;
+	std::vector<Clause*> involved_clauses;
+
+	uint_fast16_t lbd;
+
+	void clear() {
+		learnt_clause.clear();
+		involved_clauses.clear();
+	}
+
+};
+
+struct BinaryWatcher {
+    Clause* clause;
+    Lit other;
+
+    BinaryWatcher(Clause* _clause, Lit _other)
+        : clause(_clause), other(_other) { }
+
+};
+
 class ClauseDatabase {
 private:
     struct reduceDB_lt {
@@ -42,6 +72,11 @@ private:
     
     OccLists<Var, Clause*, ClauseDeleted> variableOccurrences;
 
+    std::vector<std::vector<BinaryWatcher>> binaryWatchers;
+
+    /* analysis result is stored here */
+	AnalysisResult result;
+
 public:
     ClauseAllocator allocator;
  
@@ -61,6 +96,10 @@ public:
     typedef std::vector<Clause*>::const_iterator const_iterator;
     typedef std::vector<Clause*>::reverse_iterator reverse_iterator;
     typedef std::vector<Clause*>::const_reverse_iterator const_reverse_iterator;
+
+    inline AnalysisResult& getConflictResult() {
+        return result;
+    }
 
     inline const_iterator begin() const {
         return clauses.begin();
@@ -102,6 +141,13 @@ public:
         return clauses[i];
     }
 
+    inline void grow(size_t nVars) {
+        if (variableOccurrences.size() < nVars+1) {
+            variableOccurrences.init(nVars+1);
+            binaryWatchers.resize(nVars*2+2);
+        }
+    }
+
     Clause* createClause(Cl& lits, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
 
@@ -118,6 +164,11 @@ public:
                 variableOccurrences[var(lit)].push_back(clause);
             }
         }
+
+        if (clause->size() == 2) {
+            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
+            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+        }
         
         return clause;
     }
@@ -130,24 +181,39 @@ public:
         if (track_literal_occurrence) {
             for (Lit lit : *clause) variableOccurrences.smudge(var(lit));
         }
+
+        if (clause->size() == 2) {
+            std::vector<BinaryWatcher>& list0 = binaryWatchers[~clause->first()];
+            std::vector<BinaryWatcher>& list1 = binaryWatchers[~clause->second()];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list1.end());
+        }
     }
 
     void strengthenClause(Clause* clause, Lit lit) {
         // std::cout << "Strengthening literal " << lit << " in clause " << *clause;
 
-        clause->strengthen(lit);
-
-        if (track_literal_occurrence) {
+        if (clause->size() == 2) {
+            removeClause(clause); 
+        }
+        else if (track_literal_occurrence) {
             variableOccurrences.remove(var(lit), clause);
         }
 
-        if (clause->size() < 2) {
-            removeClause(clause); 
+        clause->strengthen(lit);
+
+        if (clause->size() == 2) {
+            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
+            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
         }
     }
 
     inline const std::vector<Clause*>& getOccurenceList(Var v) {
         return variableOccurrences.lookup(v);
+    }
+
+    inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
+        return binaryWatchers[lit];
     }
 
     void cleanup() {

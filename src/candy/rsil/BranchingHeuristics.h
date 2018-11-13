@@ -28,6 +28,7 @@
 #define X_66055FCA_E0CE_46B3_9E4C_7F093C37330B_BRANCHINGHEURISTICS_H
 
 #include <candy/core/SolverTypes.h>
+#include <candy/core/ClauseDatabase.h>
 #include <candy/core/branching/VSIDS.h>
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>
@@ -63,8 +64,8 @@ namespace Candy {
         static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
     public:
+        ClauseDatabase& clause_db;
         Trail& trail;
-        ConflictAnalysis& analysis;
 
         /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
         Conjectures conjectures;
@@ -120,10 +121,10 @@ namespace Candy {
          * getAdvice(...) always returns lit_Undef and getSignAdvice(L) returns L.
          *
          */
-        RSILBranchingHeuristic(Trail& trail_, ConflictAnalysis& analysis_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false) :
-                                  trail(trail_), analysis(analysis_), 
-                                  defaultBranchingHeuristic(trail_, analysis_),
+                                  clause_db(clause_db_), trail(trail_), 
+                                  defaultBranchingHeuristic(clause_db_, trail_), 
                                   m_advice(conjectures_, conjectures_.getMaxVar()),
                                   m_rng(0xFFFF),
                                   m_backbonesEnabled(m_backbonesEnabled_) {
@@ -239,9 +240,9 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
-        RSILBudgetBranchingHeuristic(Trail& trail_, ConflictAnalysis& analysis_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILBudgetBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                      RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t initialBudget_ = 10000ull) :
-                RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(trail_, analysis_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
+                RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(clause_db_, trail_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
             for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
                 auto& advice = this->m_advice.getAdvice(i);
                 for (size_t j = 0; j < advice.getSize(); ++j) {
@@ -299,12 +300,12 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
 
-        RSILVanishingBranchingHeuristic(Trail& trail_, ConflictAnalysis& analysis_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILVanishingBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                         RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 10000ull) :
-                RSILBranchingHeuristic<AdviceType>(trail_, analysis_, std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
+                RSILBranchingHeuristic<AdviceType>(clause_db_, trail_, std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
                                     m_callCounter(m_probHalfLife_),
                                     m_probHalfLife(m_probHalfLife_), m_mask(0ull),
-                                    m_rsilHeuristic(trail_, analysis_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_)
+                                    m_rsilHeuristic(clause_db_, trail_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) 
         {}
 
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;

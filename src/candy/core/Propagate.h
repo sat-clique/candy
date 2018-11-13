@@ -9,6 +9,7 @@
 #define SRC_CANDY_CORE_PROPAGATE_H_
 
 #include "candy/core/SolverTypes.h"
+#include "candy/core/ClauseDatabase.h"
 #include "candy/core/Clause.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/CheckedCast.h"
@@ -47,35 +48,26 @@ struct WatcherDeleted {
 
 class Propagate {
 private:
+    ClauseDatabase& clause_db;
     Trail& trail;
 
-    OccLists<Lit, Watcher, WatcherDeleted> binaryWatchers;
     OccLists<Lit, Watcher, WatcherDeleted> watchers;
 
 public:
     uint64_t nPropagations;
 
-    Propagate(Trail& _trail) : trail(_trail), nPropagations(0) {
-        binaryWatchers = OccLists<Lit, Watcher, WatcherDeleted>();
+    Propagate(ClauseDatabase& _clause_db, Trail& _trail)
+        : clause_db(_clause_db), trail(_trail), nPropagations(0) {
         watchers = OccLists<Lit, Watcher, WatcherDeleted>();
     }
 
     void init(size_t maxVars) {
-        binaryWatchers.init(mkLit(maxVars, true));
         watchers.init(mkLit(maxVars, true));
-    }
-
-    std::vector<Watcher>& getBinaryWatchers(Lit p) {
-        return binaryWatchers[p];
     }
 
     void attachClause(Clause* clause) {
         assert(clause->size() > 1);
-        if (clause->size() == 2) {
-            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
-        } 
-        else {
+        if (clause->size() > 2) {
             watchers[~clause->first()].emplace_back(clause, clause->second());
             watchers[~clause->second()].emplace_back(clause, clause->first());
         }
@@ -83,13 +75,7 @@ public:
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
-        if (clause->size() == 2) {
-            std::vector<Watcher>& list0 = binaryWatchers[~clause->first()];
-            std::vector<Watcher>& list1 = binaryWatchers[~clause->second()];
-            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
-        } 
-        else {
+        if (clause->size() > 2) {
             std::vector<Watcher>& list0 = watchers[~clause->first()];
             std::vector<Watcher>& list1 = watchers[~clause->second()];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
@@ -104,7 +90,6 @@ public:
     }
 
     void detachAll() {
-        binaryWatchers.clear();
         watchers.clear();
     }
 
@@ -123,14 +108,14 @@ public:
     }
 
     inline Clause* propagate_binary_clauses(Lit p) {
-        std::vector<Watcher>& list = binaryWatchers[p];
-        for (Watcher& watcher : list) {
-            lbool val = trail.value(watcher.blocker);
+        const std::vector<BinaryWatcher>& list = clause_db.getBinaryWatchers(p);
+        for (BinaryWatcher watcher : list) {
+            lbool val = trail.value(watcher.other);
             if (val == l_False) {
-                return watcher.cref;
+                return watcher.clause;
             }
             if (val == l_Undef) {
-                trail.uncheckedEnqueue(watcher.blocker, watcher.cref);
+                trail.uncheckedEnqueue(watcher.other, watcher.clause);
             }
         }
         return nullptr;
