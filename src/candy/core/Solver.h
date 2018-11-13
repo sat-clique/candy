@@ -258,7 +258,7 @@ public:
 protected:
     ClauseDatabase& clause_db;
     Trail& trail;
-    Propagate& propagator;
+    TPropagate& propagator;
     TLearning& conflict_analysis;
     TBranching& branch;
 
@@ -624,7 +624,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     for (;;) {
         sonification.decisionLevel(trail.decisionLevel(), SolverOptions::opt_sonification_delay);
 
-        Clause* confl = propagator.propagate();
+        Clause* confl = (Clause*)propagator.propagate();
         
         sonification.assignmentLevel(static_cast<int>(trail.size()));
         

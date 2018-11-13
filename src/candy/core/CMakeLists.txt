@@ -15,7 +15,9 @@ add_library(core OBJECT
     SolverTypes.h
     Trail.h
     ConflictAnalysis.h
+    ConflictAnalysisThreadSafe.h
     Propagate.h
+    PropagateThreadSafe.h
     branching/BranchingInterface.h
     branching/VSIDS.h
     branching/LRB.h

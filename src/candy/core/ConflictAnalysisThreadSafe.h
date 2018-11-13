@@ -20,27 +20,6 @@
 
 namespace Candy {
 
-struct AnalysisResult {
-
-	AnalysisResult() : 
-		nConflicts(0), learnt_clause(), involved_clauses() 
-	{
-
-	}
-
-	uint64_t nConflicts;
-	std::vector<Lit> learnt_clause;
-	std::vector<const Clause*> involved_clauses;
-
-	uint_fast16_t lbd;
-
-	void clear() {
-		learnt_clause.clear();
-		involved_clauses.clear();
-	}
-
-};
-
 class ConflictAnalysisThreadSafe {
 private:
 	/* some helper data-structures */
@@ -48,12 +27,9 @@ private:
     std::vector<Var> analyze_clear;
     std::vector<Var> analyze_stack;
 
-    /* analysis result is stored here */
-	AnalysisResult result;
-
     /* pointers to solver state */
+	ClauseDatabase& clause_db;
     Trail& trail;
-    Propagate& propagate;
 
     /* Constant for reducing clause */
     unsigned int lbSizeMinimizingClause;
@@ -100,13 +76,14 @@ private:
 	 * Minimisation with binary clauses of the asserting clause
 	 ******************************************************************/
 	void minimisationWithBinaryResolution() {
+		AnalysisResult& result = clause_db.getConflictResult();
 	    stamp.clear();
 
 	    bool minimize = false;
-	    for (Watcher w : propagate.getBinaryWatchers(~result.learnt_clause[0])) {
-	        if (trail.satisfies(w.blocker)) {
+	    for (const BinaryWatcher w : clause_db.getBinaryWatchers(~result.learnt_clause[0])) {
+	        if (trail.satisfies(w.other)) {
 	            minimize = true;
-	            stamp.set(var(w.blocker));
+	            stamp.set(var(w.other));
 	        }
 	    }
 
@@ -118,13 +95,12 @@ private:
 	}
 
 public:
-	ConflictAnalysisThreadSafe(Trail& _trail, Propagate& _propagate) :
+	ConflictAnalysisThreadSafe(ClauseDatabase& _clause_db, Trail& _trail) :
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),
-		result(),
+		clause_db(_clause_db),
 		trail(_trail),
-		propagate(_propagate),
 		lbSizeMinimizingClause(ClauseLearningOptions::opt_lb_size_minimzing_clause)
 	{ }
 
@@ -136,10 +112,6 @@ public:
 
 	void grow(size_t size) {
 		stamp.grow(size);
-	}
-
-    AnalysisResult getResult() const {
-		return result;
 	}
 
 	/**************************************************************************************************
@@ -163,6 +135,8 @@ public:
 	    int pathC = 0;
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
+
+		AnalysisResult& result = clause_db.getConflictResult(); 
 	    result.clear();
 		result.nConflicts++;
 
@@ -171,7 +145,7 @@ public:
 	    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
 	    do {
 	        assert(confl != nullptr); // (otherwise should be UIP)
-	        result.involved_clauses.push_back(confl);
+	        result.involved_clauses.push_back((Clause*)confl);
 
 	        for (Lit lit : *confl) {
 				Var v = var(lit);
@@ -229,6 +203,8 @@ public:
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
 	void analyzeFinal(Lit p) {
+		AnalysisResult& result = clause_db.getConflictResult();
+		
 	    result.clear();	
 	    result.learnt_clause.push_back(p);
 
