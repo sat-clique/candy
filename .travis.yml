@@ -49,6 +49,8 @@ before_script:
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then gem install coveralls-lcov ; sudo apt-get
   install lcov ; fi
 script:
+- pwd
+- echo $TRAVIS_BUILD_DIR
 - mkdir -p ../build
 - cd ../build
 - if [ "$CANDY_MODE" = "REGULAR" ]; then cmake -DCMAKE_BUILD_TYPE=Release $TRAVIS_BUILD_DIR
@@ -57,7 +59,7 @@ script:
   $TRAVIS_BUILD_DIR ; fi
 - if [ "$CANDY_MODE" = "SANITIZERS" ]; then cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_ADDRESS_SANITIZER=ON
   $TRAVIS_BUILD_DIR ; fi
-- build-wrapper --out-dir $TRAVIS_BUILD_DIR/bw-output cmake --build . --config Release -- -j2
+- build-wrapper --out-dir ../bw-output cmake --build . --config Release -- -j2
 - ctest -V
 - cd $TRAVIS_BUILD_DIR
 - sonar-scanner
