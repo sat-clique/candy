@@ -205,7 +205,7 @@ public:
         return trail.vardata.size();
     }
     size_t nConflicts() const override {
-        return clause_db.getConflictResult().nConflicts;
+        return clause_db.result.nConflicts;
     }
     size_t nPropagations() const override {
         return propagator.nPropagations;
@@ -649,51 +649,50 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
             }
             
             conflict_analysis.analyze(confl);
-            AnalysisResult& conflictInfo = clause_db.getConflictResult();
             if (incremental) {
             	// sort selectors to back (but keep asserting literal upfront: begin+1)
-            	std::sort(conflictInfo.learnt_clause.begin()+1, conflictInfo.learnt_clause.end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
+            	std::sort(clause_db.result.learnt_clause.begin()+1, clause_db.result.learnt_clause.end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
             }
             
-            if (learntCallback != nullptr && (int)conflictInfo.learnt_clause.size() <= learntCallbackMaxLength) {
+            if (learntCallback != nullptr && (int)clause_db.result.learnt_clause.size() <= learntCallbackMaxLength) {
                 vector<int> clause;
-                clause.reserve(conflictInfo.learnt_clause.size() + 1);
-                for (Lit lit : conflictInfo.learnt_clause) {
+                clause.reserve(clause_db.result.learnt_clause.size() + 1);
+                for (Lit lit : clause_db.result.learnt_clause) {
                     clause.push_back((var(lit)+1)*(sign(lit)?-1:1));
                 }
                 clause.push_back(0);
                 learntCallback(learntCallbackState, clause.data());
             }
 
-            sonification.learntSize(static_cast<int>(conflictInfo.learnt_clause.size()));
+            sonification.learntSize(static_cast<int>(clause_db.result.learnt_clause.size()));
 
-            if (!isSelector(conflictInfo.learnt_clause.back())) {
-                certificate.added(conflictInfo.learnt_clause.begin(), conflictInfo.learnt_clause.end());
+            if (!isSelector(clause_db.result.learnt_clause.back())) {
+                certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
             }
 
-            trail.reduceLBDs(conflictInfo.involved_clauses);
-            clause_db.bumpActivities(conflictInfo.involved_clauses); 
+            trail.reduceLBDs(clause_db.result.involved_clauses);
+            clause_db.bumpActivities(clause_db.result.involved_clauses); 
 
             branch.notify_conflict();
 
-            lbdQueue.push(conflictInfo.lbd);
-            sumLBD += conflictInfo.lbd;
+            lbdQueue.push(clause_db.result.lbd);
+            sumLBD += clause_db.result.lbd;
 
-            if (conflictInfo.learnt_clause.size() == 1) {
+            if (clause_db.result.learnt_clause.size() == 1) {
                 trail.cancelUntil(0);
-                trail.uncheckedEnqueue(conflictInfo.learnt_clause[0]);
+                trail.uncheckedEnqueue(clause_db.result.learnt_clause[0]);
             }
             else {
-                unsigned int backtrack_level = trail.level(var(conflictInfo.learnt_clause[1]));
-                for (unsigned int i = 2; i < conflictInfo.learnt_clause.size(); i++) {
-                    unsigned int level = trail.level(var(conflictInfo.learnt_clause[i]));
+                unsigned int backtrack_level = trail.level(var(clause_db.result.learnt_clause[1]));
+                for (unsigned int i = 2; i < clause_db.result.learnt_clause.size(); i++) {
+                    unsigned int level = trail.level(var(clause_db.result.learnt_clause[i]));
                     if (level > backtrack_level) {
                         backtrack_level = level;
-                        std::swap(conflictInfo.learnt_clause[1], conflictInfo.learnt_clause[i]);
+                        std::swap(clause_db.result.learnt_clause[1], clause_db.result.learnt_clause[i]);
                     }
                 }
 
-                Clause* clause = clause_db.createClause(conflictInfo.learnt_clause, conflictInfo.lbd);
+                Clause* clause = clause_db.createClause(clause_db.result.learnt_clause, clause_db.result.lbd);
 
                 trail.cancelUntil(backtrack_level);
                 trail.uncheckedEnqueue(clause->first(), clause);
@@ -758,8 +757,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                     trail.newDecisionLevel();
                 } else if (trail.value(p) == l_False) {
                     conflict_analysis.analyzeFinal(~p);
-                    AnalysisResult& result = clause_db.getConflictResult();
-                    conflict.insert(conflict.end(), result.learnt_clause.begin(), result.learnt_clause.end());
+                    conflict.swap(clause_db.result.learnt_clause);
                     return l_False;
                 } else {
                     next = p;
@@ -813,9 +811,8 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
         else {
             // check if selectors are used in final conflict
             conflict_analysis.analyzeFinal(trail[trail.size()-1]);
-            AnalysisResult& result = clause_db.getConflictResult();
-            auto pos = find_if(result.learnt_clause.begin(), result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
-            if (pos == result.learnt_clause.end()) {
+            auto pos = find_if(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
+            if (pos == clause_db.result.learnt_clause.end()) {
                 certificate.proof();
             }
         }

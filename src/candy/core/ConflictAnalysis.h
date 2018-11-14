@@ -80,12 +80,11 @@ private:
 	/******************************************************************
 	 * Minimisation with binary clauses of the asserting clause
 	 ******************************************************************/
-	void minimisationWithBinaryResolution() {
-		AnalysisResult& result = clause_db.getConflictResult();
+	void minimisationWithBinaryResolution(std::vector<Lit>& learnt_clause) {
 	    stamp.clear();
 
 	    bool minimize = false;
-	    for (BinaryWatcher w : clause_db.getBinaryWatchers(~result.learnt_clause[0])) {
+	    for (BinaryWatcher w : clause_db.getBinaryWatchers(~learnt_clause[0])) {
 	        if (trail.satisfies(w.other)) {
 	            minimize = true;
 	            stamp.set(var(w.other));
@@ -93,9 +92,9 @@ private:
 	    }
 
 	    if (minimize) {
-	        auto end = std::remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(), [this] (Lit lit) { return stamp[var(lit)]; } );
-	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, result.learnt_clause.end()));
-	        result.learnt_clause.erase(end, result.learnt_clause.end());
+	        auto end = std::remove_if(learnt_clause.begin()+1, learnt_clause.end(), [this] (Lit lit) { return stamp[var(lit)]; } );
+	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, learnt_clause.end()));
+	        learnt_clause.erase(end, learnt_clause.end());
 	    }
 	}
 
@@ -137,20 +136,17 @@ public:
 	 *
 	 ***************************************************************************************************/
 	void analyze(Clause* confl) {
-	    int pathC = 0;
+		std::vector<Lit> learnt_clause;
+		std::vector<Clause*> involved_clauses;
+		int pathC = 0;
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
 
-		AnalysisResult& result = clause_db.getConflictResult();
-	    result.clear();
-		result.nConflicts++;
-
-	    // Generate conflict clause:
-	    result.learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
+	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
 	    do {
 	        assert(confl != nullptr); // (otherwise should be UIP)
-	        result.involved_clauses.push_back(confl);
+	        involved_clauses.push_back(confl);
 
 	        // Special case for binary clauses: The first one has to be SAT
 	        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
@@ -165,7 +161,7 @@ public:
 	                if (trail.level(v) >= (int)trail.decisionLevel()) {
 	                    pathC++;
 	                } else {
-	                    result.learnt_clause.push_back(*it);
+	                    learnt_clause.push_back(*it);
 	                }
 	            }
 	        }
@@ -181,27 +177,29 @@ public:
 	        pathC--;
 	    } while (pathC > 0);
 
-	    result.learnt_clause[0] = ~asslit;
+	    learnt_clause[0] = ~asslit;
 
 	    // Minimize conflict clause:
 	    analyze_clear.clear();
 	    uint64_t abstract_level = 0;
-	    for (uint_fast16_t i = 1; i < result.learnt_clause.size(); i++) {
-	        abstract_level |= abstractLevel(var(result.learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
+	    for (uint_fast16_t i = 1; i < learnt_clause.size(); i++) {
+	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
 	    }
-	    auto end = remove_if(result.learnt_clause.begin()+1, result.learnt_clause.end(),
+	    auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
 	                         [this, abstract_level] (Lit lit) {
 	                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
 	                         });
-	    result.learnt_clause.erase(end, result.learnt_clause.end());
+	    learnt_clause.erase(end, learnt_clause.end());
 
-	    assert(result.learnt_clause[0] == ~asslit);
+	    assert(learnt_clause[0] == ~asslit);
 
-	    if (result.learnt_clause.size() <= lbSizeMinimizingClause) {
-	        minimisationWithBinaryResolution();
+	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
+	        minimisationWithBinaryResolution(learnt_clause);
 	    }
 
-		result.lbd = trail.computeLBD(result.learnt_clause.begin(), result.learnt_clause.end());
+		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
+
+		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd);
 	}
 
 	/**************************************************************************************************
@@ -214,15 +212,13 @@ public:
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
 	void analyzeFinal(Lit p) {
-		AnalysisResult& result = clause_db.getConflictResult();
-	    result.clear();	
-	    result.learnt_clause.push_back(p);
+		std::vector<Lit> learnt_clause;
+	    learnt_clause.push_back(p);
 
 	    if (trail.decisionLevel() == 0)
             return;
 
 	    stamp.clear();
-
 	    stamp.set(var(p));
 
 	    for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
@@ -230,7 +226,7 @@ public:
 	        if (stamp[x]) {
 	            if (trail.reason(x) == nullptr) {
 	                assert(trail.level(x) > 0);
-	                result.learnt_clause.push_back(~trail[i]);
+	                learnt_clause.push_back(~trail[i]);
 	            } else {
 	                Clause* c = trail.reason(x);
 	                for (Lit lit : *c) {
@@ -243,6 +239,8 @@ public:
 	        }
 	    }
 	    stamp.unset(var(p));
+
+		clause_db.setLearntClause(learnt_clause);
 	}
 
 };

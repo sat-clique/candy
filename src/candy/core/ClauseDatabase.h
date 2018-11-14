@@ -22,12 +22,26 @@ struct AnalysisResult {
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
 
-	uint_fast16_t lbd;
+	unsigned int lbd;
 
 	void clear() {
 		learnt_clause.clear();
 		involved_clauses.clear();
+        lbd = 0;
 	}
+
+    void setLearntClause(std::vector<Lit>& learnt_clause_) {
+        learnt_clause.swap(learnt_clause_);
+        involved_clauses.clear();
+        lbd = 0;
+    }
+
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_) {
+        nConflicts++;
+        learnt_clause.swap(learnt_clause_);
+        involved_clauses.swap(involved_clauses_);
+        lbd = lbd_;
+    }
 
 };
 
@@ -74,11 +88,11 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
-    /* analysis result is stored here */
-	AnalysisResult result;
-
 public:
     ClauseAllocator allocator;
+
+    /* analysis result is stored here */
+	AnalysisResult result;
  
     std::vector<Clause*> clauses; // List of problem clauses
 
@@ -96,10 +110,6 @@ public:
     typedef std::vector<Clause*>::const_iterator const_iterator;
     typedef std::vector<Clause*>::reverse_iterator reverse_iterator;
     typedef std::vector<Clause*>::const_reverse_iterator const_reverse_iterator;
-
-    inline AnalysisResult& getConflictResult() {
-        return result;
-    }
 
     inline const_iterator begin() const {
         return clauses.begin();
@@ -146,6 +156,14 @@ public:
             variableOccurrences.init(nVars+1);
             binaryWatchers.resize(nVars*2+2);
         }
+    }
+
+    void setLearntClause(std::vector<Lit>& learnt_clause_) {
+        result.setLearntClause(learnt_clause_);
+    }
+
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_) {
+        result.setLearntClause(learnt_clause_, involved_clauses_, lbd_);
     }
 
     Clause* createClause(Cl& lits, unsigned int lbd = 0) {

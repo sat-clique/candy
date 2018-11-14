@@ -174,12 +174,12 @@ public:
     }
 
     void notify_conflict() {
-        if (clause_db.getConflictResult().nConflicts % 5000 == 0 && var_decay < max_var_decay) {
+        if (clause_db.result.nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
 
         stamp.clear();
-        for (const Clause* clause : clause_db.getConflictResult().involved_clauses) { 
+        for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {
@@ -187,7 +187,7 @@ public:
                     varBumpActivity(v);
                     if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
                         // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                        if (trail.reason(v)->getLBD() < clause_db.getConflictResult().lbd) {
+                        if (trail.reason(v)->getLBD() < clause_db.result.lbd) {
                             varBumpActivity(v);
                         }
                     }

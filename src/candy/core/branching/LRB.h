@@ -124,7 +124,7 @@ public:
 
     void notify_conflict() {
         stamp.clear();
-        for (const Clause* clause : clause_db.getConflictResult().involved_clauses) { 
+        for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
                 Var v = var(lit);
                 if (!stamp[v] && trail.level(v) > 0) {
