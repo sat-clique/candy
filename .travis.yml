@@ -61,11 +61,11 @@ script:
 - if [ "$CANDY_MODE" = "REGULAR" ]; then cmake -DCMAKE_BUILD_TYPE=Release $TRAVIS_BUILD_DIR; fi
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_COVERAGE=ON $TRAVIS_BUILD_DIR; fi
 - if [ "$CANDY_MODE" = "SANITIZERS" ]; then cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_ADDRESS_SANITIZER=ON $TRAVIS_BUILD_DIR; fi
-#- build-wrapper-linux-x86-64 --out-dir ../bw-output cmake --build . --config Release -- -j2
+- build-wrapper-linux-x86-64 --out-dir ../bw-output cmake --build . --config Release -- -j2
 - cmake --build . --config Release -- -j2
 - ctest -V
 - cd $TRAVIS_BUILD_DIR
-#- sonar-scanner
+- sonar-scanner
 after_success:
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then 
     cd $TRAVIS_BUILD_DIR/build; 
