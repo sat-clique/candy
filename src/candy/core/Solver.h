@@ -560,7 +560,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::si
     assert(propagator.propagate() == nullptr);
 
     for (const Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
-        if (trail.satisfied(*clause)) {
+        if (trail.satisfies(*clause)) {
             certificate.removed(clause->begin(), clause->end());
             propagator.detachClause(clause);
             clause_db.removeClause((Clause*)clause);
@@ -648,11 +648,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                 }
             }
             
-            conflict_analysis.analyze(confl);
-            if (incremental) {
-            	// sort selectors to back (but keep asserting literal upfront: begin+1)
-            	std::sort(clause_db.result.learnt_clause.begin()+1, clause_db.result.learnt_clause.end(), [this](Lit lit1, Lit lit2) { return (!isSelector(lit1) && isSelector(lit2)) || lit1 < lit2; });
-            }
+            conflict_analysis.handle_conflict(confl);
             
             if (learntCallback != nullptr && (int)clause_db.result.learnt_clause.size() <= learntCallbackMaxLength) {
                 vector<int> clause;
@@ -666,12 +662,9 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
 
             sonification.learntSize(static_cast<int>(clause_db.result.learnt_clause.size()));
 
-            if (!isSelector(clause_db.result.learnt_clause.back())) {
+            if (std::find_if(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), [this](Lit lit) { return isSelector(lit); }) == clause_db.result.learnt_clause.end()) {
                 certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
             }
-
-            trail.reduceLBDs(clause_db.result.involved_clauses);
-            clause_db.bumpActivities(clause_db.result.involved_clauses); 
 
             branch.notify_conflict();
 
@@ -683,23 +676,13 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                 trail.uncheckedEnqueue(clause_db.result.learnt_clause[0]);
             }
             else {
-                unsigned int backtrack_level = trail.level(var(clause_db.result.learnt_clause[1]));
-                for (unsigned int i = 2; i < clause_db.result.learnt_clause.size(); i++) {
-                    unsigned int level = trail.level(var(clause_db.result.learnt_clause[i]));
-                    if (level > backtrack_level) {
-                        backtrack_level = level;
-                        std::swap(clause_db.result.learnt_clause[1], clause_db.result.learnt_clause[i]);
-                    }
-                }
-
                 Clause* clause = clause_db.createClause(clause_db.result.learnt_clause, clause_db.result.lbd);
 
-                trail.cancelUntil(backtrack_level);
+                trail.cancelUntil(clause_db.result.backtrack_level);
                 trail.uncheckedEnqueue(clause->first(), clause);
 
                 propagator.attachClause(clause);
             }
-            clause_db.decayActivity();
             branch.notify_backtracked();
         }
         else {
@@ -793,6 +776,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     
     model.clear();
     conflict.clear();
+    clause_db.result.clear(); 
 
     lbool status = l_Undef;
     if (isInConflictingState()) {
@@ -833,6 +817,8 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     }
     
     trail.cancelUntil(0);
+
+    ok = true; // fix incremental mode
 
     Statistics::getInstance().runtimeStop("Solver");
     return status;

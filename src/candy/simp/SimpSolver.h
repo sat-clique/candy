@@ -258,7 +258,7 @@ template<class TClauseDatabase, class TAssignment, class TPropagate, class TLear
 bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::asymm(Var v, Clause* cr) {
     assert(this->trail.decisionLevel() == 0);
     
-    if (cr->isDeleted() || this->trail.satisfied(*cr)) {
+    if (cr->isDeleted() || this->trail.satisfies(*cr)) {
         return true;
     }
     

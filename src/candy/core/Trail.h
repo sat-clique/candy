@@ -130,6 +130,11 @@ public:
         return value(lit) == l_True;
     }
 
+    // Returns TRUE if a clause is satisfied in the current state.
+    inline bool satisfies(const Clause& c) const {
+        return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
+    }
+
     inline bool isAssigned(Var v) const {
         return assigns[v] != l_Undef;
     }
@@ -153,11 +158,6 @@ public:
         const Clause& c = *cr;
         if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
         return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
-    }
-
-    // Returns TRUE if a clause is satisfied in the current state.
-    inline bool satisfied(const Clause& c) const {
-        return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
     }
 
     // Gives the current decisionlevel.

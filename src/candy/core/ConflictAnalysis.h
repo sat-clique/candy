@@ -22,6 +22,9 @@ namespace Candy {
 
 class ConflictAnalysis {
 private:
+	std::vector<Lit> learnt_clause;
+	std::vector<Clause*> involved_clauses;
+
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
     std::vector<Var> analyze_clear;
@@ -80,7 +83,7 @@ private:
 	/******************************************************************
 	 * Minimisation with binary clauses of the asserting clause
 	 ******************************************************************/
-	void minimisationWithBinaryResolution(std::vector<Lit>& learnt_clause) {
+	void minimisationWithBinaryResolution() {
 	    stamp.clear();
 
 	    bool minimize = false;
@@ -96,26 +99,6 @@ private:
 	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, learnt_clause.end()));
 	        learnt_clause.erase(end, learnt_clause.end());
 	    }
-	}
-
-public:
-	ConflictAnalysis(ClauseDatabase& _clause_db, Trail& _trail) :
-		stamp(),
-		analyze_clear(),
-		analyze_stack(),
-		clause_db(_clause_db),
-		trail(_trail),
-		lbSizeMinimizingClause(ClauseLearningOptions::opt_lb_size_minimzing_clause)
-	{ }
-
-	~ConflictAnalysis() { }
-
-	void grow() {
-		stamp.grow();
-	}
-
-	void grow(size_t size) {
-		stamp.grow(size);
 	}
 
 	/**************************************************************************************************
@@ -136,8 +119,6 @@ public:
 	 *
 	 ***************************************************************************************************/
 	void analyze(Clause* confl) {
-		std::vector<Lit> learnt_clause;
-		std::vector<Clause*> involved_clauses;
 		int pathC = 0;
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
@@ -194,12 +175,51 @@ public:
 	    assert(learnt_clause[0] == ~asslit);
 
 	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
-	        minimisationWithBinaryResolution(learnt_clause);
+	        minimisationWithBinaryResolution();
 	    }
+	}
+
+public:
+	ConflictAnalysis(ClauseDatabase& _clause_db, Trail& _trail) :
+		stamp(),
+		analyze_clear(),
+		analyze_stack(),
+		clause_db(_clause_db),
+		trail(_trail),
+		lbSizeMinimizingClause(ClauseLearningOptions::opt_lb_size_minimzing_clause)
+	{ }
+
+	~ConflictAnalysis() { }
+
+	void grow() {
+		stamp.grow();
+	}
+
+	void grow(size_t size) {
+		stamp.grow(size);
+	}
+
+	void handle_conflict(Clause* confl) {
+		learnt_clause.clear();
+		involved_clauses.clear();
+		analyze(confl);
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
+        
+		trail.reduceLBDs(involved_clauses);
+        clause_db.bumpActivities(involved_clauses); 
+        clause_db.decayActivity();
 
-		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd);
+		unsigned int backtrack_level = trail.level(var(learnt_clause[1]));
+		for (unsigned int i = 2; i < learnt_clause.size(); i++) {
+			unsigned int level = trail.level(var(learnt_clause[i]));
+			if (level > backtrack_level) {
+				backtrack_level = level;
+				std::swap(learnt_clause[1], learnt_clause[i]);
+			}
+		}
+
+		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level);
 	}
 
 	/**************************************************************************************************
@@ -212,7 +232,7 @@ public:
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
 	void analyzeFinal(Lit p) {
-		std::vector<Lit> learnt_clause;
+		learnt_clause.clear();
 	    learnt_clause.push_back(p);
 
 	    if (trail.decisionLevel() == 0)
@@ -228,7 +248,7 @@ public:
 	                assert(trail.level(x) > 0);
 	                learnt_clause.push_back(~trail[i]);
 	            } else {
-	                Clause* c = trail.reason(x);
+	                const Clause* c = trail.reason(x);
 	                for (Lit lit : *c) {
 	                    if (trail.level(var(lit)) > 0) {
 	                        stamp.set(var(lit));
