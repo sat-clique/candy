@@ -25,23 +25,23 @@ env:
   - CANDY_MODE=REGULAR
   - CANDY_MODE=COVERAGE
   - CANDY_MODE=SANITIZERS
-matrix:
-  global:
-  - ASAN_OPTIONS="detect_leaks=1"
-  exclude:
-  - os: osx
-    env: CANDY_MODE=COVERAGE
-  - os: osx
-    env: CANDY_MODE=SANITIZERS
-  - os: linux
-    compiler: clang
-    env: CANDY_MODE=COVERAGE
-  - os: linux
-    compiler: clang
-    env: CANDY_MODE=SANITIZERS
-  allow_failures:
-  - os: linux
-    compiler: clang
+#matrix:
+#  global:
+#  - ASAN_OPTIONS="detect_leaks=1"
+#  exclude:
+#  - os: osx
+#    env: CANDY_MODE=COVERAGE
+#  - os: osx
+#    env: CANDY_MODE=SANITIZERS
+#  - os: linux
+#    compiler: clang
+#    env: CANDY_MODE=COVERAGE
+#  - os: linux
+#    compiler: clang
+#    env: CANDY_MODE=SANITIZERS
+#  allow_failures:
+#  - os: linux
+#    compiler: clang
 before_script:
 - if [ `uname` = "Linux" ]; then 
     sudo add-apt-repository -y ppa:ubuntu-sdk-team/ppa; 
