@@ -13,34 +13,36 @@ namespace Candy {
 struct AnalysisResult {
 
 	AnalysisResult() : 
-		nConflicts(0), learnt_clause(), involved_clauses() 
-	{
-
-	}
+		nConflicts(0), learnt_clause(), involved_clauses(), lbd(0), backtrack_level(0)
+	{ }
 
 	uint64_t nConflicts;
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
 
 	unsigned int lbd;
+    unsigned int backtrack_level;
 
 	void clear() {
 		learnt_clause.clear();
 		involved_clauses.clear();
         lbd = 0;
+        backtrack_level = 0;
 	}
 
     void setLearntClause(std::vector<Lit>& learnt_clause_) {
         learnt_clause.swap(learnt_clause_);
         involved_clauses.clear();
         lbd = 0;
+        backtrack_level = 0;
     }
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_) {
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
         nConflicts++;
         learnt_clause.swap(learnt_clause_);
         involved_clauses.swap(involved_clauses_);
         lbd = lbd_;
+        backtrack_level = backtrack_level_;
     }
 
 };
@@ -162,8 +164,8 @@ public:
         result.setLearntClause(learnt_clause_);
     }
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_) {
-        result.setLearntClause(learnt_clause_, involved_clauses_, lbd_);
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
+        result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
     Clause* createClause(Cl& lits, unsigned int lbd = 0) {
