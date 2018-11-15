@@ -67,7 +67,7 @@ script:
     cmake --build . --config Release -- -j2;
   fi
 - ctest -V
-- if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
+- if [[ ($TRAVIS_OS_NAME == 'linux') && ($CANDY_MODE == "COVERAGE") ]]; then
     cd $TRAVIS_BUILD_DIR;
     sonar-scanner;
   fi
@@ -78,6 +78,6 @@ after_success:
     lcov --remove coverage.info 'lib/*' 'testsrc/*' '/usr/*' --output-file coverage.info; 
     lcov --list coverage.info; 
     cd $TRAVIS_BUILD_DIR; 
-    coveralls-lcov ../build/coverage.info; 
+    coveralls-lcov build/coverage.info; 
   fi
 
