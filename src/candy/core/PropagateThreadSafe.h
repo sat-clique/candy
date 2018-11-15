@@ -79,9 +79,11 @@ public:
     void detachAll() {
         for (unsigned int lit = 0; lit < watchers.size(); lit++) {
             for (WatcherTS* watcher : watchers[lit]) {
-                Lit other = watcher->watch0 == ~lit ? watcher->watch1 : watcher->watch0;
-                watchers[~other].erase(std::remove(watchers[~other].begin(), watchers[~other].end(), watcher), watchers[~other].end());
-                delete watcher;
+                if (watcher->cref != nullptr) {
+                    watcher->cref = nullptr;
+                } else {
+                    delete watcher;
+                }
             }
             watchers[lit].clear();
         }
