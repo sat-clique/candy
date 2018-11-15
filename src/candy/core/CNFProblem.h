@@ -50,6 +50,7 @@ public:
 
     For& getProblem();
     const For& getProblem() const;
+    void printDIMACS() const;
 
     bool hasEmptyClause();
 

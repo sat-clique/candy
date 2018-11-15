@@ -321,6 +321,11 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    if (args.do_simp_out) {
+        problem.printDIMACS();
+        return 0;
+    }
+
     CandySolverInterface* solver = nullptr;
 
 	if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
@@ -397,9 +402,6 @@ int main(int argc, char** argv) {
 	    }
 
 	    lbool result;
-	    if (args.do_simp_out) {
-	        return simplifyAndPrintProblem(solver) == l_True ? 10 : result == l_False ? 20 : 0;
-	    }
 
         installSignalHandlers(true, solver);
 	    result = solve(solver, args.vv, args.do_preprocess);

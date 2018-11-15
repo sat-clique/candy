@@ -201,12 +201,15 @@ public:
         clause_db.bumpActivities(involved_clauses); 
         clause_db.decayActivity();
 
-		unsigned int backtrack_level = trail.level(var(learnt_clause[1]));
-		for (unsigned int i = 2; i < learnt_clause.size(); i++) {
-			unsigned int level = trail.level(var(learnt_clause[i]));
-			if (level > backtrack_level) {
-				backtrack_level = level;
-				std::swap(learnt_clause[1], learnt_clause[i]);
+		unsigned int backtrack_level = 0;
+		if (learnt_clause.size() > 1) {
+			unsigned int backtrack_level = trail.level(var(learnt_clause[1]));
+			for (unsigned int i = 2; i < learnt_clause.size(); i++) {
+				unsigned int level = trail.level(var(learnt_clause[i]));
+				if (level > backtrack_level) {
+					backtrack_level = level;
+					std::swap(learnt_clause[1], learnt_clause[i]);
+				}
 			}
 		}
 

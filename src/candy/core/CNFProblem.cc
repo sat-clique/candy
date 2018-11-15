@@ -6,6 +6,7 @@
  */
 
 #include "candy/core/CNFProblem.h"
+#include "candy/core/SolverTypes.h"
 #include "candy/frontend/Exceptions.h"
 
 #include <vector>
@@ -36,6 +37,13 @@ For& CNFProblem::getProblem() {
 
 const For& CNFProblem::getProblem() const {
     return problem;
+}
+
+void CNFProblem::printDIMACS() const {
+    printf("p cnf %zu %zu\n", nVars(), nClauses()); 
+    for (Cl* clause : problem) {
+        std::cout << *clause << "0" << std::endl;
+    }
 }
 
 bool CNFProblem::hasEmptyClause() {

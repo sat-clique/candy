@@ -122,7 +122,7 @@ public:
     }
 
 
-    void notify_conflict() {
+    void process_conflict() {
         stamp.clear();
         for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
@@ -140,11 +140,11 @@ public:
             interval_assigned[var(lit)]++;
         }
         //Todo: penalize all var not on trail
-    }
 
-    void notify_backtracked() {
         double inv_step_size = 1.0 - step_size;
-        for (Lit lit : trail.getBacktracked()) {
+        unsigned int backtrack_level = clause_db.result.backtrack_level;
+        for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
+            Lit lit = *it; 
             Var v = var(lit);
             polarity[v] = sign(lit);
 
