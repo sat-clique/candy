@@ -27,6 +27,8 @@ struct WatcherTS {
 
     WatcherTS(Clause* clause, Lit one, Lit two)
      : cref(clause), watch0(one), watch1(two) {}
+
+    ~WatcherTS() {}
 };
 
 class PropagateThreadSafe {
@@ -50,15 +52,15 @@ public:
         assert(clause->size() > 1);
         if (clause->size() > 2) {
             WatcherTS* watcher = new WatcherTS(clause, clause->first(), clause->second());
-            watchers[~clause->first()].push_back(watcher);
-            watchers[~clause->second()].push_back(watcher);
+            watchers[~(clause->first())].push_back(watcher);
+            watchers[~(clause->second())].push_back(watcher);
         }
     }
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
         if (clause->size() > 2) {
-            WatcherTS* watcher;
+            WatcherTS* watcher = nullptr;
             for (Lit lit : *clause) {
                 auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
                 if (it != watchers[~lit].end()) {
@@ -66,7 +68,9 @@ public:
                     watcher = *it;
                 }
             }
-            delete watcher;
+            if (watcher != nullptr) {
+                delete watcher;
+            }
         }
     }
 
@@ -134,9 +138,9 @@ public:
         auto keep = list.begin();
         for (auto iter = list.begin(); iter != list.end(); iter++) {
             WatcherTS* watcher = *iter;
-            if (watcher->watch0 != p) {
+            assert(watcher->watch0 == ~p || watcher->watch1 == ~p);
+            if (watcher->watch0 != ~p) {
                 std::swap(watcher->watch0, watcher->watch1);
-                assert(watcher->watch0 == p);
             }
             lbool val = trail.value(watcher->watch1);
             if (val != l_True) { // Try to avoid inspecting the clause
@@ -144,7 +148,7 @@ public:
                 
                 for (Lit lit : *clause) {
                     if (lit != watcher->watch0 && lit != watcher->watch1 && trail.value(lit) != l_False) {
-                        watcher->watch1 = lit;
+                        watcher->watch0 = lit;
                         watchers[~lit].push_back(watcher);
                         goto propagate_skip;
                     }
