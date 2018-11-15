@@ -97,12 +97,8 @@ namespace Candy {
     		defaultBranchingHeuristic.grow(size);
     	}
 
-        void notify_conflict() {
-            defaultBranchingHeuristic.notify_conflict();
-    	}
-
-    	void notify_backtracked() {
-    		defaultBranchingHeuristic.notify_backtracked();
+        void process_conflict() {
+            defaultBranchingHeuristic.process_conflict();
     	}
 
     	void notify_restarted() {

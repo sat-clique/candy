@@ -34,12 +34,8 @@ public:
         return static_cast<BranchingMethod *>(this)->getLastDecision();
     }
 
-    void notify_conflict() {
-        static_cast<BranchingMethod *>(this)->notify_conflict();
-    }
-
-    void notify_backtracked() {
-        static_cast<BranchingMethod *>(this)->notify_backtracked();
+    void process_conflict() {
+        static_cast<BranchingMethod *>(this)->process_conflict();
     }
 
     void notify_restarted() {

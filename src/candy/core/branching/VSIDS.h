@@ -173,7 +173,7 @@ public:
         order_heap.build(vs);
     }
 
-    void notify_conflict() {
+    void process_conflict() {
         if (clause_db.result.nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
@@ -194,12 +194,11 @@ public:
                 }
             }
         }
-
         varDecayActivity();
-    }
 
-    void notify_backtracked() {
-        for (Lit lit : trail.getBacktracked()) {
+        unsigned int backtrack_level = clause_db.result.backtrack_level;
+        for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
+            Lit lit = *it; 
             polarity[var(lit)] = sign(lit);
             insertVarOrder(var(lit));
         }

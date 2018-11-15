@@ -666,24 +666,21 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                 certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
             }
 
-            branch.notify_conflict();
+            branch.process_conflict();
 
             lbdQueue.push(clause_db.result.lbd);
             sumLBD += clause_db.result.lbd;
 
+            trail.cancelUntil(clause_db.result.backtrack_level);
+            
             if (clause_db.result.learnt_clause.size() == 1) {
-                trail.cancelUntil(0);
                 trail.uncheckedEnqueue(clause_db.result.learnt_clause[0]);
             }
             else {
                 Clause* clause = clause_db.createClause(clause_db.result.learnt_clause, clause_db.result.lbd);
-
-                trail.cancelUntil(clause_db.result.backtrack_level);
                 trail.uncheckedEnqueue(clause->first(), clause);
-
                 propagator.attachClause(clause);
             }
-            branch.notify_backtracked();
         }
         else {
             // Our dynamic restart, see the SAT09 competition compagnion paper

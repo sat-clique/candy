@@ -202,6 +202,7 @@ public:
 	void handle_conflict(Clause* confl) {
 		learnt_clause.clear();
 		involved_clauses.clear();
+
 		analyze(confl);
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
@@ -210,12 +211,15 @@ public:
         clause_db.bumpActivities(involved_clauses); 
         clause_db.decayActivity();
 
-		unsigned int backtrack_level = trail.level(var(learnt_clause[1]));
-		for (unsigned int i = 2; i < learnt_clause.size(); i++) {
-			unsigned int level = trail.level(var(learnt_clause[i]));
-			if (level > backtrack_level) {
-				backtrack_level = level;
-				std::swap(learnt_clause[1], learnt_clause[i]);
+		unsigned int backtrack_level = 0;
+		if (learnt_clause.size() > 1) {
+			backtrack_level = trail.level(var(learnt_clause[1]));
+			for (unsigned int i = 2; i < learnt_clause.size(); i++) {
+				unsigned int level = trail.level(var(learnt_clause[i]));
+				if (level > backtrack_level) {
+					backtrack_level = level;
+					std::swap(learnt_clause[1], learnt_clause[i]);
+				}
 			}
 		}
 
@@ -231,7 +235,7 @@ public:
 	 *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
-	void analyzeFinal(Lit p) {
+	void analyzeFinal(Lit p) { 
 		learnt_clause.clear();
 	    learnt_clause.push_back(p);
 

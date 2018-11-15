@@ -47,5 +47,10 @@ int main(int argc, char** argv) {
         }
     }
 
-    assert (result == minisat_result(problem));
+    if (result == minisat_result(problem)) {
+        return 0;
+    } 
+    else {
+        return 1;
+    }
 }

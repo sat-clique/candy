@@ -220,7 +220,6 @@ inline std::ostream& operator <<(std::ostream& stream, Cl const& clause) {
     for (Lit lit : clause) {
         stream << lit << " ";
     }
-    stream << std::endl; 
     return stream;
 }
 
@@ -234,7 +233,11 @@ inline void printLiteral(Lit lit, std::vector<lbool> values) {
 }
 
 inline void printClause(Cl clause) {
-    std::cout << clause;
+    std::cout << clause << std::endl; ;
+}
+
+inline void printDIMACS(Cl clause) {
+    std::cout << clause << "0" << std::endl;
 }
 
 //=================================================================================================
