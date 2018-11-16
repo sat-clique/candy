@@ -60,17 +60,23 @@ public:
     void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
         if (clause->size() > 2) {
-            WatcherTS* watcher = nullptr;
+            bool found = false;
             for (Lit lit : *clause) {
                 auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
                 if (it != watchers[~lit].end()) {
-                    watchers[~lit].erase(std::remove(watchers[~lit].begin(), watchers[~lit].end(), watcher), watchers[~lit].end());
-                    watcher = *it;
+                    found = true;
+                    WatcherTS* watcher = *it;
+                    Lit lit0 = watcher->watch0;
+                    Lit lit1 = watcher->watch1;
+                    size_t size0 = watchers[~lit0].size();
+                    size_t size1 = watchers[~lit1].size();
+                    watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
+                    watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
+                    assert(size0 > watchers[~lit0].size());
+                    assert(size1 > watchers[~lit1].size());
                 }
             }
-            if (watcher != nullptr) {
-                delete watcher;
-            }
+            assert(found);
         }
     }
 
@@ -139,16 +145,15 @@ public:
         for (auto iter = list.begin(); iter != list.end(); iter++) {
             WatcherTS* watcher = *iter;
             assert(watcher->watch0 == ~p || watcher->watch1 == ~p);
-            if (watcher->watch0 != ~p) {
-                std::swap(watcher->watch0, watcher->watch1);
-            }
-            lbool val = trail.value(watcher->watch1);
+            Lit other = watcher->watch0 != ~p ? watcher->watch0 : watcher->watch1;
+            lbool val = trail.value(other);
             if (val != l_True) { // Try to avoid inspecting the clause
                 const Clause* clause = watcher->cref;
                 
                 for (Lit lit : *clause) {
-                    if (lit != watcher->watch0 && lit != watcher->watch1 && trail.value(lit) != l_False) {
+                    if (lit != ~p && lit != other && trail.value(lit) != l_False) {
                         watcher->watch0 = lit;
+                        watcher->watch1 = other;
                         watchers[~lit].push_back(watcher);
                         goto propagate_skip;
                     }
@@ -160,7 +165,7 @@ public:
                     return clause;
                 }
                 else { // unit
-                    trail.uncheckedEnqueue(clause->first(), (Clause*)clause);
+                    trail.uncheckedEnqueue(other, (Clause*)clause);
                 }
             }
             *keep = *iter;

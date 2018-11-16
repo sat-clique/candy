@@ -56,7 +56,6 @@ namespace Candy {
         stream << "c Glucose arguments: " << std::endl
         << "c   Verbosity: " << arguments.verb << std::endl
         << "c   Show model: " << arguments.mod << std::endl
-        << "c   Verbosity every conflicts: " << arguments.vv << std::endl
         << "c   CPU time limit: " << arguments.cpu_lim << std::endl
         << "c   Memory limit: " << arguments.mem_lim << std::endl
         << "c   Solve: " << arguments.do_solve << std::endl
@@ -89,7 +88,6 @@ namespace Candy {
         //
         IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
         BoolOption mod("MAIN", "model", "show model.", false);
-        IntOption vv("MAIN", "vv", "Verbosity every vv conflicts", 10000, IntRange(1, INT32_MAX));
         
         IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
         IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
@@ -207,7 +205,6 @@ namespace Candy {
         return GlucoseArguments{
             verb,
             mod,
-            vv,
             cpu_lim,
             mem_lim,
             do_solve,

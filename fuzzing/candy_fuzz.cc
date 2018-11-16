@@ -4,6 +4,7 @@
 #include "candy/frontend/CandyCommandLineParser.h"
 #include "candy/frontend/SolverFactory.h"
 #include "candy/core/branching/VSIDS.h"
+#include "candy/frontend/CandyBuilder.h"
 #include "util.h"
 
 using namespace Candy;
@@ -29,7 +30,43 @@ int main(int argc, char** argv) {
         return 0; // concentrate on small problems during fuzzing
     }
 
-    CandySolverInterface* solver = new SimpSolver<>();
+    CandySolverInterface* solver;
+
+    ClauseDatabase* clause_db = new ClauseDatabase();
+    Trail* assignment = new Trail();
+
+    CandyBuilder<> builder { clause_db, assignment };
+
+    if (SolverOptions::opt_use_lrb) {
+        if (SolverOptions::opt_use_ts_ca) {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.branchWithLRB().learnThreadSafe().propagateThreadSafe().build();
+            } else {
+                solver = builder.branchWithLRB().learnThreadSafe().build();
+            }
+        } else {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.branchWithLRB().propagateThreadSafe().build();
+            } else {
+                solver = builder.branchWithLRB().build();
+            }
+        }
+    } else {
+        if (SolverOptions::opt_use_ts_ca) {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.learnThreadSafe().propagateThreadSafe().build();
+            } else {
+                solver = builder.learnThreadSafe().build();
+            }
+        } else {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.propagateThreadSafe().build();
+            } else {
+                solver = builder.build();
+            }
+        }
+    } 
+
     solver->addClauses(problem);
 
     lbool result = l_Undef;
