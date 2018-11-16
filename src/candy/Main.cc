@@ -404,7 +404,7 @@ int main(int argc, char** argv) {
 	    lbool result;
 
         installSignalHandlers(true, solver);
-	    result = solve(solver, args.vv, args.do_preprocess);
+	    result = solve(solver, args.verb, args.do_preprocess);
         installSignalHandlers(false, solver);
 
         if (result == l_True && args.do_minimize > 0) {

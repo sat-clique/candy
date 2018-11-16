@@ -65,7 +65,6 @@ namespace Candy {
     struct GlucoseArguments {
         const int verb;
         const bool mod;
-        const int vv;
         
         const int cpu_lim;
         const int mem_lim;

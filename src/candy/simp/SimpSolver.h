@@ -174,7 +174,6 @@ protected:
     void setupEliminate(bool full);
     void cleanupEliminate();
 
-    bool asymm(Var v, Clause* cr);
     bool asymmVar(Var v);
 
     void extendModel();
@@ -255,51 +254,45 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 }
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::asymm(Var v, Clause* cr) {
-    assert(this->trail.decisionLevel() == 0);
-    
-    if (cr->isDeleted() || this->trail.satisfies(*cr)) {
-        return true;
-    }
-    
-    this->trail.trail_lim.push_back(this->trail.size());
-    Lit l = lit_Undef;
-    const Clause* ccr = cr;
-    for (Lit lit : *ccr) {
-        if (var(lit) != v && this->trail.value(lit) != l_False) {
-            this->trail.uncheckedEnqueue(~lit);
-        }
-        else {
-            l = lit;
-        }
-    }
-
-    assert(l != lit_Undef);
-    
-    if (this->propagator.propagate() != nullptr) {
-        this->trail.cancelUntil(0);
-        return subsumption.strengthenClause(cr, l);
-    } else {
-        this->trail.cancelUntil(0);
-    }
-    
-    return true;
-}
-
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::asymmVar(Var v) {
+    assert(this->trail.decisionLevel() == 0);
+
     // Temporarily freeze variable. Otherwise, it would immediately end up on the queue again:
     bool was_frozen = frozen[v];
     frozen.set(v);
     
-    std::vector<Clause*> cls = this->clause_db.getOccurenceList(v);
+    std::vector<Clause*> clauses = this->clause_db.getOccurenceList(v);
     
-    if (this->trail.isAssigned(v) || cls.size() == 0)
+    if (this->trail.isAssigned(v) || clauses.size() == 0) {
         return true;
+    }
     
-    for (Clause* c : cls)
-        if (!asymm(v, c))
-            return false;
+    for (Clause* clause : clauses) {
+        if (clause->isDeleted() || this->trail.satisfies(*clause)) {
+            const Clause* cclause = clause;
+            Lit l = lit_Undef;
+            this->trail.trail_lim.push_back(this->trail.size());
+            for (Lit lit : *cclause) {
+                if (var(lit) != v && !this->trail.isAssigned(var(lit))) {
+                    this->trail.uncheckedEnqueue(~lit);
+                }
+                else {
+                    l = lit;
+                }
+            }
+            
+            assert(l != lit_Undef);
+            if (this->propagator.propagate() != nullptr) {
+                this->trail.cancelUntil(0);
+                if (!subsumption.strengthenClause(clause, l)) {
+                    return false;
+                }
+            } 
+            else {
+                this->trail.cancelUntil(0);
+            }
+        }
+    }
 
     for (Lit lit : subsumption.reduced_literals) {
         elimDetach(lit);
