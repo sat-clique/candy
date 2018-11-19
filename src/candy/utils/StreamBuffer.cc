@@ -40,7 +40,7 @@ namespace Candy {
                 throw ParserException("PARSE ERROR! Variable " + std::to_string(number) + " is out of integer-range");
             }
 
-            if (errno != 0 && errno != 25 && errno != 29) {
+            if (errno != 0) {// && errno != 25 && errno != 29) {
                 // After strtol, for reasons unknown, ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
                 // After strtol, for reasons unknown, ERRNO=29 ('Illegal seek') when reading from stdin
                 char buffer[1024];
