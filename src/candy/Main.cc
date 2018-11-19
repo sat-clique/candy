@@ -199,6 +199,8 @@ static void printProblemStatistics(CNFProblem& problem) {
 static lbool solve(CandySolverInterface* solver, int verbosity, bool do_preprocess) {
     lbool result = l_Undef;
 
+    std::cout << "c Preprocessing: " << do_preprocess << std::endl;
+
     if (solver->isInConflictingState()) {
         if (verbosity > 0) {
             printf("c =================================================================\n");
@@ -212,10 +214,7 @@ static lbool solve(CandySolverInterface* solver, int verbosity, bool do_preproce
         solver->eliminate(true, true);
         solver->disablePreprocessing();
         Statistics::getInstance().runtimeStop("Preprocessing");
-
-        if (verbosity > 1) {
-            Statistics::getInstance().printSimplificationStats();
-        }
+        Statistics::getInstance().printSimplificationStats();
 
         if (solver->isInConflictingState()) {
             result = l_False;
