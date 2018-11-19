@@ -127,8 +127,8 @@ private:
 
 	        for (Lit lit : *confl) {
 				Var v = var(lit);
-				// assert(trail.value(lit) == l_False || lit == asslit);
-				if (trail.value(lit) == l_False && !stamp[v] && trail.level(v) != 0) {
+				assert(trail.value(lit) == l_False && lit != asslit || trail.value(lit) == l_True && lit == asslit);
+				if (lit != asslit && !stamp[v] && trail.level(v) != 0) {
 					stamp.set(v);
 					if (trail.level(v) >= (int)trail.decisionLevel()) {
 						pathC++;
