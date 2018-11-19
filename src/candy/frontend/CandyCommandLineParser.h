@@ -83,7 +83,6 @@ namespace Candy {
         
         const bool read_from_stdin;
         const char *input_filename;
-        const char *output_filename;
         
         const GateRecognitionArguments gateRecognitionArgs;
         const RandomSimulationArguments randomSimulationArgs;

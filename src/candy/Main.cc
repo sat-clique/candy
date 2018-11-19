@@ -194,30 +194,6 @@ static void printProblemStatistics(CNFProblem& problem) {
 }
 
 /**
- * Prints the SAT solving result \p result and, if the verbosity level of the solver \p S
- * is greater than 0, print statistics about the solving process.
- *
- * If \p outputFilename is non-null, the result also gets written to the file given by
- * \p outputFilename. The target file gets truncated.
- */
-static void printResult(CandySolverInterface* solver, lbool result, bool showModel, const char* outputFilename = nullptr) {
-    printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
-
-    FILE* res = outputFilename != nullptr ? fopen(outputFilename, "wb") : nullptr;
-    if (res != NULL) {
-        fprintf(res, result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
-        if (result == l_True) {
-            printModel(res, solver);
-        }
-        fclose(res);
-    } else {
-        if (showModel && result == l_True) {
-            printModel(stdout, solver);
-        }
-    }
-}
-
-/**
  * Runs the SAT solver, performing simplification if \p do_preprocess is true.
  */
 static lbool solve(CandySolverInterface* solver, int verbosity, bool do_preprocess) {
@@ -287,7 +263,7 @@ static lbool simplifyAndPrintProblem(CandySolverInterface* solver) {
 int main(int argc, char** argv) {
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
     
-    if (args.verb > 0) {
+    if (args.verb > 1) {
         std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
         std::cout << args << std::endl;
     }
@@ -415,8 +391,11 @@ int main(int argc, char** argv) {
             }
         }
 
-	    const char* statsFilename = args.output_filename;
-	    printResult(solver, result, args.mod, statsFilename);
+        printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+
+        if (args.mod && result == l_True) {
+            printModel(stdout, solver);
+        }
 
 #ifndef __SANITIZE_ADDRESS__
 	    exit((result == l_True ? 10 : result == l_False ? 20 : 0));
