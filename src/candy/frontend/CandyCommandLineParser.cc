@@ -68,9 +68,7 @@ namespace Candy {
         << "c   Wait for user: " << arguments.wait_for_user << std::endl
         << "c   Read problem from stdin: " << arguments.read_from_stdin << std::endl
         << "c   Input filename: " << (arguments.input_filename == nullptr ?
-                                      "(none)" : arguments.input_filename) << std::endl
-        << "c   Output filename: "<< (arguments.output_filename == nullptr ?
-                                      "(none)" : arguments.output_filename) << std::endl;
+                                      "(none)" : arguments.input_filename) << std::endl;
         
         stream << arguments.gateRecognitionArgs;
         stream << arguments.randomSimulationArgs;
@@ -198,7 +196,6 @@ namespace Candy {
 
 //        Branch::defaultParameters = Branch::Parameters(SolverOptions::opt_var_decay, SolverOptions::opt_max_var_decay);
         
-        const char* outputFilename = (argc >= 3) ? argv[argc - 1] : nullptr;
         bool readFromStdIn = (argc == 1);
         const char* inputFilename = (!readFromStdIn ? argv[1] : nullptr);
         
@@ -217,7 +214,6 @@ namespace Candy {
             wait_for_user,
             readFromStdIn,
             inputFilename,
-            outputFilename,
             gateRecognitionArgs,
             rsArgs,
             rsarArgs,
