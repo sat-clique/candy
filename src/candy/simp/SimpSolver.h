@@ -268,7 +268,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     }
     
     for (Clause* clause : clauses) {
-        if (clause->isDeleted() || this->trail.satisfies(*clause)) {
+        if (!clause->isDeleted() && !this->trail.satisfies(*clause)) {
             const Clause* cclause = clause;
             Lit l = lit_Undef;
             this->trail.trail_lim.push_back(this->trail.size());
