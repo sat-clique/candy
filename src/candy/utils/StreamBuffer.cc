@@ -37,7 +37,7 @@ namespace Candy {
         long number = strtol(str, &end, 10);
         if (end > str) {
             if (errno == ERANGE || number <= std::numeric_limits<int>::min()/2 || number >= std::numeric_limits<int>::max()/2) {
-                throw ParserException("PARSE ERROR! Variable " + std::to_string(number) + " is out of integer-range");
+                throw ParserException("PARSE ERROR! Variable " + std::to_string(number) + " is out of range");
             }
 
             if (errno != 0) {// && errno != 25 && errno != 29) {

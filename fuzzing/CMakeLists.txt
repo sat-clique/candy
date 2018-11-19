@@ -10,23 +10,20 @@ add_executable(candy_proof_fuzz
     util.cc
     ${CANDY_OBJECTS})
 
+add_executable(candy_parser_fuzz
+    candy_parser_fuzz.cc
+    ${CANDY_OBJECTS})
+
 candy_executable_customizations(candy_fuzz)
 candy_executable_customizations(candy_proof_fuzz)
+candy_executable_customizations(candy_parser_fuzz)
 
 include_directories(${PROJECT_SOURCE_DIR}/lib/minisat)
 include_directories(${PROJECT_SOURCE_DIR}/lib/drat-trim)
 
-#link_directories(${CMAKE_BINARY_DIR}/lib/minisat)
-#link_directories(${CMAKE_BINARY_DIR}/lib/drat-trim)
-#add_library(minisat STATIC IMPORTED)
-#add_library(dt STATIC IMPORTED)
-#find_library(MINISAT_LIBRARY NAMES minisat PATHS "${CMAKE_BINARY_DIR}/lib/minisat")
-#find_library(DT_LIBRARY NAMES dt PATHS "${CMAKE_BINARY_DIR}/lib/drat-trim")
-#set_target_properties(minisat PROPERTIES IMPORTED_LOCATION ${MINISAT_LIBRARY})
-#set_target_properties(dt PROPERTIES IMPORTED_LOCATION ${DT_LIBRARY})
-
 target_link_libraries(candy_fuzz ${CANDY_LIBS} minisat-lib-static)
 target_link_libraries(candy_proof_fuzz ${CANDY_LIBS} minisat-lib-static dt)
+target_link_libraries(candy_parser_fuzz ${CANDY_LIBS})
 
 # Make sure that the fuzz-test seed CNF problems are copied to the build directory
 file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "seeds/*.cnf")
