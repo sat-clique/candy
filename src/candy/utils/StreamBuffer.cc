@@ -33,6 +33,7 @@ namespace Candy {
     int StreamBuffer::readInteger() {
         char* end = NULL;
         char* str = reinterpret_cast<char*>(&buf[pos]);
+        errno = 0;
         long number = strtol(str, &end, 10);
         if (end > str) {
             if (errno == ERANGE || number <= std::numeric_limits<int>::min()/2 || number >= std::numeric_limits<int>::max()/2) {
