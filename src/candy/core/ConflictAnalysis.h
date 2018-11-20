@@ -135,6 +135,7 @@ private:
 	            confl->swap(0, 1);
 	        }
 
+			assert(asslit == lit_Undef || confl->first() == asslit);
 	        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
 	            Var v = var(*it);
 	            if (!stamp[v] && trail.level(v) != 0) {
