@@ -1,8 +1,6 @@
 *~
 *.o
-bin/
-debug/
-release/
-
+build*/
+.vscode/
 
 *#
