@@ -88,7 +88,6 @@ private:
     friend class ClauseDatabase;
     friend class Propagate;
     friend class ConflictAnalysis;
-    friend class Trail;
     friend class TestClauseFactory;
 
 public:

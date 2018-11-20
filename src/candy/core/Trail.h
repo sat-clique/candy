@@ -220,19 +220,6 @@ public:
         return nblevels;
     }
 
-	// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-    void reduceLBDs(std::vector<Clause*>& involved_clauses) {
-        for (Clause* clause : involved_clauses) {
-            if (clause->isLearnt()) {
-                uint_fast16_t nblevels = computeLBD(clause->begin(), clause->end());
-                if (nblevels + 1 < clause->getLBD()) {
-                    clause->setLBD(nblevels); // improve the LBD
-                    clause->setFrozen(true); // Seems to be interesting, keep it for the next round
-                }
-            }
-        }
-    }
-
 };
 }
 
