@@ -90,6 +90,42 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
+    void bumpActivities(std::vector<Clause*>& involved_clauses) {
+        for (Clause* clause : involved_clauses) {
+            bumpActivity(*clause);
+        }
+    }
+
+    void rescaleActivity() {
+        for (Clause* clause : clauses) {
+            clause->activity() *= 1e-20f;
+        }
+        cla_inc *= 1e-20;
+    }
+
+    void decayActivity() {
+        cla_inc *= (1 / clause_decay);
+    }
+
+    void bumpActivity(Clause& c) {
+        if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
+            rescaleActivity();
+        }
+    }
+
+	// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
+    void reduceLBDs(Trail& trail, std::vector<Clause*>& involved_clauses) {
+        for (Clause* clause : involved_clauses) {
+            if (clause->isLearnt()) {
+                uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
+                if (nblevels + 1 < clause->getLBD()) {
+                    clause->setLBD(nblevels); // improve the LBD
+                    clause->setFrozen(true); // Seems to be interesting, keep it for the next round
+                }
+            }
+        }
+    }
+
 public:
     ClauseAllocator allocator;
 
@@ -245,31 +281,10 @@ public:
         }
     }
 
-    void bumpActivities(std::vector<Clause*>& involved_clauses);
-
-    inline void decayActivity() {
-        cla_inc *= (1 / clause_decay);
-    }
-
-    inline void bumpActivity(Clause& c) {
-        if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
-            rescaleActivity();
-        }
-    }
-
-    void rescaleActivity();
-
-	// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-    void reduceLBDs(Trail& trail, std::vector<Clause*>& involved_clauses) {
-        for (Clause* clause : involved_clauses) {
-            if (clause->isLearnt()) {
-                uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
-                if (nblevels + 1 < clause->getLBD()) {
-                    clause->setLBD(nblevels); // improve the LBD
-                    clause->setFrozen(true); // Seems to be interesting, keep it for the next round
-                }
-            }
-        }
+    void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
+		reduceLBDs(trail, involved_clauses);
+        bumpActivities(involved_clauses); 
+        decayActivity();
     }
 
 };
