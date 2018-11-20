@@ -6,9 +6,8 @@
 namespace Candy {
 
 class BranchingDiversificationInterface {
-
+public:
     virtual void setPolarity(Var v, bool sign) = 0;
-
     virtual Lit getLastDecision() = 0;
 
 };
