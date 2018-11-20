@@ -197,10 +197,6 @@ public:
 		analyze(confl);
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
-        
-		clause_db.reduceLBDs(trail, involved_clauses);
-        clause_db.bumpActivities(involved_clauses); 
-        clause_db.decayActivity();
 
 		unsigned int backtrack_level = 0;
 		if (learnt_clause.size() > 1) {
@@ -214,6 +210,7 @@ public:
 			}
 		}
 
+		clause_db.reestimateClauseWeights(trail, involved_clauses);
 		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level);
 	}
 

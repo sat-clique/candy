@@ -79,17 +79,4 @@ void ClauseDatabase::defrag() {
     }
 }
 
-void ClauseDatabase::bumpActivities(std::vector<Clause*>& involved_clauses) {
-    for (Clause* clause : involved_clauses) {
-        bumpActivity(*clause);
-    }
-}
-
-void ClauseDatabase::rescaleActivity() {
-    for (Clause* clause : clauses) {
-        clause->activity() *= 1e-20f;
-    }
-    cla_inc *= 1e-20;
-}
-
 }
