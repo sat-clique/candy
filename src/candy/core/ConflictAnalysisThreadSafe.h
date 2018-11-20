@@ -57,7 +57,7 @@ private:
 
 	        for (Lit imp : *clause) {
 	            Var v = var(imp);
-	            if (trail.value(imp) == l_False && !stamp[v] && trail.level(v) > 0) {
+	            if (!stamp[v] && trail.level(v) > 0) {
 	                if (trail.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
 	                    stamp.set(v);
 	                    analyze_stack.push_back(v);
