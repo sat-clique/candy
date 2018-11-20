@@ -198,7 +198,7 @@ public:
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
         
-		trail.reduceLBDs(involved_clauses);
+		clause_db.reduceLBDs(trail, involved_clauses);
         clause_db.bumpActivities(involved_clauses); 
         clause_db.decayActivity();
 
