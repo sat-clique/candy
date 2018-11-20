@@ -73,6 +73,10 @@ void ClauseDatabase::defrag() {
             binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
         }
     }
+    if (track_literal_occurrence) {
+        variableOccurrences.clear();
+        initOccurrenceTracking(variableOccurrences.size());
+    }
 }
 
 void ClauseDatabase::bumpActivities(std::vector<Clause*>& involved_clauses) {
