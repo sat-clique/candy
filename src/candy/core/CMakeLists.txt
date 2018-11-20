@@ -18,7 +18,7 @@ add_library(core OBJECT
     ConflictAnalysisThreadSafe.h
     Propagate.h
     PropagateThreadSafe.h
-    branching/BranchingInterface.h
+    branching/BranchingDiversificationInterface.h
     branching/VSIDS.h
     branching/LRB.h
     Stamp.h
