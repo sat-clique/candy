@@ -59,7 +59,7 @@ namespace Candy {
      *                       budgets.
      */
     template<class AdviceType>
-    class RSILBranchingHeuristic : BranchingInterface<RSILBranchingHeuristic<AdviceType>> {
+    class RSILBranchingHeuristic : BranchingDiversificationInterface {
 
         static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
@@ -76,6 +76,14 @@ namespace Candy {
         VSIDS defaultBranchingHeuristic;
 
         Lit pickBranchLit();
+
+        void setPolarity(Var v, bool sign) override {
+            defaultBranchingHeuristic.setPolarity(v, sign);
+        }
+
+        Lit getLastDecision() override {
+            return trail[(*trail.trail_lim.rbegin())];
+        }
 
     	void setDecisionVar(Var v, bool b) {
     		defaultBranchingHeuristic.setDecisionVar(v, b);

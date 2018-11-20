@@ -15,11 +15,11 @@
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/core/ClauseDatabase.h"
-#include "candy/core/branching/BranchingInterface.h"
+#include "candy/core/branching/BranchingDiversificationInterface.h"
 
 namespace Candy {
 
-class VSIDS : public BranchingInterface<VSIDS> {
+class VSIDS : public BranchingDiversificationInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
@@ -52,34 +52,11 @@ public:
 
     }
 
-    VSIDS(VSIDS&& other) :
-        clause_db(other.clause_db), trail(other.trail), 
-        order_heap(VarOrderLt(activity)) {
-            activity = std::move(other.activity);
-            polarity = std::move(other.polarity);
-            decision = std::move(other.decision);
-            var_inc = other.var_inc;
-            var_decay = other.var_decay;
-            max_var_decay = other.max_var_decay;
-            stamp.grow(other.stamp.size());
-	}
-
-    VSIDS& operator=(VSIDS&& other) {
-        activity = std::move(other.activity);
-        polarity = std::move(other.polarity);
-        decision = std::move(other.decision);
-        var_inc = other.var_inc;
-        var_decay = other.var_decay;
-        max_var_decay = other.max_var_decay;
-        stamp.grow(other.stamp.size());
-		return *this;
-    }
-
-    void setPolarity(Var v, bool sign) {
+    void setPolarity(Var v, bool sign) override {
         polarity[v] = sign;
     }
 
-    Lit getLastDecision() {
+    Lit getLastDecision() override {
         return trail[(*trail.trail_lim.rbegin())];
     }
 
