@@ -15,11 +15,11 @@
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/core/ClauseDatabase.h"
-#include "candy/core/branching/BranchingInterface.h"
+#include "candy/core/branching/BranchingDiversificationInterface.h"
 
 namespace Candy {
 
-class LRB : public BranchingInterface<LRB> {
+class LRB : public BranchingDiversificationInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
@@ -42,34 +42,11 @@ public:
 
     }
 
-    LRB(LRB&& other) :
-        clause_db(other.clause_db), trail(other.trail), 
-        order_heap(VarOrderLt(weight)) { 
-            weight = std::move(other.weight);
-            polarity = std::move(other.polarity);
-            decision = std::move(other.decision);
-            interval_assigned = std::move(other.interval_assigned);
-            participated = std::move(other.participated);
-            step_size = other.step_size;
-            stamp.grow(other.stamp.size());
-	}
-
-    LRB& operator=(LRB&& other) {
-        weight = std::move(other.weight);
-        polarity = std::move(other.polarity);
-        decision = std::move(other.decision);
-        interval_assigned = std::move(other.interval_assigned);
-        participated = std::move(other.participated);
-        step_size = other.step_size;
-        stamp.grow(other.stamp.size());
-		return *this;
-    }
-
-    void setPolarity(Var v, bool sign) {
+    void setPolarity(Var v, bool sign) override {
         polarity[v] = sign;
     }
 
-    Lit getLastDecision() {
+    Lit getLastDecision() override {
         return trail[*(trail.trail_lim.rbegin())];
     }
 
