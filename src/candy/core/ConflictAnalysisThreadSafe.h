@@ -118,7 +118,6 @@ private:
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
 
-	    // Generate conflict clause:
 	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
 	    do {
@@ -126,16 +125,16 @@ private:
 	        involved_clauses.push_back((Clause*)confl);
 
 	        for (Lit lit : *confl) {
-				Var v = var(lit);
-				assert(trail.value(lit) == l_False && lit != asslit || trail.value(lit) == l_True && lit == asslit);
-				if (lit != asslit && !stamp[v] && trail.level(v) != 0) {
-					stamp.set(v);
-					if (trail.level(v) >= (int)trail.decisionLevel()) {
-						pathC++;
-					} else {
-						learnt_clause.push_back(lit);
-					}
-				}
+		    Var v = var(lit);
+		    assert(trail.value(lit) == l_False && lit != asslit || trail.value(lit) == l_True && lit == asslit);
+		    if (lit != asslit && !stamp[v] && trail.level(v) != 0) {
+	                stamp.set(v);
+	                if (trail.level(v) >= (int)trail.decisionLevel()) {
+	                    pathC++;
+	                } else {
+	                    learnt_clause.push_back(lit);
+	                }
+	            }
 	        }
 
 	        // Select next clause to look at:
@@ -167,7 +166,7 @@ private:
 
 	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
 	        minimisationWithBinaryResolution();
-	    } 
+	    }
 	}
 
 public:
@@ -197,7 +196,7 @@ public:
 		analyze(confl);
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
-
+        
 		unsigned int backtrack_level = 0;
 		if (learnt_clause.size() > 1) {
 			backtrack_level = trail.level(var(learnt_clause[1]));
@@ -223,7 +222,7 @@ public:
 	 *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
 	 *    stores the result in 'out_conflict'.
 	 |*************************************************************************************************/
-	void analyzeFinal(Lit p) {
+	void analyzeFinal(Lit p) { 
 		learnt_clause.clear();
 	    learnt_clause.push_back(p);
 
