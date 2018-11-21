@@ -52,6 +52,21 @@ public:
         return trail[i];
     }
 
+    void print() {
+        unsigned int level = 0;
+        std::cout << "Trail: ";
+        for (unsigned int i = 0; i < size(); i++) {
+            if (i == trail_lim[level]) {
+                std::cout << "'" << trail[i] << "' ";
+                level++;
+            } 
+            else {
+                std::cout << trail[i] << " ";
+            }
+        }
+        std::cout << std::endl;
+    }
+
     typedef std::vector<Lit>::iterator iterator;
     typedef std::vector<Lit>::const_iterator const_iterator;
     typedef std::vector<Lit>::reverse_iterator reverse_iterator;

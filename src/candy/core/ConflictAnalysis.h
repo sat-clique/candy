@@ -119,7 +119,7 @@ private:
 	 *
 	 ***************************************************************************************************/
 	void analyze(Clause* confl) {
-		int pathC = 0;
+	    int pathC = 0;
 	    Lit asslit = lit_Undef;
 	    stamp.clear();
 
@@ -127,15 +127,14 @@ private:
 	    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
 	    do {
 	        assert(confl != nullptr); // (otherwise should be UIP)
-	        involved_clauses.push_back(confl);
+            involved_clauses.push_back(confl);
 
-	        // Special case for binary clauses: The first one has to be SAT
 	        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
 	            assert(trail.value(confl->second()) == l_True);
 	            confl->swap(0, 1);
 	        }
 
-			assert(asslit == lit_Undef || confl->first() == asslit);
+            assert(asslit == lit_Undef || confl->first() == asslit);
 	        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
 	            Var v = var(*it);
 	            if (!stamp[v] && trail.level(v) != 0) {

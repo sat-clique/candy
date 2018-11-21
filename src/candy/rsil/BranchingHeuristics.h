@@ -59,7 +59,7 @@ namespace Candy {
      *                       budgets.
      */
     template<class AdviceType>
-    class RSILBranchingHeuristic : BranchingDiversificationInterface {
+    class RSILBranchingHeuristic : public BranchingDiversificationInterface {
 
         static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
