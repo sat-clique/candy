@@ -112,6 +112,7 @@ struct DoubleRange {
 // Double options:
 class DoubleOption : public Option {
     char pattern[100]; 
+    unsigned int len;
 
  protected:
     DoubleRange range;
@@ -121,7 +122,7 @@ class DoubleOption : public Option {
     DoubleOption(const char* c, const char* n, const char* d, double def = double(), DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false))
         : Option(n, d, c, "<double>"), range(r), value(def) {
         // FIXME: set LC_NUMERIC to "C" to make sure that strtof/strtod parses decimal point correctly.
-        sprintf(pattern, "-%s=", name);
+        len = sprintf(pattern, "-%s=", name);
     }
 
     operator      double   (void) const { return value; }
@@ -133,7 +134,7 @@ class DoubleOption : public Option {
 
         if (span == str) {
             char* end;
-            double tmp = strtod(span, &end);
+            double tmp = strtod(span + len, &end);
 
             if (end != nullptr) {
                 if (tmp > range.end && tmp < range.begin) {
@@ -168,6 +169,7 @@ class DoubleOption : public Option {
 // Int options:
 class IntOption : public Option {
     char pattern[100]; 
+    unsigned int len;
 
  protected:
     IntRange range;
@@ -176,7 +178,7 @@ class IntOption : public Option {
  public:
     IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX))
         : Option(n, d, c, "<int32>"), range(r), value(def) {
-            sprintf(pattern, "-%s=", name);
+            len = sprintf(pattern, "-%s=", name);
         }
  
     operator   int32_t   (void) const { return value; }
@@ -188,7 +190,7 @@ class IntOption : public Option {
 
         if (span == str) {
             char* end;
-            int32_t tmp = strtol(span, &end, 10);
+            int32_t tmp = strtol(span + len, &end, 10);
 
             if (end != nullptr) {
                 if (tmp > range.end && tmp < range.begin) {
@@ -230,6 +232,7 @@ class IntOption : public Option {
 
 class Int64Option : public Option {
     char pattern[100]; 
+    unsigned int len;
 
  protected:
     Int64Range range;
@@ -238,7 +241,7 @@ class Int64Option : public Option {
  public:
     Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX))
         : Option(n, d, c, "<int64>"), range(r), value(def) {
-            sprintf(pattern, "-%s=", name);
+            len = sprintf(pattern, "-%s=", name);
         }
  
     operator     int64_t   (void) const { return value; }
@@ -250,7 +253,7 @@ class Int64Option : public Option {
 
         if (span == str) {
             char* end;
-            int64_t tmp = strtoll(span, &end, 10);
+            int64_t tmp = strtoll(span + len, &end, 10);
 
             if (end != nullptr) {
                 if (tmp > range.end && tmp < range.begin) {
@@ -291,12 +294,13 @@ class Int64Option : public Option {
 // String option:
 class StringOption : public Option {
     char pattern[100]; 
+    unsigned int len;
     const char* value;
 
  public:
     StringOption(const char* c, const char* n, const char* d, const char* def = NULL) 
         : Option(n, d, c, "<string>"), value(def) {
-            sprintf(pattern, "-%s=", name);
+            len = sprintf(pattern, "-%s=", name);
         }
 
     operator      const char*  (void) const     { return value; }
@@ -307,7 +311,7 @@ class StringOption : public Option {
         const char* span = strstr(str, pattern); 
 
         if (span == str) {
-            value = span;
+            value = span + len;
             return true;
         }
 
@@ -328,13 +332,15 @@ class StringOption : public Option {
 class BoolOption : public Option {
     char yes_pattern[100]; 
     char no_pattern[100]; 
+    unsigned int yes_len;
+    unsigned int no_len;
     bool value;
 
  public:
     BoolOption(const char* c, const char* n, const char* d, bool v) 
         : Option(n, d, c, "<bool>"), value(v) {
-            sprintf(yes_pattern, "-%s", name);
-            sprintf(no_pattern, "-no-%s", name);
+            yes_len = sprintf(yes_pattern, "-%s", name);
+            no_len = sprintf(no_pattern, "-no-%s", name);
         }
 
     operator    bool     (void) const { return value; }
@@ -344,13 +350,13 @@ class BoolOption : public Option {
     virtual bool parse(const char* str) {
         const char* span = strstr(str, yes_pattern); 
 
-        if (span == str) {
+        if (span == str && strlen(str) == yes_len) {
             value = true;
             return true;
         }
 
         span = strstr(str, no_pattern);
-        if (span == str) {
+        if (span == str && strlen(str) == no_len) {
             value = false;
             return true;
         }
