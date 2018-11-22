@@ -156,6 +156,23 @@ public:
         }
 
         stamp.clear();
+
+        // Tie Breaker: Bump and Mark the Asserted Literals first
+        // As a result of experiments with _literal-order invariant_ clause-learning systems (massive deteriorations)
+        for (Lit lit : clause_db.result.asserted_literals) {
+            Var v = var(lit);
+            if (!stamp[v] && trail.level(v) > 0) {
+                stamp.set(v);
+                varBumpActivity(v);
+                if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
+                    // UPDATEVARACTIVITY trick (see competition'09 companion paper)
+                    if (trail.reason(v)->getLBD() < clause_db.result.lbd) {
+                        varBumpActivity(v);
+                    }
+                }
+            }
+        }
+
         for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
                 Var v = var(lit);
