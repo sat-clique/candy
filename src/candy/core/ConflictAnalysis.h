@@ -24,6 +24,7 @@ class ConflictAnalysis {
 private:
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
+	std::vector<Lit> asserted_literals;
 
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
@@ -202,6 +203,7 @@ public:
 	void handle_conflict(Clause* confl) {
 		learnt_clause.clear();
 		involved_clauses.clear();
+		asserted_literals.clear();
 
 		analyze(confl);
 
@@ -220,7 +222,7 @@ public:
 		}
 
 		clause_db.reestimateClauseWeights(trail, involved_clauses);
-		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level);
+		clause_db.setLearntClause(learnt_clause, involved_clauses, asserted_literals, lbd, backtrack_level);
 	}
 
 	/**************************************************************************************************

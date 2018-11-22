@@ -19,6 +19,7 @@ struct AnalysisResult {
 	uint64_t nConflicts;
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
+    std::vector<Lit> asserted_literals;
 
 	unsigned int lbd;
     unsigned int backtrack_level;
@@ -37,10 +38,11 @@ struct AnalysisResult {
         backtrack_level = 0;
     }
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, std::vector<Lit>& asserted_literals_, unsigned int lbd_, unsigned int backtrack_level_) {
         nConflicts++;
         learnt_clause.swap(learnt_clause_);
         involved_clauses.swap(involved_clauses_);
+        asserted_literals.swap(asserted_literals_);
         lbd = lbd_;
         backtrack_level = backtrack_level_;
     }
@@ -200,8 +202,8 @@ public:
         result.setLearntClause(learnt_clause_);
     }
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
-        result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, std::vector<Lit>& asserted_literals_, unsigned int lbd_, unsigned int backtrack_level_) {
+        result.setLearntClause(learnt_clause_, involved_clauses_, asserted_literals_, lbd_, backtrack_level_);
     }
 
     Clause* createClause(Cl& lits, unsigned int lbd = 0) {
