@@ -188,10 +188,10 @@ no clause-sharing or additional diversification so far
 \end{frame}
 
 \begin{frame}{Literal Order}
-\begin{block}{2-Watched Literals Scheme}
+\begin{block}{First Two Literals in Clause are Watched}
 \begin{itemize}
-\item First Two Literals in Clause are Watched
-\item Invariant: If Clause triggers unit-propagation then the first literal is the the asserted (true) literal and the second literal is the propagation trigger / the other watched literal
+\item The first literal is the the asserted (true) literal
+\item The second literal is the propagation trigger / the other watched literal
 \item Advantage: Watchers are independent (one watcher for each of the two literals)
 \end{itemize}
 \end{block}
