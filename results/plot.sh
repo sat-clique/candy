@@ -29,13 +29,13 @@ echo "set size square 1,1"
 
 t1=`head -n 1 $f | cut -d";" -f$c1`
 t2=`head -n 1 $f | cut -d";" -f$c2`
-echo "set xlabel '$t1'"
-echo "set ylabel '$t2'"
+echo "set xlabel 'runtime of \"${t1##*/}\" in sec.'"
+echo "set ylabel 'runtime of \"${t2##*/}\" in sec.'"
 
 echo "set xrange [$offset:6000]"
 echo "set yrange [$offset:6000]"
 
-echo "set style line 1 lt 1 lw 1 lc rgb '#f9f871'"
+echo "set style line 1 lt 1 lw 1 lc rgb '#fbb252'"
 
 echo "plot timeout ls 1 title 'Timeout'"
 echo "set arrow from 5000,1 to 5000,6000 nohead ls 1"
