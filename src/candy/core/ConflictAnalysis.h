@@ -154,6 +154,7 @@ private:
 	        }
 
 	        asslit = *trail_iterator;
+			asserted_literals.push_back(asslit);
 	        stamp.unset(var(*trail_iterator));
 	        confl = trail.reason(var(*trail_iterator));
 	        pathC--;
@@ -222,7 +223,7 @@ public:
 		}
 
 		clause_db.reestimateClauseWeights(trail, involved_clauses);
-		clause_db.setLearntClause(learnt_clause, involved_clauses, asserted_literals, lbd, backtrack_level);
+		clause_db.setLearntClause(learnt_clause, involved_clauses, asserted_literals, lbd, backtrack_level); 
 	}
 
 	/**************************************************************************************************
