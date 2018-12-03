@@ -156,43 +156,38 @@ public:
         }
 
         stamp.clear();
+        const Clause* confl = clause_db.result.involved_clauses[0]; 
+        Lit asserted_literal = lit_Undef;
+        auto trail_iterator = trail.rbegin();
+	    for(int pathC = 0; pathC > 0 || asserted_literal == lit_Undef; pathC--) {
+	        assert(confl != nullptr); // (otherwise should be UIP)
 
-        // Tie Breaker: Bump and Mark the Asserted Literals first
-        // As a result of experiments with _literal-order invariant_ clause-learning systems (massive deteriorations)
-        // for (Lit lit : clause_db.result.asserted_literals) {
-        //     Var v = var(lit);
-        //     if (!stamp[v] && trail.level(v) > 0) {
-        //         stamp.set(v);
-        //         varBumpActivity(v);
-        //         if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
-        //             // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-        //             if (trail.reason(v)->getLBD() < clause_db.result.lbd) {
-        //                 varBumpActivity(v);
-        //             }
-        //         }
-        //     }
-        // }
-
-        // Original Glucose did not bump these:
-        for (Lit lit : clause_db.result.asserted_literals) {
-            stamp.set(var(lit));
-        }
-
-        for (const Clause* clause : clause_db.result.involved_clauses) { 
-            for (Lit lit : *clause) {
-                Var v = var(lit);
-                if (!stamp[v] && trail.level(v) > 0) {
-                    stamp.set(v);
-                    varBumpActivity(v);
-                    if (trail.level(v) >= (int)trail.decisionLevel() && trail.reason(v) != nullptr && trail.reason(v)->isLearnt()) {
+	        for (Lit lit : *confl) {
+				assert((trail.value(lit) == l_True) == (lit == asserted_literal));
+				Var v = var(lit);
+				if (lit != asserted_literal && !stamp[v] && trail.level(v) > 0) {
+	                stamp.set(v);
+	                if (trail.level(v) >= (int)trail.decisionLevel()) {
                         // UPDATEVARACTIVITY trick (see competition'09 companion paper)
-                        if (trail.reason(v)->getLBD() < clause_db.result.lbd) {
+                        if (trail.reason(v) != nullptr && trail.reason(v)->isLearnt() && trail.reason(v)->getLBD() < clause_db.result.lbd) {
                             varBumpActivity(v);
                         }
-                    }
-                }
-            }
-        }
+	                } else {
+	                    varBumpActivity(v);
+	                }
+	            }
+	        }
+
+	        // Select next clause to look at:
+	        while (!stamp[var(*trail_iterator)]) {
+	            trail_iterator++;
+	        }
+
+	        asserted_literal = *trail_iterator;
+	        stamp.unset(var(*trail_iterator));
+	        confl = trail.reason(var(*trail_iterator));
+	    }
+
         varDecayActivity();
 
         unsigned int backtrack_level = clause_db.result.backtrack_level;
