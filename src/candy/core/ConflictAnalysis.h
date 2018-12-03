@@ -24,7 +24,6 @@ class ConflictAnalysis {
 private:
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
-	std::vector<Lit> asserted_literals;
 
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
@@ -81,10 +80,23 @@ private:
 	    return true;
 	}
 
+	void minimization() {
+	    analyze_clear.clear();
+	    uint64_t abstract_level = 0;
+	    for (uint_fast16_t i = 1; i < learnt_clause.size(); i++) {
+	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
+	    }
+	    auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
+	                         [this, abstract_level] (Lit lit) {
+	                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
+	                         });
+	    learnt_clause.erase(end, learnt_clause.end());
+	}
+
 	/******************************************************************
 	 * Minimisation with binary clauses of the asserting clause
 	 ******************************************************************/
-	void minimisationWithBinaryResolution() {
+	void minimizationWithBinaryResolution() {
 	    stamp.clear();
 
 	    bool minimize = false;
@@ -120,25 +132,24 @@ private:
 	 *
 	 ***************************************************************************************************/
 	void analyze(Clause* confl) {
-	    int pathC = 0;
-	    Lit asslit = lit_Undef;
+	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    stamp.clear();
 
-	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
-	    Trail::const_reverse_iterator trail_iterator = trail.rbegin();
-	    do {
+	    Lit asserted_literal = lit_Undef;
+	    auto trail_iterator = trail.rbegin();
+	    for(int pathC = 0; pathC > 0 || asserted_literal == lit_Undef; pathC--) {
 	        assert(confl != nullptr); // (otherwise should be UIP)
             involved_clauses.push_back(confl);
 
-	        if (asslit != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
+	        if (asserted_literal != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
 	            assert(trail.value(confl->second()) == l_True);
 	            confl->swap(0, 1);
 	        }
 
-            assert(asslit == lit_Undef || confl->first() == asslit);
-	        for (auto it = (asslit == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
+            assert(asserted_literal == lit_Undef || confl->first() == asserted_literal);
+	        for (auto it = (asserted_literal == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
 	            Var v = var(*it);
-	            if (!stamp[v] && trail.level(v) != 0) {
+	            if (!stamp[v] && trail.level(v) > 0) {
 	                stamp.set(v);
 	                if (trail.level(v) >= (int)trail.decisionLevel()) {
 	                    pathC++;
@@ -153,32 +164,20 @@ private:
 	            trail_iterator++;
 	        }
 
-	        asslit = *trail_iterator;
-			asserted_literals.push_back(asslit);
+	        asserted_literal = *trail_iterator;
 	        stamp.unset(var(*trail_iterator));
 	        confl = trail.reason(var(*trail_iterator));
-	        pathC--;
-	    } while (pathC > 0);
+	    }
 
-	    learnt_clause[0] = ~asslit;
+	    learnt_clause[0] = ~asserted_literal;
 
 	    // Minimize conflict clause:
-	    analyze_clear.clear();
-	    uint64_t abstract_level = 0;
-	    for (uint_fast16_t i = 1; i < learnt_clause.size(); i++) {
-	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
-	    }
-	    auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
-	                         [this, abstract_level] (Lit lit) {
-	                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
-	                         });
-	    learnt_clause.erase(end, learnt_clause.end());
-
-	    assert(learnt_clause[0] == ~asslit);
-
+	    minimization();
 	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
-	        minimisationWithBinaryResolution();
+	        minimizationWithBinaryResolution();
 	    }
+
+	    assert(learnt_clause[0] == ~asserted_literal);
 	}
 
 public:
@@ -204,7 +203,6 @@ public:
 	void handle_conflict(Clause* confl) {
 		learnt_clause.clear();
 		involved_clauses.clear();
-		asserted_literals.clear();
 
 		analyze(confl);
 
@@ -223,7 +221,7 @@ public:
 		}
 
 		clause_db.reestimateClauseWeights(trail, involved_clauses);
-		clause_db.setLearntClause(learnt_clause, involved_clauses, asserted_literals, lbd, backtrack_level); 
+		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level); 
 	}
 
 	/**************************************************************************************************
