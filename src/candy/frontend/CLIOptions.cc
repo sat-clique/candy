@@ -37,8 +37,9 @@ namespace SolverOptions {
     IntOption opt_first_reduce_db("DB Reduction", "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
     IntOption opt_inc_reduce_db("DB Reduction", "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
 
-    DoubleOption opt_var_decay("CORE", "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
-    DoubleOption opt_max_var_decay("CORE", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
+    DoubleOption opt_vsids_var_decay("CORE", "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
+    DoubleOption opt_vsids_max_var_decay("CORE", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
+    BoolOption opt_vsids_extra_bump("CORE", "extra-bump", "Glucose Style Extra Bumping on current desicion level", false);
 
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
     BoolOption opt_use_ts_ca("CONFLICT ANALYSIS", "use-ts-ca", "use thread-safe conflict analysis module", false);
