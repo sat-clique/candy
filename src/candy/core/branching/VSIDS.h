@@ -40,15 +40,20 @@ public:
     Stamp<uint32_t> stamp;
     double var_inc; // Amount to bump next variable with.
     double var_decay;
-    double max_var_decay;
-    bool initial_polarity = true;
-    double initial_activity = 0.0;
+    const double max_var_decay;
+    const bool glucose_style_extra_bump = false;
+    const bool initial_polarity = true;
+    const double initial_activity = 0.0;
 
-    VSIDS(ClauseDatabase& _clause_db, Trail& _trail, double _var_decay = 0.8, double _max_var_decay = 0.95) :
+    VSIDS(ClauseDatabase& _clause_db, Trail& _trail, 
+            double _var_decay = SolverOptions::opt_vsids_var_decay, 
+            double _max_var_decay = SolverOptions::opt_vsids_max_var_decay, 
+            bool _glucose_style_extra_bump = SolverOptions::opt_vsids_extra_bump) :
         clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(activity)),
         activity(), polarity(), decision(), stamp(), 
-        var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay) {
+        var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay),
+        glucose_style_extra_bump(_glucose_style_extra_bump) {
 
     }
 
@@ -166,12 +171,14 @@ public:
 	        }
 	    }
 
-        // for (auto it = trail.begin(trail.decisionLevel()-1); it != trail.end(); it++) {
-        //     Var v = var(*it);
-        //     if (!stamp[v] && trail.reason(v) != nullptr && trail.reason(v)->isLearnt() && trail.reason(v)->getLBD() < clause_db.result.lbd) {
-        //         varBumpActivity(v);
-        //     }
-        // }
+        if (glucose_style_extra_bump) {
+            for (auto it = trail.begin(trail.decisionLevel()); it < trail.end(); it++) {
+                Var v = var(*it);
+                if (!stamp[v] && trail.reason(v) != nullptr && trail.reason(v)->isLearnt() && trail.reason(v)->getLBD() < clause_db.result.lbd) {
+                    varBumpActivity(v);
+                }
+            }
+        }
 
         varDecayActivity();
 

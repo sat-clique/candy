@@ -40,8 +40,10 @@ namespace SolverOptions {
     extern BoolOption opt_use_ts_ca; // thread-safe conflict analysis
     extern BoolOption opt_use_ts_pr; // thread-safe propagator
 
-    extern DoubleOption opt_var_decay;
-    extern DoubleOption opt_max_var_decay;
+    extern DoubleOption opt_vsids_var_decay;
+    extern DoubleOption opt_vsids_max_var_decay;
+    extern BoolOption opt_vsids_extra_bump;
+
     extern IntOption opt_phase_saving;
     
     extern IntOption opt_sonification_delay;
