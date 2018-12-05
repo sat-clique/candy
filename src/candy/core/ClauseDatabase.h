@@ -64,6 +64,10 @@ private:
         }
     };
 
+    ClauseAllocator allocator;
+ 
+    std::vector<Clause*> clauses; // List of problem clauses
+
     // clause activity heuristic
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
@@ -75,59 +79,27 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
-    void bumpActivities(std::vector<Clause*>& involved_clauses) {
-        for (Clause* clause : involved_clauses) {
-            bumpActivity(*clause);
-        }
-    }
-
-    void rescaleActivity() {
-        for (Clause* clause : clauses) {
-            clause->activity() *= 1e-20f;
-        }
-        cla_inc *= 1e-20;
-    }
-
-    void decayActivity() {
-        cla_inc *= (1 / clause_decay);
-    }
-
-    void bumpActivity(Clause& c) {
-        if ((c.activity() += static_cast<float>(cla_inc)) > 1e20f) {
-            rescaleActivity();
-        }
-    }
-
-	// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-    void reduceLBDs(Trail& trail, std::vector<Clause*>& involved_clauses) {
-        for (Clause* clause : involved_clauses) {
-            if (clause->isLearnt()) {
-                uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
-                if (nblevels + 1 < clause->getLBD()) {
-                    clause->setLBD(nblevels); // improve the LBD
-                    clause->setFrozen(true); // Seems to be interesting, keep it for the next round
-                }
-            }
-        }
-    }
+    void bumpActivities(std::vector<Clause*>& involved_clauses);
+    void bumpActivity(Clause& c);
+    void rescaleActivity();
+    void decayActivity();
+    void reduceLBDs(Trail& trail, std::vector<Clause*>& involved_clauses);
 
 public:
-    ClauseAllocator allocator;
-
     /* analysis result is stored here */
 	AnalysisResult result;
- 
-    std::vector<Clause*> clauses; // List of problem clauses
 
     ClauseDatabase();
     ~ClauseDatabase();
 
     void reduce();
+    void cleanup();
     void defrag();
-    void freeMarkedClauses();
 
     void initOccurrenceTracking(size_t nVars);
     void stopOccurrenceTracking();
+
+    void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses);
 
     typedef std::vector<Clause*>::iterator iterator;
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -148,22 +120,6 @@ public:
 
     inline iterator end() {
         return clauses.end();
-    }
-
-    inline const_reverse_iterator rbegin() const {
-        return clauses.rbegin();
-    }
-
-    inline const_reverse_iterator rend() const {
-        return clauses.rend();
-    }
-
-    inline reverse_iterator rbegin() {
-        return clauses.rbegin();
-    }
-
-    inline reverse_iterator rend() {
-        return clauses.rend();
     }
 
     inline unsigned int size() const {
@@ -251,21 +207,6 @@ public:
 
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
         return binaryWatchers[lit];
-    }
-
-    void cleanup() {
-        auto new_end = std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) { return c->isDeleted(); });
-        clauses.erase(new_end, clauses.end());
-
-        if (track_literal_occurrence) {
-            variableOccurrences.cleanAll();
-        }
-    }
-
-    void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
-		reduceLBDs(trail, involved_clauses);
-        bumpActivities(involved_clauses); 
-        decayActivity();
     }
 
 };

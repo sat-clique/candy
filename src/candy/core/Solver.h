@@ -129,7 +129,7 @@ public:
 
     void printDIMACS() override {
         printf("p cnf %zu %zu\n", nVars(), nClauses());
-        for (auto clause : clause_db.clauses) {
+        for (const Clause* clause : clause_db) {
             clause->printDIMACS();
         }
     }
@@ -199,7 +199,7 @@ public:
         return literals;
     }
     size_t nClauses() const override {
-        return clause_db.clauses.size();
+        return clause_db.size();
     }
     size_t nVars() const override {
         return trail.vardata.size();
@@ -559,7 +559,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::si
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
-    for (const Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
+    for (const Clause* clause : clause_db) if (!clause->isDeleted()) {
         if (trail.satisfies(*clause)) {
             certificate.removed(clause->begin(), clause->end());
             propagator.detachClause(clause);
@@ -573,7 +573,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::st
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
-    for (const Clause* clause : clause_db.clauses) if (!clause->isDeleted()) {
+    for (const Clause* clause : clause_db) if (!clause->isDeleted()) {
         vector<Lit> copy(clause->begin(), clause->end());
 
         for (Lit lit : copy) {        
@@ -662,7 +662,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
 
             sonification.learntSize(static_cast<int>(clause_db.result.learnt_clause.size()));
 
-            if (std::find_if(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), [this](Lit lit) { return isSelector(lit); }) == clause_db.result.learnt_clause.end()) {
+            if (incremental && std::find_if(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), [this](Lit lit) { return isSelector(lit); }) == clause_db.result.learnt_clause.end()) {
                 certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
             }
 
@@ -716,7 +716,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                     }
                     clause_db.cleanup();
                     clause_db.defrag();
-                    propagator.attachAll(clause_db.clauses);
+                    propagator.attachAll();
 
                     if (sort_watches) {
                         propagator.sortWatchers();
