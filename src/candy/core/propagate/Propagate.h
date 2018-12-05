@@ -83,8 +83,8 @@ public:
         }
     }
 
-    void attachAll(std::vector<Clause*>& clauses) {
-        for (Clause* clause : clauses) {
+    void attachAll() {
+        for (Clause* clause : clause_db) {
             attachClause(clause);
         }
     }

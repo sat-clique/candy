@@ -324,7 +324,7 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     // include persistent learnt clauses
     this->clause_db.initOccurrenceTracking(this->nVars());
     subsumption.init(this->nVars());
-    for (Clause* c : this->clause_db.clauses) {
+    for (const Clause* c : this->clause_db) {
         elimAttach(c);
     }
 
@@ -394,9 +394,18 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                         }
 
                         for (Cl& resolvent : elimination.resolvents) {
-                            this->addClause(resolvent);
-                            elimAttach(this->clause_db.clauses.back());
-                            subsumption.attach(this->clause_db.clauses.back());
+                            if (resolvent.size() == 0) {
+                                this->ok = false;
+                            }
+                            else if (resolvent.size() == 1) {
+                                this->ok = this->trail.newFact(resolvent.front());
+                            }
+                            else {
+                                Clause* clause = this->clause_db.createClause(resolvent);
+                                this->propagator.attachClause(clause);
+                                elimAttach(clause);
+                                subsumption.attach(clause);
+                            }
                         }
 
                         for (Clause* c : elimination.resolved) {

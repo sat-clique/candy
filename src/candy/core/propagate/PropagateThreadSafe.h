@@ -21,11 +21,11 @@
 namespace Candy {
 
 struct WatcherTS {
-    Clause* cref;
+    const Clause* cref;
     Lit watch0;
     Lit watch1;
 
-    WatcherTS(Clause* clause, Lit one, Lit two)
+    WatcherTS(const Clause* clause, Lit one, Lit two)
      : cref(clause), watch0(one), watch1(two) {}
 
     ~WatcherTS() {}
@@ -48,7 +48,7 @@ public:
         watchers.resize(mkLit(maxVars, true));
     }
 
-    void attachClause(Clause* clause) {
+    void attachClause(const Clause* clause) {
         assert(clause->size() > 1);
         if (clause->size() > 2) {
             WatcherTS* watcher = new WatcherTS(clause, clause->first(), clause->second());
@@ -80,8 +80,8 @@ public:
         }
     }
 
-    void attachAll(std::vector<Clause*>& clauses) {
-        for (Clause* clause : clauses) {
+    void attachAll() {
+        for (Clause* clause : clause_db) {
             attachClause(clause);
         }
     }
@@ -105,8 +105,8 @@ public:
             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
                 sort(watchers[l].begin(), watchers[l].end(), [](WatcherTS* w1, WatcherTS* w2) {
-                    Clause& c1 = *w1->cref;
-                    Clause& c2 = *w2->cref;
+                    const Clause& c1 = *w1->cref;
+                    const Clause& c2 = *w2->cref;
                     return c1.size() < c2.size() || (c1.size() == c2.size() && c1.getActivity() > c2.getActivity());
                 });
             }
