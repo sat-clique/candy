@@ -32,8 +32,8 @@
 
 #include "candy/core/ClauseDatabase.h"
 #include "candy/core/Trail.h"
-#include "candy/core/Propagate.h"
-#include "candy/core/ConflictAnalysis.h"
+#include "candy/core/propagate/Propagate.h"
+#include "candy/core/learning/ConflictAnalysis.h"
 
 #include <candy/simp/SimpSolver.h>
 #include <candy/rsil/BranchingHeuristics.h>

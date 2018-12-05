@@ -68,14 +68,14 @@
 #include "candy/core/Certificate.h"
 #include "candy/core/ClauseAllocator.h"
 #include "candy/core/CNFProblem.h"
-#include "candy/core/ConflictAnalysis.h"
+#include "candy/core/learning/ConflictAnalysis.h"
 #include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/core/Trail.h"
-#include "candy/core/Propagate.h"
+#include "candy/core/propagate/Propagate.h"
 #include "candy/core/branching/VSIDS.h"
-#include "candy/core/Stamp.h"
+#include "candy/mtl/Stamp.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/randomsimulation/Conjectures.h"
 #include "candy/rsar/Refinement.h"
@@ -736,8 +736,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                     // Dummy decision level:
                     trail.newDecisionLevel();
                 } else if (trail.value(p) == l_False) {
-                    conflict_analysis.analyzeFinal(~p);
-                    conflict.swap(clause_db.result.learnt_clause);
+                    conflict.swap(conflict_analysis.analyzeFinal(~p));
                     return l_False;
                 } else {
                     next = p;
@@ -773,7 +772,6 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     
     model.clear();
     conflict.clear();
-    clause_db.result.clear(); 
 
     lbool status = l_Undef;
     if (isInConflictingState()) {
@@ -787,19 +785,17 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     
     if (status == l_False) {
         if (!incremental) {
+            ok = false;
             certificate.proof();
         }
         else {
             // check if selectors are used in final conflict
-            conflict_analysis.analyzeFinal(trail[trail.size()-1]);
-            auto pos = find_if(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
-            if (pos == clause_db.result.learnt_clause.end()) {
+            conflict.swap(conflict_analysis.analyzeFinal(trail[trail.size()-1]));
+            auto pos = find_if(conflict.begin(), conflict.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
+            if (pos == conflict.end()) {
+                ok = false;
                 certificate.proof();
             }
-        }
-        
-        if (conflict.size() == 0) {
-            ok = false;
         }
 
         sonification.stop(1);
@@ -815,7 +811,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     
     trail.cancelUntil(0);
 
-    ok = true; // fix incremental mode
+    ok = true; // temporarily fix incremental mode
 
     Statistics::getInstance().runtimeStop("Solver");
     return status;
