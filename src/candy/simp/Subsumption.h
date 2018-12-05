@@ -5,9 +5,9 @@
 #include "candy/core/Clause.h"
 #include "candy/core/ClauseDatabase.h"
 #include "candy/core/Trail.h"
-#include "candy/core/Propagate.h"
+#include "candy/core/propagate/Propagate.h"
 #include "candy/core/Certificate.h"
-#include "candy/core/Stamp.h"
+#include "candy/mtl/Stamp.h"
 #include "candy/frontend/CLIOptions.h"
 
 namespace Candy {

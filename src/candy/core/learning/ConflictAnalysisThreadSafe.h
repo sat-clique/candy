@@ -5,14 +5,13 @@
  *      Author: markus
  */
 
-#ifndef SRC_CANDY_CORE_CONFLICTANALYSIS_H_
-#define SRC_CANDY_CORE_CONFLICTANALYSIS_H_
+#ifndef SRC_CANDY_CORE_CONFLICTANALYSIS_THREADSAFE_H_
+#define SRC_CANDY_CORE_CONFLICTANALYSIS_THREADSAFE_H_
 
-#include "candy/core/Stamp.h"
+#include "candy/mtl/Stamp.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/Trail.h"
-#include "candy/core/ClauseDatabase.h"
 #include "candy/core/Clause.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/frontend/CLIOptions.h"
@@ -20,7 +19,7 @@
 
 namespace Candy {
 
-class ConflictAnalysis {
+class ConflictAnalysisThreadSafe {
 private:
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
@@ -31,7 +30,7 @@ private:
     std::vector<Var> analyze_stack;
 
     /* pointers to solver state */
-	ClauseDatabase& clause_db;
+	ClauseDatabase& clause_db; 
     Trail& trail;
 
     /* Constant for reducing clause */
@@ -52,13 +51,8 @@ private:
 	    while (analyze_stack.size() > 0) {
 	        assert(trail.reason(analyze_stack.back()) != nullptr);
 
-	        Clause* clause = trail.reason(analyze_stack.back());
+	        const Clause* clause = trail.reason(analyze_stack.back());
 	        analyze_stack.pop_back();
-
-	        if (clause->size() == 2 && trail.value(clause->first()) == l_False) {
-	            assert(trail.value(clause->second()) == l_True);
-	            clause->swap(0, 1);
-	        }
 
 	        for (Lit imp : *clause) {
 	            Var v = var(imp);
@@ -131,7 +125,7 @@ private:
 	 *        rest of literals. There may be others from the same level though.
 	 *
 	 ***************************************************************************************************/
-	void analyze(Clause* confl) {
+	void analyze(const Clause* confl) {
 	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    stamp.clear();
 
@@ -139,22 +133,17 @@ private:
 	    auto trail_iterator = trail.rbegin();
 	    for(int pathC = 0; pathC > 0 || asserted_literal == lit_Undef; pathC--) {
 	        assert(confl != nullptr); // (otherwise should be UIP)
-            involved_clauses.push_back(confl);
+	        involved_clauses.push_back((Clause*)confl);
 
-	        if (asserted_literal != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
-	            assert(trail.value(confl->second()) == l_True);
-	            confl->swap(0, 1);
-	        }
-
-            assert(asserted_literal == lit_Undef || confl->first() == asserted_literal);
-	        for (auto it = (asserted_literal == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
-	            Var v = var(*it);
-	            if (!stamp[v] && trail.level(v) > 0) {
+	        for (Lit lit : *confl) {
+				assert((trail.value(lit) == l_True) == (lit == asserted_literal));
+				Var v = var(lit);
+				if (lit != asserted_literal && !stamp[v] && trail.level(v) > 0) {
 	                stamp.set(v);
 	                if (trail.level(v) >= (int)trail.decisionLevel()) {
 	                    pathC++;
 	                } else {
-	                    learnt_clause.push_back(*it);
+	                    learnt_clause.push_back(lit);
 	                }
 	            }
 	        }
@@ -171,17 +160,18 @@ private:
 
 	    learnt_clause[0] = ~asserted_literal;
 
+
 	    // Minimize conflict clause:
-	    minimization();
+		minimization();
 	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
 	        minimizationWithBinaryResolution();
 	    }
-
+		
 	    assert(learnt_clause[0] == ~asserted_literal);
 	}
 
 public:
-	ConflictAnalysis(ClauseDatabase& _clause_db, Trail& _trail) :
+	ConflictAnalysisThreadSafe(ClauseDatabase& _clause_db, Trail& _trail) :
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),
@@ -190,7 +180,7 @@ public:
 		lbSizeMinimizingClause(ClauseLearningOptions::opt_lb_size_minimzing_clause)
 	{ }
 
-	~ConflictAnalysis() { }
+	~ConflictAnalysisThreadSafe() { }
 
 	void grow() {
 		stamp.grow();
@@ -226,43 +216,40 @@ public:
 
 	/**************************************************************************************************
 	 *
-	 *  analyzeFinal : (p : Lit)  ->  [void]
+	 *  analyzeFinal : (p : Lit)  ->  std::vector<Lit>
 	 *
-	 *  Description:
-	 *    Specialized analysis procedure to express the final conflict in terms of assumptions.
-	 *    Calculates the (possibly empty) set of assumptions that led to the assignment of 'p', and
-	 *    stores the result in 'out_conflict'.
+	 *  Specialized analysis procedure to express the final conflict in terms of assumptions.
+	 *  Calculates and returns the set of assumptions that led to the assignment of 'p'.
+	 * 
 	 |*************************************************************************************************/
-	void analyzeFinal(Lit p) { 
+	std::vector<Lit>& analyzeFinal(Lit p) { 
 		learnt_clause.clear();
 	    learnt_clause.push_back(p);
 
-	    if (trail.decisionLevel() == 0)
-            return;
+	    if (trail.decisionLevel() > 0) {
+			stamp.clear();
+			stamp.set(var(p));
+			for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
+				Var x = var(trail[i]);
+				if (stamp[x]) {
+					if (trail.reason(x) == nullptr) {
+						assert(trail.level(x) > 0);
+						learnt_clause.push_back(~trail[i]);
+					} else {
+						const Clause* c = trail.reason(x);
+						for (Lit lit : *c) {
+							if (trail.level(var(lit)) > 0) {
+								stamp.set(var(lit));
+							}
+						}
+					}
+					stamp.unset(x);
+				}
+			}
+			stamp.unset(var(p));
+		}
 
-	    stamp.clear();
-	    stamp.set(var(p));
-
-	    for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
-	        Var x = var(trail[i]);
-	        if (stamp[x]) {
-	            if (trail.reason(x) == nullptr) {
-	                assert(trail.level(x) > 0);
-	                learnt_clause.push_back(~trail[i]);
-	            } else {
-	                const Clause* c = trail.reason(x);
-	                for (Lit lit : *c) {
-	                    if (trail.level(var(lit)) > 0) {
-	                        stamp.set(var(lit));
-	                    }
-	                }
-	            }
-	            stamp.unset(x);
-	        }
-	    }
-	    stamp.unset(var(p));
-
-		clause_db.setLearntClause(learnt_clause);
+		return learnt_clause;
 	}
 
 };

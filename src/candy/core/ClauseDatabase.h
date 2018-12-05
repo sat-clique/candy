@@ -19,23 +19,8 @@ struct AnalysisResult {
 	uint64_t nConflicts;
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
-
 	unsigned int lbd;
     unsigned int backtrack_level;
-
-	void clear() {
-		learnt_clause.clear();
-		involved_clauses.clear();
-        lbd = 0;
-        backtrack_level = 0;
-	}
-
-    void setLearntClause(std::vector<Lit>& learnt_clause_) {
-        learnt_clause.swap(learnt_clause_);
-        involved_clauses.clear();
-        lbd = 0;
-        backtrack_level = 0;
-    }
 
     void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
         nConflicts++;
@@ -194,10 +179,6 @@ public:
             variableOccurrences.init(nVars+1);
             binaryWatchers.resize(nVars*2+2);
         }
-    }
-
-    void setLearntClause(std::vector<Lit>& learnt_clause_) {
-        result.setLearntClause(learnt_clause_);
     }
 
     void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {

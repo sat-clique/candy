@@ -144,7 +144,7 @@ public:
     inline Lit pickBranchLit() {
         Var next = var_Undef;
 
-        // Activity based decision:
+        // Weight based decision:
         while (next == var_Undef || trail.value(next) != l_Undef || !decision[next]) {
             if (order_heap.empty()) {
                 next = var_Undef;

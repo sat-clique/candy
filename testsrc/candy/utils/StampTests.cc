@@ -8,7 +8,7 @@
 
 #include "candy/testutils/TestUtils.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Stamp.h"
+#include "candy/mtl/Stamp.h"
 
 using namespace Candy;
 using namespace Glucose;
