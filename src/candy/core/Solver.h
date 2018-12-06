@@ -573,29 +573,30 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::st
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
-    for (const Clause* clause : clause_db) if (!clause->isDeleted()) {
-        vector<Lit> copy(clause->begin(), clause->end());
+    vector<Lit> literals;
 
-        for (Lit lit : copy) {        
-            if (trail.value(lit) == l_False) {
-                if (clause->size() == copy.size()) { // first match
-                    propagator.detachClause(clause);
-                }
-                clause_db.strengthenClause((Clause*)clause, lit);
+    for (const Clause* clause : clause_db) if (!clause->isDeleted()) {
+        literals.clear();
+
+        for (Lit lit : *clause) {        
+            if (trail.value(lit) != l_False) {
+                literals.push_back(lit);
             }
         }
+        
+        if (literals.size() < clause->size()) {
+            propagator.detachClause(clause);
+            clause_db.removeClause((Clause*)clause);
 
-        if (clause->size() < copy.size()) {
-            assert(clause->size() > 0);
+            certificate.added(literals.begin(), literals.end());
+            certificate.removed(clause->begin(), clause->end());
 
-            certificate.added(clause->begin(), clause->end());
-            certificate.removed(copy.begin(), copy.end());
-
-            if (clause->size() == 1) {
-                trail.newFact(clause->first());
+            if (literals.size() == 1) {
+                trail.newFact(literals.front());
             }
             else {
-                propagator.attachClause((Clause*)clause);
+                Clause* new_clause = clause_db.createClause(literals, clause->getLBD());
+                propagator.attachClause(new_clause);
             }
         }
     }

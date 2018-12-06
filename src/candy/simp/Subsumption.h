@@ -132,8 +132,8 @@ template <class TPropagate> bool Subsumption<TPropagate>::strengthenClause(Claus
 
     reduced_literals.push_back(l);
     propagator.detachClause(clause);
-    certificate.added(((const Clause*)clause)->begin(), ((const Clause*)clause)->end());
     clause_db.strengthenClause(clause, l);
+    certificate.added(((const Clause*)clause)->begin(), ((const Clause*)clause)->end());
     
     if (clause->size() == 1) {
         reduced_literals.push_back(clause->first());
