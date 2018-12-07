@@ -575,7 +575,13 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::st
 
     vector<Lit> literals;
 
-    for (const Clause* clause : clause_db) if (!clause->isDeleted()) {
+    for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
+        const Clause* clause = clause_db[i];
+
+        if (clause->isDeleted()) {
+            continue;
+        }
+
         literals.clear();
 
         for (Lit lit : *clause) {        
