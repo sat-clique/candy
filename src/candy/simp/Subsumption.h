@@ -34,7 +34,6 @@ public:
         reduced_literals(),
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         subsumption_queue(),
-        subsumption_queue_contains(),
         abstraction(),
         bwdsub_assigns(0)
     {}
@@ -44,21 +43,12 @@ public:
     uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
     std::deque<Clause*> subsumption_queue;
-    std::unordered_map<Clause*, char> subsumption_queue_contains;
     std::unordered_map<const Clause*, uint64_t> abstraction;
     uint32_t bwdsub_assigns;
-
-    void subsumptionQueueProtectedPush(Clause* clause) {
-        if (!subsumption_queue_contains[clause]) {
-            subsumption_queue.push_back(clause);
-            subsumption_queue_contains[clause] = true;
-        }
-    }
 
     Clause* subsumptionQueueProtectedPop() {
         Clause* clause = subsumption_queue.front();
         subsumption_queue.pop_front();
-        subsumption_queue_contains[clause] = false;
         return clause;
     }
 
@@ -70,9 +60,9 @@ public:
         for (unsigned int i = 0; i < touched.size(); i++) {
             if (touched[i]) {
                 const std::vector<Clause*>& cs = clause_db.getOccurenceList(i);
-                for (Clause* c : cs) {
-                    if (!c->isDeleted()) {
-                        subsumptionQueueProtectedPush(c);
+                for (Clause* clause : cs) {
+                    if (!clause->isDeleted()) {
+                        subsumption_queue.push_back(clause);
                     }
                 }
             }
@@ -93,7 +83,6 @@ public:
 
     void attach(Clause* clause) {
         subsumption_queue.push_back(clause);
-        subsumption_queue_contains[clause] = true;
         calcAbstraction(clause);
     }
 
@@ -120,28 +109,31 @@ public:
         abstraction[clause] = clause_abstraction;
     }
 
-    bool strengthenClause(Clause* cr, Lit l);
+    bool strengthenClause(const Clause* cr, Lit l);
     bool backwardSubsumptionCheck();
 
 };
 
-template <class TPropagate> bool Subsumption<TPropagate>::strengthenClause(Clause* clause, Lit l) { 
+template <class TPropagate> bool Subsumption<TPropagate>::strengthenClause(const Clause* clause, Lit l) { 
     assert(trail.decisionLevel() == 0);
+    assert(!clause->isDeleted());
     
-    subsumptionQueueProtectedPush(clause);
-
     reduced_literals.push_back(l);
     propagator.detachClause(clause);
-    clause_db.strengthenClause(clause, l);
-    certificate.added(((const Clause*)clause)->begin(), ((const Clause*)clause)->end());
+    clause_db.removeClause((Clause*)clause);
+
+    std::vector<Lit> lits = clause->except(l);
+
+    certificate.added(lits.begin(), lits.end());    
     
-    if (clause->size() == 1) {
-        reduced_literals.push_back(clause->first());
-        return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
+    if (lits.size() == 1) {
+        reduced_literals.push_back(lits.front());
+        return trail.newFact(lits.front()) && propagator.propagate() == nullptr;
     }
     else {
-        propagator.attachClause(clause);
-        calcAbstraction(clause);
+        Clause* new_clause = clause_db.createClause(lits);
+        propagator.attachClause(new_clause);
+        attach(new_clause);
         return true;
     }
 }
@@ -156,8 +148,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         if (subsumption_queue.size() == 0 && bwdsub_assigns < trail.size()) {
             Lit l = trail[bwdsub_assigns++];
             bwdsub_tmpunit = Clause({l});
-            abstraction[&bwdsub_tmpunit] = 1ull << (var(l) % 64);
-            subsumption_queue.push_back(&bwdsub_tmpunit);
+            attach(&bwdsub_tmpunit);
         }
 
         const Clause* clause = subsumptionQueueProtectedPop();
@@ -175,33 +166,43 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
         // Search all candidates:
         const std::vector<Clause*>& cs = clause_db.getOccurenceList(best);
-        for (unsigned int i = 0; i < cs.size(); i++) {
+        for (unsigned int i = 0; i < cs.size(); i++) { // size might grow and that is ok
             const Clause* csi = cs[i];
+            if (csi->isDeleted()) {
+                continue;
+            }
             if (csi != clause && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
                 if ((abstraction[clause] & ~abstraction[csi]) != 0) continue;
 
                 Lit l = clause->subsumes(*csi);
 
-                if (l == lit_Undef) {
-                    Statistics::getInstance().solverSubsumedInc();
-                    certificate.removed(csi->begin(), csi->end());
+                if (l != lit_Error) {
+                    if (l == lit_Undef) { // remove:
+                        Statistics::getInstance().solverSubsumedInc();
+                        reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
+                    }
+                    else { // strengthen:
+                        Statistics::getInstance().solverDeletedInc();
+                        std::vector<Lit> lits = csi->except(l);
+                        certificate.added(lits.begin(), lits.end());
+                        
+                        if (lits.size() == 1) {
+                            reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
+                            if (!trail.newFact(lits.front()) || propagator.propagate() != nullptr) {
+                                return false;
+                            }
+                        }
+                        else {
+                            reduced_literals.push_back(l);
+                            Clause* new_clause = clause_db.createClause(lits);
+                            propagator.attachClause(new_clause);
+                            attach(new_clause);
+                        }
+                    }
+
                     propagator.detachClause(csi);
-                    if (trail.locked(csi)) {
-                        trail.vardata[var(csi->first())].reason = nullptr;
-                    }
                     clause_db.removeClause((Clause*)csi);
-                    reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
-                }
-                else if (l != lit_Error) {
-                    Statistics::getInstance().solverDeletedInc();
-                    // this might modifiy occurs ...
-                    if (!strengthenClause((Clause*)csi, ~l)) {
-                        return false;
-                    }
-                    // ... occurs modified, so check candidate at index i again:
-                    if (var(l) == best) {
-                        i--;
-                    }
+                    certificate.removed(csi->begin(), csi->end());
                 }
             }
         }

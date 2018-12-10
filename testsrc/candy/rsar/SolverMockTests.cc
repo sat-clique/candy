@@ -45,7 +45,7 @@ namespace Candy {
         
         underTest.addClauses(problem);
         underTest.addClause(Cl{mkLit(var1,0)});
-        underTest.simplify();
+        underTest.eliminate();
         underTest.addClause(Cl{mkLit(var2,0)});
         underTest.solve();
         
@@ -70,7 +70,7 @@ namespace Candy {
         
         underTest.solve();
         ++callN;
-        underTest.simplify();
+        underTest.eliminate();
         underTest.solve();
         ++callN;
         underTest.addClause({});
@@ -90,10 +90,10 @@ namespace Candy {
             ++numCallbackInvocs;
         });
         
-        underTest.simplify();
+        underTest.eliminate();
         ++callN;
         underTest.solve();
-        underTest.simplify();
+        underTest.eliminate();
         ++callN;
         
         EXPECT_EQ(numCallbackInvocs, 2);

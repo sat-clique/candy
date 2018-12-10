@@ -261,43 +261,50 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     bool was_frozen = frozen[v];
     frozen.set(v);
     
-    std::vector<Clause*> clauses = this->clause_db.getOccurenceList(v);
+    const std::vector<Clause*>& clauses = this->clause_db.getOccurenceList(v);
     
     if (this->trail.isAssigned(v) || clauses.size() == 0) {
         return true;
     }
     
-    for (Clause* clause : clauses) {
+    for (size_t i = 0, size = clauses.size(); i < size; i++) {
+        const Clause* clause = clauses[i];
         if (!clause->isDeleted() && !this->trail.satisfies(*clause)) {
-            const Clause* cclause = clause;
+            this->trail.newDecisionLevel();
             Lit l = lit_Undef;
-            this->trail.trail_lim.push_back(this->trail.size());
-            for (Lit lit : *cclause) {
+            for (Lit lit : *clause) {
                 if (var(lit) != v && !this->trail.isAssigned(var(lit))) {
                     this->trail.uncheckedEnqueue(~lit);
-                }
-                else {
+                } else {
                     l = lit;
                 }
             }
-            
+            bool asymm = this->propagator.propagate() != nullptr;
+            this->trail.cancelUntil(0);
             assert(l != lit_Undef);
-            if (this->propagator.propagate() != nullptr) {
-                this->trail.cancelUntil(0);
-                if (!subsumption.strengthenClause(clause, l)) {
-                    return false;
+            if (asymm) { // strengthen:
+                elimDetach(l);
+                this->propagator.detachClause(clause);
+                this->clause_db.removeClause((Clause*)clause);
+
+                std::vector<Lit> lits = clause->except(l);
+                this->certificate.added(lits.begin(), lits.end());
+                this->certificate.removed(clause->begin(), clause->end());
+                
+                if (lits.size() == 1) {
+                    elimDetach(lits.front());
+                    if (!this->trail.newFact(lits.front()) || this->propagator.propagate() != nullptr) {
+                        return false;
+                    }
                 }
-            } 
-            else {
-                this->trail.cancelUntil(0);
+                else {
+                    Clause* new_clause = this->clause_db.createClause(lits);
+                    this->propagator.attachClause(new_clause);
+                    subsumption.attach(new_clause);
+                }
             }
         }
     }
-
-    for (Lit lit : subsumption.reduced_literals) {
-        elimDetach(lit);
-    }
-    subsumption.reduced_literals.clear();
 
     if (!was_frozen) frozen.unset(v);
     

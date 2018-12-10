@@ -183,24 +183,6 @@ public:
         }
     }
 
-    void strengthenClause(Clause* clause, Lit lit) {
-        // std::cout << "Strengthening literal " << lit << " in clause " << *clause;
-
-        if (clause->size() == 2) {
-            removeClause(clause); 
-        }
-        else if (track_literal_occurrence) {
-            variableOccurrences.remove(var(lit), clause);
-        }
-
-        clause->strengthen(lit);
-
-        if (clause->size() == 2) {
-            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
-        }
-    }
-
     inline const std::vector<Clause*>& getOccurenceList(Var v) {
         return variableOccurrences.lookup(v);
     }
