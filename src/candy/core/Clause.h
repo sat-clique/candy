@@ -80,11 +80,6 @@ private:
         return activity_;
     }
 
-    inline void strengthen(Lit p) {
-        std::remove(begin(), end(), p);
-        --length;
-    }
-
     friend class ClauseDatabase;
     friend class Propagate;
     friend class ConflictAnalysis;
@@ -180,6 +175,12 @@ public:
 
     inline float getActivity() const {
         return activity_;
+    }
+
+    inline std::vector<Lit> except(Lit lit) const {
+        std::vector<Lit> literals;
+        for (Lit literal : *this) if (literal != lit) literals.push_back(literal);
+        return literals;
     }
 
     /**

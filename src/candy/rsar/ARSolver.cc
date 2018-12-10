@@ -245,9 +245,7 @@ namespace Candy {
             for (auto&& clause : delta.getNewClauses()) {
                 assumptions.push_back(activatedAssumptionLit(var(getAssumptionLit(clause))));
             }
-            simplify();
-            strengthen();
-            eliminate(); // <- this is the fish
+            eliminate();
         }
         
         if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
@@ -313,7 +311,7 @@ namespace Candy {
         // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
         // approximation computation system.
         if (m_simpHandlingMode == SimplificationHandlingMode::FULL) {
-            simplify();
+            eliminate();
             reduceConjectures();
         }
         
@@ -350,6 +348,7 @@ namespace Candy {
         }
         
         init();
+        m_solver->disablePreprocessing();
         
         lbool sat = l_False;
         bool abort = false;
