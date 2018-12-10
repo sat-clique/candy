@@ -431,6 +431,11 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
             if (this->isInConflictingState() || this->asynch_interrupt) {
                 break;
             }
+
+            this->propagator.detachAll();
+            this->clause_db.cleanup();
+            this->clause_db.defrag();
+            this->propagator.attachAll();
         }
     }
 
@@ -446,3 +451,4 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 }
 
 #endif
+
