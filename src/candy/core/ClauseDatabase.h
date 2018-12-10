@@ -172,7 +172,11 @@ public:
         clause->setDeleted();
 
         if (track_literal_occurrence) {
-            for (Lit lit : *clause) variableOccurrences.smudge(var(lit));
+            for (Lit lit : *clause) {
+                //variableOccurrences.smudge(var(lit));
+                auto& list = variableOccurrences[var(lit)];
+                list.erase(std::remove_if(list.begin(), list.end(), [clause](Clause* c){ return clause == c; }), list.end());
+            }
         }
 
         if (clause->size() == 2) {

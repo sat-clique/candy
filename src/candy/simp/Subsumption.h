@@ -46,12 +46,6 @@ public:
     std::unordered_map<const Clause*, uint64_t> abstraction;
     uint32_t bwdsub_assigns;
 
-    Clause* subsumptionQueueProtectedPop() {
-        Clause* clause = subsumption_queue.front();
-        subsumption_queue.pop_front();
-        return clause;
-    }
-
     void gatherTouchedClauses() {
         if (n_touched == 0) {
             return;
@@ -109,34 +103,9 @@ public:
         abstraction[clause] = clause_abstraction;
     }
 
-    bool strengthenClause(const Clause* cr, Lit l);
     bool backwardSubsumptionCheck();
 
 };
-
-template <class TPropagate> bool Subsumption<TPropagate>::strengthenClause(const Clause* clause, Lit l) { 
-    assert(trail.decisionLevel() == 0);
-    assert(!clause->isDeleted());
-    
-    reduced_literals.push_back(l);
-    propagator.detachClause(clause);
-    clause_db.removeClause((Clause*)clause);
-
-    std::vector<Lit> lits = clause->except(l);
-
-    certificate.added(lits.begin(), lits.end());    
-    
-    if (lits.size() == 1) {
-        reduced_literals.push_back(lits.front());
-        return trail.newFact(lits.front()) && propagator.propagate() == nullptr;
-    }
-    else {
-        Clause* new_clause = clause_db.createClause(lits);
-        propagator.attachClause(new_clause);
-        attach(new_clause);
-        return true;
-    }
-}
 
 template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionCheck() {
     assert(trail.decisionLevel() == 0);
@@ -151,7 +120,8 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
             attach(&bwdsub_tmpunit);
         }
 
-        const Clause* clause = subsumptionQueueProtectedPop();
+        const Clause* clause = subsumption_queue.front();
+        subsumption_queue.pop_front();
         
         if (clause->isDeleted()) {
             continue;

@@ -270,9 +270,7 @@ public:
 	}
 
 	std::vector<Elem>& lookup(const Idx& idx) {
-		if (dirty[toInt(idx)]) {
-			clean(idx);
-		}
+		clean(idx);
 		return occs[toInt(idx)];
 	}
 
@@ -299,10 +297,13 @@ public:
 	}
 
 	void clean(const Idx& idx) {
-		std::vector<Elem>& vec = occs[toInt(idx)];
-		auto end = std::remove_if(vec.begin(), vec.end(), [this](Elem e) {return deleted(e);});
-		vec.erase(end, vec.end());
-		dirty[toInt(idx)] = false;
+		if (dirty[toInt(idx)]) {
+			std::vector<Elem>& vec = occs[toInt(idx)];
+			auto end = std::remove_if(vec.begin(), vec.end(), [this](Elem e) {return deleted(e);});
+			vec.erase(end, vec.end());
+			// vec.shrink_to_fit();
+			dirty[toInt(idx)] = false;
+		}
 	}
 
 	void clear() {
