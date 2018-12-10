@@ -393,14 +393,8 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                     bool was_eliminated = elimination.eliminateVar(elim);
 
                     if (was_eliminated) {
-                        for (const Cl& resolvent : elimination.resolvents) {
-                            this->certificate.added(resolvent.begin(), resolvent.end());
-                        }
-                        for (const Clause* c : elimination.resolved) {
-                            this->certificate.removed(c->begin(), c->end());
-                        }
-
                         for (Cl& resolvent : elimination.resolvents) {
+                            this->certificate.added(resolvent.begin(), resolvent.end());
                             if (resolvent.size() == 0) {
                                 this->ok = false;
                             }
@@ -415,10 +409,11 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                             }
                         }
 
-                        for (Clause* c : elimination.resolved) {
-                            this->clause_db.removeClause(c);
-                            elimDetach(c);
+                        for (const Clause* c : elimination.resolved) {
+                            this->certificate.removed(c->begin(), c->end());
                             this->propagator.detachClause(c);
+                            this->clause_db.removeClause((Clause*)c);
+                            elimDetach(c);
                         }
 
                         this->clause_db.cleanup();
