@@ -20,6 +20,8 @@ private:
     TPropagate& propagator;
     Certificate& certificate;
 
+    const uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
+
     Stamp<uint8_t> touched;
     uint32_t n_touched;
 
@@ -29,18 +31,16 @@ public:
         trail(trail_),
         propagator(propagator_),
         certificate(certificate_),
+        subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         touched(),
         n_touched(0),
         reduced_literals(),
-        subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         subsumption_queue(),
         abstraction(),
         bwdsub_assigns(0)
     {}
 
     std::vector<Lit> reduced_literals;
-
-    uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
     std::deque<Clause*> subsumption_queue;
     std::unordered_map<const Clause*, uint64_t> abstraction;
@@ -122,7 +122,9 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
         const Clause* clause = subsumption_queue.front();
         subsumption_queue.pop_front();
-        
+        const uint64_t abstr = abstraction[clause];
+        abstraction.erase(clause);
+
         if (clause->isDeleted()) {
             continue;
         }
@@ -142,7 +144,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                 continue;
             }
             if (csi != clause && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
-                if ((abstraction[clause] & ~abstraction[csi]) != 0) continue;
+                if ((abstr & ~abstraction[csi]) != 0) continue;
 
                 Lit l = clause->subsumes(*csi);
 
