@@ -35,29 +35,31 @@ public:
         touched(),
         n_touched(0),
         reduced_literals(),
-        subsumption_queue(),
-        abstraction(),
+        queue(),
+        abstractions(),
         bwdsub_assigns(0)
     {}
 
     std::vector<Lit> reduced_literals;
 
-    std::deque<Clause*> subsumption_queue;
-    std::unordered_map<const Clause*, uint64_t> abstraction;
+    std::deque<const Clause*> queue;
+    std::unordered_map<const Clause*, uint64_t> abstractions;
+
     uint32_t bwdsub_assigns;
 
     void gatherTouchedClauses() {
         if (n_touched == 0) {
             return;
         }
-        
+
+        queue.clear();
+        abstractions.clear();
+
         for (unsigned int i = 0; i < touched.size(); i++) {
             if (touched[i]) {
                 const std::vector<Clause*>& cs = clause_db.getOccurenceList(i);
                 for (Clause* clause : cs) {
-                    if (!clause->isDeleted()) {
-                        attach(clause);
-                    }
+                    attach(clause);
                 }
             }
         }
@@ -75,32 +77,30 @@ public:
         return n_touched > 0;
     }
 
-    void attach(Clause* clause) {
-        subsumption_queue.push_back(clause);
-        calcAbstraction(clause);
+    void attach(const Clause* clause) {
+        if (abstractions.count(clause) == 0 && !clause->isDeleted() && clause_db.isPersistent(clause)) {
+            uint64_t abstraction = 0;
+            for (Lit lit : *clause) {
+                abstraction |= 1ull << (var(lit) % 64);
+            }
+            queue.push_back(clause);
+            abstractions[clause] = abstraction;
+        }
     }
 
     void init(size_t nVars) {
+        clear();
         touched.grow(nVars);
-        touched.clear();
         for (Clause* clause : clause_db) {
             attach(clause);
         }
     }
 
     void clear() {
+        queue.clear();
+        abstractions.clear();
         touched.clear();
         n_touched = 0;
-        subsumption_queue.clear();
-        abstraction.clear();
-    }
-
-    void calcAbstraction(const Clause* clause) {
-        uint64_t clause_abstraction = 0;
-        for (Lit lit : *clause) {
-            clause_abstraction |= 1ull << (var(lit) % 64);
-        }
-        abstraction[clause] = clause_abstraction;
     }
 
     bool backwardSubsumptionCheck();
@@ -112,19 +112,17 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
     Clause bwdsub_tmpunit({ lit_Undef });
     
-    while (subsumption_queue.size() > 0 || bwdsub_assigns < trail.size()) {
+    while (queue.size() > 0 || bwdsub_assigns < trail.size()) {
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
-        if (subsumption_queue.size() == 0 && bwdsub_assigns < trail.size()) {
+        if (queue.size() == 0 && bwdsub_assigns < trail.size()) {
             Lit l = trail[bwdsub_assigns++];
             bwdsub_tmpunit = Clause({l});
             attach(&bwdsub_tmpunit);
         }
 
-        const Clause* clause = subsumption_queue.front();
-        subsumption_queue.pop_front();
-        const uint64_t abstr = abstraction[clause];
-        abstraction.erase(clause);
-
+        const Clause* clause = queue.front();
+        queue.pop_front();
+        
         if (clause->isDeleted()) {
             continue;
         }
@@ -137,6 +135,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         }));
 
         // Search all candidates:
+        const uint64_t abstr = abstractions[clause];
         const std::vector<Clause*>& cs = clause_db.getOccurenceList(best);
         for (unsigned int i = 0; i < cs.size(); i++) { // size might grow and that is ok
             const Clause* csi = cs[i];
@@ -144,7 +143,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                 continue;
             }
             if (csi != clause && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
-                if ((abstr & ~abstraction[csi]) != 0) continue;
+                if ((abstr & ~abstractions[csi]) != 0) continue;
 
                 Lit l = clause->subsumes(*csi);
 
@@ -174,6 +173,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
                     propagator.detachClause(csi);
                     clause_db.removeClause((Clause*)csi);
+                    abstractions.erase(csi);
                     certificate.removed(csi->begin(), csi->end());
                 }
             }

@@ -360,7 +360,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 
     // only perform subsumption checks (inprocessing)
     if (!use_asymm && !use_elim) {
-        if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
+        if (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
             this->ok = subsumptionCheck();
         }
     }
@@ -369,7 +369,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
         while (subsumption.hasTouchedClauses() || subsumption.bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) {
             subsumption.gatherTouchedClauses();
             
-            if (subsumption.subsumption_queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
+            if (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
                 this->ok = subsumptionCheck();
             }
 
