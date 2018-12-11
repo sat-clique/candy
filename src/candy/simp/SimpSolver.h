@@ -307,8 +307,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     }
 
     if (!was_frozen) frozen.unset(v);
-    
-    return subsumptionCheck();
+    return true;
 }
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -331,8 +330,8 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     // include persistent learnt clauses
     this->clause_db.initOccurrenceTracking(this->nVars());
     subsumption.init(this->nVars());
-    for (const Clause* c : this->clause_db) {
-        elimAttach(c);
+    for (const Clause* clause : this->clause_db) if (!this->clause_db.isPersistent(clause)) {
+        elimAttach(clause);
     }
 
     if (full) {
@@ -348,14 +347,10 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     frozen.clear();
     n_occ.clear();
     elim_heap.clear();
-
-    this->clause_db.stopOccurrenceTracking();
-
     subsumption.clear();
-
-    // force full cleanup
     this->branch.notify_restarted(); // former rebuildOrderHeap
     this->clause_db.cleanup();
+    this->clause_db.stopOccurrenceTracking();
 }
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -387,6 +382,9 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 
                 if (use_asymm && !this->isInConflictingState()) {
                     this->ok = asymmVar(elim);
+                    if (!this->isInConflictingState()) {
+                        this->ok = subsumptionCheck();
+                    }
                 }
 
                 if (use_elim && !this->isInConflictingState() && !this->trail.isAssigned(elim) && !frozen[elim]) {

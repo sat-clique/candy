@@ -72,7 +72,8 @@ private:
     double cla_inc; // Amount to bump next clause with.
     double clause_decay;
 
-    uint_fast8_t persistentLBD;
+    const unsigned int persistentLBD;
+
     bool track_literal_occurrence;
     
     OccLists<Var, Clause*, ClauseDeleted> variableOccurrences;
@@ -100,6 +101,11 @@ public:
     void stopOccurrenceTracking();
 
     void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses);
+
+    bool isPersistent(const Clause* clause) const {
+        return !clause->isLearnt() || clause->getLBD() < persistentLBD;
+    }
+
 
     typedef std::vector<Clause*>::iterator iterator;
     typedef std::vector<Clause*>::const_iterator const_iterator;
