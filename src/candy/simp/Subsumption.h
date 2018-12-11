@@ -56,7 +56,7 @@ public:
                 const std::vector<Clause*>& cs = clause_db.getOccurenceList(i);
                 for (Clause* clause : cs) {
                     if (!clause->isDeleted()) {
-                        subsumption_queue.push_back(clause);
+                        attach(clause);
                     }
                 }
             }
