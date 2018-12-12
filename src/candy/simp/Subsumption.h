@@ -22,9 +22,6 @@ private:
 
     const uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
-    Stamp<uint8_t> touched;
-    uint32_t n_touched;
-
 public:         
     Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
         clause_db(clause_db_),
@@ -32,49 +29,20 @@ public:
         propagator(propagator_),
         certificate(certificate_),
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
-        touched(),
-        n_touched(0),
-        reduced_literals(),
         queue(),
         abstractions(),
         bwdsub_assigns(0)
     {}
-
-    std::vector<Lit> reduced_literals;
 
     std::deque<const Clause*> queue;
     std::unordered_map<const Clause*, uint64_t> abstractions;
 
     uint32_t bwdsub_assigns;
 
-    void gatherTouchedClauses() {
-        if (n_touched == 0) {
-            return;
+    void attachOccurences(Var v) {
+        for (const Clause* clause : clause_db.refOccurences(v)) {
+            attach(clause);
         }
-
-        queue.clear();
-        abstractions.clear();
-
-        for (unsigned int i = 0; i < touched.size(); i++) {
-            if (touched[i]) {
-                const std::vector<Clause*>& cs = clause_db.getOccurenceList(i);
-                for (Clause* clause : cs) {
-                    attach(clause);
-                }
-            }
-        }
-
-        touched.clear();
-        n_touched = 0;
-    }
-
-    inline void touch(Var v) {
-        n_touched++;
-        touched.set(v);
-    }
-
-    inline bool hasTouchedClauses() {
-        return n_touched > 0;
     }
 
     void attach(const Clause* clause) {
@@ -88,19 +56,9 @@ public:
         }
     }
 
-    void init(size_t nVars) {
-        clear();
-        touched.grow(nVars);
-        for (Clause* clause : clause_db) {
-            attach(clause);
-        }
-    }
-
     void clear() {
         queue.clear();
         abstractions.clear();
-        touched.clear();
-        n_touched = 0;
     }
 
     bool backwardSubsumptionCheck();
@@ -111,6 +69,8 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
     assert(trail.decisionLevel() == 0);
 
     Clause bwdsub_tmpunit({ lit_Undef });
+
+    sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { return c1->size() < c2->size(); });
     
     while (queue.size() > 0 || bwdsub_assigns < trail.size()) {
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
@@ -132,50 +92,46 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         
         // Find best variable to scan:
         Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
-            return clause_db.getOccurenceList(var(l1)).size() < clause_db.getOccurenceList(var(l2)).size();
+            return clause_db.numOccurences(var(l1)) < clause_db.numOccurences(var(l2));
         }));
 
         // Search all candidates:
         const uint64_t abstr = abstractions[clause];
-        const std::vector<Clause*>& cs = clause_db.getOccurenceList(best);
-        for (unsigned int i = 0; i < cs.size(); i++) { // size might grow and that is ok
-            const Clause* csi = cs[i];
-            if (csi->isDeleted()) {
+        const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
+        for (const Clause* occurence : occurences) { // size might grow and that is ok
+            if (occurence->isDeleted()) {
                 continue;
             }
-            if (csi != clause && (subsumption_lim == 0 || csi->size() < subsumption_lim)) {
-                if ((abstr & ~abstractions[csi]) != 0) continue;
+            if (occurence != clause && (subsumption_lim == 0 || occurence->size() < subsumption_lim)) {
+                if ((abstr & ~abstractions[occurence]) != 0) continue;
 
-                Lit l = clause->subsumes(*csi);
+                Lit l = clause->subsumes(*occurence);
 
                 if (l != lit_Error) {
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
-                        reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();
-                        std::vector<Lit> lits = csi->except(l);
+                        std::vector<Lit> lits = occurence->except(l);
                         certificate.added(lits.begin(), lits.end());
                         
                         if (lits.size() == 1) {
-                            reduced_literals.insert(reduced_literals.end(), csi->begin(), csi->end());
                             if (!trail.newFact(lits.front()) || propagator.propagate() != nullptr) {
                                 return false;
                             }
                         }
                         else {
-                            reduced_literals.push_back(l);
                             Clause* new_clause = clause_db.createClause(lits);
                             propagator.attachClause(new_clause);
                             attach(new_clause);
                         }
                     }
 
-                    propagator.detachClause(csi);
-                    clause_db.removeClause((Clause*)csi);
-                    abstractions.erase(csi);
-                    certificate.removed(csi->begin(), csi->end());
+                    propagator.detachClause(occurence);
+                    clause_db.removeClause((Clause*)occurence);
+                    abstractions.erase(occurence);
+                    certificate.removed(occurence->begin(), occurence->end());
                 }
             }
         }
