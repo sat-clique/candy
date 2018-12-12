@@ -107,21 +107,11 @@ public:
     bool use_elim;          // Perform variable elimination.
 
 protected:
-    // Helper structures:
-    struct ElimLt {
-        const vector<unsigned int>& occurence_count;
-        explicit ElimLt(const std::vector<unsigned int>& n_occ) : occurence_count(n_occ) { } 
-
-        bool operator()(Var x, Var y) const {
-            return occurence_count[x] < occurence_count[y];
-        }
-    };
-
     // Solver state:
     std::vector<Var> variables;
     Stamp<uint8_t> frozen;
 
-    void setupEliminate(bool full);
+    void setupEliminate();
     void cleanupEliminate();
 
     bool asymmVar(Var v);
@@ -256,10 +246,9 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 }
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::setupEliminate(bool full) {
-    frozen.grow(this->nVars());
-
+void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::setupEliminate() {
     // freeze assumptions and other externally set frozen variables
+    frozen.grow(this->nVars());
     for (Lit lit : this->assumptions) {
         frozen.set(var(lit));
     }
@@ -289,8 +278,7 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::eliminate(bool use_asymm, bool use_elim) {
-    // prepare data-structures
-    setupEliminate(use_asymm || use_elim);
+    setupEliminate();
 
     while (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {   
         if (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
@@ -300,7 +288,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 
         if (use_asymm || use_elim) {
             for (unsigned int v = 0; v < this->nVars(); v++) {
-                variables.push_back(v);
+                if (!frozen[v]) variables.push_back(v);
             }
             std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
                 return this->clause_db.numOccurences(v1) > this->clause_db.numOccurences(v2);
@@ -318,7 +306,7 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                     was_eliminated = asymmVar(elim);
                 }
 
-                if (use_elim && !this->isInConflictingState() && !this->trail.isAssigned(elim) && !frozen[elim]) {
+                if (use_elim && !this->isInConflictingState() && !this->trail.isAssigned(elim)) {
                     was_eliminated = elimination.eliminateVar(elim);
 
                     if (was_eliminated) {
