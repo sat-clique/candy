@@ -109,66 +109,17 @@ public:
 protected:
     // Helper structures:
     struct ElimLt {
-        const vector<int>& n_occ;
-        explicit ElimLt(const std::vector<int>& no) : n_occ(no) { }
+        const vector<unsigned int>& occurence_count;
+        explicit ElimLt(const std::vector<unsigned int>& n_occ) : occurence_count(n_occ) { } 
 
-        uint64_t cost(Var x) const {
-            return (uint64_t) n_occ[toInt(mkLit(x))] * (uint64_t) n_occ[toInt(~mkLit(x))];
-        }
-
-        // TODO: investigate this order alternative more.
         bool operator()(Var x, Var y) const {
-            uint64_t c_x = cost(x);
-            uint64_t c_y = cost(y);
-            return c_x < c_y;// || c_x == c_y && x < y;
+            return occurence_count[x] < occurence_count[y];
         }
     };
 
     // Solver state:
-    std::vector<int> n_occ;
-    Glucose::Heap<ElimLt> elim_heap;
+    std::vector<Var> variables;
     Stamp<uint8_t> frozen;
-
-    inline bool subsumptionCheck() {
-        bool ret = subsumption.backwardSubsumptionCheck();
-
-        for (Lit lit : subsumption.reduced_literals) {
-            elimDetach(lit);
-        }
-        subsumption.reduced_literals.clear();
-
-        return ret;
-    }
-
-    inline void elimAttach(const Clause* cr) {
-    #ifndef NDEBUG
-        for (Lit lit : *cr) assert(!isEliminated(var(lit)));
-    #endif
-        if (n_occ.size() > 0) { // elim initialized
-            for (Lit lit : *cr) {
-                n_occ[toInt(lit)]++;
-                if (elim_heap.inHeap(var(lit))) {
-                    elim_heap.increase(var(lit));
-                }
-            }
-        }
-    }
-
-    inline void elimDetach(const Clause* cr) {
-        if (n_occ.size() > 0) for (Lit lit : *cr) {
-            elimDetach(lit);
-        }
-    }
-
-    inline void elimDetach(Lit lit) {
-        if (n_occ.size() > 0) { // elim initialized
-            n_occ[toInt(lit)]--;
-            if (elim_heap.inHeap(var(lit)) || (!frozen[var(lit)] && !isEliminated(var(lit)) && !this->trail.isAssigned(var(lit)))) {
-                elim_heap.update(var(lit));
-            }
-        }
-    }
-
 
     void setupEliminate(bool full);
     void cleanupEliminate();
@@ -188,7 +139,7 @@ SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Sim
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
-    elim_heap(ElimLt(n_occ)), 
+    variables(),
     frozen() {
 }
 
@@ -200,7 +151,7 @@ SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Sim
     use_asymm(SimpSolverOptions::opt_use_asymm),
     use_rcheck(SimpSolverOptions::opt_use_rcheck),
     use_elim(SimpSolverOptions::opt_use_elim),
-    elim_heap(ElimLt(n_occ)), 
+    variables(),
     frozen() {
 }
 
@@ -255,19 +206,13 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::asymmVar(Var v) {
     assert(this->trail.decisionLevel() == 0);
-
-    // Temporarily freeze variable. Otherwise, it would immediately end up on the queue again:
-    bool was_frozen = frozen[v];
-    frozen.set(v);
     
-    const std::vector<Clause*>& clauses = this->clause_db.getOccurenceList(v);
-    
-    if (this->trail.isAssigned(v) || clauses.size() == 0) {
-        return true;
+    if (this->trail.isAssigned(v) || this->clause_db.numOccurences(v) == 0) {
+        return false;
     }
     
-    for (size_t i = 0, size = clauses.size(); i < size; i++) {
-        const Clause* clause = clauses[i];
+    const std::vector<Clause*> occurences = this->clause_db.copyOccurences(v);
+    for (const Clause* clause : occurences) {
         if (!clause->isDeleted() && !this->trail.satisfies(*clause)) {
             this->trail.newDecisionLevel();
             Lit l = lit_Undef;
@@ -282,7 +227,6 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
             this->trail.cancelUntil(0);
             assert(l != lit_Undef);
             if (asymm) { // strengthen:
-                elimDetach(l);
                 this->propagator.detachClause(clause);
                 this->clause_db.removeClause((Clause*)clause);
 
@@ -291,22 +235,19 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                 this->certificate.removed(clause->begin(), clause->end());
                 
                 if (lits.size() == 1) {
-                    elimDetach(lits.front());
-                    if (!this->trail.newFact(lits.front()) || this->propagator.propagate() != nullptr) {
-                        return false;
-                    }
+                    this->ok = this->trail.newFact(lits.front()) && this->propagator.propagate() != nullptr;
                 }
                 else {
                     Clause* new_clause = this->clause_db.createClause(lits);
                     this->propagator.attachClause(new_clause);
                     subsumption.attach(new_clause);
-                }
+                } 
+                return true;
             }
         }
     }
 
-    if (!was_frozen) frozen.unset(v);
-    return true;
+    return false;
 }
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -328,15 +269,10 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 
     // include persistent learnt clauses
     this->clause_db.initOccurrenceTracking(this->nVars());
-    subsumption.init(this->nVars());
-    for (const Clause* clause : this->clause_db) if (this->clause_db.isPersistent(clause)) {
-        elimAttach(clause);
-    }
 
-    if (full) {
-        n_occ.resize(2 * this->nVars(), 0);
-        for (Var v = 0; v < static_cast<int>(this->nVars()); v++) {
-            elim_heap.insert(v);
+    for (const Clause* clause : this->clause_db) {
+        if (this->clause_db.isPersistent(clause)) {
+            subsumption.attach(clause); 
         }
     }
 }
@@ -344,8 +280,7 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::cleanupEliminate() {
     frozen.clear();
-    n_occ.clear();
-    elim_heap.clear();
+    variables.clear();
     subsumption.clear();
     this->branch.notify_restarted(); // former rebuildOrderHeap
     this->clause_db.cleanup();
@@ -357,37 +292,34 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     // prepare data-structures
     setupEliminate(use_asymm || use_elim);
 
-    // only perform subsumption checks (inprocessing)
-    if (!use_asymm && !use_elim) {
+    while (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {   
         if (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
-            this->ok = subsumptionCheck();
+            this->ok = subsumption.backwardSubsumptionCheck();
+            this->clause_db.cleanup();
         }
-    }
-    // either asymm or elim are true (preprocessing)
-    else {
-        while (subsumption.hasTouchedClauses() || subsumption.bwdsub_assigns < this->trail.size() || elim_heap.size() > 0) {
-            subsumption.gatherTouchedClauses();
-            
-            if (subsumption.queue.size() > 0 || subsumption.bwdsub_assigns < this->trail.size()) {
-                this->ok = subsumptionCheck();
-            }
 
-            while (!elim_heap.empty() && !this->isInConflictingState() && !this->asynch_interrupt) {
-                Var elim = elim_heap.removeMin();
+        if (use_asymm || use_elim) {
+            for (unsigned int v = 0; v < this->nVars(); v++) {
+                variables.push_back(v);
+            }
+            std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
+                return this->clause_db.numOccurences(v1) > this->clause_db.numOccurences(v2);
+            });
+            while (variables.size() > 0 && !this->isInConflictingState() && !this->asynch_interrupt) {
+                bool was_eliminated = false;
+                Var elim = variables.back();
+                variables.pop_back();
 
                 if (isEliminated(elim) || this->trail.isAssigned(elim)) {
                     continue;
                 }
 
                 if (use_asymm && !this->isInConflictingState()) {
-                    this->ok = asymmVar(elim);
-                    if (!this->isInConflictingState()) {
-                        this->ok = subsumptionCheck();
-                    }
+                    was_eliminated = asymmVar(elim);
                 }
 
                 if (use_elim && !this->isInConflictingState() && !this->trail.isAssigned(elim) && !frozen[elim]) {
-                    bool was_eliminated = elimination.eliminateVar(elim);
+                    was_eliminated = elimination.eliminateVar(elim);
 
                     if (was_eliminated) {
                         for (Cl& resolvent : elimination.resolvents) {
@@ -401,9 +333,10 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                             else {
                                 const Clause* clause = this->clause_db.createClause(resolvent);
                                 this->propagator.attachClause((Clause*)clause);
-                                elimAttach(clause);
                                 subsumption.attach(clause);
-                                for (Lit lit : *clause) subsumption.touch(var(lit));
+                                for (Lit lit : *clause) {
+                                    subsumption.attachOccurences(var(lit));
+                                }
                             }
                         }
 
@@ -411,35 +344,24 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                             this->certificate.removed(c->begin(), c->end());
                             this->propagator.detachClause(c);
                             this->clause_db.removeClause((Clause*)c);
-                            elimDetach(c);
                         }
-
-                        this->clause_db.cleanup();
                         this->branch.setDecisionVar(elim, false);
-                        
-                        if (this->isInConflictingState()) {
-                            return false;
-                        }
-                        
-                        this->ok = subsumptionCheck();
                     }
                 }
+                if (was_eliminated) {
+                    this->clause_db.cleanup();
+                }
             }
+        }
 
-            if (this->isInConflictingState() || this->asynch_interrupt) {
-                break;
-            }
-
-            this->propagator.detachAll();
-            this->clause_db.cleanup();
-            this->clause_db.defrag();
-            this->propagator.attachAll();
+        if (this->isInConflictingState() || this->asynch_interrupt) {
+            break;
         }
     }
 
     cleanupEliminate();
 
-    if (!this->ok) {
+    if (this->isInConflictingState()) {
         this->certificate.proof();
     }
     

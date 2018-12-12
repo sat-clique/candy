@@ -105,7 +105,7 @@ bool VariableElimination::eliminateVar(Var v) {
     resolvents.clear();
     resolved.clear();
 
-    const std::vector<Clause*>& occurences = clause_db.getOccurenceList(v);
+    const std::vector<Clause*>& occurences = clause_db.refOccurences(v);
 
     // split the occurrences into positive and negative:
     std::vector<Clause*> pos, neg;
@@ -123,7 +123,7 @@ bool VariableElimination::eliminateVar(Var v) {
         size_t clause_size = 0;
         if (merge(*pc, *nc, v, clause_size) && (++cnt > occurences.size() + grow || (clause_lim > 0 && clause_size > clause_lim))) {
             return false;
-        }
+        } 
     }
     
     if (pos.size() > neg.size()) {

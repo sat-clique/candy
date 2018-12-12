@@ -193,8 +193,18 @@ public:
         }
     }
 
-    inline const std::vector<Clause*>& getOccurenceList(Var v) {
-        return variableOccurrences.lookup(v);
+    inline const std::vector<Clause*>& refOccurences(Var v) {
+        const std::vector<Clause*>& ref = variableOccurrences.lookup(v);
+        return ref;
+    }
+
+    inline size_t numOccurences(Var v) {
+        return refOccurences(v).size();
+    }
+
+    inline std::vector<Clause*> copyOccurences(Var v) {
+        const std::vector<Clause*>& ref = refOccurences(v);
+        return std::vector<Clause*>(ref.begin(), ref.end());
     }
 
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
