@@ -117,6 +117,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         if (queue.size() == 0 && bwdsub_assigns < trail.size()) {
             Lit l = trail[bwdsub_assigns++];
             bwdsub_tmpunit = Clause({l});
+            abstractions.erase(&bwdsub_tmpunit);
             attach(&bwdsub_tmpunit);
         }
 

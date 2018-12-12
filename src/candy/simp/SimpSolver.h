@@ -147,7 +147,6 @@ protected:
         if (n_occ.size() > 0) { // elim initialized
             for (Lit lit : *cr) {
                 n_occ[toInt(lit)]++;
-                subsumption.touch(var(lit));
                 if (elim_heap.inHeap(var(lit))) {
                     elim_heap.increase(var(lit));
                 }
@@ -330,7 +329,7 @@ void SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
     // include persistent learnt clauses
     this->clause_db.initOccurrenceTracking(this->nVars());
     subsumption.init(this->nVars());
-    for (const Clause* clause : this->clause_db) if (!this->clause_db.isPersistent(clause)) {
+    for (const Clause* clause : this->clause_db) if (this->clause_db.isPersistent(clause)) {
         elimAttach(clause);
     }
 
@@ -400,10 +399,11 @@ bool SimpSolver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>
                                 this->ok = this->trail.newFact(resolvent.front());
                             }
                             else {
-                                Clause* clause = this->clause_db.createClause(resolvent);
-                                this->propagator.attachClause(clause);
+                                const Clause* clause = this->clause_db.createClause(resolvent);
+                                this->propagator.attachClause((Clause*)clause);
                                 elimAttach(clause);
                                 subsumption.attach(clause);
+                                for (Lit lit : *clause) subsumption.touch(var(lit));
                             }
                         }
 
