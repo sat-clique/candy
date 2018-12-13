@@ -67,7 +67,7 @@
 #include "candy/utils/MemUtils.h"
 #include "candy/core/branching/VSIDS.h"
 #include "candy/core/branching/LRB.h"
-#include "candy/simp/SimpSolver.h"
+#include "candy/core/Solver.h"
 #include "candy/minimizer/Minimizer.h"
 
 #include "candy/frontend/GateAnalyzerFrontend.h"
@@ -194,54 +194,6 @@ static void printProblemStatistics(CNFProblem& problem) {
 }
 
 /**
- * Runs the SAT solver, performing simplification if \p do_preprocess is true.
- */
-static lbool solve(CandySolverInterface* solver, int verbosity, bool do_preprocess) {
-    lbool result = l_Undef;
-
-    std::cout << "c Preprocessing: " << do_preprocess << std::endl;
-
-    if (solver->isInConflictingState()) {
-        if (verbosity > 0) {
-            printf("c =================================================================\n");
-            printf("c Solved by propagation\n");
-        }
-        result = l_False;
-    }
-    else if (do_preprocess) {
-        Statistics::getInstance().runtimeStart("Preprocessing");
-        //TODO: use global args in eleminate arguments
-        solver->eliminate(true, true);
-        solver->disablePreprocessing();
-        Statistics::getInstance().runtimeStop("Preprocessing");
-        Statistics::getInstance().printSimplificationStats();
-
-        if (solver->isInConflictingState()) {
-            result = l_False;
-        }
-        if (verbosity > 0) {
-            Statistics::getInstance().printRuntime("Preprocessing");
-            if (result == l_False) {
-                printf("c =================================================================\n");
-                printf("c Solved by simplification\n");
-            }
-        }
-    }
-
-    if (result == l_Undef) {
-        result = solver->solve();
-    }
-
-
-    if (verbosity > 0) {
-    	Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-        Statistics::getInstance().printRuntimes();
-    }
-
-    return result;
-}
-
-/**
  * Run Propagate and Simplify, then output the simplified CNF Problem
  */
 static lbool simplifyAndPrintProblem(CandySolverInterface* solver) {
@@ -315,7 +267,7 @@ int main(int argc, char** argv) {
         } 
         catch (UnsuitableProblemException& e) {
             std::cerr << "c Aborting: " << e.what() << std::endl;
-            solver = new SimpSolver<>();
+            solver = new Solver<>();
         }
     }
     else {
@@ -359,6 +311,10 @@ int main(int argc, char** argv) {
         solver->resetCertificate(args.opt_certified_file);
     }
 
+    if (!args.do_preprocess) {
+        solver->disablePreprocessing();
+    }
+
     solver->addClauses(problem);
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
@@ -372,15 +328,18 @@ int main(int argc, char** argv) {
 
 	    if (args.verb > 0) {
             printProblemStatistics(problem);
-	        Statistics::getInstance().printRuntime("Initialization");
-	        printf("c |                                                                                            |\n");
 	    }
 
-	    lbool result;
-
         installSignalHandlers(true, solver);
-	    result = solve(solver, args.verb, args.do_preprocess);
+
+        lbool result = solver->solve();
+        
         installSignalHandlers(false, solver);
+
+        if (args.verb > 0) {
+            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+            Statistics::getInstance().printRuntimes();
+        }
 
         if (result == l_True && args.do_minimize > 0) {
             Minimizer minimizer(problem, solver->getModel());

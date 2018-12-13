@@ -1,7 +1,7 @@
 /* Copyright(C) 2017, Markus Iser, Adapted IPASIR Interface for Candy Solver
  * (freely used parts of Armin Biere's adaption of Minisat from the examples in the IPASIR package) */
 
-#include "candy/simp/SimpSolver.h"
+#include "candy/core/Solver.h"
 #include "candy/core/SolverTypes.h"
 
 #include <vector>
@@ -11,7 +11,7 @@ using namespace Candy;
 
 class IPASIRCandy {
 
-    SimpSolver<> solver;
+    Solver<> solver;
 
     vector<Lit> assumptions;
     vector<Lit> clause;

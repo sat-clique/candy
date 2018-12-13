@@ -53,15 +53,11 @@ namespace SolverOptions {
     extern IntOption opt_inprocessing;
 }
 
-namespace SimpSolverOptions {
-    extern BoolOption opt_use_asymm;
-    extern BoolOption opt_use_rcheck;
-    extern BoolOption opt_use_elim;
-}
-
 namespace VariableEliminationOptions {
     extern IntOption opt_clause_lim;
     extern IntOption opt_grow; 
+    extern BoolOption opt_use_asymm;
+    extern BoolOption opt_use_elim;
 }
 
 namespace SubsumptionOptions {

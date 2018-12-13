@@ -102,11 +102,8 @@ namespace Candy {
         virtual void strengthen() override {
         	m_solver->strengthen(); // remove false literals from clauses
         }
-        virtual bool eliminate() override {
-        	return m_solver->eliminate();// Perform variable elimination based simplification.
-        }
-        virtual bool eliminate(bool use_asymm, bool use_elim) override {
-        	return m_solver->eliminate(use_asymm, use_elim);  // Perform variable elimination based simplification.
+        virtual void eliminate() override {
+        	m_solver->eliminate();// Perform variable elimination based simplification.
         }
         virtual bool isEliminated(Var v) const override {
         	return m_solver->isEliminated(v);
@@ -258,7 +255,7 @@ namespace Candy {
 
         /**
          * Sets the incremental SAT solver to be used. By default, a default-constructed
-         * instance of Glucose::SimpSolver is used.
+         * instance of Candy::Solver is used.
          * The solver must be in a state such that
          *  - no clauses have been added yet
          *  - it is possible to call solve(...) functions
@@ -283,7 +280,7 @@ namespace Candy {
          * SimplificationHandlingMode). The default is SimplificationHandlingMode::RESTRICT.
          *
          * Note: The FREEZE simplification handling mode is currently unavailable due to an ongoing
-         * refactoring of the simplification code in SimpSolver.
+         * refactoring of the simplification code in Solver.
          */
         virtual ARSolverBuilder& withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept = 0;
 

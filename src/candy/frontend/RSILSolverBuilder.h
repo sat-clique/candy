@@ -35,7 +35,7 @@
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/learning/ConflictAnalysis.h"
 
-#include <candy/simp/SimpSolver.h>
+#include <candy/core/Solver.h>
 #include <candy/rsil/BranchingHeuristics.h>
 #include <candy/gates/MiterDetector.h>
 #include <candy/utils/Runtime.h>

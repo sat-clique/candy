@@ -1,7 +1,7 @@
 #ifndef CANDY_BUILDER_H_
 #define CANDY_BUILDER_H_
 
-#include "candy/simp/SimpSolver.h"
+#include "candy/core/Solver.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/ClauseDatabase.h"
 #include "candy/core/Trail.h"
@@ -39,7 +39,7 @@ public:
     }
 
     CandySolverInterface* build() {
-        return new SimpSolver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, 
+        return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, 
             *new TPropagate(*database, *assignment), *new TLearning(*database, *assignment), *new TBranching(*database, *assignment));
     }
 

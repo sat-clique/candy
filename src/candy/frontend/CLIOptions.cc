@@ -52,15 +52,11 @@ namespace SolverOptions {
     IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
 }
 
-namespace SimpSolverOptions {
-    BoolOption opt_use_asymm("SIMP", "asymm", "Shrink clauses by asymmetric branching.", false);
-    BoolOption opt_use_rcheck("SIMP", "rcheck", "Check if a clause is already implied. (costly)", false);
-    BoolOption opt_use_elim("SIMP", "elim", "Perform variable elimination.", true);
-}
-
 namespace VariableEliminationOptions {
     IntOption opt_grow("VariableElimination", "grow", "Allow a variable elimination step to grow by a number of clauses.", 0);
     IntOption opt_clause_lim("VariableElimination", "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, IntRange(0, INT32_MAX));
+    BoolOption opt_use_asymm("SIMP", "asymm", "Shrink clauses by asymmetric branching.", false);
+    BoolOption opt_use_elim("SIMP", "elim", "Perform variable elimination.", true);
 }
 
 namespace SubsumptionOptions {

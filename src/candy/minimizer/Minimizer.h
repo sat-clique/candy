@@ -11,7 +11,7 @@
 #include <vector>
 #include <map>
 
-#include "candy/simp/SimpSolver.h"
+#include "candy/core/Solver.h"
 
 namespace Candy {
 

@@ -25,7 +25,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <candy/simp/SimpSolver.h>
+#include <candy/core/Solver.h>
 #include <candy/utils/FastRand.h>
 #include <candy/utils/MemUtils.h>
 #include <candy/rsar/ApproximationState.h>
@@ -58,14 +58,14 @@ namespace Candy {
     private:
         bool solve(const std::vector<Lit>& assumptions);
         
-        std::unique_ptr<SimpSolver<>> m_solver;
+        std::unique_ptr<Solver<>> m_solver;
         Var m_maxVar;
     };
 
     
     
     EquivalencyCheckerImpl::EquivalencyCheckerImpl()
-    : EquivalencyChecker(), m_solver(std::unique_ptr<SimpSolver<>>(new SimpSolver<>())), m_maxVar(0) {
+    : EquivalencyChecker(), m_solver(std::unique_ptr<Solver<>>(new Solver<>())), m_maxVar(0) {
         m_solver->disablePreprocessing();
         m_solver->setIncrementalMode();
     }

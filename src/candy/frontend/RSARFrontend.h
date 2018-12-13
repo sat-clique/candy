@@ -35,7 +35,6 @@
 
 namespace Candy {
     class GateAnalyzer;
-    class DefaultSimpSolver;
     class Conjectures;
     
     /**
