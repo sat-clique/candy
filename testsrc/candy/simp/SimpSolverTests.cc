@@ -7,7 +7,6 @@
 namespace Candy {
     TEST(SimpSolverTests, basicIncrementalSimpSolver) {
         Solver<> underTest;
-        underTest.setIncrementalMode();
         
         Var var1 = underTest.newVar();
         Var var2 = underTest.newVar();
@@ -29,7 +28,6 @@ namespace Candy {
     // TODO: this test should be moved into the "core" test module.
     TEST(SimpSolverTests, basicIncrementalSolver) {
         Solver<> underTest;
-        underTest.setIncrementalMode();
         
         Var var1 = underTest.newVar();
         Var var2 = underTest.newVar();

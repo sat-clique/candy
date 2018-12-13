@@ -91,11 +91,6 @@ namespace Candy {
     bool SolverMock::isEliminated(Var var) const {
         return m_eliminatedVars.find(var) != m_eliminatedVars.end();
     }
-        
-    void SolverMock::setIncrementalMode() {
-        m_isIncrementalSet = true;
-        m_minAssumptionVar = m_maxCreatedVar+1;
-    }
     
     std::vector<Lit>& SolverMock::getConflict() {
         return m_conflictLits;
@@ -117,16 +112,8 @@ namespace Candy {
         m_conflictLits = conflictLits;
     }
     
-    bool SolverMock::mockctrl_isIncrementalSet() const noexcept {
-        return m_isIncrementalSet;
-    }
-    
     bool SolverMock::mockctrl_isParsingSet() const noexcept {
         return m_isParsingSet;
-    }
-    
-    bool SolverMock::mockctrl_isAssumptionVar(Var v) const noexcept {
-        return m_isIncrementalSet && v >= m_minAssumptionVar;
     }
     
     void SolverMock::mockctrl_setEliminated(Var v, bool elim) {
@@ -174,24 +161,6 @@ namespace Candy {
     const std::vector<Cl> &SolverMock::mockctrl_getAddedClauses() const noexcept{
         return m_addedClauses;
     }
-    
-    std::pair<Var, Var> SolverMock::mockctrl_getNonAssumptionVars() const noexcept {
-        if (!m_isIncrementalSet) {
-            return {0, m_maxCreatedVar};
-        }
-        else {
-            return {0, m_minAssumptionVar-1};
-        }
-    }
-    
-    std::pair<Var, Var> SolverMock::mockctrl_getAssumptionVars() const noexcept {
-        if (!m_isIncrementalSet) {
-            return {-1, -1};
-        }
-        else {
-            return {m_minAssumptionVar, m_maxCreatedVar};
-        }
-    }
 
     
     SolverMock::SolverMock() noexcept :
@@ -207,7 +176,6 @@ namespace Candy {
     m_callOnSimplify(),
     m_nClausesAddedSinceLastSolve(0),
     m_lastAssumptionLits(),
-    m_isIncrementalSet(false),
     m_isParsingSet(false),
     m_eventLog() {
         

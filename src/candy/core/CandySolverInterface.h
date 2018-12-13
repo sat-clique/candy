@@ -60,10 +60,6 @@ public:
     virtual size_t nVars() const = 0;
 	virtual size_t nConflicts() const = 0;
 	virtual size_t nPropagations() const = 0;
-
-	// Incremental mode
-    virtual void setIncrementalMode() = 0;
-	virtual bool isIncremental() = 0;
 };
 
 }

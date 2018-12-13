@@ -13,6 +13,7 @@
 #include "candy/core/Statistics.h"
 #include "candy/core/Trail.h"
 #include "candy/core/Clause.h"
+#include "candy/core/ClauseDatabase.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/frontend/CLIOptions.h"
 #include <vector>
@@ -222,9 +223,9 @@ public:
 	 *  Calculates and returns the set of assumptions that led to the assignment of 'p'.
 	 * 
 	 |*************************************************************************************************/
-	std::vector<Lit>& analyzeFinal(Lit p) { 
-		learnt_clause.clear();
-	    learnt_clause.push_back(p);
+	std::vector<Lit> analyzeFinal(Lit p) { 
+		std::vector<Lit> assumptions;
+	    assumptions.push_back(p);
 
 	    if (trail.decisionLevel() > 0) {
 			stamp.clear();
@@ -234,7 +235,7 @@ public:
 				if (stamp[x]) {
 					if (trail.reason(x) == nullptr) {
 						assert(trail.level(x) > 0);
-						learnt_clause.push_back(~trail[i]);
+						assumptions.push_back(~trail[i]);
 					} else {
 						const Clause* c = trail.reason(x);
 						for (Lit lit : *c) {
@@ -249,7 +250,7 @@ public:
 			stamp.unset(var(p));
 		}
 
-		return learnt_clause;
+		return assumptions;
 	}
 
 };

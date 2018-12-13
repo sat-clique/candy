@@ -289,13 +289,7 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_callOnSolve([&solverAndMock](int round) {
             auto checker = createEquivalencyChecker();
             
-            auto maxNonAssumVar = solverAndMock.glucoseMock->mockctrl_getNonAssumptionVars().second;
-            auto maxVar = solverAndMock.glucoseMock->mockctrl_getAssumptionVars().second;
-            ASSERT_TRUE(maxNonAssumVar != -1);
-            ASSERT_TRUE(maxVar != -1);
-            
-            checker->createVariables(maxNonAssumVar);
-            checker->createVariables(maxVar);
+            checker->createVariables(solverAndMock.glucoseMock->nVars());
             
             checker->addClauses(solverAndMock.glucoseMock->mockctrl_getAddedClauses());
             
