@@ -508,7 +508,7 @@ bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
         return ok = trail.newFact(copy.front());
     }
     else {
-        Clause* clause = clause_db.createClause(copy, lbd);
+        Clause* clause = clause_db.createClause(copy.begin(), copy.end(), lbd);
         propagator.attachClause(clause);
         return ok;
     }
@@ -547,7 +547,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::un
                     trail.newFact(literals.front());
                 }
                 else {
-                    Clause* new_clause = clause_db.createClause(literals, clause->getLBD());
+                    Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
                     propagator.attachClause(new_clause);
                 }
                 certificate.added(literals.begin(), literals.end());
@@ -683,7 +683,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                 trail.uncheckedEnqueue(clause_db.result.learnt_clause[0]);
             }
             else {
-                Clause* clause = clause_db.createClause(clause_db.result.learnt_clause, clause_db.result.lbd);
+                Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
                 trail.uncheckedEnqueue(clause->first(), clause);
                 propagator.attachClause(clause);
             }

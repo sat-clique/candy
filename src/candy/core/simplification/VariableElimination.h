@@ -130,7 +130,7 @@ public:
                         return trail.newFact(lits.front()) && propagator.propagate() == nullptr;
                     }
                     else {
-                        Clause* new_clause = clause_db.createClause(lits);
+                        Clause* new_clause = clause_db.createClause(lits.begin(), lits.end());
                         propagator.attachClause(new_clause);
                         created.push_back(clause);
                     } 
@@ -190,7 +190,7 @@ public:
                     return trail.newFact(resolvent.front()) && propagator.propagate() == nullptr;
                 }
                 else {
-                    const Clause* clause = clause_db.createClause(resolvent);
+                    const Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end());
                     propagator.attachClause((Clause*)clause);
                     created.push_back(clause);
                 }
