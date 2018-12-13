@@ -1,4 +1,3 @@
-#include <deque>
 #include <unordered_map>
 #include <vector>
 
@@ -34,7 +33,7 @@ public:
         bwdsub_assigns(0)
     {}
 
-    std::deque<const Clause*> queue;
+    std::vector<const Clause*> queue;
     std::unordered_map<const Clause*, uint64_t> abstractions;
 
     uint32_t bwdsub_assigns;
@@ -46,13 +45,15 @@ public:
     }
 
     void attach(const Clause* clause) {
-        if (abstractions.count(clause) == 0 && !clause->isDeleted() && clause_db.isPersistent(clause)) {
-            uint64_t abstraction = 0;
-            for (Lit lit : *clause) {
-                abstraction |= 1ull << (var(lit) % 64);
+        if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
+            if (abstractions.count(clause) == 0 && !clause->isDeleted() && clause_db.isPersistent(clause)) {
+                uint64_t abstraction = 0;
+                for (Lit lit : *clause) {
+                    abstraction |= 1ull << (var(lit) % 64);
+                }
+                queue.push_back(clause);
+                abstractions[clause] = abstraction;
             }
-            queue.push_back(clause);
-            abstractions[clause] = abstraction;
         }
     }
 
@@ -70,7 +71,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
     Clause bwdsub_tmpunit({ lit_Undef });
 
-    sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { return c1->size() < c2->size(); });
+    sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { return c1->size() > c2->size(); });
     
     while (queue.size() > 0 || bwdsub_assigns < trail.size()) {
         // Check top-level assignments by creating a dummy clause and placing it in the queue:
@@ -81,8 +82,8 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
             attach(&bwdsub_tmpunit);
         }
 
-        const Clause* clause = queue.front();
-        queue.pop_front();
+        const Clause* clause = queue.back();
+        queue.pop_back();
         
         if (clause->isDeleted()) {
             continue;
@@ -97,12 +98,11 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
         // Search all candidates:
         const uint64_t abstr = abstractions[clause];
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
-        for (const Clause* occurence : occurences) { // size might grow and that is ok
-            if (occurence->isDeleted()) {
-                continue;
-            }
-            if (occurence != clause && (subsumption_lim == 0 || occurence->size() < subsumption_lim)) {
+        std::vector<Clause*> occurences = clause_db.copyOccurences(best);
+        for (unsigned int i = 0; i < occurences.size(); i++) {
+            const Clause* occurence = occurences[i]; 
+
+            if (!occurence->isDeleted() && occurence != clause) {
                 if ((abstr & ~abstractions[occurence]) != 0) continue;
 
                 Lit l = clause->subsumes(*occurence);
@@ -113,7 +113,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();
-                        std::vector<Lit> lits = occurence->except(l);
+                        std::vector<Lit> lits = occurence->except(~l);
                         certificate.added(lits.begin(), lits.end());
                         
                         if (lits.size() == 1) {
@@ -125,9 +125,9 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                             Clause* new_clause = clause_db.createClause(lits);
                             propagator.attachClause(new_clause);
                             attach(new_clause);
+                            occurences.push_back(new_clause);
                         }
                     }
-
                     propagator.detachClause(occurence);
                     clause_db.removeClause((Clause*)occurence);
                     abstractions.erase(occurence);
@@ -136,6 +136,8 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
             }
         }
     }
+
+    clear();
 
     return true;
 }

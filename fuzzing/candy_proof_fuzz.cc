@@ -30,24 +30,11 @@ int main(int argc, char** argv) {
         return 0; // concentrate on small problems during fuzzing
     }
 
-    CandySolverInterface* solver = new SimpSolver<>();
+    CandySolverInterface* solver = new Solver<>();
     solver->addClauses(problem);
     solver->resetCertificate("proof.drat");
 
-    lbool result = l_Undef;
-    if (solver->isInConflictingState()) {
-        result = l_False;
-    }
-    else {
-        solver->eliminate(true, true);
-        solver->disablePreprocessing();
-        if (solver->isInConflictingState()) {
-            result = l_False;
-        }
-        else {
-            result = solver->solve();
-        }
-    }
+    lbool result = solver->solve();
 
     lbool reference_result = minisat_result(problem);
     assert (result == reference_result);

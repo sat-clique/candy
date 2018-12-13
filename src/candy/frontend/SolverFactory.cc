@@ -160,7 +160,7 @@ CandySolverInterface* SolverFactory::createRSARSolver(CNFProblem& problem) {
 			arSolverBuilder->addRefinementHeuristic(createInputDepCountRefinementHeuristic(*gateAnalyzer, limits));
 		}
 
-		arSolverBuilder->withSolver(new SimpSolver<>());
+		arSolverBuilder->withSolver(new Solver<>());
 
 		return arSolverBuilder->build();
 	}

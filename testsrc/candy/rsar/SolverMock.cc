@@ -81,12 +81,11 @@ namespace Candy {
         }
     }
     
-    bool SolverMock::eliminate() {
+    void SolverMock::eliminate() {
         m_eventLog.push_back(SolverMockEvent::SIMPLIFY);
         if (m_callOnSimplify) {
             m_callOnSimplify(m_nInvocations);
         }
-        return true;
     }
     
     bool SolverMock::isEliminated(Var var) const {

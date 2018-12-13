@@ -79,6 +79,8 @@
 #include "candy/core/CandySolverInterface.h"
 #include "candy/randomsimulation/Conjectures.h"
 #include "candy/rsar/Refinement.h"
+#include "candy/core/simplification/Subsumption.h"
+#include "candy/core/simplification/VariableElimination.h"
 
 #include "candy/sonification/SolverSonification.h"
 #include "candy/sonification/ControllerInterface.h"
@@ -141,8 +143,7 @@ public:
     // Solving:
     void simplify() override; // remove satisfied clauses 
     void strengthen() override; // remove false literals from clauses
-    virtual bool eliminate() override { return true; } // Perform variable elimination based simplification.
-    virtual bool eliminate(bool use_asymm, bool use_elim) override { return true; } // Perform variable elimination based simplification.
+    void eliminate() override; // Perform variable elimination based simplification. 
     
     void enablePreprocessing() override {
         preprocessing_enabled = true;
@@ -152,7 +153,9 @@ public:
         preprocessing_enabled = false;
     }
 
-    virtual bool isEliminated(Var v) const override { return false; }
+    bool isEliminated(Var v) const override { 
+        return elimination.isEliminated(v);
+    }
 
     void setFrozen(Var v, bool freeze) override  {
         if (freeze) {
@@ -162,7 +165,7 @@ public:
         }
     }
 
-    virtual lbool solve() override; // Main solve method (assumptions given in 'assumptions').
+    lbool solve() override;
 
     lbool solve(std::initializer_list<Lit> assumps) override {
         assumptions.clear();
@@ -262,6 +265,9 @@ protected:
     TLearning& conflict_analysis;
     TBranching& branch;
 
+    Subsumption<TPropagate> subsumption;
+    VariableElimination<TPropagate> elimination;
+
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
     // Constants For restarts
@@ -328,6 +334,9 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     propagator(*new TPropagate(clause_db, trail)),
 	conflict_analysis(*new TLearning(clause_db, trail)),
     branch(*new TBranching(clause_db, trail)),
+    // simplification
+    subsumption(clause_db, trail, propagator, certificate),
+    elimination(clause_db, trail, propagator, certificate), 
     // assumptions 
     assumptions(),
     // restarts
@@ -372,6 +381,9 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     propagator(*new TPropagate(clause_db, trail)),
 	conflict_analysis(*new TLearning(clause_db, trail)),
     branch(*new TBranching(clause_db, trail)),
+    // simplification
+    subsumption(clause_db, trail, propagator, certificate),
+    elimination(clause_db, trail, propagator, certificate), 
     // assumptions 
     assumptions(),
     // restarts
@@ -416,6 +428,9 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     propagator(pr),
 	conflict_analysis(le),
     branch(br),
+    // simplification
+    subsumption(clause_db, trail, propagator, certificate),
+    elimination(clause_db, trail, propagator, certificate), 
     // assumptions
     assumptions(),
     // restarts
@@ -480,6 +495,7 @@ Var Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::new
     trail.grow();
     conflict_analysis.grow();
     branch.grow();
+    elimination.grow(nVars());
     return v;
 }
 
@@ -492,6 +508,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
         trail.grow(maxVars);
         conflict_analysis.grow(maxVars);
         branch.grow(maxVars);
+        elimination.grow(maxVars);
     }
 
     if (sort_variables) {
@@ -608,6 +625,54 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::st
     }
 }
 
+template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::eliminate() {
+    // freeze assumptions and other externally set frozen variables
+    for (Lit lit : assumptions) {
+        elimination.lock(var(lit));
+    }
+    for (Var var : freezes) {
+        elimination.lock(var);
+    }
+
+    clause_db.initOccurrenceTracking(this->nVars());
+
+    for (const Clause* clause : clause_db) {
+        if (clause_db.isPersistent(clause)) {
+            subsumption.attach(clause); 
+        }
+    }
+
+    while (subsumption.queue.size() > 0) {
+        ok = subsumption.backwardSubsumptionCheck();
+        clause_db.cleanup();
+
+        if (isInConflictingState() || asynch_interrupt) break;
+
+        ok = elimination.eliminate();
+        clause_db.cleanup();
+
+        if (isInConflictingState() || asynch_interrupt) break;
+
+        for (const Clause* clause : elimination.created) {
+            subsumption.attach(clause);
+            for (Lit lit : *clause) {
+                subsumption.attachOccurences(var(lit));
+            }
+        }
+    } 
+
+    for (unsigned int v = 0; v < this->nVars(); v++) {
+        if (elimination.isEliminated(v)) {
+            branch.setDecisionVar(v, false);
+        }
+    }
+
+    branch.notify_restarted(); // former rebuildOrderHeap
+
+    clause_db.stopOccurrenceTracking();
+}
+
 /**************************************************************************************************
  *
  *  search : (nof*conflicts : int) (params : const SearchParams&)  ->  [lbool]
@@ -703,7 +768,8 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
 
                     if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
-                        if (!eliminate(false, false)) {
+                        eliminate();
+                        if (isInConflictingState()) {
                             return l_False;
                         }
                     }
@@ -769,11 +835,20 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     return l_Undef; // not reached
 }
 
-// NOTE: assumptions passed in member-variable 'assumptions'.
-// Parameters are useless in core but useful for SimpSolver....
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve() {
-    Statistics::getInstance().runtimeStart("Solver");
+    if (isInConflictingState()) return l_False;
+
+    if (this->preprocessing_enabled) {
+        Statistics::getInstance().runtimeStart("Preprocessing");
+        eliminate();
+        Statistics::getInstance().printSimplificationStats();
+        Statistics::getInstance().runtimeStop("Preprocessing");
+    }
+    
+    if (isInConflictingState()) return l_False;
+
+    Statistics::getInstance().runtimeStart("Solving");
 
     sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
     
@@ -781,11 +856,6 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     conflict.clear();
 
     lbool status = l_Undef;
-    if (isInConflictingState()) {
-        status = l_False;
-    }
-    
-    // Search:
     while (status == l_Undef && withinBudget()) {
         status = search();
     }
@@ -797,7 +867,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
         }
         else {
             // check if selectors are used in final conflict
-            conflict.swap(conflict_analysis.analyzeFinal(trail[trail.size()-1]));
+            // conflict.swap(conflict_analysis.analyzeFinal(trail[trail.size()-1]));
             auto pos = find_if(conflict.begin(), conflict.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
             if (pos == conflict.end()) {
                 ok = false;
@@ -820,7 +890,12 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
 
     ok = true; // temporarily fix incremental mode
 
-    Statistics::getInstance().runtimeStop("Solver");
+    Statistics::getInstance().runtimeStop("Solving");
+        
+    if (status == l_True) {
+        elimination.extendModel(this->model);
+    }
+    
     return status;
 }
 

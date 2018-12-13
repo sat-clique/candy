@@ -276,7 +276,6 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:rsar>
   $<TARGET_OBJECTS:ipasir>
   $<TARGET_OBJECTS:minimizer>
-  $<TARGET_OBJECTS:simp>
   $<TARGET_OBJECTS:core>
   $<TARGET_OBJECTS:sonification>
   $<TARGET_OBJECTS:frontend>

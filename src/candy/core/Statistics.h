@@ -99,7 +99,7 @@ public:
         if (!starttimes.count(key)) {
             starttimes.insert({{key, std::chrono::milliseconds{0}}});
         }
-        starttimes[key] = Glucose::cpuTime();
+        starttimes[key] = cpuTime();
     }
     inline void runtimeStop(std::string key) {
         if (!starttimes.count(key)) {
@@ -108,7 +108,7 @@ public:
         if (!runtimes.count(key)) {
             runtimes.insert({{key, std::chrono::milliseconds{0}}});
         }
-        runtimes[key] += Glucose::cpuTime() - starttimes[key];
+        runtimes[key] += cpuTime() - starttimes[key];
     }
     void printRuntime(std::string key) {
         double seconds = static_cast<double>(runtimes[key].count())/1000.0f;

@@ -21,6 +21,8 @@ add_library(core OBJECT
     branching/BranchingDiversificationInterface.h
     branching/VSIDS.h
     branching/LRB.h
+    simplification/Subsumption.h
+    simplification/VariableElimination.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)

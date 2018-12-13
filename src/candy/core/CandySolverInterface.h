@@ -30,10 +30,9 @@ public:
     virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) = 0;
 
     virtual void simplify() = 0; // remove satisfied clauses
-    virtual void strengthen() = 0; // remove false literals from clauses
+    virtual void strengthen() = 0; // remove false literals from clauses	
+    virtual void eliminate() = 0;  // Perform variable elimination based simplification.
 	
-    virtual bool eliminate() = 0;  // Perform variable elimination based simplification.
-    virtual bool eliminate(bool use_asymm, bool use_elim) = 0;  // Perform variable elimination based simplification.
     virtual bool isEliminated(Var v) const = 0;
     virtual void setFrozen(Var v, bool freeze) = 0;
 

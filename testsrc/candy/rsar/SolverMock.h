@@ -78,8 +78,7 @@ namespace Candy {
 
         virtual void simplify() override { } // remove satisfied clauses
         virtual void strengthen() override { } // remove false literals from clauses
-        virtual bool eliminate() override;  // Perform variable elimination based simplification.
-        virtual bool eliminate(bool use_asymm, bool use_elim) override { return true; }  // Perform variable elimination based simplification.
+        virtual void eliminate() override;  // Perform variable elimination based simplification.
         virtual bool isEliminated(Var v) const override;
         virtual void setFrozen(Var v, bool freeze) override;
 
