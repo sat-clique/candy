@@ -8,9 +8,9 @@
 
 #include <candy/core/CNFProblem.h>
 #include <candy/core/Solver.h>
+#include <candy/frontend/CandyBuilder.h>
 
 using namespace Candy;
-using namespace Glucose;
 
 TEST (CandyAddClauseTestPatterns, addClause) {
   CNFProblem formula;
@@ -50,8 +50,9 @@ TEST (CandyAddClauseTestPatterns, removeDuplicates) {
   CNFProblem formula;
   formula.readClause({mkLit(1), mkLit(2), mkLit(1)});
   ClauseDatabase* clauses = new ClauseDatabase();
-  Solver<> solver { clauses };
-  solver.addClauses(formula);
+  CandyBuilder<> builder { clauses, new Trail() };
+  CandySolverInterface* solver = builder.build();
+  solver->addClauses(formula);
   ASSERT_EQ((*clauses)[0]->size(), 2ull);
 }
 
@@ -77,8 +78,9 @@ TEST (CandyAddClauseTestPatterns, propagateEarly3) {
   formula.readClause(mkLit(1, true));
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
   ClauseDatabase* clauses = new ClauseDatabase();
-  Solver<> solver { clauses };
-  solver.addClauses(formula);
-  ASSERT_EQ(solver.nClauses(), 1ul);
+  CandyBuilder<> builder { clauses, new Trail() };
+  CandySolverInterface* solver = builder.build();
+  solver->addClauses(formula);
+  ASSERT_EQ(solver->nClauses(), 1ul);
   ASSERT_EQ((*clauses)[0]->size(), 2ul);
 }

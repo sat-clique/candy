@@ -369,53 +369,6 @@ controller.run();
 }
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauseDatabase* _clause_db) : 
-    // unsat certificate
-    certificate(nullptr),
-    // results
-    model(), conflict(),
-    // Basic Systems
-    clause_db(*_clause_db),
-    trail(*new TAssignment()),
-    propagator(*new TPropagate(clause_db, trail)),
-	conflict_analysis(*new TLearning(clause_db, trail)),
-    branch(*new TBranching(clause_db, trail)),
-    // simplification
-    subsumption(clause_db, trail, propagator, certificate),
-    elimination(clause_db, trail, propagator, certificate), 
-    // assumptions 
-    assumptions(),
-    // restarts
-    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
-    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
-    // reduce db heuristic control
-    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
-    incReduceDB(SolverOptions::opt_inc_reduce_db),
-    // memory reorganization
-    sort_watches(SolverOptions::opt_sort_watches),
-    sort_variables(SolverOptions::opt_sort_variables),
-    // conflict state
-    ok(true),
-    // incremental mode
-    incremental(false),
-    // preprocessing
-    preprocessing_enabled(true),
-    freezes(),
-    // inprocessing
-    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
-    // resource constraints and other interrupt related
-    conflict_budget(0), propagation_budget(0),
-    termCallbackState(nullptr), termCallback(nullptr),
-    asynch_interrupt(false),
-    // learnt callback ipasir
-    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
-    // sonification
-    sonification(), controller()
-{
-controller.run();
-}
-
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) : 
     // unsat certificate
     certificate(nullptr),
