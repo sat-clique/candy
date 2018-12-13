@@ -106,16 +106,9 @@ namespace Candy {
     	virtual size_t nPropagations() const override { return 0; }
         virtual size_t nVars() const override;
 
-    	// Incremental mode
-        virtual void setIncrementalMode() override;
-    	virtual bool isIncremental() override { return true; }
-
         /** Sets the literals returned by getConflict(). */
         void mockctrl_setConflictLits(const std::vector<Lit> &conflictLits);
-        
-        /** Returns true iff setIncremental() has been called. () */
-        bool mockctrl_isIncrementalSet() const noexcept;
-        
+                
         /** Returns true iff parsing has been set to true. */
         bool mockctrl_isParsingSet() const noexcept;
         
@@ -160,14 +153,7 @@ namespace Candy {
         int mockctrl_getAmountOfClausesAddedSinceLastSolve() const noexcept;
         
         /** Returns the clauses added via addClause(). */
-        const std::vector<Cl> &mockctrl_getAddedClauses() const noexcept;
-        
-        /** Returns the min. and max. non-assumption variable. */
-        std::pair<Var, Var> mockctrl_getNonAssumptionVars() const noexcept;
-        
-        /** Returns the min. and max. assumption variables. */
-        std::pair<Var, Var> mockctrl_getAssumptionVars() const noexcept;
-        
+        const std::vector<Cl> &mockctrl_getAddedClauses() const noexcept;        
         
         SolverMock() noexcept;
         virtual ~SolverMock();
@@ -190,7 +176,6 @@ namespace Candy {
         
         std::vector<Cl> m_addedClauses;
         
-        bool m_isIncrementalSet;
         bool m_isParsingSet;
         
         std::vector<SolverMockEvent> m_eventLog;

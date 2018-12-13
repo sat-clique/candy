@@ -217,10 +217,6 @@ public:
         return false;
     }
 
-    // Incremental mode
-    void setIncrementalMode() override;
-    bool isIncremental() override;
-
     // Resource constraints:
     void setConfBudget(uint64_t x) override {
         conflict_budget = nConflicts() + x;
@@ -287,8 +283,6 @@ protected:
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
-    bool incremental; // Use incremental SAT Solver
-
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
     std::vector<Var> freezes;
 
@@ -349,8 +343,6 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     sort_variables(SolverOptions::opt_sort_variables),
     // conflict state
     ok(true),
-    // incremental mode
-    incremental(false),
     // preprocessing
     preprocessing_enabled(true),
     freezes(),
@@ -396,8 +388,6 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     sort_variables(SolverOptions::opt_sort_variables),
     // conflict state
     ok(true),
-    // incremental mode
-    incremental(false),
     // preprocessing
     preprocessing_enabled(true),
     freezes(),
@@ -417,22 +407,6 @@ controller.run();
 
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
-}
-
-/****************************************************************
- Set the incremental mode
- ****************************************************************/
-
-// This function set the incremental mode to true.
-// You can add special code for this mode here.
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::setIncrementalMode() {
-    incremental = true;
-}
-
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::isIncremental() {
-    return incremental;
 }
 
 /***
@@ -667,10 +641,8 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
             }
 
             sonification.learntSize(static_cast<int>(clause_db.result.learnt_clause.size()));
-
-            if (incremental && std::find_if(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), [this](Lit lit) { return isSelector(lit); }) == clause_db.result.learnt_clause.end()) {
-                certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
-            }
+            
+            certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
 
             branch.process_conflict();
 
@@ -739,10 +711,9 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                 // Perform user provided assumption:
                 Lit p = assumptions[trail.decisionLevel()];
                 if (trail.value(p) == l_True) {
-                    // Dummy decision level:
-                    trail.newDecisionLevel();
+                    trail.newDecisionLevel(); // Dummy decision level
                 } else if (trail.value(p) == l_False) {
-                    conflict.swap(conflict_analysis.analyzeFinal(~p));
+                    conflict = conflict_analysis.analyzeFinal(~p);
                     return l_False;
                 } else {
                     next = p;
@@ -771,6 +742,9 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
 lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve() {
     if (isInConflictingState()) return l_False;
+    
+    model.clear();
+    conflict.clear();
 
     if (this->preprocessing_enabled) {
         Statistics::getInstance().runtimeStart("Preprocessing");
@@ -784,9 +758,6 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     Statistics::getInstance().runtimeStart("Solving");
 
     sonification.start(static_cast<int>(nVars()), static_cast<int>(nClauses()));
-    
-    model.clear();
-    conflict.clear();
 
     lbool status = l_Undef;
     while (status == l_Undef && withinBudget()) {
@@ -794,18 +765,9 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     }
     
     if (status == l_False) {
-        if (!incremental) {
+        if (conflict.empty()) {
             ok = false;
             certificate.proof();
-        }
-        else {
-            // check if selectors are used in final conflict
-            // conflict.swap(conflict_analysis.analyzeFinal(trail[trail.size()-1]));
-            auto pos = find_if(conflict.begin(), conflict.end(), [this] (Lit lit) { return isSelector(var(lit)); } );
-            if (pos == conflict.end()) {
-                ok = false;
-                certificate.proof();
-            }
         }
 
         sonification.stop(1);
@@ -820,8 +782,6 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     }
     
     trail.cancelUntil(0);
-
-    ok = true; // temporarily fix incremental mode
 
     Statistics::getInstance().runtimeStop("Solving");
         

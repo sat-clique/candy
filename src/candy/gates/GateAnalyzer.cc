@@ -48,7 +48,6 @@ GateAnalyzer::GateAnalyzer(CNFProblem& dimacs, int tries, bool patterns, bool se
     inputs.resize(2 * problem.nVars(), false);
     index = buildIndexFromClauses(problem.getProblem());
     if (useHolistic) solver->addClauses(problem);
-    solver->setIncrementalMode();
     solver->disablePreprocessing();
     runtime.stop();
 }

@@ -167,15 +167,6 @@ namespace Candy {
     		return m_solver->nPropagations();
     	}
 
-    	// Incremental mode
-    	virtual void setIncrementalMode() override {
-    		m_solver->setIncrementalMode();
-        }
-
-    	virtual bool isIncremental() override {
-    		return m_solver->isIncremental();
-    	}
-
     	ARSolver();
 
         ARSolver(std::unique_ptr<Conjectures> conjectures,
