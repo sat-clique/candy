@@ -95,12 +95,8 @@ namespace Candy {
 
         /** Runs the underlying SAT solver's simplification system. This method may only be called
          * before clauses containing assumptions have been added to the solver. */
-        virtual void simplify() override {
-        	m_solver->simplify(); // remove satisfied clauses
-        }
-
-        virtual void strengthen() override {
-        	m_solver->strengthen(); // remove false literals from clauses
+        virtual void unit_resolution() override {
+        	m_solver->unit_resolution(); // remove satisfied clauses and remove false literals from clauses
         }
         virtual void eliminate() override {
         	m_solver->eliminate();// Perform variable elimination based simplification.

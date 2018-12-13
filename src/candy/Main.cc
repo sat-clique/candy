@@ -202,8 +202,7 @@ static lbool simplifyAndPrintProblem(CandySolverInterface* solver) {
     solver->setPropBudget(1);
 
     result = solver->solve();
-    solver->simplify();
-    solver->strengthen();
+    solver->unit_resolution();
     solver->printDIMACS();
 
     return result;

@@ -141,8 +141,7 @@ public:
     }
 
     // Solving:
-    void simplify() override; // remove satisfied clauses 
-    void strengthen() override; // remove false literals from clauses
+    void unit_resolution() override; // remove satisfied clauses and remove false literals from clauses 
     void eliminate() override; // Perform variable elimination based simplification. 
     
     void enablePreprocessing() override {
@@ -523,8 +522,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
     }
     
     if (propagator.propagate() == nullptr) {
-        strengthen();
-        simplify();
+        unit_resolution();
         clause_db.cleanup();
     }
     else {
@@ -563,30 +561,8 @@ bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
     }
 }
 
-/**************************************************************************************************
- *
- *  simplify : [void]  ->  [bool]
- *
- *  Description:
- *    Simplify the clause database according to the current top-level assignment. Currently, the only
- *    thing done here is the removal of satisfied clauses, but more things can be put here.
- **************************************************************************************************/
 template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::simplify() {
-    assert(trail.decisionLevel() == 0);
-    assert(propagator.propagate() == nullptr);
-
-    for (const Clause* clause : clause_db) if (!clause->isDeleted()) {
-        if (trail.satisfies(*clause)) {
-            certificate.removed(clause->begin(), clause->end());
-            propagator.detachClause(clause);
-            clause_db.removeClause((Clause*)clause);
-        }
-    }
-}
-
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::strengthen() {
+void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
@@ -601,26 +577,31 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::st
 
         literals.clear();
 
-        for (Lit lit : *clause) {        
-            if (trail.value(lit) != l_False) {
+        for (Lit lit : *clause) {
+            lbool value = trail.value(lit);
+            if (value == l_Undef) {
                 literals.push_back(lit);
+            }
+            else if (value == l_True) {
+                literals.clear();
+                break;
             }
         }
         
         if (literals.size() < clause->size()) {
+            if (literals.size() > 0) {
+                if (literals.size() == 1) {
+                    trail.newFact(literals.front());
+                }
+                else {
+                    Clause* new_clause = clause_db.createClause(literals, clause->getLBD());
+                    propagator.attachClause(new_clause);
+                }
+                certificate.added(literals.begin(), literals.end());
+            }
+            certificate.removed(clause->begin(), clause->end());
             propagator.detachClause(clause);
             clause_db.removeClause((Clause*)clause);
-
-            certificate.added(literals.begin(), literals.end());
-            certificate.removed(clause->begin(), clause->end());
-
-            if (literals.size() == 1) {
-                trail.newFact(literals.front());
-            }
-            else {
-                Clause* new_clause = clause_db.createClause(literals, clause->getLBD());
-                propagator.attachClause(new_clause);
-            }
         }
     }
 }
@@ -775,8 +756,7 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                     }
                     
                     // clause database simplification
-                    strengthen();
-                    simplify();
+                    unit_resolution();
                     clause_db.cleanup();
                 
                     // clause database reduction
