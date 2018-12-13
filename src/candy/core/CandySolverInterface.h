@@ -29,8 +29,7 @@ public:
     virtual bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) = 0;
     virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) = 0;
 
-    virtual void simplify() = 0; // remove satisfied clauses
-    virtual void strengthen() = 0; // remove false literals from clauses	
+    virtual void unit_resolution() = 0; // remove satisfied clauses and remove false literals from clauses	
     virtual void eliminate() = 0;  // Perform variable elimination based simplification.
 	
     virtual bool isEliminated(Var v) const = 0;

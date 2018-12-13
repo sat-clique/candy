@@ -76,8 +76,7 @@ namespace Candy {
 
         void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
 
-        virtual void simplify() override { } // remove satisfied clauses
-        virtual void strengthen() override { } // remove false literals from clauses
+        virtual void unit_resolution() override { } // remove satisfied clauses and remove false literals from clauses
         virtual void eliminate() override;  // Perform variable elimination based simplification.
         virtual bool isEliminated(Var v) const override;
         virtual void setFrozen(Var v, bool freeze) override;
