@@ -57,13 +57,6 @@ private:
         }
     };
 
-    struct ClauseDeleted {
-        explicit ClauseDeleted() { }
-        inline bool operator()(const Clause* cr) const {
-            return cr->isDeleted();
-        }
-    };
-
     ClauseAllocator allocator;
  
     std::vector<Clause*> clauses; // List of problem clauses
@@ -76,7 +69,7 @@ private:
 
     bool track_literal_occurrence;
     
-    OccLists<Var, Clause*, ClauseDeleted> variableOccurrences;
+    std::vector<std::vector<Clause*>> variableOccurrences;
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
@@ -137,9 +130,9 @@ public:
     }
 
     inline void grow(size_t nVars) {
-        if (variableOccurrences.size() < nVars+1) {
-            variableOccurrences.init(nVars+1);
-            binaryWatchers.resize(nVars*2+2);
+        if (variableOccurrences.size() < nVars) {
+            variableOccurrences.resize(nVars);
+            binaryWatchers.resize(nVars*2);
         }
     }
 
@@ -179,7 +172,6 @@ public:
 
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
-                //variableOccurrences.smudge(var(lit));
                 auto& list = variableOccurrences[var(lit)];
                 list.erase(std::remove_if(list.begin(), list.end(), [clause](Clause* c){ return clause == c; }), list.end());
             }
@@ -194,17 +186,15 @@ public:
     }
 
     inline const std::vector<Clause*>& refOccurences(Var v) {
-        const std::vector<Clause*>& ref = variableOccurrences.lookup(v);
-        return ref;
+        return variableOccurrences[v];
     }
 
     inline size_t numOccurences(Var v) {
-        return refOccurences(v).size();
+        return variableOccurrences[v].size();
     }
 
     inline std::vector<Clause*> copyOccurences(Var v) {
-        const std::vector<Clause*>& ref = refOccurences(v);
-        return std::vector<Clause*>(ref.begin(), ref.end());
+        return std::vector<Clause*>(variableOccurrences[v].begin(), variableOccurrences[v].end());
     }
 
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {

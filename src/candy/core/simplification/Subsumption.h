@@ -110,6 +110,9 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                 if (l != lit_Error) {
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
+                        // if (!occurence->isLearnt() && clause->isLearnt()) {
+                        //     clause->setLearnt(false);
+                        // }
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();

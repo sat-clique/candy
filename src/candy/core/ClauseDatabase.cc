@@ -6,7 +6,7 @@ ClauseDatabase::ClauseDatabase() :
     cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
     persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
     track_literal_occurrence(false),
-    variableOccurrences(ClauseDeleted()),
+    variableOccurrences(),
     allocator(), 
     clauses() {
 
@@ -103,10 +103,6 @@ void ClauseDatabase::reduce() {
 void ClauseDatabase::cleanup() { 
     auto new_end = std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) { return c->isDeleted(); });
     clauses.erase(new_end, clauses.end());
-
-    if (track_literal_occurrence) {
-        variableOccurrences.cleanAll();
-    }
 }
 
 /**
