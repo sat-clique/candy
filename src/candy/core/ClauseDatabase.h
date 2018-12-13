@@ -140,10 +140,11 @@ public:
         result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
-    Clause* createClause(Cl& lits, unsigned int lbd = 0) {
+    template<typename Iterator>
+    Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
 
-        Clause* clause = new (allocator.allocate(lits.size())) Clause(lits);
+        Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end);
         if (lbd > 0) {
             clause->setLBD(lbd);
             clause->setLearnt(true);

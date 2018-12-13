@@ -86,19 +86,15 @@ private:
     friend class TestClauseFactory;
 
 public:
-    Clause(std::initializer_list<Lit> list) {
-        copyLiterals(list.begin(), list.end(), literals);
-        length = static_cast<decltype(length)>(list.size());
-        header = 0; // all flags false; lbd=0
-        activity_ = 0;
-    }
-
-    Clause(const std::vector<Lit>& list) {
-        copyLiterals(list.begin(), list.end(), literals);
-        length = static_cast<decltype(length)>(list.size());
+    template<typename Iterator>
+    Clause(Iterator begin, Iterator end) {
+        copyLiterals(begin, end, literals);
+        length = static_cast<decltype(length)>(std::distance(begin, end));
         header = 0; // not frozen, not deleted and not learnt; lbd=0
         activity_ = 0;
     }
+    
+    Clause(std::initializer_list<Lit> list) : Clause(list.begin(), list.end()) { }
 
     ~Clause();
 

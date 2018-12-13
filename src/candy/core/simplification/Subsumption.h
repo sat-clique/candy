@@ -110,9 +110,15 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                 if (l != lit_Error) {
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
-                        // if (!occurence->isLearnt() && clause->isLearnt()) {
-                        //     clause->setLearnt(false);
-                        // }
+                        // in case of inprocessing:
+                        if (clause->isLearnt() && !occurence->isLearnt()) {
+                            propagator.detachClause(clause);
+                            clause_db.removeClause((Clause*)clause);
+                            abstractions.erase(clause);
+                            Clause* new_clause = clause_db.createClause(clause->begin(), clause->end());
+                            propagator.attachClause(new_clause);
+                            abstractions[new_clause]=abstr;
+                        }
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();
@@ -125,7 +131,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                             }
                         }
                         else {
-                            Clause* new_clause = clause_db.createClause(lits);
+                            Clause* new_clause = clause_db.createClause(lits.begin(), lits.end(), occurence->getLBD());
                             propagator.attachClause(new_clause);
                             attach(new_clause);
                             occurences.push_back(new_clause);
