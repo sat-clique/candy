@@ -19,10 +19,9 @@ namespace Candy {
 #define BITS_LBD 12
 #define LBD_MASK (static_cast<uint16_t>(4095))
 
-#define SELECTABLE_BIT 12
-#define LEARNT_BIT 13
+#define LEARNT_BIT 12
+#define FROZEN_BIT 13
 #define DELETED_BIT 14
-#define FROZEN_BIT 15
 
 class Clause {
     uint16_t length;
@@ -33,19 +32,6 @@ class Clause {
     Lit literals[1];
 
 private:
-    inline Lit& operator [](int i) {
-        return literals[i];
-    }
-
-    typedef Lit* iterator;
-
-    inline iterator begin() {
-        return literals;
-    }
-
-    inline iterator end() {
-        return literals + length;
-    }
 
     inline void swap(uint16_t pos1, uint16_t pos2) {
         assert(pos1 < length && pos2 < length);
@@ -56,10 +42,6 @@ private:
 
     inline void setLearnt(bool flag) {
         header = (header & ~(1 << LEARNT_BIT)) | ((flag ? 1 : 0) << LEARNT_BIT);
-    }
-
-    inline void setSelectable(bool flag) {
-        header = (header & ~(1 << SELECTABLE_BIT)) | ((flag ? 1 : 0) << SELECTABLE_BIT);
     }
 
     inline void setFrozen(bool flag) {
@@ -103,7 +85,6 @@ public:
 
     ~Clause();
 
-    //void* operator new (std::size_t size) = delete;
     void operator delete (void* p) = delete;
 
     inline const Lit& operator [](int i) const {
@@ -154,10 +135,6 @@ public:
         return (header >> LEARNT_BIT) & 1;
     }
 
-    inline bool isSelectable() const {
-        return (header >> SELECTABLE_BIT) & 1;
-    }
-
     inline bool isFrozen() const {
         return (header >> FROZEN_BIT) & 1;
     }
@@ -168,10 +145,6 @@ public:
 
     inline uint16_t getLBD() const {
         return header & LBD_MASK;
-    }
-
-    inline uint16_t getHeader() const {
-        return header;
     }
 
     inline float getActivity() const {
