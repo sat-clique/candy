@@ -76,8 +76,13 @@ private:
         header |= flags;
     }
 
-    inline float& activity() {
+    inline float incActivity(float inc) {
+        activity_ += inc;
         return activity_;
+    }
+
+    inline void scaleActivity(float factor) {
+        activity_ *= factor;
     }
 
     friend class ClauseDatabase;

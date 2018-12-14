@@ -53,7 +53,7 @@ private:
     //        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
     //        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
     //        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
-            return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->activity() < y->activity());
+            return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->getActivity() < y->getActivity());
         }
     };
 
@@ -62,22 +62,21 @@ private:
     std::vector<Clause*> clauses; // List of problem clauses
 
     // clause activity heuristic
-    double cla_inc; // Amount to bump next clause with.
-    double clause_decay;
+    float cla_inc; // Amount to bump next clause with.
+    float clause_decay;
 
     const unsigned int persistentLBD;
 
-    bool track_literal_occurrence;
-    
+    const bool reestimationBumpActivity;
+    const bool reestimationReduceLBD;
+
+    bool track_literal_occurrence;    
     std::vector<std::vector<Clause*>> variableOccurrences;
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
-    void bumpActivities(std::vector<Clause*>& involved_clauses);
-    void bumpActivity(Clause& c);
-    void rescaleActivity();
-    void decayActivity();
-    void reduceLBDs(Trail& trail, std::vector<Clause*>& involved_clauses);
+    void bumpActivity(Clause* clause);
+    void reduceLBD(Trail& trail, Clause* clause);
 
 public:
     /* analysis result is stored here */
@@ -148,7 +147,6 @@ public:
         if (lbd > 0) {
             clause->setLBD(lbd);
             clause->setLearnt(true);
-            bumpActivity(*clause);
         }
         clauses.push_back(clause);
 

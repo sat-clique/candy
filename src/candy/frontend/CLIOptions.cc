@@ -11,6 +11,8 @@ namespace ClauseLearningOptions {
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT8_MAX));
     DoubleOption opt_clause_decay("ClauseDatabase", "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
+    BoolOption opt_reestimation_bump_activity("ClauseDatabase", "reestimate-activity", "After conflict bump activities", true);
+    BoolOption opt_reestimation_reduce_lbd("ClauseDatabase", "reestimate-lbd", "After conflict reduce lbds", true);
 }
 
 namespace SolverOptions {
