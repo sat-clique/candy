@@ -101,7 +101,7 @@ public:
                 sort(watchers[l].begin(), watchers[l].end(), [](Watcher w1, Watcher w2) {
                     Clause& c1 = *w1.cref;
                     Clause& c2 = *w2.cref;
-                    return c1.size() < c2.size() || (c1.size() == c2.size() && c1.activity() > c2.activity());
+                    return c1.size() < c2.size() || (c1.size() == c2.size() && c1.getActivity() > c2.getActivity());
                 });
             }
         }

@@ -125,7 +125,7 @@ public:
                         return trail.newFact(lits.front()) && propagator.propagate() == nullptr;
                     }
                     else {
-                        Clause* new_clause = clause_db.createClause(lits.begin(), lits.end());
+                        Clause* new_clause = clause_db.createClause(lits.begin(), lits.end(), clause->getLBD());
                         propagator.attachClause(new_clause);
                     } 
                 }
@@ -178,7 +178,8 @@ public:
                     return trail.newFact(resolvent.front()) && propagator.propagate() == nullptr;
                 }
                 else {
-                    Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end());
+                    unsigned int lbd = std::min(pc->getLBD(), nc->getLBD());
+                    Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
                     propagator.attachClause(clause);
                 }
             }

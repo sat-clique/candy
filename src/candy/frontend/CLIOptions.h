@@ -12,6 +12,8 @@ namespace ClauseLearningOptions {
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern DoubleOption opt_clause_decay;
+    extern BoolOption opt_reestimation_bump_activity;
+    extern BoolOption opt_reestimation_reduce_lbd;
 }
 
 namespace SolverOptions {
