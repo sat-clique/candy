@@ -109,13 +109,13 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
                         // in case of inprocessing:
-                        if (clause->isLearnt() && !occurence->isLearnt()) {
+                        if (clause->isLearnt() && !occurence->isLearnt()) {// recreate persistent
+                            Clause* persistent = clause_db.createClause(clause->begin(), clause->end());
+                            propagator.attachClause(persistent);
+                            abstractions[persistent]=abstr;
                             propagator.detachClause(clause);
                             clause_db.removeClause((Clause*)clause);
                             abstractions.erase(clause);
-                            Clause* new_clause = clause_db.createClause(clause->begin(), clause->end());
-                            propagator.attachClause(new_clause);
-                            abstractions[new_clause]=abstr;
                         }
                     }
                     else { // strengthen:
