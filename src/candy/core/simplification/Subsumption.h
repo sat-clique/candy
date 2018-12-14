@@ -38,12 +38,6 @@ public:
 
     uint32_t bwdsub_assigns;
 
-    void attachOccurences(Var v) {
-        for (const Clause* clause : clause_db.refOccurences(v)) {
-            attach(clause);
-        }
-    }
-
     void attach(const Clause* clause) {
         if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
             if (abstractions.count(clause) == 0 && !clause->isDeleted() && clause_db.isPersistent(clause)) {

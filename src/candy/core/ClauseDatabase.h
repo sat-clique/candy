@@ -186,10 +186,6 @@ public:
         }
     }
 
-    inline const std::vector<Clause*>& refOccurences(Var v) {
-        return variableOccurrences[v];
-    }
-
     inline size_t numOccurences(Var v) {
         return variableOccurrences[v].size();
     }
