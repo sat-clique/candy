@@ -50,10 +50,11 @@ void ClauseDatabase::reduceLBD(Trail& trail, Clause* clause) {
 }
 
 void ClauseDatabase::reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
+    if (!reestimationReduceLBD && !reestimationBumpActivity) return;
     for (Clause* clause : involved_clauses) {
         if (clause->isLearnt()) {
-            reduceLBD(trail, clause);
-            bumpActivity(clause); 
+            if (reestimationReduceLBD) reduceLBD(trail, clause);
+            if (reestimationBumpActivity) bumpActivity(clause); 
         }
     }
     cla_inc *= (1 / clause_decay);
