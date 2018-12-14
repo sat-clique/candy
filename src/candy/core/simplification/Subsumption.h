@@ -69,6 +69,10 @@ public:
 template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionCheck() {
     assert(trail.decisionLevel() == 0);
 
+    for (const Clause* clause : clause_db) {
+        attach(clause);
+    }
+
     Clause bwdsub_tmpunit({ lit_Undef });
 
     sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { return c1->size() > c2->size(); });

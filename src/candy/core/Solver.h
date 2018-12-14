@@ -284,9 +284,8 @@ protected:
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
+    double simplification_threshold_factor = 0.1;
     std::vector<Var> freezes;
-
-    // inprocessing
     uint64_t lastRestartWithInprocessing;
     uint32_t inprocessingFrequency;
 
@@ -343,10 +342,10 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     sort_variables(SolverOptions::opt_sort_variables),
     // conflict state
     ok(true),
-    // preprocessing
-    preprocessing_enabled(true),
+    // pre- and inprocessing
+    preprocessing_enabled(SolverOptions::opt_preprocessing),
+    simplification_threshold_factor(SolverOptions::opt_simplification_threshold_factor),
     freezes(),
-    // inprocessing
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
@@ -389,7 +388,8 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
     // conflict state
     ok(true),
     // preprocessing
-    preprocessing_enabled(true),
+    preprocessing_enabled(SolverOptions::opt_preprocessing),
+    simplification_threshold_factor(SolverOptions::opt_simplification_threshold_factor),
     freezes(),
     // inprocessing
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
@@ -545,29 +545,20 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
 
     clause_db.initOccurrenceTracking(this->nVars());
 
-    for (const Clause* clause : clause_db) {
-        if (clause_db.isPersistent(clause)) {
-            subsumption.attach(clause); 
-        }
-    }
-
-    while (subsumption.queue.size() > 0) {
+    unsigned int num = 1;
+    unsigned int max = 0;
+    while (num > max * simplification_threshold_factor) {
         ok = subsumption.backwardSubsumptionCheck();
-        clause_db.cleanup();
 
         if (isInConflictingState() || asynch_interrupt) break;
 
         ok = elimination.eliminate();
-        clause_db.cleanup();
 
         if (isInConflictingState() || asynch_interrupt) break;
-
-        for (const Clause* clause : elimination.created) {
-            subsumption.attach(clause);
-            for (Lit lit : *clause) {
-                subsumption.attachOccurences(var(lit));
-            }
-        }
+        
+        num = clause_db.cleanup();
+        max = std::max(num, max);
+        Statistics::getInstance().printSimplificationStats();
     } 
 
     for (unsigned int v = 0; v < this->nVars(); v++) {

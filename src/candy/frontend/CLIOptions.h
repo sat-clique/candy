@@ -21,7 +21,6 @@ namespace SolverOptions {
     extern IntOption mem_lim;
     extern BoolOption wait_for_user;    
     extern BoolOption do_solve;
-    extern BoolOption do_preprocess;
     extern BoolOption do_certified;
     extern StringOption opt_certified_file;
     extern BoolOption do_gaterecognition;
@@ -50,7 +49,9 @@ namespace SolverOptions {
     
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
+    extern BoolOption opt_preprocessing;
     extern IntOption opt_inprocessing;
+    extern DoubleOption opt_simplification_threshold_factor;
 }
 
 namespace VariableEliminationOptions {
