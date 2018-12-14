@@ -61,7 +61,7 @@ namespace VariableEliminationOptions {
 }
 
 namespace SubsumptionOptions {
-    IntOption opt_subsumption_lim("SIMP", "sub-lim", "Do not check if subsumption against a clause larger than this.", 1000, IntRange(0, INT32_MAX));
+    IntOption opt_subsumption_lim("SIMP", "sub-lim", "Do not check for subsumption with a clause larger than this.", 100, IntRange(0, INT32_MAX));
 }
 
 namespace GateRecognitionOptions {

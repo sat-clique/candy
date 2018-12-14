@@ -28,8 +28,6 @@ private:
     const uint_fast8_t grow_value;     // Allow a variable elimination step to grow by a number of clauses (default to zero).
 
 public:
-    std::vector<const Clause*> created;
-
     VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
         clause_db(clause_db_),
         trail(trail_),
@@ -41,8 +39,7 @@ public:
         use_asymm(VariableEliminationOptions::opt_use_asymm),
         use_elim(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
-        grow_value(VariableEliminationOptions::opt_grow),
-        created() 
+        grow_value(VariableEliminationOptions::opt_grow)
     { }
 
     inline void grow(size_t size) {
@@ -65,8 +62,6 @@ public:
     }
 
     bool eliminate() {
-        created.clear();
-
         std::vector<Var> variables;
         for (unsigned int v = 0; v < frozen.size(); v++) {
             if (!frozen[v] && !isEliminated(v)) variables.push_back(v);
@@ -132,7 +127,6 @@ public:
                     else {
                         Clause* new_clause = clause_db.createClause(lits.begin(), lits.end());
                         propagator.attachClause(new_clause);
-                        created.push_back(clause);
                     } 
                 }
             }
@@ -140,15 +134,11 @@ public:
         return true;
     }
 
-    /**
-     * Return true if v was eliminated, else false
-     */
     bool eliminateVar(Var v) {
         assert(!isEliminated(v));
 
         const std::vector<Clause*> occurences = clause_db.copyOccurences(v);
-        // split the occurrences into positive and negative:
-        std::vector<Clause*> pos, neg;
+        std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
         for (Clause* cl : occurences) {
             if (cl->contains(mkLit(v))) {
                 pos.push_back(cl);
@@ -174,10 +164,8 @@ public:
             mkElimClause(elimclauses, ~mkLit(v));
         } 
 
-        // flag v as eliminated
         setEliminated(v);
         
-        // produce clauses in cross product
         static std::vector<Lit> resolvent;
         resolvent.clear();
         for (Clause* pc : pos) for (Clause* nc : neg) {
@@ -190,9 +178,8 @@ public:
                     return trail.newFact(resolvent.front()) && propagator.propagate() == nullptr;
                 }
                 else {
-                    const Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end());
-                    propagator.attachClause((Clause*)clause);
-                    created.push_back(clause);
+                    Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end());
+                    propagator.attachClause(clause);
                 }
             }
         }
