@@ -136,7 +136,7 @@ namespace Candy {
             SolverOptions::cpu_lim,
             SolverOptions::mem_lim,
             SolverOptions::do_solve,
-            SolverOptions::do_preprocess,
+            SolverOptions::opt_preprocessing,
             SolverOptions::do_certified,
             SolverOptions::do_gaterecognition,
             SolverOptions::do_simp_out,

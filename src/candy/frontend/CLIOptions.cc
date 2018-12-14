@@ -22,7 +22,6 @@ namespace SolverOptions {
     BoolOption wait_for_user("MAIN", "wait", "Wait for user input on startup (for profiling).", false);
     
     BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
-    BoolOption do_preprocess("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
     StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "NULL");
     BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
@@ -49,7 +48,9 @@ namespace SolverOptions {
 
     BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
     BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
+    BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
+    DoubleOption opt_simplification_threshold_factor("MEMORY LAYOUT", "simplification-threshold-factor", "Simplification Threshold Factor", 0.1, DoubleRange(0, false, 1, false));
 }
 
 namespace VariableEliminationOptions {

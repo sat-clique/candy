@@ -310,10 +310,6 @@ int main(int argc, char** argv) {
         solver->resetCertificate(args.opt_certified_file);
     }
 
-    if (!args.do_preprocess) {
-        solver->disablePreprocessing();
-    }
-
     solver->addClauses(problem);
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily

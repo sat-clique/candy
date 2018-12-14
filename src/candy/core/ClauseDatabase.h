@@ -87,7 +87,7 @@ public:
     ~ClauseDatabase();
 
     void reduce();
-    void cleanup();
+    size_t cleanup();
     void defrag();
 
     void initOccurrenceTracking(size_t nVars);
