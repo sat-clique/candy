@@ -27,8 +27,6 @@ class Clause {
     uint16_t length;
     uint16_t header;
 
-    float activity_;
-
     Lit literals[1];
 
 private:
@@ -58,15 +56,6 @@ private:
         header |= flags;
     }
 
-    inline float incActivity(float inc) {
-        activity_ += inc;
-        return activity_;
-    }
-
-    inline void scaleActivity(float factor) {
-        activity_ *= factor;
-    }
-
     friend class ClauseDatabase;
     friend class Propagate;
     friend class ConflictAnalysis;
@@ -78,7 +67,6 @@ public:
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
         header = 0; // not frozen, not deleted and not learnt; lbd=0
-        activity_ = 0;
     }
     
     Clause(std::initializer_list<Lit> list) : Clause(list.begin(), list.end()) { }
@@ -145,10 +133,6 @@ public:
 
     inline uint16_t getLBD() const {
         return header & LBD_MASK;
-    }
-
-    inline float getActivity() const {
-        return activity_;
     }
 
     inline std::vector<Lit> except(Lit lit) const {

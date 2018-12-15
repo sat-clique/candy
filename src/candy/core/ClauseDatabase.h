@@ -43,31 +43,12 @@ struct BinaryWatcher {
 
 class ClauseDatabase {
 private:
-    struct reduceDB_lt {
-        reduceDB_lt() {
-        }
-
-        bool operator()(Clause* x, Clause* y) {
-    //        // XMiniSat paper, alternate ordering
-    //        const uint8_t reduceOnSizeSize = 12;
-    //        uint32_t w1 = x->size() < reduceOnSizeSize : x->size() : x->size() + x->getLBD();
-    //        uint32_t w2 = y->size() < reduceOnSizeSize : y->size() : y->size() + y->getLBD();
-    //        return w1 > w2 || (w1 == w2 && x->activity() < y->activity());
-            return x->getLBD() > y->getLBD() || (x->getLBD() == y->getLBD() && x->getActivity() < y->getActivity());
-        }
-    };
-
     ClauseAllocator allocator;
  
     std::vector<Clause*> clauses; // List of problem clauses
 
-    // clause activity heuristic
-    float cla_inc; // Amount to bump next clause with.
-    float clause_decay;
-
     const unsigned int persistentLBD;
 
-    const bool reestimationBumpActivity;
     const bool reestimationReduceLBD;
 
     bool track_literal_occurrence;    
@@ -75,7 +56,6 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
-    void bumpActivity(Clause* clause);
     void reduceLBD(Trail& trail, Clause* clause);
 
 public:

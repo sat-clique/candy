@@ -3,9 +3,7 @@
 namespace Candy {
 
 ClauseDatabase::ClauseDatabase() : 
-    cla_inc(1), clause_decay(ClauseDatabaseOptions::opt_clause_decay),
     persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
-    reestimationBumpActivity(ClauseDatabaseOptions::opt_reestimation_bump_activity), 
     reestimationReduceLBD(ClauseDatabaseOptions::opt_reestimation_reduce_lbd), 
     track_literal_occurrence(false),
     variableOccurrences(),
@@ -31,15 +29,6 @@ void ClauseDatabase::stopOccurrenceTracking() {
     track_literal_occurrence = false;
 }
 
-void ClauseDatabase::bumpActivity(Clause* clause) {
-    if (clause->incActivity(cla_inc) > 1e20f) {
-        for (Clause* clause : clauses) {
-            clause->scaleActivity(1e-20f);
-        }
-        cla_inc *= 1e-20;
-    }
-}
-
 // DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
 void ClauseDatabase::reduceLBD(Trail& trail, Clause* clause) {
     uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
@@ -50,14 +39,13 @@ void ClauseDatabase::reduceLBD(Trail& trail, Clause* clause) {
 }
 
 void ClauseDatabase::reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
-    if (!reestimationReduceLBD && !reestimationBumpActivity) return;
-    for (Clause* clause : involved_clauses) {
-        if (clause->isLearnt()) {
-            if (reestimationReduceLBD) reduceLBD(trail, clause);
-            if (reestimationBumpActivity) bumpActivity(clause); 
+    if (reestimationReduceLBD) {
+        for (Clause* clause : involved_clauses) {
+            if (clause->isLearnt()) {
+                reduceLBD(trail, clause);
+            }
         }
     }
-    cla_inc *= (1 / clause_decay);
 }
 
 /**
@@ -69,7 +57,7 @@ void ClauseDatabase::reduce() {
 
     std::vector<Clause*> learnts;
     copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [](Clause* clause) { return clause->isLearnt() && clause->size() > 2; });
-    std::sort(learnts.begin(), learnts.end(), reduceDB_lt());
+    std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
 
     learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());
     if (learnts.size() == 0 || learnts.back()->getLBD() <= persistentLBD) {
