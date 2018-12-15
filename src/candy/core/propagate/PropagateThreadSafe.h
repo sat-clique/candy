@@ -105,9 +105,7 @@ public:
             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
                 sort(watchers[l].begin(), watchers[l].end(), [](WatcherTS* w1, WatcherTS* w2) {
-                    const Clause& c1 = *w1->cref;
-                    const Clause& c2 = *w2->cref;
-                    return c1.size() < c2.size() || (c1.size() == c2.size() && c1.getActivity() > c2.getActivity());
+                    return w1->cref->size() < w2->cref->size();
                 });
             }
         }
