@@ -51,16 +51,16 @@ public:
     void attachClause(Clause* clause) {
         assert(clause->size() > 1);
         if (clause->size() > 2) {
-            watchers[~clause->first()].emplace_back(clause, clause->second());
-            watchers[~clause->second()].emplace_back(clause, clause->first());
+            watchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+            watchers[toInt(~clause->second())].emplace_back(clause, clause->first());
         }
     }
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 1);
         if (clause->size() > 2) {
-            std::vector<Watcher>& list0 = watchers[~clause->first()];
-            std::vector<Watcher>& list1 = watchers[~clause->second()];
+            std::vector<Watcher>& list0 = watchers[toInt(~clause->first())];
+            std::vector<Watcher>& list1 = watchers[toInt(~clause->second())];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
             list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
         }
@@ -83,7 +83,7 @@ public:
         for (size_t v = 0; v < nVars; v++) {
             Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
             for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
-                sort(watchers[l].begin(), watchers[l].end(), [](Watcher w1, Watcher w2) {
+                sort(watchers[toInt(l)].begin(), watchers[toInt(l)].end(), [](Watcher w1, Watcher w2) {
                     return w1.cref->size() < w2.cref->size();
                 });
             }
@@ -116,7 +116,7 @@ public:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
     inline Clause* propagate_watched_clauses(Lit p) {
-        std::vector<Watcher>& list = watchers[p];
+        std::vector<Watcher>& list = watchers[toInt(p)];
 
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
@@ -137,7 +137,7 @@ public:
                     for (uint_fast16_t k = 2; k < clause->size(); k++) {
                         if (trail.value((*clause)[k]) != l_False) {
                             clause->swap(1, k);
-                            watchers[~clause->second()].emplace_back(clause, clause->first());
+                            watchers[toInt(~clause->second())].emplace_back(clause, clause->first());
                             goto propagate_skip;
                         }
                     }
