@@ -56,7 +56,11 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
-    void reduceLBD(Trail& trail, Clause* clause);
+    void reduceLBD(Clause* clause, uint_fast16_t lbd) {
+        if (lbd + 1 < clause->getLBD()) {
+            clause->setLBD(lbd);
+        }
+    }
 
 public:
     /* analysis result is stored here */

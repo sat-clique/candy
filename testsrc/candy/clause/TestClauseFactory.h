@@ -20,12 +20,6 @@ public:
         clause->setLBD(lbd);
         return clause;
     }
-
-    Clause* getClauseFrozen(std::initializer_list<Lit> list) {
-        Clause* clause = new (allocator.allocate(list.size())) Clause(list);
-        clause->setFrozen(true);
-        return clause;
-    }
     
     Clause* getClauseLearnt(std::initializer_list<Lit> list) {
         Clause* clause = new (allocator.allocate(list.size())) Clause(list);
@@ -36,13 +30,6 @@ public:
     Clause* getClauseDeleted(std::initializer_list<Lit> list) {
         Clause* clause = new (allocator.allocate(list.size())) Clause(list);
         clause->setDeleted();
-        return clause;
-    }
-    
-    Clause* getClauseFrozenWithLBD(std::initializer_list<Lit> list, int lbd) {
-        Clause* clause = new (allocator.allocate(list.size())) Clause(list);
-        clause->setFrozen(true);
-        clause->setLBD(lbd);
         return clause;
     }
     

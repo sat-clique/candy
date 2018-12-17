@@ -30,19 +30,12 @@ void ClauseDatabase::stopOccurrenceTracking() {
 }
 
 // DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-void ClauseDatabase::reduceLBD(Trail& trail, Clause* clause) {
-    uint_fast16_t nblevels = trail.computeLBD(clause->begin(), clause->end());
-    if (nblevels + 1 < clause->getLBD()) {
-        clause->setLBD(nblevels); // improve the LBD
-        clause->setFrozen(true); // Seems to be interesting, keep it for the next round
-    }
-}
-
 void ClauseDatabase::reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
     if (reestimationReduceLBD) {
         for (Clause* clause : involved_clauses) {
             if (clause->isLearnt()) {
-                reduceLBD(trail, clause);
+                uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
+                reduceLBD(clause, lbd);
             }
         }
     }
@@ -64,17 +57,11 @@ void ClauseDatabase::reduce() {
         return; // We have a lot of "good" clauses, it is difficult to compare them, keep more
     }
     
-    size_t count = 0;
     for (Clause* c : learnts) {
-        if (c->isFrozen()) { // lbd was reduce during this sequence
-            c->setFrozen(false); // reset flag
-        } else {
-            ++count;
-            removeClause(c);
-        }
+        removeClause(c);
     }
 
-    Statistics::getInstance().solverRemovedClausesInc(count);
+    Statistics::getInstance().solverRemovedClausesInc(learnts.size());
 }
 
 size_t ClauseDatabase::cleanup() { 

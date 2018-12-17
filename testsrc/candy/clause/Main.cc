@@ -35,15 +35,6 @@ TEST (CandyClauseHeaderTestPatterns, setLBD) {
     Clause* clause = factory.getClauseWithLBD({lit_Undef}, 1);
     ASSERT_EQ(clause->getLBD(), 1);
     ASSERT_FALSE(clause->isLearnt());
-    ASSERT_FALSE(clause->isFrozen());
-    ASSERT_FALSE(clause->isDeleted());
-}
-
-TEST (CandyClauseHeaderTestPatterns, setFrozen) {
-    Clause* clause = factory.getClauseFrozen({lit_Undef});
-    ASSERT_EQ(clause->getLBD(), 0);
-    ASSERT_FALSE(clause->isLearnt());
-    ASSERT_TRUE(clause->isFrozen());
     ASSERT_FALSE(clause->isDeleted());
 }
 
@@ -51,7 +42,6 @@ TEST (CandyClauseHeaderTestPatterns, setLearnt) {
     Clause* clause = factory.getClauseLearnt({lit_Undef});
     ASSERT_EQ(clause->getLBD(), 0);
     ASSERT_TRUE(clause->isLearnt());
-    ASSERT_FALSE(clause->isFrozen());
     ASSERT_FALSE(clause->isDeleted());
 }
 
@@ -59,23 +49,13 @@ TEST (CandyClauseHeaderTestPatterns, setDeleted) {
     Clause* clause = factory.getClauseDeleted({lit_Undef});
     ASSERT_EQ(clause->getLBD(), 0);
     ASSERT_FALSE(clause->isLearnt());
-    ASSERT_FALSE(clause->isFrozen());
     ASSERT_TRUE(clause->isDeleted());
-}
-
-TEST (CandyClauseHeaderTestPatterns, setFrozenAndLBD) {
-    Clause* clause = factory.getClauseFrozenWithLBD({lit_Undef}, 255);
-    ASSERT_EQ(clause->getLBD(), 255);
-    ASSERT_FALSE(clause->isLearnt());
-    ASSERT_TRUE(clause->isFrozen());
-    ASSERT_FALSE(clause->isDeleted());
 }
 
 TEST (CandyClauseHeaderTestPatterns, setLearntAndLBD) {
     Clause* clause = factory.getClauseLearntWithLBD({lit_Undef}, 255);
     ASSERT_EQ(clause->getLBD(), 255);
     ASSERT_TRUE(clause->isLearnt());
-    ASSERT_FALSE(clause->isFrozen());
     ASSERT_FALSE(clause->isDeleted());
 }
 
@@ -83,7 +63,6 @@ TEST (CandyClauseHeaderTestPatterns, setDeletedAndLBD) {
     Clause* clause = factory.getClauseDeletedWithLBD({lit_Undef}, 255);
     ASSERT_EQ(clause->getLBD(), 255);
     ASSERT_FALSE(clause->isLearnt());
-    ASSERT_FALSE(clause->isFrozen());
     ASSERT_TRUE(clause->isDeleted());
 }
 
