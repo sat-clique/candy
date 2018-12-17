@@ -39,15 +39,13 @@ public:
     uint32_t bwdsub_assigns;
 
     void attach(const Clause* clause) {
-        if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
-            if (abstractions.count(clause) == 0 && !clause->isDeleted() && clause_db.isPersistent(clause)) {
-                uint64_t abstraction = 0;
-                for (Lit lit : *clause) {
-                    abstraction |= 1ull << (var(lit) % 64);
-                }
-                queue.push_back(clause);
-                abstractions[clause] = abstraction;
+        if (abstractions.count(clause) == 0 && (subsumption_lim == 0 || clause->size() < subsumption_lim)) {
+            uint64_t abstraction = 0;
+            for (Lit lit : *clause) {
+                abstraction |= 1ull << (var(lit) % 64);
             }
+            abstractions[clause] = abstraction;
+            queue.push_back(clause);
         }
     }
 
@@ -62,7 +60,7 @@ public:
 
 template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionCheck() {
     assert(trail.decisionLevel() == 0);
-
+    
     for (const Clause* clause : clause_db) {
         attach(clause);
     }
@@ -82,10 +80,8 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
         const Clause* clause = queue.back();
         queue.pop_back();
-        
-        if (clause->isDeleted()) {
-            continue;
-        }
+
+        if (clause->isDeleted()) continue;
         
         assert(clause->size() > 1 || trail.value(clause->first()) == l_True); // Unit-clauses should have been propagated before this point.
         
@@ -95,28 +91,24 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         }));
 
         // Search all candidates:
-        const uint64_t abstr = abstractions[clause];
-        std::vector<Clause*> occurences = clause_db.copyOccurences(best);
-        for (unsigned int i = 0; i < occurences.size(); i++) {
-            const Clause* occurence = occurences[i]; 
-
-            if (!occurence->isDeleted() && occurence != clause) {
-                if ((abstr & ~abstractions[occurence]) != 0) continue;
-
+        const uint64_t clause_abstraction = abstractions[clause];
+        const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
+        for (const Clause* occurence : occurences) {
+            if (occurence != clause && ((clause_abstraction & ~abstractions[occurence]) == 0) && !occurence->isDeleted()) {
                 Lit l = clause->subsumes(*occurence);
 
                 if (l != lit_Error) {
+                    if (clause->isLearnt()) {// in case of inprocessing: recreate persistent
+                        Clause* persistent = clause_db.createClause(clause->begin(), clause->end(), std::min(clause->getLBD(), occurence->getLBD()));
+                        propagator.attachClause(persistent);
+                        abstractions[persistent]=clause_abstraction;
+                        abstractions.erase(clause);
+                        propagator.detachClause(clause);
+                        clause_db.removeClause((Clause*)clause);
+                    }
+
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
-                        // in case of inprocessing:
-                        if (clause->isLearnt() && !occurence->isLearnt()) {// recreate persistent
-                            Clause* persistent = clause_db.createClause(clause->begin(), clause->end());
-                            propagator.attachClause(persistent);
-                            abstractions[persistent]=abstr;
-                            propagator.detachClause(clause);
-                            clause_db.removeClause((Clause*)clause);
-                            abstractions.erase(clause);
-                        }
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();
@@ -129,10 +121,9 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
                             }
                         }
                         else {
-                            Clause* new_clause = clause_db.createClause(lits.begin(), lits.end(), occurence->getLBD());
+                            Clause* new_clause = clause_db.createClause(lits.begin(), lits.end(), std::min(clause->getLBD(), occurence->getLBD()));
                             propagator.attachClause(new_clause);
                             attach(new_clause);
-                            occurences.push_back(new_clause);
                         }
                     }
                     propagator.detachClause(occurence);

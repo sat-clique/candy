@@ -42,10 +42,6 @@ private:
         header = (header & ~(1 << LEARNT_BIT)) | ((flag ? 1 : 0) << LEARNT_BIT);
     }
 
-    inline void setFrozen(bool flag) {
-        header = (header & ~(1 << FROZEN_BIT)) | ((flag ? 1 : 0) << FROZEN_BIT);
-    }
-
     inline void setDeleted() {
         header |= 1 << DELETED_BIT;
     }
@@ -121,10 +117,6 @@ public:
 
     inline bool isLearnt() const {
         return (header >> LEARNT_BIT) & 1;
-    }
-
-    inline bool isFrozen() const {
-        return (header >> FROZEN_BIT) & 1;
     }
 
     inline bool isDeleted() const {

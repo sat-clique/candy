@@ -18,9 +18,9 @@ private:
     TPropagate& propagator;
     Certificate& certificate;
 
+    std::vector<char> frozen;
     std::vector<uint32_t> elimclauses;
     std::vector<char> eliminated;
-    std::vector<char> frozen;
 
     const bool use_asymm;         // Shrink clauses by asymmetric branching.
     const bool use_elim;          // Perform variable elimination.
@@ -97,7 +97,8 @@ public:
 
         const std::vector<Clause*> occurences = clause_db.copyOccurences(v);
         for (const Clause* clause : occurences) {
-            if (!clause->isDeleted() && !trail.satisfies(*clause)) {
+            assert(!clause->isDeleted());
+            if (!trail.satisfies(*clause)) {
                 trail.newDecisionLevel();
                 Lit l = lit_Undef;
                 for (Lit lit : *clause) {
