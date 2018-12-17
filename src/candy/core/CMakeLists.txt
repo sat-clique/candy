@@ -4,7 +4,6 @@ add_library(core OBJECT
     Statistics.h
     Clause.cc
     Clause.h
-    ClauseAllocator.cc
     ClauseAllocator.h
     ClauseDatabase.cc
     ClauseDatabase.h

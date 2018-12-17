@@ -20,6 +20,7 @@
 namespace Candy {
 
 class ClauseAllocator {
+    friend class ClauseDatabase;
 
 private:
     static constexpr unsigned int INITIAL_PAGE_SIZE = 64*1024*1024;
@@ -30,6 +31,20 @@ private:
     size_t page_size;
     unsigned char* memory;
 
+    ClauseAllocator() : pages(), cursor(0), page_size(INITIAL_PAGE_SIZE) {
+        memory = (unsigned char*)std::malloc(INITIAL_PAGE_SIZE);
+        pages.push_back(memory);
+    }
+
+    ~ClauseAllocator() {
+        for (unsigned char* page : pages) {
+            std::free((void*)page);
+        }
+    }
+
+    ClauseAllocator(ClauseAllocator const&) = delete;
+    void operator=(ClauseAllocator const&)  = delete;
+
     inline void newPage() {
         memory = (unsigned char*)std::malloc(page_size);
         pages.push_back(memory);
@@ -39,13 +54,6 @@ private:
     inline unsigned int clauseBytes(unsigned int length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
     }
-
-public:
-    ClauseAllocator();
-    ~ClauseAllocator();
-
-    ClauseAllocator(ClauseAllocator const&) = delete;
-    void operator=(ClauseAllocator const&)  = delete;
 
     inline void* allocate(unsigned int length) {
         unsigned int size = clauseBytes(length);
@@ -61,7 +69,28 @@ public:
         // just keep it dangling until defrag does its job
     }
 
-    std::vector<Clause*> defrag(std::vector<Clause*> keep);
+    std::vector<Clause*> defrag(std::vector<Clause*> keep) {
+        std::vector<Clause*> keep2 {};
+        keep2.reserve(keep.size());
+        page_size *= pages.size();
+        std::vector<unsigned char*> oldpages;
+        oldpages.swap(pages);
+        memory = (unsigned char*)std::malloc(page_size);
+        pages.push_back(memory);
+        cursor = 0;
+        for (Clause* clause : keep) {
+            unsigned char* pos = memory + cursor;
+            unsigned int size = clauseBytes(clause->size());
+            memcpy((void*)pos, (void*)clause, size);
+            keep2.push_back(reinterpret_cast<Clause*>(pos));
+            cursor += size;
+        }
+        for (unsigned char* page : oldpages) {
+            free((void*)page);
+        }
+        assert(pages.size() == 1);
+        return keep2;
+    }
 
 };
 

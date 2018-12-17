@@ -68,14 +68,14 @@ size_t ClauseDatabase::cleanup() {
     auto new_end = std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) { return c->isDeleted(); });
     size_t num = std::distance(new_end, clauses.end());
     clauses.erase(new_end, clauses.end());
-    return num;
+    return num; 
 }
 
 /**
  * Make sure all references are updated after all clauses reside in a new adress space
  */
 void ClauseDatabase::defrag() {
-    std::vector<Clause*> reallocated = allocator.defrag(clauses);
+    std::vector<Clause*> reallocated = allocator.defrag(clauses); 
     clauses.swap(reallocated);
     for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
         watcher.clear();
