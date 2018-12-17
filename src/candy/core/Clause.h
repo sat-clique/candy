@@ -16,13 +16,16 @@
 namespace Candy {
 
 class Clause {
+    friend class ClauseDatabase;
+    friend class Propagate;
+    friend class ConflictAnalysis;
+
+private:
     uint16_t length;
     uint16_t weight;
 
     Lit literals[1];
-
-private:
-
+    
     inline void swap(uint16_t pos1, uint16_t pos2) {
         assert(pos1 < length && pos2 < length);
         Lit tmp = literals[pos1];
@@ -41,11 +44,6 @@ private:
     inline void setLBD(uint16_t lbd) {
         weight = lbd;
     }
-
-    friend class ClauseDatabase;
-    friend class Propagate;
-    friend class ConflictAnalysis;
-    friend class TestClauseFactory;
 
 public:
     template<typename Iterator>
