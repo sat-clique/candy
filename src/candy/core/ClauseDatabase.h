@@ -48,7 +48,6 @@ private:
     std::vector<Clause*> clauses; // List of problem clauses
 
     const unsigned int persistentLBD;
-
     const bool reestimationReduceLBD;
 
     bool track_literal_occurrence;    
@@ -71,11 +70,6 @@ public:
     void stopOccurrenceTracking();
 
     void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses);
-
-    bool isPersistent(const Clause* clause) const {
-        return !clause->isLearnt() || clause->getLBD() < persistentLBD;
-    }
-
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
 

@@ -142,7 +142,7 @@ namespace Candy {
     	virtual lbool modelValue(Lit p) const override {
     		return m_solver->modelValue(p);
     	}
-        virtual Cl getModel() {
+        virtual Cl getModel() override {
             return m_solver->getModel();
         }
 
