@@ -15,17 +15,9 @@
 
 namespace Candy {
 
-// bits 0..11
-#define BITS_LBD 12
-#define LBD_MASK (static_cast<uint16_t>(4095))
-
-#define LEARNT_BIT 12
-#define FROZEN_BIT 13
-#define DELETED_BIT 14
-
 class Clause {
     uint16_t length;
-    uint16_t header;
+    uint16_t weight;
 
     Lit literals[1];
 
@@ -38,18 +30,16 @@ private:
         literals[pos2] = tmp;
     }
 
-    inline void setLearnt(bool flag) {
-        header = (header & ~(1 << LEARNT_BIT)) | ((flag ? 1 : 0) << LEARNT_BIT);
+    inline void setPersistent() {
+        weight = 0;
     }
 
     inline void setDeleted() {
-        header |= 1 << DELETED_BIT;
+        weight = std::numeric_limits<uint16_t>::max();
     }
 
-    inline void setLBD(uint16_t i) {
-        uint16_t flags = header & ~LBD_MASK;
-        header = std::min(i, LBD_MASK);
-        header |= flags;
+    inline void setLBD(uint16_t lbd) {
+        weight = lbd;
     }
 
     friend class ClauseDatabase;
@@ -59,13 +49,13 @@ private:
 
 public:
     template<typename Iterator>
-    Clause(Iterator begin, Iterator end) {
+    Clause(Iterator begin, Iterator end, uint16_t lbd = 0) {
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
-        header = 0; // not frozen, not deleted and not learnt; lbd=0
+        weight = lbd; // not frozen, not deleted and not learnt; lbd=0
     }
     
-    Clause(std::initializer_list<Lit> list) : Clause(list.begin(), list.end()) { }
+    Clause(std::initializer_list<Lit> list, uint16_t lbd = 0) : Clause(list.begin(), list.end(), lbd) { }
 
     ~Clause();
 
@@ -116,15 +106,15 @@ public:
     void printDIMACS(std::vector<lbool> values) const;
 
     inline bool isLearnt() const {
-        return (header >> LEARNT_BIT) & 1;
+        return weight > 0;
     }
 
     inline bool isDeleted() const {
-        return (header >> DELETED_BIT) & 1;
+        return weight == std::numeric_limits<uint16_t>::max();
     }
 
     inline uint16_t getLBD() const {
-        return header & LBD_MASK;
+        return weight;
     }
 
     inline std::vector<Lit> except(Lit lit) const {

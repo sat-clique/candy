@@ -35,7 +35,9 @@ void ClauseDatabase::reestimateClauseWeights(Trail& trail, std::vector<Clause*>&
         for (Clause* clause : involved_clauses) {
             if (clause->isLearnt()) {
                 uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                reduceLBD(clause, lbd);
+                if (lbd < clause->getLBD()) {
+                    clause->setLBD(lbd);
+                }
             }
         }
     }

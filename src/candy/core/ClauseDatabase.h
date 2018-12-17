@@ -56,12 +56,6 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
-    void reduceLBD(Clause* clause, uint_fast16_t lbd) {
-        if (lbd + 1 < clause->getLBD()) {
-            clause->setLBD(lbd);
-        }
-    }
-
 public:
     /* analysis result is stored here */
 	AnalysisResult result;
@@ -116,11 +110,7 @@ public:
     Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
 
-        Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end);
-        if (lbd > 0) {
-            clause->setLBD(lbd);
-            clause->setLearnt(true);
-        }
+        Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
 
         if (track_literal_occurrence) {
