@@ -94,7 +94,7 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         const uint64_t clause_abstraction = abstractions[clause];
         const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
         for (const Clause* occurence : occurences) {
-            if (occurence != clause && ((clause_abstraction & ~abstractions[occurence]) == 0) && !occurence->isDeleted()) {
+            if (occurence != clause && ((clause_abstraction & ~abstractions[occurence]) == 0)) {
                 Lit l = clause->subsumes(*occurence);
 
                 if (l != lit_Error) {
