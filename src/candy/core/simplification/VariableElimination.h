@@ -97,7 +97,6 @@ public:
 
         const std::vector<Clause*> occurences = clause_db.copyOccurences(v);
         for (const Clause* clause : occurences) {
-            assert(!clause->isDeleted());
             if (!trail.satisfies(*clause)) {
                 trail.newDecisionLevel();
                 Lit l = lit_Undef;

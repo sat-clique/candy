@@ -20,30 +20,12 @@
 
 namespace Candy {
 
-// Helper structures:
 struct Watcher {
     Clause* cref;
     Lit blocker;
-    Watcher() :
-        cref(nullptr), blocker(lit_Undef) {}
-    Watcher(Clause* cr, Lit p) :
-        cref(cr), blocker(p) {}
-    bool operator==(const Watcher& w) const {
-        return cref == w.cref;
-    }
-    bool operator!=(const Watcher& w) const {
-        return cref != w.cref;
-    }
-    bool isDeleted() {
-        return cref->isDeleted() == 1;
-    }
-};
 
-struct WatcherDeleted {
-    WatcherDeleted() { }
-    inline bool operator()(const Watcher& w) const {
-        return w.cref->isDeleted() == 1;
-    }
+    Watcher(Clause* cr, Lit p)
+     : cref(cr), blocker(p) { }
 };
 
 class Propagate {
@@ -51,18 +33,19 @@ private:
     ClauseDatabase& clause_db;
     Trail& trail;
 
-    OccLists<Lit, Watcher, WatcherDeleted> watchers;
+    std::vector<std::vector<Watcher>> watchers;
 
 public:
     uint64_t nPropagations;
 
     Propagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), nPropagations(0) {
-        watchers = OccLists<Lit, Watcher, WatcherDeleted>();
+        : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) {
     }
 
     void init(size_t maxVars) {
-        watchers.init(mkLit(maxVars, true));
+        if (watchers.size() < maxVars*2+2) {
+            watchers.resize(maxVars*2+2);
+        }
     }
 
     void attachClause(Clause* clause) {
@@ -90,7 +73,9 @@ public:
     }
 
     void detachAll() {
-        watchers.clear();
+        for (std::vector<Watcher>& list : watchers) {
+            list.clear();
+        }
     }
 
     void sortWatchers() {
