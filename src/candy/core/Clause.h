@@ -49,7 +49,7 @@ private:
 
 public:
     template<typename Iterator>
-    Clause(Iterator begin, Iterator end, uint16_t lbd = 0) {
+    Clause(Iterator begin, Iterator end, uint16_t lbd) {
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
         weight = lbd; // not frozen, not deleted and not learnt; lbd=0
