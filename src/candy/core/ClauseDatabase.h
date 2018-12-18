@@ -114,8 +114,8 @@ public:
         }
 
         if (clause->size() == 2) {
-            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+            binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+            binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
         }
         
         return clause;
@@ -134,8 +134,8 @@ public:
         }
 
         if (clause->size() == 2) {
-            std::vector<BinaryWatcher>& list0 = binaryWatchers[~clause->first()];
-            std::vector<BinaryWatcher>& list1 = binaryWatchers[~clause->second()];
+            std::vector<BinaryWatcher>& list0 = binaryWatchers[toInt(~clause->first())];
+            std::vector<BinaryWatcher>& list1 = binaryWatchers[toInt(~clause->second())];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list0.end());
             list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list1.end());
         }
@@ -150,7 +150,7 @@ public:
     }
 
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
-        return binaryWatchers[lit];
+        return binaryWatchers[toInt(lit)];
     }
 
 };

@@ -43,10 +43,11 @@ private:
     }
 
     ClauseAllocator(ClauseAllocator const&) = delete;
-    void operator=(ClauseAllocator const&)  = delete;
+    void operator=(ClauseAllocator const&) = delete;
 
     inline void newPage() {
         memory = (unsigned char*)std::malloc(page_size);
+        std::memset(memory, 0, page_size);
         pages.push_back(memory);
         cursor = 0;
     }
@@ -69,27 +70,37 @@ private:
         // just keep it dangling until defrag does its job
     }
 
-    std::vector<Clause*> defrag(std::vector<Clause*> keep) {
-        std::vector<Clause*> keep2 {};
-        keep2.reserve(keep.size());
-        page_size *= pages.size();
-        std::vector<unsigned char*> oldpages;
-        oldpages.swap(pages);
-        memory = (unsigned char*)std::malloc(page_size);
-        pages.push_back(memory);
-        cursor = 0;
-        for (Clause* clause : keep) {
-            unsigned char* pos = memory + cursor;
-            unsigned int size = clauseBytes(clause->size());
-            memcpy((void*)pos, (void*)clause, size);
-            keep2.push_back(reinterpret_cast<Clause*>(pos));
-            cursor += size;
+    std::vector<Clause*> defrag() {
+        std::vector<Clause*> clauses {};
+        size_t old_page_size = page_size;
+        std::vector<unsigned char*> old_pages { pages.begin(), pages.end() };
+        pages.clear();
+        page_size *= old_pages.size();
+        newPage();
+        for (unsigned char* old_page : old_pages) {
+            size_t old_cursor = 0;
+            while (old_cursor < old_page_size) {
+                void* old_clause = old_page + old_cursor;
+                unsigned int num_literals = ((Clause*)old_clause)->size();
+                unsigned int num_bytes = clauseBytes(num_literals);
+                if (!((Clause*)old_clause)->isDeleted() && num_literals > 0) {
+                    void* clause = allocate(num_literals);
+                    memcpy(clause, (void*)old_clause, num_bytes);
+                    clauses.push_back((Clause*)clause);
+                    assert(toInt(((Clause*)clause)->first()) < 1000000);
+                }
+                if (num_literals == 0) {
+                    old_cursor = old_page_size;
+                } else {
+                    old_cursor += num_bytes;
+                }
+            }
         }
-        for (unsigned char* page : oldpages) {
+        for (unsigned char* page : old_pages) {
             free((void*)page);
         }
         assert(pages.size() == 1);
-        return keep2;
+        return clauses;
     }
 
 };
