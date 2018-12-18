@@ -62,7 +62,7 @@ public:
     ClauseDatabase();
     ~ClauseDatabase();
 
-    void reduce();
+    std::vector<Clause*> reduce();
     size_t cleanup();
     void defrag();
 
