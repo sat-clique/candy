@@ -49,7 +49,7 @@ void ClauseDatabase::reestimateClauseWeights(Trail& trail, std::vector<Clause*>&
  * In order ot make sure that no clause is locked (reason to an asignment), 
  * do only call this method at decision level 0 and strengthen all clauses first
  **/
-void ClauseDatabase::reduce() {
+std::vector<Clause*> ClauseDatabase::reduce() { 
     Statistics::getInstance().solverReduceDBInc();
 
     std::vector<Clause*> learnts;
@@ -64,6 +64,8 @@ void ClauseDatabase::reduce() {
     }
 
     Statistics::getInstance().solverRemovedClausesInc(learnts.size());
+
+    return learnts;
 }
 
 size_t ClauseDatabase::cleanup() { 
@@ -88,7 +90,9 @@ void ClauseDatabase::defrag() {
         }
     }
     if (track_literal_occurrence) {
-        variableOccurrences.clear();
+        for (std::vector<Clause*>& occ : variableOccurrences) {
+            occ.clear();
+        }
         initOccurrenceTracking(variableOccurrences.size());
     }
 }

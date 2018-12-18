@@ -28,6 +28,9 @@ private:
     const uint_fast8_t grow_value;     // Allow a variable elimination step to grow by a number of clauses (default to zero).
 
 public:
+    unsigned int nStrengthened;
+    unsigned int nEliminated;
+
     VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
         clause_db(clause_db_),
         trail(trail_),
@@ -39,7 +42,9 @@ public:
         use_asymm(VariableEliminationOptions::opt_use_asymm),
         use_elim(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
-        grow_value(VariableEliminationOptions::opt_grow)
+        grow_value(VariableEliminationOptions::opt_grow),
+        nStrengthened(0),
+        nEliminated(0)
     { }
 
     inline void grow(size_t size) {
@@ -62,6 +67,9 @@ public:
     }
 
     bool eliminate() {
+        nStrengthened = 0;
+        nEliminated = 0;
+
         std::vector<Var> variables;
         for (unsigned int v = 0; v < frozen.size(); v++) {
             if (!frozen[v] && !isEliminated(v)) variables.push_back(v);
@@ -111,6 +119,8 @@ public:
                 trail.cancelUntil(0);
                 assert(l != lit_Undef);
                 if (asymm) { // strengthen:
+                    nStrengthened++;
+
                     propagator.detachClause(clause);
                     clause_db.removeClause((Clause*)clause);
 
@@ -165,6 +175,7 @@ public:
         } 
 
         setEliminated(v);
+        nEliminated++;
         
         static std::vector<Lit> resolvent;
         resolvent.clear();

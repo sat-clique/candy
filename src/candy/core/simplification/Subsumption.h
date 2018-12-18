@@ -30,13 +30,18 @@ public:
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         queue(),
         abstractions(),
-        bwdsub_assigns(0)
+        bwdsub_assigns(0),
+        nSubsumed(0),
+        nStrengthened(0)
     {}
 
     std::vector<const Clause*> queue;
     std::unordered_map<const Clause*, uint64_t> abstractions;
 
     uint32_t bwdsub_assigns;
+
+    unsigned int nSubsumed;
+    unsigned int nStrengthened;
 
     void attach(const Clause* clause) {
         if (abstractions.count(clause) == 0 && (subsumption_lim == 0 || clause->size() < subsumption_lim)) {
@@ -54,12 +59,16 @@ public:
         abstractions.clear();
     }
 
-    bool backwardSubsumptionCheck();
+    bool subsume();
+    
+}; 
 
-};
-
-template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionCheck() {
+template <class TPropagate> 
+bool Subsumption<TPropagate>::subsume() {
     assert(trail.decisionLevel() == 0);
+    
+    nSubsumed = 0;
+    nStrengthened = 0;
     
     for (const Clause* clause : clause_db) {
         attach(clause);
@@ -82,8 +91,6 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
         queue.pop_back();
 
         if (clause->isDeleted()) continue;
-        
-        assert(clause->size() > 1 || trail.value(clause->first()) == l_True); // Unit-clauses should have been propagated before this point.
         
         // Find best variable to scan:
         Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
@@ -109,9 +116,11 @@ template <class TPropagate> bool Subsumption<TPropagate>::backwardSubsumptionChe
 
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
+                        nSubsumed++;
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();
+                        nStrengthened++;
                         std::vector<Lit> lits = occurence->except(~l);
                         certificate.added(lits.begin(), lits.end());
                         

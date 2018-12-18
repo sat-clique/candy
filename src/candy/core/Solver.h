@@ -450,7 +450,6 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
     
     if (propagator.propagate() == nullptr) {
         unit_resolution();
-        clause_db.cleanup();
     }
     else {
         ok = false; 
@@ -498,7 +497,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::un
     for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
         const Clause* clause = clause_db[i];
 
-        assert(!clause->isDeleted());
+        if (clause->isDeleted()) continue; 
 
         literals.clear();
 
@@ -546,15 +545,19 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
     unsigned int num = 1;
     unsigned int max = 0;
     while (num > max * simplification_threshold_factor) {
-        ok = subsumption.backwardSubsumptionCheck();
+        num = 0;
+        ok = subsumption.subsume();
+        num += subsumption.nStrengthened + subsumption.nSubsumed;
 
         if (isInConflictingState() || asynch_interrupt) break;
 
         ok = elimination.eliminate();
+        num += elimination.nEliminated + elimination.nStrengthened;
 
         if (isInConflictingState() || asynch_interrupt) break;
+
+        clause_db.cleanup();
         
-        num = clause_db.cleanup();
         max = std::max(num, max);
         Statistics::getInstance().printSimplificationStats();
     } 
@@ -669,17 +672,13 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                         }
                     }
                     
-                    // clause database simplification
                     unit_resolution();
                     clause_db.cleanup();
-                
-                    // clause database reduction
+                    
                     propagator.detachAll();
-                    clause_db.reduce();
-                    for (const Clause* clause : clause_db) {
-                        if (clause->isDeleted()) {
-                            certificate.removed(clause->begin(), clause->end());
-                        }
+                    std::vector<Clause*> reduced = clause_db.reduce();
+                    for (const Clause* clause : reduced) {
+                        certificate.removed(clause->begin(), clause->end());
                     }
                     clause_db.cleanup();
                     clause_db.defrag();

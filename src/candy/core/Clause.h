@@ -25,16 +25,12 @@ private:
     uint16_t weight;
 
     Lit literals[1];
-    
+
     inline void swap(uint16_t pos1, uint16_t pos2) {
         assert(pos1 < length && pos2 < length);
         Lit tmp = literals[pos1];
         literals[pos1] = literals[pos2];
         literals[pos2] = tmp;
-    }
-
-    inline void setPersistent() {
-        weight = 0;
     }
 
     inline void setDeleted() {
