@@ -87,7 +87,6 @@ private:
                     void* clause = allocate(num_literals);
                     memcpy(clause, (void*)old_clause, num_bytes);
                     clauses.push_back((Clause*)clause);
-                    assert(toInt(((Clause*)clause)->first()) < 1000000);
                 }
                 if (num_literals == 0) {
                     old_cursor = old_page_size;
