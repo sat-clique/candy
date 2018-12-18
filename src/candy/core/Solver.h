@@ -545,19 +545,13 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
     unsigned int num = 1;
     unsigned int max = 0;
     while (num > max * simplification_threshold_factor) {
-        num = 0;
         ok = subsumption.subsume();
-        num += subsumption.nStrengthened + subsumption.nSubsumed;
-
         if (isInConflictingState() || asynch_interrupt) break;
 
         ok = elimination.eliminate();
-        num += elimination.nEliminated + elimination.nStrengthened;
-
         if (isInConflictingState() || asynch_interrupt) break;
-
-        clause_db.cleanup();
         
+        num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nEliminated + elimination.nStrengthened;
         max = std::max(num, max);
         Statistics::getInstance().printSimplificationStats();
     } 
@@ -673,14 +667,12 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
                     }
                     
                     unit_resolution();
-                    clause_db.cleanup();
                     
                     propagator.detachAll();
                     std::vector<Clause*> reduced = clause_db.reduce();
                     for (const Clause* clause : reduced) {
                         certificate.removed(clause->begin(), clause->end());
                     }
-                    clause_db.cleanup();
                     clause_db.defrag();
                     propagator.attachAll();
 

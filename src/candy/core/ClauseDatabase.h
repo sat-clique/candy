@@ -63,7 +63,6 @@ public:
     ~ClauseDatabase();
 
     std::vector<Clause*> reduce();
-    size_t cleanup();
     void defrag();
 
     void initOccurrenceTracking(size_t nVars);

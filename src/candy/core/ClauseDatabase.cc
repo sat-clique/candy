@@ -68,13 +68,6 @@ std::vector<Clause*> ClauseDatabase::reduce() {
     return learnts;
 }
 
-size_t ClauseDatabase::cleanup() { 
-    auto new_end = std::remove_if(clauses.begin(), clauses.end(), [this](Clause* c) { return c->isDeleted(); });
-    size_t num = std::distance(new_end, clauses.end());
-    clauses.erase(new_end, clauses.end());
-    return num; 
-}
-
 /**
  * Make sure all references are updated after all clauses reside in a new adress space
  */
