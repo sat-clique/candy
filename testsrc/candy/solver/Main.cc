@@ -93,3 +93,16 @@ TEST (CandyAddClauseTestPatterns, removeDuplicates) {
   solver->addClauses(formula);
   ASSERT_EQ((*clauses)[0]->size(), 2ull);
 }
+
+TEST(SolverTests, basicIncrementalSolver) {
+  CNFProblem problem;
+  problem.readClauses({{1_L, 2_L}, {1_L, 1_L}, {2_L, 2_L}});
+
+  Solver<> underTest;
+  underTest.addClauses(problem);
+
+  Var assumptionVar = underTest.newVar();
+    
+  EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
+  EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
+}
