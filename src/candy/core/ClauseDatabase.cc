@@ -1,5 +1,7 @@
 #include "candy/core/ClauseDatabase.h"
 
+#include "candy/core/ClauseAllocator.h"
+
 namespace Candy {
 
 ClauseDatabase::ClauseDatabase() : 
@@ -75,15 +77,14 @@ size_t ClauseDatabase::cleanup() {
  * Make sure all references are updated after all clauses reside in a new adress space
  */
 void ClauseDatabase::defrag() {
-    std::vector<Clause*> reallocated = allocator.defrag(clauses); 
-    clauses.swap(reallocated);
+    clauses = allocator.defrag();
     for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
         watcher.clear();
     }
     for (Clause* clause : clauses) {
         if (clause->size() == 2) {
-            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+            binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+            binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
         }
     }
     if (track_literal_occurrence) {
