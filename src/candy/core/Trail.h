@@ -17,10 +17,10 @@ namespace Candy {
 
 struct VarData {
     Clause* reason;
-    uint_fast32_t level;
+    unsigned int level;
     VarData() :
         reason(nullptr), level(0) {}
-    VarData(Clause* _reason, uint_fast32_t _level) :
+    VarData(Clause* _reason, unsigned int _level) :
         reason(_reason), level(_level) {}
 };
 
@@ -30,7 +30,7 @@ public:
         trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() 
     { }
 
-    Trail(uint32_t size) : Trail() { 
+    Trail(unsigned int size) : Trail() { 
         grow(size); 
     }
 
@@ -160,8 +160,13 @@ public:
         return vardata[x].reason;
     }
 
-    inline int level(Var x) const {
+    inline unsigned int level(Var x) const {
         return vardata[x].level;
+    }
+
+    // Gives the current decisionlevel.
+    inline unsigned int decisionLevel() const {
+        return trail_lim.size();
     }
 
     // Begins a new decision level
@@ -174,11 +179,6 @@ public:
         const Clause& c = *cr;
         if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
         return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
-    }
-
-    // Gives the current decisionlevel.
-    inline size_t decisionLevel() const {
-        return trail_lim.size();
     }
 
     inline bool newFact(Lit p) {
