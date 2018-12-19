@@ -540,7 +540,7 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
         elimination.lock(var);
     }
 
-    clause_db.initOccurrenceTracking(this->nVars());
+    clause_db.initOccurrenceTracking();
 
     unsigned int num = 1;
     unsigned int max = 0;

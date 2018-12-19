@@ -17,7 +17,7 @@ ClauseDatabase::ClauseDatabase() :
 ClauseDatabase::~ClauseDatabase() {
 }
 
-void ClauseDatabase::initOccurrenceTracking(size_t nVars) {
+void ClauseDatabase::initOccurrenceTracking() {
     for (Clause* clause : clauses) {
         for (Lit lit : *clause) {
             variableOccurrences[var(lit)].push_back(clause);
@@ -27,7 +27,9 @@ void ClauseDatabase::initOccurrenceTracking(size_t nVars) {
 }
 
 void ClauseDatabase::stopOccurrenceTracking() {
-    variableOccurrences.clear();
+    for (std::vector<Clause*>& occ : variableOccurrences) {
+        occ.clear();
+    }
     track_literal_occurrence = false;
 }
 
@@ -83,10 +85,8 @@ void ClauseDatabase::defrag() {
         }
     }
     if (track_literal_occurrence) {
-        for (std::vector<Clause*>& occ : variableOccurrences) {
-            occ.clear();
-        }
-        initOccurrenceTracking(variableOccurrences.size());
+        stopOccurrenceTracking();
+        initOccurrenceTracking();
     }
 }
 

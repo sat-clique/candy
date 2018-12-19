@@ -42,7 +42,6 @@ namespace SolverOptions {
     BoolOption opt_vsids_extra_bump("CORE", "extra-bump", "Glucose Style Extra Bumping on current desicion level", false);
 
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
-    BoolOption opt_use_ts_ca("CONFLICT ANALYSIS", "use-ts-ca", "use thread-safe conflict analysis module", false);
     BoolOption opt_use_ts_pr("PROPAGATION", "use-ts-pr", "use thread-safe propagation module", false);
 
     IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
