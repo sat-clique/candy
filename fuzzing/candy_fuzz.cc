@@ -38,34 +38,19 @@ int main(int argc, char** argv) {
     CandyBuilder<> builder { clause_db, assignment };
 
     if (SolverOptions::opt_use_lrb) {
-        if (SolverOptions::opt_use_ts_ca) {
-            if (SolverOptions::opt_use_ts_pr) {
-                solver = builder.branchWithLRB().learnThreadSafe().propagateThreadSafe().build();
-            } else {
-                solver = builder.branchWithLRB().learnThreadSafe().build();
-            }
+        if (SolverOptions::opt_use_ts_pr) {
+            solver = builder.branchWithLRB().propagateStaticClauses().build();
         } else {
-            if (SolverOptions::opt_use_ts_pr) {
-                solver = builder.branchWithLRB().propagateThreadSafe().build();
-            } else {
-                solver = builder.branchWithLRB().build();
-            }
-        }
-    } else {
-        if (SolverOptions::opt_use_ts_ca) {
-            if (SolverOptions::opt_use_ts_pr) {
-                solver = builder.learnThreadSafe().propagateThreadSafe().build();
-            } else {
-                solver = builder.learnThreadSafe().build();
-            }
-        } else {
-            if (SolverOptions::opt_use_ts_pr) {
-                solver = builder.propagateThreadSafe().build();
-            } else {
-                solver = builder.build();
-            }
+            solver = builder.branchWithLRB().build();
         }
     } 
+    else {
+        if (SolverOptions::opt_use_ts_pr) {
+            solver = builder.propagateStaticClauses().build();
+        } else {
+            solver = builder.build();
+        }
+    }
 
     solver->addClauses(problem);
 

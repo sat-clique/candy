@@ -31,7 +31,7 @@ struct WatcherTS {
     ~WatcherTS() {}
 };
 
-class PropagateThreadSafe {
+class StaticPropagate {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
@@ -41,7 +41,7 @@ private:
 public:
     uint64_t nPropagations;
 
-    PropagateThreadSafe(ClauseDatabase& _clause_db, Trail& _trail)
+    StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) { }
 
     void init(size_t maxVars) {

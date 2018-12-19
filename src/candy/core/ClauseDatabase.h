@@ -65,7 +65,7 @@ public:
     std::vector<Clause*> reduce();
     void defrag();
 
-    void initOccurrenceTracking(size_t nVars);
+    void initOccurrenceTracking();
     void stopOccurrenceTracking();
 
     void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses);

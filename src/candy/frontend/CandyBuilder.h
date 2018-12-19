@@ -6,15 +6,14 @@
 #include "candy/core/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
+#include "candy/core/propagate/StaticPropagate.h"
 #include "candy/core/learning/ConflictAnalysis.h"
-#include "candy/core/propagate/PropagateThreadSafe.h"
-#include "candy/core/learning/ConflictAnalysisThreadSafe.h"
 #include "candy/core/branching/LRB.h"
 #include "candy/core/branching/VSIDS.h"
 
 namespace Candy {
 
-template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS>
+template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
 class CandyBuilder {
 public:
     ClauseDatabase* database = nullptr;
@@ -30,12 +29,8 @@ public:
         return CandyBuilder<TPropagate, TLearning, LRB>(database, assignment);
     }
 
-    constexpr auto learnThreadSafe() const -> CandyBuilder<TPropagate, ConflictAnalysisThreadSafe, TBranching> {
-        return CandyBuilder<TPropagate, ConflictAnalysisThreadSafe, TBranching>(database, assignment);
-    }
-
-    constexpr auto propagateThreadSafe() const -> CandyBuilder<PropagateThreadSafe, TLearning, TBranching> {
-        return CandyBuilder<PropagateThreadSafe, TLearning, TBranching>(database, assignment);
+    constexpr auto propagateStaticClauses() const -> CandyBuilder<StaticPropagate, TLearning, TBranching> { 
+        return CandyBuilder<StaticPropagate, TLearning, TBranching>(database, assignment);
     }
 
     CandySolverInterface* build() {

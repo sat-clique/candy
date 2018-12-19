@@ -12,8 +12,8 @@
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/Trail.h"
-#include "candy/core/ClauseDatabase.h"
 #include "candy/core/Clause.h"
+#include "candy/core/ClauseDatabase.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/frontend/CLIOptions.h"
 #include <vector>
@@ -31,7 +31,7 @@ private:
     std::vector<Var> analyze_stack;
 
     /* pointers to solver state */
-	ClauseDatabase& clause_db;
+	ClauseDatabase& clause_db; 
     Trail& trail;
 
     /* Constant for reducing clause */
@@ -52,13 +52,8 @@ private:
 	    while (analyze_stack.size() > 0) {
 	        assert(trail.reason(analyze_stack.back()) != nullptr);
 
-	        Clause* clause = trail.reason(analyze_stack.back());
+	        const Clause* clause = trail.reason(analyze_stack.back());
 	        analyze_stack.pop_back();
-
-	        if (clause->size() == 2 && trail.value(clause->first()) == l_False) {
-	            assert(trail.value(clause->second()) == l_True);
-	            clause->swap(0, 1);
-	        }
 
 	        for (Lit imp : *clause) {
 	            Var v = var(imp);
@@ -131,7 +126,7 @@ private:
 	 *        rest of literals. There may be others from the same level though.
 	 *
 	 ***************************************************************************************************/
-	void analyze(Clause* confl) {
+	void analyze(const Clause* confl) {
 	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    stamp.clear();
 
@@ -139,22 +134,17 @@ private:
 	    auto trail_iterator = trail.rbegin();
 	    for(int pathC = 0; pathC > 0 || asserted_literal == lit_Undef; pathC--) {
 	        assert(confl != nullptr); // (otherwise should be UIP)
-            involved_clauses.push_back(confl);
+	        involved_clauses.push_back((Clause*)confl);
 
-	        if (asserted_literal != lit_Undef && confl->size() == 2 && trail.value(confl->first()) == l_False) {
-	            assert(trail.value(confl->second()) == l_True);
-	            confl->swap(0, 1);
-	        }
-
-            assert(asserted_literal == lit_Undef || confl->first() == asserted_literal);
-	        for (auto it = (asserted_literal == lit_Undef) ? confl->begin() : confl->begin() + 1; it != confl->end(); it++) {
-	            Var v = var(*it);
-	            if (!stamp[v] && trail.level(v) > 0) {
+	        for (Lit lit : *confl) {
+				assert((trail.value(lit) == l_True) == (lit == asserted_literal));
+				Var v = var(lit);
+				if (lit != asserted_literal && !stamp[v] && trail.level(v) > 0) {
 	                stamp.set(v);
 	                if (trail.level(v) >= (int)trail.decisionLevel()) {
 	                    pathC++;
 	                } else {
-	                    learnt_clause.push_back(*it);
+	                    learnt_clause.push_back(lit);
 	                }
 	            }
 	        }
@@ -171,12 +161,13 @@ private:
 
 	    learnt_clause[0] = ~asserted_literal;
 
+
 	    // Minimize conflict clause:
-	    minimization();
+		minimization();
 	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
 	        minimizationWithBinaryResolution();
 	    }
-
+		
 	    assert(learnt_clause[0] == ~asserted_literal);
 	}
 
