@@ -34,9 +34,6 @@ private:
 	ClauseDatabase& clause_db; 
     Trail& trail;
 
-    /* Constant for reducing clause */
-    unsigned int lbSizeMinimizingClause;
-
     inline uint64_t abstractLevel(Var x) const {
         return 1ull << (trail.level(x) % 64);
     }
@@ -44,14 +41,12 @@ private:
 	// Check if 'p' can be removed. 'abstract_levels' is used to abort early if the algorithm is
 	// visiting literals at levels that cannot be removed later.
 	bool litRedundant(Lit lit, uint64_t abstract_levels) {
-		size_t top = analyze_clear.size();
+		unsigned int clear_start = analyze_clear.size();
 
 	    analyze_stack.clear();
 	    analyze_stack.push_back(var(lit));
 
-	    while (analyze_stack.size() > 0) {
-	        assert(trail.reason(analyze_stack.back()) != nullptr);
-
+	    while (!analyze_stack.empty()) {
 	        const Clause* clause = trail.reason(analyze_stack.back());
 	        analyze_stack.pop_back();
 
@@ -63,9 +58,10 @@ private:
 	                    analyze_stack.push_back(v);
 	                    analyze_clear.push_back(v);
 	                } else {
-	                	auto begin = analyze_clear.begin() + top;
-	                	for_each(begin, analyze_clear.end(), [this](Var v) { stamp.unset(v); });
-	                	analyze_clear.erase(begin, analyze_clear.end());
+						for (unsigned int i = clear_start; i < analyze_clear.size(); i++) {
+							stamp.unset(analyze_clear[i]);
+						}
+						analyze_clear.resize(clear_start);
 	                    return false;
 	                }
 	            }
@@ -78,7 +74,7 @@ private:
 	void minimization() {
 	    analyze_clear.clear();
 	    uint64_t abstract_level = 0;
-	    for (uint_fast16_t i = 1; i < learnt_clause.size(); i++) {
+	    for (unsigned int i = 1; i < learnt_clause.size(); i++) {
 	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
 	    }
 	    auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
@@ -165,9 +161,7 @@ private:
 
 	    // Minimize conflict clause:
 		minimization();
-	    if (learnt_clause.size() <= lbSizeMinimizingClause) {
-	        minimizationWithBinaryResolution();
-	    }
+	    minimizationWithBinaryResolution();
 		
 	    assert(learnt_clause[0] == ~asserted_literal);
 	}
@@ -178,8 +172,7 @@ public:
 		analyze_clear(),
 		analyze_stack(),
 		clause_db(_clause_db),
-		trail(_trail),
-		lbSizeMinimizingClause(ClauseLearningOptions::opt_lb_size_minimzing_clause)
+		trail(_trail)
 	{ }
 
 	~ConflictAnalysis() { }

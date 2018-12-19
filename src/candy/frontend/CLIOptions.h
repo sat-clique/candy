@@ -5,10 +5,6 @@
 
 namespace Candy {
 
-namespace ClauseLearningOptions {
-	extern IntOption opt_lb_size_minimzing_clause;
-}
-
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern DoubleOption opt_clause_decay;
