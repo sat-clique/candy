@@ -565,6 +565,12 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
     branch.notify_restarted(); // former rebuildOrderHeap
 
     clause_db.stopOccurrenceTracking();
+
+    if (max > nClauses() * simplification_threshold_factor) {
+        propagator.detachAll();
+        clause_db.defrag();
+        propagator.attachAll();
+    }
 }
 
 /**************************************************************************************************
