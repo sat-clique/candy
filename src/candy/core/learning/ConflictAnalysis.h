@@ -139,11 +139,12 @@ private:
 	        for (Lit lit : *confl) {
 				assert((trail.value(lit) == l_True) == (lit == asserted_literal));
 				Var v = var(lit);
-				if (lit != asserted_literal && !stamp[v] && trail.level(v) > 0) {
+				if (lit != asserted_literal && !stamp[v]) {
+					unsigned int level = trail.level(v);
 	                stamp.set(v);
-	                if (trail.level(v) >= (int)trail.decisionLevel()) {
+	                if (level >= trail.decisionLevel()) {
 	                    pathC++;
-	                } else {
+	                } else if (level > 0) {
 	                    learnt_clause.push_back(lit);
 	                }
 	            }
