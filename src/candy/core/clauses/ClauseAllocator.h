@@ -14,7 +14,7 @@
 #include <cstring>
 #include <numeric>
 
-#include <candy/core/Clause.h>
+#include <candy/core/clauses/Clause.h>
 #include <candy/core/Statistics.h>
 
 namespace Candy {
@@ -85,7 +85,7 @@ private:
                 unsigned int num_bytes = clauseBytes(num_literals);
                 if (!((Clause*)old_clause)->isDeleted() && num_literals > 0) {
                     void* clause = allocate(num_literals);
-                    memcpy(clause, (void*)old_clause, num_bytes);
+                    memcpy(clause, old_clause, num_bytes);
                     clauses.push_back((Clause*)clause);
                 }
                 if (num_literals == 0) {
@@ -96,7 +96,7 @@ private:
             }
         }
         for (unsigned char* page : old_pages) {
-            free((void*)page);
+            std::free((void*)page);
         }
         assert(pages.size() == 1);
         return clauses;

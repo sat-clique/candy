@@ -1,7 +1,7 @@
 #include <vector>
 
-#include "candy/core/Clause.h"
-#include "candy/core/ClauseAllocator.h"
+#include "candy/core/clauses/Clause.h"
+#include "candy/core/clauses/ClauseAllocator.h"
 #include "candy/core/Trail.h"
 #include "candy/frontend/CLIOptions.h"
 
@@ -138,6 +138,21 @@ public:
             list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list0.end());
             list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list1.end());
         }
+    }
+
+    Clause* strengthenClause(Clause* clause, Lit lit) {
+        assert(clause->size() > 2);
+        std::vector<Lit> literals;
+        for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
+        Clause* new_clause = createClause(literals.begin(), literals.end(), clause->getLBD());
+        removeClause(clause);
+        return new_clause;
+    }
+
+    Clause* persistClause(Clause* clause) {
+        Clause* new_clause = createClause(clause->begin(), clause->end(), 0);
+        removeClause(clause);
+        return new_clause;
     }
 
     inline size_t numOccurences(Var v) {

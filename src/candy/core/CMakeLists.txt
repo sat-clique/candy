@@ -2,12 +2,10 @@ add_library(core OBJECT
     Solver.h
     Statistics.cc
     Statistics.h
-    Clause.cc
-    Clause.h
-    ClauseAllocator.h
-    ClauseDatabase.cc
-    ClauseDatabase.h
-    Certificate.cc
+    clauses/Clause.h
+    clauses/ClauseAllocator.h
+    clauses/ClauseDatabase.cc
+    clauses/ClauseDatabase.h
     Certificate.h
     CNFProblem.cc
     CNFProblem.h

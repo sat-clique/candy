@@ -11,6 +11,7 @@
 #include <vector>
 #include <limits>
 #include <stddef.h>
+#include <assert.h>
 
 template <class T> class Stamp {
 private:

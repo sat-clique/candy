@@ -9,7 +9,8 @@
 #define SRC_CANDY_CORE_CLAUSE_H_
 
 #include "candy/core/SolverTypes.h"
-#include <candy/core/Statistics.h>
+#include "candy/core/Statistics.h"
+
 #include <iostream>
 #include <initializer_list>
 
@@ -18,7 +19,6 @@ namespace Candy {
 class Clause {
     friend class ClauseDatabase;
     friend class Propagate;
-    friend class ConflictAnalysis;
 
 private:
     uint16_t length;
@@ -37,6 +37,10 @@ private:
         weight = std::numeric_limits<uint16_t>::max();
     }
 
+    inline void setPersistent() {
+        weight = 0;
+    }
+
     inline void setLBD(uint16_t lbd) {
         weight = lbd;
     }
@@ -51,20 +55,12 @@ public:
     
     Clause(std::initializer_list<Lit> list, uint16_t lbd = 0) : Clause(list.begin(), list.end(), lbd) { }
 
-    ~Clause();
+    ~Clause() { }
 
     void operator delete (void* p) = delete;
 
     inline const Lit& operator [](int i) const {
         return literals[i];
-    }
-
-    inline const bool operator ==(Clause clause) const {
-        bool equal = (length == clause.length);
-        for (unsigned int i = 0; i < length && equal; i++) {
-            equal &= (literals[i] == clause[i]);
-        }
-        return equal;
     }
 
     typedef const Lit* const_iterator;
@@ -93,11 +89,29 @@ public:
         return literals[length-1];
     }
 
-    bool contains(const Lit lit) const;
-    bool contains(const Var var) const;
+    bool contains(const Lit lit) const {
+        return std::find(begin(), end(), lit) != end();
+    }
 
-    void printDIMACS() const;
-    void printDIMACS(std::vector<lbool> values) const;
+    bool contains(const Var v) const {
+        return std::find_if(begin(), end(), [v](Lit lit) { return var(lit) == v; }) != end();
+    }
+
+    void printDIMACS() const {
+        for (Lit it : *this) {
+            printLiteral(it);
+            printf(" ");
+        }
+        printf("0\n");
+    }
+
+    void printDIMACS(std::vector<lbool> values) const {
+        for (Lit it : *this) {
+            printLiteral(it, values);
+            printf(" ");
+        }
+        printf("0\n");
+    }
 
     inline bool isLearnt() const {
         return weight > 0;
@@ -109,12 +123,6 @@ public:
 
     inline uint16_t getLBD() const {
         return weight;
-    }
-
-    inline std::vector<Lit> except(Lit lit) const {
-        std::vector<Lit> literals;
-        for (Lit literal : *this) if (literal != lit) literals.push_back(literal);
-        return literals;
     }
 
     /**

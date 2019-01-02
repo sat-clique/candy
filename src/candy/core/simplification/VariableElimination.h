@@ -3,9 +3,9 @@
 
 #include <vector> 
 
-#include "candy/core/ClauseDatabase.h"
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
-#include "candy/core/Clause.h"
 #include "candy/utils/Options.h"
 #include "candy/core/Certificate.h"
 
@@ -120,22 +120,16 @@ public:
                 assert(l != lit_Undef);
                 if (asymm) { // strengthen:
                     nStrengthened++;
-
-                    propagator.detachClause(clause);
-                    clause_db.removeClause((Clause*)clause);
-
-                    std::vector<Lit> lits = clause->except(l);
-                    certificate.added(lits.begin(), lits.end());
-                    certificate.removed(clause->begin(), clause->end());
+                    certificate.strengthened(clause->begin(), clause->end(), l);
                     
-                    if (lits.size() == 0) {
-                        return false;
-                    }
-                    else if (lits.size() == 1) {
-                        return trail.newFact(lits.front()) && propagator.propagate() == nullptr;
+                    propagator.detachClause(clause);
+                    if (clause->size() == 2) {
+                        clause_db.removeClause((Clause*)clause);
+                        Lit fact = clause->first() == l ? clause->second() : clause->first();
+                        return trail.newFact(fact) && propagator.propagate() == nullptr;
                     }
                     else {
-                        Clause* new_clause = clause_db.createClause(lits.begin(), lits.end(), clause->getLBD());
+                        Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
                         propagator.attachClause(new_clause);
                     } 
                 }
