@@ -30,7 +30,7 @@
 #include <cstdint>
 #include <iostream>
 
-#include "candy/core/ClauseDatabase.h"
+#include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/learning/ConflictAnalysis.h"

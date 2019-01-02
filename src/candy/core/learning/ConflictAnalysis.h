@@ -12,8 +12,8 @@
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/Trail.h"
-#include "candy/core/Clause.h"
-#include "candy/core/ClauseDatabase.h"
+#include "candy/core/clauses/Clause.h"
+#include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/frontend/CLIOptions.h"
 #include <vector>

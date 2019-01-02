@@ -14,7 +14,7 @@
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
-#include "candy/core/ClauseDatabase.h"
+#include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/branching/BranchingDiversificationInterface.h"
 
 namespace Candy {

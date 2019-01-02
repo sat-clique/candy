@@ -10,7 +10,7 @@
 
 #include <vector>
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Clause.h"
+#include "candy/core/clauses/Clause.h"
 #include "candy/mtl/Stamp.h"
 
 namespace Candy {

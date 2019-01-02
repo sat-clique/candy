@@ -9,8 +9,8 @@
 #define SRC_CANDY_CORE_PROPAGATE_H_
 
 #include "candy/core/SolverTypes.h"
-#include "candy/core/ClauseDatabase.h"
-#include "candy/core/Clause.h"
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/CheckedCast.h"
 

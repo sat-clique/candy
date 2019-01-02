@@ -61,7 +61,6 @@
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/Statistics.h"
-#include "candy/core/ClauseAllocator.h"
 #include "candy/utils/System.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"

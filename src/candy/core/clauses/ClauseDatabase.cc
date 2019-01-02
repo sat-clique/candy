@@ -1,6 +1,5 @@
-#include "candy/core/ClauseDatabase.h"
-
-#include "candy/core/ClauseAllocator.h"
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/clauses/ClauseAllocator.h"
 
 namespace Candy {
 

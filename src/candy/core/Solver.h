@@ -47,8 +47,8 @@
  OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef Glucose_Solver_h
-#define Glucose_Solver_h
+#ifndef CANDY_SOLVER_H
+#define CANDY_SOLVER_H
 
 #include <vector>
 #include <unordered_map>
@@ -58,29 +58,33 @@
 #include <memory>
 #include <limits>
 
-#include "candy/core/Statistics.h"
-#include "candy/mtl/Heap.h"
 #include "candy/frontend/CLIOptions.h"
-#include "candy/core/SolverTypes.h"
-#include "candy/core/ClauseDatabase.h"
+
+#include "candy/mtl/Stamp.h"
+#include "candy/mtl/Heap.h"
 #include "candy/mtl/BoundedQueue.h"
-#include "candy/core/Clause.h"
-#include "candy/core/Certificate.h"
-#include "candy/core/ClauseAllocator.h"
-#include "candy/core/CNFProblem.h"
+
+#include "candy/randomsimulation/Conjectures.h"
+#include "candy/rsar/Refinement.h"
+
 #include "candy/core/learning/ConflictAnalysis.h"
+#include "candy/core/propagate/Propagate.h"
+#include "candy/core/branching/VSIDS.h"
+#include "candy/core/simplification/Subsumption.h"
+#include "candy/core/simplification/VariableElimination.h"
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/clauses/Clause.h"
+
+#include "candy/core/CandySolverInterface.h"
+#include "candy/core/Statistics.h"
+#include "candy/core/SolverTypes.h"
+#include "candy/core/Certificate.h"
+#include "candy/core/CNFProblem.h"
+#include "candy/core/Trail.h"
+
 #include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
-#include "candy/core/Trail.h"
-#include "candy/core/propagate/Propagate.h"
-#include "candy/core/branching/VSIDS.h"
-#include "candy/mtl/Stamp.h"
-#include "candy/core/CandySolverInterface.h"
-#include "candy/randomsimulation/Conjectures.h"
-#include "candy/rsar/Refinement.h"
-#include "candy/core/simplification/Subsumption.h"
-#include "candy/core/simplification/VariableElimination.h"
 
 #include "candy/sonification/SolverSonification.h"
 #include "candy/sonification/ControllerInterface.h"

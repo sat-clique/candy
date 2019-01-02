@@ -28,7 +28,7 @@
 #define X_66055FCA_E0CE_46B3_9E4C_7F093C37330B_BRANCHINGHEURISTICS_H
 
 #include <candy/core/SolverTypes.h>
-#include <candy/core/ClauseDatabase.h>
+#include <candy/core/clauses/ClauseDatabase.h>
 #include <candy/core/branching/VSIDS.h>
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>

@@ -3,7 +3,7 @@
 
 #include "candy/core/Solver.h"
 #include "candy/core/CandySolverInterface.h"
-#include "candy/core/ClauseDatabase.h"
+#include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/propagate/StaticPropagate.h"

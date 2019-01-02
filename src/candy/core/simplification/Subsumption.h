@@ -1,8 +1,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "candy/core/Clause.h"
-#include "candy/core/ClauseDatabase.h"
+#include "candy/core/clauses/Clause.h"
+#include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/Certificate.h"
@@ -105,40 +105,39 @@ bool Subsumption<TPropagate>::subsume() {
                 Lit l = clause->subsumes(*occurence);
 
                 if (l != lit_Error) {
-                    if (clause->isLearnt()) {// in case of inprocessing: recreate persistent
-                        Clause* persistent = clause_db.createClause(clause->begin(), clause->end(), std::min(clause->getLBD(), occurence->getLBD()));
+                    if (clause->isLearnt() && !occurence->isLearnt()) {// in case of inprocessing: recreate persistent
+                        Clause* persistent = clause_db.persistClause((Clause*)clause);
                         propagator.attachClause(persistent);
+                        propagator.detachClause(clause);
                         abstractions[persistent]=clause_abstraction;
                         abstractions.erase(clause);
-                        propagator.detachClause(clause);
-                        clause_db.removeClause((Clause*)clause);
                     }
 
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
                         nSubsumed++;
+                        clause_db.removeClause((Clause*)occurence);
                     }
                     else { // strengthen:
                         Statistics::getInstance().solverDeletedInc();
                         nStrengthened++;
-                        std::vector<Lit> lits = occurence->except(~l);
-                        certificate.added(lits.begin(), lits.end());
+                        certificate.strengthened(occurence->begin(), occurence->end(), ~l);
                         
-                        if (lits.size() == 1) {
-                            if (!trail.newFact(lits.front()) || propagator.propagate() != nullptr) {
+                        if (occurence->size() == 2) {
+                            clause_db.removeClause((Clause*)occurence);
+                            Lit fact = occurence->first() == ~l ? occurence->second() : occurence->first();
+                            if (!trail.newFact(fact) || propagator.propagate() != nullptr) {
                                 return false;
                             }
                         }
                         else {
-                            Clause* new_clause = clause_db.createClause(lits.begin(), lits.end(), std::min(clause->getLBD(), occurence->getLBD()));
+                            Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
                             propagator.attachClause(new_clause);
                             attach(new_clause);
                         }
                     }
                     propagator.detachClause(occurence);
-                    clause_db.removeClause((Clause*)occurence);
                     abstractions.erase(occurence);
-                    certificate.removed(occurence->begin(), occurence->end());
                 }
             }
         }
