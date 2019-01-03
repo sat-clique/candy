@@ -114,6 +114,7 @@ bool Subsumption<TPropagate>::subsume() {
                     if (l == lit_Undef) { // remove:
                         Statistics::getInstance().solverSubsumedInc();
                         nSubsumed++;
+                        certificate.removed(occurence->begin(), occurence->end());
                         clause_db.removeClause((Clause*)occurence);
                     }
                     else { // strengthen:
