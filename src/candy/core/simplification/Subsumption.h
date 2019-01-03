@@ -107,8 +107,6 @@ bool Subsumption<TPropagate>::subsume() {
                 if (l != lit_Error) {
                     if (clause->isLearnt() && !occurence->isLearnt()) {// in case of inprocessing: recreate persistent
                         Clause* persistent = clause_db.persistClause((Clause*)clause);
-                        propagator.attachClause(persistent);
-                        propagator.detachClause(clause);
                         abstractions[persistent]=clause_abstraction;
                         abstractions.erase(clause);
                     }
@@ -132,17 +130,17 @@ bool Subsumption<TPropagate>::subsume() {
                         }
                         else {
                             Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
-                            propagator.attachClause(new_clause);
                             attach(new_clause);
                         }
                     }
-                    propagator.detachClause(occurence);
                     abstractions.erase(occurence);
                 }
             }
         }
     }
 
+    propagator.detachAll();
+    propagator.attachAll();
     clear();
 
     return true;
