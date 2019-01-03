@@ -33,6 +33,7 @@ private:
 
     ClauseAllocator() : pages(), cursor(0), page_size(INITIAL_PAGE_SIZE) {
         memory = (unsigned char*)std::malloc(INITIAL_PAGE_SIZE);
+        std::memset(memory, 0, INITIAL_PAGE_SIZE);
         pages.push_back(memory);
     }
 
