@@ -72,26 +72,25 @@ private:
 
     std::vector<Clause*> defrag() {
         std::vector<Clause*> clauses {};
+        std::vector<unsigned char*> old_pages { };
+        old_pages.swap(pages);
         size_t old_page_size = page_size;
-        std::vector<unsigned char*> old_pages { pages.begin(), pages.end() };
-        pages.clear();
         page_size *= old_pages.size();
         newPage();
         for (unsigned char* old_page : old_pages) {
-            size_t old_cursor = 0;
-            while (old_cursor < old_page_size) {
-                void* old_clause = old_page + old_cursor;
-                unsigned int num_literals = ((Clause*)old_clause)->size();
-                unsigned int num_bytes = clauseBytes(num_literals);
-                if (!((Clause*)old_clause)->isDeleted() && num_literals > 0) {
-                    void* clause = allocate(num_literals);
-                    memcpy(clause, old_clause, num_bytes);
-                    clauses.push_back((Clause*)clause);
-                }
+            unsigned int num_literals = 0;
+            unsigned int num_bytes = 0;
+            for (size_t old_cursor = 0; old_cursor < old_page_size; old_cursor += num_bytes) {
+                Clause* old_clause = (Clause*)(old_page + old_cursor);
+                num_literals = old_clause->size();
+                num_bytes = clauseBytes(num_literals);
                 if (num_literals == 0) {
-                    old_cursor = old_page_size;
-                } else {
-                    old_cursor += num_bytes;
+                    break;
+                }
+                else if (!old_clause->isDeleted()) {
+                    void* clause = allocate(num_literals);
+                    memcpy(clause, (void*)old_clause, num_bytes);
+                    clauses.push_back((Clause*)clause);
                 }
             }
         }
