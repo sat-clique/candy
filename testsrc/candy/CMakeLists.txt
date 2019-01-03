@@ -1,4 +1,5 @@
 add_subdirectory(testutils)
+add_subdirectory(integration)
 add_subdirectory(gates)
 add_subdirectory(minimizer)
 add_subdirectory(randomsimulation)
