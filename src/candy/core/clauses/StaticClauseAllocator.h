@@ -37,17 +37,19 @@ public:
     }
 
     inline void free_old_pages() {
-        mutex.lock();
         bool free_old_pages = false;
         users[std::this_thread::get_id()] = true;
         for (auto it : users) {
             free_old_pages &= it.second;
-            users[it.first] = false;
         }
         if (free_old_pages) {
+            mutex.lock();
             allocator.free_old_pages();
+            mutex.unlock();
+            for (auto it : users) {
+                users[it.first] = false;
+            }
         }
-        mutex.unlock();
     }
 
     inline void reallocate() {
