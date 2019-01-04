@@ -570,7 +570,6 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
 
     clause_db.stopOccurrenceTracking();
 
-    unit_resolution();
     if (max > nClauses() * simplification_threshold_factor) {
         propagator.detachAll();
         clause_db.defrag();

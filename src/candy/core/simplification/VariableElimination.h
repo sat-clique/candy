@@ -176,10 +176,7 @@ public:
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent)) {
                 certificate.added(resolvent.begin(), resolvent.end());
-                if (resolvent.size() == 0) {
-                    return false;
-                }
-                else if (resolvent.size() == 1) {
+                if (resolvent.size() == 1) {
                     return trail.newFact(resolvent.front()) && propagator.propagate() == nullptr;
                 }
                 else {
