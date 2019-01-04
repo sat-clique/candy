@@ -9,8 +9,9 @@ ClauseDatabase::ClauseDatabase() :
     track_literal_occurrence(false),
     variableOccurrences(),
     allocator(), 
-    clauses() {
-
+    clauses() 
+{
+    allocator.enroll();
 }
 
 ClauseDatabase::~ClauseDatabase() {
@@ -73,7 +74,9 @@ std::vector<Clause*> ClauseDatabase::reduce() {
  * Make sure all references are updated after all clauses reside in a new adress space
  */
 void ClauseDatabase::defrag() {
-    clauses = allocator.defrag();
+    allocator.reallocate();
+    allocator.free_old_pages();
+    clauses = allocator.collect();
     for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
         watcher.clear();
     }
