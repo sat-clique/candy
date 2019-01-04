@@ -84,11 +84,7 @@ public:
     }
 
     void grow() {
-        decision.push_back(true);
-        polarity.push_back(initial_polarity);
-        activity.push_back(initial_activity);
-        stamp.grow();
-        insertVarOrder(decision.size() - 1);
+        grow(decision.size() + 1);
     }
 
     void grow(size_t size) {

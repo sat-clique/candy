@@ -65,13 +65,7 @@ public:
     }
 
     void grow() {
-        decision.push_back(true);
-        polarity.push_back(initial_polarity);
-        weight.push_back(initial_weight);
-        interval_assigned.push_back(0);
-        participated.push_back(0);
-        stamp.grow();
-        insertVarOrder(decision.size() - 1);
+        grow(decision.size() + 1);
     }
 
     void grow(size_t size) {

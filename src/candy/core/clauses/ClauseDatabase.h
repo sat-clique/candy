@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "candy/core/clauses/Clause.h"
+#include "candy/core/clauses/StaticClauseAllocator.h"
 #include "candy/core/clauses/ClauseAllocator.h"
 #include "candy/core/Trail.h"
 #include "candy/frontend/CLIOptions.h"
@@ -45,7 +46,7 @@ class ClauseDatabase {
 private:
     ClauseAllocator allocator;
  
-    std::vector<Clause*> clauses; // List of problem clauses
+    std::vector<Clause*> clauses; // Working set of problem clauses
 
     const unsigned int persistentLBD;
     const bool reestimationReduceLBD;
