@@ -4,6 +4,7 @@
 #include "candy/core/Solver.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/clauses/ClauseAllocator.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/propagate/StaticPropagate.h"
@@ -13,28 +14,28 @@
 
 namespace Candy {
 
-template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
-class CandyBuilder {
+template<class TClauses = ClauseDatabase<ClauseAllocator>, class TPropagate = Propagate<TClauses>, class TLearning = ConflictAnalysis<TClauses>, class TBranching = VSIDS<TClauses>> 
+class CandyBuilder { 
 public:
-    ClauseDatabase* database = nullptr;
+    TClauses* database = nullptr;
     Trail* assignment = nullptr;
 
-    constexpr CandyBuilder(ClauseDatabase* db, Trail* as) : database(db), assignment(as) { }
+    constexpr CandyBuilder(TClauses* db, Trail* as) : database(db), assignment(as) { }
 
-    constexpr auto branchWithVSIDS() const -> CandyBuilder<TPropagate, TLearning, VSIDS> {
-        return CandyBuilder<TPropagate, TLearning, VSIDS>(database, assignment);
+    constexpr auto branchWithVSIDS() const -> CandyBuilder<TClauses, TPropagate, TLearning, VSIDS<TClauses>> {
+        return CandyBuilder<TClauses, TPropagate, TLearning, VSIDS<TClauses>>(database, assignment);
     }
 
-    constexpr auto branchWithLRB() const -> CandyBuilder<TPropagate, TLearning, LRB> {
-        return CandyBuilder<TPropagate, TLearning, LRB>(database, assignment);
+    constexpr auto branchWithLRB() const -> CandyBuilder<TClauses, TPropagate, TLearning, LRB<TClauses>> {
+        return CandyBuilder<TClauses, TPropagate, TLearning, LRB<TClauses>>(database, assignment);
     }
 
-    constexpr auto propagateStaticClauses() const -> CandyBuilder<StaticPropagate, TLearning, TBranching> { 
-        return CandyBuilder<StaticPropagate, TLearning, TBranching>(database, assignment);
+    constexpr auto propagateStaticClauses() const -> CandyBuilder<TClauses, StaticPropagate<TClauses>, TLearning, TBranching> { 
+        return CandyBuilder<TClauses, StaticPropagate<TClauses>, TLearning, TBranching>(database, assignment);
     }
 
     CandySolverInterface* build() {
-        return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, 
+        return new Solver<TClauses, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, 
             *new TPropagate(*database, *assignment), *new TLearning(*database, *assignment), *new TBranching(*database, *assignment));
     }
 

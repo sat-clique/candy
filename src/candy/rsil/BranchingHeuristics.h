@@ -64,7 +64,7 @@ namespace Candy {
         static_assert(std::is_class<typename AdviceType::BasicType>::value, "AdviceType must have an inner type BasicType");
         
     public:
-        ClauseDatabase& clause_db;
+        ClauseDatabase<>& clause_db;
         Trail& trail;
 
         /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
@@ -73,7 +73,7 @@ namespace Candy {
         /**
          * A few definitions for the TBranchingHeuristic concept
          */
-        VSIDS defaultBranchingHeuristic;
+        VSIDS<> defaultBranchingHeuristic;
 
         Lit pickBranchLit();
 
@@ -125,7 +125,7 @@ namespace Candy {
          * getAdvice(...) always returns lit_Undef and getSignAdvice(L) returns L.
          *
          */
-        RSILBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILBranchingHeuristic(ClauseDatabase<>& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false) :
                                   clause_db(clause_db_), trail(trail_), 
                                   defaultBranchingHeuristic(clause_db_, trail_), 
@@ -244,7 +244,7 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
-        RSILBudgetBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILBudgetBranchingHeuristic(ClauseDatabase<>& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                      RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t initialBudget_ = 10000ull) :
                 RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(clause_db_, trail_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
             for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
@@ -304,7 +304,7 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
 
-        RSILVanishingBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
+        RSILVanishingBranchingHeuristic(ClauseDatabase<>& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
                                         RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 10000ull) :
                 RSILBranchingHeuristic<AdviceType>(clause_db_, trail_, std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
                                     m_callCounter(m_probHalfLife_),

@@ -5,6 +5,7 @@
 #include "candy/frontend/CandyCommandLineParser.h"
 #include "candy/frontend/SolverFactory.h"
 #include "candy/core/branching/VSIDS.h"
+#include "candy/frontend/CandyBuilder.h"
 #include "util.h"
 
 using namespace Candy;
@@ -30,7 +31,44 @@ int main(int argc, char** argv) {
         return 0; // concentrate on small problems during fuzzing
     }
 
-    CandySolverInterface* solver = new Solver<>();
+    CandySolverInterface* solver;
+    if (ClauseDatabaseOptions::opt_static_db) {
+        CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
+
+        if (SolverOptions::opt_use_lrb) {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.branchWithLRB().propagateStaticClauses().build();
+            } else {
+                solver = builder.branchWithLRB().build();
+            }
+        } 
+        else {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.propagateStaticClauses().build();
+            } else {
+                solver = builder.build();
+            }
+        }
+    }
+    else {
+        CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
+
+        if (SolverOptions::opt_use_lrb) {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.branchWithLRB().propagateStaticClauses().build();
+            } else {
+                solver = builder.branchWithLRB().build();
+            }
+        } 
+        else {
+            if (SolverOptions::opt_use_ts_pr) {
+                solver = builder.propagateStaticClauses().build();
+            } else {
+                solver = builder.build();
+            }
+        }
+    }
+
     solver->addClauses(problem);
     solver->resetCertificate("proof.drat");
 

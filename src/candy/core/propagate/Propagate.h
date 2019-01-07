@@ -28,9 +28,10 @@ struct Watcher {
      : cref(cr), blocker(p) { }
 };
 
+template <class TClauses = ClauseDatabase<>> 
 class Propagate {
 private:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
 
     std::vector<std::vector<Watcher>> watchers;
@@ -38,7 +39,7 @@ private:
 public:
     uint64_t nPropagations;
 
-    Propagate(ClauseDatabase& _clause_db, Trail& _trail)
+    Propagate(TClauses& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) {
     }
 

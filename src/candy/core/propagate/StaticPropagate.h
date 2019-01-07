@@ -31,9 +31,10 @@ struct WatcherTS {
     ~WatcherTS() {}
 };
 
+template <class TClauses = ClauseDatabase<>> 
 class StaticPropagate {
 private:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
 
     std::vector<std::vector<WatcherTS*>> watchers;
@@ -41,7 +42,7 @@ private:
 public:
     uint64_t nPropagations;
 
-    StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
+    StaticPropagate(TClauses& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) { }
 
     void init(size_t maxVars) {

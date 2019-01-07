@@ -43,21 +43,39 @@ extern "C" {
 
 namespace Candy {
 
-    CandySolverInterface* getSolver(bool use_lrb, bool use_ts_pr) {
-        CandyBuilder<> builder { new ClauseDatabase(), new Trail() };
-        
-        if (use_lrb) {
-            if (use_ts_pr) {
-                return builder.branchWithLRB().propagateStaticClauses().build();
-            } else {
-                return builder.branchWithLRB().build();
+    CandySolverInterface* getSolver(bool use_static_allocator, bool use_lrb, bool use_ts_pr) {
+        if (use_static_allocator) {
+            CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };        
+            if (use_lrb) {
+                if (use_ts_pr) {
+                    return builder.branchWithLRB().propagateStaticClauses().build();
+                } else {
+                    return builder.branchWithLRB().build();
+                }
+            } 
+            else {
+                if (use_ts_pr) {
+                    return builder.propagateStaticClauses().build();
+                } else {
+                    return builder.build();
+                }
             }
-        } 
+        }
         else {
-            if (use_ts_pr) {
-                return builder.propagateStaticClauses().build();
-            } else {
-                return builder.build();
+            CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };        
+            if (use_lrb) {
+                if (use_ts_pr) {
+                    return builder.branchWithLRB().propagateStaticClauses().build();
+                } else {
+                    return builder.branchWithLRB().build();
+                }
+            } 
+            else {
+                if (use_ts_pr) {
+                    return builder.propagateStaticClauses().build();
+                } else {
+                    return builder.build();
+                }
             }
         }
     }
@@ -72,32 +90,48 @@ namespace Candy {
         EXPECT_EQ(result, lbool(expectedResult));
     }
 
-    static void testAllProblems(bool use_lrb, bool use_ts_pr) {
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/sat/fuzz01.cnf", true);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/sat/fuzz02.cnf", true);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/sat/fuzz03.cnf", true);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/sat/fuzz04.cnf", true);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/sat/trivial0.cnf", true);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/sat/trivial2.cnf", true);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/unsat/trivial1.cnf", false);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/unsat/dubois20.cnf", false);
-        acceptanceTest(getSolver(use_lrb, use_ts_pr), "problems/unsat/hole6.cnf", false);
+    static void testAllProblems(bool use_static_allocator, bool use_lrb, bool use_ts_pr) {
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz01.cnf", true);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz02.cnf", true);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz03.cnf", true);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz04.cnf", true);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/trivial0.cnf", true);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/trivial2.cnf", true);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/trivial1.cnf", false);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/dubois20.cnf", false);
+        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/hole6.cnf", false);
     }
 
     TEST(IntegrationTest, test_lrb) {
-        testAllProblems(true, false);
+        testAllProblems(false, true, false);
     }
 
     TEST(IntegrationTest, test_lrb_with_static_propagate) {
-        testAllProblems(true, true);
+        testAllProblems(false, true, true);
     }
 
     TEST(IntegrationTest, test_vsids) {
-        testAllProblems(false, false);
+        testAllProblems(false, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate) {
-        testAllProblems(false, true);
+        testAllProblems(false, false, true);
     }
+
+    // TEST(IntegrationTest, test_lrb_with_static_allocator) {
+    //     testAllProblems(true, true, false);
+    // }
+
+    // TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
+    //     testAllProblems(true, true, true);
+    // }
+
+    // TEST(IntegrationTest, test_vsids_with_static_allocator) {
+    //     testAllProblems(true, false, false);
+    // }
+
+    // TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
+    //     testAllProblems(true, false, true);
+    // }
     
 }

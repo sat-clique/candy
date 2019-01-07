@@ -19,7 +19,6 @@
 
 #include <candy/core/clauses/Clause.h>
 #include <candy/core/clauses/ClauseAllocator.h>
-#include <candy/core/clauses/ClauseDatabase.h>
 #include <candy/core/Statistics.h>
 
 namespace Candy {

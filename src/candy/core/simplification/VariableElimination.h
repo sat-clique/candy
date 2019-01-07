@@ -11,9 +11,10 @@
 
 namespace Candy {
   
-template <class TPropagate> class VariableElimination {
+template <class TClauses, class TPropagate> 
+class VariableElimination {
 private:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
     TPropagate& propagator;
     Certificate& certificate;
@@ -31,7 +32,7 @@ public:
     unsigned int nStrengthened;
     unsigned int nEliminated;
 
-    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
+    VariableElimination(TClauses& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),

@@ -9,6 +9,7 @@ namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern DoubleOption opt_clause_decay;
     extern BoolOption opt_reestimation_reduce_lbd;
+    extern BoolOption opt_static_db;
 }
 
 namespace SolverOptions {
