@@ -20,6 +20,7 @@
 
 namespace Candy {
 
+template <class TClauses = ClauseDatabase<>> 
 class ConflictAnalysis {
 private:
 	std::vector<Lit> learnt_clause;
@@ -31,7 +32,7 @@ private:
     std::vector<Var> analyze_stack;
 
     /* pointers to solver state */
-	ClauseDatabase& clause_db; 
+	TClauses& clause_db; 
     Trail& trail;
 
     inline uint64_t abstractLevel(Var x) const {
@@ -167,7 +168,7 @@ private:
 	}
 
 public:
-	ConflictAnalysis(ClauseDatabase& _clause_db, Trail& _trail) :
+	ConflictAnalysis(TClauses& _clause_db, Trail& _trail) :
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),

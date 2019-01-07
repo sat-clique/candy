@@ -49,7 +49,7 @@ TEST (CandyAddClauseTestPatterns, unitResolution) {
   // assuming claues are added to solver in the given order
   formula.readClause(mkLit(1));
   formula.readClause(mkLit(1), mkLit(2));
-  ClauseDatabase* clauses = new ClauseDatabase();
+  ClauseDatabase<>* clauses = new ClauseDatabase<>();
   CandyBuilder<> builder { clauses, new Trail() };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
@@ -61,7 +61,7 @@ TEST (CandyAddClauseTestPatterns, unitResolution2) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
   formula.readClause(mkLit(1), mkLit(2));
-  ClauseDatabase* clauses = new ClauseDatabase();
+  ClauseDatabase<>* clauses = new ClauseDatabase<>();
   CandyBuilder<> builder { clauses, new Trail() };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
@@ -73,7 +73,7 @@ TEST (CandyAddClauseTestPatterns, unitResolution3) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
-  ClauseDatabase* clauses = new ClauseDatabase();
+  ClauseDatabase<>* clauses = new ClauseDatabase<>();
   CandyBuilder<> builder { clauses, new Trail() };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
@@ -87,7 +87,7 @@ TEST (CandyAddClauseTestPatterns, unitResolution3) {
 TEST (CandyAddClauseTestPatterns, removeDuplicates) {
   CNFProblem formula;
   formula.readClause({mkLit(1), mkLit(2), mkLit(1)});
-  ClauseDatabase* clauses = new ClauseDatabase();
+  ClauseDatabase<>* clauses = new ClauseDatabase<>();
   CandyBuilder<> builder { clauses, new Trail() };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);

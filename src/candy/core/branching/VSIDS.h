@@ -19,9 +19,10 @@
 
 namespace Candy {
 
+template <class TClauses = ClauseDatabase<>> 
 class VSIDS : public BranchingDiversificationInterface {
 private:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
 
 public:
@@ -45,7 +46,7 @@ public:
     const bool initial_polarity = true;
     const double initial_activity = 0.0;
 
-    VSIDS(ClauseDatabase& _clause_db, Trail& _trail, 
+    VSIDS(TClauses& _clause_db, Trail& _trail, 
             double _var_decay = SolverOptions::opt_vsids_var_decay, 
             double _max_var_decay = SolverOptions::opt_vsids_max_var_decay, 
             bool _glucose_style_extra_bump = SolverOptions::opt_vsids_extra_bump) :

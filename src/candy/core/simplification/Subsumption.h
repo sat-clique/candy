@@ -11,10 +11,10 @@
 
 namespace Candy {
 
-template <class TPropagate> class Subsumption { 
-
+template <class TClauses, class TPropagate> 
+class Subsumption { 
 private:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
     TPropagate& propagator;
     Certificate& certificate;
@@ -22,7 +22,7 @@ private:
     const uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
 public:         
-    Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
+    Subsumption(TClauses& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),
@@ -63,8 +63,8 @@ public:
     
 }; 
 
-template <class TPropagate> 
-bool Subsumption<TPropagate>::subsume() {
+template <class TClauses, class TPropagate> 
+bool Subsumption<TClauses, TPropagate>::subsume() {
     assert(trail.decisionLevel() == 0);
     
     nSubsumed = 0;

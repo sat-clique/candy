@@ -19,9 +19,10 @@
 
 namespace Candy {
 
+template <class TClauses = ClauseDatabase<>> 
 class LRB : public BranchingDiversificationInterface {
 private:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
 
 public:
@@ -33,7 +34,7 @@ public:
         VarOrderLt(std::vector<double>& act) : weight(act) {}
     };
 
-    LRB(ClauseDatabase& _clause_db, Trail& _trail, double _step_size = 0.4) :
+    LRB(TClauses& _clause_db, Trail& _trail, double _step_size = 0.4) :
         clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(weight)), 
         weight(), polarity(), decision(), stamp(), 

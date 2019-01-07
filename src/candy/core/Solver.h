@@ -104,19 +104,16 @@ namespace Candy {
  *    - TBranching must be move-constructible.
  *    - There must be a specialization of Solver::pickBranchLit<TBranching>.
  */
-template<class TClauseDatabase = ClauseDatabase, class TAssignment = Trail, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS>
+template<class TClauses = ClauseDatabase<ClauseAllocator>, class TAssignment = Trail, class TPropagate = Propagate<TClauses>, class TLearning = ConflictAnalysis<TClauses>, class TBranching = VSIDS<TClauses>> 
 class Solver : public CandySolverInterface {
     static_assert(std::is_class<TBranching>::value, "TBranching must be a class");
     //static_assert(std::is_constructible<TBranching>::value, "TBranching must have a constructor without arguments");
     //static_assert(std::is_move_assignable<TBranching>::value, "TBranching must be move-assignable");
     //static_assert(std::is_move_constructible<TBranching>::value, "TBranching must be move-constructible");
 
-    friend class SolverConfiguration;
-
 public:
     Solver();
-    Solver(TClauseDatabase* _clause_db);
-    Solver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br);
+    Solver(TClauses& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br);
     virtual ~Solver();
     
     Var newVar() override;
@@ -258,14 +255,14 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-    ClauseDatabase& clause_db;
+    TClauses& clause_db;
     Trail& trail;
     TPropagate& propagator;
     TLearning& conflict_analysis;
     TBranching& branch;
 
-    Subsumption<TPropagate> subsumption;
-    VariableElimination<TPropagate> elimination;
+    Subsumption<TClauses, TPropagate> subsumption;
+    VariableElimination<TClauses, TPropagate> elimination;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
@@ -318,14 +315,14 @@ protected:
     }
 };
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver() : 
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() : 
     // unsat certificate
     certificate(nullptr),
     // results
     model(), conflict(),
     // Basic Systems
-    clause_db(*new TClauseDatabase()),
+    clause_db(*new TClauses()),
     trail(*new TAssignment()),
     propagator(*new TPropagate(clause_db, trail)),
 	conflict_analysis(*new TLearning(clause_db, trail)),
@@ -363,8 +360,8 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
 controller.run();
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauseDatabase& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) : 
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauses& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) : 
     // unsat certificate
     certificate(nullptr),
     // results
@@ -409,16 +406,16 @@ Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::Solver(
 controller.run();
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
 }
 
 /***
  * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
  * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
  ***/
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Var Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+Var Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
     int v = static_cast<int>(nVars());
     clause_db.grow(nVars()+1);
     propagator.init(nVars());
@@ -429,8 +426,8 @@ Var Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::new
     return v;
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::addClauses(const CNFProblem& dimacs) {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClauses(const CNFProblem& dimacs) {
     size_t maxVars = (size_t)dimacs.nVars();
     if (maxVars > this->nVars()) {
         clause_db.grow(maxVars);
@@ -461,9 +458,9 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
     }
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 template<typename Iterator>
-bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
+bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
     assert(trail.decisionLevel() == 0);
 
     std::vector<Lit> copy{cbegin, cend};
@@ -491,8 +488,8 @@ bool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::ad
     }
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
@@ -534,8 +531,8 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::un
     }
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::eliminate() {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate() {
     // freeze assumptions and other externally set frozen variables
     for (Lit lit : assumptions) {
         elimination.lock(var(lit));
@@ -590,8 +587,8 @@ void Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::el
  *    all variables are decision variables, this means that the clause set is satisfiable. 'l*False'
  *    if the clause set is unsatisfiable. 'l*Undef' if the bound on number of conflicts is reached.
  **************************************************************************************************/
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::search() {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(ok);
     
     bool blocked = false;
@@ -729,8 +726,8 @@ lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::s
     return l_Undef; // not reached
 }
 
-template<class TClauseDatabase, class TAssignment, class TPropagate, class TLearning, class TBranching>
-lbool Solver<TClauseDatabase, TAssignment, TPropagate, TLearning, TBranching>::solve() {
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() {
     if (isInConflictingState()) return l_False;
     
     model.clear();

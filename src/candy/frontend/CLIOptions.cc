@@ -8,6 +8,7 @@ namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT8_MAX));
     DoubleOption opt_clause_decay("ClauseDatabase", "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
     BoolOption opt_reestimation_reduce_lbd("ClauseDatabase", "reestimate-lbd", "After conflict reduce lbds", true);
+    BoolOption opt_static_db("ClauseDatabase", "static-db", "Use thread-safe static clause-allocator", false);
 }
 
 namespace SolverOptions {
