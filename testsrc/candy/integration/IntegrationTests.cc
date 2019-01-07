@@ -87,19 +87,29 @@ namespace Candy {
         solver->addClauses(problem);
         auto result = solver->solve();
         GTEST_COUT << filename << std::endl;
+        delete solver;
         EXPECT_EQ(result, lbool(expectedResult));
     }
 
     static void testAllProblems(bool use_static_allocator, bool use_lrb, bool use_ts_pr) {
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz01.cnf", true);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz02.cnf", true);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz03.cnf", true);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz04.cnf", true);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/trivial0.cnf", true);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/trivial2.cnf", true);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/trivial1.cnf", false);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/dubois20.cnf", false);
+        if (use_static_allocator) StaticClauseAllocator::reset();
         acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/hole6.cnf", false);
+        if (use_static_allocator) StaticClauseAllocator::reset();
     }
 
     TEST(IntegrationTest, test_lrb) {
@@ -118,20 +128,20 @@ namespace Candy {
         testAllProblems(false, false, true);
     }
 
-    // TEST(IntegrationTest, test_lrb_with_static_allocator) {
-    //     testAllProblems(true, true, false);
-    // }
+    TEST(IntegrationTest, test_lrb_with_static_allocator) {
+        testAllProblems(true, true, false);
+    }
 
-    // TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
-    //     testAllProblems(true, true, true);
-    // }
+    TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
+        testAllProblems(true, true, true);
+    }
 
-    // TEST(IntegrationTest, test_vsids_with_static_allocator) {
-    //     testAllProblems(true, false, false);
-    // }
+    TEST(IntegrationTest, test_vsids_with_static_allocator) {
+        testAllProblems(true, false, false);
+    }
 
-    // TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
-    //     testAllProblems(true, false, true);
-    // }
+    TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
+        testAllProblems(true, false, true);
+    }
     
 }
