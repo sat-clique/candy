@@ -22,15 +22,14 @@ namespace Candy {
 class ClauseAllocator {
 public:
     ClauseAllocator() : old_pages(), pages(), cursor(0), page_size(INITIAL_PAGE_SIZE) {
-        memory = (unsigned char*)std::malloc(INITIAL_PAGE_SIZE);
-        std::memset(memory, 0, INITIAL_PAGE_SIZE);
-        pages.push_back(memory);
+        newPage();
     }
 
     ~ClauseAllocator() {
         for (unsigned char* page : pages) {
             std::free((void*)page);
         }
+        pages.clear();
     }
 
     inline void* allocate(unsigned int length) {
@@ -93,6 +92,15 @@ public:
             }
         }
         return clauses;
+    }
+
+    void reset() {
+        for (unsigned char* page : pages) {
+            std::free((void*)page);
+        }
+        pages.clear();
+        page_size = INITIAL_PAGE_SIZE;
+        newPage();
     }
 
 private:

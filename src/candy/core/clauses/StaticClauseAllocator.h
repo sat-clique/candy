@@ -70,6 +70,10 @@ public:
         mutex.unlock();
     }
 
+    static inline void reset() {
+        allocator.reset();
+    }
+
 private:
     static ClauseAllocator allocator;
 
