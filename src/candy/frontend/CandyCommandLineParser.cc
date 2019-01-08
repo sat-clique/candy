@@ -59,12 +59,9 @@ namespace Candy {
         << "c   Memory limit: " << arguments.mem_lim << std::endl
         << "c   Solve: " << arguments.do_solve << std::endl
         << "c   Preprocess: " << arguments.do_preprocess << std::endl
-        << "c   Certified UNSAT: " << arguments.do_certified << std::endl
-        << "c   Output Simplified Dimacs: " << arguments.do_simp_out << std::endl
         << "c   Benchmark gate recognition: " << arguments.do_gaterecognition << std::endl
         << "c   Certified UNSAT output: " << (arguments.opt_certified_file == nullptr ?
                                               "(none)" : arguments.opt_certified_file) << std::endl
-        << "c   Wait for user: " << arguments.wait_for_user << std::endl
         << "c   Read problem from stdin: " << arguments.read_from_stdin << std::endl
         << "c   Input filename: " << (arguments.input_filename == nullptr ?
                                       "(none)" : arguments.input_filename) << std::endl;
@@ -137,12 +134,9 @@ namespace Candy {
             SolverOptions::mem_lim,
             SolverOptions::do_solve,
             SolverOptions::opt_preprocessing,
-            SolverOptions::do_certified,
             SolverOptions::do_gaterecognition,
-            SolverOptions::do_simp_out,
             SolverOptions::do_minimize,
             SolverOptions::opt_certified_file,
-            SolverOptions::wait_for_user,
             readFromStdIn,
             inputFilename,
             gateRecognitionArgs,

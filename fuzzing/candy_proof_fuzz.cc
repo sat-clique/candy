@@ -31,6 +31,8 @@ int main(int argc, char** argv) {
         return 0; // concentrate on small problems during fuzzing
     }
 
+    SolverOptions::opt_certified_file = "proof.drat";
+
     CandySolverInterface* solver;
     if (ClauseDatabaseOptions::opt_static_db) {
         CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
@@ -70,7 +72,6 @@ int main(int argc, char** argv) {
     }
 
     solver->addClauses(problem);
-    solver->resetCertificate("proof.drat");
 
     lbool result = solver->solve();
 

@@ -126,7 +126,6 @@ class DoubleOption : public Option {
     }
 
     operator      double   (void) const { return value; }
-    operator      double&  (void)       { return value; }
     DoubleOption& operator=(double x)   { value = x; return *this; }
 
     virtual bool parse(const char* str) {
@@ -148,6 +147,10 @@ class DoubleOption : public Option {
         }
 
         return false;
+    }
+
+    void set(double val) {
+        value = val;
     }
 
     virtual void help (bool verbose = false) {
@@ -182,7 +185,6 @@ class IntOption : public Option {
         }
  
     operator   int32_t   (void) const { return value; }
-    operator   int32_t&  (void)       { return value; }
     IntOption& operator= (int32_t x)  { value = x; return *this; }
 
     virtual bool parse(const char* str) {
@@ -204,6 +206,10 @@ class IntOption : public Option {
         }
 
         return false;
+    }
+
+    void set(int32_t val) {
+        value = val;
     }
 
     virtual void help(bool verbose = false) {
@@ -245,7 +251,6 @@ class Int64Option : public Option {
         }
  
     operator     int64_t   (void) const { return value; }
-    operator     int64_t&  (void)       { return value; }
     Int64Option& operator= (int64_t x)  { value = x; return *this; }
 
     virtual bool parse(const char* str) {
@@ -267,6 +272,10 @@ class Int64Option : public Option {
         }
 
         return false;
+    }
+
+    void set(int64_t val) {
+        value = val;
     }
 
     virtual void help(bool verbose = false) {
@@ -295,27 +304,33 @@ class Int64Option : public Option {
 class StringOption : public Option {
     char pattern[100]; 
     unsigned int len;
-    const char* value;
+    char* value;
 
  public:
-    StringOption(const char* c, const char* n, const char* d, const char* def = NULL) 
-        : Option(n, d, c, "<string>"), value(def) {
+    StringOption(const char* c, const char* n, const char* d, const char* def = "") 
+        : Option(n, d, c, "<string>") {
             len = sprintf(pattern, "-%s=", name);
+            value = new char[256];
+            set(def);
         }
 
     operator      const char*  (void) const     { return value; }
-    operator      const char*& (void)           { return value; }
-    StringOption& operator=    (const char* x)  { value = x; return *this; }
+    StringOption& operator=    (const char* x)  { set(x); return *this; }
 
     virtual bool parse(const char* str) {
         const char* span = strstr(str, pattern); 
 
         if (span == str) {
-            value = span + len;
+            set(span + len);
             return true;
         }
 
         return false;
+    }
+
+    void set(const char* val) {
+        memset(value, 0, 256);
+        strcpy(value, val);
     }
 
     virtual void help(bool verbose = false) {
@@ -362,6 +377,10 @@ class BoolOption : public Option {
         }
 
         return false;
+    }
+
+    void set(bool val) {
+        value = val;
     }
 
     virtual void help(bool verbose = false) {

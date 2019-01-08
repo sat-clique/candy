@@ -21,13 +21,10 @@ namespace SolverOptions {
     
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption mem_lim("MAIN", "mem-lim", "Limit on memory usage in megabytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
-    BoolOption wait_for_user("MAIN", "wait", "Wait for user input on startup (for profiling).", false);
     
     BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
-    BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
     StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
     BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
-    BoolOption do_simp_out("METHOD", "simp-out", "Simplify only and output dimacs.", false);
     IntOption do_minimize("METHOD", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
     
     DoubleOption opt_K("Restarts", "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
