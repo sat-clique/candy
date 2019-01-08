@@ -19,7 +19,7 @@ protected:
     BranchingDiversificationInterface* branching_interface;
 
 public:
-    CandySolverInterface* build() = 0;
+    virtual CandySolverInterface* build() = 0;
 
     /** Access after build: */
     BranchingDiversificationInterface* accessBranchingInterface() {
