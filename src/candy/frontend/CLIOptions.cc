@@ -4,6 +4,10 @@
 
 namespace Candy {
 
+namespace ParallelOptions {
+    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, INT8_MAX));
+}
+
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT8_MAX));
     DoubleOption opt_clause_decay("ClauseDatabase", "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
@@ -21,7 +25,7 @@ namespace SolverOptions {
     
     BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
     BoolOption do_certified("METHOD", "certified", "Certified UNSAT using DRUP format", false);
-    StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "NULL");
+    StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
     BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
     BoolOption do_simp_out("METHOD", "simp-out", "Simplify only and output dimacs.", false);
     IntOption do_minimize("METHOD", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
