@@ -71,15 +71,11 @@ namespace Candy {
         
         const bool do_solve;
         const bool do_preprocess;
-        const bool do_certified;
         const bool do_gaterecognition;
-        const bool do_simp_out;
 
         const int do_minimize;
         
         const char *opt_certified_file;
-        
-        const bool wait_for_user;
         
         const bool read_from_stdin;
         const char *input_filename;

@@ -23,7 +23,6 @@ public:
 
 	virtual BranchingDiversificationInterface* accessBranchingInterface() = 0;
 
-    virtual void resetCertificate(const char* targetFilename) = 0;
 	virtual void enablePreprocessing() = 0;
     virtual void disablePreprocessing() = 0;
 

@@ -108,7 +108,6 @@ static void SIGINT_exit(int signum) {
     _exit(1);
 }
 
-
 /**
  * Installs signal handlers for SIGINT and SIGXCPU.
  * If \p handleInterruptsBySolver is true, the interrupts are handled by SIGINT_interrupt();
@@ -169,11 +168,6 @@ static void setLimits(int cpu_lim, int mem_lim) {
 #endif
 }
 
-static void waitForUserInput() {
-    std::cout << "Press enter to continue." << std::endl;
-    std::getchar();
-}
-
 static void printModel(FILE* f, CandySolverInterface* solver) {
     fprintf(f, "v");
     for (size_t i = 0; i < solver->nVars(); i++)
@@ -182,9 +176,6 @@ static void printModel(FILE* f, CandySolverInterface* solver) {
     fprintf(f, " 0\n");
 }
 
-/**
- * Prints statistics about the problem to be solved.
- */
 static void printProblemStatistics(CNFProblem& problem) {
     printf("c =====================[ Problem Statistics ]======================\n");
     printf("c |                                                               |\n");
@@ -192,41 +183,72 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
 
-/**
- * Run Propagate and Simplify, then output the simplified CNF Problem
- */
-static lbool simplifyAndPrintProblem(CandySolverInterface* solver) {
-    lbool result = l_Undef;
-
-    solver->setPropBudget(1);
-
-    result = solver->solve();
-    solver->unit_resolution();
-    solver->printDIMACS();
-
-    return result;
+static CandySolverInterface* createRSSolver(GlucoseArguments args, CNFProblem& problem) {
+    if (args.rsilArgs.useRSIL && args.rsarArgs.useRSAR) {
+        throw std::invalid_argument("Using RSAR with RSIL is not yet supported");
+    }
+    CandySolverInterface* solver = nullptr;
+    SolverFactory factory { args }; 
+    try {
+        if (args.rsilArgs.useRSIL) {
+            solver = factory.createRSILSolver(problem);
+        }
+        else if (args.rsarArgs.useRSAR) {
+            solver = factory.createRSARSolver(problem);
+        }
+    } 
+    catch (UnsuitableProblemException& e) {
+        std::cerr << "c Aborting: " << e.what() << std::endl;
+    }
+    return solver;
 }
 
-//=================================================================================================
-// Main:
+static CandySolverInterface* createSolver() {
+    if (ClauseDatabaseOptions::opt_static_db) {
+        CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
+
+        if (SolverOptions::opt_use_lrb) {
+            if (SolverOptions::opt_use_ts_pr) {
+                return builder.branchWithLRB().propagateStaticClauses().build();
+            } else {
+                return builder.branchWithLRB().build();
+            }
+        } 
+        else {
+            if (SolverOptions::opt_use_ts_pr) {
+                return builder.propagateStaticClauses().build();
+            } else {
+                return builder.build();
+            }
+        }
+    }
+    else {
+        CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
+
+        if (SolverOptions::opt_use_lrb) {
+            if (SolverOptions::opt_use_ts_pr) {
+                return builder.branchWithLRB().propagateStaticClauses().build();
+            } else {
+                return builder.branchWithLRB().build();
+            }
+        } 
+        else {
+            if (SolverOptions::opt_use_ts_pr) {
+                return builder.propagateStaticClauses().build();
+            } else {
+                return builder.build();
+            }
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
     
     if (args.verb > 1) {
-        std::cout << "c Candy 0.3 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
+        std::cout << "c Candy 0.7 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
         std::cout << args << std::endl;
     }
-
-    if (args.rsilArgs.useRSIL && args.rsarArgs.useRSAR) {
-        throw std::invalid_argument("Using RSAR with RSIL is not yet supported");
-    }
-    
-    if (args.wait_for_user) {
-        waitForUserInput();
-    }
-
-    // Use signal handlers that forcibly quit until the solver will be able to respond to interrupts:
-    //installSignalHandlers(false, nullptr);
 
     setLimits(args.cpu_lim, args.mem_lim);
 
@@ -246,91 +268,33 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    if (args.do_simp_out) {
-        problem.printDIMACS();
+    if (args.do_gaterecognition) {
+        benchmarkGateRecognition(problem, args.gateRecognitionArgs);
         return 0;
+    }
+
+    if (args.verb > 0) {
+        printProblemStatistics(problem);
     }
 
     if (ParallelOptions::opt_threads == 1) {
         CandySolverInterface* solver = nullptr;
 
         if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
-            SolverFactory factory { args }; 
-            try {
-                if (args.rsilArgs.useRSIL) {
-                    solver = factory.createRSILSolver(problem);
-                }
-                else if (args.rsarArgs.useRSAR) {
-                    solver = factory.createRSARSolver(problem);
-                }
-            } 
-            catch (UnsuitableProblemException& e) {
-                std::cerr << "c Aborting: " << e.what() << std::endl;
-                solver = new Solver<>();
-            }
+            solver = createRSSolver(args, problem);
         }
-        else {
-            if (ClauseDatabaseOptions::opt_static_db) {
-                CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
 
-                if (SolverOptions::opt_use_lrb) {
-                    if (SolverOptions::opt_use_ts_pr) {
-                        solver = builder.branchWithLRB().propagateStaticClauses().build();
-                    } else {
-                        solver = builder.branchWithLRB().build();
-                    }
-                } 
-                else {
-                    if (SolverOptions::opt_use_ts_pr) {
-                        solver = builder.propagateStaticClauses().build();
-                    } else {
-                        solver = builder.build();
-                    }
-                }
-            }
-            else {
-                CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
-
-                if (SolverOptions::opt_use_lrb) {
-                    if (SolverOptions::opt_use_ts_pr) {
-                        solver = builder.branchWithLRB().propagateStaticClauses().build();
-                    } else {
-                        solver = builder.branchWithLRB().build();
-                    }
-                } 
-                else {
-                    if (SolverOptions::opt_use_ts_pr) {
-                        solver = builder.propagateStaticClauses().build();
-                    } else {
-                        solver = builder.build();
-                    }
-                }
-            }
-        } 
-
-        if (args.do_certified) {
-            solver->resetCertificate(args.opt_certified_file);
+        if (solver == nullptr) {
+            solver = createSolver();
         }
 
         solver->addClauses(problem);
-
-        // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+        
         Statistics::getInstance().runtimeStop("Initialization");
-
         try {
-            if (args.do_gaterecognition) {
-                benchmarkGateRecognition(problem, args.gateRecognitionArgs);
-                return 0;
-            }
-
-            if (args.verb > 0) {
-                printProblemStatistics(problem);
-            }
-
+            // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
             installSignalHandlers(true, solver);
-
             lbool result = solver->solve();
-            
             installSignalHandlers(false, solver);
 
             if (args.verb > 0) {
@@ -338,18 +302,19 @@ int main(int argc, char** argv) {
                 Statistics::getInstance().printRuntimes();
             }
 
-            if (result == l_True && args.do_minimize > 0) {
-                Minimizer minimizer(problem, solver->getModel());
-                Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
-                for (Lit lit : minimalModel) {
-                    printLiteral(lit);
-                }
-            }
-
             printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
-            if (args.mod && result == l_True) {
-                printModel(stdout, solver);
+            if (result == l_True && args.mod) {
+                if (args.do_minimize > 0) {
+                    Minimizer minimizer(problem, solver->getModel());
+                    Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
+                    for (Lit lit : minimalModel) {
+                        printLiteral(lit);
+                    }
+                } 
+                else {
+                    printModel(stdout, solver);
+                }
             }
 
             #ifndef __SANITIZE_ADDRESS__

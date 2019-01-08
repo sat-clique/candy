@@ -21,12 +21,9 @@ namespace SolverOptions {
     extern BoolOption mod;
     extern IntOption cpu_lim;
     extern IntOption mem_lim;
-    extern BoolOption wait_for_user;    
     extern BoolOption do_solve;
-    extern BoolOption do_certified;
     extern StringOption opt_certified_file;
     extern BoolOption do_gaterecognition;
-    extern BoolOption do_simp_out;
     extern IntOption do_minimize;
 
     extern DoubleOption opt_K;

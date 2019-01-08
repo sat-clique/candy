@@ -248,10 +248,6 @@ public:
         this->learntCallback = learntCallback;
     }
 
-    void resetCertificate(const char* targetFilename) override {
-        this->certificate.reset(targetFilename);
-    }
-
     Certificate certificate;
 
     // Extra results: (read-only member variable)
@@ -322,7 +318,7 @@ protected:
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() : 
     // unsat certificate
-    certificate(nullptr),
+    certificate(SolverOptions::opt_certified_file),
     // results
     model(), conflict(),
     // Basic Systems
@@ -367,7 +363,7 @@ controller.run();
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauses& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) : 
     // unsat certificate
-    certificate(nullptr),
+    certificate(SolverOptions::opt_certified_file),
     // results
     model(), conflict(),
     // Basic Systems

@@ -74,10 +74,6 @@ namespace Candy {
         	m_solver->disablePreprocessing();
         }
 
-        virtual void resetCertificate(const char* targetFilename) override {
-        	return m_solver->resetCertificate(targetFilename);
-        }
-
         virtual Var newVar() override {
         	return m_solver->newVar();
         }

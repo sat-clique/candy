@@ -66,7 +66,6 @@ namespace Candy {
 
         BranchingDiversificationInterface* accessBranchingInterface() override { return nullptr; }
         
-        virtual void resetCertificate(const char* target) override {}
         virtual void enablePreprocessing() override {}
         virtual void disablePreprocessing() override {}
 

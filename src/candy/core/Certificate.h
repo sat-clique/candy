@@ -55,7 +55,7 @@ public:
     }
 
     void reset(const char* target) {
-        if (target == nullptr) {
+        if (target == nullptr || strlen(target) == 0) {
             if (out && out->is_open()) out->close();
             active = false;
         }
