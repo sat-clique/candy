@@ -14,29 +14,11 @@
 
 namespace Candy {
 
-class CandyBuilderInterface {
-protected:
-    BranchingDiversificationInterface* branching_interface;
-
-public:
-    virtual CandySolverInterface* build() = 0;
-
-    /** Access after build: */
-    BranchingDiversificationInterface* accessBranchingInterface() {
-        assert(branching_interface != nullptr);
-        return branching_interface;
-    }
-}
-
 template<class TClauses = ClauseDatabase<ClauseAllocator>, class TPropagate = Propagate<TClauses>, class TLearning = ConflictAnalysis<TClauses>, class TBranching = VSIDS<TClauses>> 
-class CandyBuilder : CandyBuilderInterface { 
+class CandyBuilder { 
 public:
     TClauses* database = nullptr;
     Trail* assignment = nullptr;
-
-    TPropagate* propagate = nullptr;
-    TLearning* learning = nullptr;
-    TBranching* branching = nullptr;
 
     constexpr CandyBuilder(TClauses* db, Trail* as) : database(db), assignment(as) { }
 
@@ -52,11 +34,10 @@ public:
         return CandyBuilder<TClauses, StaticPropagate<TClauses>, TLearning, TBranching>(database, assignment);
     }
 
-    CandySolverInterface* build() override {
+    CandySolverInterface* build() {
         TPropagate* propagate = new TPropagate(*database, *assignment);
         TLearning* learning = new TLearning(*database, *assignment);
         TBranching* branching = new TBranching(*database, *assignment);
-        branching_interface = branching;
         return new Solver<TClauses, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, *propagate, *learning, *branching);
     }
 

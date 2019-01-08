@@ -15,9 +15,13 @@
 
 namespace Candy {
 
+class BranchingDiversificationInterface;
+
 class CandySolverInterface {
 public:
 	virtual ~CandySolverInterface() {};
+
+	virtual BranchingDiversificationInterface* accessBranchingInterface() = 0;
 
     virtual void resetCertificate(const char* targetFilename) = 0;
 	virtual void enablePreprocessing() = 0;

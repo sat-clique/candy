@@ -62,6 +62,10 @@ namespace Candy {
     class ARSolver : public CandySolverInterface {
     public:
 
+        BranchingDiversificationInterface* accessBranchingInterface() override {
+            return m_solver->accessBranchingInterface();
+        }
+
         // from CandySolverInterface:
         virtual void enablePreprocessing() override {
         	m_solver->enablePreprocessing();
