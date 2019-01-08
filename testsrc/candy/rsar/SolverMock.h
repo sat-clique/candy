@@ -63,6 +63,8 @@ namespace Candy {
      */
     class SolverMock : public CandySolverInterface {
     public:
+
+        BranchingDiversificationInterface* accessBranchingInterface() override { return nullptr; }
         
         virtual void resetCertificate(const char* target) override {}
         virtual void enablePreprocessing() override {}

@@ -144,6 +144,10 @@ public:
     // Solving:
     void unit_resolution() override; // remove satisfied clauses and remove false literals from clauses 
     void eliminate() override; // Perform variable elimination based simplification. 
+
+    BranchingDiversificationInterface* accessBranchingInterface() override {
+        return &branch;
+    }
     
     void enablePreprocessing() override {
         preprocessing_enabled = true;
