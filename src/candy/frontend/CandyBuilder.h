@@ -20,6 +20,10 @@ public:
     TClauses* database = nullptr;
     Trail* assignment = nullptr;
 
+    TPropagate* propagate = nullptr;
+    TLearning* learning = nullptr;
+    TBranching* branching = nullptr;
+
     constexpr CandyBuilder(TClauses* db, Trail* as) : database(db), assignment(as) { }
 
     constexpr auto branchWithVSIDS() const -> CandyBuilder<TClauses, TPropagate, TLearning, VSIDS<TClauses>> {
@@ -35,8 +39,16 @@ public:
     }
 
     CandySolverInterface* build() {
-        return new Solver<TClauses, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, 
-            *new TPropagate(*database, *assignment), *new TLearning(*database, *assignment), *new TBranching(*database, *assignment));
+        propagate = new TPropagate(*database, *assignment);
+        learning = new TLearning(*database, *assignment);
+        branching = new TBranching(*database, *assignment);
+        return new Solver<TClauses, Trail, TPropagate, TLearning, TBranching>(*database, *assignment, *propagate, *learning, *branching);
+    }
+
+    /** Access after build: */#
+    BranchingDiversificationInterface* accessBranchingDiversificationInterface() {
+        assert(branching != nullptr);
+        return branching;
     }
 
 };
