@@ -5,6 +5,10 @@
 
 namespace Candy {
 
+namespace ParallelOptions {
+    extern IntOption opt_threads;
+}
+
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern DoubleOption opt_clause_decay;

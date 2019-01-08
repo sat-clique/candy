@@ -251,117 +251,121 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    CandySolverInterface* solver = nullptr;
+    if (ParallelOptions::opt_threads == 1) {
+        CandySolverInterface* solver = nullptr;
 
-	if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
-        SolverFactory factory { args }; 
-        try {
-            if (args.rsilArgs.useRSIL) {
-                solver = factory.createRSILSolver(problem);
-            }
-            else if (args.rsarArgs.useRSAR) {
-                solver = factory.createRSARSolver(problem);
-            }
-        } 
-        catch (UnsuitableProblemException& e) {
-            std::cerr << "c Aborting: " << e.what() << std::endl;
-            solver = new Solver<>();
-        }
-    }
-    else {
-        if (ClauseDatabaseOptions::opt_static_db) {
-            CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
-
-            if (SolverOptions::opt_use_lrb) {
-                if (SolverOptions::opt_use_ts_pr) {
-                    solver = builder.branchWithLRB().propagateStaticClauses().build();
-                } else {
-                    solver = builder.branchWithLRB().build();
+        if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
+            SolverFactory factory { args }; 
+            try {
+                if (args.rsilArgs.useRSIL) {
+                    solver = factory.createRSILSolver(problem);
+                }
+                else if (args.rsarArgs.useRSAR) {
+                    solver = factory.createRSARSolver(problem);
                 }
             } 
-            else {
-                if (SolverOptions::opt_use_ts_pr) {
-                    solver = builder.propagateStaticClauses().build();
-                } else {
-                    solver = builder.build();
-                }
+            catch (UnsuitableProblemException& e) {
+                std::cerr << "c Aborting: " << e.what() << std::endl;
+                solver = new Solver<>();
             }
         }
         else {
-            CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
+            if (ClauseDatabaseOptions::opt_static_db) {
+                CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
 
-            if (SolverOptions::opt_use_lrb) {
-                if (SolverOptions::opt_use_ts_pr) {
-                    solver = builder.branchWithLRB().propagateStaticClauses().build();
-                } else {
-                    solver = builder.branchWithLRB().build();
+                if (SolverOptions::opt_use_lrb) {
+                    if (SolverOptions::opt_use_ts_pr) {
+                        solver = builder.branchWithLRB().propagateStaticClauses().build();
+                    } else {
+                        solver = builder.branchWithLRB().build();
+                    }
+                } 
+                else {
+                    if (SolverOptions::opt_use_ts_pr) {
+                        solver = builder.propagateStaticClauses().build();
+                    } else {
+                        solver = builder.build();
+                    }
                 }
-            } 
+            }
             else {
-                if (SolverOptions::opt_use_ts_pr) {
-                    solver = builder.propagateStaticClauses().build();
-                } else {
-                    solver = builder.build();
+                CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
+
+                if (SolverOptions::opt_use_lrb) {
+                    if (SolverOptions::opt_use_ts_pr) {
+                        solver = builder.branchWithLRB().propagateStaticClauses().build();
+                    } else {
+                        solver = builder.branchWithLRB().build();
+                    }
+                } 
+                else {
+                    if (SolverOptions::opt_use_ts_pr) {
+                        solver = builder.propagateStaticClauses().build();
+                    } else {
+                        solver = builder.build();
+                    }
                 }
             }
-        }
-    } 
+        } 
 
-    if (args.do_certified) {
-        solver->resetCertificate(args.opt_certified_file);
-    }
-
-    solver->addClauses(problem);
-
-    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-    Statistics::getInstance().runtimeStop("Initialization");
-
-    try {
-		if (args.do_gaterecognition) {
-			benchmarkGateRecognition(problem, args.gateRecognitionArgs);
-			return 0;
-		}
-
-	    if (args.verb > 0) {
-            printProblemStatistics(problem);
-	    }
-
-        installSignalHandlers(true, solver);
-
-        lbool result = solver->solve();
-        
-        installSignalHandlers(false, solver);
-
-        if (args.verb > 0) {
-            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-            Statistics::getInstance().printRuntimes();
+        if (args.do_certified) {
+            solver->resetCertificate(args.opt_certified_file);
         }
 
-        if (result == l_True && args.do_minimize > 0) {
-            Minimizer minimizer(problem, solver->getModel());
-            Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
-            for (Lit lit : minimalModel) {
-                printLiteral(lit);
+        solver->addClauses(problem);
+
+        // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+        Statistics::getInstance().runtimeStop("Initialization");
+
+        try {
+            if (args.do_gaterecognition) {
+                benchmarkGateRecognition(problem, args.gateRecognitionArgs);
+                return 0;
             }
-        }
 
-        printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+            if (args.verb > 0) {
+                printProblemStatistics(problem);
+            }
 
-        if (args.mod && result == l_True) {
-            printModel(stdout, solver);
-        }
+            installSignalHandlers(true, solver);
 
-#ifndef __SANITIZE_ADDRESS__
-	    exit((result == l_True ? 10 : result == l_False ? 20 : 0));
-#endif
-	    return (result == l_True ? 10 : result == l_False ? 20 : 0);
+            lbool result = solver->solve();
+            
+            installSignalHandlers(false, solver);
 
-	} 
-    catch (std::bad_alloc& ba) {
-		printf("c Caught Bad_Alloc: %s\n", ba.what());
-		printf("c =================================================================\n");
-		printf("s INDETERMINATE\n");
-		return 0;
-	} 
+            if (args.verb > 0) {
+                Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+                Statistics::getInstance().printRuntimes();
+            }
+
+            if (result == l_True && args.do_minimize > 0) {
+                Minimizer minimizer(problem, solver->getModel());
+                Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
+                for (Lit lit : minimalModel) {
+                    printLiteral(lit);
+                }
+            }
+
+            printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+
+            if (args.mod && result == l_True) {
+                printModel(stdout, solver);
+            }
+
+            #ifndef __SANITIZE_ADDRESS__
+                exit((result == l_True ? 10 : result == l_False ? 20 : 0));
+            #endif
+            return (result == l_True ? 10 : result == l_False ? 20 : 0);
+        } 
+        catch (std::bad_alloc& ba) {
+            printf("c Caught Bad_Alloc: %s\n", ba.what());
+            printf("c =================================================================\n");
+            printf("s INDETERMINATE\n");
+            return 0;
+        } 
+    }
+    else {
+        return 0;
+    }
 }
 
