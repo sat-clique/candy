@@ -168,14 +168,6 @@ static void setLimits(int cpu_lim, int mem_lim) {
 #endif
 }
 
-static void printModel(FILE* f, CandySolverInterface* solver) {
-    fprintf(f, "v");
-    for (size_t i = 0; i < solver->nVars(); i++)
-        if (solver->modelValue(i) != l_Undef)
-            fprintf(f, " %s%zu", (solver->modelValue(i) == l_True) ? "" : "-", i + 1);
-    fprintf(f, " 0\n");
-}
-
 static void printProblemStatistics(CNFProblem& problem) {
     printf("c =====================[ Problem Statistics ]======================\n");
     printf("c |                                                               |\n");
@@ -203,19 +195,19 @@ static CandySolverInterface* createRSSolver(GlucoseArguments args, CNFProblem& p
     return solver;
 }
 
-static CandySolverInterface* createSolver() {
-    if (ClauseDatabaseOptions::opt_static_db) {
+static CandySolverInterface* createSolver(bool staticClauses, bool staticPropagate, bool lrb) {
+    if (staticClauses) {
         CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
 
-        if (SolverOptions::opt_use_lrb) {
-            if (SolverOptions::opt_use_ts_pr) {
+        if (lrb) {
+            if (staticPropagate) {
                 return builder.branchWithLRB().propagateStaticClauses().build();
             } else {
                 return builder.branchWithLRB().build();
             }
         } 
         else {
-            if (SolverOptions::opt_use_ts_pr) {
+            if (staticPropagate) {
                 return builder.propagateStaticClauses().build();
             } else {
                 return builder.build();
@@ -225,15 +217,15 @@ static CandySolverInterface* createSolver() {
     else {
         CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
 
-        if (SolverOptions::opt_use_lrb) {
-            if (SolverOptions::opt_use_ts_pr) {
+        if (lrb) {
+            if (staticPropagate) {
                 return builder.branchWithLRB().propagateStaticClauses().build();
             } else {
                 return builder.branchWithLRB().build();
             }
         } 
         else {
-            if (SolverOptions::opt_use_ts_pr) {
+            if (staticPropagate) {
                 return builder.propagateStaticClauses().build();
             } else {
                 return builder.build();
@@ -275,62 +267,62 @@ int main(int argc, char** argv) {
 
     if (args.verb > 0) {
         printProblemStatistics(problem);
-    }
+    }    
+
+    CandySolverInterface* solver = nullptr;
+    lbool result = l_Undef;
+    Cl model;
 
     if (ParallelOptions::opt_threads == 1) {
-        CandySolverInterface* solver = nullptr;
-
         if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
             solver = createRSSolver(args, problem);
         }
 
         if (solver == nullptr) {
-            solver = createSolver();
+            solver = createSolver(ClauseDatabaseOptions::opt_static_db, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb);
         }
 
         solver->addClauses(problem);
-        
+
         Statistics::getInstance().runtimeStop("Initialization");
-        try {
-            // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-            installSignalHandlers(true, solver);
-            lbool result = solver->solve();
-            installSignalHandlers(false, solver);
 
-            if (args.verb > 0) {
-                Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-                Statistics::getInstance().printRuntimes();
-            }
+        // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+        installSignalHandlers(true, solver);
+        result = solver->solve();
+        installSignalHandlers(false, solver);
 
-            printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
-
-            if (result == l_True && args.mod) {
-                if (args.do_minimize > 0) {
-                    Minimizer minimizer(problem, solver->getModel());
-                    Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
-                    for (Lit lit : minimalModel) {
-                        printLiteral(lit);
-                    }
-                } 
-                else {
-                    printModel(stdout, solver);
-                }
-            }
-
-            #ifndef __SANITIZE_ADDRESS__
-                exit((result == l_True ? 10 : result == l_False ? 20 : 0));
-            #endif
-            return (result == l_True ? 10 : result == l_False ? 20 : 0);
-        } 
-        catch (std::bad_alloc& ba) {
-            printf("c Caught Bad_Alloc: %s\n", ba.what());
-            printf("c =================================================================\n");
-            printf("s INDETERMINATE\n");
-            return 0;
-        } 
+        if (args.verb > 0) {
+            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+            Statistics::getInstance().printRuntimes();
+        }
     }
     else {
         return 0;
     }
+
+    printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+
+    if (result == l_True && args.mod) {
+        Cl model = solver->getModel();
+        if (args.do_minimize > 0) {
+            Minimizer minimizer(problem, model);
+            Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
+            for (Lit lit : minimalModel) {
+                printLiteral(lit);
+            }
+        } 
+        else {
+            std::cout << "v ";
+            for (Lit lit : model) {
+                printLiteral(lit);
+            }
+            std::cout << " 0" << std::endl;
+        }
+    }
+
+    #ifndef __SANITIZE_ADDRESS__
+        exit((result == l_True ? 10 : result == l_False ? 20 : 0));
+    #endif
+    return (result == l_True ? 10 : result == l_False ? 20 : 0);
 }
 
