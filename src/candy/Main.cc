@@ -234,6 +234,20 @@ static CandySolverInterface* createSolver(bool staticClauses, bool staticPropaga
     }
 }
 
+static void runSolver(CandySolverInterface* solver, lbool& result, Cl& model) {
+    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
+    installSignalHandlers(true, solver);
+    lbool inner_result = solver->solve();
+    installSignalHandlers(false, solver);
+
+    if (result == l_Undef) {
+        result = inner_result;
+        if (result == l_True) {
+            model = solver->getModel();
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     GlucoseArguments args = parseCommandLineArgs(argc, argv);
     
@@ -268,12 +282,13 @@ int main(int argc, char** argv) {
     if (args.verb > 0) {
         printProblemStatistics(problem);
     }    
-
-    CandySolverInterface* solver = nullptr;
+    
     lbool result = l_Undef;
     Cl model;
 
     if (ParallelOptions::opt_threads == 1) {
+        CandySolverInterface* solver = nullptr;
+
         if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
             solver = createRSSolver(args, problem);
         }
@@ -286,10 +301,7 @@ int main(int argc, char** argv) {
 
         Statistics::getInstance().runtimeStop("Initialization");
 
-        // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-        installSignalHandlers(true, solver);
-        result = solver->solve();
-        installSignalHandlers(false, solver);
+        runSolver(solver, std::ref(result), std::ref(model));
 
         if (args.verb > 0) {
             Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
@@ -297,13 +309,27 @@ int main(int argc, char** argv) {
         }
     }
     else {
-        return 0;
+        CandySolverInterface* solver1 = createSolver(ClauseDatabaseOptions::opt_static_db, SolverOptions::opt_use_ts_pr, false);
+        solver1->addClauses(problem);
+        std::thread t1(runSolver, solver1, std::ref(result), std::ref(model));
+
+        CandySolverInterface* solver2 = createSolver(ClauseDatabaseOptions::opt_static_db, SolverOptions::opt_use_ts_pr, true);
+        solver2->addClauses(problem);
+        std::thread t2(runSolver, solver2, std::ref(result), std::ref(model));
+
+        Statistics::getInstance().runtimeStop("Initialization");
+
+        while (result == l_Undef) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        }
+
+        solver1->setInterrupt(true);
+        solver2->setInterrupt(true);
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     if (result == l_True && args.mod) {
-        Cl model = solver->getModel();
         if (args.do_minimize > 0) {
             Minimizer minimizer(problem, model);
             Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);

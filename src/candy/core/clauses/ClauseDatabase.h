@@ -193,7 +193,7 @@ void ClauseDatabase<TAllocator>::initOccurrenceTracking() {
 
 template<class TAllocator> 
 void ClauseDatabase<TAllocator>::stopOccurrenceTracking() {
-    for (std::vector<Clause*>& occ : variableOccurrences) {
+    for (auto& occ : variableOccurrences) {
         occ.clear();
     }
     track_literal_occurrence = false;

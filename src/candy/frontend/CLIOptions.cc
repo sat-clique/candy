@@ -5,7 +5,7 @@
 namespace Candy {
 
 namespace ParallelOptions {
-    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, INT8_MAX));
+    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 2));
 }
 
 namespace ClauseDatabaseOptions {

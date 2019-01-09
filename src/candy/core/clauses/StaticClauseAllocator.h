@@ -25,13 +25,13 @@ namespace Candy {
 
 class StaticClauseAllocator {
 public:
-    StaticClauseAllocator() : mutex(), users() { }
+    StaticClauseAllocator() : alock(), users() { }
     ~StaticClauseAllocator() { }
 
     inline void* allocate(unsigned int length) {
-        mutex.lock();
+        alock.lock();
         void* storage = allocator.allocate(length);
-        mutex.unlock();
+        alock.unlock();
         return storage;
     }
 
@@ -42,9 +42,9 @@ public:
             free_old_pages &= it.second;
         }
         if (free_old_pages) {
-            mutex.lock();
+            alock.lock();
             allocator.free_old_pages();
-            mutex.unlock();
+            alock.unlock();
             for (auto it : users) {
                 users[it.first] = false;
             }
@@ -52,22 +52,22 @@ public:
     }
 
     inline void reallocate() {
-        mutex.lock();
+        alock.lock();
         allocator.reallocate();
-        mutex.unlock();
+        alock.unlock();
     }
 
     inline std::vector<Clause*> collect() {
-        mutex.lock();
+        alock.lock();
         std::vector<Clause*> clauses = allocator.collect();
-        mutex.unlock();
+        alock.unlock();
         return clauses;
     }
 
     inline void enroll() {
-        mutex.lock();
+        alock.lock();
         users[std::this_thread::get_id()] = false;
-        mutex.unlock();
+        alock.unlock();
     }
 
     static inline void reset() {
@@ -77,7 +77,7 @@ public:
 private:
     static ClauseAllocator allocator;
 
-    std::mutex mutex;
+    std::mutex alock;
     std::unordered_map<std::thread::id, bool> users;
 
     StaticClauseAllocator(StaticClauseAllocator const&) = delete;
