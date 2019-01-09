@@ -643,6 +643,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             sumLBD += clause_db.result.lbd;
 
             trail.cancelUntil(clause_db.result.backtrack_level);
+
+            assert(trail.value(clause_db.result.learnt_clause[0]) == l_Undef);
             
             if (clause_db.result.learnt_clause.size() == 1) {
                 trail.uncheckedEnqueue(clause_db.result.learnt_clause[0]);

@@ -25,7 +25,7 @@ namespace Candy {
 
 class StaticClauseAllocator {
 public:
-    StaticClauseAllocator() : alock(), users() { }
+    StaticClauseAllocator() { }
     ~StaticClauseAllocator() { }
 
     inline void* allocate(unsigned int length) {
@@ -72,13 +72,14 @@ public:
 
     static inline void reset() {
         allocator.reset();
+        users.clear();
     }
 
 private:
     static ClauseAllocator allocator;
 
-    std::mutex alock;
-    std::unordered_map<std::thread::id, bool> users;
+    static std::mutex alock;
+    static std::unordered_map<std::thread::id, bool> users;
 
     StaticClauseAllocator(StaticClauseAllocator const&) = delete;
     void operator=(StaticClauseAllocator const&) = delete;
