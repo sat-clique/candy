@@ -145,9 +145,10 @@ public:
         const std::vector<Clause*> occurences = clause_db.copyOccurences(v);
         std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
         for (Clause* cl : occurences) {
-            if (cl->contains(mkLit(v))) {
+            if (cl->contains(mkLit(v, false))) {
                 pos.push_back(cl);
             } else {
+                assert(cl->contains(mkLit(v, true)));
                 neg.push_back(cl);
             }
         }
@@ -172,8 +173,7 @@ public:
         setEliminated(v);
         nEliminated++;
         
-        static std::vector<Lit> resolvent;
-        resolvent.clear();
+        std::vector<Lit> resolvent;
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent)) {
                 certificate.added(resolvent.begin(), resolvent.end());
