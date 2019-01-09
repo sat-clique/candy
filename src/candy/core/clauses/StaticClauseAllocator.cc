@@ -3,4 +3,6 @@
 
 namespace Candy {
     ClauseAllocator StaticClauseAllocator::allocator { };
+    std::mutex StaticClauseAllocator::alock { };
+    std::unordered_map<std::thread::id, bool> StaticClauseAllocator::users { };
 }
