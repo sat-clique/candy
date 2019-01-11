@@ -26,7 +26,9 @@ namespace Candy {
 class GlobalClauseAllocator {
 public:
     GlobalClauseAllocator() : allocator(), active(false), alock(), ready() { }
-    ~GlobalClauseAllocator() { }
+    ~GlobalClauseAllocator() { 
+        free();
+    }
 
     inline void enroll() {
         alock.lock();
@@ -58,7 +60,7 @@ public:
         return allocator[int(active)].collect();
     }
 
-    inline void reset() {
+    inline void free() {
         allocator[0].free();
         allocator[1].free();
         ready.clear();
