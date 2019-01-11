@@ -43,43 +43,6 @@ extern "C" {
 
 namespace Candy {
 
-    CandySolverInterface* getSolver(bool use_static_allocator, bool use_lrb, bool use_ts_pr) {
-        if (use_static_allocator) {
-            CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };        
-            if (use_lrb) {
-                if (use_ts_pr) {
-                    return builder.branchWithLRB().propagateStaticClauses().build();
-                } else {
-                    return builder.branchWithLRB().build();
-                }
-            } 
-            else {
-                if (use_ts_pr) {
-                    return builder.propagateStaticClauses().build();
-                } else {
-                    return builder.build();
-                }
-            }
-        }
-        else {
-            CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };        
-            if (use_lrb) {
-                if (use_ts_pr) {
-                    return builder.branchWithLRB().propagateStaticClauses().build();
-                } else {
-                    return builder.branchWithLRB().build();
-                }
-            } 
-            else {
-                if (use_ts_pr) {
-                    return builder.propagateStaticClauses().build();
-                } else {
-                    return builder.build();
-                }
-            }
-        }
-    }
-
     static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool expectedResult) {
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
@@ -91,57 +54,48 @@ namespace Candy {
         EXPECT_EQ(result, lbool(expectedResult));
     }
 
-    static void testAllProblems(bool use_static_allocator, bool use_lrb, bool use_ts_pr) {
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz01.cnf", true);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz02.cnf", true);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz03.cnf", true);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/fuzz04.cnf", true);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/trivial0.cnf", true);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/sat/trivial2.cnf", true);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/trivial1.cnf", false);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/dubois20.cnf", false);
-        if (use_static_allocator) StaticClauseAllocator::reset();
-        acceptanceTest(getSolver(use_static_allocator, use_lrb, use_ts_pr), "problems/unsat/hole6.cnf", false);
-        if (use_static_allocator) StaticClauseAllocator::reset();
+    static void testAllProblems(GlobalClauseAllocator* global_allocator, bool use_ts_pr, bool use_lrb) {
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz01.cnf", true);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz02.cnf", true);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz03.cnf", true);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz04.cnf", true);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/trivial0.cnf", true);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/trivial2.cnf", true);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/unsat/trivial1.cnf", false);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/unsat/dubois20.cnf", false);
+        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/unsat/hole6.cnf", false);
     }
 
     TEST(IntegrationTest, test_lrb) {
-        testAllProblems(false, true, false);
+        testAllProblems(nullptr, false, true);
     }
 
     TEST(IntegrationTest, test_lrb_with_static_propagate) {
-        testAllProblems(false, true, true);
+        testAllProblems(nullptr, true, true);
     }
 
     TEST(IntegrationTest, test_vsids) {
-        testAllProblems(false, false, false);
+        testAllProblems(nullptr, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate) {
-        testAllProblems(false, false, true);
+        testAllProblems(nullptr, true, false);
     }
 
-    TEST(IntegrationTest, test_lrb_with_static_allocator) {
-        testAllProblems(true, true, false);
-    }
+    // TEST(IntegrationTest, test_lrb_with_static_allocator) {
+    //     testAllProblems(new GlobalClauseAllocator(), false, true);
+    // }
 
-    TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, true, true);
-    }
+    // TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
+    //     testAllProblems(new GlobalClauseAllocator(), true, true);
+    // }
 
-    TEST(IntegrationTest, test_vsids_with_static_allocator) {
-        testAllProblems(true, false, false);
-    }
+    // TEST(IntegrationTest, test_vsids_with_static_allocator) {
+    //     testAllProblems(new GlobalClauseAllocator(), false, false);
+    // }
 
-    TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, false, true);
-    }
+    // TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
+    //     testAllProblems(new GlobalClauseAllocator(), true, false);
+    // }
     
 }

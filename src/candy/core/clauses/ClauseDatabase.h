@@ -1,8 +1,8 @@
 #include <vector>
 
 #include "candy/core/clauses/Clause.h"
-#include "candy/core/clauses/StaticClauseAllocator.h"
 #include "candy/core/clauses/ClauseAllocator.h"
+#include "candy/core/clauses/GlobalClauseAllocator.h"
 #include "candy/core/Trail.h"
 #include "candy/frontend/CLIOptions.h"
 
@@ -42,10 +42,11 @@ struct BinaryWatcher {
 
 };
 
-template <class TAllocator = ClauseAllocator>
 class ClauseDatabase {
 private:
-    TAllocator allocator;
+    ClauseAllocator allocator;
+
+    GlobalClauseAllocator* global_allocator;
  
     std::vector<Clause*> clauses; // Working set of problem clauses
 
@@ -62,25 +63,49 @@ public:
 	AnalysisResult result;
 
     ClauseDatabase() : 
+        allocator(), global_allocator(nullptr), clauses(), 
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
         reestimationReduceLBD(ClauseDatabaseOptions::opt_reestimation_reduce_lbd), 
         track_literal_occurrence(false),
         variableOccurrences(),
-        allocator(), 
-        clauses() 
-    {
-        allocator.enroll();
-    }
+        binaryWatchers(), 
+        result()
+    { }
 
     ~ClauseDatabase() { }
 
-    std::vector<Clause*> reduce();
-    void defrag();
+    void initOccurrenceTracking() {
+        for (Clause* clause : clauses) {
+            for (Lit lit : *clause) {
+                variableOccurrences[var(lit)].push_back(clause);
+            }
+        }
+        track_literal_occurrence = true;
+    }
 
-    void initOccurrenceTracking();
-    void stopOccurrenceTracking();
+    void stopOccurrenceTracking() {
+        for (auto& occ : variableOccurrences) {
+            occ.clear();
+        }
+        track_literal_occurrence = false;
+    }
 
-    void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses);
+    void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
+        if (reestimationReduceLBD) {
+            for (Clause* clause : involved_clauses) {
+                if (clause->isLearnt()) {
+                    uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
+                    if (lbd < clause->getLBD()) {
+                        clause->setLBD(lbd);
+                    }
+                }
+            }
+        }
+    }
+
+    inline void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
+        this->global_allocator = global_allocator;
+    }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
 
@@ -179,87 +204,57 @@ public:
         return binaryWatchers[toInt(lit)];
     }
 
-};
+    /**
+     * In order ot make sure that no clause is locked (reason to an asignment), 
+     * do only call this method at decision level 0 and strengthen all clauses first
+     **/
+    std::vector<Clause*> reduce() { 
+        Statistics::getInstance().solverReduceDBInc();
 
-template<class TAllocator> 
-void ClauseDatabase<TAllocator>::initOccurrenceTracking() {
-    for (Clause* clause : clauses) {
-        for (Lit lit : *clause) {
-            variableOccurrences[var(lit)].push_back(clause);
+        std::vector<Clause*> learnts;
+        copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [this](Clause* clause) { 
+            return clause->getLBD() > persistentLBD && clause->size() > 2; 
+        });
+        std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
+        learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());
+        
+        for (Clause* c : learnts) {
+            removeClause(c);
         }
-    }
-    track_literal_occurrence = true;
-}
 
-template<class TAllocator> 
-void ClauseDatabase<TAllocator>::stopOccurrenceTracking() {
-    for (auto& occ : variableOccurrences) {
-        occ.clear();
-    }
-    track_literal_occurrence = false;
-}
+        Statistics::getInstance().solverRemovedClausesInc(learnts.size());
 
-// DYNAMIC NBLEVEL trick (see competition'09 Glucose companion paper)
-template<class TAllocator> 
-void ClauseDatabase<TAllocator>::reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
-    if (reestimationReduceLBD) {
-        for (Clause* clause : involved_clauses) {
-            if (clause->isLearnt()) {
-                uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                if (lbd < clause->getLBD()) {
-                    clause->setLBD(lbd);
-                }
+        return learnts;
+    }
+
+    /**
+     * Make sure all references are updated after all clauses reside in a new adress space
+     */
+    void defrag() {
+        if (global_allocator == nullptr) {
+            clauses = allocator.reallocate();
+        }
+        else {
+            clauses = global_allocator->import(allocator);
+            allocator.clear();
+        }
+
+        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+            watcher.clear();
+        }
+        for (Clause* clause : clauses) {
+            if (clause->size() == 2) {
+                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
             }
         }
-    }
-}
- 
-/**
- * In order ot make sure that no clause is locked (reason to an asignment), 
- * do only call this method at decision level 0 and strengthen all clauses first
- **/
-template<class TAllocator>
-std::vector<Clause*> ClauseDatabase<TAllocator>::reduce() { 
-    Statistics::getInstance().solverReduceDBInc();
-
-    std::vector<Clause*> learnts;
-    copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [this](Clause* clause) { 
-        return clause->getLBD() > persistentLBD && clause->size() > 2; 
-    });
-    std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
-    learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());
-    
-    for (Clause* c : learnts) {
-        removeClause(c);
-    }
-
-    Statistics::getInstance().solverRemovedClausesInc(learnts.size());
-
-    return learnts;
-}
-
-/**
- * Make sure all references are updated after all clauses reside in a new adress space
- */
-template<class TAllocator> 
-void ClauseDatabase<TAllocator>::defrag() {
-    allocator.reallocate();
-    allocator.free_old_pages();
-    clauses = allocator.collect();
-    for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
-        watcher.clear();
-    }
-    for (Clause* clause : clauses) {
-        if (clause->size() == 2) {
-            binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
-            binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
+        if (track_literal_occurrence) {
+            stopOccurrenceTracking();
+            initOccurrenceTracking();
         }
     }
-    if (track_literal_occurrence) {
-        stopOccurrenceTracking();
-        initOccurrenceTracking();
-    }
-}
+
+};
 
 }
 
