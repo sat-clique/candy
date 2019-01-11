@@ -90,8 +90,9 @@ public:
         return clauses;
     }
 
-    void clear() {
-        pages.clear();
+    void reset(bool free = true) {
+        if (free) this->free();
+        else pages.clear();
         newPage();
     }
 
@@ -99,7 +100,9 @@ public:
         for (unsigned char* page : pages) {
             std::free((void*)page);
         }
-        clear();
+        pages.clear();
+        cursor = 0;
+        memory = nullptr;
     }
 
     void import(ClauseAllocator& other) {

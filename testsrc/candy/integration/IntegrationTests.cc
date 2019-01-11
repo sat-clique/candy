@@ -54,48 +54,59 @@ namespace Candy {
         EXPECT_EQ(result, lbool(expectedResult));
     }
 
-    static void testAllProblems(GlobalClauseAllocator* global_allocator, bool use_ts_pr, bool use_lrb) {
+    static void testAllProblems(bool static_allocator, bool use_ts_pr, bool use_lrb) {
+        GlobalClauseAllocator* global_allocator = nullptr;
+        if (static_allocator) global_allocator = new GlobalClauseAllocator();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz01.cnf", true);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz02.cnf", true);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz03.cnf", true);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/fuzz04.cnf", true);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/trivial0.cnf", true);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/sat/trivial2.cnf", true);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/unsat/trivial1.cnf", false);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/unsat/dubois20.cnf", false);
+        if (static_allocator) global_allocator->reset();
         acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb), "problems/unsat/hole6.cnf", false);
+        if (static_allocator) delete global_allocator;
     }
 
     TEST(IntegrationTest, test_lrb) {
-        testAllProblems(nullptr, false, true);
+        testAllProblems(false, false, true);
     }
 
     TEST(IntegrationTest, test_lrb_with_static_propagate) {
-        testAllProblems(nullptr, true, true);
+        testAllProblems(false, true, true);
     }
 
     TEST(IntegrationTest, test_vsids) {
-        testAllProblems(nullptr, false, false);
+        testAllProblems(false, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate) {
-        testAllProblems(nullptr, true, false);
+        testAllProblems(false, true, false);
     }
 
     // TEST(IntegrationTest, test_lrb_with_static_allocator) {
-    //     testAllProblems(new GlobalClauseAllocator(), false, true);
+    //     testAllProblems(true, false, true);
     // }
 
     // TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
-    //     testAllProblems(new GlobalClauseAllocator(), true, true);
+    //     testAllProblems(true, true, true);
     // }
 
     // TEST(IntegrationTest, test_vsids_with_static_allocator) {
-    //     testAllProblems(new GlobalClauseAllocator(), false, false);
+    //     testAllProblems(true, false, false);
     // }
 
     // TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
-    //     testAllProblems(new GlobalClauseAllocator(), true, false);
+    //     testAllProblems(true, true, false);
     // }
     
 }
