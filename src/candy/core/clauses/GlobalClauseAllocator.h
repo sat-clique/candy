@@ -45,11 +45,10 @@ public:
         }
 
         if (everybody_ready) { // all threads use active allocator now
-            allocator[int(!active)].free(); // free inactive pages and reallocate all
-            allocator[int(!active)].clear();
-            allocator[int(!active)].import(allocator[int(active)]);
-            allocator[int(!active)].reallocate(false);
-            active = !active;
+            allocator[int(!active)].free(); // free inactive pages
+            allocator[int(!active)].import(allocator[int(active)]); // import active pages
+            active = !active; // swap active allocator
+            allocator[int(active)].reallocate(false); // reallocate (without free)
             for (auto it : ready) {
                 ready[it.first] = false;
             }
@@ -57,6 +56,12 @@ public:
 
         alock.unlock();
         return allocator[int(active)].collect();
+    }
+
+    inline void reset() {
+        allocator[0].free();
+        allocator[1].free();
+        ready.clear();
     }
 
 private:

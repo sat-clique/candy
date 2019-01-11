@@ -105,6 +105,7 @@ public:
 
     inline void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
         this->global_allocator = global_allocator;
+        global_allocator->enroll();
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -236,7 +237,11 @@ public:
         }
         else {
             clauses = global_allocator->import(allocator);
-            allocator.clear();
+            allocator.reset(false);
+        }
+
+        for (Clause* clause : clauses) {
+            assert(clause->size() > 0);
         }
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
