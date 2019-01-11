@@ -14,7 +14,7 @@
 
 namespace Candy {
 
-template<class TClauses = ClauseDatabase<ClauseAllocator>, class TPropagate = Propagate<TClauses>, class TLearning = ConflictAnalysis<TClauses>, class TBranching = VSIDS<TClauses>> 
+template<class TClauses = ClauseDatabase, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
 class CandyBuilder { 
 public:
     TClauses* database = nullptr;
@@ -22,16 +22,16 @@ public:
 
     constexpr CandyBuilder(TClauses* db, Trail* as) : database(db), assignment(as) { }
 
-    constexpr auto branchWithVSIDS() const -> CandyBuilder<TClauses, TPropagate, TLearning, VSIDS<TClauses>> {
-        return CandyBuilder<TClauses, TPropagate, TLearning, VSIDS<TClauses>>(database, assignment);
+    constexpr auto branchWithVSIDS() const -> CandyBuilder<TClauses, TPropagate, TLearning, VSIDS> {
+        return CandyBuilder<TClauses, TPropagate, TLearning, VSIDS>(database, assignment);
     }
 
-    constexpr auto branchWithLRB() const -> CandyBuilder<TClauses, TPropagate, TLearning, LRB<TClauses>> {
-        return CandyBuilder<TClauses, TPropagate, TLearning, LRB<TClauses>>(database, assignment);
+    constexpr auto branchWithLRB() const -> CandyBuilder<TClauses, TPropagate, TLearning, LRB> {
+        return CandyBuilder<TClauses, TPropagate, TLearning, LRB>(database, assignment);
     }
 
-    constexpr auto propagateStaticClauses() const -> CandyBuilder<TClauses, StaticPropagate<TClauses>, TLearning, TBranching> { 
-        return CandyBuilder<TClauses, StaticPropagate<TClauses>, TLearning, TBranching>(database, assignment);
+    constexpr auto propagateStaticClauses() const -> CandyBuilder<TClauses, StaticPropagate, TLearning, TBranching> { 
+        return CandyBuilder<TClauses, StaticPropagate, TLearning, TBranching>(database, assignment);
     }
 
     CandySolverInterface* build() {
@@ -42,6 +42,8 @@ public:
     }
 
 };
+
+CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool staticPropagate, bool lrb);
 
 }
 

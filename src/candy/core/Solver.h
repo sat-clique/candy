@@ -104,7 +104,7 @@ namespace Candy {
  *    - TBranching must be move-constructible.
  *    - There must be a specialization of Solver::pickBranchLit<TBranching>.
  */
-template<class TClauses = ClauseDatabase<ClauseAllocator>, class TAssignment = Trail, class TPropagate = Propagate<TClauses>, class TLearning = ConflictAnalysis<TClauses>, class TBranching = VSIDS<TClauses>> 
+template<class TClauses = ClauseDatabase, class TAssignment = Trail, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
 class Solver : public CandySolverInterface {
     static_assert(std::is_class<TBranching>::value, "TBranching must be a class");
     //static_assert(std::is_constructible<TBranching>::value, "TBranching must have a constructor without arguments");
@@ -261,8 +261,8 @@ protected:
     TLearning& conflict_analysis;
     TBranching& branch;
 
-    Subsumption<TClauses, TPropagate> subsumption;
-    VariableElimination<TClauses, TPropagate> elimination;
+    Subsumption<TPropagate> subsumption;
+    VariableElimination<TPropagate> elimination;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 

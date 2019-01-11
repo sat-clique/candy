@@ -182,36 +182,36 @@ namespace Candy {
         //        }
 
         CandySolverInterface* build() {
-            ClauseDatabase<ClauseAllocator>* clause_db = new ClauseDatabase<ClauseAllocator>();
+            ClauseDatabase* clause_db = new ClauseDatabase();
             Trail* trail = new Trail();
-            Propagate<ClauseDatabase<ClauseAllocator>>* propagator = new Propagate<ClauseDatabase<ClauseAllocator>>(*clause_db, *trail);
-	        ConflictAnalysis<ClauseDatabase<ClauseAllocator>>* conflict_analysis = new ConflictAnalysis<ClauseDatabase<ClauseAllocator>>(*clause_db, *trail);
+            Propagate* propagator = new Propagate(*clause_db, *trail);
+	        ConflictAnalysis* conflict_analysis = new ConflictAnalysis(*clause_db, *trail);
             if (size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     RSILBranchingHeuristic3* branch = new RSILBranchingHeuristic3(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones);
-                    return new Solver<ClauseDatabase<ClauseAllocator>, Trail, Propagate<ClauseDatabase<ClauseAllocator>>, ConflictAnalysis<ClauseDatabase<ClauseAllocator>>, RSILBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
+                    return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::VANISHING) {
                     RSILVanishingBranchingHeuristic3* branch = new RSILVanishingBranchingHeuristic3(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
-                    return new Solver<ClauseDatabase<ClauseAllocator>, Trail, Propagate<ClauseDatabase<ClauseAllocator>>, ConflictAnalysis<ClauseDatabase<ClauseAllocator>>, RSILVanishingBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
+                    return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILVanishingBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
                     RSILBudgetBranchingHeuristic3* branch = new RSILBudgetBranchingHeuristic3(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
-                    return new Solver<ClauseDatabase<ClauseAllocator>, Trail, Propagate<ClauseDatabase<ClauseAllocator>>, ConflictAnalysis<ClauseDatabase<ClauseAllocator>>, RSILBudgetBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
+                    return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBudgetBranchingHeuristic3>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
             }
             else if (size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     RSILBranchingHeuristic2* branch = new RSILBranchingHeuristic2(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones); 
-                    return new Solver<ClauseDatabase<ClauseAllocator>, Trail, Propagate<ClauseDatabase<ClauseAllocator>>, ConflictAnalysis<ClauseDatabase<ClauseAllocator>>, RSILBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
+                    return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::VANISHING) {
                     RSILVanishingBranchingHeuristic2* branch = new RSILVanishingBranchingHeuristic2(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, probHalfLife);
-                    return new Solver<ClauseDatabase<ClauseAllocator>, Trail, Propagate<ClauseDatabase<ClauseAllocator>>, ConflictAnalysis<ClauseDatabase<ClauseAllocator>>, RSILVanishingBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
+                    return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILVanishingBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
                     RSILBudgetBranchingHeuristic2* branch = new RSILBudgetBranchingHeuristic2(*clause_db, *trail, std::move(conjectures), backbonesEnabled, RSARHeuristic.get(), filterOnlyBackbones, initialBudget);
-                    return new Solver<ClauseDatabase<ClauseAllocator>, Trail, Propagate<ClauseDatabase<ClauseAllocator>>, ConflictAnalysis<ClauseDatabase<ClauseAllocator>>, RSILBudgetBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
+                    return new Solver<ClauseDatabase, Trail, Propagate, ConflictAnalysis, RSILBudgetBranchingHeuristic2>(*clause_db, *trail, *propagator, *conflict_analysis, *branch);
                 }
             }
             throw std::invalid_argument{"RSIL mode not implemented"};

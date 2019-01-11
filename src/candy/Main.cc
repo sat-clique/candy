@@ -195,45 +195,6 @@ static CandySolverInterface* createRSSolver(GlucoseArguments args, CNFProblem& p
     return solver;
 }
 
-static CandySolverInterface* createSolver(bool staticClauses, bool staticPropagate, bool lrb) {
-    if (staticClauses) {
-        CandyBuilder<ClauseDatabase<StaticClauseAllocator>> builder { new ClauseDatabase<StaticClauseAllocator>(), new Trail() };
-
-        if (lrb) {
-            if (staticPropagate) {
-                return builder.branchWithLRB().propagateStaticClauses().build();
-            } else {
-                return builder.branchWithLRB().build();
-            }
-        } 
-        else {
-            if (staticPropagate) {
-                return builder.propagateStaticClauses().build();
-            } else {
-                return builder.build();
-            }
-        }
-    }
-    else {
-        CandyBuilder<ClauseDatabase<ClauseAllocator>> builder { new ClauseDatabase<ClauseAllocator>(), new Trail() };
-
-        if (lrb) {
-            if (staticPropagate) {
-                return builder.branchWithLRB().propagateStaticClauses().build();
-            } else {
-                return builder.branchWithLRB().build();
-            }
-        } 
-        else {
-            if (staticPropagate) {
-                return builder.propagateStaticClauses().build();
-            } else {
-                return builder.build();
-            }
-        }
-    }
-}
-
 static void runSolver(CandySolverInterface* solver, lbool& result, Cl& model) {
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
     installSignalHandlers(true, solver);
@@ -286,6 +247,11 @@ int main(int argc, char** argv) {
     lbool result = l_Undef;
     Cl model;
 
+    GlobalClauseAllocator* global_allocator = nullptr;
+    if (ClauseDatabaseOptions::opt_static_db) {
+        global_allocator = new GlobalClauseAllocator();
+    }
+
     if (ParallelOptions::opt_threads == 1) {
         CandySolverInterface* solver = nullptr;
 
@@ -294,7 +260,7 @@ int main(int argc, char** argv) {
         }
 
         if (solver == nullptr) {
-            solver = createSolver(ClauseDatabaseOptions::opt_static_db, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb);
+            solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb);
         }
 
         solver->addClauses(problem);
@@ -309,11 +275,11 @@ int main(int argc, char** argv) {
         }
     }
     else {
-        CandySolverInterface* solver1 = createSolver(ClauseDatabaseOptions::opt_static_db, SolverOptions::opt_use_ts_pr, false);
+        CandySolverInterface* solver1 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, false);
         solver1->addClauses(problem);
         std::thread t1(runSolver, solver1, std::ref(result), std::ref(model));
 
-        CandySolverInterface* solver2 = createSolver(ClauseDatabaseOptions::opt_static_db, SolverOptions::opt_use_ts_pr, true);
+        CandySolverInterface* solver2 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, true);
         solver2->addClauses(problem);
         std::thread t2(runSolver, solver2, std::ref(result), std::ref(model));
 
