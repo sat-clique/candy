@@ -72,7 +72,9 @@ public:
         result()
     { }
 
-    ~ClauseDatabase() { }
+    ~ClauseDatabase() {
+        allocator.free(); 
+    }
 
     void initOccurrenceTracking() {
         for (Clause* clause : clauses) {
