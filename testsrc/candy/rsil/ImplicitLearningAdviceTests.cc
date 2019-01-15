@@ -39,7 +39,8 @@ namespace Candy {
             static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
             
             Conjectures testData;
-            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 9);
+            ImplicitLearningAdvice<AdviceEntryType> underTest;
+            underTest.init(testData, 10);
             
             for (Var i = 0; i < 10; ++i) {
                 EXPECT_FALSE(underTest.getAdvice(i).isBackbone());
@@ -52,9 +53,10 @@ namespace Candy {
             static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
             
             Conjectures testData;
-            Lit backboneLit = mkLit(5,0);
+            Lit backboneLit = mkLit(9,0);
             testData.addBackbone(BackboneConjecture{backboneLit});
-            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 9);
+            ImplicitLearningAdvice<AdviceEntryType> underTest;
+            underTest.init(testData);
             
             for (Var i = 0; i < 10; ++i) {
                 if (i != var(backboneLit)) {
@@ -74,7 +76,8 @@ namespace Candy {
             Conjectures testData;
             
             testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 5);
+            ImplicitLearningAdvice<AdviceEntryType> underTest;
+            underTest.init(testData);
             
             EXPECT_TRUE(underTest.hasPotentialAdvice(5));
             EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
@@ -91,7 +94,8 @@ namespace Candy {
             Conjectures testData;
             
             testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0), mkLit(2,1)}});
-            ImplicitLearningAdvice<AdviceEntryType> underTest(testData, 5);
+            ImplicitLearningAdvice<AdviceEntryType> underTest;
+            underTest.init(testData);
             
             EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
             EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));

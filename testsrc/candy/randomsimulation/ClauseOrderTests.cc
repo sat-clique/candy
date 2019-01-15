@@ -72,7 +72,7 @@ namespace Candy {
         auto gateBuilder = createGateStructureBuilder();
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula);
+        GateAnalyzer ga { *formula };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 0);
         
@@ -99,7 +99,7 @@ namespace Candy {
         gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula);
+        GateAnalyzer ga { *formula };
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 1);
@@ -138,7 +138,7 @@ namespace Candy {
         
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula);
+        GateAnalyzer ga { *formula };
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 3);
@@ -191,7 +191,7 @@ namespace Candy {
         
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula, 0, true, false, false, false);
+        GateAnalyzer ga { *formula, std::chrono::milliseconds(0), 1, true, false, false, false };
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 7);

@@ -41,6 +41,7 @@
 #include "candy/utils/Runtime.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/CandySolverInterface.h"
+#include "candy/frontend/CLIOptions.h"
 
 namespace Candy {
     
@@ -81,11 +82,17 @@ typedef struct Gate {
 class GateAnalyzer {
 
 public:
-    GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-            bool patterns = true, bool semantic = true, bool holistic = false,
-            bool lookahead = false, bool intensify = true, int lookahead_threshold = 10,
-            unsigned int conflict_budget = 1000,
-            std::chrono::milliseconds timeout = std::chrono::milliseconds{0});
+    GateAnalyzer(const CNFProblem& dimacs, 
+        std::chrono::milliseconds timeout = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{GateRecognitionOptions::opt_gr_timeout}), 
+        int tries = GateRecognitionOptions::opt_gr_tries,
+        bool patterns = GateRecognitionOptions::opt_gr_patterns, 
+        bool semantic = GateRecognitionOptions::opt_gr_semantic, 
+        bool holistic = GateRecognitionOptions::opt_gr_holistic,
+        bool lookahead = GateRecognitionOptions::opt_gr_lookahead, 
+        bool intensify = GateRecognitionOptions::opt_gr_intensify, 
+        int lookahead_threshold = GateRecognitionOptions::opt_gr_lookahead_threshold,
+        unsigned int conflict_budget = GateRecognitionOptions::opt_gr_semantic_budget);
+
     ~GateAnalyzer();
 
     // main analysis routine
@@ -133,15 +140,15 @@ public:
 
     bool hasTimeout() const;
 
+    const CNFProblem& problem;
     Runtime runtime;
 
-    CNFProblem& getProblem() {
+    const CNFProblem& getProblem() {
         return problem;
     }
 
 private:
     // problem to analyze:
-    CNFProblem& problem;
     std::unique_ptr<CandySolverInterface> solver;
     std::vector<Lit> assumptions;
 
@@ -236,7 +243,7 @@ private:
         }
     }
 
-    std::vector<For> buildIndexFromClauses(For& f) {
+    std::vector<For> buildIndexFromClauses(const For& f) {
         std::vector<For> index(2 * problem.nVars());
         for (Cl* c : f) for (Lit l : *c) {
             index[l].push_back(c);

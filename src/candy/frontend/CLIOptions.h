@@ -90,6 +90,7 @@ namespace RandomSimulationOptions {
 namespace RSILOptions {
     extern BoolOption opt_rsil_enable;
     extern StringOption opt_rsil_mode;
+    extern IntOption opt_rsil_advice_size;
     extern IntOption opt_rsil_vanHalfLife;
     extern IntOption opt_rsil_impBudgets;
     extern IntOption opt_rsil_filterByInputDeps;

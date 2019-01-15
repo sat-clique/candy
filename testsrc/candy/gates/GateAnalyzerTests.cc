@@ -92,7 +92,7 @@ namespace Candy {
         CNFProblem problem;
         IFormula simple_and = {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}};
         problem.readClauses(simple_and);
-        GateAnalyzer ga(problem);
+        GateAnalyzer ga { problem };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 1);
         ASSERT_EQ(ga.getRoots().size(), 1);
@@ -104,7 +104,7 @@ namespace Candy {
         CNFProblem problem;
         IFormula simple_xor = {{1_L}, {~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}, {1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}};
         problem.readClauses(simple_xor);
-        GateAnalyzer ga(problem);
+        GateAnalyzer ga { problem };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 1);
         ASSERT_EQ(ga.getRoots().size(), 1);
@@ -121,7 +121,7 @@ namespace Candy {
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
-        GateAnalyzer ga(problem);
+        GateAnalyzer ga { problem };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
         ASSERT_EQ(ga.getRoots().size(), 1);
@@ -141,7 +141,7 @@ namespace Candy {
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
         problem.readClauses(stuff);
-        GateAnalyzer ga(problem, 1);
+        GateAnalyzer ga { problem };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
         ASSERT_EQ(ga.getRoots().size(), 2);
@@ -161,7 +161,7 @@ namespace Candy {
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
         problem.readClauses(stuff);
-        GateAnalyzer ga(problem, 1);
+        GateAnalyzer ga { problem };
         ga.analyze();
         Lit root = ga.normalizeRoots();
         ASSERT_EQ(root, 8_L);
@@ -182,7 +182,7 @@ namespace Candy {
         problem.readClauses(simple_or);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
-        GateAnalyzer ga(problem);
+        GateAnalyzer ga { problem };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
         ASSERT_EQ(ga.getRoots().size(), 1);
@@ -209,7 +209,7 @@ namespace Candy {
         problem.readClauses(simple_xor1);
         problem.readClauses(simple_eq);
         problem.readClauses(simple_xor2);
-        GateAnalyzer ga(problem, 3, true, true, true);
+        GateAnalyzer ga { problem, std::chrono::milliseconds(0), 3, true, true, true };
         ga.analyze();
 //        ASSERT_EQ(ga.getGateCount(), 4);
 //        ASSERT_EQ(ga.getRoots().size(), 1);

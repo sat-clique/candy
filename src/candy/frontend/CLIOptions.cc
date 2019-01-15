@@ -64,7 +64,7 @@ namespace SubsumptionOptions {
 
 namespace GateRecognitionOptions {
     BoolOption opt_print_gates("GATE RECOGNITION", "print-gates", "print gates.", false);
-    IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX)); 
+    IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 3, IntRange(0, INT32_MAX)); 
     BoolOption opt_gr_patterns("GATE RECOGNITION", "gate-patterns", "Enable Pattern-based Gate Detection", true);
     BoolOption opt_gr_semantic("GATE RECOGNITION", "gate-semantic", "Enable Semantic Gate Detection", true);
     IntOption opt_gr_semantic_budget("GATE RECOGNITION", "gate-semantic-budget", "Enable Semantic Gate Detection Conflict Budget", 0, IntRange(0, INT32_MAX));
@@ -88,6 +88,7 @@ namespace RandomSimulationOptions {
 namespace RSILOptions {
     BoolOption opt_rsil_enable("RSIL", "rsil-enable", "Enable random-simulation-based implicit learning heuristics", false);
     StringOption opt_rsil_mode("RSIL", "rsil-mode", "Set RSIL mode to unrestricted, vanishing or implicationbudgeted", "unrestricted");
+    IntOption opt_rsil_advice_size("RSIL", "advice-size", "Set RSIL advice size", 3, IntRange(2, 3));
     IntOption opt_rsil_vanHalfLife("RSIL", "rsil-van-halflife", "Set the probability half-life (in decisions) for vanishing mode", 1 << 24, IntRange(1, INT32_MAX));
     IntOption opt_rsil_impBudgets("RSIL", "rsil-imp-budgets", "Set the initial budgets for implicationbudgeted mode", 1 << 20, IntRange(1, INT32_MAX));
     IntOption opt_rsil_filterByInputDeps("RSIL", "rsil-filter-by-input-dependencies", "Disregard variables dependending on more than N inputs. N=0 (default) disables this filter.", 

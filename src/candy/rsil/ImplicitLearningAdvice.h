@@ -285,26 +285,20 @@ namespace Candy {
     class ImplicitLearningAdvice {
         static_assert(AdviceEntryType::maxSize > 0, "max. advice size must be larger than zero");
         
-    public:
-        
-        /**
-         * Constructs an instance \a i of ImplicitLearningAdvice.
-         *
-         * \param conjectures   The set of equivalence/backbone conjectures which should
-         *                      be represented by \i. Note that equivalence conjectures of
-         *                      size greater than tMaxAdviceSize are discarded.
-         *
-         * \param maxVar        A variable at least as great as the greatest variable occuring
-         *                      in \p conjectures.
-         *
-         * \param advicePrototype   TODO: document prototype
-         */
-        explicit ImplicitLearningAdvice(const Conjectures& conjectures, Var maxVar);
-        
+    public:        
         /**
          * Constructs an empty instance of ImplicitLearningAdvice.
          */
         ImplicitLearningAdvice();
+        
+        /**
+         * Initializes an instance \a i of ImplicitLearningAdvice.
+         *
+         * \param conjectures   The set of equivalence/backbone conjectures which should
+         *                      be represented by \i. Note that equivalence conjectures of
+         *                      size greater than tMaxAdviceSize are discarded.
+         */
+        void init(const Conjectures& conjectures, int size = -1);
         
         /**
          * Retrieves implicit learning heuristics advice for the variable \p v .
@@ -374,9 +368,8 @@ namespace Candy {
     }
     
     template<class AdviceEntryType>
-    ImplicitLearningAdvice<AdviceEntryType>::ImplicitLearningAdvice(const Conjectures& conjectures,
-                                                                    Var maxVar) {
-        m_advice.resize(maxVar+1);
+    void ImplicitLearningAdvice<AdviceEntryType>::init(const Conjectures& conjectures, int size) { 
+        m_advice.resize(size != -1 ? size : conjectures.getMaxVar()+1);
         
         for (auto& conjecture : conjectures.getEquivalences()) {
             if (conjecture.size() <= AdviceEntryType::maxSize) {

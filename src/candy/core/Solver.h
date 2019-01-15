@@ -113,7 +113,7 @@ class Solver : public CandySolverInterface {
 
 public:
     Solver();
-    Solver(TClauses& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br);
+    Solver(TClauses db, TAssignment& as);
     virtual ~Solver();
     
     Var newVar() override;
@@ -255,11 +255,11 @@ public:
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
-    TClauses& clause_db;
+    TClauses clause_db;
     Trail& trail;
-    TPropagate& propagator;
-    TLearning& conflict_analysis;
-    TBranching& branch;
+    TPropagate propagator;
+    TLearning conflict_analysis;
+    TBranching branch;
 
     Subsumption<TPropagate> subsumption;
     VariableElimination<TPropagate> elimination;
@@ -280,7 +280,6 @@ protected:
 
     // constants for memory reorganization
     bool sort_watches;
-    bool sort_variables;
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
@@ -322,11 +321,11 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // results
     model(), conflict(),
     // Basic Systems
-    clause_db(*new TClauses()),
+    clause_db(),
     trail(*new TAssignment()),
-    propagator(*new TPropagate(clause_db, trail)),
-	conflict_analysis(*new TLearning(clause_db, trail)),
-    branch(*new TBranching(clause_db, trail)),
+    propagator(clause_db, trail),
+	conflict_analysis(clause_db, trail),
+    branch(clause_db, trail),
     // simplification
     subsumption(clause_db, trail, propagator, certificate),
     elimination(clause_db, trail, propagator, certificate), 
@@ -340,7 +339,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
     sort_watches(SolverOptions::opt_sort_watches),
-    sort_variables(SolverOptions::opt_sort_variables),
     // conflict state
     ok(true),
     // pre- and inprocessing
@@ -361,17 +359,17 @@ controller.run();
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauses& db, TAssignment& as, TPropagate& pr, TLearning& le, TBranching& br) : 
+Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauses db, TAssignment& as) : 
     // unsat certificate
     certificate(SolverOptions::opt_certified_file),
     // results
     model(), conflict(),
     // Basic Systems
-    clause_db(db),
+    clause_db(std::move(db)),
     trail(as),
-    propagator(pr),
-	conflict_analysis(le),
-    branch(br),
+    propagator(clause_db, trail),
+	conflict_analysis(clause_db, trail),
+    branch(clause_db, trail),
     // simplification
     subsumption(clause_db, trail, propagator, certificate),
     elimination(clause_db, trail, propagator, certificate), 
@@ -385,7 +383,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClause
     incReduceDB(SolverOptions::opt_inc_reduce_db),
     // memory reorganization
     sort_watches(SolverOptions::opt_sort_watches),
-    sort_variables(SolverOptions::opt_sort_variables),
     // conflict state
     ok(true),
     // preprocessing
@@ -438,9 +435,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause
         elimination.grow(maxVars);
     }
 
-    if (sort_variables) {
-        branch.initFrom(dimacs);
-    }
+    branch.init(dimacs);
 
     for (vector<Lit>* clause : dimacs.getProblem()) {
         if (!addClause(*clause)) {

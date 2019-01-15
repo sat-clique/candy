@@ -100,13 +100,15 @@ public:
         }
     }
 
-    void initFrom(const CNFProblem& problem) {
-        std::vector<double> occ = problem.getLiteralRelativeOccurrences();
-        for (size_t i = 0; i < decision.size(); i++) {
-            activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
-            polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
+    void init(const CNFProblem& problem) {
+        if (SolverOptions::opt_sort_variables) {
+            std::vector<double> occ = problem.getLiteralRelativeOccurrences();
+            for (size_t i = 0; i < decision.size(); i++) {
+                activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
+                polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
+            }
+            rebuildOrderHeap();
         }
-        rebuildOrderHeap();
     }
 
     // Insert a variable in the decision order priority queue.
