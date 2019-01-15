@@ -1,22 +1,23 @@
-
-#include "candy/frontend/CandyCommandLineParser.h"
+#include "candy/core/Solver.h"
+#include "candy/frontend/Exceptions.h"
+#include "candy/frontend/CandyBuilder.h"
+#include "util.h"
 
 using namespace Candy;
 
 int main(int argc, char** argv) {
-    GlucoseArguments args = parseCommandLineArgs(argc, argv);
+    parseOptions(argc, argv, true);
 
     CNFProblem problem{};
     try {
-        if (args.read_from_stdin) {
+        if (argc == 1) {
             printf("c Reading from standard input... Use '--help' for help.\n");
             problem.readDimacsFromStdin();
-            return 0;
         } else {
-            problem.readDimacsFromFile(args.input_filename);
-            return 0;
+            const char* inputFilename = argv[1];
+            problem.readDimacsFromFile(inputFilename);
         }
-    } 
+    }
     catch (ParserException& e) {
 		printf("Caught Parser Exception\n%s\n", e.what());
         return 0;

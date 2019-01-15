@@ -31,6 +31,7 @@
 #include <chrono>
 
 #include "Conjectures.h"
+#include "SimulationVector.h"
 
 namespace Candy {
     class GateAnalyzer;
@@ -63,9 +64,14 @@ namespace Candy {
      * Instances of this class are meant to be created using a RandomSimulatorBuilder
      * or a factory method.
      */
-    class RandomSimulator {
+    class BitparallelRandomSimulator {
     public:
-        RandomSimulator();
+        BitparallelRandomSimulator(std::unique_ptr<ClauseOrder> clauseOrderStrat,
+            std::unique_ptr<Partition> partitionStrat,
+            std::unique_ptr<Randomization> randomizationStrat,
+            std::unique_ptr<Propagation> propagationStrat,
+            const GateAnalyzer &gateAnalyzer,
+            float reductionRateAbortThreshold); 
         
         /**
          * Performs random simulation using a maximum amount of variable assignment rounds.
@@ -77,7 +83,7 @@ namespace Candy {
          *   Implementations of RandomSimulator may (e.g. due to alignment requirements) actually
          *   perform more (up to a compile-time defined constant) rounds than given by nRounds.
          */
-        virtual Conjectures run(unsigned int nRounds) = 0;
+        Conjectures run(unsigned int nRounds);
         
         /**
          * Performs random simulation using a maximum amount of variable assignment rounds, aborting
@@ -94,7 +100,7 @@ namespace Candy {
          *
          * \param timeLimit CPU time limit in seconds. If timeLimit == -1, no time limit is used.
          */
-        virtual Conjectures run(unsigned int nRounds, std::chrono::milliseconds timeLimit) = 0;
+        Conjectures run(unsigned int nRounds, std::chrono::milliseconds timeLimit);
         
         /**
          * Performs random simulation until the random simulator heuristically determines
@@ -102,11 +108,30 @@ namespace Candy {
          * default, you need to create the RandomSimulator object with a rsp. heuristic
          * configuration. Otherwise, it is an error to call this method.
          */
-        virtual Conjectures run() = 0;
-        virtual ~RandomSimulator();
+        Conjectures run();
+
+        void ensureInitialized();
         
-        RandomSimulator(const RandomSimulator &other) = delete;
-        RandomSimulator& operator=(const RandomSimulator &other) = delete;
+        ~BitparallelRandomSimulator();
+        BitparallelRandomSimulator(const BitparallelRandomSimulator& other) = delete;
+        BitparallelRandomSimulator& operator=(const BitparallelRandomSimulator &other) = delete;
+        
+    private:
+        bool isFurtherSimulationWorthwile();
+        
+        Conjectures runImpl(bool boundedRun, unsigned int nSteps, std::chrono::milliseconds timeLimit);
+        
+        std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
+        std::unique_ptr<Partition> m_partitionStrat;
+        std::unique_ptr<Randomization> m_randomizationStrat;
+        std::unique_ptr<Propagation> m_propagationStrat;
+        
+        const GateAnalyzer& m_gateAnalyzer;
+        bool m_isInitialized;
+        
+        SimulationVectors m_simulationVectors;
+        float m_abortThreshold;
+
     };
     
     
@@ -123,40 +148,40 @@ namespace Candy {
      * instead (see the implementation's documentation).
      *
      */
-    class RandomSimulatorBuilder {
+    class BitparallelRandomSimulatorBuilder {
     public:
         /**
          * Configures the builder to create random simulators with the given clause order strategy.
          */
-        virtual RandomSimulatorBuilder& withClauseOrderStrategy(std::unique_ptr<ClauseOrder> clauseOrderStrat) = 0;
+        BitparallelRandomSimulatorBuilder& withClauseOrderStrategy(std::unique_ptr<ClauseOrder> clauseOrderStrat);
         
         /**
          * Configures the builder to create random simulators with the given partition strategy.
          */
-        virtual RandomSimulatorBuilder& withPartitionStrategy(std::unique_ptr<Partition> partitionStrat) = 0;
+        BitparallelRandomSimulatorBuilder& withPartitionStrategy(std::unique_ptr<Partition> partitionStrat);
         
         /**
          * Configures the builder to create random simulators with the given randomization strategy.
          */
-        virtual RandomSimulatorBuilder& withRandomizationStrategy(std::unique_ptr<Randomization> randomizationStrat) = 0;
+        BitparallelRandomSimulatorBuilder& withRandomizationStrategy(std::unique_ptr<Randomization> randomizationStrat);
         
         /**
          * Configures the builder to create random simulators with the given variable assignment propagation strategy.
          */
-        virtual RandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation> propagationStrat) = 0;
+        BitparallelRandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation> propagationStrat);
         
         /**
          * Configures the builder to create random simulators with the given reduction rate abort threshold (RRAT).
          * TODO: document the RRAT, and that negative values of threshold disable it
          */
-        virtual RandomSimulatorBuilder& withReductionRateAbortThreshold(float threshold) = 0;
+        BitparallelRandomSimulatorBuilder& withReductionRateAbortThreshold(float threshold);
         
         /**
          * Configures the builder to create random simulators with the given gate filter. Random simulators
          * only consider gates with outputs marked enabled by this filter. If no such filter is configured,
          * all output variables are considered to be enabled.
          */
-        virtual RandomSimulatorBuilder& withGateFilter(std::unique_ptr<GateFilter> filter) = 0;
+        BitparallelRandomSimulatorBuilder& withGateFilter(std::unique_ptr<GateFilter> filter);
 
         /**
          * Configures the builder to create random simualtors with the given gate analyzer. Note that
@@ -164,41 +189,27 @@ namespace Candy {
          * the gate analyzer; this has to be performed by the user before starting random simulation
          * by invoking the random simulator's run() method.
          */
-        virtual RandomSimulatorBuilder& withGateAnalyzer(const GateAnalyzer& gateAnalyzer) = 0;
+        BitparallelRandomSimulatorBuilder& withGateAnalyzer(const GateAnalyzer& gateAnalyzer);
 
         /**
          * Builds the random simulator.
          */
-        virtual std::unique_ptr<RandomSimulator> build() = 0;
+        std::unique_ptr<BitparallelRandomSimulator> build();
         
-        RandomSimulatorBuilder();
-        virtual ~RandomSimulatorBuilder();
-        RandomSimulatorBuilder(const RandomSimulatorBuilder& other) = delete;
-        RandomSimulatorBuilder& operator=(const RandomSimulatorBuilder &other) = delete;
+        BitparallelRandomSimulatorBuilder(const GateAnalyzer& analyzer);
+        ~BitparallelRandomSimulatorBuilder();
+        BitparallelRandomSimulatorBuilder(const BitparallelRandomSimulatorBuilder& other) = delete;
+        BitparallelRandomSimulatorBuilder& operator=(const BitparallelRandomSimulatorBuilder& other) = delete;
+        
+    private:
+        std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
+        std::unique_ptr<Partition> m_partitionStrat;
+        std::unique_ptr<Randomization> m_randomizationStrat;
+        std::unique_ptr<Propagation> m_propagationStrat;
+        std::vector<std::unique_ptr<GateFilter>> m_gateFilters;
+        const GateAnalyzer& m_gateAnalyzer;
+        float m_reductionRateAbortThreshold;
     };
-    
-    /**
-     * \ingroup RandomSimulation
-     *
-     * Creates an instance of the RandomSimulator class using the implementation
-     * chosen as default within this package.
-     *
-     * Note: this implementation of RandomSimulator rounds the maximum amount of simulation rounds
-     *   up to the next multiple of 2048.
-     *
-     * \param gateAnalyzer      The gate structure on which to perform random simulation Note that
-     *   the random simulation system does not invoke gateAnalyzer.analyze(), and does not configure
-     *   the gate analyzer; this has to be performed by the user before starting random simulation
-     *   by invoking the random simulator's run() method.
-     */
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(const GateAnalyzer& gateAnalyzer);
-    
-    /**
-     * \ingroup RandomSimulation
-     *
-     * Creates a RandomSimulationBuilder for the default RandomSimulator implementation.
-     * TODO: document defaults.
-     */
-    std::unique_ptr<RandomSimulatorBuilder> createDefaultRandomSimulatorBuilder();
+
 }
 #endif

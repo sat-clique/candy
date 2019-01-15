@@ -39,9 +39,11 @@ namespace Candy {
      */
     class UnsuitableProblemException : public std::exception {
     public:
-        explicit UnsuitableProblemException(const std::string& what) noexcept;
-        virtual const char* what() const noexcept;
-        
+        explicit UnsuitableProblemException(const std::string& what) noexcept : m_what(what) { }
+        const char* what() const noexcept {
+            return m_what.c_str();
+        }
+
     private:
         std::string m_what;
     };
@@ -53,9 +55,11 @@ namespace Candy {
      */
     class ParserException : public std::exception {
     public:
-        explicit ParserException(const std::string& what) noexcept;
-        virtual const char* what() const noexcept;
-        
+        explicit ParserException(const std::string& what) noexcept : m_what(what) { }
+        const char* what() const noexcept {
+            return m_what.c_str();
+        }
+                
     private:
         std::string m_what;
     };

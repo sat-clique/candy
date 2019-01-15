@@ -69,13 +69,10 @@
 #include "candy/core/Solver.h"
 #include "candy/minimizer/Minimizer.h"
 
-#include "candy/frontend/GateAnalyzerFrontend.h"
-#include "candy/frontend/RSILSolverBuilder.h"
 #include "candy/frontend/RandomSimulationFrontend.h"
-#include "candy/frontend/RSARFrontend.h"
-#include "candy/frontend/CandyCommandLineParser.h"
 #include "candy/frontend/SolverFactory.h"
 #include "candy/frontend/CandyBuilder.h"
+#include "candy/frontend/Exceptions.h"
 
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/rsar/ARSolver.h"
@@ -175,26 +172,6 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
 
-static CandySolverInterface* createRSSolver(GlucoseArguments args, CNFProblem& problem) {
-    if (args.rsilArgs.useRSIL && args.rsarArgs.useRSAR) {
-        throw std::invalid_argument("Using RSAR with RSIL is not yet supported");
-    }
-    CandySolverInterface* solver = nullptr;
-    SolverFactory factory { args }; 
-    try {
-        if (args.rsilArgs.useRSIL) {
-            solver = factory.createRSILSolver(problem);
-        }
-        else if (args.rsarArgs.useRSAR) {
-            solver = factory.createRSARSolver(problem);
-        }
-    } 
-    catch (UnsuitableProblemException& e) {
-        std::cerr << "c Aborting: " << e.what() << std::endl;
-    }
-    return solver;
-}
-
 static void runSolver(CandySolverInterface* solver, lbool& result, Cl& model) {
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
     installSignalHandlers(true, solver);
@@ -210,24 +187,25 @@ static void runSolver(CandySolverInterface* solver, lbool& result, Cl& model) {
 }
 
 int main(int argc, char** argv) {
-    GlucoseArguments args = parseCommandLineArgs(argc, argv);
+    setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or gzipped DIMACS.\n");
+    parseOptions(argc, argv, true);
     
-    if (args.verb > 1) {
+    if (SolverOptions::verb > 1) {
         std::cout << "c Candy 0.7 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
-        std::cout << args << std::endl;
     }
 
-    setLimits(args.cpu_lim, args.mem_lim);
+    setLimits(SolverOptions::cpu_lim, SolverOptions::mem_lim);
 
     Statistics::getInstance().runtimeStart("Initialization");
 
     CNFProblem problem{};
     try {
-        if (args.read_from_stdin) {
+        if (argc == 1) {
             printf("c Reading from standard input... Use '--help' for help.\n");
             problem.readDimacsFromStdin();
         } else {
-            problem.readDimacsFromFile(args.input_filename);
+            const char* inputFilename = argv[1];
+            problem.readDimacsFromFile(inputFilename);
         }
     }
     catch (ParserException& e) {
@@ -235,12 +213,12 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    if (args.do_gaterecognition) {
-        benchmarkGateRecognition(problem, args.gateRecognitionArgs);
+    if (SolverOptions::do_gaterecognition) {
+        std::cout << "c benchmarking gate recognition. not impl. atm" << std::endl;
         return 0;
     }
 
-    if (args.verb > 0) {
+    if (SolverOptions::verb > 0) {
         printProblemStatistics(problem);
     }    
     
@@ -253,14 +231,14 @@ int main(int argc, char** argv) {
     }
 
     if (ParallelOptions::opt_threads == 1) {
-        CandySolverInterface* solver = nullptr;
+        CandySolverInterface* solver;
 
-        if (args.rsilArgs.useRSIL || args.rsarArgs.useRSAR) {
-            solver = createRSSolver(args, problem);
+        if (RSAROptions::opt_rsar_enable) {
+            solver = createRSARSolver(problem);
         }
 
         if (solver == nullptr) {
-            solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb);
+            solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
         }
 
         solver->addClauses(problem);
@@ -269,17 +247,17 @@ int main(int argc, char** argv) {
 
         runSolver(solver, std::ref(result), std::ref(model));
 
-        if (args.verb > 0) {
+        if (SolverOptions::verb > 0) {
             Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
             Statistics::getInstance().printRuntimes();
         }
     }
     else {
-        CandySolverInterface* solver1 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, false);
+        CandySolverInterface* solver1 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, false, false); 
         solver1->addClauses(problem);
         std::thread t1(runSolver, solver1, std::ref(result), std::ref(model));
 
-        CandySolverInterface* solver2 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, true);
+        CandySolverInterface* solver2 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, true, false);
         solver2->addClauses(problem);
         std::thread t2(runSolver, solver2, std::ref(result), std::ref(model));
 
@@ -295,10 +273,10 @@ int main(int argc, char** argv) {
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
-    if (result == l_True && args.mod) {
-        if (args.do_minimize > 0) {
+    if (result == l_True && SolverOptions::mod) {
+        if (SolverOptions::do_minimize > 0) {
             Minimizer minimizer(problem, model);
-            Cl minimalModel = minimizer.computeMinimalModel(args.do_minimize == 2);
+            Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
             for (Lit lit : minimalModel) {
                 printLiteral(lit);
             }

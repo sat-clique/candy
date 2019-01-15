@@ -39,11 +39,13 @@ namespace Candy {
         auto gateBuilder = createGateStructureBuilder();
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula);
+        GateAnalyzer ga { *formula };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 0);
-        
-        auto underTest = createDefaultRandomSimulator(ga);
+
+        BitparallelRandomSimulatorBuilder simulatorBuilder { ga };
+        auto underTest = simulatorBuilder.build();
+
         auto result = underTest->run(2048);
         
         EXPECT_EQ(result.getBackbones().size(), 0ul);
@@ -59,11 +61,12 @@ namespace Candy {
         
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula);
+        GateAnalyzer ga { *formula };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 3);
-        
-        auto underTest = createDefaultRandomSimulator(ga);
+
+        BitparallelRandomSimulatorBuilder simulatorBuilder { ga };
+        auto underTest = simulatorBuilder.build();
         
         auto result = underTest->run(4096);
         
@@ -88,14 +91,12 @@ namespace Candy {
         
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga(*formula);
+        GateAnalyzer ga { *formula };
         ga.analyze();
         ASSERT_EQ(ga.getGateCount(), 6);
-        
-        auto rsBuilder = createDefaultRandomSimulatorBuilder();
-        rsBuilder->withGateAnalyzer(ga);
-        rsBuilder->withReductionRateAbortThreshold(0.1f);
-        auto underTest = rsBuilder->build();
+
+        BitparallelRandomSimulatorBuilder simulatorBuilder { ga };
+        auto underTest = simulatorBuilder.withReductionRateAbortThreshold(0.1f).build();
         
         Conjectures result;
         

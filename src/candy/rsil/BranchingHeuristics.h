@@ -35,6 +35,10 @@
 #include <candy/utils/FastRand.h>
 #include <candy/utils/Attributes.h>
 #include <candy/rsar/Heuristics.h>
+#include <candy/gates/GateAnalyzer.h>
+#include <candy/gates/MiterDetector.h>
+#include <candy/frontend/RandomSimulationFrontend.h>
+
 #include "RSARHeuristicsFilter.h"
 
 #include <type_traits>
@@ -68,7 +72,8 @@ namespace Candy {
         Trail& trail;
 
         /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
-        Conjectures conjectures;
+        std::unique_ptr<Conjectures> conjectures;
+        bool initializationCompleted;
 
         /**
          * A few definitions for the TBranchingHeuristic concept
@@ -93,8 +98,20 @@ namespace Candy {
     		return defaultBranchingHeuristic.isDecisionVar(v);
     	}
 
-    	void initFrom(const CNFProblem& problem) {
-    		defaultBranchingHeuristic.initFrom(problem);
+    	virtual void init(const CNFProblem& problem) {
+    		defaultBranchingHeuristic.init(problem);
+            generateConjectures(problem);
+            if (initializationCompleted) {
+                m_backbonesEnabled = !conjectures->getBackbones().empty();
+                m_advice.init(*conjectures.get());
+            }
+    	}
+
+    	virtual void init(std::unique_ptr<Conjectures> _con, bool backbonesEnabled = true) {
+            this->conjectures = std::move(_con); 
+            initializationCompleted = true;
+            m_backbonesEnabled = backbonesEnabled;
+            m_advice.init(*conjectures.get());
     	}
 
     	void grow() {
@@ -113,6 +130,34 @@ namespace Candy {
     		defaultBranchingHeuristic.notify_restarted();
         }
 
+        void generateConjectures(const CNFProblem& problem) {
+            GateAnalyzer analyzer { problem };
+            analyzer.analyze();
+
+            if (analyzer.hasTimeout()) {
+                std::cout << "c gate analysis exceeded the preprocessing time limit." << std::endl;
+            }
+            else if (analyzer.getGateCount() <= RSILOptions::opt_rsil_minGateFraction * problem.nVars()) {
+                std::cout << "c insufficient gate count." << std::endl;
+            }
+            else if (RSILOptions::opt_rsil_onlyMiters && !hasPossiblyMiterStructure(analyzer)) {
+                std::cout << "c problem heuristically determined not to be a miter problem." << std::endl;
+            }
+            else {
+                try {
+                    this->conjectures = performRandomSimulation(analyzer, std::chrono::milliseconds(RandomSimulationOptions::opt_rs_ppTimeLimit));
+                    if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
+                        std::cout << "c no conjectures found." << std::endl;
+                    } else {
+                        initializationCompleted = true;
+                    }
+                }
+                catch(OutOfTimeException& exception) {
+                    std::cout << "c random simulation exceeded the preprocessing time limit." << std::endl;
+                }
+            }
+        }
+
         /// A type used for recognition of RSILBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBranchingHeuristic<AdviceEntry<3>>;
@@ -125,18 +170,16 @@ namespace Candy {
          * getAdvice(...) always returns lit_Undef and getSignAdvice(L) returns L.
          *
          */
-        RSILBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
-                               RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false) :
-                                  clause_db(clause_db_), trail(trail_), 
-                                  defaultBranchingHeuristic(clause_db_, trail_), 
-                                  m_advice(conjectures_, conjectures_.getMaxVar()),
-                                  m_rng(0xFFFF),
-                                  m_backbonesEnabled(m_backbonesEnabled_) {
-            if (rsar_filter_ != nullptr) {
-                std::vector<RefinementHeuristic*> heuristics;
-                heuristics.push_back(rsar_filter_);
-                filterWithRSARHeuristics(heuristics, m_advice, filterOnlyBackbones_);
-            }
+        RSILBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_) :
+            clause_db(clause_db_), trail(trail_), initializationCompleted(false), 
+            defaultBranchingHeuristic(clause_db_, trail_), m_advice(),
+            m_rng(0xFFFF)
+        {
+            // if (rsar_filter_ != nullptr) {
+            //     std::vector<RefinementHeuristic*> heuristics;
+            //     heuristics.push_back(rsar_filter_);
+            //     filterWithRSARHeuristics(heuristics, m_advice, RSILOptions::opt_rsil_filterOnlyBackbone);
+            // }
         }
 
         RSILBranchingHeuristic(RSILBranchingHeuristic&& other) = default;
@@ -237,6 +280,26 @@ namespace Candy {
 
         Lit pickBranchLit();
 
+        void init(const CNFProblem& problem) override {
+            RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>::init(problem);
+            for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
+                auto& advice = this->m_advice.getAdvice(i);
+                for (size_t j = 0; j < advice.getSize(); ++j) {
+                    advice.setBudget(j, RSILOptions::opt_rsil_impBudgets);
+                }
+            }
+        }
+
+    	void init(std::unique_ptr<Conjectures> _con, bool backbonesEnabled = true, unsigned int budget = 1 << 20) {
+            RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>::init(std::move(_con), backbonesEnabled);
+            for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
+                auto& advice = this->m_advice.getAdvice(i);
+                for (size_t j = 0; j < advice.getSize(); ++j) {
+                    advice.setBudget(j, budget);
+                }
+            }
+    	}
+
         /// A type used for recognition of RSILBudgetBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBudgetBranchingHeuristic<3>;
@@ -244,16 +307,9 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
         
-        RSILBudgetBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
-                                     RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t initialBudget_ = 10000ull) :
-                RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(clause_db_, trail_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) {
-            for (Var i = 0; this->m_advice.hasPotentialAdvice(i); ++i) {
-                auto& advice = this->m_advice.getAdvice(i);
-                for (size_t j = 0; j < advice.getSize(); ++j) {
-                    advice.setBudget(j, initialBudget_);
-                }
-            }
-        }
+        RSILBudgetBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_)
+         : RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(clause_db_, trail_) 
+        { }
 
         RSILBudgetBranchingHeuristic(RSILBudgetBranchingHeuristic&& other) = default;
         RSILBudgetBranchingHeuristic& operator=(RSILBudgetBranchingHeuristic&& other) = default;
@@ -296,6 +352,15 @@ namespace Candy {
     public:
 
         Lit pickBranchLit();
+
+        void init(const CNFProblem& problem) override {
+            m_rsilHeuristic.init(problem);
+        }
+
+    	void init(std::unique_ptr<Conjectures> _con, bool backbonesEnabled = true, unsigned int halflife = 1 << 24) {
+            m_rsilHeuristic.init(std::move(_con), backbonesEnabled);
+            m_probHalfLife = halflife;
+    	}
         
         /// A type used for recognition of RSILVanishingBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
@@ -304,13 +369,12 @@ namespace Candy {
         /// The type of the extended heuristic, used for parameter arguments.
         using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
 
-        RSILVanishingBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_, Conjectures conjectures_ = Conjectures{}, bool m_backbonesEnabled_ = false,
-                                        RefinementHeuristic* rsar_filter_ = nullptr, bool filterOnlyBackbones_ = false, uint64_t m_probHalfLife_ = 10000ull) :
-                RSILBranchingHeuristic<AdviceType>(clause_db_, trail_, std::move(Conjectures{}), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_),
-                                    m_callCounter(m_probHalfLife_),
-                                    m_probHalfLife(m_probHalfLife_), m_mask(0ull),
-                                    m_rsilHeuristic(clause_db_, trail_, std::move(conjectures_), m_backbonesEnabled_, rsar_filter_, filterOnlyBackbones_) 
-        {}
+        RSILVanishingBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_)
+         : RSILBranchingHeuristic<AdviceType>(clause_db_, trail_),
+            m_callCounter(RSILOptions::opt_rsil_vanHalfLife),
+            m_probHalfLife(RSILOptions::opt_rsil_vanHalfLife), m_mask(0ull),
+            m_rsilHeuristic(clause_db_, trail_) 
+        { }
 
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
@@ -508,8 +572,7 @@ namespace Candy {
         return lit_Undef;
     }
     
-    template<class AdviceType>
-    ATTR_ALWAYSINLINE
+    template<class AdviceType> ATTR_ALWAYSINLINE
     inline Lit RSILBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
         if (m_backbonesEnabled) {
             Var decisionVariable = var(literal);
@@ -527,8 +590,6 @@ namespace Candy {
         }
         return literal;
     }
-
-
     
     // Note: The RSILBudgetBranchingHeuristic implementation itself is not concerned with
     // actually updating the AdviceEntry objects, and does not directly alter the behaviour

@@ -21,8 +21,16 @@ namespace Candy {
 
 class ClauseAllocator {
 public:
-    ClauseAllocator() : pages(), cursor(0) {
+    ClauseAllocator() : pages(), cursor(0), memory(nullptr) {
         newPage();
+    }
+
+    ClauseAllocator(ClauseAllocator&& other) noexcept : 
+        pages(std::move(other.pages)), 
+        cursor(other.cursor), memory(other.memory)
+    {
+        other.cursor = 0;
+        other.memory = nullptr;
     }
 
     ~ClauseAllocator() {

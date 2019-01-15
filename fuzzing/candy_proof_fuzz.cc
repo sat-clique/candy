@@ -2,7 +2,7 @@
 #include "drat-trim.h"
 
 #include "candy/core/Solver.h"
-#include "candy/frontend/CandyCommandLineParser.h"
+#include "candy/frontend/Exceptions.h"
 #include "candy/frontend/SolverFactory.h"
 #include "candy/core/branching/VSIDS.h"
 #include "candy/frontend/CandyBuilder.h"
@@ -11,17 +11,18 @@
 using namespace Candy;
 
 int main(int argc, char** argv) {
-    GlucoseArguments args = parseCommandLineArgs(argc, argv);
+    parseOptions(argc, argv, true);
 
     CNFProblem problem{};
+    const char* inputFilename;
     try {
-        if (args.read_from_stdin) {
-            printf("c Reading from standard input... Use '--help' for help.\n");
-            problem.readDimacsFromStdin();
+        if (argc == 1) {
+            return 0;
         } else {
-            problem.readDimacsFromFile(args.input_filename);
+            inputFilename = argv[1];
+            problem.readDimacsFromFile(inputFilename);
         }
-    } 
+    }
     catch (ParserException& e) {
 		printf("Caught Parser Exception\n%s\n", e.what());
         return 0;
@@ -37,7 +38,7 @@ int main(int argc, char** argv) {
     if (ClauseDatabaseOptions::opt_static_db) {
         global_allocator = new GlobalClauseAllocator();
     }
-    CandySolverInterface* solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb);
+    CandySolverInterface* solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb, false);
 
     solver->addClauses(problem);
 
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     assert (result == reference_result);
 
     if (result == l_False) {
-        int proof_result = check_proof((char*)args.input_filename, "proof.drat");
+        int proof_result = check_proof((char*)inputFilename, "proof.drat");
         assert (0 == proof_result);
     }
 }

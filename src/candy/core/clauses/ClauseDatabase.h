@@ -72,6 +72,21 @@ public:
         result()
     { }
 
+    ClauseDatabase(ClauseDatabase&& other) noexcept : 
+        allocator(std::move(other.allocator)), 
+        global_allocator(other.global_allocator), 
+        clauses(std::move(other.clauses)), 
+        persistentLBD(other.persistentLBD),
+        reestimationReduceLBD(other.reestimationReduceLBD), 
+        track_literal_occurrence(other.track_literal_occurrence),
+        variableOccurrences(std::move(other.variableOccurrences)),
+        binaryWatchers(std::move(other.binaryWatchers)), 
+        result(other.result)
+    {
+        other.global_allocator = nullptr;
+        other.track_literal_occurrence = false;
+    }
+
     ~ClauseDatabase() {
         allocator.free(); 
     }

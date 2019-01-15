@@ -33,91 +33,122 @@ namespace Candy {
 
     template <>
     Lit RSILBranchingHeuristic3::pickBranchLit() {
-        Lit rsilAdvice = getAdvice();
-        if (rsilAdvice != lit_Undef) {
-            return rsilAdvice;
+        if (initializationCompleted) {
+            Lit rsilAdvice = getAdvice();
+            if (rsilAdvice != lit_Undef) {
+                return rsilAdvice;
+            }
+            
+            Lit candidate = defaultBranchingHeuristic.pickBranchLit();
+            if (candidate != lit_Undef) {
+                return getSignAdvice(candidate);
+            }
+
+            return lit_Undef;
         }
-        
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
-        
-        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
-            return candidate;
+        else {
+            return defaultBranchingHeuristic.pickBranchLit();
         }
-        return getSignAdvice(candidate);
     }
     
     template <>
     Lit RSILVanishingBranchingHeuristic3::pickBranchLit() {
-        Lit rsilAdvice = getAdvice();
-        if (rsilAdvice != lit_Undef) {
-            return rsilAdvice;
+        if (initializationCompleted) {
+            Lit rsilAdvice = getAdvice();
+            if (rsilAdvice != lit_Undef) {
+                return rsilAdvice;
+            }
+            
+            Lit candidate = defaultBranchingHeuristic.pickBranchLit();
+            if (candidate != lit_Undef) {
+                return getSignAdvice(candidate);
+            }
+            
+            return lit_Undef;
         }
-        
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
-        
-        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
-            return candidate;
+        else {
+            return defaultBranchingHeuristic.pickBranchLit();
         }
-        return getSignAdvice(candidate);
     }
     
     template <>
     Lit RSILBudgetBranchingHeuristic3::pickBranchLit() {
-        Lit rsilAdvice = getAdvice();
-        if (rsilAdvice != lit_Undef) {
-            return rsilAdvice;
+        if (initializationCompleted) {
+            Lit rsilAdvice = getAdvice();
+            if (rsilAdvice != lit_Undef) {
+                return rsilAdvice;
+            }
+            
+            Lit candidate = defaultBranchingHeuristic.pickBranchLit();
+            if (candidate != lit_Undef) {
+                return getSignAdvice(candidate);
+            }
+            
+            return lit_Undef;
         }
-        
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
-        
-        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
-            return candidate;
+        else {
+            return defaultBranchingHeuristic.pickBranchLit();
         }
-        return getSignAdvice(candidate);
     }
     
     template <>
     Lit RSILBranchingHeuristic2::pickBranchLit() {
-        Lit rsilAdvice = getAdvice();
-        if (rsilAdvice != lit_Undef) {
-            return rsilAdvice;
+        if (initializationCompleted) {
+            Lit rsilAdvice = getAdvice();
+            if (rsilAdvice != lit_Undef) {
+                return rsilAdvice;
+            }
+            
+            Lit candidate = defaultBranchingHeuristic.pickBranchLit();
+            if (candidate != lit_Undef) {
+                return getSignAdvice(candidate);
+            }
+            
+            return lit_Undef;
         }
-        
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
-        
-        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
-            return candidate;
+        else {
+            return defaultBranchingHeuristic.pickBranchLit();
         }
-        return getSignAdvice(candidate);
     }
     
     template <>
     Lit RSILVanishingBranchingHeuristic2::pickBranchLit() {
-        Lit rsilAdvice = getAdvice();
-        if (rsilAdvice != lit_Undef) {
-            return rsilAdvice;
+        if (initializationCompleted) {
+            Lit rsilAdvice = getAdvice();
+            if (rsilAdvice != lit_Undef) {
+                return rsilAdvice;
+            }
+            
+            Lit candidate = defaultBranchingHeuristic.pickBranchLit();
+            if (candidate != lit_Undef) {
+                return getSignAdvice(candidate);
+            }
+            
+            return lit_Undef;
         }
-        
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
-        
-        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
-            return candidate;
+        else {
+            return defaultBranchingHeuristic.pickBranchLit();
         }
-        return getSignAdvice(candidate);
     }
     
     template <>
     Lit RSILBudgetBranchingHeuristic2::pickBranchLit() {
-        Lit rsilAdvice = getAdvice();
-        if (rsilAdvice != lit_Undef) {
-            return rsilAdvice;
+        if (initializationCompleted) {
+            Lit rsilAdvice = getAdvice();
+            if (rsilAdvice != lit_Undef) {
+                return rsilAdvice;
+            }
+            
+            Lit candidate = defaultBranchingHeuristic.pickBranchLit();
+            if (candidate != lit_Undef) {
+                return getSignAdvice(candidate);
+            }
+            
+            return lit_Undef;
         }
-        
-        Lit candidate = defaultBranchingHeuristic.pickBranchLit();
-        
-        if (rsilAdvice != lit_Undef || candidate == lit_Undef) {
-            return candidate;
+        else {
+            return defaultBranchingHeuristic.pickBranchLit();
         }
-        return getSignAdvice(candidate);
     }
+
 }

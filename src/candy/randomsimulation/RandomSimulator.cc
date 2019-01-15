@@ -31,6 +31,7 @@
 #include <candy/utils/MemUtils.h>
 #include <candy/utils/System.h>
 #include <candy/utils/Runtime.h>
+#include <candy/frontend/CLIOptions.h>
 
 #include "ClauseOrder.h"
 #include "Partition.h"
@@ -40,71 +41,14 @@
 
 // TODO: documentation
 
-namespace Candy {
-    
-    /* "interface" destructors */
-    
-    RandomSimulator::RandomSimulator() {
-        
-    }
-    
-    RandomSimulator::~RandomSimulator() {
-        
-    }
-    
-    
-    RandomSimulatorBuilder::RandomSimulatorBuilder() {
-        
-    }
-    
-    RandomSimulatorBuilder::~RandomSimulatorBuilder() {
-        
-    }
-    
-    class BitparallelRandomSimulator : public RandomSimulator {
-    public:
-        BitparallelRandomSimulator(std::unique_ptr<ClauseOrder> clauseOrderStrat,
-                                   std::unique_ptr<Partition> partitionStrat,
-                                   std::unique_ptr<Randomization> randomizationStrat,
-                                   std::unique_ptr<Propagation> propagationStrat,
-                                   const GateAnalyzer &gateAnalyzer,
-                                   float reductionRateAbortThreshold);
-        
-        Conjectures run(unsigned int nSteps) override;
-        Conjectures run(unsigned int nSteps, std::chrono::milliseconds timeLimit) override;
-        Conjectures run() override;
-        
-        void ensureInitialized();
-        
-        
-        virtual ~BitparallelRandomSimulator();
-        BitparallelRandomSimulator(const BitparallelRandomSimulator& other) = delete;
-        BitparallelRandomSimulator& operator=(const BitparallelRandomSimulator &other) = delete;
-        
-    private:
-        bool isFurtherSimulationWorthwile();
-        
-        Conjectures runImpl(bool boundedRun, unsigned int nSteps, std::chrono::milliseconds timeLimit);
-        
-        std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
-        std::unique_ptr<Partition> m_partitionStrat;
-        std::unique_ptr<Randomization> m_randomizationStrat;
-        std::unique_ptr<Propagation> m_propagationStrat;
-        
-        const GateAnalyzer& m_gateAnalyzer;
-        bool m_isInitialized;
-        
-        SimulationVectors m_simulationVectors;
-        float m_abortThreshold;
-    };
-    
+namespace Candy {    
     BitparallelRandomSimulator::BitparallelRandomSimulator(std::unique_ptr<ClauseOrder> clauseOrderStrat,
-                                                           std::unique_ptr<Partition> partitionStrat,
-                                                           std::unique_ptr<Randomization> randomizationStrat,
-                                                           std::unique_ptr<Propagation> propagationStrat,
-                                                           const GateAnalyzer &gateAnalyzer,
-                                                           float reductionRateAbortThreshold)
-    : RandomSimulator(), m_clauseOrderStrat(std::move(clauseOrderStrat)),
+        std::unique_ptr<Partition> partitionStrat,
+        std::unique_ptr<Randomization> randomizationStrat, 
+        std::unique_ptr<Propagation> propagationStrat,
+        const GateAnalyzer& gateAnalyzer,
+        float reductionRateAbortThreshold) :
+    m_clauseOrderStrat(std::move(clauseOrderStrat)),
     m_partitionStrat(std::move(partitionStrat)),
     m_randomizationStrat(std::move(randomizationStrat)),
     m_propagationStrat(std::move(propagationStrat)),
@@ -188,42 +132,24 @@ namespace Candy {
         return m_partitionStrat->getConjectures();
     }
     
-    BitparallelRandomSimulator::~BitparallelRandomSimulator() {
+    BitparallelRandomSimulator::~BitparallelRandomSimulator() { 
     }
     
-    
-    /* TODO make the random simulator type a template argument */
-    class BitparallelRandomSimulatorBuilder : public RandomSimulatorBuilder {
-    public:
-        BitparallelRandomSimulatorBuilder();
-        
-        BitparallelRandomSimulatorBuilder& withClauseOrderStrategy(std::unique_ptr<ClauseOrder> clauseOrderStrat) override;
-        BitparallelRandomSimulatorBuilder& withPartitionStrategy(std::unique_ptr<Partition> partitionStrat) override;
-        BitparallelRandomSimulatorBuilder& withRandomizationStrategy(std::unique_ptr<Randomization> randomizationStrat) override;
-        BitparallelRandomSimulatorBuilder& withPropagationStrategy(std::unique_ptr<Propagation> propagationStrat) override;
-        BitparallelRandomSimulatorBuilder& withGateAnalyzer(const GateAnalyzer& gateAnalyzer) override;
-        BitparallelRandomSimulatorBuilder& withReductionRateAbortThreshold(float threshold) override;
-        BitparallelRandomSimulatorBuilder& withGateFilter(std::unique_ptr<GateFilter> filter) override;
-        std::unique_ptr<RandomSimulator> build() override;
-
-
-        
-        virtual ~BitparallelRandomSimulatorBuilder();
-        BitparallelRandomSimulatorBuilder(const BitparallelRandomSimulatorBuilder& other) = delete;
-        BitparallelRandomSimulatorBuilder& operator=(const BitparallelRandomSimulatorBuilder& other) = delete;
-        
-    private:
-        std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
-        std::unique_ptr<Partition> m_partitionStrat;
-        std::unique_ptr<Randomization> m_randomizationStrat;
-        std::unique_ptr<Propagation> m_propagationStrat;
-        std::vector<std::unique_ptr<GateFilter>> m_gateFilters;
-        const GateAnalyzer *m_gateAnalyzer;
-        float m_reductionRateAbortThreshold;
-    };
-    
-    BitparallelRandomSimulatorBuilder::BitparallelRandomSimulatorBuilder()
-    : RandomSimulatorBuilder(), m_clauseOrderStrat(nullptr) , m_partitionStrat(nullptr), m_randomizationStrat(nullptr), m_propagationStrat(nullptr), m_gateFilters(), m_gateAnalyzer(nullptr), m_reductionRateAbortThreshold(-1.0f) {
+    BitparallelRandomSimulatorBuilder::BitparallelRandomSimulatorBuilder(const GateAnalyzer& analyzer) : 
+        m_clauseOrderStrat(nullptr) , 
+        m_partitionStrat(nullptr), 
+        m_randomizationStrat(nullptr), 
+        m_propagationStrat(nullptr), 
+        m_gateFilters(), 
+        m_gateAnalyzer(analyzer), 
+        m_reductionRateAbortThreshold(-1.0f) 
+    {
+        if (RandomSimulationOptions::opt_rs_abortbyrrat) {
+            withReductionRateAbortThreshold(RandomSimulationOptions::opt_rs_rrat);
+        }
+        if (RandomSimulationOptions::opt_rs_filterGatesByNonmono) {
+            withGateFilter(createNonmonotonousGateFilter(analyzer));
+        }
     }
     
     BitparallelRandomSimulatorBuilder::~BitparallelRandomSimulatorBuilder() {
@@ -254,11 +180,6 @@ namespace Candy {
         return *this;
     }
     
-    BitparallelRandomSimulatorBuilder& BitparallelRandomSimulatorBuilder::withGateAnalyzer(const GateAnalyzer& gateAnalyzer) {
-        m_gateAnalyzer = &gateAnalyzer;
-        return *this;
-    }
-    
     BitparallelRandomSimulatorBuilder& BitparallelRandomSimulatorBuilder::withReductionRateAbortThreshold(float threshold) {
         assert (threshold > 0);
         m_reductionRateAbortThreshold = threshold;
@@ -266,12 +187,7 @@ namespace Candy {
     }
 
     
-    std::unique_ptr<RandomSimulator> BitparallelRandomSimulatorBuilder::build() {
-        if (m_gateAnalyzer == nullptr) {
-            // TODO: do we have exception support?
-            return nullptr;
-        }
-        
+    std::unique_ptr<BitparallelRandomSimulator> BitparallelRandomSimulatorBuilder::build() {
         if (m_clauseOrderStrat.get() == nullptr) {
             m_clauseOrderStrat = createNonrecursiveClauseOrder();
         }
@@ -298,19 +214,9 @@ namespace Candy {
                                                                        std::move(m_partitionStrat),
                                                                        std::move(m_randomizationStrat),
                                                                        std::move(m_propagationStrat),
-                                                                       *m_gateAnalyzer,
+                                                                       m_gateAnalyzer,
                                                                        m_reductionRateAbortThreshold);
     }
-    
 
-    
-    std::unique_ptr<RandomSimulatorBuilder> createDefaultRandomSimulatorBuilder() {
-        return backported_std::make_unique<BitparallelRandomSimulatorBuilder>();
-    }
-    
-    std::unique_ptr<RandomSimulator> createDefaultRandomSimulator(const GateAnalyzer& gateAnalyzer) {
-        auto defaultBuilder = createDefaultRandomSimulatorBuilder();
-        defaultBuilder->withGateAnalyzer(gateAnalyzer);
-        return defaultBuilder->build();
-    }
+//std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{RandomSimulationOptions::opt_rs_ppTimeLimit})
 }

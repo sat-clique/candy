@@ -29,43 +29,13 @@
 
 #include <memory>
 #include <chrono>
+#include <candy/randomsimulation/RandomSimulator.h>
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/gates/GateAnalyzer.h>
+#include <candy/utils/MemUtils.h>
 
 namespace Candy {
-    /**
-     * \ingroup CandyFrontend
-     *
-     * \brief Random simulation argument structure
-     */
-    struct RandomSimulationArguments {
-        /// The maximum amount of random simulation steps to be performed. This amount may be rounded up to the nearest multiple of 2048.
-        const int nRounds;
-        
-        /// Iff true, random simulation may be aborted due to the reduction rate abort threshold being too low.
-        const bool abortByRRAT;
-        
-        /// The reduction rate abort threshold.
-        const double rrat;
-        
-        /// If true, conjectures larger than maxConjectureSize are discarded.
-        const bool filterConjecturesBySize;
-        
-        /// The maximum conjecture size (ignored if filterConjecturesBySize == false).
-        const int maxConjectureSize;
-        
-        /// Remove backbone variables from the conjectures produced by random simulation.
-        const bool removeBackboneConjectures;
-        
-        /// If true, only nonmonotonously nested gates are taken into account for random simulation.
-        const bool filterGatesByNonmono;
-        
-        /// The random simulation time limit. If negative, no time limit is used.
-        std::chrono::milliseconds preprocessingTimeLimit;
-    };
-    
-    std::ostream& operator <<(std::ostream& stream, const RandomSimulationArguments& arguments);
-    
+
     /**
      * \ingroup CandyFrontend
      *
@@ -79,9 +49,25 @@ namespace Candy {
      * \returns a set of conjectures about equivalences and backbone variables in the given gate structure
      *   (transferring ownership of the returned object to the caller).
      */
-    std::unique_ptr<Candy::Conjectures> performRandomSimulation(const Candy::GateAnalyzer &analyzer,
-                                                                const RandomSimulationArguments& rsArguments,
-                                                                std::chrono::milliseconds timeLimit = std::chrono::milliseconds{-1});
+    static std::unique_ptr<Conjectures> performRandomSimulation(const GateAnalyzer& analyzer, std::chrono::milliseconds timeLimit) {
+        BitparallelRandomSimulatorBuilder simulatorBuilder { analyzer };
+
+        auto randomSimulator = simulatorBuilder.build();
+
+        auto conjectures = randomSimulator->run(static_cast<unsigned int>(RandomSimulationOptions::opt_rs_nrounds), timeLimit);
+        
+        if (RandomSimulationOptions::opt_rs_filterConjBySize > 0) {
+            auto sizeFilter = Candy::createSizeConjectureFilter(RandomSimulationOptions::opt_rs_filterConjBySize);
+            conjectures = sizeFilter->apply(conjectures);
+        }
+        
+        if (RandomSimulationOptions::opt_rs_removeBackboneConj) {
+            auto bbFilter = Candy::createBackboneRemovalConjectureFilter();
+            conjectures = bbFilter->apply(conjectures);
+        }
+        
+        return backported_std::make_unique<Conjectures>(std::move(conjectures));
+    }
 }
 
 #endif
