@@ -354,12 +354,12 @@ namespace Candy {
         Lit pickBranchLit();
 
         void init(const CNFProblem& problem) override {
-            m_rsilHeuristic.init(problem);
+            RSILBranchingHeuristic<AdviceType>::init(problem);
         }
 
     	void init(std::unique_ptr<Conjectures> _con, bool backbonesEnabled = true, unsigned int halflife = 1 << 24) {
-            m_rsilHeuristic.init(std::move(_con), backbonesEnabled);
-            m_probHalfLife = halflife;
+            RSILBranchingHeuristic<AdviceType>::init(std::move(_con), backbonesEnabled);
+            m_probHalfLife = halflife; 
     	}
         
         /// A type used for recognition of RSILVanishingBranchingHeuristic types in template metaprogramming.
@@ -372,82 +372,23 @@ namespace Candy {
         RSILVanishingBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_)
          : RSILBranchingHeuristic<AdviceType>(clause_db_, trail_),
             m_callCounter(RSILOptions::opt_rsil_vanHalfLife),
-            m_probHalfLife(RSILOptions::opt_rsil_vanHalfLife), m_mask(0ull),
-            m_rsilHeuristic(clause_db_, trail_) 
+            m_probHalfLife(RSILOptions::opt_rsil_vanHalfLife), m_mask(0ull)
         { }
 
         RSILVanishingBranchingHeuristic(RSILVanishingBranchingHeuristic&& other) = default;
         RSILVanishingBranchingHeuristic& operator=(RSILVanishingBranchingHeuristic&& other) = default;
-        
-        /**
-         * \brief Gets a branching literal advice using implicit learning.
-         *
-         * If possible, a branching decision literal is proposed with implicit learning using
-         * the literals occurring on the trail's most recent decision level. If no such literal
-         * can be picked, lit_Undef is returned. Note that getAdvice(...) does not return literals
-         * conjectured to belong to the problem's backbone.
-         *
-         * \param trail         The sequence of current variable assignments, ordered by the
-         *                      time of assignment.
-         * \param trailSize     The size of the initial segment of \p trail containing the current
-         *                      sequence of variable assignments.
-         * \param trailLimits   A sequence of indices of \p trail partitioning \p trail into assignments
-         *                      occurring on different decision levels.
-         * \param assigns       The underlying solver's variable assignments. For a variable \p v,
-         *                      \p assigns[v] must be the lbool representing its current assignment.
-         * \param decision      A data structure marking variables eligible to be used for branching
-         *                      decisions. A variable \p v is considered eligible iff \p decision[v]
-         *                      is not 0.
-         *
-         * \returns a literal chosen via implicit learning or lit_Undef.
-         */
-        Lit getAdvice() noexcept;
-        
-        /**
-         * \brief Gets a branching literal sign advice using implicit learning.
-         *
-         * For a branching literal L having already been picked for a branching decision, this method
-         * returns a literal with the same variable as L, but a sign chosen via implicit learning. Note
-         * that with this method, implicit learning is only used for backbone variable conjectures.
-         *
-         * \returns a literal L having the same variable as \p literal.
-         */
-        Lit getSignAdvice(Lit literal) noexcept;
-
-    	void grow() {
-    		RSILBranchingHeuristic<AdviceType>::grow();
-            m_rsilHeuristic.grow();
-    	}
-
-    	void grow(size_t size) {
-    		RSILBranchingHeuristic<AdviceType>::grow(size);
-            m_rsilHeuristic.grow(size);
-    	}
-        
-        void setDecisionVar(Var v, bool b) {
-    		m_rsilHeuristic.setDecisionVar(v, b);
-    	}
-
-    	bool isDecisionVar(Var v) {
-    		return m_rsilHeuristic.isDecisionVar(v);
-    	}        
-        
+                
     private:
         /**
          * \brief Decides if implicit learning can used for this decision.
          *
-         * \returns true iff implicit learning can used for this decision.
-         */
-        bool isRSILEnabled() noexcept;
-        
-        /**
-         * \brief Updates the counter used for isRSILEnabled().
-         *
          * Increases m_callCounter by one. If the counter exceeds the probability half-life,
          * the probability of using implicit learning is halved and the counter is reset to 0.
+         *
+         * \returns true iff implicit learning can used for this decision.
          */
-        void updateCallCounter() noexcept;
-        
+        bool makeRSILDecision() noexcept;
+                
         /// The counter used to keep track of the number of branching decisions modulo the
         /// intervention probability half-life.
         uint64_t m_callCounter;
@@ -461,8 +402,6 @@ namespace Candy {
         /// is 0, implicit learning is used, otherwise not.
         fastnextrand_state_t m_mask;
         
-        /// The underlying RSIL branching heuristic used for computing implicit learning advice.
-        RSILBranchingHeuristic<AdviceType> m_rsilHeuristic;
     };
     
     /**
@@ -599,36 +538,19 @@ namespace Candy {
     // for further details.
     
     template<class AdviceType>
-    inline bool RSILVanishingBranchingHeuristic<AdviceType>::isRSILEnabled() noexcept {
-        auto randomNumber = m_rsilHeuristic.getRandomNumberGenerator()();
-        return (randomNumber & m_mask) == 0ull;
-    }
-    
-    template<class AdviceType>
-    inline void RSILVanishingBranchingHeuristic<AdviceType>::updateCallCounter() noexcept {
+    inline bool RSILVanishingBranchingHeuristic<AdviceType>::makeRSILDecision() noexcept {
+        auto randomNumber = this->getRandomNumberGenerator()();
+        bool result = (randomNumber & m_mask) == 0ull;
+        // update call counter
         assert(m_callCounter > 0);
         --m_callCounter;
         if (m_callCounter == 0) {
             m_mask = (m_mask << 1) | 1ull;
             m_callCounter = m_probHalfLife;
         }
-    }
-    
-    template<class AdviceType>
-    ATTR_ALWAYSINLINE
-    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getAdvice() noexcept {
-        auto result = isRSILEnabled() ? m_rsilHeuristic.getAdvice() : lit_Undef;
-        updateCallCounter();
         return result;
     }
-    
-    template<class AdviceType>
-    ATTR_ALWAYSINLINE
-    inline Lit RSILVanishingBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
-        auto result = isRSILEnabled() ? m_rsilHeuristic.getSignAdvice(literal) : literal;
-        updateCallCounter();
-        return result;
-    }
+
 }
 
 #endif

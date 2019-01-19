@@ -53,7 +53,7 @@ namespace Candy {
     
     template <>
     Lit RSILVanishingBranchingHeuristic3::pickBranchLit() {
-        if (initializationCompleted) {
+        if (initializationCompleted && makeRSILDecision()) {
             Lit rsilAdvice = getAdvice();
             if (rsilAdvice != lit_Undef) {
                 return rsilAdvice;
@@ -113,7 +113,7 @@ namespace Candy {
     
     template <>
     Lit RSILVanishingBranchingHeuristic2::pickBranchLit() {
-        if (initializationCompleted) {
+        if (initializationCompleted && makeRSILDecision()) {
             Lit rsilAdvice = getAdvice();
             if (rsilAdvice != lit_Undef) {
                 return rsilAdvice;
