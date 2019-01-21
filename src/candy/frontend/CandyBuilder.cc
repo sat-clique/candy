@@ -24,7 +24,7 @@ RSILMode getRSILMode() {
     }
 }
 
-CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool staticPropagate, bool lrb, bool rsil) {
+CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool staticPropagate, bool lrb, bool rsil, unsigned int rsil_adv_size) {
     ClauseDatabase clauses;
     Trail* assignment = new Trail();
 
@@ -43,9 +43,8 @@ CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool
     } 
     else if (rsil) {
         RSILMode mode = getRSILMode();
-        unsigned int size = 3;
         if (staticPropagate) {
-            if (size == 3) {
+            if (rsil_adv_size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     return builder.propagateStaticClauses().branchWithRSILUnrestricted3().build(std::move(clauses), assignment);
                 }
@@ -56,7 +55,7 @@ CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool
                     return builder.propagateStaticClauses().branchWithRSILBudgeted3().build(std::move(clauses), assignment);
                 }
             }
-            else if (size == 2) {
+            else if (rsil_adv_size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     return builder.propagateStaticClauses().branchWithRSILUnrestricted2().build(std::move(clauses), assignment);
                 }
@@ -68,7 +67,7 @@ CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool
                 }
             }
         } else {
-            if (size == 3) {
+            if (rsil_adv_size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     return builder.branchWithRSILUnrestricted3().build(std::move(clauses), assignment);
                 }
@@ -79,7 +78,7 @@ CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool
                     return builder.branchWithRSILBudgeted3().build(std::move(clauses), assignment);
                 }
             }
-            else if (size == 2) {
+            else if (rsil_adv_size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     return builder.branchWithRSILUnrestricted2().build(std::move(clauses), assignment);
                 }
