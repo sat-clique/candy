@@ -130,6 +130,32 @@ public:
         return addClause(lits.begin(), lits.end(), lbd);
     }
 
+    GlobalClauseAllocator* setupGlobalAllocator() override {
+        GlobalClauseAllocator* allocator = new GlobalClauseAllocator();
+        clause_db.setGlobalClauseAllocator(allocator);
+        clause_db.defrag();
+        return allocator; 
+    }
+
+    void initWithGlobalAllocator(GlobalClauseAllocator* allocator) override {
+        std::vector<Clause*> clauses = allocator->collect();
+        for (Clause* clause : clauses) {
+            size_t maxVars = var(*std::max_element(clause->begin(), clause->end()))+1;
+            if (maxVars > this->nVars()) {
+                clause_db.grow(maxVars);
+                propagator.init(maxVars);
+                trail.grow(maxVars);
+                conflict_analysis.grow(maxVars);
+                branch.grow(maxVars);
+                elimination.grow(maxVars);
+            }
+            if (clause->size() > 2) {
+                propagator.attachClause(clause);
+            }
+        }
+        clause_db.setGlobalClauseAllocator(allocator);
+    }
+
     void printDIMACS() override {
         printf("p cnf %zu %zu\n", nVars(), nClauses());
         for (const Clause* clause : clause_db) {
@@ -256,7 +282,7 @@ public:
 
 protected:
     TClauses clause_db;
-    Trail& trail;
+    TAssignment trail;
     TPropagate propagator;
     TLearning conflict_analysis;
     TBranching branch;
@@ -322,7 +348,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     model(), conflict(),
     // Basic Systems
     clause_db(),
-    trail(*new TAssignment()),
+    trail(),
     propagator(clause_db, trail),
 	conflict_analysis(clause_db, trail),
     branch(clause_db, trail),
@@ -345,51 +371,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     preprocessing_enabled(SolverOptions::opt_preprocessing),
     simplification_threshold_factor(SolverOptions::opt_simplification_threshold_factor),
     freezes(),
-    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
-    // resource constraints and other interrupt related
-    conflict_budget(0), propagation_budget(0),
-    termCallbackState(nullptr), termCallback(nullptr),
-    asynch_interrupt(false),
-    // learnt callback ipasir
-    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
-    // sonification
-    sonification(), controller()
-{
-controller.run();
-}
-
-template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver(TClauses db, TAssignment& as) : 
-    // unsat certificate
-    certificate(SolverOptions::opt_certified_file),
-    // results
-    model(), conflict(),
-    // Basic Systems
-    clause_db(std::move(db)),
-    trail(as),
-    propagator(clause_db, trail),
-	conflict_analysis(clause_db, trail),
-    branch(clause_db, trail),
-    // simplification
-    subsumption(clause_db, trail, propagator, certificate),
-    elimination(clause_db, trail, propagator, certificate), 
-    // assumptions
-    assumptions(),
-    // restarts
-    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
-    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
-    // reduce db heuristic control
-    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
-    incReduceDB(SolverOptions::opt_inc_reduce_db),
-    // memory reorganization
-    sort_watches(SolverOptions::opt_sort_watches),
-    // conflict state
-    ok(true),
-    // preprocessing
-    preprocessing_enabled(SolverOptions::opt_preprocessing),
-    simplification_threshold_factor(SolverOptions::opt_simplification_threshold_factor),
-    freezes(),
-    // inprocessing
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
@@ -478,7 +459,9 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause
     }
     else {
         Clause* clause = clause_db.createClause(copy.begin(), copy.end(), lbd);
-        propagator.attachClause(clause);
+        if (clause->size() > 2) {
+            propagator.attachClause(clause);
+        }
         return ok;
     }
 }
@@ -515,12 +498,16 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
                 }
                 else {
                     Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
-                    propagator.attachClause(new_clause);
+                    if (new_clause->size() > 2) {
+                        propagator.attachClause(new_clause);
+                    }
                 }
                 certificate.added(literals.begin(), literals.end());
             }
             certificate.removed(clause->begin(), clause->end());
-            propagator.detachClause(clause);
+            if (clause->size() > 2) {
+                propagator.detachClause(clause);
+            }
             clause_db.removeClause((Clause*)clause);
         }
     }
@@ -647,7 +634,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             else {
                 Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
                 trail.uncheckedEnqueue(clause->first(), clause);
-                propagator.attachClause(clause);
+                if (clause->size() > 2) {
+                    propagator.attachClause(clause);
+                }   
             }
         }
         else {

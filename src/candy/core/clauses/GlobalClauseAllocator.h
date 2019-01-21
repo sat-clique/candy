@@ -60,6 +60,10 @@ public:
         return allocator[int(active)].collect();
     }
 
+    inline std::vector<Clause*> collect() {
+        return allocator[int(active)].collect();
+    }
+
     inline void free() {
         allocator[0].free();
         allocator[1].free();

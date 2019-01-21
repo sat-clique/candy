@@ -43,38 +43,34 @@ extern "C" {
 
 namespace Candy {
 
-    static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool expectedResult) {
+    static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool expectedResult, bool install_static_allocator) {
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
         // ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
         solver->addClauses(problem);
+        GlobalClauseAllocator* allocator = nullptr;
+        if (install_static_allocator) {
+            allocator = solver->setupGlobalAllocator();
+        }
         auto result = solver->solve();
         GTEST_COUT << filename << std::endl;
         delete solver;
+        if (allocator != nullptr) {
+            delete allocator;
+        }
         EXPECT_EQ(result, lbool(expectedResult));
     }
 
     static void testAllProblems(bool static_allocator, bool use_ts_pr, bool use_lrb) {
-        GlobalClauseAllocator* global_allocator = nullptr;
-        if (static_allocator) global_allocator = new GlobalClauseAllocator();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/sat/fuzz01.cnf", true);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/sat/fuzz02.cnf", true);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/sat/fuzz03.cnf", true);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/sat/fuzz04.cnf", true);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/sat/trivial0.cnf", true);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/sat/trivial2.cnf", true);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/unsat/trivial1.cnf", false);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/unsat/dubois20.cnf", false);
-        if (static_allocator) global_allocator->free();
-        acceptanceTest(createSolver(global_allocator, use_ts_pr, use_lrb, false), "problems/unsat/hole6.cnf", false);
-        if (static_allocator) delete global_allocator;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz01.cnf", true, static_allocator); 
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz02.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz03.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz04.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/trivial0.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/trivial2.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/unsat/trivial1.cnf", false, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/unsat/dubois20.cnf", false, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/unsat/hole6.cnf", false, static_allocator);
     }
 
     TEST(IntegrationTest, test_lrb) {

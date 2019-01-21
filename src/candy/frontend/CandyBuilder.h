@@ -56,13 +56,13 @@ public:
         return CandyBuilder<StaticPropagate, TLearning, TBranching>();
     }
 
-    CandySolverInterface* build(ClauseDatabase&& database, Trail* assignment) {
-        return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>(std::move(database), *assignment);
+    CandySolverInterface* build() {
+        return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>();
     }
 
 };
 
-CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator = nullptr, bool staticPropagate = false, bool lrb = false, bool rsil = false, unsigned int rsil_adv_size = 3);
+CandySolverInterface* createSolver(bool staticPropagate = false, bool lrb = false, bool rsil = false, unsigned int rsil_adv_size = 3);
 
 }
 

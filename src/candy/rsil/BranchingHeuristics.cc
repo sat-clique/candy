@@ -53,15 +53,22 @@ namespace Candy {
     
     template <>
     Lit RSILVanishingBranchingHeuristic3::pickBranchLit() {
-        if (initializationCompleted && makeRSILDecision()) {
-            Lit rsilAdvice = getAdvice();
-            if (rsilAdvice != lit_Undef) {
-                return rsilAdvice;
+        if (initializationCompleted) {
+            if (makeRSILDecision()) {
+                Lit rsilAdvice = getAdvice();
+                if (rsilAdvice != lit_Undef) {
+                    return rsilAdvice;
+                }
             }
             
             Lit candidate = defaultBranchingHeuristic.pickBranchLit();
             if (candidate != lit_Undef) {
-                return getSignAdvice(candidate);
+                if (makeRSILDecision()) {
+                    return getSignAdvice(candidate);
+                }
+                else {
+                    return candidate; 
+                }
             }
             
             return lit_Undef;
@@ -113,15 +120,22 @@ namespace Candy {
     
     template <>
     Lit RSILVanishingBranchingHeuristic2::pickBranchLit() {
-        if (initializationCompleted && makeRSILDecision()) {
-            Lit rsilAdvice = getAdvice();
-            if (rsilAdvice != lit_Undef) {
-                return rsilAdvice;
+        if (initializationCompleted) {
+            if (makeRSILDecision()) {
+                Lit rsilAdvice = getAdvice();
+                if (rsilAdvice != lit_Undef) {
+                    return rsilAdvice;
+                }
             }
             
             Lit candidate = defaultBranchingHeuristic.pickBranchLit();
             if (candidate != lit_Undef) {
-                return getSignAdvice(candidate);
+                if (makeRSILDecision()) {
+                    return getSignAdvice(candidate);
+                }
+                else {
+                    return candidate; 
+                }
             }
             
             return lit_Undef;

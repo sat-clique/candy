@@ -48,10 +48,9 @@ TEST (CandyAddClauseTestPatterns, unitResolution) {
   CNFProblem formula;
   // assuming claues are added to solver in the given order
   formula.readClause(mkLit(1));
-  formula.readClause(mkLit(1), mkLit(2));
-  ClauseDatabase clauses;
+  formula.readClause(mkLit(1), mkLit(2));  
   CandyBuilder<> builder { };
-  CandySolverInterface* solver = builder.build(std::move(clauses), new Trail());
+  CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
   ASSERT_EQ(solver->nClauses(), 1ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
@@ -60,10 +59,9 @@ TEST (CandyAddClauseTestPatterns, unitResolution) {
 TEST (CandyAddClauseTestPatterns, unitResolution2) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
-  formula.readClause(mkLit(1), mkLit(2));
-  ClauseDatabase clauses;
+  formula.readClause(mkLit(1), mkLit(2));  
   CandyBuilder<> builder { };
-  CandySolverInterface* solver = builder.build(std::move(clauses), new Trail());
+  CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
   ASSERT_EQ(solver->nClauses(), 1ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
@@ -73,9 +71,8 @@ TEST (CandyAddClauseTestPatterns, unitResolution3) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
-  ClauseDatabase clauses;
   CandyBuilder<> builder { };
-  CandySolverInterface* solver = builder.build(std::move(clauses), new Trail());
+  CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
   ASSERT_EQ(solver->nClauses(), 2ul);
   // ASSERT_EQ(clauses[0]->size(), 3ul);
@@ -87,9 +84,8 @@ TEST (CandyAddClauseTestPatterns, unitResolution3) {
 TEST (CandyAddClauseTestPatterns, removeDuplicates) {
   CNFProblem formula;
   formula.readClause({mkLit(1), mkLit(2), mkLit(1)});
-  ClauseDatabase clauses;
   CandyBuilder<> builder { };
-  CandySolverInterface* solver = builder.build(std::move(clauses), new Trail());
+  CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
   // ASSERT_EQ(clauses[0]->size(), 2ull);
 }
@@ -97,12 +93,9 @@ TEST (CandyAddClauseTestPatterns, removeDuplicates) {
 TEST(SolverTests, basicIncrementalSolver) {
   CNFProblem problem;
   problem.readClauses({{1_L, 2_L}, {1_L, 1_L}, {2_L, 2_L}});
-
   Solver<> underTest;
   underTest.addClauses(problem);
-
-  Var assumptionVar = underTest.newVar();
-    
+  Var assumptionVar = underTest.newVar();    
   EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
   EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
 }

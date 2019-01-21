@@ -123,15 +123,17 @@ public:
                     nStrengthened++;
                     certificate.strengthened(clause->begin(), clause->end(), l);
                     
-                    propagator.detachClause(clause);
                     if (clause->size() == 2) {
                         clause_db.removeClause((Clause*)clause);
                         Lit fact = clause->first() == l ? clause->second() : clause->first();
                         return trail.newFact(fact) && propagator.propagate() == nullptr;
                     }
-                    else {
+                    else if (clause->size() > 2) {
+                        propagator.detachClause(clause);
                         Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
-                        propagator.attachClause(new_clause);
+                        if (new_clause->size() > 2) {
+                            propagator.attachClause(new_clause);
+                        }
                     } 
                 }
             }
@@ -183,14 +185,18 @@ public:
                 else {
                     unsigned int lbd = std::min(pc->getLBD(), nc->getLBD());
                     Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
-                    propagator.attachClause(clause);
+                    if (clause->size() > 2) {
+                        propagator.attachClause(clause);
+                    }
                 }
             }
         }
 
         for (const Clause* c : occurences) {
             certificate.removed(c->begin(), c->end());
-            propagator.detachClause(c);
+            if (c->size() > 2) {
+                propagator.detachClause(c);
+            }
             clause_db.removeClause((Clause*)c);
         }
 
