@@ -24,21 +24,14 @@ RSILMode getRSILMode() {
     }
 }
 
-CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool staticPropagate, bool lrb, bool rsil, unsigned int rsil_adv_size) {
-    ClauseDatabase clauses;
-    Trail* assignment = new Trail();
-
-    if (global_allocator != nullptr) {
-        clauses.setGlobalClauseAllocator(global_allocator);
-    }
-
+CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, unsigned int rsil_adv_size) {
     CandyBuilder<> builder { }; 
 
     if (lrb) {
         if (staticPropagate) {
-            return builder.branchWithLRB().propagateStaticClauses().build(std::move(clauses), assignment);
+            return builder.branchWithLRB().propagateStaticClauses().build();
         } else {
-            return builder.branchWithLRB().build(std::move(clauses), assignment);
+            return builder.branchWithLRB().build();
         }
     } 
     else if (rsil) {
@@ -46,56 +39,56 @@ CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator, bool
         if (staticPropagate) {
             if (rsil_adv_size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    return builder.propagateStaticClauses().branchWithRSILUnrestricted3().build(std::move(clauses), assignment);
+                    return builder.propagateStaticClauses().branchWithRSILUnrestricted3().build();
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    return builder.propagateStaticClauses().branchWithRSILVanishing3().build(std::move(clauses), assignment);
+                    return builder.propagateStaticClauses().branchWithRSILVanishing3().build();
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    return builder.propagateStaticClauses().branchWithRSILBudgeted3().build(std::move(clauses), assignment);
+                    return builder.propagateStaticClauses().branchWithRSILBudgeted3().build();
                 }
             }
             else if (rsil_adv_size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    return builder.propagateStaticClauses().branchWithRSILUnrestricted2().build(std::move(clauses), assignment);
+                    return builder.propagateStaticClauses().branchWithRSILUnrestricted2().build();
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    return builder.propagateStaticClauses().branchWithRSILVanishing2().build(std::move(clauses), assignment);
+                    return builder.propagateStaticClauses().branchWithRSILVanishing2().build();
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    return builder.propagateStaticClauses().branchWithRSILBudgeted2().build(std::move(clauses), assignment);
+                    return builder.propagateStaticClauses().branchWithRSILBudgeted2().build();
                 }
             }
         } else {
             if (rsil_adv_size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    return builder.branchWithRSILUnrestricted3().build(std::move(clauses), assignment);
+                    return builder.branchWithRSILUnrestricted3().build();
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    return builder.branchWithRSILVanishing3().build(std::move(clauses), assignment);
+                    return builder.branchWithRSILVanishing3().build();
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    return builder.branchWithRSILBudgeted3().build(std::move(clauses), assignment);
+                    return builder.branchWithRSILBudgeted3().build();
                 }
             }
             else if (rsil_adv_size == 2) {
                 if (mode == RSILMode::UNRESTRICTED) {
-                    return builder.branchWithRSILUnrestricted2().build(std::move(clauses), assignment);
+                    return builder.branchWithRSILUnrestricted2().build();
                 }
                 else if (mode == RSILMode::VANISHING) {
-                    return builder.branchWithRSILVanishing2().build(std::move(clauses), assignment);
+                    return builder.branchWithRSILVanishing2().build();
                 }
                 else if (mode == RSILMode::IMPLICATIONBUDGETED) {
-                    return builder.branchWithRSILBudgeted2().build(std::move(clauses), assignment);
+                    return builder.branchWithRSILBudgeted2().build();
                 }
             }
         }
     }
     else {
         if (staticPropagate) {
-            return builder.propagateStaticClauses().build(std::move(clauses), assignment);
+            return builder.propagateStaticClauses().build();
         } else {
-            return builder.build(std::move(clauses), assignment);
+            return builder.build();
         }
     }
 }

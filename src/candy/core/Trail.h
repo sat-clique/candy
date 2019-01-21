@@ -42,11 +42,6 @@ public:
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
 
-    inline Lit& operator [](unsigned int i) {
-        assert(i < trail_size);
-        return trail[i];
-    }
-
     inline const Lit operator [](unsigned int i) const {
         assert(i < trail_size);
         return trail[i];
@@ -67,9 +62,7 @@ public:
         std::cout << std::endl;
     }
 
-    typedef std::vector<Lit>::iterator iterator;
     typedef std::vector<Lit>::const_iterator const_iterator;
-    typedef std::vector<Lit>::reverse_iterator reverse_iterator;
     typedef std::vector<Lit>::const_reverse_iterator const_reverse_iterator;
 
     inline const_iterator begin() const {
@@ -77,14 +70,6 @@ public:
     }
 
     inline const_iterator end() const {
-        return trail.begin() + trail_size;
-    }
-
-    inline iterator begin() {
-        return trail.begin();
-    }
-
-    inline iterator end() {
         return trail.begin() + trail_size;
     }
 
@@ -96,20 +81,8 @@ public:
         return trail.rend();
     }
 
-    inline reverse_iterator rbegin() {
-        return trail.rbegin() + (trail.size() - trail_size);
-    }
-
-    inline reverse_iterator rend() {
-        return trail.rend();
-    }
-
     inline const_iterator begin(unsigned int level) const {
         return trail.begin() + trail_lim[level];
-    }
-
-    inline iterator begin(unsigned int level) {
-        return trail.begin() + trail_lim[level]; 
     }
 
     inline unsigned int size() const {

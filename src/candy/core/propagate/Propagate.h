@@ -49,26 +49,24 @@ public:
     }
 
     void attachClause(Clause* clause) {
-        assert(clause->size() > 1);
-        if (clause->size() > 2) {
-            watchers[toInt(~clause->first())].emplace_back(clause, clause->second());
-            watchers[toInt(~clause->second())].emplace_back(clause, clause->first());
-        }
+        assert(clause->size() > 2);
+        watchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+        watchers[toInt(~clause->second())].emplace_back(clause, clause->first());
     }
 
     void detachClause(const Clause* clause) {
-        assert(clause->size() > 1);
-        if (clause->size() > 2) {
-            std::vector<Watcher>& list0 = watchers[toInt(~clause->first())];
-            std::vector<Watcher>& list1 = watchers[toInt(~clause->second())];
-            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
-        }
+        assert(clause->size() > 2);
+        std::vector<Watcher>& list0 = watchers[toInt(~clause->first())];
+        std::vector<Watcher>& list1 = watchers[toInt(~clause->second())];
+        list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
+        list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
     }
 
     void attachAll() {
         for (Clause* clause : clause_db) {
-            attachClause(clause);
+            if (clause->size() > 2) {
+                attachClause(clause);
+            }
         }
     }
 

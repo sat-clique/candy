@@ -66,6 +66,14 @@ namespace Candy {
             return m_solver->accessBranchingInterface();
         }
 
+        GlobalClauseAllocator* setupGlobalAllocator() override {
+            return m_solver->setupGlobalAllocator();
+        }
+
+        void initWithGlobalAllocator(GlobalClauseAllocator* allocator) override {
+            m_solver->initWithGlobalAllocator(allocator);
+        }
+
         // from CandySolverInterface:
         virtual void enablePreprocessing() override {
         	m_solver->enablePreprocessing();

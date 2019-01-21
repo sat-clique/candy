@@ -304,9 +304,6 @@ namespace Candy {
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILBudgetBranchingHeuristic<3>;
         
-        /// The type of the extended heuristic, used for parameter arguments.
-        using UnderlyingHeuristicType = RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>;
-        
         RSILBudgetBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_)
          : RSILBranchingHeuristic<BudgetAdviceEntry<tAdviceSize>>(clause_db_, trail_) 
         { }
@@ -365,9 +362,6 @@ namespace Candy {
         /// A type used for recognition of RSILVanishingBranchingHeuristic types in template metaprogramming.
         /// This type is independent of the template argument AdviceType.
         using BasicType = RSILVanishingBranchingHeuristic<AdviceEntry<3>>;
-        
-        /// The type of the extended heuristic, used for parameter arguments.
-        using UnderlyingHeuristicType = RSILBranchingHeuristic<AdviceType>;
 
         RSILVanishingBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_)
          : RSILBranchingHeuristic<AdviceType>(clause_db_, trail_),

@@ -49,40 +49,38 @@ public:
     }
 
     void attachClause(const Clause* clause) {
-        assert(clause->size() > 1);
-        if (clause->size() > 2) {
-            WatcherTS* watcher = new WatcherTS(clause, clause->first(), clause->second());
-            watchers[~(clause->first())].push_back(watcher);
-            watchers[~(clause->second())].push_back(watcher);
-        }
+        assert(clause->size() > 2);
+        WatcherTS* watcher = new WatcherTS(clause, clause->first(), clause->second());
+        watchers[~(clause->first())].push_back(watcher);
+        watchers[~(clause->second())].push_back(watcher);
     }
 
     void detachClause(const Clause* clause) {
-        assert(clause->size() > 1);
-        if (clause->size() > 2) {
-            bool found = false;
-            for (Lit lit : *clause) {
-                auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
-                if (it != watchers[~lit].end()) {
-                    found = true;
-                    WatcherTS* watcher = *it;
-                    Lit lit0 = watcher->watch0;
-                    Lit lit1 = watcher->watch1;
-                    size_t size0 = watchers[~lit0].size();
-                    size_t size1 = watchers[~lit1].size();
-                    watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
-                    watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
-                    assert(size0 > watchers[~lit0].size());
-                    assert(size1 > watchers[~lit1].size());
-                }
+        assert(clause->size() > 2);
+        bool found = false;
+        for (Lit lit : *clause) {
+            auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
+            if (it != watchers[~lit].end()) {
+                found = true;
+                WatcherTS* watcher = *it;
+                Lit lit0 = watcher->watch0;
+                Lit lit1 = watcher->watch1;
+                size_t size0 = watchers[~lit0].size();
+                size_t size1 = watchers[~lit1].size();
+                watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
+                watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
+                assert(size0 > watchers[~lit0].size());
+                assert(size1 > watchers[~lit1].size());
             }
-            assert(found);
         }
+        assert(found);
     }
 
     void attachAll() {
         for (Clause* clause : clause_db) {
-            attachClause(clause);
+            if (clause->size() > 2) {
+                attachClause(clause);
+            }
         }
     }
 

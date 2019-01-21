@@ -72,23 +72,8 @@ public:
         result()
     { }
 
-    ClauseDatabase(ClauseDatabase&& other) noexcept : 
-        allocator(std::move(other.allocator)), 
-        global_allocator(other.global_allocator), 
-        clauses(std::move(other.clauses)), 
-        persistentLBD(other.persistentLBD),
-        reestimationReduceLBD(other.reestimationReduceLBD), 
-        track_literal_occurrence(other.track_literal_occurrence),
-        variableOccurrences(std::move(other.variableOccurrences)),
-        binaryWatchers(std::move(other.binaryWatchers)), 
-        result(other.result)
-    {
-        other.global_allocator = nullptr;
-        other.track_literal_occurrence = false;
-    }
-
     ~ClauseDatabase() {
-        allocator.free(); 
+        allocator.free();
     }
 
     void initOccurrenceTracking() {
@@ -123,6 +108,21 @@ public:
     inline void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
         this->global_allocator = global_allocator;
         global_allocator->enroll();
+        this->clauses = global_allocator->collect();
+        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+            watcher.clear();
+        }
+        for (Clause* clause : clauses) {
+            if (clause->size() == 2) {
+                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
+            }
+        }
+        if (track_literal_occurrence) {
+            stopOccurrenceTracking();
+            initOccurrenceTracking();
+        }
+
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -255,10 +255,6 @@ public:
         else {
             clauses = global_allocator->import(allocator);
             allocator.reset(false);
-        }
-
-        for (Clause* clause : clauses) {
-            assert(clause->size() > 0);
         }
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {

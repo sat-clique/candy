@@ -8,6 +8,7 @@
 #ifndef SRC_CANDY_CORE_CANDYSOLVERINTERFACE_H_
 #define SRC_CANDY_CORE_CANDYSOLVERINTERFACE_H_
 
+#include "candy/core/clauses/GlobalClauseAllocator.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
 
@@ -22,6 +23,9 @@ public:
 	virtual ~CandySolverInterface() {};
 
 	virtual BranchingDiversificationInterface* accessBranchingInterface() = 0;
+
+	virtual GlobalClauseAllocator* setupGlobalAllocator() = 0;
+    virtual void initWithGlobalAllocator(GlobalClauseAllocator* allocator) = 0;
 
 	virtual void enablePreprocessing() = 0;
     virtual void disablePreprocessing() = 0;

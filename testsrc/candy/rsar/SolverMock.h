@@ -65,6 +65,9 @@ namespace Candy {
     public:
 
         BranchingDiversificationInterface* accessBranchingInterface() override { return nullptr; }
+
+        GlobalClauseAllocator* setupGlobalAllocator() override { return nullptr; }
+        virtual void initWithGlobalAllocator(GlobalClauseAllocator* allocator) override { }
         
         virtual void enablePreprocessing() override {}
         virtual void disablePreprocessing() override {}

@@ -183,6 +183,11 @@ static void runSolver(CandySolverInterface* solver, lbool& result, Cl& model) {
         if (result == l_True) {
             model = solver->getModel();
         }
+
+        if (SolverOptions::verb > 0) {
+            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+            Statistics::getInstance().printRuntimes();
+        }
     }
 }
 
@@ -224,12 +229,6 @@ int main(int argc, char** argv) {
     
     lbool result = l_Undef;
     Cl model;
-
-    GlobalClauseAllocator* global_allocator = nullptr;
-    if (ClauseDatabaseOptions::opt_static_db) {
-        global_allocator = new GlobalClauseAllocator();
-    }
-
     if (ParallelOptions::opt_threads == 1) {
         CandySolverInterface* solver;
 
@@ -238,7 +237,7 @@ int main(int argc, char** argv) {
         }
 
         if (solver == nullptr) {
-            solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
+            solver = createSolver(SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
         }
 
         solver->addClauses(problem);
@@ -246,19 +245,25 @@ int main(int argc, char** argv) {
         Statistics::getInstance().runtimeStop("Initialization");
 
         runSolver(solver, std::ref(result), std::ref(model));
-
-        if (SolverOptions::verb > 0) {
-            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-            Statistics::getInstance().printRuntimes();
-        }
     }
     else {
-        CandySolverInterface* solver1 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, false, false); 
+        GlobalClauseAllocator* global_allocator = nullptr;
+
+        CandySolverInterface* solver1 = createSolver(SolverOptions::opt_use_ts_pr, false, false); 
         solver1->addClauses(problem);
+        if (ClauseDatabaseOptions::opt_static_db) {
+            global_allocator = solver1->setupGlobalAllocator();
+        }
         std::thread t1(runSolver, solver1, std::ref(result), std::ref(model));
 
-        CandySolverInterface* solver2 = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, true, false);
-        solver2->addClauses(problem);
+        SolverOptions::opt_inprocessing = 500;
+        CandySolverInterface* solver2 = createSolver(SolverOptions::opt_use_ts_pr, true, false);
+        if (ClauseDatabaseOptions::opt_static_db) {
+            solver2->initWithGlobalAllocator(global_allocator);
+        } 
+        else {
+            solver2->addClauses(problem);
+        }
         std::thread t2(runSolver, solver2, std::ref(result), std::ref(model));
 
         Statistics::getInstance().runtimeStop("Initialization");
@@ -269,6 +274,8 @@ int main(int argc, char** argv) {
 
         solver1->setInterrupt(true);
         solver2->setInterrupt(true);
+        t1.detach();
+        t2.detach();
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
