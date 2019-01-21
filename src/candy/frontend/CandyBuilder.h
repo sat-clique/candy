@@ -62,7 +62,7 @@ public:
 
 };
 
-CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator = nullptr, bool staticPropagate = false, bool lrb = false, bool rsil = false);
+CandySolverInterface* createSolver(GlobalClauseAllocator* global_allocator = nullptr, bool staticPropagate = false, bool lrb = false, bool rsil = false, unsigned int rsil_adv_size = 3);
 
 }
 
