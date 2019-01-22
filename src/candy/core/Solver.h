@@ -454,13 +454,13 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause
     if (copy.size() == 0) {
         return ok = false;
     }
-    else if (copy.size() == 1) {
-        return ok = trail.newFact(copy.front());
-    }
     else {
         Clause* clause = clause_db.createClause(copy.begin(), copy.end(), lbd);
         if (clause->size() > 2) {
             propagator.attachClause(clause);
+        }
+        else if (clause->size() == 1) {
+            ok = trail.newFact(clause->first()); 
         }
         return ok;
     }
@@ -493,14 +493,12 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
         
         if (literals.size() < clause->size()) {
             if (literals.size() > 0) {
-                if (literals.size() == 1) {
+                Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
+                if (new_clause->size() == 1) {
                     trail.newFact(literals.front());
                 }
-                else {
-                    Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
-                    if (new_clause->size() > 2) {
-                        propagator.attachClause(new_clause);
-                    }
+                else if (new_clause->size() > 2) {
+                    propagator.attachClause(new_clause);
                 }
                 certificate.added(literals.begin(), literals.end());
             }
@@ -627,16 +625,11 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             trail.cancelUntil(clause_db.result.backtrack_level);
 
             assert(trail.value(clause_db.result.learnt_clause[0]) == l_Undef);
-            
-            if (clause_db.result.learnt_clause.size() == 1) {
-                trail.uncheckedEnqueue(clause_db.result.learnt_clause[0]);
-            }
-            else {
-                Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
-                trail.uncheckedEnqueue(clause->first(), clause);
-                if (clause->size() > 2) {
-                    propagator.attachClause(clause);
-                }   
+
+            Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
+            trail.uncheckedEnqueue(clause->first(), clause);
+            if (clause->size() > 2) {
+                propagator.attachClause(clause);
             }
         }
         else {

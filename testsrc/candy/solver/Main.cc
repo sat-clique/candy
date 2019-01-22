@@ -36,15 +36,15 @@ TEST (CandyAddClauseTestPatterns, rejectTautologies2) {
   ASSERT_EQ(solver.nClauses(), 0ul);
 }
 
-TEST (CandyAddClauseTestPatterns, propagateEarly) {
+TEST (CandyAddClauseTestPatterns, materialUnitClauses) {
   CNFProblem formula;
   formula.readClause({mkLit(1)});
   Solver<> solver;
   solver.addClauses(formula);
-  ASSERT_EQ(solver.nClauses(), 0ul);
+  ASSERT_EQ(solver.nClauses(), 1ul);
 }
 
-TEST (CandyAddClauseTestPatterns, unitResolution) {
+TEST (CandyAddClauseTestPatterns, materialUnitClauses2) {
   CNFProblem formula;
   // assuming claues are added to solver in the given order
   formula.readClause(mkLit(1));
@@ -52,29 +52,30 @@ TEST (CandyAddClauseTestPatterns, unitResolution) {
   CandyBuilder<> builder { };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
-  ASSERT_EQ(solver->nClauses(), 1ul); 
+  ASSERT_EQ(solver->nClauses(), 2ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
 }
 
-TEST (CandyAddClauseTestPatterns, unitResolution2) {
+TEST (CandyAddClauseTestPatterns, materialUnitClauses3) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
   formula.readClause(mkLit(1), mkLit(2));  
   CandyBuilder<> builder { };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
-  ASSERT_EQ(solver->nClauses(), 1ul); 
+  ASSERT_EQ(solver->nClauses(), 2ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
 }
 
-TEST (CandyAddClauseTestPatterns, unitResolution3) {
+TEST (CandyAddClauseTestPatterns, lazyDeletionOfStrengthenedClauses) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
   CandyBuilder<> builder { };
   CandySolverInterface* solver = builder.build();
   solver->addClauses(formula);
-  ASSERT_EQ(solver->nClauses(), 2ul);
+  solver->printDIMACS();
+  ASSERT_EQ(solver->nClauses(), 3ul);
   // ASSERT_EQ(clauses[0]->size(), 3ul);
   // ASSERT_TRUE(clauses[0]->isDeleted());
   // ASSERT_EQ(clauses[1]->size(), 2ul);

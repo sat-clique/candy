@@ -196,7 +196,7 @@ public:
     }
 
     Clause* strengthenClause(Clause* clause, Lit lit) {
-        assert(clause->size() > 2);
+        assert(clause->size() > 1);
         std::vector<Lit> literals;
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
         Clause* new_clause = createClause(literals.begin(), literals.end(), clause->getLBD());

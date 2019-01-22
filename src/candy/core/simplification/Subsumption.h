@@ -30,15 +30,12 @@ public:
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         queue(),
         abstractions(),
-        bwdsub_assigns(0),
         nSubsumed(0),
         nStrengthened(0)
     {}
 
     std::vector<const Clause*> queue;
     std::unordered_map<const Clause*, uint64_t> abstractions;
-
-    uint32_t bwdsub_assigns;
 
     unsigned int nSubsumed;
     unsigned int nStrengthened;
@@ -74,19 +71,9 @@ bool Subsumption<TPropagate>::subsume() {
         attach(clause);
     }
 
-    Clause bwdsub_tmpunit({ lit_Undef });
-
     sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { return c1->size() > c2->size(); });
     
-    while (queue.size() > 0 || bwdsub_assigns < trail.size()) {
-        // Check top-level assignments by creating a dummy clause and placing it in the queue:
-        if (queue.size() == 0 && bwdsub_assigns < trail.size()) {
-            Lit l = trail[bwdsub_assigns++];
-            bwdsub_tmpunit = Clause({l});
-            abstractions.erase(&bwdsub_tmpunit);
-            attach(&bwdsub_tmpunit);
-        }
-
+    while (queue.size() > 0) {
         const Clause* clause = queue.back();
         queue.pop_back();
 
@@ -122,16 +109,17 @@ bool Subsumption<TPropagate>::subsume() {
                         nStrengthened++;
                         certificate.strengthened(occurence->begin(), occurence->end(), ~l);
                         
-                        if (occurence->size() == 2) {
-                            clause_db.removeClause((Clause*)occurence);
-                            Lit fact = occurence->first() == ~l ? occurence->second() : occurence->first();
-                            if (!trail.newFact(fact) || propagator.propagate() != nullptr) {
-                                return false;
-                            }
+                        Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
+                        if (new_clause->size() == 0) {
+                            return false;
                         }
                         else {
-                            Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
                             attach(new_clause);
+                            if (new_clause->size() == 1) {
+                                if (!trail.newFact(new_clause->first()) || propagator.propagate() != nullptr) {
+                                    return false; 
+                                }
+                            } 
                         }
                     }
                     abstractions.erase(occurence);
