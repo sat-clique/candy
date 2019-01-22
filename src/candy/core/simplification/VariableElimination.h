@@ -122,19 +122,21 @@ public:
                 if (asymm) { // strengthen:
                     nStrengthened++;
                     certificate.strengthened(clause->begin(), clause->end(), l);
-                    
-                    if (clause->size() == 2) {
-                        clause_db.removeClause((Clause*)clause);
-                        Lit fact = clause->first() == l ? clause->second() : clause->first();
-                        return trail.newFact(fact) && propagator.propagate() == nullptr;
-                    }
-                    else if (clause->size() > 2) {
+
+                    if (clause->size() > 2) {
                         propagator.detachClause(clause);
-                        Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
-                        if (new_clause->size() > 2) {
-                            propagator.attachClause(new_clause);
-                        }
+                    }
+                     
+                    Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
+                    if (new_clause->size() > 2) {
+                        propagator.attachClause(new_clause);
+                    }
+                    else if (new_clause->size() == 1) {
+                        return trail.newFact(new_clause->first()) && propagator.propagate() == nullptr;
                     } 
+                    else if (new_clause->size() == 0) {
+                        return false;
+                    }
                 }
             }
         }
@@ -179,15 +181,13 @@ public:
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent)) {
                 certificate.added(resolvent.begin(), resolvent.end());
-                if (resolvent.size() == 1) {
-                    return trail.newFact(resolvent.front()) && propagator.propagate() == nullptr;
+                unsigned int lbd = std::min(pc->getLBD(), nc->getLBD());
+                Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
+                if (clause->size() > 2) {
+                    propagator.attachClause(clause);
                 }
-                else {
-                    unsigned int lbd = std::min(pc->getLBD(), nc->getLBD());
-                    Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
-                    if (clause->size() > 2) {
-                        propagator.attachClause(clause);
-                    }
+                else if (clause->size() == 1) {
+                    return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
                 }
             }
         }
