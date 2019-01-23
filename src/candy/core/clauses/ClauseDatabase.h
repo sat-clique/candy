@@ -254,7 +254,8 @@ public:
             clauses = allocator.reallocate();
         }
         else {
-            clauses = global_allocator->absorb(allocator);
+            global_allocator->absorb(allocator);
+            clauses = global_allocator->collect();
         }
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {

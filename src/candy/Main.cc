@@ -237,7 +237,7 @@ int main(int argc, char** argv) {
         }
 
         if (solver == nullptr) {
-            solver = createSolver(SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
+            solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
         }
 
         solver->addClauses(problem);
@@ -248,23 +248,46 @@ int main(int argc, char** argv) {
     }
     else {
         GlobalClauseAllocator* global_allocator = nullptr;
+        std::vector<CandySolverInterface*> solvers;
+        std::vector<std::thread> threads;
 
-        CandySolverInterface* solver1 = createSolver(SolverOptions::opt_use_ts_pr, false, false); 
-        solver1->addClauses(problem);
-        if (ClauseDatabaseOptions::opt_static_db) {
-            global_allocator = solver1->setupGlobalAllocator();
+        CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, false, false); 
+        solver->addClauses(problem);
+        if (ParallelOptions::opt_static_database) {
+            global_allocator = solver->setupGlobalAllocator();
         }
-        std::thread t1(runSolver, solver1, std::ref(result), std::ref(model));
+        solvers.push_back(solver);
+        threads.push_back(std::thread(runSolver, solver, std::ref(result), std::ref(model)));
 
-        SolverOptions::opt_inprocessing = 500;
-        CandySolverInterface* solver2 = createSolver(SolverOptions::opt_use_ts_pr, true, false);
-        if (ClauseDatabaseOptions::opt_static_db) {
-            solver2->initWithGlobalAllocator(global_allocator);
-        } 
-        else {
-            solver2->addClauses(problem);
+        for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
+            switch (count) {
+                case 2 :
+                    SolverOptions::opt_inprocessing = 500;
+                    SolverOptions::opt_use_lrb = true;
+                    RSILOptions::opt_rsil_enable = false;
+                    break;
+                case 3 :
+                    SolverOptions::opt_inprocessing = 0;
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = true;
+                    break;
+                case 4 :
+                    SolverOptions::opt_inprocessing = 0;
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+            }
+            solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
+            if (ParallelOptions::opt_static_database) {
+                solver->initWithGlobalAllocator(global_allocator);
+            } 
+            else {
+                solver->addClauses(problem);
+            }
+            solvers.push_back(solver);
+            threads.push_back(std::thread(runSolver, solver, std::ref(result), std::ref(model)));
         }
-        std::thread t2(runSolver, solver2, std::ref(result), std::ref(model));
 
         Statistics::getInstance().runtimeStop("Initialization");
 
@@ -272,10 +295,13 @@ int main(int argc, char** argv) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
 
-        solver1->setInterrupt(true);
-        solver2->setInterrupt(true);
-        t1.detach();
-        t2.detach();
+        for (CandySolverInterface* solver : solvers) {
+            solver->setInterrupt(true);
+        }
+        
+        for (std::thread& thread : threads) {
+            thread.detach();
+        }
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");

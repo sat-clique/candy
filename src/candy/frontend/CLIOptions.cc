@@ -5,14 +5,14 @@
 namespace Candy {
 
 namespace ParallelOptions {
-    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 2));
+    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 4));
+    BoolOption opt_static_propagate("ParallelOptions", "static-propagate", "use thread-safe propagation module", false);
+    BoolOption opt_static_database("ParallelOptions", "static-database", "Use thread-safe static clause-allocator", false);
 }
 
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT8_MAX));
-    DoubleOption opt_clause_decay("ClauseDatabase", "cla-decay", "The clause activity decay factor", 0.999, DoubleRange(0, false, 1, false));
     BoolOption opt_reestimation_reduce_lbd("ClauseDatabase", "reestimate-lbd", "After conflict reduce lbds", true);
-    BoolOption opt_static_db("ClauseDatabase", "static-db", "Use thread-safe static clause-allocator", false);
 }
 
 namespace SolverOptions {
@@ -40,7 +40,6 @@ namespace SolverOptions {
     BoolOption opt_vsids_extra_bump("CORE", "extra-bump", "Glucose Style Extra Bumping on current desicion level", false);
 
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
-    BoolOption opt_use_ts_pr("PROPAGATION", "use-ts-pr", "use thread-safe propagation module", false);
 
     IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
 

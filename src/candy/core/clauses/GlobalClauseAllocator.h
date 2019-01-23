@@ -34,13 +34,13 @@ public:
         alock.unlock();
     }
 
-    inline std::vector<Clause*> absorb(ClauseAllocator& other) {
+    inline void absorb(ClauseAllocator& other) {
         alock.lock();
         allocator[int(active)].import(other);
         other.reset(false);
+        ready[std::this_thread::get_id()] = true;
 
         bool everybody_ready = false;
-        ready[std::this_thread::get_id()] = true;
         for (auto it : ready) {
             everybody_ready &= it.second;
         }
@@ -48,19 +48,20 @@ public:
         if (everybody_ready) { // all threads use active allocator now
             allocator[int(!active)].free(); // free inactive pages
             allocator[int(!active)].import(allocator[int(active)]); // import active pages
-            allocator[int(!active)].reallocate(false); // reallocate (without free)
+            allocator[int(!active)].reallocate(ready.size() == 1); // reallocate (without free); free in single threaded scenario
             active = !active; // swap active allocator
             for (auto it : ready) {
                 ready[it.first] = false;
             }
         }
-
         alock.unlock();
-        return allocator[int(active)].collect();
     }
 
     inline std::vector<Clause*> collect() {
-        return allocator[int(active)].collect();
+        alock.lock();
+        std::vector<Clause*> clauses = allocator[int(active)].collect();
+        alock.unlock();
+        return clauses;
     }
 
 private:

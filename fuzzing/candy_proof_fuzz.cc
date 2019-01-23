@@ -34,11 +34,7 @@ int main(int argc, char** argv) {
 
     SolverOptions::opt_certified_file = "proof.drat";
 
-    GlobalClauseAllocator* global_allocator = nullptr;
-    if (ClauseDatabaseOptions::opt_static_db) {
-        global_allocator = new GlobalClauseAllocator();
-    }
-    CandySolverInterface* solver = createSolver(global_allocator, SolverOptions::opt_use_ts_pr, SolverOptions::opt_use_lrb, false);
+    CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
 
     solver->addClauses(problem);
 

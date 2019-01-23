@@ -7,13 +7,13 @@ namespace Candy {
 
 namespace ParallelOptions {
     extern IntOption opt_threads;
+    extern BoolOption opt_static_propagate; // thread-safe propagator
+    extern BoolOption opt_static_database;
 }
 
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
-    extern DoubleOption opt_clause_decay;
     extern BoolOption opt_reestimation_reduce_lbd;
-    extern BoolOption opt_static_db;
 }
 
 namespace SolverOptions {
@@ -35,8 +35,6 @@ namespace SolverOptions {
     extern IntOption opt_inc_reduce_db;
     
     extern BoolOption opt_use_lrb; // lrb branching
-    extern BoolOption opt_use_ts_ca; // thread-safe conflict analysis
-    extern BoolOption opt_use_ts_pr; // thread-safe propagator
 
     extern DoubleOption opt_vsids_var_decay;
     extern DoubleOption opt_vsids_max_var_decay;
