@@ -329,8 +329,8 @@ class StringOption : public Option {
     }
 
     void set(const char* val) {
-        memset(value, 0, 256);
-        strcpy(value, val);
+        // memset(value, 0, 256);
+        strncpy(value, val, 256);
     }
 
     virtual void help(bool verbose = false) {
