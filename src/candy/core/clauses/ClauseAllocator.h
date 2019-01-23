@@ -21,7 +21,7 @@ namespace Candy {
 
 class ClauseAllocator {
 public:
-    ClauseAllocator() : pages(), cursor(0), memory(nullptr) {
+    ClauseAllocator() : pages(), deleted(), cursor(0), memory(nullptr) {
         newPage();
     }
 
@@ -37,7 +37,6 @@ public:
         for (unsigned char* page : pages) {
             std::free((void*)page);
         }
-        pages.clear();
     }
 
     inline void* allocate(unsigned int length) {
@@ -50,11 +49,18 @@ public:
         return clause;
     }
 
+    inline void deallocate(Clause* clause) {
+        deleted.push_back(clause);
+    }
+
     std::vector<Clause*> reallocate(bool free_old_pages = true) {
         std::vector<Clause*> clauses {};
         std::vector<unsigned char*> old_pages;
         old_pages.swap(pages);
         newPage();
+        sort(old_pages.begin(), old_pages.end());
+        sort(deleted.begin(), deleted.end());
+        auto deleted_clause = deleted.begin();
         for (unsigned char* old_page : old_pages) {
             unsigned int num_literals = 0;
             unsigned int num_bytes = 0;
@@ -65,13 +71,17 @@ public:
                 if (num_literals == 0) {
                     break;
                 }
-                else if (!old_clause->isDeleted()) {
+                else if (deleted_clause != deleted.end() && old_clause == *deleted_clause) {
+                    deleted_clause++;
+                }
+                else {
                     void* clause = allocate(num_literals);
                     memcpy(clause, (void*)old_clause, num_bytes);
                     clauses.push_back((Clause*)clause);
                 }
             }
         }
+        deleted.clear();
         if (free_old_pages) {
             for (unsigned char* page : old_pages) {
                 std::free((void*)page);
@@ -89,9 +99,7 @@ public:
                 if (clause->size() == 0) {
                     break;
                 }
-                else if (!clause->isDeleted()) {
-                    clauses.push_back(clause);
-                }
+                clauses.push_back(clause);
                 num_bytes = clauseBytes(clause->size());
             }
         }
@@ -100,7 +108,10 @@ public:
 
     void reset(bool free = true) {
         if (free) this->free();
-        else pages.clear();
+        else {
+            pages.clear();
+            deleted.clear();
+        }
         newPage();
     }
 
@@ -109,18 +120,21 @@ public:
             std::free((void*)page);
         }
         pages.clear();
+        deleted.clear();
         cursor = 0;
         memory = nullptr;
     }
 
     void import(ClauseAllocator& other) {
         pages.insert(pages.end(), other.pages.begin(), other.pages.end());
+        deleted.insert(deleted.end(), other.deleted.begin(), other.deleted.end());
     }
 
 private:
     static constexpr unsigned int PAGE_SIZE = 128*1024*1024;
 
     std::vector<unsigned char*> pages;
+    std::vector<Clause*> deleted;
 
     size_t cursor;
     unsigned char* memory;

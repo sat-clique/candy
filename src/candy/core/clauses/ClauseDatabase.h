@@ -178,6 +178,7 @@ public:
     void removeClause(Clause* clause) {
         // std::cout << "Removing clause " << *clause;
 
+        allocator.deallocate(clause);
         clause->setDeleted();
 
         if (track_literal_occurrence) {
@@ -253,8 +254,7 @@ public:
             clauses = allocator.reallocate();
         }
         else {
-            clauses = global_allocator->import(allocator);
-            allocator.reset(false);
+            clauses = global_allocator->absorb(allocator);
         }
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {

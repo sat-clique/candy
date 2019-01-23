@@ -26,9 +26,7 @@ namespace Candy {
 class GlobalClauseAllocator {
 public:
     GlobalClauseAllocator() : allocator(), active(false), alock(), ready() { }
-    ~GlobalClauseAllocator() { 
-        free();
-    }
+    ~GlobalClauseAllocator() { }
 
     inline void enroll() {
         alock.lock();
@@ -36,9 +34,10 @@ public:
         alock.unlock();
     }
 
-    inline std::vector<Clause*> import(ClauseAllocator& other) {
+    inline std::vector<Clause*> absorb(ClauseAllocator& other) {
         alock.lock();
         allocator[int(active)].import(other);
+        other.reset(false);
 
         bool everybody_ready = false;
         ready[std::this_thread::get_id()] = true;
@@ -49,8 +48,8 @@ public:
         if (everybody_ready) { // all threads use active allocator now
             allocator[int(!active)].free(); // free inactive pages
             allocator[int(!active)].import(allocator[int(active)]); // import active pages
+            allocator[int(!active)].reallocate(false); // reallocate (without free)
             active = !active; // swap active allocator
-            allocator[int(active)].reallocate(false); // reallocate (without free)
             for (auto it : ready) {
                 ready[it.first] = false;
             }
@@ -62,12 +61,6 @@ public:
 
     inline std::vector<Clause*> collect() {
         return allocator[int(active)].collect();
-    }
-
-    inline void free() {
-        allocator[0].free();
-        allocator[1].free();
-        ready.clear();
     }
 
 private:

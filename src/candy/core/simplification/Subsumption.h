@@ -41,13 +41,15 @@ public:
     unsigned int nStrengthened;
 
     void attach(const Clause* clause) {
-        if (abstractions.count(clause) == 0 && (subsumption_lim == 0 || clause->size() < subsumption_lim)) {
+        if (abstractions.count(clause) == 0) {
             uint64_t abstraction = 0;
             for (Lit lit : *clause) {
                 abstraction |= 1ull << (var(lit) % 64);
             }
             abstractions[clause] = abstraction;
-            queue.push_back(clause);
+            if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
+                queue.push_back(clause);
+            }
         }
     }
 
