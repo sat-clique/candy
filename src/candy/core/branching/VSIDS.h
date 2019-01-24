@@ -189,7 +189,7 @@ public:
         }
     }
 
-    void notify_restarted() {
+    void reset() {
         rebuildOrderHeap();
     }
 

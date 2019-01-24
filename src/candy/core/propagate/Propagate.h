@@ -62,15 +62,7 @@ public:
         list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
     }
 
-    void attachAll() {
-        for (Clause* clause : clause_db) {
-            if (clause->size() > 2) {
-                attachClause(clause);
-            }
-        }
-    }
-
-    void detachAll() {
+    void clear() {
         for (std::vector<Watcher>& list : watchers) {
             list.clear();
         }

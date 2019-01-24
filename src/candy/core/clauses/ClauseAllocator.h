@@ -75,6 +75,15 @@ public:
                     deleted_clause++;
                 }
                 else {
+                // if (deleted_clause != deleted.end()) {
+                //     while (old_clause > *deleted_clause) {
+                //         deleted_clause++;
+                //     }
+                //     if (old_clause == *deleted_clause) {
+                //         deleted_clause++;
+                //         break;
+                //     }
+                // }
                     void* clause = allocate(num_literals);
                     memcpy(clause, (void*)old_clause, num_bytes);
                     clauses.push_back((Clause*)clause);

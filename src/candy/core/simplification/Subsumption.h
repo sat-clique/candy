@@ -130,8 +130,12 @@ bool Subsumption<TPropagate>::subsume() {
         }
     }
 
-    propagator.detachAll();
-    propagator.attachAll();
+    propagator.clear();
+    for (Clause* clause : clause_db) {
+        if (clause->size() > 2) {
+            propagator.attachClause(clause);
+        }
+    }
     clear();
 
     return true;
