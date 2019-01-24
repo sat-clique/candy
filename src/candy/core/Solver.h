@@ -543,14 +543,18 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
         }
     }
 
-    branch.notify_restarted(); // former rebuildOrderHeap
+    branch.reset(); // former rebuildOrderHeap
 
     clause_db.stopOccurrenceTracking();
 
     if (max > nClauses() * simplification_threshold_factor) {
-        propagator.detachAll();
+        propagator.clear();
         clause_db.defrag();
-        propagator.attachAll();
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                propagator.attachClause(clause);
+            }
+        }
     }
 }
 
@@ -627,7 +631,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             assert(trail.value(clause_db.result.learnt_clause[0]) == l_Undef);
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
-            trail.uncheckedEnqueue(clause->first(), clause);
+            trail.uncheckedEnqueue(clause->first(), clause->size() == 1 ? nullptr : clause);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
@@ -638,7 +642,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 lbdQueue.fastclear();
                 
                 trail.cancelUntil(0);
-                branch.notify_restarted();
+                branch.reset();
                 
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
@@ -654,13 +658,23 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     
                     unit_resolution();
                     
-                    propagator.detachAll();
+                    propagator.clear();
                     std::vector<Clause*> reduced = clause_db.reduce();
                     for (const Clause* clause : reduced) {
                         certificate.removed(clause->begin(), clause->end());
                     }
                     clause_db.defrag();
-                    propagator.attachAll();
+                    
+                    for (Clause* clause : clause_db) {
+                        if (clause->size() > 2) {
+                            propagator.attachClause(clause);
+                        } else if (clause->size() == 1) {
+                            this->ok &= trail.newFact(clause->first()) && propagator.propagate() != nullptr;
+                            if (!ok) {
+                                return l_False;
+                            }
+                        }
+                    }
 
                     if (sort_watches) {
                         propagator.sortWatchers();

@@ -131,7 +131,7 @@ public:
         }
     }
 
-    void notify_restarted() {
+    void reset() {
         std::fill(participated.begin(), participated.end(), 0);
         std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
         rebuildOrderHeap();

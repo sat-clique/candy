@@ -76,15 +76,7 @@ public:
         assert(found);
     }
 
-    void attachAll() {
-        for (Clause* clause : clause_db) {
-            if (clause->size() > 2) {
-                attachClause(clause);
-            }
-        }
-    }
-
-    void detachAll() {
+    void clear() {
         for (unsigned int lit = 0; lit < watchers.size(); lit++) {
             for (WatcherTS* watcher : watchers[lit]) {
                 if (watcher->cref != nullptr) {

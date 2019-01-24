@@ -126,8 +126,8 @@ namespace Candy {
             defaultBranchingHeuristic.process_conflict();
     	}
 
-    	void notify_restarted() {
-    		defaultBranchingHeuristic.notify_restarted();
+    	void reset() {
+    		defaultBranchingHeuristic.reset();
         }
 
         void generateConjectures(const CNFProblem& problem) {
