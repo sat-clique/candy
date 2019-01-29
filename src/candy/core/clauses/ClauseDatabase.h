@@ -72,9 +72,7 @@ public:
         result()
     { }
 
-    ~ClauseDatabase() {
-        allocator.free();
-    }
+    ~ClauseDatabase() { }
 
     void initOccurrenceTracking() {
         for (Clause* clause : clauses) {
@@ -179,7 +177,6 @@ public:
         // std::cout << "Removing clause " << *clause;
 
         allocator.deallocate(clause);
-        clause->setDeleted();
 
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {

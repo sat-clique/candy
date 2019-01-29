@@ -17,16 +17,9 @@
 namespace Candy {
 
 class Clause {
-    // class ClauseAllocator;
-    // class StaticClauseAllocator;
-    
-    // template<class TAllocator> class ClauseDatabase;
-    // friend class ClauseDatabase<ClauseAllocator>;
-    // friend class ClauseDatabase<StaticClauseAllocator>;
-    
-    // template<class TAllocator> class Propagate;
-    // friend class Propagate<ClauseDatabase<ClauseAllocator>>;
-    // friend class Propagate<ClauseDatabase<StaticClauseAllocator>>;
+    friend class ClauseAllocator;
+    friend class ClauseDatabase;
+    friend class Propagate;
 
 private:
     uint16_t length;
@@ -34,7 +27,6 @@ private:
 
     Lit literals[1];
 
-public:
     inline void swap(uint16_t pos1, uint16_t pos2) {
         assert(pos1 < length && pos2 < length);
         Lit tmp = literals[pos1];
@@ -54,7 +46,7 @@ public:
         weight = lbd;
     }
 
-// public:
+public:
     template<typename Iterator>
     Clause(Iterator begin, Iterator end, uint16_t lbd) {
         copyLiterals(begin, end, literals);

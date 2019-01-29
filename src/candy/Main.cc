@@ -262,20 +262,46 @@ int main(int argc, char** argv) {
         for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
             switch (count) {
                 case 2 :
-                    SolverOptions::opt_inprocessing = 500;
-                    SolverOptions::opt_use_lrb = true;
+                    SolverOptions::opt_inprocessing = 100;
+                    SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_asymm = false;
                     break;
                 case 3 :
                     SolverOptions::opt_inprocessing = 0;
-                    SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = true;
+                    SolverOptions::opt_use_lrb = true;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_asymm = false;
                     break;
                 case 4 :
                     SolverOptions::opt_inprocessing = 0;
                     SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = true;
+                    VariableEliminationOptions::opt_use_asymm = false;
+                    break;
+                case 5 :
+                    SolverOptions::opt_inprocessing = 0;
+                    SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = false;
                     VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+                case 6 :
+                    SolverOptions::opt_inprocessing = 300;
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+                case 7 :
+                    SolverOptions::opt_inprocessing = 300;
+                    SolverOptions::opt_use_lrb = true;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+                case 8 :
+                    SolverOptions::opt_inprocessing = 300;
+                    SolverOptions::opt_use_lrb = true;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_asymm = false;
                     break;
             }
             solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);

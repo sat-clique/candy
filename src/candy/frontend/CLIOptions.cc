@@ -5,7 +5,7 @@
 namespace Candy {
 
 namespace ParallelOptions {
-    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 4));
+    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 8));
     BoolOption opt_static_propagate("ParallelOptions", "static-propagate", "use thread-safe propagation module", false);
     BoolOption opt_static_database("ParallelOptions", "static-database", "Use thread-safe static clause-allocator", false);
 }

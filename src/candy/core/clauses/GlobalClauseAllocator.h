@@ -36,8 +36,7 @@ public:
 
     inline void absorb(ClauseAllocator& other) {
         alock.lock();
-        allocator[int(active)].import(other);
-        other.reset(false);
+        allocator[int(active)].absorb(other); 
         ready[std::this_thread::get_id()] = true;
 
         bool everybody_ready = false;
@@ -46,9 +45,8 @@ public:
         }
 
         if (everybody_ready) { // all threads use active allocator now
-            allocator[int(!active)].free(); // free inactive pages
-            allocator[int(!active)].import(allocator[int(active)]); // import active pages
-            allocator[int(!active)].reallocate(ready.size() == 1); // reallocate (without free); free in single threaded scenario
+            //free the old one and copy and cleanup the new one 
+            allocator[int(!active)].copy(allocator[int(active)]);
             active = !active; // swap active allocator
             for (auto it : ready) {
                 ready[it.first] = false;
