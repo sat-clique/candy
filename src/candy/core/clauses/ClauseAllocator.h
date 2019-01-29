@@ -19,144 +19,174 @@
 
 namespace Candy {
 
-class ClauseAllocator {
+class Page {
+    friend class ClauseAllocator;
+
+private:
+    size_t page_size;
+    size_t cursor;
+    unsigned char* memory;
+
+    Page(Page const&) = delete;
+    void operator=(Page const&) = delete;
+
 public:
-    ClauseAllocator() : pages(), deleted(), cursor(0), memory(nullptr) {
-        newPage();
+    Page(size_t page_size_) : page_size(page_size_), cursor(0) {
+        memory = (unsigned char*)std::malloc(page_size);
+        std::memset(memory, 0, page_size);
     }
 
-    ClauseAllocator(ClauseAllocator&& other) noexcept : 
-        pages(std::move(other.pages)), 
-        cursor(other.cursor), memory(other.memory)
-    {
+    Page(Page&& other) : page_size(other.page_size), cursor(other.cursor), memory(other.memory) {
+        other.page_size = 0;
         other.cursor = 0;
         other.memory = nullptr;
     }
 
-    ~ClauseAllocator() {
-        for (unsigned char* page : pages) {
-            std::free((void*)page);
+    ~Page() {
+        if (memory != nullptr) {
+            std::free((void*)memory);
+            memory = nullptr;
         }
     }
+
+    bool hasMemory(size_t bytes) {
+        assert(memory != nullptr);
+        return cursor + bytes < page_size;
+    }
+
+    void* getMemory(size_t bytes) {
+        assert(memory != nullptr);
+        void* result = memory + cursor;
+        cursor += bytes;
+        return result;
+    }
+
+    bool contains(void* p) {
+        assert(memory != nullptr);
+        return p >= (void*)memory && p < (void*)(memory + cursor);
+    }
+};
+
+class ClauseAllocator {
+public:
+    ClauseAllocator() : pages(), deleted() {
+        pages.emplace_back(PAGE_SIZE);
+    }
+
+    ~ClauseAllocator() { }
 
     inline void* allocate(unsigned int length) {
         unsigned int size = clauseBytes(length);
-        if (cursor + size > PAGE_SIZE) {
-            newPage();
+        if (!pages.back().hasMemory(size)) {
+            pages.emplace_back(PAGE_SIZE);
         }
-        void* clause = memory + cursor;
-        cursor += size;
-        return clause;
+        return pages.back().getMemory(size);
     }
 
     inline void deallocate(Clause* clause) {
-        deleted.push_back(clause);
+        if (contains(clause)) { 
+            // in parallel scenario it is important not to delete clauses of the commonly used allocator ...
+            clause->setDeleted();
+        }
+        else {
+            // ... keep them to take care of them during synchronization
+            deleted.push_back(clause);
+        }
     }
 
-    std::vector<Clause*> reallocate(bool free_old_pages = true) {
+    inline bool contains(Clause* clause) {
+        for (Page& page : pages) {
+            if (page.contains(clause)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    std::vector<Clause*> reallocate() {
         std::vector<Clause*> clauses {};
-        std::vector<unsigned char*> old_pages;
+        std::vector<Page> old_pages;
         old_pages.swap(pages);
-        newPage();
-        sort(old_pages.begin(), old_pages.end());
-        sort(deleted.begin(), deleted.end());
-        auto deleted_clause = deleted.begin();
-        for (unsigned char* old_page : old_pages) {
+        size_t page_size = PAGE_SIZE;
+        for (Page& page : pages) {
+            page_size += page.page_size;
+        }
+        pages.emplace_back(page_size);
+        for (Page& old_page : old_pages) {
             unsigned int num_literals = 0;
             unsigned int num_bytes = 0;
-            for (unsigned char *p = old_page, *end = old_page + PAGE_SIZE; p < end; p += num_bytes) {
+            for (unsigned char *p = old_page.memory, *end = old_page.memory + old_page.cursor; p < end; p += num_bytes) {
                 Clause* old_clause = (Clause*)p;
                 num_literals = old_clause->size();
                 num_bytes = clauseBytes(num_literals);
-                if (num_literals == 0) {
-                    break;
-                }
-                else if (deleted_clause != deleted.end() && old_clause == *deleted_clause) {
-                    deleted_clause++;
-                }
-                else {
-                // if (deleted_clause != deleted.end()) {
-                //     while (old_clause > *deleted_clause) {
-                //         deleted_clause++;
-                //     }
-                //     if (old_clause == *deleted_clause) {
-                //         deleted_clause++;
-                //         break;
-                //     }
-                // }
+                if (!old_clause->isDeleted()) {
                     void* clause = allocate(num_literals);
                     memcpy(clause, (void*)old_clause, num_bytes);
                     clauses.push_back((Clause*)clause);
                 }
             }
         }
-        deleted.clear();
-        if (free_old_pages) {
-            for (unsigned char* page : old_pages) {
-                std::free((void*)page);
-            }
-        }
+        old_pages.clear();
         return clauses;
     }
 
     std::vector<Clause*> collect() {
         std::vector<Clause*> clauses {};
-        for (unsigned char* page : pages) {
+        for (Page& page : pages) {
             unsigned int num_bytes = 0;
-            for (unsigned char *p = page, *end = page + PAGE_SIZE; p < end; p += num_bytes) {
+            for (unsigned char *p = page.memory, *end = page.memory + page.cursor; p < end; p += num_bytes) {
                 Clause* clause = (Clause*)p;
-                if (clause->size() == 0) {
-                    break;
+                if (!clause->isDeleted()) {
+                    clauses.push_back(clause);
                 }
-                clauses.push_back(clause);
                 num_bytes = clauseBytes(clause->size());
             }
         }
         return clauses;
     }
 
-    void reset(bool free = true) {
-        if (free) this->free();
-        else {
-            pages.clear();
-            deleted.clear();
-        }
-        newPage();
-    }
-
-    void free() {
-        for (unsigned char* page : pages) {
-            std::free((void*)page);
-        }
+    void copy(ClauseAllocator& other) {
         pages.clear();
         deleted.clear();
-        cursor = 0;
-        memory = nullptr;
+        size_t page_size = PAGE_SIZE;
+        for (Page& page : other.pages) {
+            page_size += page.page_size;
+        }
+        pages.emplace_back(page_size);
+        for (const Page& page : other.pages) {
+            unsigned int num_literals = 0;
+            unsigned int num_bytes = 0;
+            for (unsigned char *p = page.memory, *end = page.memory + page.cursor; p < end; p += num_bytes) {
+                Clause* clause = (Clause*)p;
+                num_literals = clause->size();
+                num_bytes = clauseBytes(num_literals);
+                if (!clause->isDeleted()) {
+                    void* clause = allocate(num_literals);
+                    memcpy(clause, (void*)clause, num_bytes);
+                }
+            }
+        }
     }
 
-    void import(ClauseAllocator& other) {
-        pages.insert(pages.end(), other.pages.begin(), other.pages.end());
-        deleted.insert(deleted.end(), other.deleted.begin(), other.deleted.end());
+    void absorb(ClauseAllocator& other) {
+        for (Page& page : other.pages) {
+            pages.emplace_back(std::move(page));
+        }
+        other.pages.clear();
+        for (Clause* clause : other.deleted) {
+            deallocate(clause);
+        }
+        other.deleted.clear();
+        other.pages.emplace_back(PAGE_SIZE);
     }
 
 private:
-    static constexpr unsigned int PAGE_SIZE = 128*1024*1024;
+    const unsigned int PAGE_SIZE = 128*1024*1024;
 
-    std::vector<unsigned char*> pages;
+    std::vector<Page> pages;
     std::vector<Clause*> deleted;
 
-    size_t cursor;
-    unsigned char* memory;
-
-    ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&) = delete;
-
-    inline void newPage() {
-        memory = (unsigned char*)std::malloc(PAGE_SIZE);
-        std::memset(memory, 0, PAGE_SIZE);
-        pages.push_back(memory);
-        cursor = 0;
-    }
 
     inline unsigned int clauseBytes(unsigned int length) {
         return (sizeof(Clause) + sizeof(Lit) * (length-1));
