@@ -3,7 +3,7 @@
 
 namespace Candy {
     void* ClauseAllocator::allocate_globally(unsigned int length) {
-        global_allocator->allocate(length);
+        return global_allocator->allocate(length);
     }
 
     void ClauseAllocator::reallocate() {
