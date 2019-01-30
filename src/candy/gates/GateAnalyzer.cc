@@ -46,7 +46,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, std::chrono::milliseconds t
     gates.resize(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     index = buildIndexFromClauses(problem.getProblem());
-    if (useHolistic) solver->addClauses(problem);
+    if (useHolistic) solver->init(problem);
     solver->disablePreprocessing();
     runtime.stop();
 }
@@ -118,7 +118,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
 #endif
             clause.clear();
         }
-    solver->addClauses(constraint);
+    solver->init(constraint);
     solver->setConfBudget(semanticConflictBudget);
     bool isRightUnique = solver->solve(assumptions) == l_False;
     assumptions.back() = alit;

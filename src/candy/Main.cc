@@ -240,7 +240,7 @@ int main(int argc, char** argv) {
             solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
         }
 
-        solver->addClauses(problem);
+        solver->init(problem);
 
         Statistics::getInstance().runtimeStop("Initialization");
 
@@ -252,7 +252,7 @@ int main(int argc, char** argv) {
         std::vector<std::thread> threads;
 
         CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, false, false); 
-        solver->addClauses(problem);
+        solver->init(problem);
         if (ParallelOptions::opt_static_database) {
             global_allocator = solver->setupGlobalAllocator();
         }
@@ -261,56 +261,67 @@ int main(int argc, char** argv) {
 
         for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
             switch (count) {
-                case 2 :
-                    SolverOptions::opt_inprocessing = 100;
+                case 2 : // plain subsumption inprocessing
+                    SolverOptions::opt_inprocessing = 1;
                     SolverOptions::opt_use_lrb = false;
+                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
-                case 3 :
+                case 3 : // plain lrb
                     SolverOptions::opt_inprocessing = 0;
                     SolverOptions::opt_use_lrb = true;
+                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
-                case 4 :
+                case 4 : // plain rsil
                     SolverOptions::opt_inprocessing = 0;
                     SolverOptions::opt_use_lrb = false;
+                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = true;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
-                case 5 :
+                case 5 : // full inprocessing
+                    SolverOptions::opt_inprocessing = 300;
+                    SolverOptions::opt_use_lrb = false;
+                    SolverOptions::opt_preprocessing = false;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_elim = true;
+                    VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+                case 6 : // full inprocessing with lrb
+                    SolverOptions::opt_inprocessing = 300;
+                    SolverOptions::opt_use_lrb = true;
+                    SolverOptions::opt_preprocessing = false;
+                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_elim = true;
+                    VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+                case 7 : // full inprocessing with rsil
+                    SolverOptions::opt_inprocessing = 300;
+                    SolverOptions::opt_use_lrb = false;
+                    SolverOptions::opt_preprocessing = false;
+                    RSILOptions::opt_rsil_enable = true;
+                    VariableEliminationOptions::opt_use_elim = true;
+                    VariableEliminationOptions::opt_use_asymm = true;
+                    break;
+                case 8 : // plain w/o sorting
+                    SolverOptions::opt_sort_watches = false;
+                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 0;
                     SolverOptions::opt_use_lrb = false;
+                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_asymm = true;
-                    break;
-                case 6 :
-                    SolverOptions::opt_inprocessing = 300;
-                    SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_asymm = true;
-                    break;
-                case 7 :
-                    SolverOptions::opt_inprocessing = 300;
-                    SolverOptions::opt_use_lrb = true;
-                    RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_asymm = true;
-                    break;
-                case 8 :
-                    SolverOptions::opt_inprocessing = 300;
-                    SolverOptions::opt_use_lrb = true;
-                    RSILOptions::opt_rsil_enable = false;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
             }
             solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
-            if (ParallelOptions::opt_static_database) {
-                solver->initWithGlobalAllocator(global_allocator);
-            } 
-            else {
-                solver->addClauses(problem);
-            }
+            solver->init(problem, global_allocator);
             solvers.push_back(solver);
             threads.push_back(std::thread(runSolver, solver, std::ref(result), std::ref(model)));
         }

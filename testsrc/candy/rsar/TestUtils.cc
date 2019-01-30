@@ -98,8 +98,7 @@ namespace Candy {
         Lit assumption1 = mkLit(createVariable(), 1);
         Lit assumption2 = mkLit(createVariable(), 1);
         
-        addClauses({Cl{assumption1, a}, Cl{assumption1, ~b},
-            Cl{assumption2, ~a}, Cl{assumption2, b}});
+        addClauses({Cl{assumption1, a}, Cl{assumption1, ~b}, Cl{assumption2, ~a}, Cl{assumption2, b}});
         
         extendedAssumptions.push_back(~assumption1);
         extendedAssumptions.push_back(assumption2);
@@ -167,8 +166,7 @@ namespace Candy {
         checker->createVariables(2);
         checker->createVariables(3);
 
-        checker->addClauses({
-            {mkLit(0, 0), mkLit(1, 1)},
+        checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
             {mkLit(3, 0), mkLit(0, 1)},
             {mkLit(2, 0), mkLit(3, 1)}});
         

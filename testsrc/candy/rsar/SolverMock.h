@@ -67,14 +67,13 @@ namespace Candy {
         BranchingDiversificationInterface* accessBranchingInterface() override { return nullptr; }
 
         GlobalClauseAllocator* setupGlobalAllocator() override { return nullptr; }
-        virtual void initWithGlobalAllocator(GlobalClauseAllocator* allocator) override { }
         
         virtual void enablePreprocessing() override {}
         virtual void disablePreprocessing() override {}
 
         virtual Var newVar() override;
 
-        virtual void addClauses(const CNFProblem& problem) override;
+        virtual void init(const CNFProblem& problem, GlobalClauseAllocator* allocator = nullptr) override;
         virtual bool addClause(const std::vector<Lit>& lits, unsigned int lrb = 0) override;
         virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lrb = 0) override { return false; }
 

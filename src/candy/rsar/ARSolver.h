@@ -70,10 +70,6 @@ namespace Candy {
             return m_solver->setupGlobalAllocator();
         }
 
-        void initWithGlobalAllocator(GlobalClauseAllocator* allocator) override {
-            m_solver->initWithGlobalAllocator(allocator);
-        }
-
         // from CandySolverInterface:
         virtual void enablePreprocessing() override {
         	m_solver->enablePreprocessing();
@@ -86,8 +82,8 @@ namespace Candy {
         	return m_solver->newVar();
         }
 
-        virtual void addClauses(const CNFProblem& problem) override {
-        	m_solver->addClauses(problem);
+        virtual void init(const CNFProblem& problem, GlobalClauseAllocator* allocator = nullptr) override {
+        	m_solver->init(problem, allocator);
         }
         virtual bool addClause(const std::vector<Lit>& lits, unsigned int lrb = 0) override {
         	return m_solver->addClause(lits, lrb);
@@ -192,7 +188,7 @@ namespace Candy {
          * Initializes the abstraction refinement system and performs
          * initialization-time simplification.
          */
-        void init();
+        void initialize();
 
         /** Removes eliminated variables from the conjectures. */
         void reduceConjectures();

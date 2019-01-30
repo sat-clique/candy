@@ -39,8 +39,6 @@ namespace SolverOptions {
     extern DoubleOption opt_vsids_var_decay;
     extern DoubleOption opt_vsids_max_var_decay;
     extern BoolOption opt_vsids_extra_bump;
-
-    extern IntOption opt_phase_saving;
     
     extern IntOption opt_sonification_delay;
     

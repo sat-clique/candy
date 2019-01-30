@@ -63,7 +63,7 @@ namespace Candy {
         return true;
     }
     
-    void SolverMock::addClauses(const CNFProblem &problem) {
+    void SolverMock::init(const CNFProblem &problem, GlobalClauseAllocator* allocator) {
         // TODO: fix the unscrupolously non-const CNFProblem interface to update
         // m_nClausesAddedSinceLastSolve
         m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);

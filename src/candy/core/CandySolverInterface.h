@@ -24,15 +24,14 @@ public:
 
 	virtual BranchingDiversificationInterface* accessBranchingInterface() = 0;
 
-	virtual GlobalClauseAllocator* setupGlobalAllocator() = 0;
-    virtual void initWithGlobalAllocator(GlobalClauseAllocator* allocator) = 0;
-
 	virtual void enablePreprocessing() = 0;
     virtual void disablePreprocessing() = 0;
 
     virtual Var newVar() = 0;
 
-    virtual void addClauses(const CNFProblem& problem) = 0;
+	virtual GlobalClauseAllocator* setupGlobalAllocator() = 0;
+    virtual void init(const CNFProblem& problem, GlobalClauseAllocator* allocator = nullptr) = 0;
+
     virtual bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) = 0;
     virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) = 0;
 

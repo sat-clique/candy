@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
 
     CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
 
-    solver->addClauses(problem);
+    solver->init(problem);
 
     lbool result = solver->solve();
 
