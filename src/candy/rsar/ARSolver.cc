@@ -304,7 +304,7 @@ namespace Candy {
         };
     }
     
-    void ARSolver::init() {
+    void ARSolver::initialize() {
         // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
         // approximation computation system.
         if (m_simpHandlingMode == SimplificationHandlingMode::FULL) {
@@ -344,7 +344,7 @@ namespace Candy {
             return l_False;
         }
         
-        init();
+        initialize();
         m_solver->disablePreprocessing();
         
         lbool sat = l_False;

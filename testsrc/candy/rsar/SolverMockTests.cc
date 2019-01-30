@@ -43,7 +43,7 @@ namespace Candy {
         Var var1 = underTest.newVar();
         Var var2 = underTest.newVar();
         
-        underTest.addClauses(problem);
+        underTest.init(problem);
         underTest.addClause(Cl{mkLit(var1,0)});
         underTest.eliminate();
         underTest.addClause(Cl{mkLit(var2,0)});

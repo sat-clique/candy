@@ -45,8 +45,6 @@ struct BinaryWatcher {
 class ClauseDatabase {
 private:
     ClauseAllocator allocator;
-
-    GlobalClauseAllocator* global_allocator;
  
     std::vector<Clause*> clauses; // Working set of problem clauses
 
@@ -63,7 +61,7 @@ public:
 	AnalysisResult result;
 
     ClauseDatabase() : 
-        allocator(), global_allocator(nullptr), clauses(), 
+        allocator(), clauses(), 
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
         reestimationReduceLBD(ClauseDatabaseOptions::opt_reestimation_reduce_lbd), 
         track_literal_occurrence(false),
@@ -104,9 +102,9 @@ public:
     }
 
     inline void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
-        this->global_allocator = global_allocator;
-        global_allocator->enroll();
-        this->clauses = global_allocator->collect();
+        allocator.setGlobalClauseAllocator(global_allocator);
+        this->clauses = allocator.collect();
+        
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
             watcher.clear();
         }
@@ -247,13 +245,8 @@ public:
      * Make sure all references are updated after all clauses reside in a new adress space
      */
     void defrag() {
-        if (global_allocator == nullptr) {
-            clauses = allocator.reallocate();
-        }
-        else {
-            global_allocator->absorb(allocator);
-            clauses = global_allocator->collect();
-        }
+        allocator.reallocate();
+        clauses = allocator.collect();
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
             watcher.clear();

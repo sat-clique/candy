@@ -117,7 +117,56 @@ public:
     virtual ~Solver();
     
     Var newVar() override;
-    void addClauses(const CNFProblem& problem) override;
+
+    void init(const CNFProblem& dimacs, GlobalClauseAllocator* allocator = nullptr) override {
+        size_t maxVars = (size_t)dimacs.nVars();
+        if (maxVars > this->nVars()) {
+            clause_db.grow(maxVars);
+            propagator.init(maxVars);
+            trail.grow(maxVars);
+            conflict_analysis.grow(maxVars);
+            branch.grow(maxVars);
+            elimination.grow(maxVars);
+        }
+
+        branch.init(dimacs);
+
+        if (allocator == nullptr) {
+            for (vector<Lit>* clause : dimacs.getProblem()) {
+                if (!addClause(*clause)) {
+                    certificate.proof();
+                    return;
+                }
+            }
+            
+            if (propagator.propagate() == nullptr) {
+                unit_resolution();
+            }
+            else {
+                ok = false; 
+                certificate.proof();
+            }
+        }
+        else {
+            std::vector<Clause*> clauses = allocator->collect();
+            for (Clause* clause : clauses) {
+                if (clause->size() == 1) {
+                    trail.newFact(clause->first());
+                }
+                else if (clause->size() > 2) {
+                    propagator.attachClause(clause);
+                }
+            }
+            clause_db.setGlobalClauseAllocator(allocator);
+        }
+    }
+
+    GlobalClauseAllocator* setupGlobalAllocator() override {
+        GlobalClauseAllocator* allocator = new GlobalClauseAllocator();
+        clause_db.setGlobalClauseAllocator(allocator);
+        clause_db.defrag();
+        return allocator; 
+    }
 
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end, unsigned int lbd = 0);
@@ -128,32 +177,6 @@ public:
 
     bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) override {
         return addClause(lits.begin(), lits.end(), lbd);
-    }
-
-    GlobalClauseAllocator* setupGlobalAllocator() override {
-        GlobalClauseAllocator* allocator = new GlobalClauseAllocator();
-        clause_db.setGlobalClauseAllocator(allocator);
-        clause_db.defrag();
-        return allocator; 
-    }
-
-    void initWithGlobalAllocator(GlobalClauseAllocator* allocator) override {
-        std::vector<Clause*> clauses = allocator->collect();
-        for (Clause* clause : clauses) {
-            size_t maxVars = var(*std::max_element(clause->begin(), clause->end()))+1;
-            if (maxVars > this->nVars()) {
-                clause_db.grow(maxVars);
-                propagator.init(maxVars);
-                trail.grow(maxVars);
-                conflict_analysis.grow(maxVars);
-                branch.grow(maxVars);
-                elimination.grow(maxVars);
-            }
-            if (clause->size() > 2) {
-                propagator.attachClause(clause);
-            }
-        }
-        clause_db.setGlobalClauseAllocator(allocator);
     }
 
     void printDIMACS() override {
@@ -402,36 +425,6 @@ Var Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
     branch.grow();
     elimination.grow(nVars());
     return v;
-}
-
-template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClauses(const CNFProblem& dimacs) {
-    size_t maxVars = (size_t)dimacs.nVars();
-    if (maxVars > this->nVars()) {
-        clause_db.grow(maxVars);
-        propagator.init(maxVars);
-        trail.grow(maxVars);
-        conflict_analysis.grow(maxVars);
-        branch.grow(maxVars);
-        elimination.grow(maxVars);
-    }
-
-    branch.init(dimacs);
-
-    for (vector<Lit>* clause : dimacs.getProblem()) {
-        if (!addClause(*clause)) {
-            certificate.proof();
-            return;
-        }
-    }
-    
-    if (propagator.propagate() == nullptr) {
-        unit_resolution();
-    }
-    else {
-        ok = false; 
-        certificate.proof();
-    }
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>

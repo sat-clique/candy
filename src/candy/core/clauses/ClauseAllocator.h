@@ -20,29 +20,39 @@
 
 namespace Candy {
 
+class GlobalClauseAllocator;
+
 class ClauseAllocator {
 public:
-    ClauseAllocator() : pages(), deleted() {
-        pages.emplace_back(PAGE_SIZE);
-    }
+    ClauseAllocator() : pages(), deleted(), global_allocator(nullptr) { }
 
     ~ClauseAllocator() { }
 
     inline void* allocate(unsigned int length) {
-        if (!pages.back().hasMemory(length)) {
-            pages.emplace_back(PAGE_SIZE);
+        if (global_allocator != nullptr && length == 1) {
+            return allocate_globally(1);
+        } 
+        else {
+            if (pages.size() == 0 || !pages.back().hasMemory(length)) {
+                pages.emplace_back(PAGE_SIZE);
+            }
+            return pages.back().getMemory(length);
         }
-        return pages.back().getMemory(length);
     }
 
     inline void deallocate(Clause* clause) {
-        if (contains(clause)) { 
-            // in parallel scenario it is important not to delete clauses of the commonly used allocator ...
+        if (global_allocator == nullptr) {
             clause->setDeleted();
         }
         else {
-            // ... keep them to take care of them during synchronization
-            deleted.push_back(clause);
+            if (this->contains(clause)) { 
+                // in parallel scenario it is important not to delete clauses of the commonly used allocator ...
+                clause->setDeleted();
+            }
+            else {
+                // ... keep them to take care of them during synchronization
+                deleted.push_back(clause);
+            }
         }
     }
 
@@ -61,36 +71,6 @@ public:
             size += page.size();
         }
         return size;
-    }
-
-    std::vector<Clause*> reallocate() {
-        std::vector<Clause*> clauses {};
-        std::vector<ClauseAllocatorPage> old_pages;
-        old_pages.swap(pages);
-        pages.emplace_back(size() + PAGE_SIZE);
-        for (ClauseAllocatorPage& old_page : old_pages) {
-            for (const Clause* old_clause : old_page) {
-                if (!old_clause->isDeleted()) {
-                    void* clause = allocate(old_clause->size());
-                    memcpy(clause, (void*)old_clause, old_page.clauseBytes(old_clause->size()));
-                    clauses.push_back((Clause*)clause);
-                }
-            }
-        }
-        old_pages.clear();
-        return clauses;
-    }
-
-    std::vector<Clause*> collect() {
-        std::vector<Clause*> clauses {};
-        for (ClauseAllocatorPage& page : pages) {
-            for (const Clause* clause : page) {
-                if (!clause->isDeleted()) {
-                    clauses.push_back((Clause*)clause);
-                }
-            }
-        }
-        return clauses;
     }
 
     void copy(ClauseAllocator& other) {
@@ -117,8 +97,12 @@ public:
             deallocate(clause);
         }
         other.deleted.clear();
-        other.pages.emplace_back(PAGE_SIZE);
     }
+
+    void reallocate();
+    std::vector<Clause*> collect();
+
+    void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator);
 
 private:
     const unsigned int PAGE_SIZE = 128*1024*1024;
@@ -126,7 +110,11 @@ private:
     std::vector<ClauseAllocatorPage> pages;
     std::vector<Clause*> deleted;
 
+    GlobalClauseAllocator* global_allocator;
+
     void operator=(ClauseAllocator const&) = delete;
+
+    void* allocate_globally(unsigned int length);
 
 };
 

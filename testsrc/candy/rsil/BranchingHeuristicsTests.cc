@@ -487,7 +487,7 @@ namespace Candy {
         RSILOptions::opt_rsil_advice_size.set(size);
 
         CandySolverInterface* solver = createSolver(false, false, true, size);
-        solver->addClauses(problem);
+        solver->init(problem);
         EXPECT_TRUE((expectedResult ? l_True : l_False) == solver->solve());
     }
     

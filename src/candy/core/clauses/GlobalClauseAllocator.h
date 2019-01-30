@@ -28,6 +28,13 @@ public:
     GlobalClauseAllocator() : allocator(), active(false), alock(), ready() { }
     ~GlobalClauseAllocator() { }
 
+    inline void* allocate(unsigned int length) {
+        alock.lock();
+        void* mem = allocator[int(active)].allocate(length);
+        alock.unlock();
+        return mem;
+    }
+
     inline void enroll() {
         alock.lock();
         ready[std::this_thread::get_id()] = false;

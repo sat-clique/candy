@@ -108,7 +108,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_DISABLEsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::DISABLE);
-        underTest.arSolver->addClauses(*underTest.minProblem);
+        underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
         
@@ -118,7 +118,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_RESTRICTsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::RESTRICT);
-        underTest.arSolver->addClauses(*underTest.minProblem);
+        underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
         
@@ -133,7 +133,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_FREEZEsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::FREEZE);
-        underTest.arSolver->addClauses(*underTest.minProblem);
+        underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
         
@@ -145,7 +145,7 @@ namespace Candy {
     
     TEST(RSARARSolver, temporal_init_simpCallTime_FULLsimp) {
         auto underTest = createSimpleSetup(SimplificationHandlingMode::FULL);
-        underTest.arSolver->addClauses(*underTest.minProblem);
+        underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
         
@@ -157,7 +157,7 @@ namespace Candy {
     
     static void test_temporal_init_solveCallTime(SimplificationHandlingMode mode) {
         auto underTest = createSimpleSetup(mode);
-        underTest.arSolver->addClauses(*underTest.minProblem);
+        underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
         EXPECT_TRUE(occursOnlyAfter(eventLog, SolverMockEvent::SOLVE, SolverMockEvent::ADD_PROBLEM));
@@ -186,7 +186,7 @@ namespace Candy {
     
 //    TEST(RSARARSolver, forcesDeactivation_SimpleProblem) {
 //        auto underTest = createSimpleSetup(SimplificationHandlingMode::DISABLE);
-//        underTest.arSolver->addClauses(*underTest.minProblem);
+//        underTest.arSolver->init(*underTest.minProblem);
 //        underTest.arSolver->solve();
 //        // no heuristics employed, no conflict assumption lits indicated
 //        // by the solver, no eliminated vars => ARSolver needs to force
@@ -242,7 +242,7 @@ namespace Candy {
         
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         
-        solverAndMock.arSolver->addClauses(*solverAndMock.minProblem);
+        solverAndMock.arSolver->init(*solverAndMock.minProblem);
         lbool result = solverAndMock.arSolver->solve();
         
         EXPECT_EQ(result, l_False);
@@ -256,7 +256,7 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         solverAndMock.glucoseMock->mockctrl_setResultInInvocation(1, true);
         
-        solverAndMock.arSolver->addClauses(*solverAndMock.minProblem);
+        solverAndMock.arSolver->init(*solverAndMock.minProblem);
         lbool result = solverAndMock.arSolver->solve();
         
         EXPECT_EQ(result, l_True);
@@ -270,7 +270,7 @@ namespace Candy {
         solverAndMock.glucoseMock->mockctrl_setEliminated(1, true);
         solverAndMock.glucoseMock->mockctrl_setEliminated(2, true);
         
-        solverAndMock.arSolver->addClauses(*solverAndMock.minProblem);
+        solverAndMock.arSolver->init(*solverAndMock.minProblem);
         solverAndMock.arSolver->solve();
         
         EXPECT_FALSE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 1));
@@ -342,7 +342,7 @@ namespace Candy {
             }
         });
         
-        solverAndMock.arSolver->addClauses(*solverAndMock.minProblem);
+        solverAndMock.arSolver->init(*solverAndMock.minProblem);
         solverAndMock.arSolver->solve();
     }
     
@@ -371,7 +371,7 @@ namespace Candy {
         solverBuilder->withSolver(new Solver<>());
         
         auto solver = solverBuilder->build();
-        solver->addClauses(problem);
+        solver->init(problem);
         auto result = solver->solve();
         EXPECT_EQ(result, lbool(expectedResult));
     }
