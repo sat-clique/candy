@@ -114,7 +114,7 @@ class Solver : public CandySolverInterface {
 public:
     Solver();
     Solver(TClauses db, TAssignment& as);
-    virtual ~Solver();
+    ~Solver();
     
     Var newVar() override;
 

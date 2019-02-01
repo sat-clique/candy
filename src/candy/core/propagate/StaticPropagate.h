@@ -42,6 +42,10 @@ public:
     StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) { }
 
+    ~StaticPropagate() {
+        clear();
+    }
+
     void init(size_t maxVars) {
         watchers.resize(mkLit(maxVars, true));
     }
