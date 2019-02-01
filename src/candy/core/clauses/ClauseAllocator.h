@@ -29,15 +29,15 @@ public:
     ~ClauseAllocator() { }
 
     inline void* allocate(unsigned int length) {
-        if (global_allocator != nullptr && length == 1) {
-            return allocate_globally(1);
-        } 
-        else {
+        if (global_allocator == nullptr || length > 1) {
             if (pages.size() == 0 || !pages.back().hasMemory(length)) {
                 pages.emplace_back(PAGE_SIZE);
             }
             return pages.back().getMemory(length);
         }
+        else {
+            return allocate_globally(1);
+        } 
     }
 
     inline void deallocate(Clause* clause) {

@@ -16,11 +16,6 @@
 #include <candy/core/clauses/Clause.h>
 #include <candy/core/clauses/ClauseAllocator.h>
 
-// output_iterator : public virtual iterator {
-//     reference operator*() const;
-//     iterator operator++(int); //postfix increment
-// };
-
 namespace Candy {
 
 class ClauseAllocatorPage {

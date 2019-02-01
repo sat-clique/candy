@@ -16,8 +16,6 @@
 
 #include <array>
 
-//#define FUTURE_PROPAGATE
-
 namespace Candy {
 
 struct Watcher {

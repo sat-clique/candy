@@ -16,8 +16,6 @@
 
 #include <array>
 
-//#define FUTURE_PROPAGATE
-
 namespace Candy {
 
 struct WatcherTS {
@@ -57,23 +55,24 @@ public:
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 2);
-        bool found = false;
+        unsigned int found = 0;
         for (Lit lit : *clause) {
+            WatcherTS* watcher = nullptr;
             auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
             if (it != watchers[~lit].end()) {
-                found = true;
-                WatcherTS* watcher = *it;
+                watcher = *it;
                 Lit lit0 = watcher->watch0;
                 Lit lit1 = watcher->watch1;
-                size_t size0 = watchers[~lit0].size();
-                size_t size1 = watchers[~lit1].size();
                 watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
                 watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
-                assert(size0 > watchers[~lit0].size());
-                assert(size1 > watchers[~lit1].size());
+            }
+            if (watcher != nullptr) {
+                if (++found == 2) {
+                    delete watcher;
+                    break;
+                }
             }
         }
-        assert(found);
     }
 
     void clear() {
