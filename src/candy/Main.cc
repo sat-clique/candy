@@ -230,13 +230,12 @@ int main(int argc, char** argv) {
     lbool result = l_Undef;
     Cl model;
     if (ParallelOptions::opt_threads == 1) {
-        CandySolverInterface* solver;
+        CandySolverInterface* solver = nullptr;
 
         if (RSAROptions::opt_rsar_enable) {
             solver = createRSARSolver(problem);
         }
-
-        if (solver == nullptr) {
+        else {
             solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
         }
 
@@ -262,6 +261,8 @@ int main(int argc, char** argv) {
         for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
             switch (count) {
                 case 2 : // plain subsumption inprocessing
+                    SolverOptions::opt_sort_watches = false;
+                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 1;
                     SolverOptions::opt_use_lrb = false;
                     SolverOptions::opt_preprocessing = false;
@@ -270,6 +271,8 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
                 case 3 : // plain lrb
+                    SolverOptions::opt_sort_watches = true;
+                    SolverOptions::opt_sort_variables = true;
                     SolverOptions::opt_inprocessing = 0;
                     SolverOptions::opt_use_lrb = true;
                     SolverOptions::opt_preprocessing = false;
@@ -278,6 +281,8 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
                 case 4 : // plain rsil
+                    SolverOptions::opt_sort_watches = false;
+                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 0;
                     SolverOptions::opt_use_lrb = false;
                     SolverOptions::opt_preprocessing = false;
@@ -286,6 +291,10 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
                 case 5 : // full inprocessing
+                    SolverOptions::opt_sort_watches = true;
+                    SolverOptions::opt_sort_variables = true;
+                    SolverOptions::opt_sort_watches = false;
+                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 300;
                     SolverOptions::opt_use_lrb = false;
                     SolverOptions::opt_preprocessing = false;
@@ -294,6 +303,8 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = true;
                     break;
                 case 6 : // full inprocessing with lrb
+                    SolverOptions::opt_sort_watches = true;
+                    SolverOptions::opt_sort_variables = true;
                     SolverOptions::opt_inprocessing = 300;
                     SolverOptions::opt_use_lrb = true;
                     SolverOptions::opt_preprocessing = false;
@@ -302,6 +313,8 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = true;
                     break;
                 case 7 : // full inprocessing with rsil
+                    SolverOptions::opt_sort_watches = false;
+                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 300;
                     SolverOptions::opt_use_lrb = false;
                     SolverOptions::opt_preprocessing = false;
