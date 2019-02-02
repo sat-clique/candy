@@ -1,5 +1,14 @@
-/**************************************************************************************[Options.cc]
-Copyright (c) 2008-2010, Niklas Sorensson
+/*************************************************************************************************
+Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+
+Candy sources are based on Glucose which is based on MiniSat (see former copyrights below). 
+Permissions and copyrights of Candy are exactly the same as Glucose and Minisat (see below).
+
+
+--------------- Original Minisat Copyrights
+
+Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
+Copyright (c) 2007-2010, Niklas Sorensson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -15,7 +24,7 @@ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPO
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-**************************************************************************************************/
+*************************************************************************************************/
 
 #include "candy/utils/Options.h"
 
