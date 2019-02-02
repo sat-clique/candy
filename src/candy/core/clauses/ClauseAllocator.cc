@@ -10,7 +10,7 @@ namespace Candy {
         if (global_allocator == nullptr) {
             std::vector<ClauseAllocatorPage> old_pages;
             old_pages.swap(pages);
-            pages.emplace_back(size() + PAGE_SIZE);
+            pages.emplace_back(size());
             for (ClauseAllocatorPage& old_page : old_pages) {
                 for (const Clause* old_clause : old_page) {
                     if (!old_clause->isDeleted()) {
@@ -22,7 +22,7 @@ namespace Candy {
             old_pages.clear();
         }
         else {
-            global_allocator->absorb(*this);
+            global_allocator->import(*this);
         }
     }
 

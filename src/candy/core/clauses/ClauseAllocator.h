@@ -73,11 +73,12 @@ public:
         return size;
     }
 
-    void copy(ClauseAllocator& other) {
+    void clear() {
         pages.clear();
         deleted.clear();
-        size_t page_size = size() + PAGE_SIZE;
-        pages.emplace_back(page_size);
+    }
+
+    void import(ClauseAllocator& other) {
         for (const ClauseAllocatorPage& page : other.pages) {
             for (const Clause* clause : page) {
                 if (!clause->isDeleted()) {
@@ -86,17 +87,9 @@ public:
                 }
             }
         }
-    }
-
-    void absorb(ClauseAllocator& other) {
-        for (ClauseAllocatorPage& page : other.pages) {
-            pages.emplace_back(std::move(page));
-        }
-        other.pages.clear();
         for (Clause* clause : other.deleted) {
             deallocate(clause);
         }
-        other.deleted.clear();
     }
 
     void reallocate();
