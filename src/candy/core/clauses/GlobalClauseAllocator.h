@@ -41,9 +41,10 @@ public:
         alock.unlock();
     }
 
-    inline void absorb(ClauseAllocator& other) {
+    inline void import(ClauseAllocator& other) {
         alock.lock();
-        allocator[int(active)].absorb(other); 
+        allocator[int(active)].import(other); 
+        other.clear();
         ready[std::this_thread::get_id()] = true;
 
         bool everybody_ready = false;
@@ -53,7 +54,8 @@ public:
 
         if (everybody_ready) { // all threads use active allocator now
             //free the old one and copy and cleanup the new one 
-            allocator[int(!active)].copy(allocator[int(active)]);
+            allocator[int(!active)].clear();
+            allocator[int(!active)].import(allocator[int(active)]);
             active = !active; // swap active allocator
             for (auto it : ready) {
                 ready[it.first] = false;
