@@ -120,23 +120,15 @@ public:
         }
     }
 
-    inline void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
+    GlobalClauseAllocator* setupGlobalClauseAllocator() {
+        GlobalClauseAllocator* global_allocator = new GlobalClauseAllocator();
+        global_allocator->move(allocator);
         allocator.setGlobalClauseAllocator(global_allocator);
-        
-        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
-            watcher.clear();
-        }
-        for (Clause* clause : clauses) {
-            if (clause->size() == 2) {
-                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
-                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
-            }
-        }
-        if (track_literal_occurrence) {
-            stopOccurrenceTracking();
-            initOccurrenceTracking();
-        }
+        return global_allocator;
+    }
 
+    void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
+        allocator.setGlobalClauseAllocator(global_allocator);
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
