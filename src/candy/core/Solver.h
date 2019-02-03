@@ -572,6 +572,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             sonification.conflictLevel(trail.decisionLevel());
 
             if (trail.decisionLevel() == 0) {
+                std::cout << *confl << std::endl;
                 return l_False;
             }
             
@@ -635,6 +636,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         lastRestartWithInprocessing = curRestart;
                         eliminate();
                         if (isInConflictingState()) {
+                            std::cout << "c Conflict found during inprocessing" << std::endl;
                             return l_False;
                         }
                     }
@@ -652,8 +654,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         if (clause->size() > 2) {
                             propagator.attachClause(clause);
                         } else if (clause->size() == 1) {
-                            this->ok &= trail.newFact(clause->first()) && propagator.propagate() != nullptr;
+                            this->ok &= trail.newFact(clause->first()) && propagator.propagate() == nullptr;
                             if (!ok) {
+                                std::cout << "c Conflict found during clause database cleanup: " << *clause << std::endl;
                                 return l_False;
                             }
                         }
@@ -716,7 +719,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         Statistics::getInstance().runtimeStop("Preprocessing");
     }
     
-    if (isInConflictingState()) return l_False;
+    if (isInConflictingState()) {
+        std::cout << "c Conflict found during preprocessing" << std::endl;
+        return l_False;
+    }
 
     Statistics::getInstance().runtimeStart("Solving");
 
