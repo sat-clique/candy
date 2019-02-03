@@ -104,6 +104,16 @@ public:
         }
     }
 
+    inline void move(ClauseAllocator& other) {
+        for (ClauseAllocatorPage& page : other.pages) {
+            this->pages.emplace_back(std::move(page));
+        }
+        for (Clause* clause : other.deleted) {
+            this->deallocate(clause);
+        }
+        other.clear();
+    }
+
     void reallocate();
     std::vector<Clause*> collect();
 

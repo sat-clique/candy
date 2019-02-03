@@ -76,6 +76,12 @@ public:
         alock.unlock();
     }
 
+    inline void move(ClauseAllocator& other) {
+        alock.lock();
+        allocator[int(active)].move(other); 
+        alock.unlock();
+    }
+
     inline std::vector<Clause*> collect() {
         alock.lock();
         std::vector<Clause*> clauses = allocator[int(active)].collect();
