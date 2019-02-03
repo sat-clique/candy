@@ -122,7 +122,6 @@ public:
 
     inline void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
         allocator.setGlobalClauseAllocator(global_allocator);
-        this->clauses = allocator.collect();
         
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
             watcher.clear();
