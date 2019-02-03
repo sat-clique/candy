@@ -155,7 +155,6 @@ public:
     GlobalClauseAllocator* setupGlobalAllocator() override {
         GlobalClauseAllocator* allocator = new GlobalClauseAllocator();
         clause_db.setGlobalClauseAllocator(allocator);
-        clause_db.defrag();
         return allocator; 
     }
 

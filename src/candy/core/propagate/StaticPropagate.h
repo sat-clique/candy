@@ -71,9 +71,8 @@ public:
 
     void detachClause(const Clause* clause) {
         assert(clause->size() > 2);
-        unsigned int found = 0;
+        WatcherTS* watcher = nullptr;
         for (Lit lit : *clause) {
-            WatcherTS* watcher = nullptr;
             auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
             if (it != watchers[~lit].end()) {
                 watcher = *it;
@@ -82,13 +81,8 @@ public:
                 watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
                 watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
             }
-            if (watcher != nullptr) {
-                if (++found == 2) {
-                    delete watcher;
-                    break;
-                }
-            }
         }
+        delete watcher;
     }
 
     void clear() {
