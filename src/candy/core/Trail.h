@@ -122,6 +122,23 @@ public:
         return trail_size;
     }
 
+    inline unsigned int size(unsigned int level) const {
+        if (level == 0) {
+            if (trail_lim.size() == 0) {
+                return trail_size;
+            }
+            else {
+                return trail_lim[0];
+            }
+        }
+        else if (trail_lim.size() > level) {
+            return trail_lim[level] - trail_lim[level-1];
+        }
+        else {
+            return 0;
+        }
+    }
+
     inline void grow() {
         assigns.push_back(l_Undef);
         vardata.emplace_back();

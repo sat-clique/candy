@@ -43,6 +43,7 @@ struct AnalysisResult {
     unsigned int backtrack_level;
 
     void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
+        assert(lbd_ <= learnt_clause_.size());
         nConflicts++;
         learnt_clause.swap(learnt_clause_);
         involved_clauses.swap(involved_clauses_); 
@@ -120,7 +121,7 @@ public:
         }
     }
 
-    GlobalClauseAllocator* setupGlobalClauseAllocator() {
+    GlobalClauseAllocator* createGlobalClauseAllocator() {
         GlobalClauseAllocator* global_allocator = new GlobalClauseAllocator();
         global_allocator->move(allocator);
         allocator.setGlobalClauseAllocator(global_allocator);
@@ -129,6 +130,21 @@ public:
 
     void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
         allocator.setGlobalClauseAllocator(global_allocator);
+        this->clauses = allocator.collect();
+
+        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+            watcher.clear();
+        }
+        for (Clause* clause : clauses) {
+            if (clause->size() == 2) {
+                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
+            }
+        }
+        if (track_literal_occurrence) {
+            stopOccurrenceTracking();
+            initOccurrenceTracking();
+        }
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -183,7 +199,6 @@ public:
 
     void removeClause(Clause* clause) {
         // std::cout << "Removing clause " << *clause;
-
         allocator.deallocate(clause);
 
         if (track_literal_occurrence) {

@@ -163,17 +163,15 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
 
-static void runSolver(CandySolverInterface* solver, lbool& result, Cl& model) {
+static void runSolver(CandySolverInterface* solver_, lbool& result, CandySolverInterface*& solver) {
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
     installSignalHandlers(true, solver);
-    lbool inner_result = solver->solve();
+    lbool result_ = solver_->solve();
     installSignalHandlers(false, solver);
 
     if (result == l_Undef) {
-        result = inner_result;
-        if (result == l_True) {
-            model = solver->getModel();
-        }
+        result = result_;
+        solver = solver_;
 
         if (SolverOptions::verb > 0) {
             Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
@@ -218,11 +216,10 @@ int main(int argc, char** argv) {
         printProblemStatistics(problem);
     }    
     
+    CandySolverInterface* solver = nullptr;
     lbool result = l_Undef;
-    Cl model;
-    if (ParallelOptions::opt_threads == 1) {
-        CandySolverInterface* solver = nullptr;
 
+    if (ParallelOptions::opt_threads == 1) {
         if (RSAROptions::opt_rsar_enable) {
             solver = createRSARSolver(problem);
         }
@@ -234,20 +231,20 @@ int main(int argc, char** argv) {
 
         Statistics::getInstance().runtimeStop("Initialization");
 
-        runSolver(solver, std::ref(result), std::ref(model));
+        runSolver(solver, std::ref(result), std::ref(solver));
     }
     else {
         GlobalClauseAllocator* global_allocator = nullptr;
         std::vector<CandySolverInterface*> solvers;
         std::vector<std::thread> threads;
 
-        CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, false, false); 
-        solver->init(problem);
+        CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, false, false); 
+        solver_->init(problem);
         if (ParallelOptions::opt_static_database) {
-            global_allocator = solver->setupGlobalAllocator();
+            global_allocator = solver_->setupGlobalAllocator();
         }
-        solvers.push_back(solver);
-        threads.push_back(std::thread(runSolver, solver, std::ref(result), std::ref(model)));
+        solvers.push_back(solver_);
+        threads.push_back(std::thread(runSolver, solver_, std::ref(result), std::ref(solver)));
 
         for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
             switch (count) {
@@ -324,10 +321,10 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
             }
-            solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
-            solver->init(problem, global_allocator);
-            solvers.push_back(solver);
-            threads.push_back(std::thread(runSolver, solver, std::ref(result), std::ref(model)));
+            solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
+            solver_->init(problem, global_allocator);
+            solvers.push_back(solver_);
+            threads.push_back(std::thread(runSolver, solver_, std::ref(result), std::ref(solver)));
         }
 
         Statistics::getInstance().runtimeStop("Initialization");
@@ -343,19 +340,26 @@ int main(int argc, char** argv) {
         for (std::thread& thread : threads) {
             thread.detach();
         }
+
+        unsigned int c = 0;
+        for (CandySolverInterface* solver_ : solvers) {
+            c++;
+            if (solver_ == solver) std::cout << "c solver " << c << " is the winner" << std::endl;
+        }
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     if (result == l_True && SolverOptions::mod) {
         if (SolverOptions::do_minimize > 0) {
-            Minimizer minimizer(problem, model);
+            Minimizer minimizer(problem, solver->getModel());
             Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
             for (Lit lit : minimalModel) {
                 printLiteral(lit);
             }
         } 
         else {
+            Cl model = solver->getModel();
             std::cout << "v ";
             for (Lit lit : model) {
                 printLiteral(lit);

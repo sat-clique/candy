@@ -123,6 +123,7 @@ public:
         branch.init(dimacs);
 
         if (allocator == nullptr) {
+            std::cout << "c importing " << dimacs.nClauses() << " clauses from dimacs" << std::endl;
             for (vector<Lit>* clause : dimacs.getProblem()) {
                 if (!addClause(*clause)) {
                     certificate.proof();
@@ -141,6 +142,7 @@ public:
         else {
             clause_db.setGlobalClauseAllocator(allocator);
             std::vector<Clause*> clauses = allocator->collect();
+            std::cout << "c importing " << clauses.size() << " clauses from global allocator" << std::endl;
             for (Clause* clause : clauses) {
                 if (clause->size() == 1) {
                     trail.newFact(clause->first());
@@ -153,7 +155,7 @@ public:
     }
 
     GlobalClauseAllocator* setupGlobalAllocator() override {
-        return clause_db.setupGlobalClauseAllocator();
+        return clause_db.createGlobalClauseAllocator();
     }
 
     template<typename Iterator>
@@ -457,13 +459,13 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
     for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
         const Clause* clause = clause_db[i];
 
-        if (clause->isDeleted()) continue; 
+        if (clause->isDeleted() || clause->size() == 1) continue; 
 
         literals.clear();
 
         for (Lit lit : *clause) {
             lbool value = trail.value(lit);
-            if (value == l_Undef) {
+            if (value == l_Undef) { // do not remove unit-clauses
                 literals.push_back(lit);
             }
             else if (value == l_True) {
