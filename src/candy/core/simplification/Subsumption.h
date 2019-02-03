@@ -134,13 +134,12 @@ bool Subsumption<TPropagate>::subsume() {
                 Lit l = clause->subsumes(*occurence);
 
                 if (l != lit_Error) {
-                    if (clause->isLearnt() && !occurence->isLearnt()) {// in case of inprocessing: recreate persistent
-                        Clause* persistent = clause_db.persistClause((Clause*)clause);
-                        abstractions[persistent]=clause_abstraction;
-                        abstractions.erase(clause);
-                    }
-
                     if (l == lit_Undef) { // remove:
+                        if (clause->isLearnt() && !occurence->isLearnt()) {// in case of inprocessing: recreate persistent
+                            Clause* persistent = clause_db.persistClause((Clause*)clause);
+                            abstractions[persistent]=clause_abstraction;
+                            abstractions.erase(clause);
+                        }
                         Statistics::getInstance().solverSubsumedInc();
                         nSubsumed++;
                         certificate.removed(occurence->begin(), occurence->end());

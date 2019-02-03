@@ -139,6 +139,7 @@ public:
             }
         }
         else {
+            clause_db.setGlobalClauseAllocator(allocator);
             std::vector<Clause*> clauses = allocator->collect();
             for (Clause* clause : clauses) {
                 if (clause->size() == 1) {
@@ -148,14 +149,11 @@ public:
                     propagator.attachClause(clause);
                 }
             }
-            clause_db.setGlobalClauseAllocator(allocator);
         }
     }
 
     GlobalClauseAllocator* setupGlobalAllocator() override {
-        GlobalClauseAllocator* allocator = new GlobalClauseAllocator();
-        clause_db.setGlobalClauseAllocator(allocator);
-        return allocator; 
+        return clause_db.setupGlobalClauseAllocator();
     }
 
     template<typename Iterator>

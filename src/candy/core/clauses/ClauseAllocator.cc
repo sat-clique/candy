@@ -66,6 +66,5 @@ namespace Candy {
         assert(this->global_allocator == nullptr);
         this->global_allocator = global_allocator;
         global_allocator->enroll();
-        global_allocator->move(*this);
     }
 }
