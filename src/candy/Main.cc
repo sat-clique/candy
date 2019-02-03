@@ -172,11 +172,6 @@ static void runSolver(CandySolverInterface* solver_, lbool& result, CandySolverI
     if (result == l_Undef) {
         result = result_;
         solver = solver_;
-
-        if (SolverOptions::verb > 0) {
-            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-            Statistics::getInstance().printRuntimes();
-        }
     }
 }
 
@@ -350,21 +345,28 @@ int main(int argc, char** argv) {
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
-    if (result == l_True && SolverOptions::mod) {
-        if (SolverOptions::do_minimize > 0) {
-            Minimizer minimizer(problem, solver->getModel());
-            Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
-            for (Lit lit : minimalModel) {
-                printLiteral(lit);
+    if (solver != nullptr) {
+        if (result == l_True && SolverOptions::mod) {
+            if (SolverOptions::do_minimize > 0) {
+                Minimizer minimizer(problem, solver->getModel());
+                Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
+                for (Lit lit : minimalModel) {
+                    printLiteral(lit);
+                }
+            } 
+            else {
+                Cl model = solver->getModel();
+                std::cout << "v ";
+                for (Lit lit : model) {
+                    printLiteral(lit);
+                }
+                std::cout << " 0" << std::endl;
             }
-        } 
-        else {
-            Cl model = solver->getModel();
-            std::cout << "v ";
-            for (Lit lit : model) {
-                printLiteral(lit);
-            }
-            std::cout << " 0" << std::endl;
+        }
+
+        if (SolverOptions::verb > 0) {
+            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+            Statistics::getInstance().printRuntimes();
         }
     }
 
