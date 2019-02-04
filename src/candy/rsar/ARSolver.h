@@ -102,7 +102,7 @@ namespace Candy {
         virtual bool unit_resolution() override {
         	return m_solver->unit_resolution(); // remove satisfied clauses and remove false literals from clauses
         }
-        virtual void eliminate() override {
+        virtual void eliminate() override { 
         	m_solver->eliminate();// Perform variable elimination based simplification.
         }
         virtual bool isEliminated(Var v) const override {
