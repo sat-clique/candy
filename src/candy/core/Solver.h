@@ -154,7 +154,7 @@ public:
 
     GlobalClauseAllocator* setupGlobalAllocator() override {
         for (Lit lit : trail) {
-            if (trail.reason(lit) != nullptr) {
+            if (trail.reason(var(lit)) != nullptr) {
                 std::vector<Lit> unit;
                 unit.push_back(lit);
                 clause_db.createClause(unit.begin(), unit.end());
@@ -643,7 +643,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     }
 
                     for (Lit lit : trail) {
-                        if (trail.reason(lit) != nullptr) {
+                        if (trail.reason(var(lit)) != nullptr) {
                             std::vector<Lit> unit;
                             unit.push_back(lit);
                             clause_db.createClause(unit.begin(), unit.end());
