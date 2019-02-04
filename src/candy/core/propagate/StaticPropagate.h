@@ -145,8 +145,7 @@ public:
             Lit other = watcher->watch0 != ~p ? watcher->watch0 : watcher->watch1;
             lbool val = trail.value(other);
             if (val != l_True) { // Try to avoid inspecting the clause
-                const Clause* clause = watcher->cref;
-                
+                const Clause* clause = watcher->cref;                
                 for (Lit lit : *clause) {
                     if (lit != ~p && lit != other && trail.value(lit) != l_False) {
                         watcher->watch0 = lit;

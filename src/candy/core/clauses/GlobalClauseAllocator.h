@@ -49,22 +49,25 @@ public:
 
     inline void enroll() {
         alock.lock();
+        std::cout << "c thread registration in global allocator: " << std::this_thread::get_id() << std::endl;
         ready[std::this_thread::get_id()] = false;
         alock.unlock();
     }
 
     inline void import(ClauseAllocator& other) {
         alock.lock();
+        std::cout << "c global allocator imports clauses from: " << std::this_thread::get_id() << std::endl;
         allocator[int(active)].import(other); 
         other.clear();
         ready[std::this_thread::get_id()] = true;
 
-        bool everybody_ready = false;
+        bool everybody_ready = true;
         for (auto it : ready) {
             everybody_ready &= it.second;
         }
 
         if (everybody_ready) { // all threads use active allocator now
+            std::cout << "c global allocator reorganization" << std::endl;
             //free the old one and copy and cleanup the new one 
             allocator[int(!active)].clear();
             allocator[int(!active)].import(allocator[int(active)]);

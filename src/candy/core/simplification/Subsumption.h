@@ -113,7 +113,9 @@ bool Subsumption<TPropagate>::subsume() {
         attach(clause);
     }
 
-    sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { return c1->size() > c2->size(); });
+    sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { 
+        return c1->size() > c2->size() || (c1->size() == c2->size() && c1->getLBD() > c2->getLBD()); 
+    });
     
     while (queue.size() > 0) {
         const Clause* clause = queue.back();
@@ -133,9 +135,24 @@ bool Subsumption<TPropagate>::subsume() {
             if (occurence != clause && ((clause_abstraction & ~abstractions[occurence]) == 0)) {
                 Lit l = clause->subsumes(*occurence);
 
-                if (l != lit_Error) {
-                    if (l == lit_Undef) { // remove:
-                        if (clause->isLearnt() && !occurence->isLearnt()) {// in case of inprocessing: recreate persistent
+                if (l == lit_Undef) { // remove:
+                    if (clause->size() == occurence->size()) {
+                        const Clause* to_delete = occurence;
+                        if (clause->getLBD() > occurence->getLBD()) {
+                            to_delete = clause;
+                        }
+                        else if (clause->getLBD() == occurence->getLBD()) {
+                            if (clause > occurence) {
+                                to_delete = clause;
+                            }
+                        }
+                        certificate.removed(to_delete->begin(), to_delete->end());
+                        clause_db.removeClause((Clause*)to_delete);
+                        abstractions.erase(to_delete);
+                    }
+                    else {
+                        if (clause->isLearnt() && !occurence->isLearnt()) {
+                            // in case of inprocessing: recreate persistent
                             Clause* persistent = clause_db.persistClause((Clause*)clause);
                             abstractions[persistent]=clause_abstraction;
                             abstractions.erase(clause);
@@ -144,26 +161,27 @@ bool Subsumption<TPropagate>::subsume() {
                         nSubsumed++;
                         certificate.removed(occurence->begin(), occurence->end());
                         clause_db.removeClause((Clause*)occurence);
+                        abstractions.erase(occurence);
                     }
-                    else { // strengthen:
-                        Statistics::getInstance().solverDeletedInc();
-                        nStrengthened++;
-                        certificate.strengthened(occurence->begin(), occurence->end(), ~l);
-                        
-                        Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
-                        if (new_clause->size() == 0) {
-                            return false;
-                        }
-                        else {
-                            attach(new_clause);
-                            if (new_clause->size() == 1) {
-                                if (!trail.newFact(new_clause->first()) || propagator.propagate() != nullptr) {
-                                    return false; 
-                                }
-                            } 
-                        }
-                    }
+                }
+                else if (l != lit_Error) { // strengthen:
+                    Statistics::getInstance().solverDeletedInc();
+                    nStrengthened++;
+                    certificate.strengthened(occurence->begin(), occurence->end(), ~l);
+                    
+                    Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
                     abstractions.erase(occurence);
+                    if (new_clause->size() == 0) {
+                        return false;
+                    }
+                    else {
+                        attach(new_clause);
+                        if (new_clause->size() == 1) {
+                            if (!trail.newFact(new_clause->first()) || propagator.propagate() != nullptr) {
+                                return false; 
+                            }
+                        } 
+                    }
                 }
             }
         }
