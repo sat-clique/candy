@@ -123,8 +123,8 @@ public:
 
     GlobalClauseAllocator* createGlobalClauseAllocator() {
         GlobalClauseAllocator* global_allocator = new GlobalClauseAllocator();
-        global_allocator->move(allocator);
         allocator.setGlobalClauseAllocator(global_allocator);
+        global_allocator->move(allocator);
         return global_allocator;
     }
 
@@ -179,7 +179,6 @@ public:
     template<typename Iterator>
     Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
-
         Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
 
@@ -200,7 +199,7 @@ public:
     void removeClause(Clause* clause) {
         // std::cout << "Removing clause " << *clause;
         allocator.deallocate(clause);
-
+        
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
                 auto& list = variableOccurrences[var(lit)];
@@ -269,8 +268,8 @@ public:
     /**
      * Make sure all references are updated after all clauses reside in a new adress space
      */
-    void defrag() {
-        allocator.reallocate();
+    void reorganize() {
+        allocator.reorganize();
         clauses = allocator.collect();
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {

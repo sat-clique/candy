@@ -174,6 +174,11 @@ public:
         return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
     }
 
+    // Returns TRUE if a clause is falsified in the current state.
+    inline bool falsifies(const Clause& c) const {
+        return std::all_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_False; });
+    }
+
     inline bool isAssigned(Var v) const {
         return assigns[v] != l_Undef;
     }

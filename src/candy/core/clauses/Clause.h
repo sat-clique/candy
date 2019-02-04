@@ -98,6 +98,10 @@ public:
         return literals[1];
     }
 
+    inline const Lit third() const {
+        return literals[2];
+    }
+
     inline const Lit back() const {
         return literals[length-1];
     }

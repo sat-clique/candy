@@ -66,6 +66,22 @@ public:
         return maxVars-1;
     }
 
+    bool isSatisfied(Cl model) {
+        sort(model.begin(), model.end(), [](Lit lit1, Lit lit2) { return var(lit1) < var(lit2); });
+        for (Cl* clause : problem) {
+            bool sat = false;
+            for (Lit lit : *clause) {
+                assert(var(model[var(lit)]) == var(lit));
+                sat |= model[var(lit)] == lit;
+            }
+            if (!sat) {
+                std::cout << "c Error! Clause is not satisfied by model: " << *clause << std::endl;
+                return false;
+            }
+        }
+        return true;
+    }
+
     std::vector<double> getLiteralRelativeOccurrences() const;
 
     void readDimacsFromStdin();

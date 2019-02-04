@@ -78,14 +78,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 using namespace Candy;
 
-static std::function<void()> solverSetInterrupt;
+static std::vector<CandySolverInterface*> solvers;
 
 // Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
 // for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
 static void SIGINT_interrupt(int signum) {
-    //solver->setInterrupt(true);
-    assert(solverSetInterrupt);
-    solverSetInterrupt();
+    for (CandySolverInterface* solver : solvers) {
+        solver->setInterrupt(true);
+    }
 }
 
 // Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
@@ -101,7 +101,7 @@ static void SIGINT_exit(int signum) {
  * If \p handleInterruptsBySolver is true, the interrupts are handled by SIGINT_interrupt();
  * otherwise, they are set up to be handled by SIGINT_exit().
  */
-static void installSignalHandlers(bool handleInterruptsBySolver, CandySolverInterface* solver) {
+static void installSignalHandlers(bool handleInterruptsBySolver) {
 #if defined(WIN32) && !defined(CYGWIN)
 #if defined(_MSC_VER)
 #pragma message ("Warning: setting signal handlers not yet implemented for Win32")
@@ -110,10 +110,6 @@ static void installSignalHandlers(bool handleInterruptsBySolver, CandySolverInte
 #endif
 #else
     if (handleInterruptsBySolver) {
-        solverSetInterrupt = [solver]() {
-            solver->setInterrupt(true);
-        };
-
         signal(SIGINT, SIGINT_interrupt);
         signal(SIGXCPU, SIGINT_interrupt);
     } else {
@@ -163,11 +159,20 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
 
-static void runSolver(CandySolverInterface* solver_, lbool& result, CandySolverInterface*& solver) {
+static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, GlobalClauseAllocator*& global_allocator) {
+    CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
+    solvers.push_back(solver_);
+
+    solver_->init(problem, global_allocator);
+
+    if (ParallelOptions::opt_static_database && global_allocator == nullptr) {
+        global_allocator = solver_->setupGlobalAllocator();
+    }
+
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-    installSignalHandlers(true, solver);
+    installSignalHandlers(true);
     lbool result_ = solver_->solve();
-    installSignalHandlers(false, solver);
+    installSignalHandlers(false);
 
     if (result == l_Undef) {
         result = result_;
@@ -209,7 +214,10 @@ int main(int argc, char** argv) {
 
     if (SolverOptions::verb > 0) {
         printProblemStatistics(problem);
-    }    
+    }
+
+    GlobalClauseAllocator* global_allocator = nullptr;
+    std::vector<std::thread> threads;
     
     CandySolverInterface* solver = nullptr;
     lbool result = l_Undef;
@@ -221,25 +229,26 @@ int main(int argc, char** argv) {
         else {
             solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
         }
+        solvers.push_back(solver); 
 
         solver->init(problem);
 
         Statistics::getInstance().runtimeStop("Initialization");
 
-        runSolver(solver, std::ref(result), std::ref(solver));
+        installSignalHandlers(true);
+        result = solver->solve();
+        installSignalHandlers(false);
     }
     else {
-        GlobalClauseAllocator* global_allocator = nullptr;
-        std::vector<CandySolverInterface*> solvers;
-        std::vector<std::thread> threads;
+        VariableEliminationOptions::opt_use_elim = false;
+        SolverOptions::opt_use_lrb = false;
+        RSILOptions::opt_rsil_enable = false;
 
-        CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, false, false); 
-        solver_->init(problem);
-        if (ParallelOptions::opt_static_database) {
-            global_allocator = solver_->setupGlobalAllocator();
+        threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
+
+        while (ParallelOptions::opt_static_database && global_allocator == nullptr) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-        solvers.push_back(solver_);
-        threads.push_back(std::thread(runSolver, solver_, std::ref(result), std::ref(solver)));
 
         for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
             switch (count) {
@@ -273,7 +282,7 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
-                case 5 : // full inprocessing
+                case 5 : // inprocessing without elim
                     SolverOptions::opt_sort_watches = true;
                     SolverOptions::opt_sort_variables = true;
                     SolverOptions::opt_sort_watches = false;
@@ -282,27 +291,27 @@ int main(int argc, char** argv) {
                     SolverOptions::opt_use_lrb = false;
                     SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = true;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = true;
                     break;
-                case 6 : // full inprocessing with lrb
+                case 6 : // inprocessing without elim with lrb
                     SolverOptions::opt_sort_watches = true;
                     SolverOptions::opt_sort_variables = true;
                     SolverOptions::opt_inprocessing = 300;
                     SolverOptions::opt_use_lrb = true;
                     SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = true;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = true;
                     break;
-                case 7 : // full inprocessing with rsil
+                case 7 : // inprocessing without elim with rsil
                     SolverOptions::opt_sort_watches = false;
                     SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 300;
                     SolverOptions::opt_use_lrb = false;
                     SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = true;
-                    VariableEliminationOptions::opt_use_elim = true;
+                    VariableEliminationOptions::opt_use_elim = false;
                     VariableEliminationOptions::opt_use_asymm = true;
                     break;
                 case 8 : // plain w/o sorting
@@ -316,36 +325,25 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
             }
-            solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
-            solver_->init(problem, global_allocator);
-            solvers.push_back(solver_);
-            threads.push_back(std::thread(runSolver, solver_, std::ref(result), std::ref(solver)));
+            
+            threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
         }
 
         Statistics::getInstance().runtimeStop("Initialization");
 
-        while (result == l_Undef) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        }
-
-        for (CandySolverInterface* solver : solvers) {
-            solver->setInterrupt(true);
-        }
-        
         for (std::thread& thread : threads) {
             thread.detach();
         }
 
-        unsigned int c = 0;
-        for (CandySolverInterface* solver_ : solvers) {
-            c++;
-            if (solver_ == solver) std::cout << "c solver " << c << " is the winner" << std::endl;
+        while (result == l_Undef) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     if (solver != nullptr) {
+        if (result == l_True) assert(problem.isSatisfied(solver->getModel())); 
         if (result == l_True && SolverOptions::mod) {
             if (SolverOptions::do_minimize > 0) {
                 Minimizer minimizer(problem, solver->getModel());

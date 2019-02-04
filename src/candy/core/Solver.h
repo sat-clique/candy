@@ -130,14 +130,6 @@ public:
                     return;
                 }
             }
-            
-            if (propagator.propagate() == nullptr) {
-                unit_resolution();
-            }
-            else {
-                ok = false; 
-                certificate.proof();
-            }
         }
         else {
             clause_db.setGlobalClauseAllocator(allocator);
@@ -152,9 +144,22 @@ public:
                 }
             }
         }
+        
+        ok = propagator.propagate() == nullptr && unit_resolution();
+        
+        if (!ok) {
+            certificate.proof();
+        }
     }
 
     GlobalClauseAllocator* setupGlobalAllocator() override {
+        for (Lit lit : trail) {
+            if (trail.reason(lit) != nullptr) {
+                std::vector<Lit> unit;
+                unit.push_back(lit);
+                clause_db.createClause(unit.begin(), unit.end());
+            }
+        }
         return clause_db.createGlobalClauseAllocator();
     }
 
@@ -181,8 +186,8 @@ public:
     }
 
     // Solving:
-    void unit_resolution() override; // remove satisfied clauses and remove false literals from clauses 
-    void eliminate() override; // Perform variable elimination based simplification. 
+    bool unit_resolution(); // remove satisfied clauses and remove false literals from clauses 
+    void eliminate(); // Perform variable elimination based simplification. 
 
     BranchingDiversificationInterface* accessBranchingInterface() override {
         return &branch;
@@ -450,10 +455,11 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
+bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
+    bool satisfied = false;
     vector<Lit> literals;
 
     for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
@@ -461,21 +467,24 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
 
         if (clause->isDeleted() || clause->size() == 1) continue; 
 
+        satisfied = false;
         literals.clear();
 
         for (Lit lit : *clause) {
             lbool value = trail.value(lit);
-            if (value == l_Undef) { // do not remove unit-clauses
+            if (value == l_Undef) {
                 literals.push_back(lit);
             }
             else if (value == l_True) {
-                literals.clear();
-                break;
+                satisfied = true;
             }
         }
         
         if (literals.size() < clause->size()) {
-            if (literals.size() > 0) {
+            if (!satisfied) { 
+                if (literals.size() == 0) {
+                    return false;
+                }
                 Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
                 if (new_clause->size() == 1) {
                     trail.newFact(literals.front());
@@ -485,6 +494,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
                 }
                 certificate.added(literals.begin(), literals.end());
             }
+
             certificate.removed(clause->begin(), clause->end());
             if (clause->size() > 2) {
                 propagator.detachClause(clause);
@@ -492,6 +502,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             clause_db.removeClause((Clause*)clause);
         }
     }
+    return true;
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -529,16 +540,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
     branch.reset(); // former rebuildOrderHeap
 
     clause_db.stopOccurrenceTracking();
-
-    if (max > nClauses() * simplification_threshold_factor) {
-        propagator.clear();
-        clause_db.defrag();
-        for (Clause* clause : clause_db) {
-            if (clause->size() > 2) {
-                propagator.attachClause(clause);
-            }
-        }
-    }
 }
 
 /**************************************************************************************************
@@ -640,15 +641,21 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                             return l_False;
                         }
                     }
-                    
-                    unit_resolution();
+
+                    for (Lit lit : trail) {
+                        if (trail.reason(lit) != nullptr) {
+                            std::vector<Lit> unit;
+                            unit.push_back(lit);
+                            clause_db.createClause(unit.begin(), unit.end());
+                        }
+                    }
                     
                     propagator.clear();
                     std::vector<Clause*> reduced = clause_db.reduce();
                     for (const Clause* clause : reduced) {
                         certificate.removed(clause->begin(), clause->end());
                     }
-                    clause_db.defrag();
+                    clause_db.reorganize();
                     
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
@@ -660,6 +667,12 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                                 return l_False;
                             }
                         }
+                    }
+                    
+                    this->ok &= unit_resolution();
+                    if (!ok) {
+                        std::cout << "c Conflict found during unit resolution" << std::endl;
+                        return l_False;
                     }
 
                     if (sort_watches) {
@@ -691,8 +704,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 // New variable decision:
                 Statistics::getInstance().solverDecisionsInc();
                 next = branch.pickBranchLit();
-                if (next == lit_Undef) {
-                    // Model found:
+                if (next == lit_Undef) { // Model found
                     return l_True;
                 }
             }

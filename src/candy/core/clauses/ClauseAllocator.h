@@ -48,6 +48,7 @@ public:
             return pages.back().getMemory(length);
         }
         else {
+            assert(length == 1);
             return allocate_globally(1);
         } 
     }
@@ -108,14 +109,45 @@ public:
         for (ClauseAllocatorPage& page : other.pages) {
             this->pages.emplace_back(std::move(page));
         }
-        for (Clause* clause : other.deleted) {
-            this->deallocate(clause);
-        }
         other.clear();
     }
 
-    void reallocate();
-    std::vector<Clause*> collect();
+    void reorganize() {
+        if (global_allocator == nullptr) {
+            std::vector<ClauseAllocatorPage> old_pages;
+            old_pages.swap(pages);
+            pages.emplace_back(size());
+            for (ClauseAllocatorPage& old_page : old_pages) {
+                for (const Clause* old_clause : old_page) {
+                    if (!old_clause->isDeleted()) {
+                        void* clause = allocate(old_clause->size());
+                        memcpy(clause, (void*)old_clause, old_page.clauseBytes(old_clause->size()));
+                    }
+                }
+            }
+            old_pages.clear();
+        }
+        else {
+            reorganize_globally();
+        }
+    }
+
+    std::vector<Clause*> collect() {
+        if (global_allocator == nullptr) {
+            std::vector<Clause*> clauses {};
+            for (ClauseAllocatorPage& page : pages) {
+                for (const Clause* clause : page) {
+                    if (!clause->isDeleted()) {
+                        clauses.push_back((Clause*)clause);
+                    }
+                }
+            }
+            return clauses;
+        }
+        else {
+            return collect_globally();
+        }
+    }
 
     void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator);
 
@@ -130,6 +162,8 @@ private:
     void operator=(ClauseAllocator const&) = delete;
 
     void* allocate_globally(unsigned int length);
+    void reorganize_globally();
+    std::vector<Clause*> collect_globally();
 
 };
 
