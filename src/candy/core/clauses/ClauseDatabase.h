@@ -21,7 +21,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseAllocator.h"
-#include "candy/core/clauses/GlobalClauseAllocator.h"
 #include "candy/core/Trail.h"
 #include "candy/frontend/CLIOptions.h"
 
@@ -121,15 +120,12 @@ public:
         }
     }
 
-    GlobalClauseAllocator* createGlobalClauseAllocator() {
-        GlobalClauseAllocator* global_allocator = new GlobalClauseAllocator();
-        allocator.setGlobalClauseAllocator(global_allocator);
-        global_allocator->move(allocator);
-        return global_allocator;
+    ClauseAllocator* createGlobalClauseAllocator() {
+        return allocator.create_global_allocator();
     }
 
-    void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator) {
-        allocator.setGlobalClauseAllocator(global_allocator);
+    void setGlobalClauseAllocator(ClauseAllocator* global_allocator) {
+        allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
 
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {

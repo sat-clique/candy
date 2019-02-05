@@ -110,6 +110,10 @@ public:
         return page_size;
     }
 
+    inline size_t fill() const {
+        return cursor;
+    }
+
     inline bool contains(void* p) const {
         assert(memory != nullptr);
         return p >= (void*)memory && p < (void*)(memory + cursor);

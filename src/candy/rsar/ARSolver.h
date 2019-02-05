@@ -66,7 +66,7 @@ namespace Candy {
             return m_solver->accessBranchingInterface();
         }
 
-        GlobalClauseAllocator* setupGlobalAllocator() override {
+        ClauseAllocator* setupGlobalAllocator() override {
             return m_solver->setupGlobalAllocator();
         }
 
@@ -82,7 +82,7 @@ namespace Candy {
         	return m_solver->newVar();
         }
 
-        virtual void init(const CNFProblem& problem, GlobalClauseAllocator* allocator = nullptr) override {
+        virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override {
         	m_solver->init(problem, allocator);
         }
         virtual bool addClause(const std::vector<Lit>& lits, unsigned int lrb = 0) override {

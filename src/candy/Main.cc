@@ -159,7 +159,7 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
 
-static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, GlobalClauseAllocator*& global_allocator) {
+static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, ClauseAllocator*& global_allocator) {
     CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
     solvers.push_back(solver_);
 
@@ -216,7 +216,7 @@ int main(int argc, char** argv) {
         printProblemStatistics(problem);
     }
 
-    GlobalClauseAllocator* global_allocator = nullptr;
+    ClauseAllocator* global_allocator = nullptr;
     std::vector<std::thread> threads;
     
     CandySolverInterface* solver = nullptr;
