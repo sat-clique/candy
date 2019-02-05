@@ -427,7 +427,8 @@ template<typename Iterator>
 bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
     assert(trail.decisionLevel() == 0);
 
-    std::vector<Lit> copy{cbegin, cend};
+    std::vector<Lit> copy { cbegin, cend };
+    // copy.insert(copy.end(), cbegin, cend);
 
     // remove redundant literals
     std::sort(copy.begin(), copy.end());
