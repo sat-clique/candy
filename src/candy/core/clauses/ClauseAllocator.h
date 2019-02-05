@@ -43,7 +43,7 @@ public:
 
     inline void* allocate(unsigned int length) {
         if (global_allocator == nullptr || length > 1) {
-            memory.allocate(length);
+            return memory.allocate(length);
         }
         else {
             assert(length == 1);

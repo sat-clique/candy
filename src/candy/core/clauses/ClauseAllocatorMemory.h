@@ -68,6 +68,7 @@ private:
 public:
     ClauseAllocatorPage(size_t page_size_) : page_size(page_size_), cursor(0) {
         memory = (unsigned char*)std::malloc(page_size);
+        // std::memset(memory, page_size, 0);
     }
 
     ClauseAllocatorPage(ClauseAllocatorPage&& other) : page_size(other.page_size), cursor(other.cursor), memory(other.memory) {
