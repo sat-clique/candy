@@ -31,8 +31,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 class ClauseAllocatorPage {
-    friend class ClauseAllocator;
-
 public:
     class const_iterator {
     public:
@@ -128,8 +126,6 @@ public:
 };
 
 class ClauseAllocatorMemory {
-    friend class ClauseAllocator;
-
 private:
     const unsigned int PAGE_SIZE = 32*1024*1024;
 
@@ -162,6 +158,18 @@ public:
             size += page.used();
         }
         return size;
+    }
+
+    std::vector<Clause*> collect() {
+        std::vector<Clause*> clauses;
+        for (ClauseAllocatorPage& page : pages) {
+            for (const Clause* clause : page) {
+                if (!clause->isDeleted()) {
+                    clauses.push_back((Clause*)clause);
+                }
+            }
+        }
+        return clauses;
     }
 
     void reallocate() {
