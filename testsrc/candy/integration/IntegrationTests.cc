@@ -48,7 +48,7 @@ namespace Candy {
         problem.readDimacsFromFile(filename);
         // ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
         solver->init(problem);
-        GlobalClauseAllocator* allocator = nullptr;
+        ClauseAllocator* allocator = nullptr;
         if (install_static_allocator) {
             allocator = solver->setupGlobalAllocator();
         }

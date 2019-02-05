@@ -20,7 +20,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef SRC_CANDY_CORE_CANDYSOLVERINTERFACE_H_
 #define SRC_CANDY_CORE_CANDYSOLVERINTERFACE_H_
 
-#include "candy/core/clauses/GlobalClauseAllocator.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
 
@@ -29,6 +28,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 class BranchingDiversificationInterface;
+class ClauseAllocator;
 
 class CandySolverInterface {
 public:
@@ -41,8 +41,8 @@ public:
 
     virtual Var newVar() = 0;
 
-	virtual GlobalClauseAllocator* setupGlobalAllocator() = 0;
-    virtual void init(const CNFProblem& problem, GlobalClauseAllocator* allocator = nullptr) = 0;
+	virtual ClauseAllocator* setupGlobalAllocator() = 0;
+    virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) = 0;
 
     virtual bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) = 0;
     virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) = 0;

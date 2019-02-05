@@ -25,6 +25,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <cstdint>
 #include <cstring>
 #include <numeric>
+#include <mutex>
+#include <thread>
+#include <unordered_map>
 
 #include <candy/core/clauses/Clause.h>
 #include <candy/core/clauses/ClauseAllocatorPage.h>
@@ -32,11 +35,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-class GlobalClauseAllocator;
-
 class ClauseAllocator {
 public:
-    ClauseAllocator() : pages(), deleted(), global_allocator(nullptr) { }
+    ClauseAllocator() : pages(), old_pages(), deleted(), global_allocator(nullptr), alock(), ready(), ready_lock() { }
 
     ~ClauseAllocator() { }
 
@@ -49,46 +50,22 @@ public:
         }
         else {
             assert(length == 1);
-            return allocate_globally(1);
+            global_allocator->lock();
+            void* mem = global_allocator->allocate(1);
+            global_allocator->unlock();
+            return mem;
         } 
     }
 
     inline void deallocate(Clause* clause) {
-        if (global_allocator == nullptr) {
+        if (global_allocator == nullptr || this->contains(clause)) { 
             clause->setDeleted();
         }
-        else {
-            if (this->contains(clause)) { 
-                // in parallel scenario it is important not to delete clauses of the commonly used allocator ...
-                clause->setDeleted();
-            }
-            else {
-                // ... keep them to take care of them during synchronization
-                deleted.push_back(clause);
-            }
+        else { 
+            // in parallel scenario it is important not to delete clauses of the commonly used allocator before synchronization happens
+            // instead keep them to take care of them during synchronization
+            deleted.push_back(clause);
         }
-    }
-
-    inline bool contains(Clause* clause) {
-        for (ClauseAllocatorPage& page : pages) { 
-            if (page.contains(clause)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    inline size_t size() {
-        size_t size = 0;
-        for (ClauseAllocatorPage& page : pages) {
-            size += page.size();
-        }
-        return size;
-    }
-
-    void clear() {
-        pages.clear();
-        deleted.clear();
     }
 
     void import(ClauseAllocator& other) {
@@ -105,65 +82,154 @@ public:
         }
     }
 
-    inline void move(ClauseAllocator& other) {
-        for (ClauseAllocatorPage& page : other.pages) {
-            this->pages.emplace_back(std::move(page));
-        }
-        other.clear();
-    }
-
     void reorganize() {
         if (global_allocator == nullptr) {
-            std::vector<ClauseAllocatorPage> old_pages;
-            old_pages.swap(pages);
-            pages.emplace_back(size());
-            for (ClauseAllocatorPage& old_page : old_pages) {
-                for (const Clause* old_clause : old_page) {
-                    if (!old_clause->isDeleted()) {
-                        void* clause = allocate(old_clause->size());
-                        memcpy(clause, (void*)old_clause, old_page.clauseBytes(old_clause->size()));
-                    }
-                }
-            }
+            reallocate();
             old_pages.clear();
         }
         else {
-            reorganize_globally();
+            std::cout << "c global allocator imports pages of size " << used_space() << " from: " << std::this_thread::get_id() << std::endl;
+            global_allocator->lock();
+            for (ClauseAllocatorPage& page : this->pages) {
+                global_allocator->pages.emplace_back(std::move(page));
+            }
+            std::cout << "c global allocator deletes " << deleted.size() << " clauses from: " << std::this_thread::get_id() << std::endl;
+            for (Clause* clause : this->deleted) {
+                global_allocator->deallocate(clause);
+            }
+            global_allocator->unlock(); 
+            pages.clear();
+            deleted.clear();
+            assert(used_space() == 0);
+
+            if (global_allocator->is_ready()) { // all threads use new pages now
+                std::cout << "c global allocator reorganization" << std::endl;
+                //free the old one and copy and cleanup the new one 
+                global_allocator->old_pages.clear();
+                global_allocator->lock();
+                global_allocator->reallocate();
+                global_allocator->unlock(); 
+            }
         }
     }
 
     std::vector<Clause*> collect() {
-        if (global_allocator == nullptr) {
-            std::vector<Clause*> clauses {};
-            for (ClauseAllocatorPage& page : pages) {
-                for (const Clause* clause : page) {
-                    if (!clause->isDeleted()) {
-                        clauses.push_back((Clause*)clause);
-                    }
+        std::vector<Clause*> clauses {};
+        if (global_allocator != nullptr) {
+            global_allocator->lock();
+            clauses = global_allocator->collect();
+            global_allocator->unlock();
+            global_allocator->set_ready();
+        }
+        for (ClauseAllocatorPage& page : pages) {
+            for (const Clause* clause : page) {
+                if (!clause->isDeleted()) {
+                    clauses.push_back((Clause*)clause);
                 }
             }
-            return clauses;
         }
-        else {
-            return collect_globally();
-        }
+        return clauses;
     }
 
-    void setGlobalClauseAllocator(GlobalClauseAllocator* global_allocator);
+    void set_global_allocator(ClauseAllocator* global_allocator_) {
+        assert(global_allocator == nullptr);
+        std::cout << "c thread registration in global allocator: " << std::this_thread::get_id() << std::endl;
+        global_allocator = global_allocator_;
+        global_allocator->lock();
+        global_allocator->ready[std::this_thread::get_id()] = false;
+        global_allocator->unlock();
+    }
+
+    ClauseAllocator* create_global_allocator() {
+        assert(global_allocator == nullptr);
+        global_allocator = new ClauseAllocator();
+        global_allocator->lock();
+        global_allocator->ready[std::this_thread::get_id()] = false;
+        for (ClauseAllocatorPage& page : this->pages) {
+            global_allocator->pages.emplace_back(std::move(page));
+        }
+        global_allocator->unlock();
+        pages.clear();
+        deleted.clear();
+        return global_allocator;
+    }
 
 private:
-    const unsigned int PAGE_SIZE = 128*1024*1024;
+    const unsigned int PAGE_SIZE = 32*1024*1024;
 
     std::vector<ClauseAllocatorPage> pages;
+    std::vector<ClauseAllocatorPage> old_pages;
+    
     std::vector<Clause*> deleted;
 
-    GlobalClauseAllocator* global_allocator;
+    // global allocator for multi-threaded scenario    
+    ClauseAllocator* global_allocator;
+    std::mutex alock;
+    std::unordered_map<std::thread::id, bool> ready;
+    std::mutex ready_lock;
 
+    ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&) = delete;
 
-    void* allocate_globally(unsigned int length);
-    void reorganize_globally();
-    std::vector<Clause*> collect_globally();
+    inline void lock() {
+        alock.lock();
+    }
+
+    inline void unlock() {
+        alock.unlock();
+    }
+
+    inline void set_ready() {
+        ready_lock.lock();
+        ready[std::this_thread::get_id()] = true;
+        ready_lock.unlock();
+    }
+
+    inline bool is_ready() {
+        ready_lock.lock();
+        bool everybody_ready = true;
+        for (auto it : ready) {
+            everybody_ready &= it.second;
+        }
+        if (everybody_ready) {
+            for (auto it : ready) {
+                ready[it.first] = false;
+            }
+        }
+        ready_lock.unlock();
+        return everybody_ready;
+    }
+
+    inline bool contains(Clause* clause) {
+        for (ClauseAllocatorPage& page : pages) { 
+            if (page.contains(clause)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    inline size_t used_space() {
+        size_t size = 0;
+        for (ClauseAllocatorPage& page : pages) {
+            size += page.fill();
+        }
+        return size;
+    }
+
+    void reallocate() {
+        size_t size = used_space(); 
+        old_pages.swap(pages);
+        pages.emplace_back(size);
+        for (ClauseAllocatorPage& old_page : old_pages) {
+            for (const Clause* old_clause : old_page) {
+                if (!old_clause->isDeleted()) {
+                    void* clause = allocate(old_clause->size());
+                    memcpy(clause, (void*)old_clause, old_page.clauseBytes(old_clause->size()));
+                }
+            }
+        }
+    }
 
 };
 

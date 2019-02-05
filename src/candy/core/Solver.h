@@ -109,7 +109,7 @@ public:
     
     Var newVar() override;
 
-    void init(const CNFProblem& dimacs, GlobalClauseAllocator* allocator = nullptr) override {
+    void init(const CNFProblem& dimacs, ClauseAllocator* allocator = nullptr) override {
         size_t maxVars = (size_t)dimacs.nVars();
         if (maxVars > this->nVars()) {
             clause_db.grow(maxVars);
@@ -152,7 +152,7 @@ public:
         }
     }
 
-    GlobalClauseAllocator* setupGlobalAllocator() override {
+    ClauseAllocator* setupGlobalAllocator() override {
         for (Lit lit : trail) {
             if (trail.reason(var(lit)) != nullptr) {
                 std::vector<Lit> unit;

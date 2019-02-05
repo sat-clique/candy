@@ -4,9 +4,7 @@ add_library(core OBJECT
     Statistics.h
     clauses/Clause.h
     clauses/ClauseAllocator.h
-    clauses/ClauseAllocator.cc
     clauses/ClauseAllocatorPage.h
-    clauses/GlobalClauseAllocator.h
     clauses/ClauseDatabase.h
     Certificate.h
     CNFProblem.cc
