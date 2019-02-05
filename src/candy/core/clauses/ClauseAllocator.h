@@ -30,7 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <unordered_map>
 
 #include <candy/core/clauses/Clause.h>
-#include <candy/core/clauses/ClauseAllocatorPage.h>
+#include <candy/core/clauses/ClauseAllocatorMemory.h>
 #include <candy/core/Statistics.h>
 
 namespace Candy {
@@ -94,19 +94,13 @@ public:
     }
 
     std::vector<Clause*> collect() {
-        std::vector<Clause*> clauses {};
+        std::vector<Clause*> clauses = memory.collect();
         if (global_allocator != nullptr) {
             global_allocator->lock();
-            clauses = global_allocator->collect();
+            std::vector<Clause*> global_clauses = global_allocator->collect();
             global_allocator->unlock();
             global_allocator->set_ready();
-        }
-        for (ClauseAllocatorPage& page : memory.pages) {
-            for (const Clause* clause : page) {
-                if (!clause->isDeleted()) {
-                    clauses.push_back((Clause*)clause);
-                }
-            }
+            clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
         }
         return clauses;
     }
