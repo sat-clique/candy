@@ -325,6 +325,10 @@ int main(int argc, char** argv) {
                     VariableEliminationOptions::opt_use_asymm = false;
                     break;
             }
+
+            while (solvers.size() < count-1) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
             
             threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
         }

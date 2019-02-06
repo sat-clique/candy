@@ -145,7 +145,8 @@ public:
             }
         }
         
-        ok = propagator.propagate() == nullptr && unit_resolution();
+        ok = propagator.propagate() == nullptr;
+        unit_resolution();
         
         if (!ok) {
             certificate.proof();
@@ -186,7 +187,7 @@ public:
     }
 
     // Solving:
-    bool unit_resolution(); // remove satisfied clauses and remove false literals from clauses 
+    void unit_resolution(); // remove satisfied clauses and remove false literals from clauses 
     void eliminate(); // Perform variable elimination based simplification. 
 
     BranchingDiversificationInterface* accessBranchingInterface() override {
@@ -456,7 +457,7 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
 
@@ -466,35 +467,33 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
     for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
         const Clause* clause = clause_db[i];
 
-        if (clause->isDeleted() || clause->size() == 1) continue; 
-
         satisfied = false;
         literals.clear();
 
         for (Lit lit : *clause) {
             lbool value = trail.value(lit);
-            if (value == l_Undef) {
+            if (value != l_False) {
+                satisfied |= (value == l_True);
                 literals.push_back(lit);
             }
-            else if (value == l_True) {
-                satisfied = true;
-            }
         }
-        
-        if (literals.size() < clause->size()) {
-            if (!satisfied) { 
-                if (literals.size() == 0) {
-                    return false;
-                }
-                Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
-                if (new_clause->size() == 1) {
-                    trail.newFact(literals.front());
-                }
-                else if (new_clause->size() > 2) {
-                    propagator.attachClause(new_clause);
-                }
-                certificate.added(literals.begin(), literals.end());
+
+        if (literals.size() > 1 && satisfied) {
+            certificate.removed(clause->begin(), clause->end());
+            if (clause->size() > 2) {
+                propagator.detachClause(clause);
             }
+            clause_db.removeClause((Clause*)clause);
+        }
+        else if (literals.size() < clause->size()) {
+            Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
+            if (new_clause->size() == 1) {
+                trail.newFact(new_clause->first());
+            }
+            else if (new_clause->size() > 2) {
+                propagator.attachClause(new_clause);
+            }
+            certificate.added(new_clause->begin(), new_clause->end());
 
             certificate.removed(clause->begin(), clause->end());
             if (clause->size() > 2) {
@@ -503,7 +502,6 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             clause_db.removeClause((Clause*)clause);
         }
     }
-    return true;
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -642,37 +640,35 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                             return l_False;
                         }
                     }
-
-                    for (Lit lit : trail) {
-                        if (trail.reason(var(lit)) != nullptr) {
-                            std::vector<Lit> unit;
-                            unit.push_back(lit);
-                            clause_db.createClause(unit.begin(), unit.end());
-                        }
-                    }
+                    
+                    unit_resolution();
                     
                     propagator.clear();
+                    std::cout << "c Clauses before reduce: " << clause_db.size() << std::endl; 
                     std::vector<Clause*> reduced = clause_db.reduce();
+                    std::cout << "c Clauses to reduce: " << reduced.size() << std::endl; 
                     for (const Clause* clause : reduced) {
                         certificate.removed(clause->begin(), clause->end());
                     }
                     clause_db.reorganize();
+                    std::cout << "c Clauses after reorganize: " << clause_db.size() << std::endl; 
                     
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
                             propagator.attachClause(clause);
-                        } else if (clause->size() == 1) {
-                            this->ok &= trail.newFact(clause->first()) && propagator.propagate() == nullptr;
-                            if (!ok) {
-                                std::cout << "c Conflict found during clause database cleanup: " << *clause << std::endl;
+                        } 
+                        else if (clause->size() == 1 && trail.value(clause->first()) == l_Undef) {
+                            this->ok = trail.newFact(clause->first());
+                            if (isInConflictingState()) {
+                                std::cout << "c Conflict found with unit-clause from other thread" << *clause << std::endl;
                                 return l_False;
                             }
                         }
                     }
-                    
-                    this->ok &= unit_resolution();
-                    if (!ok) {
-                        std::cout << "c Conflict found during unit resolution" << std::endl;
+
+                    this->ok = propagator.propagate() == nullptr;
+                    if (isInConflictingState()) {
+                        std::cout << "c Conflict found with propagation of unit-clause from other thread" << std::endl;
                         return l_False;
                     }
 
