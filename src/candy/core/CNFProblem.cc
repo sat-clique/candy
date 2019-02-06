@@ -92,10 +92,14 @@ void CNFProblem::readDimacs(gzFile input_stream) {
         }
         if (*in == 'p') {
             if (in.skipString("p cnf")) {
-                headerVars = in.readInteger();
-                headerClauses = in.readInteger();
-                if (headerVars < 0 || headerClauses < 0) {
+                int num1 = in.readInteger();
+                int num2 = in.readInteger();
+                if (num1 < 0 || num2 < 0) {
                     throw ParserException("PARSE ERROR! Expected positive occurence count in header but got " + std::to_string(headerVars) + " vars and " + std::to_string(headerClauses) + " clauses");
+                }
+                else {
+                    headerVars = num1;
+                    headerClauses = num2;
                 }
                 problem.reserve(headerClauses);
             }
@@ -121,7 +125,7 @@ void CNFProblem::readDimacs(gzFile input_stream) {
     if (headerVars != maxVars) {
         fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, maxVars);
     }
-    if (headerClauses != (int)problem.size()) {
+    if (headerClauses != problem.size()) {
         fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses (declared %i, found %i).\n", headerClauses, (int)problem.size());
     }
 }
@@ -158,7 +162,7 @@ template <typename Iterator>
 void CNFProblem::readClause(Iterator begin, Iterator end) {
     Cl* clause = new Cl(begin, end);
     for (Lit lit : *clause) {
-        maxVars = std::max(maxVars, 1 + var(lit));
+        maxVars = std::max(maxVars, (unsigned int) 1 + var(lit)); 
     }
     problem.push_back(clause);
 }

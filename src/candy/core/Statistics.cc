@@ -88,7 +88,7 @@ void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
 #endif
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {
-        printf("Memory used           : %.2f MB\n", mem_used);
+        printf("c Memory used           : %.2f MB\n", mem_used);
     }
     printf("c CPU time              : %g s\n\n", cpu_time);
 }

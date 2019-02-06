@@ -240,97 +240,46 @@ int main(int argc, char** argv) {
         installSignalHandlers(false);
     }
     else {
-        VariableEliminationOptions::opt_use_elim = false;
-        SolverOptions::opt_use_lrb = false;
-        RSILOptions::opt_rsil_enable = false;
-
-        threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
-
-        while (ParallelOptions::opt_static_database && global_allocator == nullptr) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        }
-
-        for (int count = 2; count <= ParallelOptions::opt_threads; count++) {
+        for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads; count++) {
+            SolverOptions::opt_sort_watches = count % 2 == 0;
+            SolverOptions::opt_sort_variables = count % 2 == 0;
+            SolverOptions::opt_preprocessing = count % 2 == 0;
+            VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
+            VariableEliminationOptions::opt_use_asymm = count == 2 || count == 5;
             switch (count) {
-                case 2 : // plain subsumption inprocessing
-                    SolverOptions::opt_sort_watches = false;
-                    SolverOptions::opt_sort_variables = false;
-                    SolverOptions::opt_inprocessing = 1;
+                case 0 : case 1 : //vsids
                     SolverOptions::opt_use_lrb = false;
-                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = false;
+                    SolverOptions::opt_inprocessing = (count == 1 && ParallelOptions::opt_static_database) ? 1 : 0;
                     break;
-                case 3 : // plain lrb
-                    SolverOptions::opt_sort_watches = true;
-                    SolverOptions::opt_sort_variables = true;
-                    SolverOptions::opt_inprocessing = 0;
+                case 2 : case 3 : //lrb
                     SolverOptions::opt_use_lrb = true;
-                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = false;
-                    break;
-                case 4 : // plain rsil
-                    SolverOptions::opt_sort_watches = false;
-                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 0;
-                    SolverOptions::opt_use_lrb = false;
-                    SolverOptions::opt_preprocessing = false;
-                    RSILOptions::opt_rsil_enable = true;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = false;
                     break;
-                case 5 : // inprocessing without elim
-                    SolverOptions::opt_sort_watches = true;
-                    SolverOptions::opt_sort_variables = true;
-                    SolverOptions::opt_sort_watches = false;
-                    SolverOptions::opt_sort_variables = false;
-                    SolverOptions::opt_inprocessing = 300;
+                case 4 : case 5 : //vsids
                     SolverOptions::opt_use_lrb = false;
-                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = true;
-                    break;
-                case 6 : // inprocessing without elim with lrb
-                    SolverOptions::opt_sort_watches = true;
-                    SolverOptions::opt_sort_variables = true;
                     SolverOptions::opt_inprocessing = 300;
-                    SolverOptions::opt_use_lrb = true;
-                    SolverOptions::opt_preprocessing = false;
-                    RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = true;
                     break;
-                case 7 : // inprocessing without elim with rsil
-                    SolverOptions::opt_sort_watches = false;
-                    SolverOptions::opt_sort_variables = false;
-                    SolverOptions::opt_inprocessing = 300;
+                case 6 : case 7 : //rsil
                     SolverOptions::opt_use_lrb = false;
-                    SolverOptions::opt_preprocessing = false;
                     RSILOptions::opt_rsil_enable = true;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = true;
-                    break;
-                case 8 : // plain w/o sorting
-                    SolverOptions::opt_sort_watches = false;
-                    SolverOptions::opt_sort_variables = false;
                     SolverOptions::opt_inprocessing = 0;
-                    SolverOptions::opt_use_lrb = false;
-                    SolverOptions::opt_preprocessing = false;
-                    RSILOptions::opt_rsil_enable = false;
-                    VariableEliminationOptions::opt_use_elim = false;
-                    VariableEliminationOptions::opt_use_asymm = false;
                     break;
-            }
-
-            while (solvers.size() < count-1) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
             
             threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
+
+            while (ParallelOptions::opt_static_database && global_allocator == nullptr) {
+                // wait for global allocator initialization
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
+
+            while (solvers.size() < count) { 
+                // do not crash global variable "solvers"
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
         }
 
         Statistics::getInstance().runtimeStop("Initialization");

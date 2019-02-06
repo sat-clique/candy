@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         }
     }
     catch (ParserException& e) {
-		printf("Caught Parser Exception\n%s\n", e.what());
+		printf("c Caught Parser Exception\n%s\n", e.what());
         return 0;
     }
 

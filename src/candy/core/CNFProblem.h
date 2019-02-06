@@ -32,10 +32,10 @@ class CNFProblem {
 private:
     For problem;
 
-    int maxVars = 0;
+    unsigned int maxVars = 0;
 
-    int headerVars = 0;
-    int headerClauses = 0;
+    unsigned int headerVars = 0;
+    unsigned int headerClauses = 0;
 
 public:
     CNFProblem() {
@@ -53,12 +53,12 @@ public:
 
     bool hasEmptyClause();
 
-    inline int nVars() const {
+    inline size_t nVars() const {
         return maxVars;
     }
 
-    inline int nClauses() const {
-        return (int)problem.size();
+    inline size_t nClauses() const {
+        return problem.size();
     }
 
     inline int newVar() {
