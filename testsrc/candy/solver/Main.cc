@@ -61,7 +61,7 @@ TEST (CandyAddClauseTestPatterns, materialUnitClauses3) {
   formula.readClause(mkLit(1), mkLit(2));  
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 2ul); 
+  ASSERT_EQ(solver.nClauses(), 3ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
 }
 
