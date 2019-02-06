@@ -238,6 +238,10 @@ public:
         return binaryWatchers[toInt(lit)];
     }
 
+    std::vector<Clause*> getUnitClauses() { 
+        return allocator.collect_unit_clauses();
+    }
+
     /**
      * In order ot make sure that no clause is locked (reason to an asignment), 
      * do only call this method at decision level 0 and strengthen all clauses first

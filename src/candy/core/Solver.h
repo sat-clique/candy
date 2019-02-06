@@ -518,6 +518,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
 
     unsigned int num = 1;
     unsigned int max = 0;
+    unsigned int count = 0;
     while (num > max * simplification_threshold_factor) {
         ok = subsumption.subsume();
         if (isInConflictingState() || asynch_interrupt) break;
@@ -528,7 +529,12 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
         num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nEliminated + elimination.nStrengthened;
         max = std::max(num, max);
         Statistics::getInstance().printSimplificationStats();
+        count++;
     } 
+
+    if (inprocessingFrequency > 0 && count == 1) {
+        inprocessingFrequency++;
+    }
 
     for (unsigned int v = 0; v < this->nVars(); v++) {
         if (elimination.isEliminated(v)) {
@@ -627,6 +633,25 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 
                 trail.cancelUntil(0);
                 branch.reset();
+
+                // multi-threaded unit-clauses fast-track
+                vector<Clause*> facts = clause_db.getUnitClauses();
+                for (Clause* clause : facts) {
+                    assert(clause->size() == 1);
+                    if (trail.value(clause->first()) == l_Undef) {
+                        this->ok = trail.newFact(clause->first());
+                        if (isInConflictingState()) {
+                            std::cout << "c Conflict found with unit-clause from other thread" << *clause << std::endl;
+                            return l_False;
+                        }
+                    }
+                }
+
+                this->ok = propagator.propagate() == nullptr;
+                if (isInConflictingState()) {
+                    std::cout << "c Conflict found with propagation of unit-clause from other thread" << std::endl;
+                    return l_False;
+                }
                 
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {

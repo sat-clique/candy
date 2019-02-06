@@ -37,13 +37,17 @@ namespace Candy {
 
 class ClauseAllocator {
 public:
-    ClauseAllocator() : memory(), deleted(), global_allocator(nullptr), alock(), ready(), ready_lock() { }
+    ClauseAllocator() : memory(32), facts(1), deleted(), global_allocator(nullptr), alock(), ready(), ready_lock() { }
 
     ~ClauseAllocator() { }
 
     inline void* allocate(unsigned int length) {
         if (global_allocator == nullptr || length > 1) {
-            return memory.allocate(length);
+            if (length == 1) {
+                return facts.allocate(1);
+            } else {
+                return memory.allocate(length);
+            }
         }
         else {
             assert(length == 1);
@@ -95,6 +99,8 @@ public:
 
     std::vector<Clause*> collect() {
         std::vector<Clause*> clauses = memory.collect();
+        std::vector<Clause*> unit_clauses = facts.collect();
+        clauses.insert(clauses.end(), unit_clauses.begin(), unit_clauses.end());
         if (global_allocator != nullptr) {
             global_allocator->lock();
             std::vector<Clause*> global_clauses = global_allocator->collect();
@@ -103,6 +109,17 @@ public:
             clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
         }
         return clauses;
+    }
+
+    std::vector<Clause*> collect_unit_clauses() {
+        std::vector<Clause*> unit_clauses = facts.collect();
+        if (global_allocator != nullptr) {
+            global_allocator->lock();
+            std::vector<Clause*> global_unit_clauses = global_allocator->collect_unit_clauses();
+            global_allocator->unlock();
+            unit_clauses.insert(unit_clauses.end(), global_unit_clauses.begin(), global_unit_clauses.end());
+        }
+        return unit_clauses;
     }
 
     void set_global_allocator(ClauseAllocator* global_allocator_) {
@@ -120,14 +137,17 @@ public:
         global_allocator->lock();
         global_allocator->ready[std::this_thread::get_id()] = false;
         global_allocator->memory.absorb(this->memory); 
+        global_allocator->facts.absorb(this->facts); 
         global_allocator->unlock();
         memory.clear();
+        facts.clear();
         deleted.clear();
         return global_allocator;
     }
 
 private:
     ClauseAllocatorMemory memory;
+    ClauseAllocatorMemory facts;
     
     std::vector<Clause*> deleted;
 
