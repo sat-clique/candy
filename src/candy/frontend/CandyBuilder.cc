@@ -110,6 +110,7 @@ CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, un
             return builder.build();
         }
     }
+    return builder.build();
 }
 
 }

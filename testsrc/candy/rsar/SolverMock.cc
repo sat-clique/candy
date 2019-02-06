@@ -67,7 +67,7 @@ namespace Candy {
         // TODO: fix the unscrupolously non-const CNFProblem interface to update
         // m_nClausesAddedSinceLastSolve
         m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
-        for (int i = 0; i < problem.nVars(); ++i) {
+        for (unsigned int i = 0; i < problem.nVars(); ++i) {
             newVar();
         }
     }
