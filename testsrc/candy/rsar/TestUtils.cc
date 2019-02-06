@@ -282,7 +282,7 @@ namespace Candy {
             return {};
         }
         
-        fastnextrand_state_t randState = static_cast<fastnextrand_state_t>(std::abs(f.nVars()));
+        fastnextrand_state_t randState = static_cast<fastnextrand_state_t>(f.nVars());
         
         for (int i = 0; i < n; ++i) {
             randState = fastNextRand(randState);
