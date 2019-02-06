@@ -128,18 +128,19 @@ public:
 
 class ClauseAllocatorMemory {
 private:
-    const unsigned int PAGE_SIZE = 32*1024*1024;
+    const unsigned int default_page_size;
 
     std::vector<ClauseAllocatorPage> pages;
     std::vector<ClauseAllocatorPage> old_pages;
 
 public:
-    ClauseAllocatorMemory() : pages(), old_pages() { }
+    ClauseAllocatorMemory(unsigned int page_size_mb = 32)
+     : default_page_size(page_size_mb*1024*1024), pages(), old_pages() { }
     ~ClauseAllocatorMemory() { }
 
     inline void* allocate(size_t length) {
         if (pages.size() == 0 || !pages.back().hasMemory(length)) { 
-            pages.emplace_back(PAGE_SIZE); 
+            pages.emplace_back(default_page_size); 
         }
         return pages.back().allocate(length);
     }
