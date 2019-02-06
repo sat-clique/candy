@@ -29,6 +29,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 class Clause {
+    friend class ClauseAllocatorMemory;
     friend class ClauseAllocator;
     friend class ClauseDatabase;
     friend class Propagate;
@@ -64,6 +65,7 @@ public:
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
         weight = lbd; // not frozen, not deleted and not learnt; lbd=0
+        assert(lbd <= length);
     }
     
     Clause(std::initializer_list<Lit> list, uint16_t lbd = 0) : Clause(list.begin(), list.end(), lbd) { }
