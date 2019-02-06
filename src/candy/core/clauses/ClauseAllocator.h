@@ -73,14 +73,14 @@ public:
         else {
             std::cout << "c global allocator imports pages of size " << memory.used() << " and deletes " << deleted.size() << " clauses from: " << std::this_thread::get_id() << std::endl;
             global_allocator->lock();
-            global_allocator->memory.absorb(this->memory);
+            global_allocator->memory.import(this->memory, 3);
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }
             global_allocator->unlock(); 
-            memory.clear();
+            memory.reallocate();
+            memory.free_old_pages();
             deleted.clear();
-            assert(memory.used() == 0);
 
             if (global_allocator->is_ready()) { // all threads use new pages now
                 std::cout << "c global allocator reorganization" << std::endl;
@@ -119,7 +119,7 @@ public:
         global_allocator = new ClauseAllocator();
         global_allocator->lock();
         global_allocator->ready[std::this_thread::get_id()] = false;
-        global_allocator->memory.absorb(this->memory);
+        global_allocator->memory.absorb(this->memory); 
         global_allocator->unlock();
         memory.clear();
         deleted.clear();

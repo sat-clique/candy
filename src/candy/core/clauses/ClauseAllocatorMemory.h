@@ -195,12 +195,13 @@ public:
         old_pages.clear();
     }
 
-    void import(ClauseAllocatorMemory& other) {
+    void import(ClauseAllocatorMemory& other, unsigned int limit) {
         for (const ClauseAllocatorPage& page : other.pages) {
             for (const Clause* clause : page) {
-                if (!clause->isDeleted()) {
+                if (!clause->isDeleted() && clause->getLBD() < limit) {
                     void* new_clause = allocate(clause->size());
                     memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
+                    ((Clause*)clause)->setDeleted(); 
                 }
             }
         }

@@ -486,7 +486,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             clause_db.removeClause((Clause*)clause);
         }
         else if (literals.size() < clause->size()) {
-            Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), clause->getLBD());
+            Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size())));
             if (new_clause->size() == 1) {
                 trail.newFact(new_clause->first());
             }
