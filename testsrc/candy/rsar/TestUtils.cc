@@ -340,7 +340,7 @@ namespace Candy {
         
         std::vector<Lit> literalsWorkingCpy = literals;
         
-        auto indices = getRandomIndices(literals, std::abs(problem.nVars()));
+        auto indices = getRandomIndices(literals, problem.nVars());
         auto result = std::unique_ptr<Conjectures>(new Conjectures{});
         
         auto backboneLit = literalsWorkingCpy.back();
