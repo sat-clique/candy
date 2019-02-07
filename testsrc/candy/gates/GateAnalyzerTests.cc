@@ -33,14 +33,6 @@
 #include <iostream>
 #include <algorithm>
 
-/*
-    GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-            bool patterns = true, bool semantic = true, bool holistic = false,
-            bool lookahead = false, bool intensify = true, int lookahead_threshold = 10,
-            unsigned int conflict_budget = 0,
-            std::chrono::milliseconds timeout = std::chrono::milliseconds{0})
- */
-
 namespace Candy {
 
     typedef std::initializer_list<Lit> ILits;
@@ -209,7 +201,7 @@ namespace Candy {
         problem.readClauses(simple_xor1);
         problem.readClauses(simple_eq);
         problem.readClauses(simple_xor2);
-        GateAnalyzer ga { problem, std::chrono::milliseconds(0), 3, true, true, true };
+        GateAnalyzer ga { problem, 0, 3, true, true, true };
         ga.analyze();
 //        ASSERT_EQ(ga.getGateCount(), 4);
 //        ASSERT_EQ(ga.getRoots().size(), 1);

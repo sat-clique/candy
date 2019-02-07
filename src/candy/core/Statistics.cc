@@ -18,7 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include <candy/core/Statistics.h>
-#include "candy/utils/System.h"
+#include <candy/utils/Runtime.h>
 
 namespace Candy {
 
@@ -70,8 +70,7 @@ void Statistics::printSimplificationStats() {
 }
 
 void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
-    std::chrono::milliseconds cpu_time_millis = cpuTime();
-    double cpu_time = static_cast<double>(cpu_time_millis.count())/1000.0f;
+    double cpu_time = get_cpu_time();
     printf("c =================================================================\n");
 #ifdef SOLVER_STATS
     printf("c restarts              : %llu (%llu conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
