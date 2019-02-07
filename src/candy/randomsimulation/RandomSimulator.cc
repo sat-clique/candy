@@ -29,7 +29,6 @@
 #include <cassert>
 
 #include <candy/utils/MemUtils.h>
-#include <candy/utils/System.h>
 #include <candy/utils/Runtime.h>
 #include <candy/frontend/CLIOptions.h>
 
@@ -85,21 +84,21 @@ namespace Candy {
     
     Conjectures BitparallelRandomSimulator::run() {
         assert (m_abortThreshold >= 0.0f);
-        return runImpl(false, 0, std::chrono::milliseconds{-1});
+        return runImpl(false, 0, -1);
     }
     
     Conjectures BitparallelRandomSimulator::run(unsigned int nSteps) {
         assert (nSteps > 0);
-        return runImpl(true, nSteps, std::chrono::milliseconds{-1});
+        return runImpl(true, nSteps, -1);
     }
     
-    Conjectures BitparallelRandomSimulator::run(unsigned int nSteps, std::chrono::milliseconds timeLimit) {
+    Conjectures BitparallelRandomSimulator::run(unsigned int nSteps, double timeLimit) {
         assert (nSteps > 0);
-        assert (timeLimit >= std::chrono::milliseconds{-1});
+        assert (timeLimit >= -1);
         return runImpl(true, nSteps, timeLimit);
     }
     
-    Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps, std::chrono::milliseconds timeLimit) {
+    Conjectures BitparallelRandomSimulator::runImpl(bool boundedRun, unsigned int nSteps, double timeLimit) {
         ensureInitialized();
         
         unsigned int realSteps = nSteps / (SimulationVector::VARSIMVECVARS);
@@ -107,7 +106,7 @@ namespace Candy {
         
         auto& inputVars = m_clauseOrderStrat->getInputVariables();
         
-        auto startCPUTime = cpuTime();
+        double startCPUTime = get_cpu_time();
         
         for (unsigned int step = 0; !boundedRun || step < realSteps; ++step) {
             m_randomizationStrat->randomize(m_simulationVectors, inputVars);
@@ -121,8 +120,8 @@ namespace Candy {
                 break;
             }
             
-            if (timeLimit > std::chrono::milliseconds{0}) {
-                auto currentCPUTime = cpuTime();
+            if (timeLimit > 0) {
+                double currentCPUTime = get_cpu_time();
                 if ((currentCPUTime - startCPUTime) > timeLimit) {
                     throw OutOfTimeException{};
                 }
@@ -217,6 +216,4 @@ namespace Candy {
                                                                        m_gateAnalyzer,
                                                                        m_reductionRateAbortThreshold);
     }
-
-//std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{RandomSimulationOptions::opt_rs_ppTimeLimit})
 }

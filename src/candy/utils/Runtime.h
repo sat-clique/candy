@@ -1,5 +1,4 @@
-/* Copyright (c) 2017 Markus Iser,
-                      Felix Kutzner (github.com/fkutzner)
+/* Copyright (c) 2017 - 2019 Markus Iser
  
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
@@ -28,36 +27,16 @@
 #ifndef SRC_CANDY_UTILS_RUNTIME_H_
 #define SRC_CANDY_UTILS_RUNTIME_H_
 
-#include <candy/utils/System.h>
-#include <chrono>
+namespace Candy { 
 
-namespace Candy {
+double get_wall_time();
+double get_cpu_time();
 
-namespace RuntimePrivate {
-    struct DefaultCPUTimeProvider {
-        inline std::chrono::milliseconds getTime() const noexcept {
-            return cpuTime();
-        }
-    };
-}
-
-    
-/**
- * \brief A generic time measurement class.
- *
- * \tparam TimeProvider     A type providing the method
- *                          std::chrono::milliseconds getTime() const noexcept
- *                          such that elapsed time can be measusred by computing
- *                          the difference of two getTime() invocation results.
- */
-template<typename TimeProvider = RuntimePrivate::DefaultCPUTimeProvider>
-class GenericRuntime {
+class Runtime {
 private:
-    std::chrono::milliseconds startTime;
-    std::chrono::milliseconds totalRuntime;
-    std::chrono::milliseconds timeout;
-    std::chrono::milliseconds lastLap;
-    TimeProvider timeProvider;
+    double startTime;
+    double totalRuntime;
+    double timeout;
 
 public:
     /**
@@ -66,13 +45,8 @@ public:
      * \param timeout   the amount of time used for timeout detection. If 0, timeout
      *                  detection is disabled.
      */
-    explicit GenericRuntime(std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) {
-        this->timeout = timeout;
-        this->startTime = std::chrono::milliseconds{0};
-        this->totalRuntime = std::chrono::milliseconds{0};
-        this->lastLap = std::chrono::milliseconds{0};
-    }
-    ~GenericRuntime() {}
+    Runtime(double timeout_ = 0) : timeout(timeout_), startTime(0), totalRuntime(0) { }
+    ~Runtime() {}
 
     /**
      * Starts time measurement.
@@ -80,11 +54,10 @@ public:
      * This method resets the start time of the current lap.
      */
     bool start() noexcept {
-        if (startTime != std::chrono::milliseconds{0}) {
+        if (startTime != 0) {
             return false;
         }
-        startTime = timeProvider.getTime();
-        lastLap = totalRuntime;
+        startTime = get_wall_time();
         return true;
     }
 
@@ -102,11 +75,11 @@ public:
      *                  preceded the last invocation of start().
      */
     bool stop() noexcept {
-        if (startTime == std::chrono::milliseconds{0}) {
+        if (startTime == 0) {
             return false;
         }
-        totalRuntime += timeProvider.getTime() - this->startTime;
-        startTime = std::chrono::milliseconds{0};
+        totalRuntime += get_wall_time() - this->startTime;
+        startTime = 0;
         return true;
     }
 
@@ -115,7 +88,7 @@ public:
      *                  total amount of elapsed time exceeds the timeout.
      */
     bool hasTimeout() const noexcept {
-        return timeout > std::chrono::milliseconds{0} && getRuntime() > timeout;
+        return timeout > 0 && getRuntime() > timeout;
     }
 
     /**
@@ -123,48 +96,25 @@ public:
      *
      * \param timeout   the timeout value in milliseconds.
      */
-    void setTimeout(std::chrono::milliseconds timeout) {
+    void setTimeout(double timeout) {
         this->timeout = timeout;
     }
 
     /**
      * \returns     the total elapsed time in milliseconds.
      */
-    std::chrono::milliseconds getRuntime() const noexcept {
-        if (this->startTime > std::chrono::milliseconds{0}) {
-            return totalRuntime + (timeProvider.getTime() - this->startTime);
+    double getRuntime() const noexcept {
+        if (this->startTime > 0) {
+            return totalRuntime + (get_wall_time() - this->startTime);
         }
         else {
             return totalRuntime;
         }
     }
 
-    /**
-     * Gets the time elapsed within the current lap and starts
-     * a new lap.
-     *
-     * \returns     the time elapsed in the current lap, in milliseconds.
-     */
-    std::chrono::milliseconds lap() noexcept {
-        auto currentTime = getRuntime();
-        auto result = currentTime - this->lastLap;
-        this->lastLap = currentTime;
-        return result;
-    }
-    
-    // for testing only
-    TimeProvider& test_getTimeProvider() {
-        return timeProvider;
-    }
 };
 
-/**
- * A RuntimeImpl specialization measuring elapsed CPU time.
- */
-using Runtime = GenericRuntime<>;
-    
-class OutOfTimeException {
-};
+class OutOfTimeException {};
 
 }
 

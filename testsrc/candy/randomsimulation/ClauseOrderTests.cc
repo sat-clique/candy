@@ -191,7 +191,7 @@ namespace Candy {
         
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga { *formula, std::chrono::milliseconds(0), 1, true, false, false, false };
+        GateAnalyzer ga { *formula, 0, 1, true, false, false, false };
         ga.analyze();
         
         ASSERT_EQ(ga.getGateCount(), 7);

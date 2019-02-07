@@ -73,7 +73,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
 
-#include "candy/utils/System.h"
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
 
@@ -578,7 +577,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             sonification.conflictLevel(trail.decisionLevel());
 
             if (trail.decisionLevel() == 0) {
-                std::cout << *confl << std::endl;
                 return l_False;
             }
             
@@ -669,14 +667,16 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     unit_resolution();
                     
                     propagator.clear();
-                    std::cout << "c Clauses before reduce: " << clause_db.size() << std::endl; 
+                    size_t before = clause_db.size();
                     std::vector<Clause*> reduced = clause_db.reduce();
-                    std::cout << "c Clauses to reduce: " << reduced.size() << std::endl; 
+                    size_t reduce = reduced.size();
                     for (const Clause* clause : reduced) {
                         certificate.removed(clause->begin(), clause->end());
                     }
                     clause_db.reorganize();
-                    std::cout << "c Clauses after reorganize: " << clause_db.size() << std::endl; 
+                    size_t after = clause_db.size();
+
+                    std::cout << "c Memory reorganization (" << before << " clauses before, " << after << " clauses after, " << reduce << " clauses removed by local reduction policy)" << std::endl; 
                     
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {

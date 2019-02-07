@@ -76,7 +76,7 @@ class GateAnalyzer {
 
 public:
     GateAnalyzer(const CNFProblem& dimacs, 
-        std::chrono::milliseconds timeout = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{GateRecognitionOptions::opt_gr_timeout}), 
+        double timeout = GateRecognitionOptions::opt_gr_timeout, 
         int tries = GateRecognitionOptions::opt_gr_tries,
         bool patterns = GateRecognitionOptions::opt_gr_patterns, 
         bool semantic = GateRecognitionOptions::opt_gr_semantic, 

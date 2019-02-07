@@ -52,7 +52,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Certificate.h"
 #include "candy/core/Statistics.h"
-#include "candy/utils/System.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
 #include "candy/core/branching/VSIDS.h"
@@ -160,14 +159,20 @@ static void printProblemStatistics(CNFProblem& problem) {
 }
 
 static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, ClauseAllocator*& global_allocator) {
+    std::cout << "c Sort Watches: " << SolverOptions::opt_sort_watches << std::endl;
+    std::cout << "c Sort Variables: " << SolverOptions::opt_sort_variables << std::endl;
+    std::cout << "c Preprocessing: " << SolverOptions::opt_preprocessing << std::endl;
+    std::cout << "c Inprocessing: " << SolverOptions::opt_inprocessing << std::endl;
+
     CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
-    solvers.push_back(solver_);
 
     solver_->init(problem, global_allocator);
 
     if (ParallelOptions::opt_static_database && global_allocator == nullptr) {
         global_allocator = solver_->setupGlobalAllocator();
     }
+
+    solvers.push_back(solver_);
 
     // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
     installSignalHandlers(true);
@@ -180,7 +185,9 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
     }
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) {    
+    Statistics::getInstance().runtimeStart("Wallclock");
+
     setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or gzipped DIMACS.\n");
     parseOptions(argc, argv, true);
     
@@ -241,11 +248,13 @@ int main(int argc, char** argv) {
     }
     else {
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads; count++) {
-            SolverOptions::opt_sort_watches = count % 2 == 0;
-            SolverOptions::opt_sort_variables = count % 2 == 0;
-            SolverOptions::opt_preprocessing = count % 2 == 0;
+            std::cout << "c Initializing Solver " << count << std::endl;
+
+            SolverOptions::opt_sort_watches = ((count % 2) == 0);
+            SolverOptions::opt_sort_variables = ((count % 2) == 0);
+            SolverOptions::opt_preprocessing = ((count % 2) == 0);
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
-            VariableEliminationOptions::opt_use_asymm = count == 2 || count == 5;
+            VariableEliminationOptions::opt_use_asymm = ((count % 4) == 2);
             switch (count) {
                 case 0 : case 1 : //vsids
                     SolverOptions::opt_use_lrb = false;
@@ -271,13 +280,8 @@ int main(int argc, char** argv) {
             
             threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
 
-            while (ParallelOptions::opt_static_database && global_allocator == nullptr) {
-                // wait for global allocator initialization
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
-            }
-
-            while (solvers.size() < count) { 
-                // do not crash global variable "solvers"
+            while (solvers.size() <= count) { 
+                // wait till solver is initialized
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
         }
@@ -317,9 +321,12 @@ int main(int argc, char** argv) {
 
         if (SolverOptions::verb > 0) {
             Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
-            Statistics::getInstance().printRuntimes();
         }
     }
+
+    Statistics::getInstance().runtimeStop("Wallclock");
+
+    Statistics::getInstance().printRuntimes();
 
     #ifndef __SANITIZE_ADDRESS__
         exit((result == l_True ? 10 : result == l_False ? 20 : 0));

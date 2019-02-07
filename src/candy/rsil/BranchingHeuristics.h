@@ -145,7 +145,7 @@ namespace Candy {
             }
             else {
                 try {
-                    this->conjectures = performRandomSimulation(analyzer, std::chrono::milliseconds(RandomSimulationOptions::opt_rs_ppTimeLimit));
+                    this->conjectures = performRandomSimulation(analyzer, RandomSimulationOptions::opt_rs_ppTimeLimit);
                     if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
                         std::cout << "c no conjectures found." << std::endl;
                     } else {

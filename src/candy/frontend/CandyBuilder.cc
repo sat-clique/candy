@@ -48,14 +48,17 @@ CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, un
 
     if (lrb) {
         if (staticPropagate) {
+            std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, LRB>" << std::endl;
             return builder.branchWithLRB().propagateStaticClauses().build();
         } else {
+            std::cout << "Building Solver of Type Solver<Propagate, ConflictAnalysis, LRB>" << std::endl;
             return builder.branchWithLRB().build();
         }
     } 
     else if (rsil) {
         RSILMode mode = getRSILMode();
         if (staticPropagate) {
+            std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, RSIL>" << std::endl;
             if (rsil_adv_size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     return builder.propagateStaticClauses().branchWithRSILUnrestricted3().build();
@@ -79,6 +82,7 @@ CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, un
                 }
             }
         } else {
+            std::cout << "c Building Solver of Type Solver<Propagate, ConflictAnalysis, RSIL>" << std::endl;
             if (rsil_adv_size == 3) {
                 if (mode == RSILMode::UNRESTRICTED) {
                     return builder.branchWithRSILUnrestricted3().build();
@@ -105,11 +109,14 @@ CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, un
     }
     else {
         if (staticPropagate) {
+            std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, VSIDS>" << std::endl;
             return builder.propagateStaticClauses().build();
         } else {
+            std::cout << "c Building Solver of Type Solver<Propagate, ConflictAnalysis, VSIDS>" << std::endl;
             return builder.build();
         }
     }
+    std::cout << "c Warning! Configuration Not Found. Building Solver of Type Solver<Propagate, ConflictAnalysis, VSIDS>" << std::endl;
     return builder.build();
 }
 

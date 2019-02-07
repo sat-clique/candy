@@ -46,7 +46,6 @@ SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& st
 }
 
 CandySolverInterface* createRSARSolver(CNFProblem& problem) {
-	// std::chrono::milliseconds startCPUTime = cpuTime();
 	bool initializationComleted = false;
 	std::unique_ptr<Conjectures> conjectures;
 	
@@ -61,7 +60,7 @@ CandySolverInterface* createRSARSolver(CNFProblem& problem) {
 	}
 	else {
 		try {
-			conjectures = performRandomSimulation(analyzer, std::chrono::milliseconds(RandomSimulationOptions::opt_rs_ppTimeLimit));
+			conjectures = performRandomSimulation(analyzer, RandomSimulationOptions::opt_rs_ppTimeLimit);
 			if (conjectures->getEquivalences().empty() && conjectures->getBackbones().empty()) {
 				std::cout << "c no conjectures found." << std::endl;
 			} else {

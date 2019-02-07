@@ -1,9 +1,8 @@
 add_library(utils OBJECT
+    Runtime.cc
     Runtime.h
     Options.cc
     Options.h
-    System.cc
-    System.h
     FastRand.h
     FastRand.cc
     MemUtils.h

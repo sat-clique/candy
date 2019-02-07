@@ -32,14 +32,6 @@
 #include <iostream>
 #include <algorithm>
 
-/*
-    GateAnalyzer(CNFProblem& dimacs, int tries = 0,
-            bool patterns = true, bool semantic = true, bool holistic = false,
-            bool lookahead = false, bool intensify = true, int lookahead_threshold = 10,
-            unsigned int conflict_budget = 0,
-            std::chrono::milliseconds timeout = std::chrono::milliseconds{0})
- */
-
 namespace Candy {
 
     typedef std::initializer_list<std::initializer_list<Lit>> formula;

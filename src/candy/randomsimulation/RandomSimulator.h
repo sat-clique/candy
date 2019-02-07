@@ -100,7 +100,7 @@ namespace Candy {
          *
          * \param timeLimit CPU time limit in seconds. If timeLimit == -1, no time limit is used.
          */
-        Conjectures run(unsigned int nRounds, std::chrono::milliseconds timeLimit);
+        Conjectures run(unsigned int nRounds, double timeLimit);
         
         /**
          * Performs random simulation until the random simulator heuristically determines
@@ -119,7 +119,7 @@ namespace Candy {
     private:
         bool isFurtherSimulationWorthwile();
         
-        Conjectures runImpl(bool boundedRun, unsigned int nSteps, std::chrono::milliseconds timeLimit);
+        Conjectures runImpl(bool boundedRun, unsigned int nSteps, double timeLimit);
         
         std::unique_ptr<ClauseOrder> m_clauseOrderStrat;
         std::unique_ptr<Partition> m_partitionStrat;

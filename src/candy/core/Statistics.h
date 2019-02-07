@@ -26,11 +26,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 #include <map>
 #include <string>
-#include <chrono>
-#include <candy/utils/System.h>
+
+#include "candy/utils/Runtime.h"
 
 #define SOLVER_STATS
-//#define RUNTIME_STATS
+#define RUNTIME_STATS
 
 namespace Candy {
 
@@ -43,8 +43,8 @@ class Statistics {
 #endif
 
 #ifdef RUNTIME_STATS
-    std::map<std::string, std::chrono::milliseconds> runtimes;
-    std::map<std::string, std::chrono::milliseconds> starttimes;
+    std::map<std::string, double> runtimes;
+    std::map<std::string, double> starttimes;
 #endif
 
     char stats;
@@ -99,32 +99,31 @@ public:
 #ifdef RUNTIME_STATS
     inline void runtimeReset(std::string key) {
         if (!starttimes.count(key)) {
-            starttimes.insert({{key, std::chrono::milliseconds{0}}});
+            starttimes.insert({{key, 0}});
         }
         if (!runtimes.count(key)) {
-            runtimes.insert({{key, std::chrono::milliseconds{0}}});
+            runtimes.insert({{key, 0}});
         }
-        starttimes[key] = std::chrono::milliseconds{0};
-        runtimes[key] = std::chrono::milliseconds{0};
+        starttimes[key] = 0;
+        runtimes[key] = 0;
     }
     inline void runtimeStart(std::string key) {
         if (!starttimes.count(key)) {
-            starttimes.insert({{key, std::chrono::milliseconds{0}}});
+            starttimes.insert({{key, 0}});
         }
-        starttimes[key] = cpuTime();
+        starttimes[key] = get_wall_time();
     }
     inline void runtimeStop(std::string key) {
         if (!starttimes.count(key)) {
-            starttimes.insert({{key, std::chrono::milliseconds{0}}});
+            starttimes.insert({{key, 0}});
         }
         if (!runtimes.count(key)) {
-            runtimes.insert({{key, std::chrono::milliseconds{0}}});
+            runtimes.insert({{key, 0}});
         }
-        runtimes[key] += cpuTime() - starttimes[key];
+        runtimes[key] += get_wall_time() - starttimes[key]; 
     }
     void printRuntime(std::string key) {
-        double seconds = static_cast<double>(runtimes[key].count())/1000.0f;
-        printf("c Runtime %-14s: %12.2f s\n", key.c_str(), seconds);
+        printf("c Runtime %-14s: %12.2f s\n", key.c_str(), runtimes[key]);
     }
     void printRuntimes() {
         for (auto pair : runtimes) {

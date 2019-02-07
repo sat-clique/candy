@@ -27,7 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, std::chrono::milliseconds timeout, int tries, bool patterns, bool semantic, bool holistic, 
+GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, bool patterns, bool semantic, bool holistic, 
         bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget) :
             problem (dimacs), runtime(timeout), solver (backported_std::make_unique<Solver<>>()),
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),

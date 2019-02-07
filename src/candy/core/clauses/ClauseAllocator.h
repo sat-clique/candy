@@ -126,16 +126,14 @@ public:
         assert(global_allocator == nullptr);
         std::cout << "c thread registration in global allocator: " << std::this_thread::get_id() << std::endl;
         global_allocator = global_allocator_;
-        global_allocator->lock();
-        global_allocator->ready[std::this_thread::get_id()] = false;
-        global_allocator->unlock();
+        global_allocator->set_ready();
     }
 
     ClauseAllocator* create_global_allocator() {
         assert(global_allocator == nullptr);
         global_allocator = new ClauseAllocator();
+        global_allocator->set_ready();
         global_allocator->lock();
-        global_allocator->ready[std::this_thread::get_id()] = false;
         global_allocator->memory.absorb(this->memory); 
         global_allocator->facts.absorb(this->facts); 
         global_allocator->unlock();
