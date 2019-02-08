@@ -250,6 +250,7 @@ int main(int argc, char** argv) {
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
 
+            SolverOptions::opt_unitresolution = 0;
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = ((count % 2) == 0);
