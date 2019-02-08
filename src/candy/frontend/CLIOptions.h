@@ -65,6 +65,7 @@ namespace SolverOptions {
     extern BoolOption opt_sort_variables;
     extern BoolOption opt_preprocessing;
     extern IntOption opt_inprocessing;
+    extern IntOption opt_unitresolution;
     extern DoubleOption opt_simplification_threshold_factor;
 }
 

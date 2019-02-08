@@ -318,7 +318,7 @@ protected:
     bqueue<uint32_t> lbdQueue, trailQueue;
 
     // used for reduce
-    uint_fast64_t curRestart;
+    unsigned int curRestart;
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
 
@@ -330,12 +330,14 @@ protected:
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
     double simplification_threshold_factor = 0.1;
     std::vector<Var> freezes;
-    uint64_t lastRestartWithInprocessing;
-    uint32_t inprocessingFrequency;
+    unsigned int lastRestartWithInprocessing;
+    unsigned int inprocessingFrequency;
+    unsigned int lastRestartWithUnitResolution;
+    unsigned int unitResolutionFrequency;
 
     // Resource contraints and other interrupts
-    uint32_t conflict_budget;    // 0 means no budget.
-    uint32_t propagation_budget; // 0 means no budget.
+    unsigned int conflict_budget;    // 0 means no budget.
+    unsigned int propagation_budget; // 0 means no budget.
     void* termCallbackState;
     int (*termCallback)(void* state);
     bool asynch_interrupt;
@@ -389,7 +391,8 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     preprocessing_enabled(SolverOptions::opt_preprocessing),
     simplification_threshold_factor(SolverOptions::opt_simplification_threshold_factor),
     freezes(),
-    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing),
+    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
+    lastRestartWithUnitResolution(0), unitResolutionFrequency(SolverOptions::opt_unitresolution), 
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
@@ -466,6 +469,8 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
     for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
         const Clause* clause = clause_db[i];
 
+        if (clause->isDeleted()) continue;
+
         satisfied = false;
         literals.clear();
 
@@ -527,7 +532,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
         
         num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nEliminated + elimination.nStrengthened;
         max = std::max(num, max);
-        Statistics::getInstance().printSimplificationStats();
         count++;
     } 
 
@@ -544,6 +548,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
     branch.reset(); // former rebuildOrderHeap
 
     clause_db.stopOccurrenceTracking();
+    Statistics::getInstance().printSimplificationStats();
 }
 
 /**************************************************************************************************
@@ -664,12 +669,16 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         }
                     }
                     
-                    unit_resolution();
+                    if (unitResolutionFrequency > 0 && lastRestartWithUnitResolution + unitResolutionFrequency <= curRestart) {
+                        lastRestartWithUnitResolution = curRestart;
+                        unit_resolution();
+                    }
+                    
                     
                     propagator.clear();
-                    size_t before = clause_db.size();
                     std::vector<Clause*> reduced = clause_db.reduce();
                     size_t reduce = reduced.size();
+                    size_t before = clause_db.size();
                     for (const Clause* clause : reduced) {
                         certificate.removed(clause->begin(), clause->end());
                     }
@@ -749,7 +758,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     if (this->preprocessing_enabled) {
         Statistics::getInstance().runtimeStart("Preprocessing");
         eliminate();
-        Statistics::getInstance().printSimplificationStats();
         Statistics::getInstance().runtimeStop("Preprocessing");
     }
     
