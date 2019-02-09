@@ -53,4 +53,4 @@ Candy offers a multitude of options, like paramaters to tune heuristics and thre
 
 ## Support
 
-If you like Candy and in case you want to support building of the Candy Kingdom, you can send Ethereum to the following address: **0x118b032be2c45f9a74301e0432d67dbbcdf7b6f0**
+If you like Candy and in case you want to support building of the Candy Kingdom, you can send Ethereum to the following address: **0xfa7ca55ad16f6f5fd4c425ed72d443f5d3c1a2e0**
