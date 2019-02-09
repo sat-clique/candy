@@ -672,6 +672,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     if (unitResolutionFrequency > 0 && lastRestartWithUnitResolution + unitResolutionFrequency <= curRestart) {
                         lastRestartWithUnitResolution = curRestart;
                         unit_resolution();
+                        if (isInConflictingState()) {
+                            std::cout << "c Conflict found during unit-resolution" << std::endl;
+                            return l_False;
+                        }
                     }
                     
                     
@@ -700,10 +704,17 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         }
                     }
 
+                    size_t pos = trail.size();
                     this->ok = propagator.propagate() == nullptr;
                     if (isInConflictingState()) {
                         std::cout << "c Conflict found with propagation of unit-clause from other thread" << std::endl;
                         return l_False;
+                    }
+
+                    for (auto it = trail.begin()+pos; it != trail.end(); it++) {
+                        std::vector<Lit> fact;
+                        fact.push_back(*it);
+                        clause_db.createClause(fact.begin(), fact.end()); 
                     }
 
                     if (sort_watches) {

@@ -212,6 +212,7 @@ public:
         for (ClauseAllocatorPage& page : other.pages) {
             pages.emplace_back(std::move(page));
         }
+        other.clear();
     }
 
 };
