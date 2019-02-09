@@ -302,7 +302,9 @@ int main(int argc, char** argv) {
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     if (solver != nullptr) {
-        if (result == l_True) assert(problem.isSatisfied(solver->getModel())); 
+        if (result == l_True) {
+            assert(problem.isSatisfied(solver->getModel()));
+        }
         if (result == l_True && SolverOptions::mod) {
             if (SolverOptions::do_minimize > 0) {
                 Minimizer minimizer(problem, solver->getModel());
