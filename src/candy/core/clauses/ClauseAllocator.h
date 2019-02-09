@@ -86,7 +86,7 @@ public:
             memory.free_old_pages();
             deleted.clear();
 
-            if (global_allocator->is_ready()) { // all threads use new pages now
+            if (global_allocator->everybody_ready()) { // all threads use new pages now
                 //free the old one and copy and cleanup the new one 
                 global_allocator->memory.free_old_pages();
                 global_allocator->lock();
@@ -104,7 +104,7 @@ public:
             global_allocator->lock();
             std::vector<Clause*> global_clauses = global_allocator->collect();
             global_allocator->unlock();
-            global_allocator->set_ready();
+            global_allocator->set_ready(true);
             clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
         }
         return clauses;
@@ -125,13 +125,13 @@ public:
         assert(global_allocator == nullptr);
         std::cout << "c thread registration in global allocator: " << std::this_thread::get_id() << std::endl;
         global_allocator = global_allocator_;
-        global_allocator->set_ready();
+        global_allocator->set_ready(false);
     }
 
     ClauseAllocator* create_global_allocator() {
         assert(global_allocator == nullptr);
         global_allocator = new ClauseAllocator();
-        global_allocator->set_ready();
+        global_allocator->set_ready(false);
         global_allocator->lock();
         global_allocator->memory.absorb(this->memory); 
         global_allocator->facts.absorb(this->facts); 
@@ -163,13 +163,13 @@ private:
         alock.unlock();
     }
 
-    inline void set_ready() {
+    inline void set_ready(bool flag) {
         ready_lock.lock();
-        ready[std::this_thread::get_id()] = true;
+        ready[std::this_thread::get_id()] = flag;
         ready_lock.unlock();
     }
 
-    inline bool is_ready() {
+    inline bool everybody_ready() {
         ready_lock.lock();
         bool everybody_ready = true;
         for (auto it : ready) {

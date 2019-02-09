@@ -132,7 +132,7 @@ bool Subsumption<TPropagate>::subsume() {
         const uint64_t clause_abstraction = abstractions[clause];
         const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
         for (const Clause* occurence : occurences) {
-            if (occurence != clause && ((clause_abstraction & ~abstractions[occurence]) == 0)) {
+            if (occurence != clause && !occurence->isDeleted() && ((clause_abstraction & ~abstractions[occurence]) == 0)) {
                 Lit l = clause->subsumes(*occurence);
 
                 if (l == lit_Undef) { // remove:
@@ -148,7 +148,9 @@ bool Subsumption<TPropagate>::subsume() {
                         }
                         certificate.removed(to_delete->begin(), to_delete->end());
                         clause_db.removeClause((Clause*)to_delete);
-                        abstractions.erase(to_delete);
+                        abstractions.erase(clause);
+                        abstractions.erase(occurence);
+                        break; 
                     }
                     else {
                         if (clause->isLearnt() && !occurence->isLearnt()) {

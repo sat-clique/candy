@@ -221,8 +221,8 @@ public:
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent)) {
                 certificate.added(resolvent.begin(), resolvent.end());
-                unsigned int lbd = std::min(pc->getLBD(), nc->getLBD());
-                Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
+                uint16_t lbd = std::min(pc->getLBD(), nc->getLBD());
+                Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), std::min(lbd, (uint16_t)(resolvent.size()-1)));
                 if (clause->size() > 2) {
                     propagator.attachClause(clause);
                 }
