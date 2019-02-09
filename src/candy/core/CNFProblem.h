@@ -68,6 +68,7 @@ public:
 
     bool isSatisfied(Cl model) {
         sort(model.begin(), model.end(), [](Lit lit1, Lit lit2) { return var(lit1) < var(lit2); });
+        bool err = false;
         for (Cl* clause : problem) {
             bool sat = false;
             for (Lit lit : *clause) {
@@ -75,11 +76,11 @@ public:
                 sat |= model[var(lit)] == lit;
             }
             if (!sat) {
+                err = true;
                 std::cout << "c Error! Clause is not satisfied by model: " << *clause << std::endl;
-                return false;
             }
         }
-        return true;
+        return !err;
     }
 
     std::vector<double> getLiteralRelativeOccurrences() const;

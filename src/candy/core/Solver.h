@@ -144,7 +144,7 @@ public:
             }
         }
         
-        ok = propagator.propagate() == nullptr;
+        ok &= (propagator.propagate() == nullptr);
         unit_resolution();
         
         if (!ok) {
@@ -157,10 +157,7 @@ public:
         vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
             assert(clause->size() == 1);
-            if (!trail.newFact(clause->first())) {
-                this->ok = false;
-                return;
-            }
+            this->ok &= trail.newFact(clause->first());
         }
     }
 
@@ -171,7 +168,7 @@ public:
             if (trail.reason(var(lit)) != nullptr) {
                 unit[0] = lit;
                 clause_db.createClause(unit.begin(), unit.end());
-                trail.newFact(lit);
+                this->ok &= trail.newFact(lit);
             }
         }
     }
@@ -183,12 +180,19 @@ public:
             return false;
         }
 
-        this->ok = (propagator.propagate() == nullptr);
+        this->ok &= (propagator.propagate() == nullptr);
         if (isInConflictingState()) {
             std::cout << "c Conflict found while propagating of unit-clause from other threads" << std::endl;
             return false;
         }
+
         materializeUnitClauses();
+        if (isInConflictingState()) {
+            std::cout << "c Conflict found during materialization of unit-clauses" << std::endl;
+            return false;
+        }
+
+        return true;
     }
 
     ClauseAllocator* setupGlobalAllocator() override {
@@ -485,7 +489,7 @@ bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause
             propagator.attachClause(clause);
         }
         else if (clause->size() == 1) {
-            ok = trail.newFact(clause->first()); 
+            ok &= trail.newFact(clause->first()); 
         }
         return ok;
     }
@@ -557,10 +561,10 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
     unsigned int max = 0;
     unsigned int count = 0;
     while (num > max * simplification_threshold_factor) {
-        ok = subsumption.subsume();
+        ok &= subsumption.subsume();
         if (isInConflictingState() || asynch_interrupt) break;
 
-        ok = elimination.eliminate();
+        ok &= elimination.eliminate();
         if (isInConflictingState() || asynch_interrupt) break;
         
         num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nEliminated + elimination.nStrengthened;
@@ -615,6 +619,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             sonification.conflictLevel(trail.decisionLevel());
 
             if (trail.decisionLevel() == 0) {
+                std::cout << "c Conflict found by propagation at level 0" << std::endl;
                 return l_False;
             }
             
@@ -672,7 +677,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 branch.reset();
 
                 // multi-threaded unit-clauses fast-track
-                if (!propagateGlobalUnitClauses()) return l_False;
+                if (!propagateGlobalUnitClauses()) {
+                    std::cout << "c Conflict found during global propagation" << std::endl;
+                    return l_False;
+                }
                 
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
@@ -714,7 +722,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         } 
                     }
 
-                    if (!propagateGlobalUnitClauses()) return l_False;
+                    if (!propagateGlobalUnitClauses()) {
+                        std::cout << "c Conflict found during global propagation" << std::endl;
+                        return l_False;
+                    }
 
                     if (sort_watches) {
                         propagator.sortWatchers();
@@ -734,6 +745,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     trail.newDecisionLevel(); // Dummy decision level
                 } else if (trail.value(p) == l_False) {
                     conflict = conflict_analysis.analyzeFinal(~p);
+                    std::cout << "c Conflict found during assumption propagation" << std::endl;
                     return l_False;
                 } else {
                     next = p;
