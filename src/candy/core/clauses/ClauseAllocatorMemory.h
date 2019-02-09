@@ -176,6 +176,7 @@ public:
 
     void reallocate() {
         size_t size = used(); 
+        old_pages.clear();
         old_pages.swap(pages);
         pages.emplace_back(size);
         for (ClauseAllocatorPage& old_page : old_pages) {

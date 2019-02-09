@@ -172,11 +172,17 @@ public:
         result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
+    // std::vector<Lit> critical { 2762_L, 2857_L, 2946_L, ~2949_L };
+
     template<typename Iterator>
     Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
         Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
+
+        // if (std::includes(critical.begin(), critical.end(), clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) < var(l2); })) {
+        //     std::cout << clause << " Create " << *clause << std::endl;
+        // }
 
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
@@ -215,7 +221,8 @@ public:
         assert(clause->size() > 1);
         std::vector<Lit> literals;
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
-        Clause* new_clause = createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size())));
+
+        Clause* new_clause = createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
         removeClause(clause);
         return new_clause;
     }

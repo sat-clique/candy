@@ -152,14 +152,47 @@ public:
         }
     }
 
-    ClauseAllocator* setupGlobalAllocator() override {
-        for (Lit lit : trail) {
-            if (trail.reason(var(lit)) != nullptr) {
-                std::vector<Lit> unit;
-                unit.push_back(lit);
-                clause_db.createClause(unit.begin(), unit.end());
+    void importUnitClauses() {
+        assert(trail.decisionLevel() == 0);
+        vector<Clause*> facts = clause_db.getUnitClauses();
+        for (Clause* clause : facts) {
+            assert(clause->size() == 1);
+            if (!trail.newFact(clause->first())) {
+                this->ok = false;
+                return;
             }
         }
+    }
+
+    void materializeUnitClauses() {
+        assert(trail.decisionLevel() == 0);
+        std::array<Lit, 1> unit;
+        for (Lit lit : trail) {
+            if (trail.reason(var(lit)) != nullptr) {
+                unit[0] = lit;
+                clause_db.createClause(unit.begin(), unit.end());
+                trail.newFact(lit);
+            }
+        }
+    }
+
+    bool propagateGlobalUnitClauses() {
+        importUnitClauses();
+        if (isInConflictingState()) {
+            std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
+            return false;
+        }
+
+        this->ok = (propagator.propagate() == nullptr);
+        if (isInConflictingState()) {
+            std::cout << "c Conflict found while propagating of unit-clause from other threads" << std::endl;
+            return false;
+        }
+        materializeUnitClauses();
+    }
+
+    ClauseAllocator* setupGlobalAllocator() override {
+        materializeUnitClauses();
         return clause_db.createGlobalClauseAllocator();
     }
 
@@ -490,7 +523,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             clause_db.removeClause((Clause*)clause);
         }
         else if (literals.size() < clause->size()) {
-            Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size())));
+            Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
             if (new_clause->size() == 1) {
                 trail.newFact(new_clause->first());
             }
@@ -623,7 +656,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
             assert(trail.value(clause_db.result.learnt_clause[0]) == l_Undef);
 
-            Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
+            Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), 
+                clause_db.result.learnt_clause.size() < 3 ? 0 : clause_db.result.lbd);
             trail.uncheckedEnqueue(clause->first(), clause->size() == 1 ? nullptr : clause);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
@@ -638,23 +672,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 branch.reset();
 
                 // multi-threaded unit-clauses fast-track
-                vector<Clause*> facts = clause_db.getUnitClauses();
-                for (Clause* clause : facts) {
-                    assert(clause->size() == 1);
-                    if (trail.value(clause->first()) == l_Undef) {
-                        this->ok = trail.newFact(clause->first());
-                        if (isInConflictingState()) {
-                            std::cout << "c Conflict found with unit-clause from other thread" << *clause << std::endl;
-                            return l_False;
-                        }
-                    }
-                }
-
-                this->ok = propagator.propagate() == nullptr;
-                if (isInConflictingState()) {
-                    std::cout << "c Conflict found with propagation of unit-clause from other thread" << std::endl;
-                    return l_False;
-                }
+                if (!propagateGlobalUnitClauses()) return l_False;
                 
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
@@ -678,7 +696,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         }
                     }
                     
-                    
                     propagator.clear();
                     std::vector<Clause*> reduced = clause_db.reduce();
                     size_t reduce = reduced.size();
@@ -695,27 +712,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         if (clause->size() > 2) {
                             propagator.attachClause(clause);
                         } 
-                        else if (clause->size() == 1 && trail.value(clause->first()) == l_Undef) {
-                            this->ok = trail.newFact(clause->first());
-                            if (isInConflictingState()) {
-                                std::cout << "c Conflict found with unit-clause from other thread" << *clause << std::endl;
-                                return l_False;
-                            }
-                        }
                     }
 
-                    size_t pos = trail.size();
-                    this->ok = propagator.propagate() == nullptr;
-                    if (isInConflictingState()) {
-                        std::cout << "c Conflict found with propagation of unit-clause from other thread" << std::endl;
-                        return l_False;
-                    }
-
-                    for (auto it = trail.begin()+pos; it != trail.end(); it++) {
-                        std::vector<Lit> fact;
-                        fact.push_back(*it);
-                        clause_db.createClause(fact.begin(), fact.end()); 
-                    }
+                    if (!propagateGlobalUnitClauses()) return l_False;
 
                     if (sort_watches) {
                         propagator.sortWatchers();
