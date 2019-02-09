@@ -136,8 +136,6 @@ public:
         global_allocator->memory.absorb(this->memory); 
         global_allocator->facts.absorb(this->facts); 
         global_allocator->unlock();
-        memory.clear();
-        facts.clear();
         deleted.clear();
         return global_allocator;
     }
