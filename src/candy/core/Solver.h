@@ -109,14 +109,13 @@ public:
     Var newVar() override;
 
     void init(const CNFProblem& dimacs, ClauseAllocator* allocator = nullptr) override {
-        size_t maxVars = (size_t)dimacs.nVars();
-        if (maxVars > this->nVars()) {
-            clause_db.grow(maxVars);
-            propagator.init(maxVars);
-            trail.grow(maxVars);
-            conflict_analysis.grow(maxVars);
-            branch.grow(maxVars);
-            elimination.grow(maxVars);
+        if (dimacs.nVars() > this->nVars()) {
+            clause_db.grow(dimacs.nVars());
+            propagator.init(dimacs.nVars());
+            trail.grow(dimacs.nVars());
+            conflict_analysis.grow(dimacs.nVars());
+            branch.grow(dimacs.nVars());
+            elimination.grow(dimacs.nVars());
         }
 
         branch.init(dimacs);
@@ -159,6 +158,7 @@ public:
             assert(clause->size() == 1);
             this->ok &= trail.newFact(clause->first());
         }
+        this->ok &= (propagator.propagate() == nullptr);
     }
 
     void materializeUnitClauses() {
@@ -171,28 +171,6 @@ public:
                 this->ok &= trail.newFact(lit);
             }
         }
-    }
-
-    bool propagateGlobalUnitClauses() {
-        importUnitClauses();
-        if (isInConflictingState()) {
-            std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
-            return false;
-        }
-
-        this->ok &= (propagator.propagate() == nullptr);
-        if (isInConflictingState()) {
-            std::cout << "c Conflict found while propagating of unit-clause from other threads" << std::endl;
-            return false;
-        }
-
-        materializeUnitClauses();
-        if (isInConflictingState()) {
-            std::cout << "c Conflict found during materialization of unit-clauses" << std::endl;
-            return false;
-        }
-
-        return true;
     }
 
     ClauseAllocator* setupGlobalAllocator() override {
@@ -677,10 +655,12 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 branch.reset();
 
                 // multi-threaded unit-clauses fast-track
-                if (!propagateGlobalUnitClauses()) {
-                    std::cout << "c Conflict found during global propagation" << std::endl;
+                importUnitClauses();
+                if (isInConflictingState()) {
+                    std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
                     return l_False;
                 }
+                materializeUnitClauses();
                 
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
@@ -716,7 +696,12 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
                     std::cout << "c Memory reorganization (" << before << " clauses before, " << after << " clauses after, " << reduce << " clauses removed by local reduction policy)" << std::endl; 
                     
-                    // reset trail completly before reattaching clauses
+                    // reset trail completly before reattaching clauses, but materialize unit-clauses before
+                    materializeUnitClauses();
+                    if (isInConflictingState()) {
+                        std::cout << "c Conflict found during unit-clause materialization" << std::endl;
+                        return l_False;
+                    }
                     trail.reset();
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
@@ -724,8 +709,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         } 
                     }
 
-                    if (!propagateGlobalUnitClauses()) {
-                        std::cout << "c Conflict found during global propagation" << std::endl;
+                    this->ok &= (propagator.propagate() == nullptr);
+                    if (isInConflictingState()) {
+                        std::cout << "c Conflict found after import of global clauses" << std::endl;
                         return l_False;
                     }
 
