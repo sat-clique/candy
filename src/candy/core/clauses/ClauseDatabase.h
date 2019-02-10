@@ -172,7 +172,7 @@ public:
         result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
-    // std::vector<Lit> critical { 2762_L, 2857_L, 2946_L, ~2949_L };
+    // std::vector<Lit> critical { 25489_L, 25609_L, 25671_L, ~25674_L };
 
     template<typename Iterator>
     Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
@@ -181,7 +181,7 @@ public:
         clauses.push_back(clause);
 
         // if (std::includes(critical.begin(), critical.end(), clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) < var(l2); })) {
-        //     std::cout << clause << " Create " << *clause << std::endl;
+        //     std::cout << std::this_thread::get_id() << ": " << clause << " Create " << *clause << std::endl;
         // }
 
         if (track_literal_occurrence) {

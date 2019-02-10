@@ -716,6 +716,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
                     std::cout << "c Memory reorganization (" << before << " clauses before, " << after << " clauses after, " << reduce << " clauses removed by local reduction policy)" << std::endl; 
                     
+                    // reset trail completly before reattaching clauses
+                    trail.reset();
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
                             propagator.attachClause(clause);

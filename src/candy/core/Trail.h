@@ -242,6 +242,15 @@ public:
         }
     }
 
+    inline void reset() {
+        for (Lit lit : *this) {
+            assigns[var(lit)] = l_Undef;
+        }
+        qhead = 0;
+        trail_size = 0;
+        trail_lim.clear(); 
+    }
+
     /**
      * Count the number of decision levels in which the given list of literals was assigned
      */
