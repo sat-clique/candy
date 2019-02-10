@@ -78,6 +78,7 @@ public:
             std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->lock();
             global_allocator->memory.import(this->memory, 3);
+            // global_allocator->memory.absorb(this->memory); 
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }
