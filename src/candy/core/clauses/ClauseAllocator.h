@@ -77,14 +77,14 @@ public:
         else {
             std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->lock();
-            global_allocator->memory.import(this->memory, 3);
-            // global_allocator->memory.absorb(this->memory); 
+            // global_allocator->memory.import(this->memory, 3);
+            global_allocator->memory.absorb(this->memory); 
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }
             global_allocator->unlock(); 
-            memory.reallocate();
-            memory.free_old_pages();
+            // memory.reallocate();
+            // memory.free_old_pages();
             deleted.clear();
 
             if (global_allocator->everybody_ready()) { // all threads use new pages now
