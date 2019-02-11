@@ -62,6 +62,7 @@ private:
     Stamp<uint32_t> stamp;
     std::vector<Var> analyze_clear;
     std::vector<Var> analyze_stack;
+	std::vector<Lit> minimized;
 
     /* pointers to solver state */
 	ClauseDatabase& clause_db; 
@@ -106,15 +107,30 @@ private:
 
 	void minimization() {
 	    analyze_clear.clear();
+		minimized.clear();
+
 	    uint64_t abstract_level = 0;
 	    for (unsigned int i = 1; i < learnt_clause.size(); i++) {
 	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
 	    }
-	    auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
-	                         [this, abstract_level] (Lit lit) {
-	                             return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
-	                         });
-	    learnt_clause.erase(end, learnt_clause.end());
+		
+		for (Lit lit : learnt_clause) {
+			if (minimized.size() == 0) { // keep asserted literal
+				minimized.push_back(lit);
+			}
+			else if (trail.reason(var(lit)) == nullptr) {
+				minimized.push_back(lit);
+			}
+			else if (!litRedundant(lit, abstract_level)) {
+				minimized.push_back(lit);
+			}
+		}
+		learnt_clause.swap(minimized); 
+	    // auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
+	    //                      [this, abstract_level] (Lit lit) {
+	    //                          return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
+	    //                      });
+	    // learnt_clause.erase(end, learnt_clause.end());
 	}
 
 	/******************************************************************
