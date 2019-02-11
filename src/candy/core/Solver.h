@@ -151,7 +151,7 @@ public:
         }
     }
 
-    void importUnitClauses() {
+    void importAndPropagateUnitClauses() {
         assert(trail.decisionLevel() == 0);
         vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
@@ -647,6 +647,12 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
         }
         else {
+            // for (Clause* c : clause_db) {
+            //     if (trail.falsifies(*c)) {
+            //         std::cout << std::this_thread::get_id() << ": " << c << " is false " << *c << std::endl;
+            //         assert (!trail.falsifies(*c));
+            //     }
+            // }
             // Our dynamic restart, see the SAT09 competition compagnion paper
             if (nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts())))) {
                 lbdQueue.fastclear();
@@ -655,7 +661,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 branch.reset();
 
                 // multi-threaded unit-clauses fast-track
-                importUnitClauses();
+                importAndPropagateUnitClauses();
                 if (isInConflictingState()) {
                     std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
                     return l_False;
@@ -709,7 +715,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                         } 
                     }
 
-                    this->ok &= (propagator.propagate() == nullptr);
+                    importAndPropagateUnitClauses();
                     if (isInConflictingState()) {
                         std::cout << "c Conflict found after import of global clauses" << std::endl;
                         return l_False;

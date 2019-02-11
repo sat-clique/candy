@@ -172,7 +172,12 @@ public:
         result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
-    // std::vector<Lit> critical { 25489_L, 25609_L, 25671_L, ~25674_L };
+    void logCritical(Clause* clause, std::string prefix = "") { 
+        // std::vector<Lit> critical { ~79422_L };
+        // if (std::includes(critical.begin(), critical.end(), clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) < var(l2); })) {
+        //     std::cout << std::this_thread::get_id() << ": " << clause << " " << prefix << " " << *clause << std::endl;
+        // }
+    }
 
     template<typename Iterator>
     Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
@@ -180,9 +185,7 @@ public:
         Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
 
-        // if (std::includes(critical.begin(), critical.end(), clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) < var(l2); })) {
-        //     std::cout << std::this_thread::get_id() << ": " << clause << " Create " << *clause << std::endl;
-        // }
+        logCritical(clause, "create");
 
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
@@ -201,6 +204,8 @@ public:
     void removeClause(Clause* clause) {
         // std::cout << "Removing clause " << *clause;
         allocator.deallocate(clause);
+
+        logCritical(clause, "remove");
         
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
@@ -222,6 +227,8 @@ public:
         std::vector<Lit> literals;
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
 
+        logCritical(clause, "strengthen");
+
         Clause* new_clause = createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
         removeClause(clause);
         return new_clause;
@@ -229,6 +236,9 @@ public:
 
     Clause* persistClause(Clause* clause) {
         Clause* new_clause = createClause(clause->begin(), clause->end(), 0);
+
+        logCritical(clause, "persist");
+
         removeClause(clause);
         return new_clause;
     }
