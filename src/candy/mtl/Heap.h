@@ -121,9 +121,13 @@ public:
     }
   }
 
+  void grow(unsigned int n) {
+    if (indices.size() < n) {
+      indices.resize(n, -1);
+    }
+  }
+
   void insert(int n) {
-    if (n + 1 > (int) indices.size())
-      indices.resize(n + 1, -1);
     assert(!inHeap(n));
     indices[n] = (int) heap.size();
     heap.push_back(n);
