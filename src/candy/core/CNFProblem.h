@@ -32,7 +32,6 @@ class CNFProblem {
 private:
     For problem;
     unsigned int maxVars = 0;
-    bool emptyClause = false;
 
 public:
     CNFProblem() { }
@@ -50,9 +49,14 @@ public:
     }
 
     ~CNFProblem() {
+        clear();
+    }
+
+    inline void clear() {
         for (Cl* clause : problem) {
             delete clause;
         }
+        problem.clear();
     }
 
     inline const For& getProblem() const {
@@ -65,10 +69,6 @@ public:
 
     void printDIMACS() const;
 
-    bool hasEmptyClause() const {
-        return emptyClause;
-    }
-
     inline size_t nVars() const {
         return maxVars;
     }
@@ -78,8 +78,7 @@ public:
     }
 
     inline int newVar() {
-        maxVars++;
-        return maxVars-1;
+        return maxVars++;
     }
 
     std::vector<double> getLiteralRelativeOccurrences() const;
@@ -90,7 +89,7 @@ public:
     void readClause(Lit plit);
     void readClause(Lit plit1, Lit plit2);
     void readClause(std::initializer_list<Lit> list);
-    void readClause(Cl cl);
+    void readClause(Cl& cl);
     void readClauses(std::initializer_list<std::initializer_list<Lit>> f);
     void readClauses(For& f);
 

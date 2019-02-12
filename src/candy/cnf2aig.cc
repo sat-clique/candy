@@ -253,12 +253,16 @@ int main(int argc, char** argv) {
     char* filename = argv[1];
 
     problem.readDimacsFromFile(filename);
+	bool trivially_unsat = false;
+	for (Cl* clause : problem.getProblem()) {
+		trivially_unsat |= clause->size() == 0;
+	}
 
     if (problem.nClauses() == 0) {
 		fprintf(out, "aag 0 0 0 1 0\n1\n"); // trivial SAT
 		exit(0);
 	}
-    else if (problem.nVars() == 0 || problem.hasEmptyClause()) {
+    else if (problem.nVars() == 0 || trivially_unsat) {
 		fprintf(out, "aag 0 0 0 1 0\n0\n"); // trivial UNSAT
 		exit(0);
 	}
