@@ -154,16 +154,15 @@ void CNFProblem::readClause(Iterator begin, Iterator end) {
     }
     else {
         std::sort(clause->begin(), clause->end());
-        maxVars = std::max(maxVars, (unsigned int) 1 + var(clause->back()));
-
         // remove redundant literals
         clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
-
         // skip tatological clause
         bool isTautological = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) == var(l2); });
         if (isTautological) {
+            delete clause;
             return;
         }
+        maxVars = std::max(maxVars, (unsigned int) 1 + var(clause->back()));
     }
 
     problem.push_back(clause);

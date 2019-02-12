@@ -42,7 +42,7 @@ public:
     }
 
     CNFProblem(Cl& clause) {
-        readClause(clause);
+        readClause(clause.begin(), clause.end());
     }
 
     CNFProblem(std::initializer_list<std::initializer_list<Lit>> formula) {
