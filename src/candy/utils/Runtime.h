@@ -34,9 +34,9 @@ double get_cpu_time();
 
 class Runtime {
 private:
+    double timeout;
     double startTime;
     double totalRuntime;
-    double timeout;
 
 public:
     /**

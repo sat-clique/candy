@@ -85,11 +85,8 @@ namespace Candy {
         virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override {
         	m_solver->init(problem, allocator);
         }
-        virtual bool addClause(const std::vector<Lit>& lits, unsigned int lrb = 0) override {
-        	return m_solver->addClause(lits, lrb);
-        }
-        virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lrb = 0) override {
-        	return m_solver->addClause(lits, lrb);
+        virtual bool addClause(const Cl& lits) override { 
+        	return m_solver->addClause(lits); 
         }
 
         virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { 

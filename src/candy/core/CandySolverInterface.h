@@ -43,9 +43,7 @@ public:
 
 	virtual ClauseAllocator* setupGlobalAllocator() = 0;
     virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) = 0;
-
-    virtual bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) = 0;
-    virtual bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) = 0;
+	virtual bool addClause(const Cl& clause) = 0;
 
     virtual void unit_resolution() = 0; // remove satisfied clauses and remove false literals from clauses	
     virtual void eliminate() = 0;  // Perform variable elimination based simplification.

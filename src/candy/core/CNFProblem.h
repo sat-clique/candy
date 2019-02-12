@@ -31,14 +31,22 @@ class CNFProblem {
 
 private:
     For problem;
-
     unsigned int maxVars = 0;
-
-    unsigned int headerVars = 0;
-    unsigned int headerClauses = 0;
+    bool emptyClause = false;
 
 public:
-    CNFProblem() {
+    CNFProblem() { }
+
+    CNFProblem(For& formula) {
+        readClauses(formula);
+    }
+
+    CNFProblem(Cl& clause) {
+        readClause(clause);
+    }
+
+    CNFProblem(std::initializer_list<std::initializer_list<Lit>> formula) {
+        readClauses(formula);
     }
 
     ~CNFProblem() {
@@ -47,11 +55,19 @@ public:
         }
     }
 
-    For& getProblem();
-    const For& getProblem() const;
+    inline const For& getProblem() const {
+        return problem;
+    }
+
+    inline For& getProblem() { 
+        return problem;
+    }
+
     void printDIMACS() const;
 
-    bool hasEmptyClause();
+    bool hasEmptyClause() const {
+        return emptyClause;
+    }
 
     inline size_t nVars() const {
         return maxVars;
@@ -64,23 +80,6 @@ public:
     inline int newVar() {
         maxVars++;
         return maxVars-1;
-    }
-
-    bool isSatisfied(Cl model) {
-        sort(model.begin(), model.end(), [](Lit lit1, Lit lit2) { return var(lit1) < var(lit2); });
-        bool err = false;
-        for (Cl* clause : problem) {
-            bool sat = false;
-            for (Lit lit : *clause) {
-                assert(var(model[var(lit)]) == var(lit));
-                sat |= model[var(lit)] == lit;
-            }
-            if (!sat) {
-                err = true;
-                std::cout << "c Error! Clause is not satisfied by model: " << *clause << std::endl;
-            }
-        }
-        return !err;
     }
 
     std::vector<double> getLiteralRelativeOccurrences() const;

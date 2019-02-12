@@ -43,26 +43,11 @@ std::vector<double> CNFProblem::getLiteralRelativeOccurrences() const {
     return literalOccurrence;
 }
 
-For& CNFProblem::getProblem() {
-    return problem;
-}
-
-const For& CNFProblem::getProblem() const {
-    return problem;
-}
-
 void CNFProblem::printDIMACS() const {
     printf("p cnf %zu %zu\n", nVars(), nClauses()); 
     for (Cl* clause : problem) {
         std::cout << *clause << "0" << std::endl;
     }
-}
-
-bool CNFProblem::hasEmptyClause() {
-    for (Cl* clause : problem) {
-        if (clause->size() == 0) return true;
-    }
-    return false;
 }
 
 void CNFProblem::readDimacsFromStdin() {
@@ -84,6 +69,8 @@ void CNFProblem::readDimacsFromFile(const char* filename) {
 }
 
 void CNFProblem::readDimacs(gzFile input_stream) {
+    unsigned int headerVars = 0;
+    unsigned int headerClauses = 0;
     StreamBuffer in(input_stream);
     while (!in.eof()) {
         in.skipWhitespace();
@@ -123,10 +110,10 @@ void CNFProblem::readDimacs(gzFile input_stream) {
         }
     }
     if (headerVars != maxVars) {
-        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, maxVars);
+        fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, maxVars);
     }
     if (headerClauses != problem.size()) {
-        fprintf(stderr, "WARNING! DIMACS header mismatch: wrong number of clauses (declared %i, found %i).\n", headerClauses, (int)problem.size());
+        fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of clauses (declared %i, found %i).\n", headerClauses, (int)problem.size());
     }
 }
 
@@ -161,9 +148,24 @@ void CNFProblem::readClauses(For& f) {
 template <typename Iterator>
 void CNFProblem::readClause(Iterator begin, Iterator end) {
     Cl* clause = new Cl(begin, end);
-    for (Lit lit : *clause) {
-        maxVars = std::max(maxVars, (unsigned int) 1 + var(lit)); 
+        
+    if (clause->size() == 0) {
+        emptyClause = true;
     }
+    else {
+        std::sort(clause->begin(), clause->end());
+        maxVars = std::max(maxVars, (unsigned int) 1 + var(clause->back()));
+
+        // remove redundant literals
+        clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
+
+        // skip tatological clause
+        bool isTautological = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) == var(l2); });
+        if (isTautological) {
+            return;
+        }
+    }
+
     problem.push_back(clause);
 }
 
