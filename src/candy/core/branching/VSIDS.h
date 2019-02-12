@@ -107,8 +107,8 @@ public:
     void setDecisionVar(Var v, bool b) {
         if (decision[v] != static_cast<char>(b)) {
             decision[v] = b;
-            if (b) {
-                insertVarOrder(v);
+            if (b && !order_heap.inHeap(v)) {
+                order_heap.insert(v);
             }
         }
     }
@@ -122,15 +122,12 @@ public:
     }
 
     void grow(size_t size) {
-        int prevSize = decision.size(); // can be negative during initialization
         if (size > decision.size()) {
             decision.resize(size, true);
             polarity.resize(size, initial_polarity);
             activity.resize(size, initial_activity);
             stamp.grow(size);
-            for (int i = prevSize; i < static_cast<int>(size); i++) {
-                insertVarOrder(i);
-            }
+            order_heap.grow(size);
         }
     }
 
@@ -141,14 +138,8 @@ public:
                 activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
                 polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
             }
-            rebuildOrderHeap();
         }
-    }
-
-    // Insert a variable in the decision order priority queue.
-    inline void insertVarOrder(Var x) {
-        if (!order_heap.inHeap(x) && decision[x])
-            order_heap.insert(x);
+        reset();
     }
 
     // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
@@ -177,16 +168,6 @@ public:
         var_inc *= 1e-100;
     }
 
-    void rebuildOrderHeap() {
-        vector<Var> vs;
-        for (size_t v = 0; v < decision.size(); v++) {
-            if (decision[v] && !trail.isAssigned(v)) {
-                vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
-            }
-        }
-        order_heap.build(vs);
-    }
-
     void process_conflict() {
         if (clause_db.result.nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
@@ -196,7 +177,7 @@ public:
 	    for(const Clause* clause : clause_db.result.involved_clauses) {
 	        for (Lit lit : *clause) {
 				Var v = var(lit);
-				if (!stamp[v] && trail.level(v) > 0) {
+				if (!stamp[v]) {
 	                stamp.set(v);
 	                varBumpActivity(v);
 	            }
@@ -217,14 +198,20 @@ public:
         // UPDATEVARACTIVITY trick (see competition'09 Glucose companion paper)
         unsigned int backtrack_level = clause_db.result.backtrack_level;
         for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
-            Lit lit = *it; 
-            polarity[var(lit)] = sign(lit);
-            insertVarOrder(var(lit));
+            Var v = var(*it);
+            polarity[v] = sign(*it);
+            if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
         }
     }
 
     void reset() {
-        rebuildOrderHeap();
+        vector<Var> vs;
+        for (Var v = 0; v < (Var)decision.size(); v++) {
+            if (decision[v]) {
+                vs.push_back(v);
+            }
+        }
+        order_heap.build(vs);
     }
 
     inline Lit pickBranchLit() {

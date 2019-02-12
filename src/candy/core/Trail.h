@@ -202,24 +202,17 @@ public:
         trail_lim.push_back(trail_size);
     }
 
-    // Returns TRUE if a clause is a reason for some implication in the current state.
-    inline bool locked(const Clause* cr) const {
-        const Clause& c = *cr;
-        if (c.size() > 2) return value(c[0]) == l_True && reason(var(c[0])) == cr;
-        return (value(c[0]) == l_True && reason(var(c[0])) == cr) || (value(c[1]) == l_True && reason(var(c[1])) == cr);
-    }
-
     inline bool newFact(Lit p) {
         assert(decisionLevel() == 0);
 
-        if (value(p) == l_False) {
-            return false;
+        if (value(p) == l_Undef) {
+            uncheckedEnqueue(p);
         }
         else if (value(p) == l_True) {
             vardata[var(p)] = VarData(nullptr, 0);
         }
-        else {
-            uncheckedEnqueue(p);
+        else if (value(p) == l_False) {
+            return false;
         }
         return true;
     }

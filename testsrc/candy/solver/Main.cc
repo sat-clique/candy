@@ -58,7 +58,7 @@ TEST (CandyAddClauseTestPatterns, materialUnitClauses2) {
 TEST (CandyAddClauseTestPatterns, materialUnitClauses3) {
   CNFProblem formula;
   formula.readClause(mkLit(1, true));
-  formula.readClause(mkLit(1), mkLit(2));  
+  formula.readClause(mkLit(1), mkLit(2));
   Solver<> solver;
   solver.init(formula);
   ASSERT_EQ(solver.nClauses(), 3ul); 

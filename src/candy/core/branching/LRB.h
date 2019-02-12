@@ -66,8 +66,8 @@ public:
     void setDecisionVar(Var v, bool b) {
         if (decision[v] != static_cast<char>(b)) {
             decision[v] = b;
-            if (b) {
-                insertVarOrder(v);
+            if (b && !order_heap.inHeap(v)) {
+                order_heap.insert(v);
             }
         }
     }
@@ -89,9 +89,7 @@ public:
             interval_assigned.resize(size, 0);
             participated.resize(size, 0);
             stamp.grow(size);
-            for (int i = prevSize; i < static_cast<int>(size); i++) {
-                insertVarOrder(i);
-            }
+            order_heap.grow(size);
         }
     }
 
@@ -102,8 +100,8 @@ public:
                 weight[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
                 polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
             }
-            rebuildOrderHeap();
         }
+        reset();
     }
 
 
@@ -112,7 +110,7 @@ public:
         for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
                 Var v = var(lit);
-                if (!stamp[v] && trail.level(v) > 0) {
+                if (!stamp[v]) {
                     stamp.set(v);
                     participated[v]++;
                 }
@@ -121,32 +119,36 @@ public:
         if (step_size > 0.06) {
             step_size -= 10e-6;
         }
-        for (Lit lit : trail) {
-            interval_assigned[var(lit)]++;
+        for (auto it = trail.begin(0); it != trail.end(); it++) {
+            interval_assigned[var(*it)]++;
         }
         //Todo: penalize all var not on trail
 
         double inv_step_size = 1.0 - step_size;
         unsigned int backtrack_level = clause_db.result.backtrack_level;
         for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
-            Lit lit = *it; 
-            Var v = var(lit);
-            polarity[v] = sign(lit);
+            Var v = var(*it);
+            polarity[v] = sign(*it);
+            if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
 
             if (interval_assigned[v] > 0) {
                 weight[v] = inv_step_size * weight[v] + step_size * (participated[v] / interval_assigned[v]);
                 interval_assigned[v] = 0;
                 participated[v] = 0;
             }
-
-            insertVarOrder(v);
         }
     }
 
     void reset() {
         std::fill(participated.begin(), participated.end(), 0);
         std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
-        rebuildOrderHeap();
+        vector<Var> vs;
+        for (Var v = 0; v < (Var)decision.size(); v++) {
+            if (decision[v]) {
+                vs.push_back(v);
+            }
+        }
+        order_heap.build(vs);
     }
 
     inline Lit pickBranchLit() {
@@ -179,21 +181,6 @@ private:
     double initial_weight = 0.0;
     bool initial_polarity = true;
 
-    // Insert a variable in the decision order priority queue.
-    inline void insertVarOrder(Var x) {
-        if (!order_heap.inHeap(x) && decision[x])
-            order_heap.insert(x);
-    }
-
-    void rebuildOrderHeap() {
-        vector<Var> vs;
-        for (size_t v = 0; v < decision.size(); v++) {
-            if (decision[v] && !trail.isAssigned(v)) {
-                vs.push_back(checked_unsignedtosigned_cast<size_t, Var>(v));
-            }
-        }
-        order_heap.build(vs);
-    }
 };
 
 }

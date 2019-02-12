@@ -32,12 +32,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <candy/core/clauses/Clause.h>
 #include <candy/core/clauses/ClauseAllocatorMemory.h>
 #include <candy/core/Statistics.h>
+#include <candy/frontend/CLIOptions.h>
 
 namespace Candy {
 
 class ClauseAllocator {
 public:
-    ClauseAllocator() : memory(32), facts(1), deleted(), global_allocator(nullptr), alock(), ready(), ready_lock() { }
+    ClauseAllocator() : 
+        memory(32), facts(1), deleted(), 
+        global_database_lbd_upper_bound(ParallelOptions::opt_lbd_static_database),
+        global_allocator(nullptr), alock(), ready(), ready_lock() { }
 
     ~ClauseAllocator() { }
 
@@ -77,14 +81,13 @@ public:
         else {
             std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->lock();
-            // global_allocator->memory.import(this->memory, 3);
-            global_allocator->memory.absorb(this->memory); 
+            global_allocator->memory.import(this->memory, global_database_lbd_upper_bound);
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }
             global_allocator->unlock(); 
-            // memory.reallocate();
-            // memory.free_old_pages();
+            memory.reallocate();
+            memory.free_old_pages();
             deleted.clear();
 
             if (global_allocator->everybody_ready()) { // all threads use new pages now
@@ -146,6 +149,8 @@ private:
     ClauseAllocatorMemory facts;
     
     std::vector<Clause*> deleted;
+
+    const unsigned int global_database_lbd_upper_bound;
 
     // global allocator for multi-threaded scenario    
     ClauseAllocator* global_allocator;

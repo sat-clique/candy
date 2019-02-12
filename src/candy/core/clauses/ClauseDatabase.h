@@ -260,8 +260,7 @@ public:
     }
 
     /**
-     * In order ot make sure that no clause is locked (reason to an asignment), 
-     * do only call this method at decision level 0 and strengthen all clauses first
+     * only call this method at decision level 0
      **/
     std::vector<Clause*> reduce() { 
         Statistics::getInstance().solverReduceDBInc();

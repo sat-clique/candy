@@ -151,7 +151,7 @@ public:
         }
 
         trail.reset();
-        importAndPropagateUnitClauses();
+        propagateAndMaterializeUnitClauses();
         if (isInConflictingState()) {
             std::cout << "c Conflict found after import of clauses" << std::endl;
             certificate.proof();
@@ -161,30 +161,33 @@ public:
         }
     }
 
-    void importAndPropagateUnitClauses() {
-        assert(trail.decisionLevel() == 0);
+    void propagateAndMaterializeUnitClauses() {
+        assert(trail.size() == 0);
         vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
-            assert(clause->size() == 1);
+            std::cout << "pushing: " << *clause << std::endl;
             this->ok &= trail.newFact(clause->first());
         }
-        this->ok &= (propagator.propagate() == nullptr);
-    }
-
-    void materializeUnitClauses() {
-        assert(trail.decisionLevel() == 0);
-        std::array<Lit, 1> unit;
-        for (Lit lit : trail) {
-            if (trail.reason(var(lit)) != nullptr) {
-                unit[0] = lit;
-                clause_db.createClause(unit.begin(), unit.end());
-                this->ok &= trail.newFact(lit);
+        if (!isInConflictingState()) {
+            std::array<Lit, 1> unit;
+            unsigned int pos = trail.size();
+            std::cout << "pos: " << pos << std::endl;
+            this->ok &= (propagator.propagate() == nullptr);
+            if (!isInConflictingState()) {
+                for (auto it = trail.begin() + pos; it != trail.end(); it++) {
+                    std::cout << "materializing: " << *it << std::endl;
+                    assert(trail.reason(var(*it)) != nullptr);
+                    unit[0] = *it;
+                    clause_db.createClause(unit.begin(), unit.end());
+                    trail.newFact(*it);
+                }
             }
+            std::cout << "Clauses: " << std::endl;
+            for (Clause* clause : clause_db) std::cout << *clause << std::endl;
         }
     }
 
     ClauseAllocator* setupGlobalAllocator() override {
-        materializeUnitClauses();
         return clause_db.createGlobalClauseAllocator();
     }
 
@@ -468,12 +471,14 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             }
         }
 
-        if (literals.size() > 1 && satisfied) {
-            certificate.removed(clause->begin(), clause->end());
-            if (clause->size() > 2) {
-                propagator.detachClause(clause);
+        if (satisfied) {
+            if (literals.size() > 1) {
+                certificate.removed(clause->begin(), clause->end());
+                if (clause->size() > 2) {
+                    propagator.detachClause(clause);
+                }
+                clause_db.removeClause((Clause*)clause);
             }
-            clause_db.removeClause((Clause*)clause);
         }
         else if (literals.size() < clause->size()) {
             if (literals.size() == 0) {
@@ -631,20 +636,13 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             if (nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts())))) {
                 lbdQueue.fastclear();
                 
-                trail.cancelUntil(0);
-                branch.reset();
-
-                // multi-threaded unit-clauses fast-track
-                importAndPropagateUnitClauses();
-                if (isInConflictingState()) {
-                    std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
-                    return l_False;
-                }
-                materializeUnitClauses();
+                branch.reset();                
+                trail.reset();
                 
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
                     curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
+                    nbclausesbeforereduce += incReduceDB;
 
                     if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
@@ -685,15 +683,13 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     if (sort_watches) {
                         propagator.sortWatchers();
                     }
+                }
 
-                    trail.reset();
-                    importAndPropagateUnitClauses();
-                    if (isInConflictingState()) {
-                        std::cout << "c Conflict found after import of global clauses" << std::endl;
-                        return l_False;
-                    }
-
-                    nbclausesbeforereduce += incReduceDB;
+                // multi-threaded unit-clauses fast-track
+                propagateAndMaterializeUnitClauses();
+                if (isInConflictingState()) {
+                    std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
+                    return l_False;
                 }
                 
                 return l_Undef;
