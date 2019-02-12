@@ -199,15 +199,12 @@ namespace Candy {
         for (auto&& clause : delta.getNewClauses()) {
             auto assumptionLit = getAssumptionLit(clause);
             auto otherLits = getNonAssumptionLits(clause);
-            m_approxLitsByAssumption[assumptionLit] = otherLits;
-            
-            bool success = m_solver->addClause(clause);
-            (void)success; // prevents release-mode compiler from warning about unused variable success
+            m_approxLitsByAssumption[assumptionLit] = otherLits;            
+            bool success = m_solver->addClause((Cl&)clause);
             
 #if !defined(NDEBUG)
             if (!success) {
                 assert(!m_solver->isInConflictingState());
-                
                 // The clause must not have contained eliminated variables
                 Var assumptionVar = var(getAssumptionLit(clause));
                 assert(!m_solver->isEliminated(assumptionVar));
@@ -331,13 +328,13 @@ namespace Candy {
     }
     
     lbool ARSolver::solve() {
+        if (m_solver->isInConflictingState()) {
+            return l_False;
+        }
+
         if (m_maxRefinementSteps == 0) {
             // no refinement allowed -> use plain sat solving
             return m_solver->solve();
-        }
-        
-        if (m_solver->isInConflictingState()) {
-            return l_False;
         }
         
         initialize();

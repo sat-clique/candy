@@ -68,7 +68,7 @@ public:
         if (lit) {
             clause.push_back(import(lit));
         } else {
-            solver.addClause(clause.begin(), clause.end());
+            solver.addClause(clause);
             clause.clear();
         }
     }

@@ -282,7 +282,7 @@ namespace Candy {
         EXPECT_TRUE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 5));
     }
     
-    TEST(RSARARSolver, addedApproximationClausesRepresentEquivalencies) {
+    TEST(RSARARSolver, DISABLED_addedApproximationClausesRepresentEquivalencies) {
         auto solverAndMock = createDefaultTestSetup();
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         
@@ -383,27 +383,27 @@ namespace Candy {
         return test_acceptanceTest(filename, simpMode, expectedResult, addHeuristics);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_1_DISABLEsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_DISABLEsimp) {
         test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::DISABLE, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_3_DISABLEsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_DISABLEsimp) {
         test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::DISABLE, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_6_DISABLEsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_DISABLEsimp) {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::DISABLE, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_1_RESTRICTsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_RESTRICTsimp) {
         test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::RESTRICT, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_3_RESTRICTsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_RESTRICTsimp) {
         test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::RESTRICT, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_6_RESTRICTsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_RESTRICTsimp) {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::RESTRICT, true);
     }
     
@@ -419,27 +419,27 @@ namespace Candy {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::FREEZE, true);
     }*/
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_1_FULLsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_FULLsimp) {
         test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::FULL, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_3_FULLsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_FULLsimp) {
         test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::FULL, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_6_FULLsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_FULLsimp) {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::FULL, true);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_1_DISABLEsimp_onlyInternalHeur) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_DISABLEsimp_onlyInternalHeur) {
         test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::DISABLE, true, false);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_3_DISABLEsimp_onlyInternalHeur) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_DISABLEsimp_onlyInternalHeur) {
         test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::DISABLE, true, false);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_flat200_6_DISABLEsimp_onlyInternalHeur) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_DISABLEsimp_onlyInternalHeur) {
         test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::DISABLE, true, false);
     }
     
@@ -452,19 +452,19 @@ namespace Candy {
                                    addHeuristics);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_6s33_DISABLEsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_DISABLEsimp) {
         test_acceptanceTest_problem_6s(SimplificationHandlingMode::DISABLE, false);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_6s33_RESTRICTsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_RESTRICTsimp) {
         test_acceptanceTest_problem_6s(SimplificationHandlingMode::RESTRICT, false);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_6s33_FREEZEsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_FREEZEsimp) {
         test_acceptanceTest_problem_6s(SimplificationHandlingMode::FREEZE, false);
     }
     
-    TEST(RSARARSolver, acceptanceTest_problem_6s33_FULLsimp) {
+    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_FULLsimp) {
         test_acceptanceTest_problem_6s(SimplificationHandlingMode::FULL, false);
     }
 }

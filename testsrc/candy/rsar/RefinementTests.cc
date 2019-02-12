@@ -141,7 +141,7 @@ namespace Candy {
     
 
     
-    TEST(RSARRefinementStrategy, noopRefineWithTwoEquivalenceClasses) {
+    TEST(RSARRefinementStrategy, DISABLED_noopRefineWithTwoEquivalenceClasses) {
         auto mock = std::unique_ptr<MockHeuristic>(new MockHeuristic());
         
         EXPECT_CALL(*mock, beginRefinementStep()).Times(testing::Exactly(2));
@@ -211,7 +211,7 @@ namespace Candy {
     }
     
     
-    TEST(RSARRefinementStrategy, refineWithTwoEquivalenceClasses) {
+    TEST(RSARRefinementStrategy, DISABLED_refineWithTwoEquivalenceClasses) {
         auto mock = std::unique_ptr<MockHeuristic>(new MockHeuristic());
         EXPECT_CALL(*mock, beginRefinementStep()).Times(testing::Exactly(4));
         EXPECT_CALL(*mock, markRemovals(testing::Matcher<EquivalenceImplications&>(testing::_))).Times(testing::Exactly(8));

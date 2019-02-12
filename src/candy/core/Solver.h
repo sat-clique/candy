@@ -103,12 +103,18 @@ class Solver : public CandySolverInterface {
 
 public:
     Solver();
-    Solver(TClauses db, TAssignment& as);
     ~Solver();
     
     Var newVar() override;
 
+    bool addClause(const Cl& clause) override {
+        init(CNFProblem((Cl&)clause)); 
+        return !isInConflictingState(); 
+    }
+
     void init(const CNFProblem& dimacs, ClauseAllocator* allocator = nullptr) override {
+        assert(trail.decisionLevel() == 0);
+
         if (dimacs.nVars() > this->nVars()) {
             clause_db.grow(dimacs.nVars());
             propagator.init(dimacs.nVars());
@@ -120,34 +126,38 @@ public:
 
         branch.init(dimacs);
 
+        if (dimacs.hasEmptyClause()) {
+            this->ok = false;
+            certificate.proof();
+            return;
+        }
+
         if (allocator == nullptr) {
-            std::cout << "c importing " << dimacs.nClauses() << " clauses from dimacs" << std::endl;
-            for (vector<Lit>* clause : dimacs.getProblem()) {
-                if (!addClause(*clause)) {
-                    certificate.proof();
-                    return;
-                }
+            std::cout << "c importing clauses from dimacs" << std::endl;
+            for (Cl* import : dimacs.getProblem()) {
+                clause_db.createClause(import->begin(), import->end());
             }
+        } 
+        else {
+            std::cout << "c importing clauses from global allocator" << std::endl;
+            clause_db.setGlobalClauseAllocator(allocator);
+        }
+
+        std::cout << "c attaching " << clause_db.size() << " clauses" << std::endl;
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                propagator.attachClause(clause);
+            } 
+        }
+
+        trail.reset();
+        importAndPropagateUnitClauses();
+        if (isInConflictingState()) {
+            std::cout << "c Conflict found after import of clauses" << std::endl;
+            certificate.proof();
         }
         else {
-            clause_db.setGlobalClauseAllocator(allocator);
-            std::vector<Clause*> clauses = allocator->collect();
-            std::cout << "c importing " << clauses.size() << " clauses from global allocator" << std::endl;
-            for (Clause* clause : clauses) {
-                if (clause->size() == 1) {
-                    trail.newFact(clause->first());
-                }
-                else if (clause->size() > 2) {
-                    propagator.attachClause(clause);
-                }
-            }
-        }
-        
-        ok &= (propagator.propagate() == nullptr);
-        unit_resolution();
-        
-        if (!ok) {
-            certificate.proof();
+            unit_resolution();
         }
     }
 
@@ -176,17 +186,6 @@ public:
     ClauseAllocator* setupGlobalAllocator() override {
         materializeUnitClauses();
         return clause_db.createGlobalClauseAllocator();
-    }
-
-    template<typename Iterator>
-    bool addClause(Iterator begin, Iterator end, unsigned int lbd = 0);
-
-    bool addClause(const std::vector<Lit>& lits, unsigned int lbd = 0) override { 
-        return addClause(lits.begin(), lits.end(), lbd);
-    }
-
-    bool addClause(std::initializer_list<Lit> lits, unsigned int lbd = 0) override {
-        return addClause(lits.begin(), lits.end(), lbd);
     }
 
     void printDIMACS() override {
@@ -373,6 +372,11 @@ protected:
         return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
                 && (conflict_budget == 0 || nConflicts() < conflict_budget) && (propagation_budget == 0 || nPropagations() < propagation_budget);
     }
+
+private:
+    template<typename Iterator>
+    bool addClause(Iterator begin, Iterator end);
+
 };
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -441,39 +445,6 @@ Var Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-template<typename Iterator>
-bool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::addClause(Iterator cbegin, Iterator cend, unsigned int lbd) {
-    assert(trail.decisionLevel() == 0);
-
-    std::vector<Lit> copy { cbegin, cend };
-    // copy.insert(copy.end(), cbegin, cend);
-
-    // remove redundant literals
-    std::sort(copy.begin(), copy.end());
-    copy.erase(std::unique(copy.begin(), copy.end()), copy.end());
-
-    // skip tatological clause
-    bool isTautological = copy.end() != std::unique(copy.begin(), copy.end(), [](Lit l1, Lit l2) { return var(l1) == var(l2); });
-    if (isTautological) {
-        return ok;
-    }
-
-    if (copy.size() == 0) {
-        return ok = false;
-    }
-    else {
-        Clause* clause = clause_db.createClause(copy.begin(), copy.end(), lbd);
-        if (clause->size() > 2) {
-            propagator.attachClause(clause);
-        }
-        else if (clause->size() == 1) {
-            ok &= trail.newFact(clause->first()); 
-        }
-        return ok;
-    }
-}
-
-template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
     assert(trail.decisionLevel() == 0);
     assert(propagator.propagate() == nullptr);
@@ -505,6 +476,10 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             clause_db.removeClause((Clause*)clause);
         }
         else if (literals.size() < clause->size()) {
+            if (literals.size() == 0) {
+                ok = false; 
+                return;
+            }
             Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
             if (new_clause->size() == 1) {
                 trail.newFact(new_clause->first());
@@ -647,12 +622,11 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
         }
         else {
+            // #ifndef NDEBUG
             // for (Clause* c : clause_db) {
-            //     if (trail.falsifies(*c)) {
-            //         std::cout << std::this_thread::get_id() << ": " << c << " is false " << *c << std::endl;
-            //         assert (!trail.falsifies(*c));
-            //     }
+            //     assert (!trail.falsifies(*c));
             // }
+            // #endif
             // Our dynamic restart, see the SAT09 competition compagnion paper
             if (nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts())))) {
                 lbdQueue.fastclear();
@@ -701,28 +675,22 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     size_t after = clause_db.size();
 
                     std::cout << "c Memory reorganization (" << before << " clauses before, " << after << " clauses after, " << reduce << " clauses removed by local reduction policy)" << std::endl; 
-                    
-                    // reset trail completly before reattaching clauses, but materialize unit-clauses before
-                    materializeUnitClauses();
-                    if (isInConflictingState()) {
-                        std::cout << "c Conflict found during unit-clause materialization" << std::endl;
-                        return l_False;
-                    }
-                    trail.reset();
+
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
                             propagator.attachClause(clause);
                         } 
                     }
 
+                    if (sort_watches) {
+                        propagator.sortWatchers();
+                    }
+
+                    trail.reset();
                     importAndPropagateUnitClauses();
                     if (isInConflictingState()) {
                         std::cout << "c Conflict found after import of global clauses" << std::endl;
                         return l_False;
-                    }
-
-                    if (sort_watches) {
-                        propagator.sortWatchers();
                     }
 
                     nbclausesbeforereduce += incReduceDB;
@@ -737,11 +705,13 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 Lit p = assumptions[trail.decisionLevel()];
                 if (trail.value(p) == l_True) {
                     trail.newDecisionLevel(); // Dummy decision level
-                } else if (trail.value(p) == l_False) {
+                } 
+                else if (trail.value(p) == l_False) {
                     conflict = conflict_analysis.analyzeFinal(~p);
                     std::cout << "c Conflict found during assumption propagation" << std::endl;
                     return l_False;
-                } else {
+                } 
+                else {
                     next = p;
                     break;
                 }
