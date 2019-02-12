@@ -126,15 +126,14 @@ public:
 
         branch.init(dimacs);
 
-        if (dimacs.hasEmptyClause()) {
-            this->ok = false;
-            certificate.proof();
-            return;
-        }
-
         if (allocator == nullptr) {
-            std::cout << "c importing clauses from dimacs" << std::endl;
+            std::cout << "c importing " << dimacs.nClauses() << " clauses from dimacs" << std::endl;
             for (Cl* import : dimacs.getProblem()) {
+                if (import->size() == 0) {
+                    this->ok = false;
+                    certificate.proof();
+                    return;
+                }
                 clause_db.createClause(import->begin(), import->end());
             }
         } 

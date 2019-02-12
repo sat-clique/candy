@@ -27,6 +27,8 @@ using namespace Candy;
 
 class IPASIRCandy {
 
+    CNFProblem problem;
+
     Solver<> solver;
 
     vector<Lit> assumptions;
@@ -36,7 +38,6 @@ class IPASIRCandy {
     bool nomodel;
 
     Lit import(int lit) {
-        while((size_t)abs(lit) > solver.nVars()) (void)solver.newVar();
         return mkLit(Var(abs(lit)-1), (lit < 0));
     }
 
@@ -68,8 +69,9 @@ public:
         if (lit) {
             clause.push_back(import(lit));
         } else {
-            solver.addClause(clause);
+            problem.readClause(clause.begin(), clause.end());
             clause.clear();
+            std::cout << *problem.getProblem()[0] << std::endl;
         }
     }
 
@@ -81,8 +83,10 @@ public:
 
     int solve() {
         drop_analysis();
+        solver.init(problem);
         lbool res = solver.solve(assumptions);
         assumptions.clear();
+        problem.clear();
         nomodel = (res != l_True);
         return (res == l_Undef) ? 0 :(res == l_True ? 10 : 20);
     }

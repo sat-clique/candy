@@ -129,7 +129,7 @@ void CNFProblem::readClause(std::initializer_list<Lit> list) {
     readClause(list.begin(), list.end());
 }
 
-void CNFProblem::readClause(Cl cl) {
+void CNFProblem::readClause(Cl& cl) {
     readClause(cl.begin(), cl.end());
 }
 
@@ -147,12 +147,8 @@ void CNFProblem::readClauses(For& f) {
 
 template <typename Iterator>
 void CNFProblem::readClause(Iterator begin, Iterator end) {
-    Cl* clause = new Cl(begin, end);
-        
-    if (clause->size() == 0) {
-        emptyClause = true;
-    }
-    else {
+    if (std::distance(begin, end) > 0) {
+        Cl* clause = new Cl(begin, end);
         std::sort(clause->begin(), clause->end());
         // remove redundant literals
         clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
@@ -163,9 +159,11 @@ void CNFProblem::readClause(Iterator begin, Iterator end) {
             return;
         }
         maxVars = std::max(maxVars, (unsigned int) 1 + var(clause->back()));
+        problem.push_back(clause);
     }
-
-    problem.push_back(clause);
+    else {
+        problem.push_back(new Cl());
+    }
 }
 
 }
