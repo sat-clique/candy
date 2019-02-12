@@ -171,19 +171,15 @@ public:
         if (!isInConflictingState()) {
             std::array<Lit, 1> unit;
             unsigned int pos = trail.size();
-            std::cout << "pos: " << pos << std::endl;
             this->ok &= (propagator.propagate() == nullptr);
             if (!isInConflictingState()) {
                 for (auto it = trail.begin() + pos; it != trail.end(); it++) {
-                    std::cout << "materializing: " << *it << std::endl;
                     assert(trail.reason(var(*it)) != nullptr);
                     unit[0] = *it;
                     clause_db.createClause(unit.begin(), unit.end());
                     trail.newFact(*it);
                 }
             }
-            std::cout << "Clauses: " << std::endl;
-            for (Clause* clause : clause_db) std::cout << *clause << std::endl;
         }
     }
 
