@@ -164,7 +164,6 @@ public:
         assert(trail.size() == 0);
         vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
-            std::cout << "pushing: " << *clause << std::endl;
             this->ok &= trail.newFact(clause->first());
         }
         if (!isInConflictingState()) {
@@ -631,9 +630,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             if (nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / nConflicts())))) {
                 lbdQueue.fastclear();
                 
-                branch.reset();                
-                trail.reset();
-                
+                branch.reset();       
+                trail.reset();         
+                                
                 // Perform clause database reduction and simplifications
                 if (nConflicts() >= (curRestart * nbclausesbeforereduce)) {
                     curRestart = (nConflicts() / nbclausesbeforereduce) + 1;
@@ -641,20 +640,23 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
                     if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
                         lastRestartWithInprocessing = curRestart;
+                        propagateAndMaterializeUnitClauses();
                         eliminate();
                         if (isInConflictingState()) {
                             std::cout << "c Conflict found during inprocessing" << std::endl;
                             return l_False;
                         }
+                        trail.reset();
                     }
-                    
-                    if (unitResolutionFrequency > 0 && lastRestartWithUnitResolution + unitResolutionFrequency <= curRestart) {
+                    else if (unitResolutionFrequency > 0 && lastRestartWithUnitResolution + unitResolutionFrequency <= curRestart) {
                         lastRestartWithUnitResolution = curRestart;
+                        propagateAndMaterializeUnitClauses();
                         unit_resolution();
                         if (isInConflictingState()) {
                             std::cout << "c Conflict found during unit-resolution" << std::endl;
                             return l_False;
                         }
+                        trail.reset();
                     }
                     
                     propagator.clear();
