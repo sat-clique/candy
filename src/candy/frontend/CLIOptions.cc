@@ -27,7 +27,7 @@ namespace ParallelOptions {
     IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 8));
     BoolOption opt_static_propagate("ParallelOptions", "static-propagate", "use thread-safe propagation module", false);
     BoolOption opt_static_database("ParallelOptions", "static-database", "Use thread-safe static clause-allocator", false);
-    IntOption opt_lbd_static_database("ParallelOptions", "lbd_static_database", "LBD upper bound for static database", 3, IntRange(3, INT16_MAX));
+    IntOption opt_static_database_size_bound("ParallelOptions", "static_database_size_bound", "upper size-bound for static database", 3, IntRange(3, INT16_MAX));
 }
 
 namespace ClauseDatabaseOptions {

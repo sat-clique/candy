@@ -40,7 +40,7 @@ class ClauseAllocator {
 public:
     ClauseAllocator() : 
         memory(32), facts(1), deleted(), 
-        global_database_lbd_upper_bound(ParallelOptions::opt_lbd_static_database),
+        global_database_size_bound(ParallelOptions::opt_static_database_size_bound),
         global_allocator(nullptr), alock(), ready(), ready_lock() { }
 
     ~ClauseAllocator() { }
@@ -81,7 +81,7 @@ public:
         else {
             std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->lock();
-            global_allocator->memory.import(this->memory, global_database_lbd_upper_bound);
+            global_allocator->memory.import(this->memory, global_database_size_bound);
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }
@@ -150,7 +150,7 @@ private:
     
     std::vector<Clause*> deleted;
 
-    const unsigned int global_database_lbd_upper_bound;
+    const unsigned int global_database_size_bound;
 
     // global allocator for multi-threaded scenario    
     ClauseAllocator* global_allocator;
