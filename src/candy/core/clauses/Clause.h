@@ -132,6 +132,10 @@ public:
         printf("0\n");
     }
 
+    inline bool isPersistent() const {
+        return weight == 0;
+    }
+
     inline bool isLearnt() const {
         return weight > 0;
     }
