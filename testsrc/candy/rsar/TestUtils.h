@@ -67,9 +67,6 @@ namespace Candy {
         /** Creates a variable which can be used in in the clauses passed to addClauses()
          * and equivalency/backbone queries. */
         virtual Var createVariable() = 0;
-        
-        /** Creates all variables up to the given maximum. */
-        virtual void createVariables(Var max) = 0;
 
         /** Returns true iff the literals a and b are equivalent wrt. the SAT problem instance
          * given via addClauses(...), with the literals contained in the given collection of

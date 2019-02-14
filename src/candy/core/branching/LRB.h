@@ -81,7 +81,6 @@ public:
     }
 
     void grow(size_t size) {
-        int prevSize = decision.size(); // can be negative during initialization
         if (size > decision.size()) {
             decision.resize(size, true);
             polarity.resize(size, initial_polarity);

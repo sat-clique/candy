@@ -177,7 +177,8 @@ namespace Candy {
                                 int maxRefinementSteps,
                                 std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
                                 SimplificationHandlingMode simpHandlingMode)
-    : m_conjectures(std::move(conjectures)),
+    : maxVars(0), 
+    m_conjectures(std::move(conjectures)),
     m_solver(solver),
     m_maxRefinementSteps(maxRefinementSteps),
     m_heuristics(std::move(heuristics)),
@@ -190,64 +191,19 @@ namespace Candy {
     }
     
     lbool ARSolver::underlyingSolve(const std::vector<Lit>& assumptions) {
-        assert(!m_solver->isInConflictingState());
-        return m_solver->solve(assumptions);
+        m_solver->setAssumptions(assumptions);
+        return m_solver->solve();
     }
     
     void ARSolver::addApproximationClauses(EncodedApproximationDelta& delta) {
-        assert(!m_solver->isInConflictingState());
+        CNFProblem approximation;
         for (auto&& clause : delta.getNewClauses()) {
             auto assumptionLit = getAssumptionLit(clause);
             auto otherLits = getNonAssumptionLits(clause);
-            m_approxLitsByAssumption[assumptionLit] = otherLits;            
-            bool success = m_solver->addClause((Cl&)clause);
-            
-#if !defined(NDEBUG)
-            if (!success) {
-                assert(!m_solver->isInConflictingState());
-                // The clause must not have contained eliminated variables
-                Var assumptionVar = var(getAssumptionLit(clause));
-                assert(!m_solver->isEliminated(assumptionVar));
-                auto conjectureLiterals = getNonAssumptionLits(clause);
-                assert(!m_solver->isEliminated(var(conjectureLiterals.first)));
-                assert(!m_solver->isEliminated(var(conjectureLiterals.second)));
-            }
-#endif
+            m_approxLitsByAssumption[assumptionLit] = otherLits;
+            approximation.readClause((Cl&)clause);
         }
-    }
-    
-    void ARSolver::addInitialApproximationClauses(EncodedApproximationDelta& delta) {
-        if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
-            // freeze the variables occuring in the delta, so that they won't be eliminated
-            // due to simplification.
-            for (auto&& clause : delta.getNewClauses()) {
-                auto lits = getNonAssumptionLits(clause);
-                m_solver->setFrozen(var(lits.first), true);
-                m_solver->setFrozen(var(lits.second), true);
-            }
-        }
-        
-        addApproximationClauses(delta);
-        
-        // In RESTRICT and FREEZE simp. handling mode, simplify just after inserting the clauses of the
-        // first approximation stage.
-        if (m_simpHandlingMode == SimplificationHandlingMode::RESTRICT
-            || m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
-            
-            std::vector<Lit> assumptions;
-            for (auto&& clause : delta.getNewClauses()) {
-                assumptions.push_back(activatedAssumptionLit(var(getAssumptionLit(clause))));
-            }
-            eliminate();
-        }
-        
-        if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
-            for (auto&& clause : delta.getNewClauses()) {
-                auto lits = getNonAssumptionLits(clause);
-                m_solver->setFrozen(var(lits.first), false);
-                m_solver->setFrozen(var(lits.second), false);
-            }
-        }
+        m_solver->init(approximation);
     }
 
     /** Marks all clauses deactivated in the given approximation delta. */
@@ -301,8 +257,9 @@ namespace Candy {
         // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
         // approximation computation system.
         if (m_simpHandlingMode == SimplificationHandlingMode::FULL) {
-            eliminate();
-            reduceConjectures();
+            // Currently not supported:
+            // eliminate();
+            // reduceConjectures();
         }
         
         // The latest point of simplification is right after inserting the clauses of the
@@ -323,22 +280,17 @@ namespace Candy {
         m_refinementStrategy = createDefaultRefinementStrategy(*m_conjectures,
                                                                std::move(m_heuristics),
                                                                [this]() {
-                                                                   return m_solver->newVar();
+                                                                   return this->createVariable();
                                                                });
     }
     
     lbool ARSolver::solve() {
-        if (m_solver->isInConflictingState()) {
-            return l_False;
-        }
-
         if (m_maxRefinementSteps == 0) {
             // no refinement allowed -> use plain sat solving
             return m_solver->solve();
         }
         
         initialize();
-        m_solver->disablePreprocessing();
         
         lbool sat = l_False;
         bool abort = false;
@@ -347,9 +299,20 @@ namespace Candy {
         do {
             if (i == 0) {
                 currentDelta = m_refinementStrategy->init();
-                addInitialApproximationClauses(*currentDelta);
+                addApproximationClauses(*currentDelta);
+
+                if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
+                    m_solver->enablePreprocessing();
+                    // freeze the variables occuring in the delta, so that they won't be eliminated due to simplification.
+                    for (auto&& clause : currentDelta->getNewClauses()) {
+                        auto lits = getNonAssumptionLits(clause);
+                        m_solver->setFrozen(var(lits.first), true);
+                        m_solver->setFrozen(var(lits.second), true);
+                    }
+                }
             }
             else if (i != m_maxRefinementSteps) {
+                m_solver->disablePreprocessing();
                 // Note that m_maxRefinementSteps != 0
                 currentDelta = m_refinementStrategy->refine();
                 addApproximationClauses(*currentDelta);
@@ -360,14 +323,9 @@ namespace Candy {
                 assert(currentDelta.get() != nullptr);
                 
                 sat = underlyingSolve(currentDelta->getAssumptionLiterals());
-                
-                // the underlying solver may enter a conflicting state e.g. after
-                // learning unary clauses.
-                abort |= m_solver->isInConflictingState();
-                assert(!m_solver->isInConflictingState() || sat != l_True);
-                
+                                
                 // the loop can safely be exited if no approximation clauses were used during solve
-                abort |= (currentDelta->countEnabledClauses() == 0);
+                abort |= (sat != l_True) || (currentDelta->countEnabledClauses() == 0);
             }
             else {
                 // no further steps after this one => deactivate the approximation clauses completely.
@@ -414,7 +372,7 @@ namespace Candy {
     m_solver(),
     m_maxRefinementSteps(-1),
     m_heuristics(),
-    m_simpHandlingMode(SimplificationHandlingMode::RESTRICT),
+    m_simpHandlingMode(SimplificationHandlingMode::FREEZE),
     m_called(false) {
         m_heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>);
         

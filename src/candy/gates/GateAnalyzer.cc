@@ -38,7 +38,10 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
     runtime.start();
     gates.resize(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
-    index = buildIndexFromClauses(problem.getProblem());
+    index.resize(2 * problem.nVars());
+    for (Cl* c : problem) for (Lit l : *c) {// build index
+        index[l].push_back(c);
+    }
     if (useHolistic) solver->init(problem);
     solver->disablePreprocessing();
     runtime.stop();
@@ -97,7 +100,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     Lit alit = mkLit(problem.nVars()+assumptions.size(), false);
     assumptions.push_back(~alit);
     Cl clause;
-    for (const For& f : { fwd, bwd })
+    for (const For& f : { fwd, bwd }) {
         for (Cl* cl : f) {
             for (Lit l : *cl) {
                 if (var(l) != o) {
@@ -106,14 +109,13 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
             }
             clause.push_back(alit);
             constraint.readClause(clause);
-#ifdef GADebug
-            printClause(&clause, true);
-#endif
             clause.clear();
         }
+    }
     solver->init(constraint);
     solver->setConfBudget(semanticConflictBudget);
-    bool isRightUnique = solver->solve(assumptions) == l_False;
+    solver->setAssumptions(assumptions);
+    bool isRightUnique = solver->solve() == l_False;
     assumptions.back() = alit;
     return isRightUnique;
 }
@@ -316,7 +318,7 @@ void GateAnalyzer::analyze() {
     runtime.start();
 
     // start recognition with unit literals
-    for (Cl* c : problem.getProblem()) {
+    for (Cl* c : problem) {
         if (c->size() == 1) {
             roots.push_back(c);
             removeFromIndex(index, c);

@@ -52,23 +52,19 @@ namespace Candy {
         return lbool(result);
     }
     
-    bool SolverMock::addClause(const Cl &clause) { 
-        EXPECT_TRUE(std::all_of(clause.begin(), clause.end(),
-                                [this](Lit l) { return var(l) <= m_maxCreatedVar; }));
-        EXPECT_TRUE(std::all_of(clause.begin(), clause.end(),
-                                [this](Lit l) { return !this->isEliminated(var(l)); }));
-        m_addedClauses.push_back(clause);
-        ++m_nClausesAddedSinceLastSolve;
-        m_eventLog.push_back(SolverMockEvent::ADD_CLAUSE);
-        return true;
-    }
-    
     void SolverMock::init(const CNFProblem &problem, ClauseAllocator* allocator) {
         // TODO: fix the unscrupolously non-const CNFProblem interface to update
         // m_nClausesAddedSinceLastSolve
         m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
-        for (unsigned int i = 0; i < problem.nVars(); ++i) {
-            newVar();
+        m_maxCreatedVar = problem.nVars();
+        for (const Cl* clause : problem) {
+            EXPECT_TRUE(std::all_of(clause->begin(), clause->end(),
+                                    [this](Lit l) { return var(l) <= m_maxCreatedVar; }));
+            EXPECT_TRUE(std::all_of(clause->begin(), clause->end(),
+                                    [this](Lit l) { return !this->isEliminated(var(l)); }));
+            m_addedClauses.push_back(*clause);
+            ++m_nClausesAddedSinceLastSolve;
+            // m_eventLog.push_back(SolverMockEvent::ADD_CLAUSE);
         }
     }
     
@@ -96,17 +92,9 @@ namespace Candy {
         return m_conflictLits;
     }
     
-    Var SolverMock::newVar() {
-        return ++m_maxCreatedVar;
-    }
-    
     size_t SolverMock::nVars() const {
         return m_maxCreatedVar+1;
     }
-    
-    bool SolverMock::isInConflictingState() const {
-        return false;
-    };
     
     void SolverMock::mockctrl_setConflictLits(const std::vector<Lit> & conflictLits) {
         m_conflictLits = conflictLits;

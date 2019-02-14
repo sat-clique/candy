@@ -252,7 +252,7 @@ namespace Candy {
             
             CNFProblem problem;
             problem.readDimacsFromFile(fullFilename.c_str());
-            ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
+            ASSERT_FALSE(problem.nClauses() == 0) << "Could not read test problem file.";
             
             GateAnalyzer analyzer{problem};
             analyzer.analyze();
