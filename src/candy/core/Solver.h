@@ -104,31 +104,25 @@ class Solver : public CandySolverInterface {
 public:
     Solver();
     ~Solver();
-    
-    Var newVar() override;
 
-    bool addClause(const Cl& clause) override {
-        init(CNFProblem((Cl&)clause)); 
-        return !isInConflictingState(); 
-    }
-
-    void init(const CNFProblem& dimacs, ClauseAllocator* allocator = nullptr) override {
+    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override {
         assert(trail.decisionLevel() == 0);
 
-        if (dimacs.nVars() > this->nVars()) {
-            clause_db.grow(dimacs.nVars());
-            propagator.init(dimacs.nVars());
-            trail.grow(dimacs.nVars());
-            conflict_analysis.grow(dimacs.nVars());
-            branch.grow(dimacs.nVars());
-            elimination.grow(dimacs.nVars());
+        if (problem.nVars() > this->nVars()) {
+            clause_db.grow(problem.nVars());
+            propagator.init(problem.nVars());
+            trail.grow(problem.nVars());
+            conflict_analysis.grow(problem.nVars());
+            branch.grow(problem.nVars());
+            elimination.grow(problem.nVars());
+            freezes.grow(problem.nVars());
         }
 
-        branch.init(dimacs);
+        branch.init(problem);
 
         if (allocator == nullptr) {
-            std::cout << "c importing " << dimacs.nClauses() << " clauses from dimacs" << std::endl;
-            for (Cl* import : dimacs.getProblem()) {
+            std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
+            for (Cl* import : problem) {
                 if (import->size() == 0) {
                     this->ok = false;
                     certificate.proof();
@@ -196,8 +190,7 @@ public:
         return conflict;
     }
 
-    // Solving:
-    void unit_resolution(); // remove satisfied clauses and remove false literals from clauses 
+    void unit_resolution(); // delete satisfied clauses and eliminate false literals
     void eliminate(); // Perform variable elimination based simplification. 
 
     BranchingDiversificationInterface* accessBranchingInterface() override {
@@ -218,28 +211,22 @@ public:
 
     void setFrozen(Var v, bool freeze) override  {
         if (freeze) {
-            freezes.push_back(v);
+            freezes.set(v);
         } else {
-            freezes.erase(std::remove(freezes.begin(), freezes.end(), v), freezes.end());
+            freezes.unset(v);
         }
     }
 
     lbool solve() override;
 
-    lbool solve(std::initializer_list<Lit> assumps) override {
-        assumptions.clear();
-        assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-        return solve();
-    }
-
-    lbool solve(const vector<Lit>& assumps) override {
-        assumptions.clear();
-        assumptions.insert(assumptions.end(), assumps.begin(), assumps.end());
-        return solve();
+    void setAssumptions(const vector<Lit>& assumptions) override {
+        this->assumptions.clear();
+        this->assumptions.insert(this->assumptions.end(), assumptions.begin(), assumptions.end());
+        for (Lit lit : assumptions) setFrozen(var(lit), true);
     }
 
     // true means solver is in a conflicting state
-    bool isInConflictingState() const override {
+    bool isInConflictingState() const {
         return !ok;
     }
 
@@ -292,7 +279,7 @@ public:
     }
 
     //TODO: use std::function<int(void*)> as type here
-    void setTermCallback(void* state, int (*termCallback)(void*)) {
+    void setTermCallback(void* state, int (*termCallback)(void*)) override {
         this->termCallbackState = state;
         this->termCallback = termCallback;
     }
@@ -340,7 +327,7 @@ protected:
 
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
     double simplification_threshold_factor = 0.1;
-    std::vector<Var> freezes;
+    Stamp<Var> freezes;
     unsigned int lastRestartWithInprocessing;
     unsigned int inprocessingFrequency;
     unsigned int lastRestartWithUnitResolution;
@@ -425,22 +412,6 @@ template<class TClauses, class TAssignment, class TPropagate, class TLearning, c
 Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
 }
 
-/***
- * Creates a new SAT variable in the solver. If 'decision' is cleared, variable will not be
- * used as a decision variable (NOTE! This has effects on the meaning of a SATISFIABLE result).
- ***/
-template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-Var Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::newVar() {
-    int v = static_cast<int>(nVars());
-    clause_db.grow(nVars()+1);
-    propagator.init(nVars());
-    trail.grow();
-    conflict_analysis.grow();
-    branch.grow();
-    elimination.grow(nVars());
-    return v;
-}
-
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
     assert(trail.decisionLevel() == 0);
@@ -499,12 +470,8 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate() {
-    // freeze assumptions and other externally set frozen variables
-    for (Lit lit : assumptions) {
-        elimination.lock(var(lit));
-    }
-    for (Var var : freezes) {
-        elimination.lock(var);
+    for (unsigned int v = 0; v < nVars(); v++) {
+        elimination.lock(v);
     }
 
     clause_db.initOccurrenceTracking();

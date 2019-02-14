@@ -36,38 +36,35 @@ namespace Candy {
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_mostSimple) {
         auto gateBuilder = createGateStructureBuilder();
         auto cnf = gateBuilder->build();
-        auto& formula = cnf->getProblem();
         
-        EXPECT_EQ(formula.size(), 1ul);
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(0, 1)})));
+        EXPECT_EQ(cnf->nClauses(), 1ul);
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_andGate) {
         auto gateBuilder = createGateStructureBuilder();
         gateBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto cnf = gateBuilder->build();
-        auto& formula = cnf->getProblem();
         
-        EXPECT_EQ(formula.size(), 4ul);
+        EXPECT_EQ(cnf->nClauses(), 4ul);
         
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 0), mkLit(2, 0), mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 1), mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(2, 1), mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 0), mkLit(2, 0), mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 1), mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(2, 1), mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_orGate) {
         auto gateBuilder = createGateStructureBuilder();
         gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
         auto cnf = gateBuilder->build();
-        auto& formula = cnf->getProblem();
         
-        EXPECT_EQ(formula.size(), 4ul);
+        EXPECT_EQ(cnf->nClauses(), 4ul);
         
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 1), mkLit(2, 1), mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(1, 0), mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(2, 0), mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(formula, Cl({mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 1), mkLit(2, 1), mkLit(0, 0)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 0), mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(2, 0), mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_simple) {

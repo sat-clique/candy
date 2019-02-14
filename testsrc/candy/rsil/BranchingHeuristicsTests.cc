@@ -481,7 +481,7 @@ namespace Candy {
     static void test_acceptanceTest(std::string filename, bool expectedResult, std::string mode, unsigned int size = 3) {
         CNFProblem problem;
         problem.readDimacsFromFile(filename.c_str());
-        ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
+        ASSERT_FALSE(problem.nClauses() == 0) << "Could not read test problem file.";
         
         RSILOptions::opt_rsil_mode.set(mode.c_str());
         RSILOptions::opt_rsil_advice_size.set(size);

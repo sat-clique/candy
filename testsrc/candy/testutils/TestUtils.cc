@@ -36,20 +36,6 @@ namespace Candy {
         assert(variables.find(forbidden) == variables.end()); // TODO refactor
     }
     
-    void deleteClauses(CNFProblem* formula) {
-        
-        // TODO: This is a weird workaround. CNFProblem ought to own the formula and take care of its destruction.
-        
-        if (formula == nullptr) {
-            return;
-        }
-        
-        for (auto clause : formula->getProblem()) {
-            delete clause;
-        }
-        formula->getProblem().clear();
-    }
-    
     Cl negatedLits(const Cl& clause) {
         Cl result;
         for (auto lit : clause) {
@@ -64,7 +50,7 @@ namespace Candy {
         }
     }
 
-    bool containsClause(const For& formula, const Cl& clause) {
+    bool containsClause(const CNFProblem& formula, const Cl& clause) {
         bool found = false;
         Cl clause1(clause.begin(), clause.end());
         std::sort(clause1.begin(), clause1.end());

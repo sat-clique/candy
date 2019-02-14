@@ -39,26 +39,22 @@ public:
 	virtual void enablePreprocessing() = 0;
     virtual void disablePreprocessing() = 0;
 
-    virtual Var newVar() = 0;
-
 	virtual ClauseAllocator* setupGlobalAllocator() = 0;
     virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) = 0;
-	virtual bool addClause(const Cl& clause) = 0;
 
-    virtual void unit_resolution() = 0; // remove satisfied clauses and remove false literals from clauses	
     virtual void eliminate() = 0;  // Perform variable elimination based simplification.
 	
     virtual bool isEliminated(Var v) const = 0;
     virtual void setFrozen(Var v, bool freeze) = 0;
-
+	virtual void setAssumptions(const std::vector<Lit>& assumptions) = 0;
+	
 	virtual lbool solve() = 0;
-	virtual lbool solve(std::initializer_list<Lit> assumps) = 0;
-	virtual lbool solve(const std::vector<Lit>& assumps) = 0;
 
 	virtual void setConfBudget(uint64_t x) = 0;
 	virtual void setPropBudget(uint64_t x) = 0;
 	virtual void setInterrupt(bool value) = 0;
 	virtual void budgetOff() = 0;
+	virtual void setTermCallback(void* state, int (*termCallback)(void*)) = 0;
 	virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) = 0;
 
 	virtual void printDIMACS() = 0;
@@ -67,9 +63,6 @@ public:
 	virtual lbool modelValue(Var x) const = 0;
 	virtual lbool modelValue(Lit p) const = 0;
     virtual Cl getModel() = 0;
-
-	// true means solver is in a conflicting state
-	virtual bool isInConflictingState() const = 0;
 	virtual std::vector<Lit>& getConflict() = 0;
 
 	virtual size_t nClauses() const = 0;
