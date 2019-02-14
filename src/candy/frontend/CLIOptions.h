@@ -28,7 +28,7 @@ namespace ParallelOptions {
     extern IntOption opt_threads;
     extern BoolOption opt_static_propagate; // thread-safe propagator
     extern BoolOption opt_static_database;
-    extern IntOption opt_lbd_static_database;
+    extern IntOption opt_static_database_size_bound;
 }
 
 namespace ClauseDatabaseOptions {
