@@ -107,9 +107,9 @@ public:
             std::vector<Clause*> global_clauses = global_allocator->memory.collect();
             global_allocator->memory_lock.unlock();
             global_allocator->set_ready(true);
-            global_allocator->facts_lock.lock();
+            // global_allocator->facts_lock.lock();
             std::vector<Clause*> global_unit_clauses = global_allocator->facts.collect();
-            global_allocator->facts_lock.unlock();
+            // global_allocator->facts_lock.unlock();
             clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
             clauses.insert(clauses.end(), global_unit_clauses.begin(), global_unit_clauses.end());
         }
@@ -122,10 +122,11 @@ public:
 
     std::vector<Clause*> collect_unit_clauses() {
         if (global_allocator != nullptr) {
-            global_allocator->facts_lock.lock();
-            std::vector<Clause*> global_unit_clauses = global_allocator->collect_unit_clauses();
-            global_allocator->facts_lock.unlock();
-            return global_unit_clauses;
+            // global_allocator->facts_lock.lock();
+            // std::vector<Clause*> global_unit_clauses = global_allocator->collect_unit_clauses();
+            // global_allocator->facts_lock.unlock();
+            // return global_unit_clauses;
+            return global_allocator->collect_unit_clauses();
         }
         else {
             return facts.collect();
