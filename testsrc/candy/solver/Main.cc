@@ -79,19 +79,19 @@ TEST (CandyAddClauseTestPatterns, lazyDeletionOfStrengthenedClauses) {
 }
 
 TEST (CandyAddClauseTestPatterns, removeDuplicates) {
-  CNFProblem formula;
-  formula.readClause({mkLit(1), mkLit(2), mkLit(1)});
+  CNFProblem formula { {mkLit(1), mkLit(2), mkLit(1)} };
   Solver<> solver;
   solver.init(formula);
   // ASSERT_EQ(clauses[0]->size(), 2ull);
 }
 
 TEST(SolverTests, basicIncrementalSolver) {
-  CNFProblem problem;
-  problem.readClauses({{1_L, 2_L}, {1_L, 1_L}, {2_L, 2_L}});
+  CNFProblem problem { {{1_L, 2_L}, {1_L, 1_L}, {2_L, 2_L}} };
   Solver<> underTest;
+  Var assumptionVar = problem.newVar();
   underTest.init(problem);
-  Var assumptionVar = underTest.newVar();    
-  EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 0)}));
-  EXPECT_TRUE(l_True == underTest.solve(std::vector<Lit>{mkLit(assumptionVar, 1)}));
+  underTest.setAssumptions(Cl { mkLit(assumptionVar, 0) });
+  EXPECT_TRUE(l_True == underTest.solve());
+  underTest.setAssumptions(Cl { mkLit(assumptionVar, 1) });
+  EXPECT_TRUE(l_True == underTest.solve());
 }

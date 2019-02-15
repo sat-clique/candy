@@ -49,14 +49,20 @@ namespace Candy {
         virtual ~EquivalencyCheckerImpl();
         
         void addClauses(const std::vector<Cl>& clauses) override;
-        Var createVariable() override;
-        void createVariables(Var max) override;
         bool isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) override;
         bool isAllEquivalent(const std::vector<Lit>& assumptions, const std::vector<Lit>& equivalentLits) override;
         bool isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) override;
+
+        Var createVariable() {
+            return m_maxVar++;
+        }
         
     private:
-        bool solve(const std::vector<Lit>& assumptions);
+        bool solve();
+
+        void setAssumptions(const vector<Lit>& assumptions) {
+            m_solver->setAssumptions(assumptions);
+        }
         
         std::unique_ptr<Solver<>> m_solver;
         Var m_maxVar;
@@ -73,23 +79,12 @@ namespace Candy {
     }
     
     void EquivalencyCheckerImpl::addClauses(const std::vector<Cl>& clauses) {
-        for (auto& clause : clauses) {
-            for (auto lit : clause) {
-                ASSERT_TRUE(var(lit) <= m_maxVar);
-            }
-            m_solver->addClause(clause);
+        CNFProblem problem;
+        for (const Cl& clause : clauses) {
+            problem.readClause((Cl&)clause);
         }
-    }
-    
-    Var EquivalencyCheckerImpl::createVariable() {
-        m_maxVar = m_solver->newVar();
-        return m_maxVar;
-    }
-    
-    void EquivalencyCheckerImpl::createVariables(Var max) {
-        while (m_maxVar < max) {
-            createVariable();
-        }
+        m_solver->init(problem);
+        m_maxVar = problem.nVars();
     }
     
     bool EquivalencyCheckerImpl::isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) {
@@ -103,10 +98,12 @@ namespace Candy {
         extendedAssumptions.push_back(~assumption1);
         extendedAssumptions.push_back(assumption2);
         
-        if (!solve(extendedAssumptions)) {
+        setAssumptions(extendedAssumptions);
+        if (!solve()) {
             extendedAssumptions[extendedAssumptions.size()-2] = assumption1;
             extendedAssumptions[extendedAssumptions.size()-1] = ~assumption2;
-            return !solve(extendedAssumptions);
+            setAssumptions(extendedAssumptions);
+            return !solve();
         }
         else {
             return false;
@@ -132,13 +129,14 @@ namespace Candy {
             addClauses({Cl{~lit, assumption}});
             std::vector<Lit> extendedAssumptions {assumptions};
             extendedAssumptions.push_back(~assumption);
-            allBackbone &= !solve(extendedAssumptions);
+            setAssumptions(extendedAssumptions);
+            allBackbone &= !solve();
         }
         return allBackbone;
     }
     
-    bool EquivalencyCheckerImpl::solve(const std::vector<Lit>& assumptions) {
-        return l_True == m_solver->solve(assumptions);
+    bool EquivalencyCheckerImpl::solve() {
+        return l_True == m_solver->solve();
     }
     
     std::unique_ptr<EquivalencyChecker> createEquivalencyChecker() {
@@ -148,8 +146,6 @@ namespace Candy {
     
     TEST(RSARTestUtils, EquivalencyChecker_checkEquivalences) {
         auto checker = createEquivalencyChecker();
-        
-        checker->createVariables(3);
 
         checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
             {mkLit(1, 0), mkLit(0, 1)},
@@ -162,9 +158,6 @@ namespace Candy {
     
     TEST(RSARTestUtils, EquivalencyChecker_checkBackbones) {
         auto checker = createEquivalencyChecker();
-        
-        checker->createVariables(2);
-        checker->createVariables(3);
 
         checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
             {mkLit(3, 0), mkLit(0, 1)},

@@ -35,7 +35,7 @@ Minimizer::Minimizer(CNFProblem& _problem, Cl _model) : problem(_problem), model
 
 Minimizer::~Minimizer() { }
 
-void Minimizer::generateHittingSetProblem(For& clauses) {
+void Minimizer::generateHittingSetProblem(CNFProblem& clauses) {
     for (Cl* clause : clauses) {
         // create clause containing all satified literals (purified)
         Cl normalizedClause;
@@ -57,10 +57,11 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
         GateAnalyzer gateAnalyzer(problem);
         gateAnalyzer.analyze();
         For clauses = gateAnalyzer.getPrunedProblem(model);
-        generateHittingSetProblem(clauses);
+        CNFProblem problem { clauses };
+        generateHittingSetProblem(problem);
     }
     else {
-        generateHittingSetProblem(problem.getProblem());
+        generateHittingSetProblem(problem);
     }
 
     CandySolverInterface* solver = new Solver<>();
@@ -119,9 +120,10 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
 //        printClause(assume);
         assert(assume.size() >= i++);
 
-        solver->addClause(exclude);
+        solver->init(CNFProblem { exclude });
 
-        if (solver->solve(assume) == l_True) {
+        solver->setAssumptions(assume);
+        if (solver->solve() == l_True) {
             Cl newModel = solver->getModel();
             pModel.clear();
             pModel.insert(pModel.end(), newModel.begin(), newModel.end());

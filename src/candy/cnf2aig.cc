@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
 
     problem.readDimacsFromFile(filename);
 	bool trivially_unsat = false;
-	for (Cl* clause : problem.getProblem()) {
+	for (Cl* clause : problem) {
 		trivially_unsat |= clause->size() == 0;
 	}
 

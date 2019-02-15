@@ -45,8 +45,7 @@ namespace Candy {
 
     enum class SimplificationHandlingMode {
         DISABLE, /// Disable problem simplification entirely
-        RESTRICT, /// Simplify the SAT problem after creating the first approximation
-        FREEZE, /// like RESTRICT, but freeze the variables occuring involved in the first approximation
+        FREEZE, /// Simplify the SAT problem after creating the first approximation and freeze the variables occuring in the first approximation
         FULL /// Simplify the problem first, then compute the approximations using the remaining variables
     };
     
@@ -78,27 +77,25 @@ namespace Candy {
         	m_solver->disablePreprocessing();
         }
 
-        virtual Var newVar() override {
-        	return m_solver->newVar();
+        virtual Var createVariable() {
+        	return maxVars++;
         }
 
         virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override {
+            maxVars = problem.nVars();
         	m_solver->init(problem, allocator);
-        }
-        virtual bool addClause(const Cl& lits) override { 
-        	return m_solver->addClause(lits); 
         }
 
         virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { 
-            return m_solver->setLearntCallback(state, max_length, learntCallback);
+            m_solver->setLearntCallback(state, max_length, learntCallback);
         }
 
+        virtual void setTermCallback(void* state, int (*termCallback)(void*)) override {
+            m_solver->setTermCallback(state, termCallback);
+        }
 
         /** Runs the underlying SAT solver's simplification system. This method may only be called
          * before clauses containing assumptions have been added to the solver. */
-        virtual void unit_resolution() override {
-        	m_solver->unit_resolution(); // remove satisfied clauses and remove false literals from clauses
-        }
         virtual void eliminate() override { 
         	m_solver->eliminate();// Perform variable elimination based simplification.
         }
@@ -109,15 +106,11 @@ namespace Candy {
         	m_solver->setFrozen(v, freeze);
         }
 
+    	virtual void setAssumptions(const std::vector<Lit>& assumptions) override {
+    		m_solver->setAssumptions(assumptions);
+    	}
+
     	virtual lbool solve() override;
-    	virtual lbool solve(std::initializer_list<Lit> assumps) override {
-    		assert(0 && "unsupported");
-    		return l_Undef;
-    	}
-    	virtual lbool solve(const std::vector<Lit>& assumps) override {
-    		assert(0 && "unsupported");
-    		return l_Undef;
-    	}
 
     	virtual void setConfBudget(uint64_t x) override {
     		m_solver->setConfBudget(x);
@@ -146,11 +139,6 @@ namespace Candy {
         virtual Cl getModel() override {
             return m_solver->getModel();
         }
-
-    	// true means solver is in a conflicting state
-    	virtual bool isInConflictingState() const override {
-    		return m_solver->isInConflictingState();
-    	}
     	virtual std::vector<Lit>& getConflict() override {
     		return m_solver->getConflict();
     	}
@@ -201,6 +189,8 @@ namespace Candy {
 
         /** Calls the underlying SAT solver using the given assumption literals. */
         lbool underlyingSolve(const std::vector<Lit>& assumptions);
+
+        int maxVars;
 
         /**
          * Creates a function returning the set of literals contained in clauses

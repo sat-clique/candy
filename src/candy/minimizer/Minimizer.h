@@ -48,7 +48,7 @@ public:
   Minimizer(CNFProblem& _problem, Cl _model);
   virtual ~Minimizer();
 
-  void generateHittingSetProblem(For& clauses);
+  void generateHittingSetProblem(CNFProblem& clauses);
   CNFProblem& getHittingSetProblem();
 
   Cl computeMinimalModel(bool pruningActivated);

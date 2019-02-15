@@ -136,10 +136,6 @@ public:
     const CNFProblem& problem;
     Runtime runtime;
 
-    const CNFProblem& getProblem() {
-        return problem;
-    }
-
 private:
     // problem to analyze:
     std::unique_ptr<CandySolverInterface> solver;
@@ -234,14 +230,6 @@ private:
         for (Cl* c : copy) {
             removeFromIndex(index, c);
         }
-    }
-
-    std::vector<For> buildIndexFromClauses(const For& f) {
-        std::vector<For> index(2 * problem.nVars());
-        for (Cl* c : f) for (Lit l : *c) {
-            index[l].push_back(c);
-        }
-        return index;
     }
 
 };

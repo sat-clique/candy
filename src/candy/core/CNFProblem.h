@@ -31,20 +31,20 @@ class CNFProblem {
 
 private:
     For problem;
-    unsigned int maxVars = 0;
+    unsigned int maxVars;
 
 public:
-    CNFProblem() { }
+    CNFProblem() : maxVars(0) { }
 
-    CNFProblem(For& formula) {
+    CNFProblem(For& formula) : maxVars(0) {
         readClauses(formula);
     }
 
-    CNFProblem(Cl& clause) {
+    CNFProblem(Cl& clause) : maxVars(0) {
         readClause(clause.begin(), clause.end());
     }
 
-    CNFProblem(std::initializer_list<std::initializer_list<Lit>> formula) {
+    CNFProblem(std::initializer_list<std::initializer_list<Lit>> formula) : maxVars(0) {
         readClauses(formula);
     }
 
@@ -52,22 +52,19 @@ public:
         clear();
     }
 
-    inline void clear() {
-        for (Cl* clause : problem) {
-            delete clause;
-        }
-        problem.clear();
+    typedef For::const_iterator const_iterator;
+
+    inline const_iterator begin() const {
+        return problem.begin();
     }
 
-    inline const For& getProblem() const {
-        return problem;
+    inline const_iterator end() const {
+        return problem.end();
     }
 
-    inline For& getProblem() { 
-        return problem;
+    inline const Cl* operator [](int i) const {
+        return problem[i];
     }
-
-    void printDIMACS() const;
 
     inline size_t nVars() const {
         return maxVars;
@@ -80,6 +77,15 @@ public:
     inline int newVar() {
         return maxVars++;
     }
+
+    inline void clear() {
+        for (Cl* clause : problem) {
+            delete clause;
+        }
+        problem.clear();
+    }
+
+    void printDIMACS() const;
 
     std::vector<double> getLiteralRelativeOccurrences() const;
 
