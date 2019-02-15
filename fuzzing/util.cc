@@ -9,7 +9,7 @@ extern lbool minisat_result(CNFProblem const &problem) {
         solver.newVar();
     }
 
-    for (auto* clause : problem.getProblem()) {
+    for (auto* clause : problem) {
         Minisat::vec<Minisat::Lit> minisatClause;
         for (auto lit : *clause) {
             minisatClause.push(Minisat::mkLit(static_cast<Minisat::Var>(var(lit)), sign(lit)));

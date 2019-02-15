@@ -46,13 +46,6 @@ namespace Candy {
     /**
      * \ingroup TestUtils
      *
-     * Deletes the clauses in the given formula.
-     */
-    void deleteClauses(CNFProblem* formula);
-    
-    /**
-     * \ingroup TestUtils
-     *
      * Asserts that variables does not contain the variable forbidden.
      */
     void assertContainsVariable(const std::unordered_set<Var>& variables, const Var forbidden);
@@ -83,7 +76,7 @@ namespace Candy {
      *
      * Returns true iff the given formula contains the given clause.
      */
-    bool containsClause(const For& formula, const Cl& clause);
+    bool containsClause(const CNFProblem& formula, const Cl& clause);
     
     /** 
      * \ingroup TestUtils

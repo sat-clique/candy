@@ -71,21 +71,20 @@ namespace Candy {
         virtual void enablePreprocessing() override {}
         virtual void disablePreprocessing() override {}
 
-        virtual Var newVar() override;
-
         virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override;
-        virtual bool addClause(const Cl& lits) override; 
 
         void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
+        void setTermCallback(void* state, int (*termCallback)(void*)) override { }
 
-        virtual void unit_resolution() override { } // remove satisfied clauses and remove false literals from clauses
         virtual void eliminate() override;  // Perform variable elimination based simplification.
         virtual bool isEliminated(Var v) const override;
         virtual void setFrozen(Var v, bool freeze) override;
 
     	virtual lbool solve() override;
-    	virtual lbool solve(std::initializer_list<Lit> assumps) override { return solve(); }
-    	virtual lbool solve(const std::vector<Lit>& assumps) override { return solve(); }
+
+    	virtual void setAssumptions(const std::vector<Lit>& assumptions) override { 
+            for (Lit lit : assumptions) setFrozen(var(lit), true);
+        }
 
     	virtual void setConfBudget(uint64_t x) override { }
     	virtual void setPropBudget(uint64_t x) override { }
@@ -98,9 +97,6 @@ namespace Candy {
     	virtual lbool modelValue(Var x) const override { return l_Undef; }
     	virtual lbool modelValue(Lit p) const override { return l_Undef; }
         virtual Cl getModel() override { return Cl(); }
-
-    	// true means solver is in a conflicting state
-    	virtual bool isInConflictingState() const override;
     	virtual std::vector<Lit>& getConflict() override;
 
     	virtual size_t nClauses() const override { return 0; }
@@ -154,7 +150,7 @@ namespace Candy {
          * invocation */
         int mockctrl_getAmountOfClausesAddedSinceLastSolve() const noexcept;
         
-        /** Returns the clauses added via addClause(). */
+        /** Returns the clauses added via init(). */
         const std::vector<Cl> &mockctrl_getAddedClauses() const noexcept;        
         
         SolverMock() noexcept;

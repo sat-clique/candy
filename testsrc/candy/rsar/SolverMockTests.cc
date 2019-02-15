@@ -35,25 +35,18 @@
 namespace Candy {
     TEST(RSARTestUtils, SolverMock_eventRecording) {
         SolverMock underTest;
-        CNFProblem problem;
+        CNFProblem problem { {{ 1_L }, { 2_L }} };
         
         auto expected = std::vector<SolverMockEvent>{};
         EXPECT_EQ(underTest.mockctrl_getEventLog(), expected);
         
-        Var var1 = underTest.newVar();
-        Var var2 = underTest.newVar();
-        
         underTest.init(problem);
-        underTest.addClause(Cl{mkLit(var1,0)});
         underTest.eliminate();
-        underTest.addClause(Cl{mkLit(var2,0)});
         underTest.solve();
         
         auto expected2 = std::vector<SolverMockEvent>{
             SolverMockEvent::ADD_PROBLEM,
-            SolverMockEvent::ADD_CLAUSE,
             SolverMockEvent::SIMPLIFY,
-            SolverMockEvent::ADD_CLAUSE,
             SolverMockEvent::SOLVE};
         EXPECT_EQ(underTest.mockctrl_getEventLog(), expected2);
     }
@@ -73,7 +66,7 @@ namespace Candy {
         underTest.eliminate();
         underTest.solve();
         ++callN;
-        underTest.addClause({});
+        underTest.init({{}});
         underTest.solve();
         ++callN;
         

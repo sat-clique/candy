@@ -46,7 +46,7 @@ namespace Candy {
     static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool expectedResult, bool install_static_allocator) {
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
-        // ASSERT_FALSE(problem.getProblem().empty()) << "Could not read test problem file.";
+        // ASSERT_FALSE(problem.size() == 0) << "Could not read test problem file.";
         solver->init(problem);
         ClauseAllocator* allocator = nullptr;
         if (install_static_allocator) {

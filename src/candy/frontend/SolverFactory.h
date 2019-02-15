@@ -36,9 +36,6 @@ SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& st
 	if (str == "FREEZE") {
 		return Candy::SimplificationHandlingMode::FREEZE;
 	}
-	if (str == "RESTRICT") {
-		return Candy::SimplificationHandlingMode::RESTRICT;
-	}
 	if (str == "FULL") {
 		return Candy::SimplificationHandlingMode::FULL;
 	}

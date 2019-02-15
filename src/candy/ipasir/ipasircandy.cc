@@ -71,7 +71,6 @@ public:
         } else {
             problem.readClause(clause.begin(), clause.end());
             clause.clear();
-            std::cout << *problem.getProblem()[0] << std::endl;
         }
     }
 
@@ -84,7 +83,8 @@ public:
     int solve() {
         drop_analysis();
         solver.init(problem);
-        lbool res = solver.solve(assumptions);
+        solver.setAssumptions(assumptions);
+        lbool res = solver.solve();
         assumptions.clear();
         problem.clear();
         nomodel = (res != l_True);
