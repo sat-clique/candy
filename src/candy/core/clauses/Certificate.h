@@ -55,45 +55,23 @@ private:
 
 public:
     Certificate(const char* _out) : active(false) {
-        reset(_out);
+        std::unique_ptr<std::ofstream> new_out = backported_std::make_unique<std::ofstream>(_out, std::ofstream::out);
+
+        if (new_out->is_open()) {
+            this->out = std::move(new_out);
+            this->active = true;
+        }
     }
 
     ~Certificate() {
-        reset(nullptr);
-    }
-
-    bool isActive() {
-        return active;
-    }
-
-    void reset(const char* target) {
-        if (target == nullptr || strlen(target) == 0) {
-            if (out && out->is_open()) out->close();
-            active = false;
-        }
-        else {
-            std::unique_ptr<std::ofstream> new_out = backported_std::make_unique<std::ofstream>(target, std::ofstream::out);
-
-            if (new_out->is_open()) {
-                if (out && out->is_open()) out->close();
-                this->out = std::move(new_out);
-                this->active = true;
-            }
-        }
+        if (out && out->is_open()) out->close();
+        active = false;
     }
 
     void proof() {
         if (active) {
             *out << "0" << std::endl;
         }
-    }
-
-    void added(std::initializer_list<Lit> list) {
-        added(list.begin(), list.end());
-    }
-
-    void removed(std::initializer_list<Lit> list) {
-        removed(list.begin(), list.end());
     }
 
     template<typename Iterator>

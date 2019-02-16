@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseAllocator.h"
+#include "candy/core/clauses/Certificate.h"
 #include "candy/core/Trail.h"
 #include "candy/frontend/CLIOptions.h"
 
@@ -75,6 +76,8 @@ private:
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
+    Certificate certificate;
+
 public:
     /* analysis result is stored here */
 	AnalysisResult result;
@@ -86,7 +89,8 @@ public:
         track_literal_occurrence(false),
         variableOccurrences(),
         binaryWatchers(), 
-        result()
+        certificate(SolverOptions::opt_certified_file), 
+        result() 
     { }
 
     ~ClauseDatabase() { }
@@ -179,11 +183,17 @@ public:
         // }
     }
 
+    void emptyClause() {
+        certificate.proof();
+    }
+
     template<typename Iterator>
     Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
         Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
+
+        certificate.added(clause->begin(), clause->end());
 
         logCritical(clause, "create");
 
@@ -204,6 +214,8 @@ public:
     void removeClause(Clause* clause) {
         // std::cout << "Removing clause " << *clause;
         allocator.deallocate(clause);
+
+        certificate.removed(clause->begin(), clause->end());
 
         logCritical(clause, "remove");
         
@@ -262,7 +274,7 @@ public:
     /**
      * only call this method at decision level 0
      **/
-    std::vector<Clause*> reduce() { 
+    void reduce() { 
         Statistics::getInstance().solverReduceDBInc();
 
         std::vector<Clause*> learnts;
@@ -270,15 +282,9 @@ public:
             return clause->getLBD() > persistentLBD && clause->size() > 2; 
         });
         std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
-        learnts.erase(learnts.begin() + (learnts.size() / 2), learnts.end());
-        
-        for (Clause* c : learnts) {
-            removeClause(c);
-        }
+        std::for_each(learnts.begin() + (learnts.size() / 2), learnts.end(), [this](Clause* clause) { removeClause(clause); } );
 
         Statistics::getInstance().solverRemovedClausesInc(learnts.size());
-
-        return learnts;
     }
 
     /**

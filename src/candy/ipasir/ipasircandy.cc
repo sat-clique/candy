@@ -55,8 +55,8 @@ class IPASIRCandy {
     }
 
 public:
-    IPASIRCandy() : solver(), fmap(0), nomodel(false) {
-        solver.disablePreprocessing();
+    IPASIRCandy() : solver(), fmap(0), nomodel(false) { 
+        VariableEliminationOptions::opt_use_elim = false;
     }
 
     ~IPASIRCandy() {

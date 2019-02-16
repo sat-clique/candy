@@ -43,7 +43,6 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
         index[l].push_back(c);
     }
     if (useHolistic) solver->init(problem);
-    solver->disablePreprocessing();
     runtime.stop();
 }
 

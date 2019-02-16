@@ -33,64 +33,6 @@
 #include <unordered_map>
 
 namespace Candy {
-    TEST(RSARTestUtils, SolverMock_eventRecording) {
-        SolverMock underTest;
-        CNFProblem problem { {{ 1_L }, { 2_L }} };
-        
-        auto expected = std::vector<SolverMockEvent>{};
-        EXPECT_EQ(underTest.mockctrl_getEventLog(), expected);
-        
-        underTest.init(problem);
-        underTest.eliminate();
-        underTest.solve();
-        
-        auto expected2 = std::vector<SolverMockEvent>{
-            SolverMockEvent::ADD_PROBLEM,
-            SolverMockEvent::SIMPLIFY,
-            SolverMockEvent::SOLVE};
-        EXPECT_EQ(underTest.mockctrl_getEventLog(), expected2);
-    }
-    
-    TEST(RSARTestUtils, SolverMock_callbackOnSolve) {
-        SolverMock underTest;
-        int callN = 0;
-        int numCallbackInvocs = 0;
-        
-        underTest.mockctrl_callOnSolve([&numCallbackInvocs, &callN](int n) {
-            EXPECT_EQ(n, callN);
-            ++numCallbackInvocs;
-        });
-        
-        underTest.solve();
-        ++callN;
-        underTest.eliminate();
-        underTest.solve();
-        ++callN;
-        underTest.init({{}});
-        underTest.solve();
-        ++callN;
-        
-        EXPECT_EQ(numCallbackInvocs, 3);
-    }
-    
-    TEST(RSARTestUtils, SolverMock_callbackOnSimplify) {
-        SolverMock underTest;
-        int callN = 0;
-        int numCallbackInvocs = 0;
-        
-        underTest.mockctrl_callOnSimplify([&numCallbackInvocs, &callN](int n) {
-            EXPECT_EQ(n, callN);
-            ++numCallbackInvocs;
-        });
-        
-        underTest.eliminate();
-        ++callN;
-        underTest.solve();
-        underTest.eliminate();
-        ++callN;
-        
-        EXPECT_EQ(numCallbackInvocs, 2);
-    }
     
     TEST(RSARTestUtils, SolverMock_solveResultSettingPlain) {
         SolverMock underTest;

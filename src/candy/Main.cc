@@ -50,7 +50,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <chrono>
 
 #include "candy/core/CNFProblem.h"
-#include "candy/core/Certificate.h"
 #include "candy/core/Statistics.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
@@ -301,6 +300,8 @@ int main(int argc, char** argv) {
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
+    Statistics::getInstance().runtimeStop("Wallclock");
+
     if (solver != nullptr) {
         if (result == l_True && SolverOptions::mod) {
             if (SolverOptions::do_minimize > 0) {
@@ -324,8 +325,6 @@ int main(int argc, char** argv) {
             Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
         }
     }
-
-    Statistics::getInstance().runtimeStop("Wallclock");
 
     Statistics::getInstance().printRuntimes();
 

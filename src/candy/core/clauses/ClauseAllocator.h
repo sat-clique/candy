@@ -156,13 +156,8 @@ public:
 
 private:
     ClauseAllocatorMemory memory;
-    std::mutex memory_lock;
 
     ClauseAllocatorMemory facts;
-    std::mutex facts_lock;
-    
-    std::unordered_map<std::thread::id, bool> ready;
-    std::mutex ready_lock;
     
     std::vector<Clause*> deleted;
 
@@ -170,6 +165,11 @@ private:
 
     // global allocator for multi-threaded scenario    
     ClauseAllocator* global_allocator;
+    std::mutex memory_lock;
+    std::mutex facts_lock;
+    
+    std::unordered_map<std::thread::id, bool> ready;
+    std::mutex ready_lock;
 
     ClauseAllocator(ClauseAllocator const&) = delete;
     void operator=(ClauseAllocator const&) = delete;

@@ -69,7 +69,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Certificate.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
 
@@ -123,12 +122,11 @@ public:
         if (allocator == nullptr) {
             std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
             for (Cl* import : problem) {
+                clause_db.createClause(import->begin(), import->end());
                 if (import->size() == 0) {
                     this->ok = false;
-                    certificate.proof();
                     return;
                 }
-                clause_db.createClause(import->begin(), import->end());
             }
         } 
         else {
@@ -146,8 +144,7 @@ public:
         trail.reset();
         propagateAndMaterializeUnitClauses();
         if (isInConflictingState()) {
-            std::cout << "c Conflict found after import of clauses" << std::endl;
-            certificate.proof();
+            clause_db.emptyClause();
         }
         else {
             unit_resolution();
@@ -195,14 +192,6 @@ public:
 
     BranchingDiversificationInterface* accessBranchingInterface() override {
         return &branch;
-    }
-    
-    void enablePreprocessing() override {
-        preprocessing_enabled = true;
-    }
-
-    void disablePreprocessing() override {
-        preprocessing_enabled = false;
     }
 
     bool isEliminated(Var v) const override { 
@@ -290,8 +279,6 @@ public:
         this->learntCallback = learntCallback;
     }
 
-    Certificate certificate;
-
     // Extra results: (read-only member variable)
     vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
     vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
@@ -349,7 +336,6 @@ protected:
     SolverSonification sonification;
     ControllerInterface controller;
 
-    void cancelUntil(int level); // Backtrack until a certain level.
     lbool search(); // Search for a given number of conflicts.
 
     inline bool withinBudget() {
@@ -365,8 +351,6 @@ private:
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() : 
-    // unsat certificate
-    certificate(SolverOptions::opt_certified_file),
     // results
     model(), conflict(),
     // Basic Systems
@@ -376,8 +360,8 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
 	conflict_analysis(clause_db, trail),
     branch(clause_db, trail),
     // simplification
-    subsumption(clause_db, trail, propagator, certificate),
-    elimination(clause_db, trail, propagator, certificate), 
+    subsumption(clause_db, trail, propagator),
+    elimination(clause_db, trail, propagator), 
     // assumptions 
     assumptions(),
     // restarts
@@ -438,7 +422,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
 
         if (satisfied) {
             if (literals.size() > 1) {
-                certificate.removed(clause->begin(), clause->end());
                 if (clause->size() > 2) {
                     propagator.detachClause(clause);
                 }
@@ -457,9 +440,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             else if (new_clause->size() > 2) {
                 propagator.attachClause(new_clause);
             }
-            certificate.added(new_clause->begin(), new_clause->end());
-
-            certificate.removed(clause->begin(), clause->end());
             if (clause->size() > 2) {
                 propagator.detachClause(clause);
             }
@@ -524,7 +504,6 @@ template<class TClauses, class TAssignment, class TPropagate, class TLearning, c
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(ok);
     
-    bool blocked = false;
     Statistics::getInstance().solverRestartInc();
     sonification.restart();
     for (;;) {
@@ -542,20 +521,14 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 return l_False;
             }
             
-            trailQueue.push(trail.size());
-            
-            // BLOCK RESTART (CP 2012 paper)
-            if (nConflicts() > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
-                lbdQueue.fastclear();
-                Statistics::getInstance().solverStopsRestartsInc();
-                if (!blocked) {
-                    Statistics::getInstance().solverLastBlockAtRestartSave();
-                    Statistics::getInstance().solverStopsRestartsSameInc();
-                    blocked = true;
-                }
-            }
-            
             conflict_analysis.handle_conflict(confl);
+            
+            trailQueue.push(trail.size());
+            if (nConflicts() > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
+                lbdQueue.fastclear(); // BLOCK RESTART (CP 2012 paper)
+            }
+            lbdQueue.push(clause_db.result.lbd);
+            sumLBD += clause_db.result.lbd;
             
             if (learntCallback != nullptr && (int)clause_db.result.learnt_clause.size() <= learntCallbackMaxLength) {
                 vector<int> clause;
@@ -568,20 +541,14 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
 
             sonification.learntSize(static_cast<int>(clause_db.result.learnt_clause.size()));
-            
-            certificate.added(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end());
 
             branch.process_conflict();
-
-            lbdQueue.push(clause_db.result.lbd);
-            sumLBD += clause_db.result.lbd;
 
             trail.cancelUntil(clause_db.result.backtrack_level);
 
             assert(trail.value(clause_db.result.learnt_clause[0]) == l_Undef);
 
-            Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), 
-                clause_db.result.learnt_clause.size() < 3 ? 0 : clause_db.result.lbd);
+            Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
             trail.uncheckedEnqueue(clause->first(), clause->size() == 1 ? nullptr : clause);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
@@ -627,16 +594,11 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     }
                     
                     propagator.clear();
-                    std::vector<Clause*> reduced = clause_db.reduce();
-                    size_t reduce = reduced.size();
+                    clause_db.reduce();
                     size_t before = clause_db.size();
-                    for (const Clause* clause : reduced) {
-                        certificate.removed(clause->begin(), clause->end());
-                    }
                     clause_db.reorganize();
-                    size_t after = clause_db.size();
 
-                    std::cout << "c Memory reorganization (" << before << " clauses before, " << after << " clauses after, " << reduce << " clauses removed by local reduction policy)" << std::endl; 
+                    std::cout << "c Memory reorganization (" << before << " clauses before, " << clause_db.size() << " clauses after" << std::endl; 
 
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
@@ -723,8 +685,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     if (status == l_False) {
         if (conflict.empty()) {
-            ok = false;
-            certificate.proof();
+            this->ok = false;
+            clause_db.emptyClause();
         }
 
         sonification.stop(1);

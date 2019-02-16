@@ -302,7 +302,6 @@ namespace Candy {
                 addApproximationClauses(*currentDelta);
 
                 if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
-                    m_solver->enablePreprocessing();
                     // freeze the variables occuring in the delta, so that they won't be eliminated due to simplification.
                     for (auto&& clause : currentDelta->getNewClauses()) {
                         auto lits = getNonAssumptionLits(clause);
@@ -312,7 +311,6 @@ namespace Candy {
                 }
             }
             else if (i != m_maxRefinementSteps) {
-                m_solver->disablePreprocessing();
                 // Note that m_maxRefinementSteps != 0
                 currentDelta = m_refinementStrategy->refine();
                 addApproximationClauses(*currentDelta);

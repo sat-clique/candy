@@ -25,7 +25,7 @@ namespace Candy {
 Statistics::Statistics() :
 #ifdef SOLVER_STATS
     decisions(0), 
-    starts(0), nbstopsrestarts(0), nbstopsrestartssame(0), lastblockatrestart(0),
+    starts(0), 
     nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0),
     subsumed(0), deleted(0),
 #endif
@@ -57,9 +57,8 @@ void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations
 
 void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
 #if defined SOLVER_STATS
-    printf("c |%5lu %8lu %4lu | %11d |%5lu %10d %10lu |\n",
-            starts, nbstopsrestarts, (conflicts / starts), clauses,
-            nbReduceDB, learnts, nbRemovedClauses);
+    printf("c |%5lu %4lu | %11d |%5lu %10d %10lu |\n",
+            starts, (conflicts / starts), clauses, nbReduceDB, learnts, nbRemovedClauses);
 #endif
 }
 
@@ -71,19 +70,18 @@ void Statistics::printSimplificationStats() {
 
 void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
     double cpu_time = get_cpu_time();
+    double wall_time = get_wall_time();
     printf("c =================================================================\n");
 #ifdef SOLVER_STATS
     printf("c restarts              : %lu (%lu conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
-    printf("c blocked restarts      : %lu (multiple: %lu)\n", nbstopsrestarts, nbstopsrestartssame);
-    printf("c last block at restart : %lu\n", lastblockatrestart);
 
     printf("c nb ReduceDB           : %lu\n", nbReduceDB);
     printf("c nb removed Clauses    : %lu\n", nbRemovedClauses);
     printf("c nb reduced Clauses    : %lu\n", nbReducedClauses);
 
-    printf("c conflicts             : %-12lu   (%.0f /sec)\n", conflicts, conflicts / cpu_time);
-    printf("c decisions             : %-12lu   (%.0f /sec)\n", decisions, decisions / cpu_time);
-    printf("c propagations          : %-12lu   (%.0f /sec)\n", propagations, propagations / cpu_time);
+    printf("c conflicts             : %-12lu   (%.0f /sec)\n", conflicts, conflicts / runtimes["Wallclock"]);
+    printf("c decisions             : %-12lu   (%.0f /sec)\n", decisions, decisions / runtimes["Wallclock"]);
+    printf("c propagations          : %-12lu   (%.0f /sec)\n", propagations, propagations / runtimes["Wallclock"]);
 #endif
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {

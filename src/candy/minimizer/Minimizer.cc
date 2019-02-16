@@ -64,8 +64,8 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
         generateHittingSetProblem(problem);
     }
 
+    SolverOptions::opt_preprocessing = false;
     CandySolverInterface* solver = new Solver<>();
-    solver->disablePreprocessing();
     solver->init(hittingSetProblem);
 //    solver->printDIMACS();
 
