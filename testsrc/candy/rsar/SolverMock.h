@@ -73,7 +73,6 @@ namespace Candy {
         void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
         void setTermCallback(void* state, int (*termCallback)(void*)) override { }
 
-        virtual bool isEliminated(Var v) const override;
         virtual void setFrozen(Var v, bool freeze) override;
 
     	virtual lbool solve() override;
@@ -108,9 +107,6 @@ namespace Candy {
         
         /** Returns true iff v is an assumption variable. */
         bool mockctrl_isAssumptionVar(Var v) const noexcept;
-        
-        /** Sets isElimininated(v) */
-        void mockctrl_setEliminated(Var v, bool elim);
         
         /** Sets the result of the SAT solver at the nth invocation */
         void mockctrl_setResultInInvocation(int n, bool result);
@@ -159,7 +155,6 @@ namespace Candy {
         Var m_maxCreatedVar;
         std::vector<Lit> m_conflictLits;
         Var m_minAssumptionVar;
-        std::unordered_set<Var> m_eliminatedVars;
         std::unordered_set<Var> m_frozenVars;
         std::unordered_map<int, bool> m_solveResultInInvocationN;
         bool m_defaultSolveResult;
