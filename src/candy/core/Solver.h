@@ -194,10 +194,6 @@ public:
         return &branch;
     }
 
-    bool isEliminated(Var v) const override { 
-        return elimination.isEliminated(v);
-    }
-
     void setFrozen(Var v, bool freeze) override  {
         if (freeze) {
             freezes.set(v);

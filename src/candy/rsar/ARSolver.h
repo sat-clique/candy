@@ -85,10 +85,7 @@ namespace Candy {
         virtual void setTermCallback(void* state, int (*termCallback)(void*)) override {
             m_solver->setTermCallback(state, termCallback);
         }
-
-        virtual bool isEliminated(Var v) const override {
-        	return m_solver->isEliminated(v);
-        }
+        
         virtual void setFrozen(Var v, bool freeze) override {
         	m_solver->setFrozen(v, freeze);
         }

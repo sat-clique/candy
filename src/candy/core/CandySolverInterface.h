@@ -39,7 +39,6 @@ public:
 	virtual ClauseAllocator* setupGlobalAllocator() = 0;
     virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) = 0;
 	
-    virtual bool isEliminated(Var v) const = 0;
     virtual void setFrozen(Var v, bool freeze) = 0;
 	virtual void setAssumptions(const std::vector<Lit>& assumptions) = 0;
 	

@@ -27,6 +27,7 @@
 #include "ARSolver.h"
 
 #include "candy/core/CandySolverInterface.h"
+#include "candy/frontend/CLIOptions.h"
 
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/MemUtils.h>
@@ -40,7 +41,7 @@
 
 namespace Candy {
     ARSolverBuilder::ARSolverBuilder() noexcept {
-        
+        VariableEliminationOptions::opt_use_elim = false; 
     }
     
     ARSolverBuilder::~ARSolverBuilder() {
@@ -150,9 +151,7 @@ namespace Candy {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Implication impl : equivalence) {
                 Var first = var(impl.first);
-                if (m_solver->isEliminated(first)) {
-                    equivalence.addVariableRemovalToWorkQueue(first);
-                }
+                equivalence.addVariableRemovalToWorkQueue(first);
             }
         }
     }
@@ -161,9 +160,7 @@ namespace Candy {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Lit bbLit : backbones) {
                 Var first = var(bbLit);
-                if (m_solver->isEliminated(first)) {
-                    backbones.addVariableRemovalToWorkQueue(first);
-                }
+                backbones.addVariableRemovalToWorkQueue(first);
             }
         }
     }
@@ -220,9 +217,7 @@ namespace Candy {
         for (auto&& equivalenceConj : m_conjectures->getEquivalences()) {
             EquivalenceConjecture copy;
             for (auto lit : equivalenceConj) {
-                if (!m_solver->isEliminated(var(lit))) {
-                    copy.addLit(lit);
-                }
+                copy.addLit(lit);
             }
             if (copy.size() > 1) {
                 newConjectures->addEquivalence(copy);
@@ -230,9 +225,7 @@ namespace Candy {
         }
         
         for (auto backboneConj : m_conjectures->getBackbones()) {
-            if (!m_solver->isEliminated(var(backboneConj.getLit()))) {
-                newConjectures->addBackbone(backboneConj);
-            }
+            newConjectures->addBackbone(backboneConj);
         }
         
         m_conjectures = std::move(newConjectures);

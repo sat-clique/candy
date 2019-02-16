@@ -60,8 +60,6 @@ namespace Candy {
         for (const Cl* clause : problem) {
             EXPECT_TRUE(std::all_of(clause->begin(), clause->end(),
                                     [this](Lit l) { return var(l) <= m_maxCreatedVar; }));
-            EXPECT_TRUE(std::all_of(clause->begin(), clause->end(),
-                                    [this](Lit l) { return !this->isEliminated(var(l)); }));
             m_addedClauses.push_back(*clause);
             ++m_nClausesAddedSinceLastSolve;
             // m_eventLog.push_back(SolverMockEvent::ADD_CLAUSE);
@@ -75,10 +73,6 @@ namespace Candy {
         else {
             m_frozenVars.erase(variable);
         }
-    }
-    
-    bool SolverMock::isEliminated(Var var) const {
-        return m_eliminatedVars.find(var) != m_eliminatedVars.end();
     }
     
     std::vector<Lit>& SolverMock::getConflict() {
@@ -95,15 +89,6 @@ namespace Candy {
     
     bool SolverMock::mockctrl_isParsingSet() const noexcept {
         return m_isParsingSet;
-    }
-    
-    void SolverMock::mockctrl_setEliminated(Var v, bool elim) {
-        if (elim) {
-            m_eliminatedVars.insert(v);
-        }
-        else {
-            m_eliminatedVars.erase(v);
-        }
     }
     
     void SolverMock::mockctrl_setResultInInvocation(int n, bool result) {
@@ -149,7 +134,6 @@ namespace Candy {
     m_maxCreatedVar(-1),
     m_conflictLits(),
     m_minAssumptionVar(0),
-    m_eliminatedVars(),
     m_frozenVars(),
     m_solveResultInInvocationN(),
     m_defaultSolveResult(false),

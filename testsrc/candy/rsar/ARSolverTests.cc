@@ -244,25 +244,6 @@ namespace Candy {
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 2);
     }
     
-    
-    TEST(RSARARSolver, doesNotAddEliminatedVariablesViaApproximation) {
-        auto solverAndMock = createDefaultTestSetup();
-        solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
-        solverAndMock.glucoseMock->mockctrl_setEliminated(1, true);
-        solverAndMock.glucoseMock->mockctrl_setEliminated(2, true);
-        
-        solverAndMock.arSolver->init(*solverAndMock.minProblem);
-        solverAndMock.arSolver->solve();
-        
-        EXPECT_FALSE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 1));
-        EXPECT_FALSE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 2));
-        
-        EXPECT_TRUE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 0));
-        EXPECT_TRUE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 3));
-        EXPECT_TRUE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 4));
-        EXPECT_TRUE(varOccursIn(solverAndMock.glucoseMock->mockctrl_getAddedClauses(), 5));
-    }
-    
     TEST(RSARARSolver, DISABLED_addedApproximationClausesRepresentEquivalencies) {
         auto solverAndMock = createDefaultTestSetup();
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
