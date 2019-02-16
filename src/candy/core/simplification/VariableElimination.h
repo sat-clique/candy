@@ -47,7 +47,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/Options.h"
-#include "candy/core/Certificate.h"
 
 namespace Candy {
   
@@ -57,7 +56,6 @@ private:
     ClauseDatabase& clause_db;
     Trail& trail;
     TPropagate& propagator;
-    Certificate& certificate;
 
     std::vector<char> frozen;
     std::vector<uint32_t> elimclauses;
@@ -72,11 +70,10 @@ public:
     unsigned int nStrengthened;
     unsigned int nEliminated;
 
-    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
+    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),
-        certificate(certificate_),
         frozen(),
         elimclauses(), 
         eliminated(),
@@ -161,7 +158,6 @@ public:
                 assert(l != lit_Undef);
                 if (asymm) { // strengthen:
                     nStrengthened++;
-                    certificate.strengthened(clause->begin(), clause->end(), l);
 
                     if (clause->size() > 2) {
                         propagator.detachClause(clause);
@@ -220,7 +216,6 @@ public:
         std::vector<Lit> resolvent;
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent)) {
-                certificate.added(resolvent.begin(), resolvent.end());
                 uint16_t lbd = std::min(pc->getLBD(), nc->getLBD());
                 Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), std::min(lbd, (uint16_t)(resolvent.size()-1)));
                 if (clause->size() > 2) {
@@ -233,7 +228,6 @@ public:
         }
 
         for (const Clause* c : occurences) {
-            certificate.removed(c->begin(), c->end());
             if (c->size() > 2) {
                 propagator.detachClause(c);
             }

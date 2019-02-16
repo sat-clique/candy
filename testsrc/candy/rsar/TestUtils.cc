@@ -72,7 +72,7 @@ namespace Candy {
     
     EquivalencyCheckerImpl::EquivalencyCheckerImpl()
     : EquivalencyChecker(), m_solver(std::unique_ptr<Solver<>>(new Solver<>())), m_maxVar(0) {
-        m_solver->disablePreprocessing();
+        SolverOptions::opt_preprocessing = false;
     }
     
     EquivalencyCheckerImpl::~EquivalencyCheckerImpl() {

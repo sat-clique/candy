@@ -45,7 +45,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
-#include "candy/core/Certificate.h"
 #include "candy/mtl/Stamp.h"
 #include "candy/frontend/CLIOptions.h"
 
@@ -57,16 +56,14 @@ private:
     ClauseDatabase& clause_db;
     Trail& trail;
     TPropagate& propagator;
-    Certificate& certificate;
 
     const uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
 
 public:         
-    Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_, Certificate& certificate_) : 
+    Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),
-        certificate(certificate_),
         subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         queue(),
         abstractions(),
@@ -146,7 +143,6 @@ bool Subsumption<TPropagate>::subsume() {
                                 to_delete = clause;
                             }
                         }
-                        certificate.removed(to_delete->begin(), to_delete->end());
                         clause_db.removeClause((Clause*)to_delete);
                         abstractions.erase(clause);
                         abstractions.erase(occurence);
@@ -161,7 +157,6 @@ bool Subsumption<TPropagate>::subsume() {
                         }
                         Statistics::getInstance().solverSubsumedInc();
                         nSubsumed++;
-                        certificate.removed(occurence->begin(), occurence->end());
                         clause_db.removeClause((Clause*)occurence);
                         abstractions.erase(occurence);
                     }
@@ -169,7 +164,6 @@ bool Subsumption<TPropagate>::subsume() {
                 else if (l != lit_Error) { // strengthen:
                     Statistics::getInstance().solverDeletedInc();
                     nStrengthened++;
-                    certificate.strengthened(occurence->begin(), occurence->end(), ~l);
                     
                     Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
                     abstractions.erase(occurence);

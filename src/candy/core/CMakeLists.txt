@@ -6,7 +6,7 @@ add_library(core OBJECT
     clauses/ClauseAllocator.h
     clauses/ClauseAllocatorMemory.h
     clauses/ClauseDatabase.h
-    Certificate.h
+    clauses/Certificate.h
     CNFProblem.cc
     CNFProblem.h
     SolverTypes.h

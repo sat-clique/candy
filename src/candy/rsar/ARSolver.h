@@ -69,14 +69,6 @@ namespace Candy {
             return m_solver->setupGlobalAllocator();
         }
 
-        // from CandySolverInterface:
-        virtual void enablePreprocessing() override {
-        	m_solver->enablePreprocessing();
-        }
-        virtual void disablePreprocessing() override {
-        	m_solver->disablePreprocessing();
-        }
-
         virtual Var createVariable() {
         	return maxVars++;
         }
@@ -94,11 +86,6 @@ namespace Candy {
             m_solver->setTermCallback(state, termCallback);
         }
 
-        /** Runs the underlying SAT solver's simplification system. This method may only be called
-         * before clauses containing assumptions have been added to the solver. */
-        virtual void eliminate() override { 
-        	m_solver->eliminate();// Perform variable elimination based simplification.
-        }
         virtual bool isEliminated(Var v) const override {
         	return m_solver->isEliminated(v);
         }

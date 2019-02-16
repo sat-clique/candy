@@ -37,7 +37,7 @@ namespace Candy {
 class Statistics {
 #ifdef SOLVER_STATS
     uint64_t decisions;
-    uint64_t starts, nbstopsrestarts, nbstopsrestartssame, lastblockatrestart;
+    uint64_t starts;
     uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses;
     uint64_t subsumed, deleted;
 #endif
@@ -69,9 +69,6 @@ public:
     inline void solverDecisionsInc() { ++decisions; }
 
     inline void solverRestartInc() { ++starts; }
-    inline void solverStopsRestartsInc() { ++nbstopsrestarts; }
-    inline void solverStopsRestartsSameInc() { ++nbstopsrestartssame; }
-    inline void solverLastBlockAtRestartSave() { lastblockatrestart = starts; }
 
     inline void solverRemovedClausesInc(unsigned int amount) { nbRemovedClauses += amount; }
     inline void solverReducedClausesInc(unsigned int amount) { nbReducedClauses += amount; }
@@ -84,9 +81,6 @@ public:
     inline void solverRandomDecisionsInc() { }
 
     inline void solverRestartInc() { }
-    inline void solverStopsRestartsInc() { }
-    inline void solverStopsRestartsSameInc() { }
-    inline void solverLastBlockAtRestartSave() { }
 
     inline void solverRemovedClausesInc(unsigned int amount) { (void)(amount); }
     inline void solverReducedClausesInc(unsigned int amount) { (void)(amount); }

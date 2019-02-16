@@ -36,13 +36,8 @@ public:
 
 	virtual BranchingDiversificationInterface* accessBranchingInterface() = 0;
 
-	virtual void enablePreprocessing() = 0;
-    virtual void disablePreprocessing() = 0;
-
 	virtual ClauseAllocator* setupGlobalAllocator() = 0;
     virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) = 0;
-
-    virtual void eliminate() = 0;  // Perform variable elimination based simplification.
 	
     virtual bool isEliminated(Var v) const = 0;
     virtual void setFrozen(Var v, bool freeze) = 0;

@@ -67,16 +67,12 @@ namespace Candy {
         BranchingDiversificationInterface* accessBranchingInterface() override { return nullptr; }
 
         ClauseAllocator* setupGlobalAllocator() override { return nullptr; }
-        
-        virtual void enablePreprocessing() override {}
-        virtual void disablePreprocessing() override {}
 
         virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override;
 
         void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
         void setTermCallback(void* state, int (*termCallback)(void*)) override { }
 
-        virtual void eliminate() override;  // Perform variable elimination based simplification.
         virtual bool isEliminated(Var v) const override;
         virtual void setFrozen(Var v, bool freeze) override;
 
