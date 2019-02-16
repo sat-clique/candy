@@ -330,6 +330,7 @@ int main(int argc, char** argv) {
     Statistics::getInstance().printRuntimes();
 
     #ifndef __SANITIZE_ADDRESS__
+        if (ParallelOptions::opt_threads > 1) std::terminate();
         exit((result == l_True ? 10 : result == l_False ? 20 : 0));
     #endif
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
