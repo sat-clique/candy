@@ -117,14 +117,6 @@ void CNFProblem::readDimacs(gzFile input_stream) {
     }
 }
 
-void CNFProblem::readClause(Lit plit) {
-    readClause({plit});
-}
-
-void CNFProblem::readClause(Lit plit1, Lit plit2) {
-    readClause({plit1, plit2});
-}
-
 void CNFProblem::readClause(std::initializer_list<Lit> list) {
     readClause(list.begin(), list.end());
 }
