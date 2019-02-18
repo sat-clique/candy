@@ -17,72 +17,104 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <candy/core/Statistics.h>
-#include <candy/utils/Runtime.h>
+#include "candy/core/Statistics.h"
+#include "candy/utils/Runtime.h"
+#include "candy/core/CandySolverInterface.h"
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/Trail.h"
 
 namespace Candy {
 
-Statistics::Statistics() :
-#ifdef SOLVER_STATS
-    decisions(0), 
-    starts(0), 
-    nbReduceDB(0), nbRemovedClauses(0), nbReducedClauses(0),
-    subsumed(0), deleted(0),
-#endif
-#ifdef RUNTIME_STATS
-    runtimes(), starttimes(),
-#endif
-
-    stats(0)
-{
-    (void)stats;
-}
+Statistics::Statistics(CandySolverInterface& solver_) : solver(solver_), 
+    runtimes(), starttimes()
+{ }
 
 Statistics::~Statistics() { }
 
-void Statistics::printIncrementalStats(uint64_t conflicts, uint64_t propagations) {
-    printf("c---------- Glucose Stats -------------------------\n");
-#ifdef SOLVER_STATS
-    printf("c restarts              : %lu\n", starts);
 
-    printf("c nb ReduceDB           : %lu\n", nbReduceDB);
-    printf("c nb removed Clauses    : %lu\n", nbRemovedClauses);
+size_t Statistics::nClauses() const {
+    return solver.getClauseDatabase().size();
+}
+size_t Statistics::nConflicts() const {
+    return solver.getClauseDatabase().result.nConflicts;
+}
+size_t Statistics::nReduceCalls() const {
+    return solver.getClauseDatabase().nReduceCalls;
+}
+size_t Statistics::nReduced() const {
+    return solver.getClauseDatabase().nReduced;
+}
 
-    printf("c conflicts             : %lu\n", conflicts);
-    printf("c decisions             : %lu\n", decisions);
-    printf("c propagations          : %lu\n", propagations);
-#endif
+size_t Statistics::nVars() const {
+    return solver.getAssignment().vardata.size();
+}
+size_t Statistics::nPropagations() const {
+    return solver.getAssignment().nPropagations;
+}
+size_t Statistics::nDecisions() const {
+    return solver.getAssignment().nDecisions;
+}
+
+size_t Statistics::nRestarts() const {
+    return restarts;
+}
+
+void Statistics::solverRestartInc() { ++restarts; }
+
+void Statistics::runtimeReset(std::string key) {
+    starttimes[key] = 0;
+    runtimes[key] = 0;
+}
+
+void Statistics::runtimeStart(std::string key) {
+    starttimes[key] = get_wall_time();
+    if (!runtimes.count(key)) runtimes[key] = 0;
+}
+
+void Statistics::runtimeStop(std::string key) {
+    if (!starttimes.count(key)) return;
+    runtimes[key] += get_wall_time() - starttimes[key]; 
+}
+
+void Statistics::printRuntime(std::string key) {
+    printf("c Runtime %-14s: %12.2f s\n", key.c_str(), runtimes[key]);
+}
+
+void Statistics::printRuntimes() {
+    for (auto pair : runtimes) {
+        printRuntime(pair.first);
+    }
+}
+
+void Statistics::printIncrementalStats() {
+    printf("c restarts              : %lu\n", restarts);
+
+    printf("c nb ReduceDB           : %lu\n", nReduceCalls());
+    printf("c nb removed Clauses    : %lu\n", nReduced());
+
+    printf("c conflicts             : %lu\n", nConflicts());
+    printf("c decisions             : %lu\n", nDecisions());
+    printf("c propagations          : %lu\n", nPropagations());
 }
 
 
-void Statistics::printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts) {
-#if defined SOLVER_STATS
-    printf("c |%5lu %4lu | %11d |%5lu %10d %10lu |\n",
-            starts, (conflicts / starts), clauses, nbReduceDB, learnts, nbRemovedClauses);
-#endif
+void Statistics::printIntermediateStats() {
+    printf("c | %5lu (%lu conflicts in avg) | %10lu %10lu %5lu |\n", restarts, (nConflicts() / restarts), nClauses(), nReduceCalls(), nReduced());
 }
 
-void Statistics::printSimplificationStats() {
-#if defined SOLVER_STATS
-    printf("c simplification        : %lu subsumed, %lu deleted literals)\n", subsumed, deleted);
-#endif
-}
-
-void Statistics::printFinalStats(uint64_t conflicts, uint64_t propagations) {
+void Statistics::printFinalStats() {
     double cpu_time = get_cpu_time();
     double wall_time = get_wall_time();
     printf("c =================================================================\n");
-#ifdef SOLVER_STATS
-    printf("c restarts              : %lu (%lu conflicts in avg)\n", starts, (starts > 0 ? conflicts / starts : 0));
+    printf("c restarts              : %lu (%lu conflicts in avg)\n", restarts, (restarts > 0 ? (nConflicts() / restarts) : 0));
 
-    printf("c nb ReduceDB           : %lu\n", nbReduceDB);
-    printf("c nb removed Clauses    : %lu\n", nbRemovedClauses);
-    printf("c nb reduced Clauses    : %lu\n", nbReducedClauses);
+    printf("c nb ReduceDB           : %lu\n", nReduceCalls());
+    printf("c nb removed Clauses    : %lu\n", nReduced());
 
-    printf("c conflicts             : %-12lu   (%.0f /sec)\n", conflicts, conflicts / runtimes["Wallclock"]);
-    printf("c decisions             : %-12lu   (%.0f /sec)\n", decisions, decisions / runtimes["Wallclock"]);
-    printf("c propagations          : %-12lu   (%.0f /sec)\n", propagations, propagations / runtimes["Wallclock"]);
-#endif
+    printf("c conflicts             : %-12lu   (%.0f /sec)\n", nConflicts(), nConflicts() / runtimes["Wallclock"]);
+    printf("c decisions             : %-12lu   (%.0f /sec)\n", nDecisions(), nDecisions() / runtimes["Wallclock"]);
+    printf("c propagations          : %-12lu   (%.0f /sec)\n", nPropagations(), nPropagations() / runtimes["Wallclock"]);
+
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {
         printf("c Memory used           : %.2f MB\n", mem_used);

@@ -38,7 +38,7 @@ namespace Candy {
         return found;
     }
     
-    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Glucose::Lit>& lits) {
+    bool isEquivalenceConjEq(EquivalenceConjecture &conj, const std::vector<Candy::Lit>& lits) {
         if (conj.size() != lits.size()) {
             return false;
         }
@@ -53,7 +53,7 @@ namespace Candy {
         return true;
     }
     
-    bool hasEquivalenceConj(Conjectures &c, const std::vector<Glucose::Lit>& lits) {
+    bool hasEquivalenceConj(Conjectures &c, const std::vector<Candy::Lit>& lits) {
         auto invertedLits = negatedLits(lits);
         for (auto eqconj : c.getEquivalences()) {
             if (isEquivalenceConjEq(eqconj, lits) || isEquivalenceConjEq(eqconj, invertedLits)) {

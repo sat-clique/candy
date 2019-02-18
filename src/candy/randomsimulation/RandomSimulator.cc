@@ -58,8 +58,8 @@ namespace Candy {
     {
     }
     
-    static std::vector<Glucose::Var> variables(const std::vector<Glucose::Lit>& literals) {
-        std::vector<Glucose::Var> result;
+    static std::vector<Candy::Var> variables(const std::vector<Candy::Lit>& literals) {
+        std::vector<Candy::Var> result;
         for (auto lit : literals) {
             result.push_back(var(lit));
         }

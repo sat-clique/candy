@@ -11,7 +11,6 @@
 #include "candy/mtl/Stamp.h"
 
 using namespace Candy;
-using namespace Glucose;
 
 TEST (StampTestPatterns, initializationTest) {
 	Stamp<uint32_t> stamp(3);

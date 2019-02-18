@@ -155,14 +155,12 @@ bool Subsumption<TPropagate>::subsume() {
                             abstractions[persistent]=clause_abstraction;
                             abstractions.erase(clause);
                         }
-                        Statistics::getInstance().solverSubsumedInc();
                         nSubsumed++;
                         clause_db.removeClause((Clause*)occurence);
                         abstractions.erase(occurence);
                     }
                 }
                 else if (l != lit_Error) { // strengthen:
-                    Statistics::getInstance().solverDeletedInc();
                     nStrengthened++;
                     
                     Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);

@@ -29,7 +29,10 @@
 
 #include <candy/core/CNFProblem.h>
 #include <candy/core/SolverTypes.h>
+#include <candy/core/Statistics.h>
 #include "candy/core/CandySolverInterface.h"
+#include <candy/core/clauses/ClauseDatabase.h>
+#include <candy/core/Trail.h>
 #include "candy/rsar/ARSolver.h"
 
 #include <memory>
@@ -64,7 +67,7 @@ namespace Candy {
     class SolverMock : public CandySolverInterface {
     public:
 
-        BranchingDiversificationInterface* accessBranchingInterface() override { return nullptr; }
+        BranchingDiversificationInterface* getBranchingUnit() override { return nullptr; }
 
         ClauseAllocator* setupGlobalAllocator() override { return nullptr; }
 
@@ -86,18 +89,17 @@ namespace Candy {
     	virtual void setInterrupt(bool value) override { }
     	virtual void budgetOff() override { }
 
-    	virtual void printDIMACS() override { }
-
     	// The value of a variable in the last model. The last call to solve must have been satisfiable.
     	virtual lbool modelValue(Var x) const override { return l_Undef; }
     	virtual lbool modelValue(Lit p) const override { return l_Undef; }
         virtual Cl getModel() override { return Cl(); }
     	virtual std::vector<Lit>& getConflict() override;
 
-    	virtual size_t nClauses() const override { return 0; }
-    	virtual size_t nConflicts() const override { return 0; }
-    	virtual size_t nPropagations() const override { return 0; }
-        virtual size_t nVars() const override;
+    	virtual Statistics& getStatistics() override { return *new Statistics { *this }; }
+        virtual ClauseDatabase& getClauseDatabase() override { return *new ClauseDatabase { }; } 
+        virtual Trail& getAssignment() override { return *new Trail { }; }
+
+        size_t nVars() const;
 
         /** Sets the literals returned by getConflict(). */
         void mockctrl_setConflictLits(const std::vector<Lit> &conflictLits);

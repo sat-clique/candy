@@ -55,7 +55,7 @@ namespace Candy {
         /**
          * Sets the variables for whose literals need to be partitioned.
          */
-        virtual void setVariables(const std::vector<Glucose::Var> &variables) = 0;
+        virtual void setVariables(const std::vector<Candy::Var> &variables) = 0;
         
         /**
          * Updates the partitions using the given variable assignment.
