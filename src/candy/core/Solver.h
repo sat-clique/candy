@@ -506,10 +506,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
             
             trailQueue.push(trail.size());
-            conflict_analysis.handle_conflict(confl);
             if (statistics.nConflicts() > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
                 lbdQueue.fastclear(); // BLOCK RESTART (CP 2012 paper)
             }
+            conflict_analysis.handle_conflict(confl);
             lbdQueue.push(clause_db.result.lbd);
             sumLBD += clause_db.result.lbd;
 
