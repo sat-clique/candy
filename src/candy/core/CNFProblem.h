@@ -92,10 +92,9 @@ public:
     void readDimacsFromStdin();
     void readDimacsFromFile(const char* filename);
 
-    void readClause(Lit plit);
-    void readClause(Lit plit1, Lit plit2);
     void readClause(std::initializer_list<Lit> list);
     void readClause(Cl& cl);
+    
     void readClauses(std::initializer_list<std::initializer_list<Lit>> f);
     void readClauses(For& f);
 

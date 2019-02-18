@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
     assert (result == reference_result);
 
     if (result == l_False) {
-        int proof_result = check_proof((char*)inputFilename, "proof.drat");
+        int proof_result = check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get()); 
         assert (0 == proof_result);
     }
 }

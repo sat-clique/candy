@@ -342,6 +342,10 @@ class StringOption : public Option {
         strncpy(value, val, 256);
     }
 
+    char* get() {
+        return value;
+    }
+
     virtual void help(bool verbose = false) {
         fprintf(stderr, "  -%-10s = %8s\n", name, type_name);
         if (verbose) {

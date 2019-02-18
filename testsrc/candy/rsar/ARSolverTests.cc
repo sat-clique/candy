@@ -75,7 +75,7 @@ namespace Candy {
         }
         
         std::unique_ptr<CNFProblem> result = backported_std::make_unique<CNFProblem>();
-        result->readClause(mkLit(maxVar, 1));
+        result->readClause({ mkLit(maxVar, 1) });
         return result;
     }
     
