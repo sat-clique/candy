@@ -67,10 +67,8 @@ private:
     std::vector<std::vector<Watcher>> watchers;
 
 public:
-    uint64_t nPropagations;
-
     Propagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) {
+        : clause_db(_clause_db), trail(_trail), watchers() {
     }
 
     void init(size_t maxVars) {
@@ -184,7 +182,6 @@ public:
 
     Clause* propagate() {
         Clause* conflict = nullptr;
-        unsigned int old_qhead = trail.qhead;
 
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
@@ -198,7 +195,6 @@ public:
             if (conflict != nullptr) break;
         }
 
-        nPropagations += trail.qhead - old_qhead;
         return conflict;
     }
 };

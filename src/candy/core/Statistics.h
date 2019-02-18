@@ -27,109 +27,46 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <map>
 #include <string>
 
+#include "candy/core/CandySolverInterface.h"
 #include "candy/utils/Runtime.h"
-
-#define SOLVER_STATS
-#define RUNTIME_STATS
 
 namespace Candy {
 
 class Statistics {
-#ifdef SOLVER_STATS
-    uint64_t decisions;
-    uint64_t starts;
-    uint64_t nbReduceDB, nbRemovedClauses, nbReducedClauses;
-    uint64_t subsumed, deleted;
-#endif
+    CandySolverInterface& solver;
 
-#ifdef RUNTIME_STATS
+    uint64_t restarts;
     std::map<std::string, double> runtimes;
     std::map<std::string, double> starttimes;
-#endif
-
-    char stats;
-
-private:
-    Statistics();
 
 public:
-    inline static Statistics& getInstance() {
-        static Statistics statistics;
-        return statistics;
-    }
+    Statistics(CandySolverInterface& solver);
     ~Statistics();
 
-    void printIncrementalStats(uint64_t conflicts, uint64_t propagations);
-    void printIntermediateStats(int trail, int clauses, int learnts, uint64_t conflicts);
-    void printSimplificationStats();
-    void printFinalStats(uint64_t conflicts, uint64_t propagations);
-    void printAllocatorStatistics();
+    void printIncrementalStats();
+    void printIntermediateStats();
+    void printFinalStats();
 
-#ifdef SOLVER_STATS
-    inline void solverDecisionsInc() { ++decisions; }
 
-    inline void solverRestartInc() { ++starts; }
+    size_t nClauses() const;
+    size_t nConflicts() const;
+    size_t nReduceCalls() const;
+    size_t nReduced() const;
 
-    inline void solverRemovedClausesInc(unsigned int amount) { nbRemovedClauses += amount; }
-    inline void solverReducedClausesInc(unsigned int amount) { nbReducedClauses += amount; }
-    inline void solverReduceDBInc() { ++nbReduceDB; }
+    size_t nVars() const;
+    size_t nPropagations() const;
+    size_t nDecisions() const;
 
-    inline void solverSubsumedInc() { ++subsumed; }
-    inline void solverDeletedInc() { ++deleted; }
-#else
-    inline void solverDecisionsInc() { }
-    inline void solverRandomDecisionsInc() { }
+    size_t nRestarts() const;
 
-    inline void solverRestartInc() { }
+    void solverRestartInc();
 
-    inline void solverRemovedClausesInc(unsigned int amount) { (void)(amount); }
-    inline void solverReducedClausesInc(unsigned int amount) { (void)(amount); }
-    inline void solverReduceDBInc() { }
+    void runtimeReset(std::string key);
+    void runtimeStart(std::string key);
+    void runtimeStop(std::string key);
 
-    inline void solverSubsumedInc() { }
-    inline void solverDeletedInc() { }
-#endif// SOLVER_STATS
-
-#ifdef RUNTIME_STATS
-    inline void runtimeReset(std::string key) {
-        if (!starttimes.count(key)) {
-            starttimes.insert({{key, 0}});
-        }
-        if (!runtimes.count(key)) {
-            runtimes.insert({{key, 0}});
-        }
-        starttimes[key] = 0;
-        runtimes[key] = 0;
-    }
-    inline void runtimeStart(std::string key) {
-        if (!starttimes.count(key)) {
-            starttimes.insert({{key, 0}});
-        }
-        starttimes[key] = get_wall_time();
-    }
-    inline void runtimeStop(std::string key) {
-        if (!starttimes.count(key)) {
-            starttimes.insert({{key, 0}});
-        }
-        if (!runtimes.count(key)) {
-            runtimes.insert({{key, 0}});
-        }
-        runtimes[key] += get_wall_time() - starttimes[key]; 
-    }
-    void printRuntime(std::string key) {
-        printf("c Runtime %-14s: %12.2f s\n", key.c_str(), runtimes[key]);
-    }
-    void printRuntimes() {
-        for (auto pair : runtimes) {
-            printRuntime(pair.first);
-        }
-    }
-#else
-    inline void runtimeStart(std::string key) { (void)(key); }
-    inline void runtimeStop(std::string key) { (void)(key); }
-    void printRuntime(std::string key) { (void)(key); }
-    void printRuntimes() { }
-#endif// RUNTIME_STATS
+    void printRuntime(std::string key);
+    void printRuntimes();
 
 };
 

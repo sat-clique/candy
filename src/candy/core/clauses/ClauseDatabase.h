@@ -79,6 +79,9 @@ private:
     Certificate certificate;
 
 public:
+
+    size_t nReduced, nReduceCalls;
+    
     /* analysis result is stored here */
 	AnalysisResult result;
 
@@ -90,6 +93,7 @@ public:
         variableOccurrences(),
         binaryWatchers(), 
         certificate(SolverOptions::opt_certified_file), 
+        nReduced(0), nReduceCalls(0),
         result() 
     { }
 
@@ -275,16 +279,14 @@ public:
      * only call this method at decision level 0
      **/
     void reduce() { 
-        Statistics::getInstance().solverReduceDBInc();
-
         std::vector<Clause*> learnts;
         copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [this](Clause* clause) { 
             return clause->getLBD() > persistentLBD && clause->size() > 2; 
         });
         std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
         std::for_each(learnts.begin() + (learnts.size() / 2), learnts.end(), [this](Clause* clause) { removeClause(clause); } );
-
-        Statistics::getInstance().solverRemovedClausesInc(learnts.size());
+        nReduced += learnts.size();
+        nReduceCalls++;
     }
 
     /**

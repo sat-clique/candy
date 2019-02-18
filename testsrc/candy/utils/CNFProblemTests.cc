@@ -11,7 +11,6 @@
 #include "candy/core/CNFProblem.h"
 
 using namespace Candy;
-using namespace Glucose;
 
 TEST (CNFProblemTestPatterns, clausePersistance) {
     CNFProblem problem;

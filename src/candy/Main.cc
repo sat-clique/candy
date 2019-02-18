@@ -184,9 +184,7 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
     }
 }
 
-int main(int argc, char** argv) {    
-    Statistics::getInstance().runtimeStart("Wallclock");
-
+int main(int argc, char** argv) {
     setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or gzipped DIMACS.\n");
     parseOptions(argc, argv, true);
     
@@ -195,8 +193,6 @@ int main(int argc, char** argv) {
     }
 
     setLimits(SolverOptions::cpu_lim, SolverOptions::mem_lim);
-
-    Statistics::getInstance().runtimeStart("Initialization");
 
     CNFProblem problem{};
     try {
@@ -238,8 +234,6 @@ int main(int argc, char** argv) {
         solvers.push_back(solver); 
 
         solver->init(problem);
-
-        Statistics::getInstance().runtimeStop("Initialization");
 
         installSignalHandlers(true);
         result = solver->solve();
@@ -287,8 +281,6 @@ int main(int argc, char** argv) {
             }
         }
 
-        Statistics::getInstance().runtimeStop("Initialization");
-
         for (std::thread& thread : threads) {
             thread.detach();
         }
@@ -299,8 +291,6 @@ int main(int argc, char** argv) {
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
-
-    Statistics::getInstance().runtimeStop("Wallclock");
 
     if (solver != nullptr) {
         if (result == l_True && SolverOptions::mod) {
@@ -322,11 +312,11 @@ int main(int argc, char** argv) {
         }
 
         if (SolverOptions::verb > 0) {
-            Statistics::getInstance().printFinalStats(solver->nConflicts(), solver->nPropagations());
+            solver->getStatistics().printFinalStats();
         }
     }
 
-    Statistics::getInstance().printRuntimes();
+    solver->getStatistics().printRuntimes();
 
     #ifndef __SANITIZE_ADDRESS__
         if (ParallelOptions::opt_threads > 1) std::terminate();

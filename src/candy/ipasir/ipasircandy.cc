@@ -42,8 +42,8 @@ class IPASIRCandy {
     }
 
     void analyze() {
-        fmap = new unsigned char [solver.nVars()];
-        memset(fmap, 0, solver.nVars());
+        fmap = new unsigned char [solver.getStatistics().nVars()];
+        memset(fmap, 0, solver.getStatistics().nVars());
         for (unsigned int i = 0; i < solver.getConflict().size(); i++) {
             fmap[var(solver.getConflict()[i])] = 1;
         }

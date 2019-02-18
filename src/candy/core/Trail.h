@@ -60,7 +60,8 @@ struct VarData {
 class Trail {
 public:
     Trail() : 
-        trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp() 
+        trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp(), 
+        nDecisions(0), nPropagations(0)
     { }
 
     Trail(unsigned int size) : Trail() { 
@@ -74,6 +75,9 @@ public:
     std::vector<VarData> vardata; // Stores reason and level for each variable.
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
+
+    size_t nDecisions;
+    size_t nPropagations;
 
     inline const Lit operator [](unsigned int i) const {
         assert(i < trail_size);
@@ -222,6 +226,12 @@ public:
         assigns[var(p)] = lbool(!sign(p));
         vardata[var(p)] = VarData(from, decisionLevel());
         trail[trail_size++] = p;
+        if (from == nullptr) {
+            nDecisions++;
+        }
+        else {
+            nPropagations++;
+        }
     }
 
     inline void cancelUntil(unsigned int level) {

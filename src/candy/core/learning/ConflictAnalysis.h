@@ -149,7 +149,6 @@ private:
 
 	    if (minimize) {
 	        auto end = std::remove_if(learnt_clause.begin()+1, learnt_clause.end(), [this] (Lit lit) { return stamp[var(lit)]; } );
-	        Statistics::getInstance().solverReducedClausesInc(std::distance(end, learnt_clause.end()));
 	        learnt_clause.erase(end, learnt_clause.end());
 	    }
 	}

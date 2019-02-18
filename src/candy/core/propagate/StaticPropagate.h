@@ -49,10 +49,8 @@ private:
     std::vector<std::vector<WatcherTS*>> watchers;
 
 public:
-    uint64_t nPropagations;
-
     StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), nPropagations(0) { }
+        : clause_db(_clause_db), trail(_trail), watchers() { }
 
     ~StaticPropagate() {
         clear();
@@ -175,7 +173,6 @@ public:
 
     const Clause* propagate() {
         const Clause* conflict = nullptr;
-        unsigned int old_qhead = trail.qhead;
 
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
@@ -189,7 +186,6 @@ public:
             if (conflict != nullptr) break;
         }
 
-        nPropagations += trail.qhead - old_qhead;
         return conflict;
     }
 };

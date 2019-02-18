@@ -38,17 +38,9 @@ private:
     std::unique_ptr<std::ofstream> out;
 
     template<typename Iterator>
-    void printLiterals(Iterator it, Iterator end) {
+    inline void printLiterals(Iterator it, Iterator end) {
         for(; it != end; it++) {
             *out << (var(*it) + 1) * (sign(*it) ? -1 : 1) << " ";
-        }
-        *out << "0\n";
-    }
-
-    template<typename Iterator>
-    void printLiteralsExcept(Iterator it, Iterator end, Lit lit) {
-        for(; it != end; it++) {
-            if (*it != lit) *out << (var(*it) + 1) * (sign(*it) ? -1 : 1) << " ";
         }
         *out << "0\n";
     }
@@ -68,34 +60,27 @@ public:
         active = false;
     }
 
-    void proof() {
+    inline void proof() {
         if (active) {
             *out << "0" << std::endl;
         }
     }
 
     template<typename Iterator>
-    void added(Iterator it, Iterator end) {
+    inline void added(Iterator it, Iterator end) {
         if (active) {
             printLiterals(it, end);
         }
     }
 
     template<typename Iterator>
-    void removed(Iterator it, Iterator end) {
+    inline void removed(Iterator it, Iterator end) {
         if (active) {
             *out << "d ";
             printLiterals(it, end);
         }
     }
-
-    template<typename Iterator>
-    void strengthened(Iterator it, Iterator end, Lit lit) {
-        if (active) {
-            printLiteralsExcept(it, end, lit);
-            removed(it, end);
-        }
-    }
+    
 };
 
 } /* namespace Candy */

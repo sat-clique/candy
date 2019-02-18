@@ -61,8 +61,8 @@ namespace Candy {
     class ARSolver : public CandySolverInterface {
     public:
 
-        BranchingDiversificationInterface* accessBranchingInterface() override {
-            return m_solver->accessBranchingInterface();
+        BranchingDiversificationInterface* getBranchingUnit() override {
+            return m_solver->getBranchingUnit();
         }
 
         ClauseAllocator* setupGlobalAllocator() override {
@@ -109,10 +109,6 @@ namespace Candy {
     		m_solver->budgetOff();
     	}
 
-    	virtual void printDIMACS() override {
-    		m_solver->printDIMACS();
-    	}
-
     	// The value of a variable in the last model. The last call to solve must have been satisfiable.
     	virtual lbool modelValue(Var x) const override {
     		return m_solver->modelValue(x);
@@ -127,17 +123,16 @@ namespace Candy {
     		return m_solver->getConflict();
     	}
 
-    	virtual size_t nClauses() const override {
-    		return m_solver->nClauses();
+    	virtual Statistics& getStatistics() override {
+    		return m_solver->getStatistics();
     	}
-    	virtual size_t nVars() const override {
-    		return m_solver->nVars();
-        }
-    	virtual size_t nConflicts() const override {
-    		return m_solver->nConflicts();
+
+    	virtual ClauseDatabase& getClauseDatabase() override {
+    		return m_solver->getClauseDatabase();
     	}
-    	virtual size_t nPropagations() const override {
-    		return m_solver->nPropagations();
+
+    	virtual Trail& getAssignment() override {
+    		return m_solver->getAssignment();
     	}
 
     	ARSolver();

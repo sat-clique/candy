@@ -17,7 +17,7 @@ TEST (CandyAddClauseTestPatterns, addClause) {
   formula.readClause({mkLit(1), mkLit(2)});
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 1ul);
+  ASSERT_EQ(solver.getStatistics().nClauses(), 1ul);
 }
 
 TEST (CandyAddClauseTestPatterns, rejectTautologies) {
@@ -25,7 +25,7 @@ TEST (CandyAddClauseTestPatterns, rejectTautologies) {
   formula.readClause(mkLit(1), mkLit(1, true));
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 0ul);
+  ASSERT_EQ(solver.getStatistics().nClauses(), 0ul);
 }
 
 TEST (CandyAddClauseTestPatterns, rejectTautologies2) {
@@ -33,7 +33,7 @@ TEST (CandyAddClauseTestPatterns, rejectTautologies2) {
   formula.readClause({ mkLit(1), mkLit(2), mkLit(1, true) });
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 0ul);
+  ASSERT_EQ(solver.getStatistics().nClauses(), 0ul);
 }
 
 TEST (CandyAddClauseTestPatterns, materialUnitClauses) {
@@ -41,7 +41,7 @@ TEST (CandyAddClauseTestPatterns, materialUnitClauses) {
   formula.readClause({mkLit(1)});
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 1ul);
+  ASSERT_EQ(solver.getStatistics().nClauses(), 1ul);
 }
 
 TEST (CandyAddClauseTestPatterns, materialUnitClauses2) {
@@ -51,7 +51,7 @@ TEST (CandyAddClauseTestPatterns, materialUnitClauses2) {
   formula.readClause(mkLit(1), mkLit(2));  
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 2ul); 
+  ASSERT_EQ(solver.getStatistics().nClauses(), 2ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
 }
 
@@ -61,7 +61,7 @@ TEST (CandyAddClauseTestPatterns, materialUnitClauses3) {
   formula.readClause(mkLit(1), mkLit(2));
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 3ul); 
+  ASSERT_EQ(solver.getStatistics().nClauses(), 3ul); 
   // ASSERT_TRUE(clauses[0]->isDeleted());
 }
 
@@ -71,7 +71,7 @@ TEST (CandyAddClauseTestPatterns, lazyDeletionOfStrengthenedClauses) {
   formula.readClause({mkLit(1), mkLit(2), mkLit(3)});
   Solver<> solver;
   solver.init(formula);
-  ASSERT_EQ(solver.nClauses(), 3ul);
+  ASSERT_EQ(solver.getStatistics().nClauses(), 3ul);
   // ASSERT_EQ(clauses[0]->size(), 3ul);
   // ASSERT_TRUE(clauses[0]->isDeleted());
   // ASSERT_EQ(clauses[1]->size(), 2ul);

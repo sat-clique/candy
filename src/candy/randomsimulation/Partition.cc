@@ -159,7 +159,7 @@ namespace Candy {
     public:
         explicit DefaultPartition(std::unique_ptr<CompressionScheduleStrategy> compressionSched);
         
-        void setVariables(const std::vector<Glucose::Var> &variables) override;
+        void setVariables(const std::vector<Candy::Var> &variables) override;
         void update(const SimulationVectors &assignment) override;
         Conjectures getConjectures() override;
         float getPartitionReductionRate() override;
@@ -205,7 +205,7 @@ namespace Candy {
         unsigned int m_round;
         std::vector<PartitionEntry> m_partitioningPos;
         std::vector<PartitionEntry> m_partitioningNeg;
-        std::vector<Glucose::Var> m_variables;
+        std::vector<Candy::Var> m_variables;
         
         std::unique_ptr<CompressionScheduleStrategy> m_compressionSched;
         std::uint64_t m_correlationCount;
@@ -228,7 +228,7 @@ namespace Candy {
         
     }
     
-    void DefaultPartition::setVariables(const std::vector<Glucose::Var> &variables) {
+    void DefaultPartition::setVariables(const std::vector<Candy::Var> &variables) {
         m_variables = variables;
     }
     
@@ -295,7 +295,7 @@ namespace Candy {
         }
         
        
-        for (Glucose::Var variable : m_variables) {
+        for (Candy::Var variable : m_variables) {
             initializePartitionEntry(variable, assignment);
         }
         
@@ -473,7 +473,7 @@ namespace Candy {
         
         getPartitionsByID(partitions, groupIDs_detOrder, nullptr);
         
-        Glucose::Var maxVar = 0;
+        Candy::Var maxVar = 0;
         for (auto var : m_variables) {
             if (var > maxVar) {
                 maxVar = var;

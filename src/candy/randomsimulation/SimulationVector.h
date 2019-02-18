@@ -160,7 +160,7 @@ namespace Candy {
      */
     class SimulationVectors {
     public:
-        typedef Glucose::Var index_t;
+        typedef Candy::Var index_t;
         
         SimulationVectors();
         ~SimulationVectors();
