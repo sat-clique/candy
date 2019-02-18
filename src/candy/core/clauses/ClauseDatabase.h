@@ -69,6 +69,7 @@ private:
     std::vector<Clause*> clauses; // Working set of problem clauses
 
     const unsigned int persistentLBD;
+    const bool keepMedianLBD;
     const bool reestimationReduceLBD;
 
     bool track_literal_occurrence;    
@@ -88,6 +89,7 @@ public:
     ClauseDatabase() : 
         allocator(), clauses(), 
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
+        keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
         reestimationReduceLBD(ClauseDatabaseOptions::opt_reestimation_reduce_lbd), 
         track_literal_occurrence(false),
         variableOccurrences(),
@@ -180,26 +182,17 @@ public:
         result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
-    void logCritical(Clause* clause, std::string prefix = "") { 
-        // std::vector<Lit> critical { ~79422_L };
-        // if (std::includes(critical.begin(), critical.end(), clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) < var(l2); })) {
-        //     std::cout << std::this_thread::get_id() << ": " << clause << " " << prefix << " " << *clause << std::endl;
-        // }
-    }
-
     void emptyClause() {
         certificate.proof();
     }
 
     template<typename Iterator>
-    Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
+    inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
         // std::cout << "Creating clause " << lits;
         Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
 
         certificate.added(clause->begin(), clause->end());
-
-        logCritical(clause, "create");
 
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
@@ -215,13 +208,11 @@ public:
         return clause;
     }
 
-    void removeClause(Clause* clause) {
+    inline void removeClause(Clause* clause) {
         // std::cout << "Removing clause " << *clause;
         allocator.deallocate(clause);
 
         certificate.removed(clause->begin(), clause->end());
-
-        logCritical(clause, "remove");
         
         if (track_literal_occurrence) {
             for (Lit lit : *clause) {
@@ -242,9 +233,6 @@ public:
         assert(clause->size() > 1);
         std::vector<Lit> literals;
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
-
-        logCritical(clause, "strengthen");
-
         Clause* new_clause = createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
         removeClause(clause);
         return new_clause;
@@ -252,9 +240,6 @@ public:
 
     Clause* persistClause(Clause* clause) {
         Clause* new_clause = createClause(clause->begin(), clause->end(), 0);
-
-        logCritical(clause, "persist");
-
         removeClause(clause);
         return new_clause;
     }
@@ -280,12 +265,32 @@ public:
      **/
     void reduce() { 
         std::vector<Clause*> learnts;
+
         copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [this](Clause* clause) { 
-            return clause->getLBD() > persistentLBD && clause->size() > 2; 
+            return clause->getLBD() > persistentLBD; 
         });
-        std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
-        std::for_each(learnts.begin(), learnts.end() - (learnts.size() / 2), [this](Clause* clause) { removeClause(clause); } );
-        nReduced += learnts.size() / 2;
+
+        std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { 
+            return c1->getLBD() < c2->getLBD(); 
+        });
+
+        if (learnts.size() > 0) {
+            auto begin = learnts.begin() + learnts.size()/2;
+
+            if (keepMedianLBD) {
+                unsigned int median_lbd = (*begin)->getLBD();
+                while ((*begin)->getLBD() == median_lbd) {
+                    begin++;
+                }
+            }
+
+            for_each(begin, learnts.end(), [this] (Clause* clause) { 
+                removeClause(clause); 
+            });
+
+            nReduced += std::distance(begin, learnts.end());
+        }
+
         nReduceCalls++;
     }
 
