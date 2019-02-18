@@ -284,8 +284,8 @@ public:
             return clause->getLBD() > persistentLBD && clause->size() > 2; 
         });
         std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); });
-        std::for_each(learnts.begin() + (learnts.size() / 2), learnts.end(), [this](Clause* clause) { removeClause(clause); } );
-        nReduced += learnts.size();
+        std::for_each(learnts.begin(), learnts.end() - (learnts.size() / 2), [this](Clause* clause) { removeClause(clause); } );
+        nReduced += learnts.size() / 2;
         nReduceCalls++;
     }
 
