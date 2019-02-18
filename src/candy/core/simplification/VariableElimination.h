@@ -118,7 +118,7 @@ public:
         });
 
         for (Var v : variables) {
-            if (trail.isAssigned(v)) continue;
+            if (trail.defines(mkLit(v, false))) continue;
 
             if (use_asymm) {
                 if (!asymmVar(v)) {
@@ -126,7 +126,7 @@ public:
                 }
             }
 
-            if (trail.isAssigned(v)) continue;
+            if (trail.defines(mkLit(v, false))) continue;
 
             if (use_elim) {
                 if (!eliminateVar(v)) {
@@ -147,8 +147,8 @@ public:
                 trail.newDecisionLevel();
                 Lit l = lit_Undef;
                 for (Lit lit : *clause) {
-                    if (var(lit) != v && !trail.isAssigned(var(lit))) {
-                        trail.uncheckedEnqueue(~lit);
+                    if (var(lit) != v && !trail.defines(lit)) {
+                        trail.decide(~lit);
                     } else {
                         l = lit;
                     }
@@ -168,7 +168,7 @@ public:
                         propagator.attachClause(new_clause);
                     }
                     else if (new_clause->size() == 1) {
-                        return trail.newFact(new_clause->first()) && propagator.propagate() == nullptr;
+                        return trail.fact(new_clause->first()) && propagator.propagate() == nullptr;
                     } 
                     else if (new_clause->size() == 0) {
                         return false;
@@ -217,12 +217,12 @@ public:
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, v, resolvent)) {
                 uint16_t lbd = std::min(pc->getLBD(), nc->getLBD());
-                Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), std::min(lbd, (uint16_t)(resolvent.size()-1)));
-                if (clause->size() > 2) {
-                    propagator.attachClause(clause);
+                Clause* new_clause = clause_db.createClause(resolvent.begin(), resolvent.end(), std::min(lbd, (uint16_t)(resolvent.size()-1)));
+                if (new_clause->size() > 2) {
+                    propagator.attachClause(new_clause);
                 }
-                else if (clause->size() == 1) {
-                    return trail.newFact(clause->first()) && propagator.propagate() == nullptr;
+                else if (new_clause->size() == 1) {
+                    return trail.fact(new_clause->first()) && propagator.propagate() == nullptr;
                 }
             }
         }

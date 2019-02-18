@@ -50,7 +50,7 @@ namespace Candy {
         Heuristic underTest { clause_db, trail };
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(1_L);
+        trail.decide(1_L);
         auto result = underTest.getAdvice();
 
         EXPECT_EQ(result, lit_Undef);
@@ -78,7 +78,7 @@ namespace Candy {
         Heuristic underTest { clause_db, trail };
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(1_L);
+        trail.decide(1_L);
         auto result = underTest.getAdvice();
 
         EXPECT_EQ(result, lit_Undef);
@@ -108,7 +108,7 @@ namespace Candy {
         underTest.init(std::move(testData));
         
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(2_L);
+        trail.decide(2_L);
         underTest.grow(5);
         auto result = underTest.getAdvice();
 
@@ -137,9 +137,9 @@ namespace Candy {
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(1_L);
-        trail.uncheckedEnqueue(2_L);
-        trail.uncheckedEnqueue(3_L);
+        trail.decide(1_L);
+        trail.decide(2_L);
+        trail.decide(3_L);
         underTest.grow(5);
         auto result = underTest.getAdvice();
 
@@ -173,7 +173,7 @@ namespace Candy {
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(2_L);
+        trail.decide(2_L);
         underTest.grow(5);
         underTest.setDecisionVar(3_V, false);
         auto result = underTest.getAdvice();
@@ -208,7 +208,7 @@ namespace Candy {
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(5_L);
+        trail.decide(5_L);
         underTest.grow(5);
         auto result = underTest.getAdvice();
 
@@ -242,7 +242,7 @@ namespace Candy {
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(4_L);
+        trail.decide(4_L);
         underTest.grow(5);
         auto result = underTest.getAdvice();
 
@@ -277,8 +277,8 @@ namespace Candy {
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(4_L);
-        trail.uncheckedEnqueue(5_L);
+        trail.decide(4_L);
+        trail.decide(5_L);
         underTest.grow(5);
         auto result = underTest.getAdvice();
 
@@ -331,7 +331,7 @@ namespace Candy {
     //     underTest.init(std::move(testData), false);
 
     //     trail.newDecisionLevel();
-    //     trail.uncheckedEnqueue(4_L);
+    //     trail.decide(4_L);
     //     underTest.grow(6);
     //     auto result = underTest.getAdvice();
         
@@ -339,7 +339,7 @@ namespace Candy {
         
     //     trail.cancelUntil(0);
     //     trail.newDecisionLevel();
-    //     trail.uncheckedEnqueue(5_L);
+    //     trail.decide(5_L);
     //     result = underTest.getAdvice();
         
     //     ASSERT_EQ(result, mkLit(5,0));
@@ -396,7 +396,7 @@ namespace Candy {
         underTest.init(std::move(testData), false);
 
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(2_L);
+        trail.decide(2_L);
         underTest.grow(5);
         
         int calls = 0;
@@ -422,8 +422,8 @@ namespace Candy {
     //     underTest.init(std::move(testData), false, halfLife);
 
     //     trail.newDecisionLevel();
-    //     trail.uncheckedEnqueue(1_L);
-    //     trail.uncheckedEnqueue(~2_L);
+    //     trail.decide(1_L);
+    //     trail.decide(~2_L);
     //     underTest.grow(5);
         
     //     std::unordered_map<uint8_t, double> distribution;
@@ -457,7 +457,7 @@ namespace Candy {
         underTest.init(std::move(testData), false, budget);
         
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(2_L);
+        trail.decide(2_L);
         underTest.grow(5);
 
         for (uint64_t i = 0; i <= budget+2; ++i) {
@@ -472,7 +472,7 @@ namespace Candy {
         
         trail.cancelUntil(0);
         trail.newDecisionLevel();
-        trail.uncheckedEnqueue(3_L);
+        trail.decide(3_L);
 
         Lit result = underTest.getAdvice();
         ASSERT_NE(result, lit_Undef) << "The back implication's budget should not be depleted in this test";

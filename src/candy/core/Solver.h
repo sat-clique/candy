@@ -153,7 +153,7 @@ public:
         assert(trail.size() == 0);
         vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
-            this->ok &= trail.newFact(clause->first());
+            this->ok &= trail.fact(clause->first());
         }
         if (!isInConflictingState()) {
             std::array<Lit, 1> unit;
@@ -163,8 +163,8 @@ public:
                 for (auto it = trail.begin() + pos; it != trail.end(); it++) {
                     assert(trail.reason(var(*it)) != nullptr);
                     unit[0] = *it;
-                    clause_db.createClause(unit.begin(), unit.end());
-                    trail.newFact(*it);
+                    Clause* new_clause = clause_db.createClause(unit.begin(), unit.end());
+                    trail.fact(new_clause->first());
                 }
             }
         }
@@ -420,7 +420,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
             }
             Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
             if (new_clause->size() == 1) {
-                trail.newFact(new_clause->first());
+                trail.fact(new_clause->first());
             }
             else if (new_clause->size() > 2) {
                 propagator.attachClause(new_clause);
@@ -517,7 +517,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             trail.cancelUntil(clause_db.result.backtrack_level);
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
-            trail.uncheckedEnqueue(clause->first(), clause->size() == 1 ? nullptr : clause);
+            trail.propagate(clause->first(), clause);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
@@ -533,8 +533,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
 
             logging.logLearntClause(clause);
-
-            assert(trail.value(clause->first()) == l_Undef);
         }
         else {
             if (statistics.nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / statistics.nConflicts())))) {
@@ -625,7 +623,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             
             // Increase decision level and enqueue 'next'
             trail.newDecisionLevel();
-            trail.uncheckedEnqueue(next);
+            trail.decide(next);
         }
     }
     return l_Undef; // not reached

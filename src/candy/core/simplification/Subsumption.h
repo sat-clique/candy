@@ -171,7 +171,7 @@ bool Subsumption<TPropagate>::subsume() {
                     else {
                         attach(new_clause);
                         if (new_clause->size() == 1) {
-                            if (!trail.newFact(new_clause->first()) || propagator.propagate() != nullptr) {
+                            if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
                                 return false; 
                             }
                         } 

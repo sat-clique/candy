@@ -173,18 +173,24 @@ public:
         return value(lit) == l_True;
     }
 
-    // Returns TRUE if a clause is satisfied in the current state.
     inline bool satisfies(const Clause& c) const {
         return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
     }
 
-    // Returns TRUE if a clause is falsified in the current state.
+    inline bool falsifies(Lit lit) const {
+        return value(lit) == l_False;
+    }
+
     inline bool falsifies(const Clause& c) const {
         return std::all_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_False; });
     }
 
-    inline bool isAssigned(Var v) const {
-        return assigns[v] != l_Undef;
+    inline bool defines(Lit lit) const {
+        return value(lit) != l_Undef;
+    }
+
+    inline bool defines(const Clause& c) const {
+        return std::all_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) != l_Undef; });
     }
 
     // Main internal methods:
@@ -206,31 +212,38 @@ public:
         trail_lim.push_back(trail_size);
     }
 
-    inline bool newFact(Lit p) {
-        assert(decisionLevel() == 0);
-
-        if (value(p) == l_Undef) {
-            uncheckedEnqueue(p);
-        }
-        else if (value(p) == l_True) {
-            vardata[var(p)] = VarData(nullptr, 0);
-        }
-        else if (value(p) == l_False) {
-            return false;
-        }
-        return true;
-    }
-
-    inline void uncheckedEnqueue(Lit p, Clause* from = nullptr) {
+    inline void decide(Lit p) {
         assert(value(p) == l_Undef);
         assigns[var(p)] = lbool(!sign(p));
-        vardata[var(p)] = VarData(from, decisionLevel());
+        vardata[var(p)] = VarData(nullptr, decisionLevel());
         trail[trail_size++] = p;
-        if (from == nullptr) {
-            nDecisions++;
+        nDecisions++;
+    }
+
+    inline bool propagate(Lit p, Clause* from) {
+        if (this->falsifies(p)) {
+            return false;
         }
         else {
+            assigns[var(p)] = lbool(!sign(p));
+            vardata[var(p)] = VarData(from, decisionLevel());
+            trail[trail_size++] = p;
             nPropagations++;
+            return true;
+        }
+    }
+
+    inline bool fact(Lit p) {
+        assert(decisionLevel() == 0);
+        vardata[var(p)] = VarData(nullptr, 0);
+        if (!this->defines(p)) {
+            assigns[var(p)] = lbool(!sign(p));
+            trail[trail_size++] = p;
+            nPropagations++;
+            return true;
+        }
+        else {
+            return this->satisfies(p);
         }
     }
 
