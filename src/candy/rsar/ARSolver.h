@@ -90,16 +90,6 @@ namespace Candy {
 
     	virtual lbool solve() override;
 
-    	virtual void setConfBudget(uint64_t x) override {
-    		m_solver->setConfBudget(x);
-    	}
-    	virtual void setPropBudget(uint64_t x) override {
-    		m_solver->setPropBudget(x);
-    	}
-    	virtual void budgetOff() override {
-    		m_solver->budgetOff();
-    	}
-
     	// The value of a variable in the last model. The last call to solve must have been satisfiable.
     	virtual lbool modelValue(Var x) const override {
     		return m_solver->modelValue(x);

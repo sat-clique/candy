@@ -50,9 +50,6 @@ public:
 	virtual Trail& getAssignment() = 0; 
 	virtual Statistics& getStatistics() = 0;
 
-	virtual void setConfBudget(uint64_t x) = 0;
-	virtual void setPropBudget(uint64_t x) = 0;
-	virtual void budgetOff() = 0;
 	virtual void setTermCallback(void* state, int (*termCallback)(void* state)) = 0;
 	virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) = 0;
 

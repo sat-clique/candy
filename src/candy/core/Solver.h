@@ -241,17 +241,6 @@ public:
         return literals;
     }
 
-    // Resource constraints:
-    void setConfBudget(uint64_t x) override {
-        conflict_budget = statistics.nConflicts() + x;
-    }
-    void setPropBudget(uint64_t x) override {
-        propagation_budget = statistics.nPropagations() + x;
-    }
-    void budgetOff() override {
-        conflict_budget = propagation_budget = 0;
-    }
-
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void* state)) override {
         this->termCallbackState = state;
@@ -308,9 +297,7 @@ protected:
     unsigned int lastRestartWithUnitResolution;
     unsigned int unitResolutionFrequency;
 
-    // Resource contraints and other interrupts
-    unsigned int conflict_budget;    // 0 means no budget.
-    unsigned int propagation_budget; // 0 means no budget.
+    // Interruption callback
     void* termCallbackState;
     int (*termCallback)(void* state);
 
@@ -322,8 +309,7 @@ protected:
     lbool search(); // Search for a given number of conflicts.
 
     inline bool withinBudget() {
-        return (termCallback == nullptr || 0 == termCallback(termCallbackState))
-                && (conflict_budget == 0 || statistics.nConflicts() < conflict_budget) && (propagation_budget == 0 || statistics.nPropagations() < propagation_budget);
+        return (termCallback == nullptr || 0 == termCallback(termCallbackState));
     }
 
 private:
@@ -366,8 +352,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     freezes(),
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
     lastRestartWithUnitResolution(0), unitResolutionFrequency(SolverOptions::opt_unitresolution), 
-    // resource constraints and other interrupt related
-    conflict_budget(0), propagation_budget(0),
+    // interruption callback
     termCallbackState(nullptr), termCallback(nullptr),
     // learnt callback ipasir
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
