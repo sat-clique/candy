@@ -113,39 +113,6 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 #endif
 }
 
-static void setLimits(int cpu_lim, int mem_lim) {
-#if !defined(CANDY_HAVE_RLIMIT)
-  #if defined(_MSC_VER)
-    #pragma message ("Warning: setting limits not yet implemented for non-POSIX platforms")
-  #else
-    #warning "setting limits not yet implemented for non-POSIX platforms"
-  #endif
-#else
-    // Set limit on CPU-time:
-    if (cpu_lim != INT32_MAX) {
-        rlimit rl;
-        getrlimit(RLIMIT_CPU, &rl);
-        if (rl.rlim_max == RLIM_INFINITY || (rlim_t) cpu_lim < rl.rlim_max) {
-            rl.rlim_cur = cpu_lim;
-            if (setrlimit(RLIMIT_CPU, &rl) == -1)
-                printf("c WARNING! Could not set resource limit: CPU-time.\n");
-        }
-    }
-
-    // Set limit on virtual memory:
-    if (mem_lim != INT32_MAX) {
-        rlim_t new_mem_lim = (rlim_t) mem_lim * 1024 * 1024;
-        rlimit rl;
-        getrlimit(RLIMIT_AS, &rl);
-        if (rl.rlim_max == RLIM_INFINITY || new_mem_lim < rl.rlim_max) {
-            rl.rlim_cur = new_mem_lim;
-            if (setrlimit(RLIMIT_AS, &rl) == -1)
-                printf("c WARNING! Could not set resource limit: Virtual memory.\n");
-        }
-    }
-#endif
-}
-
 static void printProblemStatistics(CNFProblem& problem) {
     printf("c =====================[ Problem Statistics ]======================\n");
     printf("c |                                                               |\n");
@@ -187,8 +154,6 @@ int main(int argc, char** argv) {
     if (SolverOptions::verb > 1) {
         std::cout << "c Candy 0.7 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
     }
-
-    setLimits(SolverOptions::cpu_lim, SolverOptions::mem_lim);
 
     CNFProblem problem{};
     try {

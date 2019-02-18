@@ -34,13 +34,13 @@ namespace ParallelOptions {
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern BoolOption opt_reestimation_reduce_lbd;
+    extern BoolOption opt_keep_median_lbd;
 }
 
 namespace SolverOptions {
     extern IntOption verb;
     extern BoolOption mod;
     extern IntOption cpu_lim;
-    extern IntOption mem_lim;
     extern BoolOption do_solve;
     extern StringOption opt_certified_file;
     extern BoolOption do_gaterecognition;

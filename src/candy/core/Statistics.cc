@@ -104,7 +104,6 @@ void Statistics::printIntermediateStats() {
 
 void Statistics::printFinalStats() {
     double cpu_time = get_cpu_time();
-    double wall_time = get_wall_time();
     printf("c =================================================================\n");
     printf("c restarts              : %lu (%lu conflicts in avg)\n", restarts, (restarts > 0 ? (nConflicts() / restarts) : 0));
 
