@@ -25,10 +25,11 @@
  */
 
 #include <gtest/gtest.h>
-#include <candy/core/Solver.h>
+#include <candy/core/CandySolverInterface.h>
 #include <candy/utils/FastRand.h>
 #include <candy/utils/MemUtils.h>
 #include <candy/rsar/ApproximationState.h>
+#include <candy/frontend/CandyBuilder.h>
 
 #include "TestUtils.h"
 #include "HeuristicsMock.h"
@@ -60,22 +61,24 @@ namespace Candy {
     private:
         bool solve();
 
-        void setAssumptions(const vector<Lit>& assumptions) {
+        void setAssumptions(const std::vector<Lit>& assumptions) {
             m_solver->setAssumptions(assumptions);
         }
         
-        std::unique_ptr<Solver<>> m_solver;
+        CandySolverInterface* m_solver;
         Var m_maxVar;
     };
 
     
     
     EquivalencyCheckerImpl::EquivalencyCheckerImpl()
-    : EquivalencyChecker(), m_solver(std::unique_ptr<Solver<>>(new Solver<>())), m_maxVar(0) {
+    : EquivalencyChecker(), m_maxVar(0) {
         SolverOptions::opt_preprocessing = false;
+        m_solver = createSolver();
     }
     
     EquivalencyCheckerImpl::~EquivalencyCheckerImpl() {
+        delete m_solver;
     }
     
     void EquivalencyCheckerImpl::addClauses(const std::vector<Cl>& clauses) {
@@ -180,12 +183,6 @@ namespace Candy {
         bool foundSecond = false;
         
         for (auto event : events) {
-        	switch (event) {
-        	case SolverMockEvent::ADD_CLAUSE: printf("clause;"); break;
-        	case SolverMockEvent::ADD_PROBLEM: printf("problem;"); break;
-        	case SolverMockEvent::SIMPLIFY: printf("simplify;"); break;
-        	case SolverMockEvent::SOLVE: printf("solve;"); break;
-        	}
             if ((event == first) && foundSecond) {
                 return false;
             }
@@ -213,35 +210,6 @@ namespace Candy {
                      SolverMockEvent first,
                      SolverMockEvent second) {
         return !occursOnlyBefore(events, first, second);
-    }
-    
-    void printEventLog(const std::vector<SolverMockEvent> &events, bool insertNewlines) {
-        std::cout << "Event log: ";
-        if (insertNewlines) {
-            std::cout << std::endl;
-        }
-        
-        for (auto event : events) {
-            switch(event) {
-                case SolverMockEvent::SOLVE:
-                    std::cout << "SOLVE"; break;
-                case SolverMockEvent::ADD_CLAUSE:
-                    std::cout << "ADD_CLAUSE"; break;
-                case SolverMockEvent::SIMPLIFY:
-                    std::cout << "SIMPLIFY"; break;
-                case SolverMockEvent::ADD_PROBLEM:
-                    std::cout << "ADD_PROBLEM"; break;
-                default:
-                    std::cout << "Unknown";
-            }
-            if (insertNewlines) {
-                std::cout << std::endl;
-            }
-            else {
-                std::cout << " ";
-            }
-        }
-        std::cout << std::endl;
     }
     
     bool contains(const Cl& clause, Lit lit) {

@@ -18,9 +18,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "candy/gates/GateAnalyzer.h"
-#include "candy/core/Solver.h"
+#include "candy/core/CandySolverInterface.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/MemUtils.h"
+#include "candy/core/CandySolverInterface.h"
+#include "candy/frontend/CandyBuilder.h"
 
 #include <iterator>
 #include <vector>
@@ -29,7 +31,7 @@ namespace Candy {
 
 GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, bool patterns, bool semantic, bool holistic, 
         bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget) :
-            problem (dimacs), runtime(timeout), solver (backported_std::make_unique<Solver<>>()),
+            problem (dimacs), runtime(timeout), 
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
             lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), 
@@ -42,6 +44,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
     for (Cl* c : problem) for (Lit l : *c) {// build index
         index[l].push_back(c);
     }
+    solver = createSolver(); 
     if (useHolistic) solver->init(problem);
     runtime.stop();
 }
@@ -144,14 +147,14 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inp) {
 }
 
 // main analysis routine
-vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool lah) {
+std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool lah) {
     std::vector<Lit> frontier, remainder;
 
     for (Lit o : candidates) {
         For& f = index[~o], g = index[o];
         if (!runtime.hasTimeout() && f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
             bool mono = false, pattern = false, semantic = false;
-            set<Lit> inp;
+            std::set<Lit> inp;
             for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
             mono = inputs[o] == 0 || inputs[~o] == 0;
             if (!mono) pattern = pat && patternCheck(o, f, g, inp);
@@ -207,7 +210,7 @@ Lit GateAnalyzer::normalizeRoots() {
         nGates++;
         gates[root].out = mkLit(root, false);
         gates[root].notMono = false;
-        set<Lit> inp;
+        std::set<Lit> inp;
         for (Cl* c : roots) {
             inp.insert(c->begin(), c->end());
             c->push_back(mkLit(root, true));
@@ -226,8 +229,8 @@ Lit GateAnalyzer::normalizeRoots() {
     }
 }
 
-vector<Lit> GateAnalyzer::getRootLiterals() {
-    vector<Lit> literals;
+std::vector<Lit> GateAnalyzer::getRootLiterals() {
+    std::vector<Lit> literals;
 
     for (Cl* c : getRoots()) {
         literals.insert(literals.end(), c->begin(), c->end());

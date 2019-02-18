@@ -24,8 +24,6 @@
 #include <vector>
 #include <assert.h>
 
-using namespace std;
-
 namespace Glucose {
 
 //=================================================================================================
@@ -34,8 +32,8 @@ namespace Glucose {
 template<class Comp>
 class Heap {
   Comp lt;       // The heap is a minimum-heap with respect to this comparator
-  vector<int> heap;     // Heap of integers
-  vector<int> indices;  // Each integers position (index) in the Heap
+  std::vector<int> heap;     // Heap of integers
+  std::vector<int> indices;  // Each integers position (index) in the Heap
 
   // Index "traversal" functions
   static inline int left(int i) {
@@ -146,7 +144,7 @@ public:
   }
 
   // Rebuild the heap from scratch, using the elements in 'ns':
-  void build(vector<int>& ns) {
+  void build(std::vector<int>& ns) {
     for (int i = 0; i < (int) heap.size(); i++) {
       indices[heap[i]] = -1;
     }

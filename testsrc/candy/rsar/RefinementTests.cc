@@ -92,8 +92,7 @@ namespace Candy {
     
     TEST(RSARRefinementStrategy, refineEmptyNoHeuristics) {
         Candy::Conjectures testData;
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
-        heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
+        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics;
         std::function<Var()> newVarFn;
         
         auto underTest = createDefaultRefinementStrategy(testData,
@@ -118,9 +117,8 @@ namespace Candy {
         EXPECT_CALL(*mock, markRemovals(testing::Matcher<Backbones&>(testing::_))).Times(testing::Exactly(0));
         
         Candy::Conjectures testData;
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
-        heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
-        heuristics->push_back(std::move(mock));
+        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics;
+        heuristics.push_back(std::move(mock));
         
         std::function<Var()> newVarFn;
         
@@ -168,9 +166,8 @@ namespace Candy {
         
         auto checker = createEquivalencyChecker();
         
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
-        heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
-        heuristics->push_back(std::move(mock));
+        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics;
+        heuristics.push_back(std::move(mock));
         
         std::function<Var()> newVarFn = [&checker](){ return checker->createVariable(); };
         
@@ -237,10 +234,9 @@ namespace Candy {
         
         auto checker = createEquivalencyChecker();
         
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
-        heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
-        heuristics->push_back(std::move(mock));
-        heuristics->push_back(std::move(fake));
+        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics; 
+        heuristics.push_back(std::move(mock));
+        heuristics.push_back(std::move(fake)); 
         
         std::function<Var()> newVarFn = [&checker](){ return checker->createVariable(); };
         
@@ -334,10 +330,9 @@ namespace Candy {
         
         auto checker = createEquivalencyChecker();
         
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics;
-        heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>{});
-        heuristics->push_back(std::move(mock));
-        heuristics->push_back(std::move(fake));
+        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics;
+        heuristics.push_back(std::move(mock));
+        heuristics.push_back(std::move(fake));
         
         std::function<Var()> newVarFn = [&checker](){ return checker->createVariable(); };
         

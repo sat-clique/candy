@@ -20,11 +20,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef CANDY_BUILDER_H_
 #define CANDY_BUILDER_H_
 
-#include "candy/core/Solver.h"
-#include "candy/core/CandySolverInterface.h"
-#include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/core/clauses/ClauseAllocator.h"
-#include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/propagate/StaticPropagate.h"
 #include "candy/core/learning/ConflictAnalysis.h"
@@ -33,6 +28,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/rsil/BranchingHeuristics.h"
 
 namespace Candy {
+
+class CandySolverInterface; 
 
 template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
 class CandyBuilder { 
@@ -75,9 +72,7 @@ public:
         return CandyBuilder<StaticPropagate, TLearning, TBranching>();
     }
 
-    CandySolverInterface* build() {
-        return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>();
-    }
+    CandySolverInterface* build();
 
 };
 

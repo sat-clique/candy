@@ -29,7 +29,7 @@
 
 #include <candy/rsil/BranchingHeuristics.h>
 #include <candy/testutils/TestUtils.h>
-#include <candy/core/Solver.h>
+#include <candy/core/CandySolverInterface.h>
 #include <candy/core/Trail.h>
 #include <candy/randomsimulation/RandomSimulator.h>
 #include <candy/gates/GateAnalyzer.h>

@@ -42,12 +42,6 @@
 namespace Candy {
     class Conjectures;
     class RefinementHeuristic;
-
-    enum class SimplificationHandlingMode {
-        DISABLE, /// Disable problem simplification entirely
-        FREEZE, /// Simplify the SAT problem after creating the first approximation and freeze the variables occuring in the first approximation
-        FULL /// Simplify the problem first, then compute the approximations using the remaining variables
-    };
     
     /**
      * \class ARSolver
@@ -135,13 +129,12 @@ namespace Candy {
     		return m_solver->getAssignment();
     	}
 
-    	ARSolver();
+        ARSolver(std::unique_ptr<Conjectures> conjectures, 
+            std::unique_ptr<RefinementHeuristic> heuristics, 
+            CandySolverInterface* solver = nullptr);
 
-        ARSolver(std::unique_ptr<Conjectures> conjectures,
-        			 CandySolverInterface* solver,
-                     int maxRefinementSteps,
-                     std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
-                     SimplificationHandlingMode simpHandlingMode);
+        ARSolver(std::unique_ptr<Conjectures> conjectures, 
+            CandySolverInterface* solver = nullptr);
 
         virtual ~ARSolver();
         ARSolver(const ARSolver& other) = delete;
@@ -157,17 +150,8 @@ namespace Candy {
         /** Removes eliminated variables from the conjectures. */
         void reduceConjectures();
 
-        /**
-         * Adds the new clauses contained in the approximation delta, performing
-         * simplification as needed.
-         */
-        void addInitialApproximationClauses(EncodedApproximationDelta& delta);
-
         /** Adds the new clauses contained in the approximation delta. */
         void addApproximationClauses(EncodedApproximationDelta& delta);
-
-        /** Calls the underlying SAT solver using the given assumption literals. */
-        lbool underlyingSolve(const std::vector<Lit>& assumptions);
 
         int maxVars;
 
@@ -181,8 +165,7 @@ namespace Candy {
         std::unique_ptr<Conjectures> m_conjectures;
         CandySolverInterface* m_solver;
         int m_maxRefinementSteps;
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> m_heuristics;
-        SimplificationHandlingMode m_simpHandlingMode;
+        std::vector<std::unique_ptr<RefinementHeuristic>> m_heuristics;
 
         std::unique_ptr<RefinementStrategy> m_refinementStrategy;
 
@@ -193,71 +176,6 @@ namespace Candy {
         std::unordered_map<Lit, std::pair<Lit, Lit>> m_approxLitsByAssumption;
     };
 
-    /**
-     * \class ARSolverBuilder
-     *
-     * \ingroup RS_AbstractionRefinement
-     *
-     * \brief A builder for ARSolver instances.
-     */
-    class ARSolverBuilder {
-    public:
-        /**
-         * Sets the conjectures (about equivalencies between literals in the SAT problem
-         * instance and the problem instance's backbone) which should be used to compute
-         * approximations. The default is not to use any conjectures, reducing the
-         * solving process to plain SAT solving.
-         */
-        virtual ARSolverBuilder& withConjectures(std::unique_ptr<Conjectures> conjectures) noexcept = 0;
-
-        /**
-         * Sets the incremental SAT solver to be used. By default, a default-constructed
-         * instance of Candy::Solver is used.
-         * The solver must be in a state such that
-         *  - no clauses have been added yet
-         *  - it is possible to call solve(...) functions
-         */
-        virtual ARSolverBuilder& withSolver(CandySolverInterface* solver) noexcept = 0;
-
-        /**
-         * Sets the maximum amount of refinement steps to be performed. A negative maximum
-         * causes removes the bound on the maximum amount of refinement steps. By default,
-         * no such bound is used.
-         */
-        virtual ARSolverBuilder& withMaxRefinementSteps(int maxRefinementSteps) noexcept = 0;
-
-        /**
-         * Adds the given heuristic to the set of refinement heuristics to be used to compute
-         * approximations of the SAT problem instance.
-         */
-        virtual ARSolverBuilder& addRefinementHeuristic(std::unique_ptr<RefinementHeuristic> heuristic) = 0;
-
-        /**
-         * Sets the simplification handling mode to be used (see the documentation of
-         * SimplificationHandlingMode). The default is SimplificationHandlingMode::RESTRICT.
-         *
-         * Note: The FREEZE simplification handling mode is currently unavailable due to an ongoing
-         * refactoring of the simplification code in Solver.
-         */
-        virtual ARSolverBuilder& withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept = 0;
-
-        /**
-         * Builds the ARSolver instance. Can be called only once.
-         */
-        virtual ARSolver* build() = 0;
-
-        ARSolverBuilder() noexcept;
-        virtual ~ARSolverBuilder();
-        ARSolverBuilder(const ARSolverBuilder& other) = delete;
-        ARSolverBuilder& operator= (const ARSolverBuilder& other) = delete;
-    };
-
-    /**
-     * \ingroup RS_AbstractionRefinement
-     *
-     * creates an ARSolverBuilder instance.
-     */
-    std::unique_ptr<ARSolverBuilder> createARSolverBuilder();
 }
 
 #endif

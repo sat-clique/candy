@@ -119,7 +119,6 @@ namespace RSILOptions {
 namespace RSAROptions {        
     extern BoolOption opt_rsar_enable;
     extern IntOption opt_rsar_maxRefinementSteps;
-    extern StringOption opt_rsar_simpMode;
     extern StringOption opt_rsar_inputDepCountHeurConf;
     extern IntOption opt_rsar_minGateCount;
 }

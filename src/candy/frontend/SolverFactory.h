@@ -26,21 +26,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/rsar/ARSolver.h" 
 #include "candy/utils/StringUtils.h" 
 #include "candy/frontend/RandomSimulationFrontend.h"
+#include "candy/frontend/CandyBuilder.h"
 
 namespace Candy {
-
-SimplificationHandlingMode parseSimplificationHandlingMode(const std::string& str) {
-	if (str == "DISABLE") {
-		return Candy::SimplificationHandlingMode::DISABLE;
-	}
-	if (str == "FREEZE") {
-		return Candy::SimplificationHandlingMode::FREEZE;
-	}
-	if (str == "FULL") {
-		return Candy::SimplificationHandlingMode::FULL;
-	}
-	throw std::invalid_argument(str + ": Unknown simplification handling mode");
-}
 
 CandySolverInterface* createRSARSolver(CNFProblem& problem) {
 	bool initializationComleted = false;
@@ -70,22 +58,17 @@ CandySolverInterface* createRSARSolver(CNFProblem& problem) {
 	}
 
 	if (initializationComleted) {
-		auto arSolverBuilder = Candy::createARSolverBuilder();
-		arSolverBuilder->withConjectures(std::move(conjectures));
-		arSolverBuilder->withMaxRefinementSteps(RSAROptions::opt_rsar_maxRefinementSteps);
-		arSolverBuilder->withSimplificationHandlingMode(parseSimplificationHandlingMode(std::string { RSAROptions::opt_rsar_simpMode }));
+		std::unique_ptr<RefinementHeuristic> refinementHeuristics;
 
 		if (RSAROptions::opt_rsar_inputDepCountHeurConf > 0) {
 			std::vector<size_t> limits = tokenizeByWhitespace<size_t>(std::string { RSAROptions::opt_rsar_inputDepCountHeurConf }); 
 			if (limits.size() == 0) {
 				throw std::invalid_argument("invalid limits");
 			}
-			arSolverBuilder->addRefinementHeuristic(createInputDepCountRefinementHeuristic(analyzer, limits));
+			refinementHeuristics = createInputDepCountRefinementHeuristic(analyzer, limits);
 		}
 
-		arSolverBuilder->withSolver(new Solver<>());
-
-		return arSolverBuilder->build();
+		return new ARSolver(std::move(conjectures), std::move(refinementHeuristics)); 
 	}
 	else {
 		return nullptr;

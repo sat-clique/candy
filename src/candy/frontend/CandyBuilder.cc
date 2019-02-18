@@ -19,6 +19,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/frontend/CandyBuilder.h"
 
+#include "candy/core/CandySolverInterface.h"
+
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/Trail.h"
+
+#include "candy/core/Solver.h"
+
 namespace Candy {
 
 enum class RSILMode {
@@ -41,6 +48,11 @@ RSILMode getRSILMode() {
     else {
         throw std::invalid_argument("Error: unknown RSIL mode " + mode);
     }
+}
+
+template<class TPropagate, class TLearning, class TBranching> 
+CandySolverInterface* CandyBuilder<TPropagate, TLearning, TBranching>::build() {
+    return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>();
 }
 
 CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, unsigned int rsil_adv_size) {

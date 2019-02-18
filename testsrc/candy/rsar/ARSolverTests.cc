@@ -31,6 +31,7 @@
 #include <candy/utils/FastRand.h>
 #include <candy/utils/MemUtils.h>
 
+#include "candy/frontend/CandyBuilder.h"
 #include "SolverMock.h"
 #include "HeuristicsMock.h"
 #include "TestUtils.h"
@@ -49,13 +50,8 @@ namespace Candy {
     
     static void test_allAddedClausesDeactivated(SolverMock &mock) {
         auto eventLog = mock.mockctrl_getEventLog();
-        auto nAddedClauses = std::count(eventLog.begin(),
-                                        eventLog.end(),
-                                        SolverMockEvent::ADD_CLAUSE);
-        
         auto& lastAssumptionLits = mock.mockctrl_getLastAssumptionLits();
         
-        EXPECT_EQ(lastAssumptionLits.size(), static_cast<size_t>(nAddedClauses));
         EXPECT_TRUE(std::all_of(lastAssumptionLits.begin(),
                                 lastAssumptionLits.end(),
                                 [](Lit l) { return !isActive(l); }));
@@ -83,20 +79,16 @@ namespace Candy {
         return result;
     }
     
-    static ARSolverAndGlucoseMock createSimpleSetup(SimplificationHandlingMode mode) {
+    static ARSolverAndGlucoseMock createSimpleSetup() {
     	SolverMock* solverMock = new SolverMock();
         solverMock->mockctrl_setDefaultSolveResult(false);
         
         auto conjectures = makeDummyConjectures();
         std::unique_ptr<CNFProblem> simplemostProblem = createSimplestCNFProblem(*conjectures);
         
-        auto underTestBuilder = createARSolverBuilder();
-        underTestBuilder->withSolver(solverMock);
-        underTestBuilder->withSimplificationHandlingMode(mode);
-        
-        underTestBuilder->withConjectures(makeDummyConjectures());
-        underTestBuilder->withMaxRefinementSteps(3);
-        ARSolver* underTest = underTestBuilder->build();
+        RSAROptions::opt_rsar_maxRefinementSteps = 3;
+
+        ARSolver* underTest = new ARSolver(makeDummyConjectures(), solverMock);
         
         return ARSolverAndGlucoseMock{underTest, solverMock, std::move(simplemostProblem)};
     }
@@ -106,79 +98,35 @@ namespace Candy {
         return underTest.glucoseMock->mockctrl_getEventLog();
     }
     
-    TEST(RSARARSolver, DISABLED_temporal_init_simpCallTime_DISABLEsimp) {
-        auto underTest = createSimpleSetup(SimplificationHandlingMode::DISABLE);
+    TEST(RSARARSolver, temporal_init_simpCallTime) {
+        auto underTest = createSimpleSetup();
         underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
-        
-        EXPECT_TRUE(std::find(eventLog.begin(), eventLog.end(), SolverMockEvent::SIMPLIFY)
-                    == eventLog.end());
+        EXPECT_TRUE(occursOnlyBefore(eventLog, SolverMockEvent::ADD_PROBLEM, SolverMockEvent::SOLVE));
     }
     
-    TEST(RSARARSolver, DISABLED_temporal_init_simpCallTime_FREEZEsimp) {
-        auto underTest = createSimpleSetup(SimplificationHandlingMode::FREEZE);
-        underTest.arSolver->init(*underTest.minProblem);
-        underTest.arSolver->solve();
-        auto eventLog = getEventLog(underTest);
-        
-        // Expected behaviour: add problem, freeze literals, add clauses, simplify, solve
-        EXPECT_TRUE(occursOnlyAfter(eventLog, SolverMockEvent::SIMPLIFY, SolverMockEvent::ADD_PROBLEM));
-        EXPECT_TRUE(occursBefore(eventLog, SolverMockEvent::ADD_CLAUSE, SolverMockEvent::SIMPLIFY));
-//        EXPECT_TRUE(occursOnlyBefore(eventLog, SolverMockEvent::SIMPLIFY, SolverMockEvent::SOLVE));
-    }
-    
-    TEST(RSARARSolver, DISABLED_temporal_init_simpCallTime_FULLsimp) {
-        auto underTest = createSimpleSetup(SimplificationHandlingMode::FULL);
-        underTest.arSolver->init(*underTest.minProblem);
-        underTest.arSolver->solve();
-        auto eventLog = getEventLog(underTest);
-        
-        // Expected behaviour: add problem, simplify, add clauses, solve
-        EXPECT_TRUE(occursOnlyAfter(eventLog, SolverMockEvent::SIMPLIFY, SolverMockEvent::ADD_PROBLEM));
-        EXPECT_TRUE(occursOnlyBefore(eventLog, SolverMockEvent::SIMPLIFY, SolverMockEvent::ADD_CLAUSE));
-//        EXPECT_TRUE(occursOnlyBefore(eventLog, SolverMockEvent::SIMPLIFY, SolverMockEvent::SOLVE));
-    }
-    
-    static void test_temporal_init_solveCallTime(SimplificationHandlingMode mode) {
-        auto underTest = createSimpleSetup(mode);
+    TEST(RSARARSolver, temporal_init_solveCallTime) {
+        auto underTest = createSimpleSetup();
         underTest.arSolver->init(*underTest.minProblem);
         underTest.arSolver->solve();
         auto eventLog = getEventLog(underTest);
         EXPECT_TRUE(occursOnlyAfter(eventLog, SolverMockEvent::SOLVE, SolverMockEvent::ADD_PROBLEM));
-        EXPECT_TRUE(!occursBefore(eventLog, SolverMockEvent::SOLVE, SolverMockEvent::ADD_CLAUSE));
-        if (std::find(eventLog.begin(), eventLog.end(), SolverMockEvent::SIMPLIFY) != eventLog.end()) {
-            EXPECT_TRUE(occursOnlyAfter(eventLog, SolverMockEvent::SOLVE, SolverMockEvent::SIMPLIFY));
-        }
-    }
-    
-    TEST(RSARARSolver, DISABLED_temporal_init_solveCallTime_DISABLEsimp) {
-        test_temporal_init_solveCallTime(SimplificationHandlingMode::DISABLE);
-    }
-    
-    TEST(RSARARSolver, DISABLED_temporal_init_solveCallTime_FREEZEsimp) {
-        test_temporal_init_solveCallTime(SimplificationHandlingMode::FREEZE);
-    }
-    
-    TEST(RSARARSolver, DISABLED_temporal_init_solveCallTime_FULLsimp) {
-        test_temporal_init_solveCallTime(SimplificationHandlingMode::FULL);
     }
     
     
-//    TEST(RSARARSolver, forcesDeactivation_SimpleProblem) {
-//        auto underTest = createSimpleSetup(SimplificationHandlingMode::DISABLE);
-//        underTest.arSolver->init(*underTest.minProblem);
-//        underTest.arSolver->solve();
-//        // no heuristics employed, no conflict assumption lits indicated
-//        // by the solver, no eliminated vars => ARSolver needs to force
-//        // the additional clauses to be deactivated in the end
-//
-//        test_allAddedClausesDeactivated(*underTest.glucoseMock);
-//    }
+   TEST(RSARARSolver, forcesDeactivation_SimpleProblem) {
+       auto underTest = createSimpleSetup();
+       underTest.arSolver->init(*underTest.minProblem);
+       underTest.arSolver->solve();
+       // no heuristics employed, no conflict assumption lits indicated
+       // by the solver, no eliminated vars => ARSolver needs to force
+       // the additional clauses to be deactivated in the end
+       test_allAddedClausesDeactivated(*underTest.glucoseMock);
+   }
     
     
-    static ARSolverAndGlucoseMock createSetup(SimplificationHandlingMode simplificationMode,
-                                              std::unique_ptr<Conjectures> conjectures,
+    static ARSolverAndGlucoseMock createSetup(std::unique_ptr<Conjectures> conjectures,
                                               const std::vector<std::vector<Var>> &deactivationsByStep,
                                               std::unique_ptr<CNFProblem> minProblem) {
     	SolverMock* solverMock = new SolverMock();
@@ -189,33 +137,18 @@ namespace Candy {
             fakeHeur->inStepNRemove(i, deactivationsByStep[i]);
         }
         
-        auto underTestBuilder = createARSolverBuilder();
-        underTestBuilder->withSolver(solverMock);
-        underTestBuilder->withSimplificationHandlingMode(simplificationMode);
-        underTestBuilder->withConjectures(std::move(conjectures));
-        underTestBuilder->addRefinementHeuristic(std::move(fakeHeur));
-        ARSolver* underTest = underTestBuilder->build();
+        ARSolver* underTest = new ARSolver(std::move(conjectures), std::move(fakeHeur));
         
         return ARSolverAndGlucoseMock{underTest, solverMock, std::move(minProblem)};
     }
     
     static ARSolverAndGlucoseMock createDefaultTestSetup() {
         auto conjectures = std::unique_ptr<Conjectures>(new Conjectures());
-        conjectures->addEquivalence(createEquivalenceConjecture({
-            mkLit(0, 1),
-            mkLit(1, 0),
-            mkLit(2, 1),
-            mkLit(3, 0)}));
-        conjectures->addEquivalence(createEquivalenceConjecture({
-            mkLit(4, 1),
-            mkLit(5, 0)}));
-        int nVars = 6;
-        std::unique_ptr<CNFProblem> minProblem = backported_std::make_unique<CNFProblem>();
-        minProblem->readClause(mkLit(nVars, 1));
-        return createSetup(SimplificationHandlingMode::DISABLE,
-                           std::move(conjectures),
-                           {{1}, {4}, {0, 3}},
-                           std::move(minProblem));
+        conjectures->addEquivalence(createEquivalenceConjecture({~1_L, 2_L, ~3_L, 4_L}));
+        conjectures->addEquivalence(createEquivalenceConjecture({~5_L, 6_L}));
+        std::unique_ptr<CNFProblem> minProblem = backported_std::make_unique<CNFProblem>(); 
+        minProblem->readClause({~7_L});
+        return createSetup(std::move(conjectures), {{1}, {4}, {0, 3}}, std::move(minProblem));
     }
     
     TEST(RSARARSolver, DISABLED_ultimatelyTerminatesWhenUNSAT) {
@@ -228,7 +161,7 @@ namespace Candy {
         
         EXPECT_EQ(result, l_False);
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 3);
-//        test_allAddedClausesDeactivated(*solverAndMock.glucoseMock);
+        test_allAddedClausesDeactivated(*solverAndMock.glucoseMock);
     }
     
     TEST(RSARARSolver, DISABLED_terminatesOnSAT) {
@@ -244,7 +177,7 @@ namespace Candy {
         EXPECT_EQ(solverAndMock.glucoseMock->mockctrl_getAmountOfInvocations(), 2);
     }
     
-    TEST(RSARARSolver, DISABLED_addedApproximationClausesRepresentEquivalencies) {
+    TEST(RSARARSolver, addedApproximationClausesRepresentEquivalencies) {
         auto solverAndMock = createDefaultTestSetup();
         solverAndMock.glucoseMock->mockctrl_setDefaultSolveResult(false);
         
@@ -256,13 +189,13 @@ namespace Candy {
             if (round == 0) {
                 // see createDefaultTestSetup() for initial conjectures and mock heuristic
                 // configuration
-//                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-//                                                    {mkLit(2, 1),
-//                                                        mkLit(3, 0),
-//                                                        mkLit(0, 1)}));
-//                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-//                                                    {mkLit(4, 0),
-//                                                        mkLit(5, 1)}));
+                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                                                    {mkLit(2, 1),
+                                                        mkLit(3, 0),
+                                                        mkLit(0, 1)}));
+                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                                                    {mkLit(4, 0),
+                                                        mkLit(5, 1)}));
                 
                 // var. 1 should be removed before the first call to solve
                 EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
@@ -275,10 +208,10 @@ namespace Candy {
                                                   mkLit(4, 0)));
             }
             else if (round == 1) {
-//                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-//                                                    {mkLit(2, 1),
-//                                                        mkLit(3, 0),
-//                                                        mkLit(0, 1)}));
+                EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
+                                                    {mkLit(2, 1),
+                                                        mkLit(3, 0),
+                                                        mkLit(0, 1)}));
 
                 
                 // var. 1 should be removed before the first call to solve
@@ -308,7 +241,6 @@ namespace Candy {
     
     
     static void test_acceptanceTest(std::string filename,
-                                    SimplificationHandlingMode simpMode,
                                     bool expectedResult,
                                     bool addHeuristics = true) {
         CNFProblem problem;
@@ -322,94 +254,40 @@ namespace Candy {
         auto randomLiterals = pickLiterals(problem, 10);
         auto randomConjectures = createRandomConjectures(randomLiterals, problem);
         auto randomHeuristic = createRandomHeuristic(randomLiterals);
-        
-        
-        auto solverBuilder = createARSolverBuilder();
-        solverBuilder->withSimplificationHandlingMode(simpMode);
-        solverBuilder->withConjectures(std::move(randomConjectures));
-        solverBuilder->addRefinementHeuristic(std::move(randomHeuristic));
-        solverBuilder->withSolver(new Solver<>());
-        
-        auto solver = solverBuilder->build();
+                
+        auto solver = new ARSolver(std::move(randomConjectures), std::move(randomHeuristic));
         solver->init(problem);
         auto result = solver->solve();
         EXPECT_EQ(result, lbool(expectedResult));
     }
     
-    static void test_acceptanceTest_problem_flat200(int n, SimplificationHandlingMode simpMode,
-                                                    bool expectedResult,
-                                                    bool addHeuristics = true) {
-        std::string filename = "problems/flat200-" + std::to_string(n) + ".cnf";
-        return test_acceptanceTest(filename, simpMode, expectedResult, addHeuristics);
+    TEST(RSARARSolver, acceptanceTest_problem_flat200_1) {
+        return test_acceptanceTest(std::string("problems/flat200-6.cnf"), true);
     }
     
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_DISABLEsimp) {
-        test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::DISABLE, true);
+    TEST(RSARARSolver, acceptanceTest_problem_flat200_3) {
+        return test_acceptanceTest(std::string("problems/flat200-6.cnf"), true);
     }
     
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_DISABLEsimp) {
-        test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::DISABLE, true);
+    TEST(RSARARSolver, acceptanceTest_problem_flat200_6) {
+        return test_acceptanceTest(std::string("problems/flat200-6.cnf"), true);
     }
     
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_DISABLEsimp) {
-        test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::DISABLE, true);
+    TEST(RSARARSolver, acceptanceTest_problem_flat200_1_onlyInternalHeur) {
+        return test_acceptanceTest(std::string("problems/flat200-1.cnf"), true, false);
     }
     
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_FREEZEsimp) {
-        test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::FREEZE, true);
+    TEST(RSARARSolver, acceptanceTest_problem_flat200_3_onlyInternalHeur) {
+        return test_acceptanceTest(std::string("problems/flat200-3.cnf"), true, false);
     }
     
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_FREEZEsimp) {
-        test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::FREEZE, true);
+    TEST(RSARARSolver, acceptanceTest_problem_flat200_6_onlyInternalHeur) {
+        return test_acceptanceTest(std::string("problems/flat200-6.cnf"), true, false);
     }
     
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_FREEZEsimp) {
-        test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::FREEZE, true);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_FULLsimp) {
-        test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::FULL, true);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_FULLsimp) {
-        test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::FULL, true);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_FULLsimp) {
-        test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::FULL, true);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_1_DISABLEsimp_onlyInternalHeur) {
-        test_acceptanceTest_problem_flat200(1, SimplificationHandlingMode::DISABLE, true, false);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_3_DISABLEsimp_onlyInternalHeur) {
-        test_acceptanceTest_problem_flat200(3, SimplificationHandlingMode::DISABLE, true, false);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_flat200_6_DISABLEsimp_onlyInternalHeur) {
-        test_acceptanceTest_problem_flat200(6, SimplificationHandlingMode::DISABLE, true, false);
-    }
-    
-    static void test_acceptanceTest_problem_6s(SimplificationHandlingMode simpMode,
-                                               bool expectedResult,
-                                               bool addHeuristics = true) {
-        return test_acceptanceTest(std::string("problems/6s33.cnf"),
-                                   simpMode,
-                                   expectedResult,
-                                   addHeuristics);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_DISABLEsimp) {
-        test_acceptanceTest_problem_6s(SimplificationHandlingMode::DISABLE, false);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_FREEZEsimp) {
-        test_acceptanceTest_problem_6s(SimplificationHandlingMode::FREEZE, false);
-    }
-    
-    TEST(RSARARSolver, DISABLED_acceptanceTest_problem_6s33_FULLsimp) {
-        test_acceptanceTest_problem_6s(SimplificationHandlingMode::FULL, false);
+    TEST(RSARARSolver, acceptanceTest_problem_6s33) {
+        test_acceptanceTest(std::string("problems/6s33.cnf"), false);
     }
 }
+
 

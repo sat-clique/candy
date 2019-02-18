@@ -23,7 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 #include <map>
 
-#include "candy/core/Solver.h"
+#include "candy/core/CandySolverInterface.h"
 
 namespace Candy {
 

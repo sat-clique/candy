@@ -107,7 +107,7 @@ namespace Candy {
         std::unique_ptr<EncodedApproximationDelta> refine() override;
         
         explicit SimpleRefinementStrategy(const Conjectures& conjectures,
-                                 std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
+                                 std::vector<std::unique_ptr<RefinementHeuristic>> heuristics,
                                  std::function<Var()> createVariable);
         virtual ~SimpleRefinementStrategy();
         SimpleRefinementStrategy(const SimpleRefinementStrategy& other) = delete;
@@ -135,7 +135,7 @@ namespace Candy {
         Var addAssumptionVariable();
         
         
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> m_heuristics;
+        std::vector<std::unique_ptr<RefinementHeuristic>> m_heuristics;
         std::unique_ptr<ApproximationState> m_approximationState;
         std::function<Var()> m_createVariable;
         
@@ -155,7 +155,7 @@ namespace Candy {
     }
     
     SimpleRefinementStrategy::SimpleRefinementStrategy(const Conjectures& conjectures,
-                                                       std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
+                                                       std::vector<std::unique_ptr<RefinementHeuristic>> heuristics,
                                                        std::function<Var()> createVariable)
     : RefinementStrategy(),
     m_heuristics(std::move(heuristics)),
@@ -178,7 +178,7 @@ namespace Candy {
     void SimpleRefinementStrategy::updateApproximationState() {
         bool markBackbones = !(m_approximationState->getBackbones().empty());
         
-        for (auto& heuristic : *m_heuristics) {
+        for (auto& heuristic : m_heuristics) {
             heuristic->beginRefinementStep();
             if (markBackbones) {
                 heuristic->markRemovals(m_approximationState->getBackbones());
@@ -187,7 +187,7 @@ namespace Candy {
         
         for (auto iter = m_approximationState->beginEquivalenceImplications();
              iter != m_approximationState->endEquivalenceImplications(); ++iter) {
-            for (auto& heuristic : *m_heuristics) {
+            for (auto& heuristic : m_heuristics) {
                 heuristic->markRemovals(**iter);
             }
         }
@@ -256,7 +256,7 @@ namespace Candy {
     
     
     std::unique_ptr<RefinementStrategy> createDefaultRefinementStrategy(const Conjectures& conjectures,
-                                                                        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
+                                                                        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics,
                                                                         std::function<Var()> createVariable) {
         return backported_std::make_unique<SimpleRefinementStrategy>(conjectures, std::move(heuristics), createVariable);
     }

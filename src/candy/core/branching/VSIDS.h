@@ -205,7 +205,7 @@ public:
     }
 
     void reset() {
-        vector<Var> vs;
+        std::vector<Var> vs;
         for (Var v = 0; v < (Var)decision.size(); v++) {
             if (decision[v]) {
                 vs.push_back(v);

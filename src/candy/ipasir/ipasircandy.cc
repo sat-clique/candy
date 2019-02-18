@@ -17,22 +17,22 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include "candy/core/Solver.h"
+#include "candy/core/CandySolverInterface.h"
+#include "candy/frontend/CandyBuilder.h"
 #include "candy/core/SolverTypes.h"
 
 #include <vector>
 
-using namespace std;
 using namespace Candy;
 
 class IPASIRCandy {
 
     CNFProblem problem;
 
-    Solver<> solver;
+    CandySolverInterface* solver;
 
-    vector<Lit> assumptions;
-    vector<Lit> clause;
+    std::vector<Lit> assumptions;
+    std::vector<Lit> clause;
 
     unsigned char* fmap;
     bool nomodel;
@@ -42,10 +42,10 @@ class IPASIRCandy {
     }
 
     void analyze() {
-        fmap = new unsigned char [solver.getStatistics().nVars()];
-        memset(fmap, 0, solver.getStatistics().nVars());
-        for (unsigned int i = 0; i < solver.getConflict().size(); i++) {
-            fmap[var(solver.getConflict()[i])] = 1;
+        fmap = new unsigned char [solver->getStatistics().nVars()];
+        memset(fmap, 0, solver->getStatistics().nVars());
+        for (unsigned int i = 0; i < solver->getConflict().size(); i++) {
+            fmap[var(solver->getConflict()[i])] = 1;
         }
     }
 
@@ -55,12 +55,14 @@ class IPASIRCandy {
     }
 
 public:
-    IPASIRCandy() : solver(), fmap(0), nomodel(false) { 
+    IPASIRCandy() : fmap(0), nomodel(false) { 
         VariableEliminationOptions::opt_use_elim = false;
+        solver = createSolver();
     }
 
     ~IPASIRCandy() {
         drop_analysis();
+        delete solver;
     }
 
     void add(int lit) {
@@ -82,9 +84,9 @@ public:
 
     int solve() {
         drop_analysis();
-        solver.init(problem);
-        solver.setAssumptions(assumptions);
-        lbool res = solver.solve();
+        solver->init(problem);
+        solver->setAssumptions(assumptions);
+        lbool res = solver->solve();
         assumptions.clear();
         problem.clear();
         nomodel = (res != l_True);
@@ -93,7 +95,7 @@ public:
 
     int val(int lit) {
         if (nomodel) return 0;
-        lbool res = solver.modelValue(import(lit));
+        lbool res = solver->modelValue(import(lit));
         return (res == l_True) ? lit : -lit;
     }
 
@@ -104,11 +106,11 @@ public:
     }
 
     void set_terminate(void* state, int(*callback)(void* state)) {
-        solver.setTermCallback(state, callback);
+        solver->setTermCallback(state, callback);
     }
 
     void set_learn(void* state, int max_length, void (*callback)(void* state, int* clause)) {
-        solver.setLearntCallback(state, max_length, callback);
+        solver->setLearntCallback(state, max_length, callback);
     }
 };
 

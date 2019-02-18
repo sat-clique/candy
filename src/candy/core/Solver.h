@@ -120,8 +120,11 @@ public:
         if (allocator == nullptr) {
             std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
             for (Cl* import : problem) {
-                clause_db.createClause(import->begin(), import->end());
-                if (import->size() == 0) {
+                Clause* clause = clause_db.createClause(import->begin(), import->end());
+                if (clause->size() > 2) {
+                    propagator.attachClause(clause);
+                } 
+                else if (clause->size() == 0) {
                     this->ok = false;
                     return;
                 }
@@ -130,13 +133,15 @@ public:
         else {
             std::cout << "c importing clauses from global allocator" << std::endl;
             clause_db.setGlobalClauseAllocator(allocator);
-        }
-
-        std::cout << "c attaching " << clause_db.size() << " clauses" << std::endl;
-        for (Clause* clause : clause_db) {
-            if (clause->size() > 2) {
-                propagator.attachClause(clause);
-            } 
+            for (Clause* clause : clause_db) {
+                if (clause->size() > 2) {
+                    propagator.attachClause(clause);
+                } 
+                else if (clause->size() == 0) {
+                    this->ok = false;
+                    return;
+                }
+            }
         }
 
         trail.reset();
@@ -151,7 +156,7 @@ public:
 
     void propagateAndMaterializeUnitClauses() {
         assert(trail.size() == 0);
-        vector<Clause*> facts = clause_db.getUnitClauses();
+        std::vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
             this->ok &= trail.fact(clause->first());
         }
@@ -174,7 +179,7 @@ public:
         return clause_db.createGlobalClauseAllocator();
     }
 
-    vector<Lit>& getConflict() override {
+    std::vector<Lit>& getConflict() override {
         return conflict;
     }
 
@@ -207,7 +212,7 @@ public:
 
     lbool solve() override;
 
-    void setAssumptions(const vector<Lit>& assumptions) override {
+    void setAssumptions(const std::vector<Lit>& assumptions) override {
         this->assumptions.clear();
         this->assumptions.insert(this->assumptions.end(), assumptions.begin(), assumptions.end());
         for (Lit lit : assumptions) setFrozen(var(lit), true);
@@ -234,10 +239,6 @@ public:
             literals[v] = model[v] == l_True ? mkLit(v, false) : model[v] == l_False ? mkLit(v, true) : lit_Undef;
         }
         return literals;
-    }
-
-    bool isSelector(Var v) {
-        return false;
     }
 
     // Resource constraints:
@@ -267,8 +268,8 @@ public:
     }
 
     // Extra results: (read-only member variable)
-    vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
-    vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
+    std::vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
+    std::vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
     TClauses clause_db;
@@ -387,7 +388,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_reso
     assert(propagator.propagate() == nullptr);
 
     bool satisfied = false;
-    vector<Lit> literals;
+    std::vector<Lit> literals;
 
     for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
         const Clause* clause = clause_db[i];
@@ -523,7 +524,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
             
             if (learntCallback != nullptr && clause->size() <= learntCallbackMaxLength) {
-                vector<int> to_send;
+                std::vector<int> to_send;
                 to_send.reserve(clause->size() + 1);
                 for (Lit lit : *clause) {
                     to_send.push_back((var(lit)+1)*(sign(lit)?-1:1));
@@ -603,8 +604,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
                 else if (trail.value(p) == l_False) {
-                    conflict = conflict_analysis.analyzeFinal(~p);
                     std::cout << "c Conflict found during assumption propagation" << std::endl;
+                    conflict = conflict_analysis.analyzeFinal(~p);
                     return l_False;
                 } 
                 else {
@@ -636,6 +637,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     model.clear();
     conflict.clear();
+    // trail.reset();
 
     if (!isInConflictingState() && this->preprocessing_enabled) {
         statistics.runtimeStart("Preprocessing");
