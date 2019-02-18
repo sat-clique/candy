@@ -68,15 +68,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/Statistics.h"
+#include "candy/core/Logging.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
 
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
-
-#include "candy/sonification/SolverSonification.h"
-#include "candy/sonification/ControllerInterface.h"
 
 namespace Candy {
 
@@ -283,6 +281,7 @@ protected:
     VariableElimination<TPropagate> elimination;
 
     Statistics statistics;
+    Logging logging;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
@@ -323,10 +322,6 @@ protected:
     int learntCallbackMaxLength;
     void (*learntCallback)(void* state, int* clause);
 
-    // Sonification
-    SolverSonification sonification;
-    ControllerInterface controller;
-
     lbool search(); // Search for a given number of conflicts.
 
     inline bool withinBudget() {
@@ -355,6 +350,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     elimination(clause_db, trail, propagator), 
     // stats
     statistics(*this), 
+    logging(*this),
     // assumptions 
     assumptions(),
     // restarts
@@ -378,12 +374,8 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     termCallbackState(nullptr), termCallback(nullptr),
     asynch_interrupt(false),
     // learnt callback ipasir
-    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr),
-    // sonification
-    sonification(), controller()
-{
-controller.run();
-}
+    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
+{ }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
@@ -500,62 +492,51 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
     assert(ok);
     
     statistics.solverRestartInc();
-    sonification.restart();
+    logging.logRestart();
     for (;;) {
-        sonification.decisionLevel(trail.decisionLevel(), SolverOptions::opt_sonification_delay);
-
         Clause* confl = (Clause*)propagator.propagate();
-        
-        sonification.assignmentLevel(static_cast<int>(trail.size()));
-        
+        logging.logDecision();
         if (confl != nullptr) { // CONFLICT
-            sonification.conflictLevel(trail.decisionLevel());
+            logging.logConflict();
 
             if (trail.decisionLevel() == 0) {
                 std::cout << "c Conflict found by propagation at level 0" << std::endl;
                 return l_False;
             }
             
-            conflict_analysis.handle_conflict(confl);
-            
             trailQueue.push(trail.size());
+            conflict_analysis.handle_conflict(confl);
             if (statistics.nConflicts() > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
                 lbdQueue.fastclear(); // BLOCK RESTART (CP 2012 paper)
             }
             lbdQueue.push(clause_db.result.lbd);
             sumLBD += clause_db.result.lbd;
-            
-            if (learntCallback != nullptr && (int)clause_db.result.learnt_clause.size() <= learntCallbackMaxLength) {
-                vector<int> clause;
-                clause.reserve(clause_db.result.learnt_clause.size() + 1);
-                for (Lit lit : clause_db.result.learnt_clause) {
-                    clause.push_back((var(lit)+1)*(sign(lit)?-1:1));
-                }
-                clause.push_back(0);
-                learntCallback(learntCallbackState, clause.data());
-            }
-
-            sonification.learntSize(static_cast<int>(clause_db.result.learnt_clause.size()));
 
             branch.process_conflict();
 
             trail.cancelUntil(clause_db.result.backtrack_level);
-
-            assert(trail.value(clause_db.result.learnt_clause[0]) == l_Undef);
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
             trail.uncheckedEnqueue(clause->first(), clause->size() == 1 ? nullptr : clause);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
+            
+            if (learntCallback != nullptr && clause->size() <= learntCallbackMaxLength) {
+                vector<int> to_send;
+                to_send.reserve(clause->size() + 1);
+                for (Lit lit : *clause) {
+                    to_send.push_back((var(lit)+1)*(sign(lit)?-1:1));
+                }
+                to_send.push_back(0);
+                learntCallback(learntCallbackState, to_send.data());
+            }
+
+            logging.logLearntClause(clause);
+
+            assert(trail.value(clause->first()) == l_Undef);
         }
         else {
-            // #ifndef NDEBUG
-            // for (Clause* c : clause_db) {
-            //     assert (!trail.falsifies(*c));
-            // }
-            // #endif
-            // Our dynamic restart, see the SAT09 competition compagnion paper
             if (statistics.nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / statistics.nConflicts())))) {
                 lbdQueue.fastclear();
                 
@@ -653,49 +634,29 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() {
     statistics.runtimeStart("Wallclock");
-
-    if (isInConflictingState()) {
-        statistics.runtimeStop("Wallclock");
-        return l_False;
-    }
+    logging.logStart();
     
     model.clear();
     conflict.clear();
 
-    if (this->preprocessing_enabled) {
+    if (!isInConflictingState() && this->preprocessing_enabled) {
         statistics.runtimeStart("Preprocessing");
         eliminate();
         statistics.runtimeStop("Preprocessing");
     }
-    
-    if (isInConflictingState()) {
-        std::cout << "c Conflict found during preprocessing" << std::endl;
-        statistics.runtimeStop("Wallclock");
-        return l_False;
-    }
 
-    sonification.start(static_cast<int>(statistics.nVars()), static_cast<int>(statistics.nClauses()));
-
-    lbool status = l_Undef;
+    lbool status = isInConflictingState() ? l_False : l_Undef;
     while (status == l_Undef && withinBudget()) {
         status = search();
     }
     
     if (status == l_False) {
         if (conflict.empty()) {
-            this->ok = false;
             clause_db.emptyClause();
         }
-
-        sonification.stop(1);
     }
     else if (status == l_True) {
         model.insert(model.end(), trail.assigns.begin(), trail.assigns.end());
-
-        sonification.stop(0);
-    }
-    else {
-        sonification.stop(-1);
     }
     
     trail.cancelUntil(0);
@@ -704,7 +665,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         elimination.extendModel(this->model);
     }
     
-    statistics.runtimeStop("Wallclock");
+    logging.logResult(status);
+    statistics.runtimeStop("Wallclock"); 
     return status;
 }
 

@@ -125,12 +125,7 @@ private:
 				minimized.push_back(lit);
 			}
 		}
-		learnt_clause.swap(minimized); 
-	    // auto end = remove_if(learnt_clause.begin()+1, learnt_clause.end(),
-	    //                      [this, abstract_level] (Lit lit) {
-	    //                          return trail.reason(var(lit)) != nullptr && litRedundant(lit, abstract_level);
-	    //                      });
-	    // learnt_clause.erase(end, learnt_clause.end());
+		learnt_clause.swap(minimized);
 	}
 
 	/******************************************************************
