@@ -306,11 +306,7 @@ protected:
     int learntCallbackMaxLength;
     void (*learntCallback)(void* state, int* clause);
 
-    lbool search(); // Search for a given number of conflicts.
-
-    inline bool withinBudget() {
-        return (termCallback == nullptr || 0 == termCallback(termCallbackState));
-    }
+    lbool search(); 
 
 private:
     template<typename Iterator>
@@ -353,7 +349,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
     lastRestartWithUnitResolution(0), unitResolutionFrequency(SolverOptions::opt_unitresolution), 
     // interruption callback
-    termCallbackState(nullptr), termCallback(nullptr),
+    termCallbackState(nullptr), termCallback([](void*) -> int { return 0; }),
     // learnt callback ipasir
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
 { }
@@ -626,7 +622,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     }
 
     lbool status = isInConflictingState() ? l_False : l_Undef;
-    while (status == l_Undef && withinBudget()) {
+    while (status == l_Undef && termCallback(termCallbackState) == 0) {
         status = search();
     }
     
