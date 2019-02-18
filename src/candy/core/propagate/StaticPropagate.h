@@ -116,7 +116,7 @@ public:
                 return watcher.clause;
             }
             if (val == l_Undef) {
-                trail.uncheckedEnqueue(watcher.other, watcher.clause);
+                trail.propagate(watcher.other, watcher.clause);
             }
         }
         return nullptr;
@@ -159,7 +159,7 @@ public:
                     return clause;
                 }
                 else { // unit
-                    trail.uncheckedEnqueue(other, (Clause*)clause);
+                    trail.propagate(other, (Clause*)clause);
                 }
             }
             *keep = *iter;
