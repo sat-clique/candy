@@ -55,15 +55,14 @@ namespace Candy {
     void SolverMock::init(const CNFProblem &problem, ClauseAllocator* allocator) {
         // TODO: fix the unscrupolously non-const CNFProblem interface to update
         // m_nClausesAddedSinceLastSolve
-        m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
         m_maxCreatedVar = problem.nVars();
         for (const Cl* clause : problem) {
             EXPECT_TRUE(std::all_of(clause->begin(), clause->end(),
                                     [this](Lit l) { return var(l) <= m_maxCreatedVar; }));
             m_addedClauses.push_back(*clause);
             ++m_nClausesAddedSinceLastSolve;
-            // m_eventLog.push_back(SolverMockEvent::ADD_CLAUSE);
         }
+        m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
     }
     
     void SolverMock::setFrozen(Var variable, bool frozen) {

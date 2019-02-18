@@ -28,6 +28,7 @@
 
 #include "candy/core/CandySolverInterface.h"
 #include "candy/frontend/CLIOptions.h"
+#include "candy/frontend/CandyBuilder.h"
 
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/MemUtils.h>
@@ -39,17 +40,8 @@
 #include <unordered_set>
 #include <iostream>
 
-namespace Candy {
-    ARSolverBuilder::ARSolverBuilder() noexcept {
-        VariableEliminationOptions::opt_use_elim = false; 
-    }
-    
-    ARSolverBuilder::~ARSolverBuilder() {
-        
-    }
-    
-    /* -- Solver-internal heuristics --------------------------------------------------------- */
-    
+namespace Candy {    
+    /* -- Solver-internal heuristics --------------------------------------------------------- */    
     class ARSolverConflictHeuristic : public RefinementHeuristic {
     public:
         
@@ -165,31 +157,27 @@ namespace Candy {
         }
     }
     
-    ARSolver::ARSolver() {
-
+    ARSolver::ARSolver(std::unique_ptr<Conjectures> conjectures,
+        std::unique_ptr<RefinementHeuristic> heuristics, 
+        CandySolverInterface* solver) : ARSolver(std::move(conjectures), solver) {
+        m_heuristics.push_back(std::move(heuristics));
     }
     
-    ARSolver::ARSolver(std::unique_ptr<Conjectures> conjectures,
-    							CandySolverInterface* solver,
-                                int maxRefinementSteps,
-                                std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
-                                SimplificationHandlingMode simpHandlingMode)
+    ARSolver::ARSolver(std::unique_ptr<Conjectures> conjectures, CandySolverInterface* solver)
     : maxVars(0), 
-    m_conjectures(std::move(conjectures)),
-    m_solver(solver),
-    m_maxRefinementSteps(maxRefinementSteps),
-    m_heuristics(std::move(heuristics)),
-    m_simpHandlingMode(simpHandlingMode),
+    m_conjectures(std::move(conjectures)), 
+    m_maxRefinementSteps(RSAROptions::opt_rsar_maxRefinementSteps),
+    m_heuristics(), 
     m_refinementStrategy(),
     m_approxLitsByAssumption() {
+        if (solver != nullptr) {
+            m_solver = solver;
+        } else {
+            m_solver = createSolver();
+        }
     }
     
     ARSolver::~ARSolver() {
-    }
-    
-    lbool ARSolver::underlyingSolve(const std::vector<Lit>& assumptions) {
-        m_solver->setAssumptions(assumptions);
-        return m_solver->solve();
     }
     
     void ARSolver::addApproximationClauses(EncodedApproximationDelta& delta) {
@@ -247,31 +235,23 @@ namespace Candy {
     }
     
     void ARSolver::initialize() {
-        // In FULL simp. handling mode, simplify here to avoid adding unneccessary variables to the
-        // approximation computation system.
-        if (m_simpHandlingMode == SimplificationHandlingMode::FULL) {
-            // Currently not supported:
-            // eliminate();
-            // reduceConjectures();
-        }
-        
         // The latest point of simplification is right after inserting the clauses of the
         // first approximation. Eliminated variables may linger on in the approximation
         // computation system. Therefore, eliminated variables are removed during the first
         // two approximation computation stages.
         auto gcHeuristic = std::unique_ptr<RefinementHeuristic>(new ARSolverGarbageCollectorHeuristic(m_solver, true));
-        m_heuristics->push_back(std::move(gcHeuristic));
+        m_heuristics.push_back(std::move(gcHeuristic));
         
         // Always remove equivalencies and backbones of which it is known that they are
         // causing unsatisfiability.
         auto conflictGetter = createConflictGetter();
         auto conflictHeuristic = std::unique_ptr<RefinementHeuristic>(new ARSolverConflictHeuristic(conflictGetter));
-        m_heuristics->push_back(std::move(conflictHeuristic));
+        m_heuristics.push_back(std::move(conflictHeuristic));
         
         
         // set up the refinement strategy
         m_refinementStrategy = createDefaultRefinementStrategy(*m_conjectures,
-                                                               std::move(m_heuristics),
+                                                               std::move(m_heuristics),  
                                                                [this]() {
                                                                    return this->createVariable();
                                                                });
@@ -288,23 +268,11 @@ namespace Candy {
         lbool sat = l_False;
         bool abort = false;
         int i = 0;
-        std::unique_ptr<EncodedApproximationDelta> currentDelta;
-        do {
-            if (i == 0) {
-                currentDelta = m_refinementStrategy->init();
-                addApproximationClauses(*currentDelta);
 
-                if (m_simpHandlingMode == SimplificationHandlingMode::FREEZE) {
-                    // freeze the variables occuring in the delta, so that they won't be eliminated due to simplification.
-                    for (auto&& clause : currentDelta->getNewClauses()) {
-                        auto lits = getNonAssumptionLits(clause);
-                        m_solver->setFrozen(var(lits.first), true);
-                        m_solver->setFrozen(var(lits.second), true);
-                    }
-                }
-            }
-            else if (i != m_maxRefinementSteps) {
-                // Note that m_maxRefinementSteps != 0
+        std::unique_ptr<EncodedApproximationDelta> currentDelta = m_refinementStrategy->init();
+        addApproximationClauses(*currentDelta);
+        do {
+            if (i > 0 && i != m_maxRefinementSteps) {
                 currentDelta = m_refinementStrategy->refine();
                 addApproximationClauses(*currentDelta);
             }
@@ -312,8 +280,9 @@ namespace Candy {
             if (m_maxRefinementSteps < 0 || i < m_maxRefinementSteps) {
                 // can perform another step after this one => use the approximation clauses.
                 assert(currentDelta.get() != nullptr);
-                
-                sat = underlyingSolve(currentDelta->getAssumptionLiterals());
+        
+                m_solver->setAssumptions(currentDelta->getAssumptionLiterals());
+                sat = m_solver->solve();
                                 
                 // the loop can safely be exited if no approximation clauses were used during solve
                 abort |= (sat != l_True) || (currentDelta->countEnabledClauses() == 0);
@@ -322,101 +291,15 @@ namespace Candy {
                 // no further steps after this one => deactivate the approximation clauses completely.
                 assert(currentDelta.get() != nullptr);
                 auto assumptions = deactivatedAssumptions(*currentDelta);
-                sat = underlyingSolve(assumptions);
+                m_solver->setAssumptions(assumptions);
+                sat = m_solver->solve();
                 abort = true;
             }
             
             ++i;
         } while(!abort && (sat == l_False));
+
         return sat;
     }
-    
-    /* -- ARSolverBuilder implementation --------------------------------------------------------- */
-    
-    class ARSolverBuilderImpl : public ARSolverBuilder {
-    public:
-        ARSolverBuilderImpl& withConjectures(std::unique_ptr<Conjectures> conjectures) noexcept override;
-        ARSolverBuilderImpl& withSolver(CandySolverInterface* solver) noexcept override;
-        ARSolverBuilderImpl& withMaxRefinementSteps(int maxRefinementSteps) noexcept override;
-        ARSolverBuilderImpl& addRefinementHeuristic(std::unique_ptr<RefinementHeuristic> heuristic) override;
-        ARSolverBuilderImpl& withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept override;
-        
-        ARSolver* build() override;
-        
-        ARSolverBuilderImpl() noexcept;
-        virtual ~ARSolverBuilderImpl();
-        ARSolverBuilderImpl(const ARSolverBuilderImpl& other) = delete;
-        ARSolverBuilderImpl& operator=(const ARSolverBuilderImpl& other) = delete;
-        
-    private:
-        std::unique_ptr<Conjectures> m_conjectures;
-        CandySolverInterface* m_solver;
-        int m_maxRefinementSteps;
-        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> m_heuristics;
-        SimplificationHandlingMode m_simpHandlingMode;
-        
-        bool m_called;
-    };
-    
-    ARSolverBuilderImpl::ARSolverBuilderImpl() noexcept : ARSolverBuilder(),
-    m_conjectures(),
-    m_solver(),
-    m_maxRefinementSteps(-1),
-    m_heuristics(),
-    m_simpHandlingMode(SimplificationHandlingMode::FREEZE),
-    m_called(false) {
-        m_heuristics.reset(new std::vector<std::unique_ptr<RefinementHeuristic>>);
-        
-    }
-    
-    ARSolverBuilderImpl::~ARSolverBuilderImpl() {
-        
-    }
-    
-    ARSolverBuilderImpl& ARSolverBuilderImpl::withConjectures(std::unique_ptr<Conjectures> conjectures) noexcept {
-        m_conjectures = std::move(conjectures);
-        return *this;
-    }
-    
-    ARSolverBuilderImpl& ARSolverBuilderImpl::withSolver(CandySolverInterface* solver) noexcept {
-        m_solver = solver;
-        return *this;
-    }
-    
-    ARSolverBuilderImpl& ARSolverBuilderImpl::withMaxRefinementSteps(int maxRefinementSteps) noexcept {
-        m_maxRefinementSteps = maxRefinementSteps;
-        return *this;
-    }
-    
-    ARSolverBuilderImpl& ARSolverBuilderImpl::addRefinementHeuristic(std::unique_ptr<RefinementHeuristic> heuristic) {
-        m_heuristics->push_back(std::move(heuristic));
-        return *this;
-    }
-    
-    ARSolverBuilderImpl& ARSolverBuilderImpl::withSimplificationHandlingMode(SimplificationHandlingMode mode) noexcept {
-        m_simpHandlingMode = mode;
-        return *this;
-    }
-    
-    ARSolver* ARSolverBuilderImpl::build() {
-        assert(!m_called);
-        m_called = true;
-        
-        std::unique_ptr<Conjectures> usedConjectures = std::move(m_conjectures);
-        if (usedConjectures.get() == nullptr) {
-            usedConjectures.reset(new Conjectures());
-        }
 
-        ARSolver* result = new ARSolver(std::move(usedConjectures),
-                                                           m_solver,
-                                                           m_maxRefinementSteps,
-                                                           std::move(m_heuristics),
-                                                           m_simpHandlingMode);
-        return result;
-    }
-
-
-    std::unique_ptr<ARSolverBuilder> createARSolverBuilder() {
-        return backported_std::make_unique<ARSolverBuilderImpl>();
-    }
 }

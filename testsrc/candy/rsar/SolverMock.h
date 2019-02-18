@@ -50,9 +50,7 @@ namespace Candy {
      */
     enum class SolverMockEvent {
         ADD_PROBLEM,
-        ADD_CLAUSE,
-        SOLVE,
-        SIMPLIFY
+        SOLVE
     };
     
     /**

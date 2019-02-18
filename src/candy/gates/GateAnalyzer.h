@@ -138,7 +138,7 @@ public:
 
 private:
     // problem to analyze:
-    std::unique_ptr<CandySolverInterface> solver;
+    CandySolverInterface* solver;
     std::vector<Lit> assumptions;
 
     // control structures:

@@ -53,12 +53,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/Statistics.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
-#include "candy/core/branching/VSIDS.h"
-#include "candy/core/branching/LRB.h"
-#include "candy/core/Solver.h"
 #include "candy/minimizer/Minimizer.h"
 
-#include "candy/frontend/RandomSimulationFrontend.h"
 #include "candy/frontend/SolverFactory.h"
 #include "candy/frontend/CandyBuilder.h"
 #include "candy/frontend/Exceptions.h"

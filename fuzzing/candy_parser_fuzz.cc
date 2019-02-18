@@ -1,4 +1,3 @@
-#include "candy/core/Solver.h"
 #include "candy/frontend/Exceptions.h"
 #include "candy/frontend/CandyBuilder.h"
 #include "util.h"

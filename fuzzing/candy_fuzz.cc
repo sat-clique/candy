@@ -1,8 +1,6 @@
 #include "minisat/core/Solver.h"
 
-#include "candy/core/Solver.h"
 #include "candy/frontend/Exceptions.h"
-#include "candy/core/branching/VSIDS.h"
 #include "candy/frontend/CandyBuilder.h"
 #include "util.h"
 
@@ -30,8 +28,7 @@ int main(int argc, char** argv) {
         return 0; // concentrate on small problems during fuzzing
     }
 
-    CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
-
+    CandySolverInterface* solver = createSolver();
     solver->init(problem);
 
     lbool result = solver->solve();

@@ -116,7 +116,7 @@ namespace Candy {
      *                          creating assumption literals).
      */
     std::unique_ptr<RefinementStrategy> createDefaultRefinementStrategy(const Conjectures& conjectures,
-                                                                        std::unique_ptr<std::vector<std::unique_ptr<RefinementHeuristic>>> heuristics,
+                                                                        std::vector<std::unique_ptr<RefinementHeuristic>> heuristics,
                                                                         std::function<Var()> createVariable);
     
     /**

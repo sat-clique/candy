@@ -31,6 +31,7 @@
 
 #include <iostream>
 #include <algorithm>
+#include <vector>
 
 namespace Candy {
 
@@ -38,7 +39,7 @@ namespace Candy {
 
     TEST(MinimizerTest, hittingSet) {
         CNFProblem simple_and { {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}} };
-        Minimizer minimi(simple_and, vector<Lit>({ 1_L, 2_L, 3_L }));
+        Minimizer minimi(simple_and, std::vector<Lit>({ 1_L, 2_L, 3_L }));
         minimi.generateHittingSetProblem(simple_and);
         CNFProblem& hittingSet = minimi.getHittingSetProblem();
 
@@ -52,7 +53,7 @@ namespace Candy {
 
     TEST(MinimizerTest, simpleMinimize) {
         CNFProblem simple_or = { {{1_L}, {~1_L, 2_L, 3_L}, {1_L, ~2_L}, {1_L, ~3_L}} };
-        Minimizer minimi(simple_or, vector<Lit>({ 1_L, 2_L, 3_L }));
+        Minimizer minimi(simple_or, std::vector<Lit>({ 1_L, 2_L, 3_L }));
         Cl minimized = minimi.computeMinimalModel(false);
 
         ASSERT_EQ(minimized.size(), 2);

@@ -18,7 +18,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Solver.h"
+#include "candy/core/CandySolverInterface.h"
+#include "candy/frontend/CandyBuilder.h"
 
 #include "candy/gates/GateAnalyzer.h"
 
@@ -65,7 +66,7 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
     }
 
     SolverOptions::opt_preprocessing = false;
-    CandySolverInterface* solver = new Solver<>();
+    CandySolverInterface* solver = createSolver();
     solver->init(hittingSetProblem);
 //    solver->printDIMACS();
 

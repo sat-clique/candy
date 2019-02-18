@@ -1,7 +1,6 @@
 #include "minisat/core/Solver.h"
 #include "drat-trim.h"
 
-#include "candy/core/Solver.h"
 #include "candy/frontend/Exceptions.h"
 #include "candy/frontend/SolverFactory.h"
 #include "candy/core/branching/VSIDS.h"
@@ -34,8 +33,7 @@ int main(int argc, char** argv) {
 
     SolverOptions::opt_certified_file = "proof.drat";
 
-    CandySolverInterface* solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
-
+    CandySolverInterface* solver = createSolver();
     solver->init(problem);
 
     lbool result = solver->solve();

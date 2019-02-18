@@ -30,9 +30,10 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-
 #ifndef BoundedQueue_h
 #define BoundedQueue_h
+
+#include <vector>
 
 //=================================================================================================
 
@@ -40,15 +41,15 @@ namespace Candy {
 
 template <class T>
 class bqueue {
-    uint16_t first;
-    uint16_t last;
-    uint16_t queuesize; // Number of current elements (must be < maxsize !)
+    unsigned int first;
+    unsigned int last;
+    unsigned int queuesize; // Number of current elements (must be < maxsize !)
     bool expComputed;
     double exp, value;
-    uint64_t sumofqueue;
-    vector<T> elems;
+    unsigned int sumofqueue;
+    std::vector<T> elems;
 public:
-    bqueue(uint32_t size) :
+    bqueue(unsigned int size) :
         first(0), last(0), queuesize(0),
         expComputed(false), exp(2.0 / (size+1)), value(0),
         sumofqueue(0), elems(size, 0)
@@ -79,15 +80,15 @@ public:
         if ((++last) == elems.size()) last = 0;
     }
 
-    uint64_t getsum() const {
+    unsigned int getsum() const {
         return sumofqueue;
     }
 
-    uint32_t getavg() const {
-        return (uint32_t)(sumofqueue/((uint64_t)queuesize));
+    unsigned int getavg() const {
+        return sumofqueue / queuesize;
     }
 
-    uint32_t maxSize() const {
+    unsigned int maxSize() const {
         return elems.size();
     }
 
@@ -128,7 +129,7 @@ public:
         sumofqueue = 0;
     }
 
-    uint32_t size() {
+    unsigned int size() {
         return queuesize;
     }
 };

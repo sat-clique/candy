@@ -28,7 +28,7 @@
 #define X_3D4F7FAE_8852_4861_A031_1808523E1215_TESTUTILS_H
 
 #include <candy/core/SolverTypes.h>
-#include <candy/core/Solver.h>
+#include <candy/core/CandySolverInterface.h>
 #include <candy/rsar/Heuristics.h>
 #include <candy/randomsimulation/Conjectures.h>
 
@@ -132,13 +132,6 @@ namespace Candy {
     bool occursAfter(const std::vector<SolverMockEvent> &events,
                      SolverMockEvent first,
                      SolverMockEvent second);
-    
-    /**
-     * \ingroup RS_AbstractionRefinement_Tests
-     *
-     * Prints the given solver mock event log.
-     */
-    void printEventLog(const std::vector<SolverMockEvent> &events, bool insertNewlines = false);
     
     /**
      * \ingroup RS_AbstractionRefinement_Tests
