@@ -82,10 +82,6 @@ namespace Candy {
             for (Lit lit : assumptions) setFrozen(var(lit), true);
         }
 
-    	virtual void setConfBudget(uint64_t x) override { }
-    	virtual void setPropBudget(uint64_t x) override { }
-    	virtual void budgetOff() override { }
-
     	// The value of a variable in the last model. The last call to solve must have been satisfiable.
     	virtual lbool modelValue(Var x) const override { return l_Undef; }
     	virtual lbool modelValue(Lit p) const override { return l_Undef; }
