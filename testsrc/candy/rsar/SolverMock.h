@@ -84,7 +84,6 @@ namespace Candy {
 
     	virtual void setConfBudget(uint64_t x) override { }
     	virtual void setPropBudget(uint64_t x) override { }
-    	virtual void setInterrupt(bool value) override { }
     	virtual void budgetOff() override { }
 
     	// The value of a variable in the last model. The last call to solve must have been satisfiable.

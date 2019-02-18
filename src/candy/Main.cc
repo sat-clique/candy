@@ -74,27 +74,21 @@ using namespace Candy;
 
 static std::vector<CandySolverInterface*> solvers;
 
-// Terminate by notifying the solver and back out gracefully. This is mainly to have a test-case
-// for this feature of the Solver as it may take longer than an immediate call to '_exit()'.
-static void SIGINT_interrupt(int signum) {
-    for (CandySolverInterface* solver : solvers) {
-        solver->setInterrupt(true);
-    }
+static bool interrupted = false;
+static int interrupted_callback(void* state) {
+    return interrupted ? 1 : 0;
 }
 
-// Note that '_exit()' rather than 'exit()' has to be used. The reason is that 'exit()' calls
-// destructors and may cause deadlocks if a malloc/free function happens to be running (these
-// functions are guarded by locks for multithreaded use).
-static void SIGINT_exit(int signum) {
-    printf("\n*** INTERRUPTED ***\n");
+static void set_interrupted(int signum) {
+    std::cout << "c Informing solver about desire to interrupt." << std::endl;
+    interrupted = true;
+}
+
+static void just_quit(int signum) {
+    std::cout << std::endl << "*** INTERRUPTED ***" << std::endl;
     _exit(1);
 }
 
-/**
- * Installs signal handlers for SIGINT and SIGXCPU.
- * If \p handleInterruptsBySolver is true, the interrupts are handled by SIGINT_interrupt();
- * otherwise, they are set up to be handled by SIGINT_exit().
- */
 static void installSignalHandlers(bool handleInterruptsBySolver) {
 #if defined(WIN32) && !defined(CYGWIN)
 #if defined(_MSC_VER)
@@ -104,11 +98,11 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 #endif
 #else
     if (handleInterruptsBySolver) {
-        signal(SIGINT, SIGINT_interrupt);
-        signal(SIGXCPU, SIGINT_interrupt);
+        signal(SIGINT, set_interrupted);
+        signal(SIGXCPU, set_interrupted);
     } else {
-        signal(SIGINT, SIGINT_exit);
-        signal(SIGXCPU, SIGINT_exit);
+        signal(SIGINT, just_quit);
+        signal(SIGXCPU, just_quit);
     }
 #endif
 }
@@ -135,11 +129,9 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
     }
 
     solvers.push_back(solver_);
+    solver_->setTermCallback(solver_, interrupted_callback);
 
-    // Change to signal-handlers that will only notify the solver and allow it to terminate voluntarily
-    installSignalHandlers(true);
     lbool result_ = solver_->solve();
-    installSignalHandlers(false);
 
     if (result == l_Undef) {
         result = result_;
@@ -195,6 +187,7 @@ int main(int argc, char** argv) {
         solvers.push_back(solver); 
 
         solver->init(problem);
+        solver->setTermCallback(solver, interrupted_callback);
 
         installSignalHandlers(true);
         result = solver->solve();
@@ -246,9 +239,11 @@ int main(int argc, char** argv) {
             thread.detach();
         }
 
-        while (result == l_Undef) {
+        installSignalHandlers(true);
+        while (result == l_Undef && !interrupted) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
+        installSignalHandlers(false);
     }
 
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
@@ -275,9 +270,9 @@ int main(int argc, char** argv) {
         if (SolverOptions::verb > 0) {
             solver->getStatistics().printFinalStats();
         }
-    }
 
-    solver->getStatistics().printRuntimes();
+        solver->getStatistics().printRuntimes();
+    }
 
     #ifndef __SANITIZE_ADDRESS__
         if (ParallelOptions::opt_threads > 1) std::terminate();

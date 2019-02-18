@@ -52,9 +52,8 @@ public:
 
 	virtual void setConfBudget(uint64_t x) = 0;
 	virtual void setPropBudget(uint64_t x) = 0;
-	virtual void setInterrupt(bool value) = 0;
 	virtual void budgetOff() = 0;
-	virtual void setTermCallback(void* state, int (*termCallback)(void*)) = 0;
+	virtual void setTermCallback(void* state, int (*termCallback)(void* state)) = 0;
 	virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) = 0;
 
 	// The value of a variable in the last model. The last call to solve must have been satisfiable.
