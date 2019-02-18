@@ -248,15 +248,12 @@ public:
     void setPropBudget(uint64_t x) override {
         propagation_budget = statistics.nPropagations() + x;
     }
-    void setInterrupt(bool value) override {
-        asynch_interrupt = value;
-    }
     void budgetOff() override {
         conflict_budget = propagation_budget = 0;
     }
 
     //TODO: use std::function<int(void*)> as type here
-    void setTermCallback(void* state, int (*termCallback)(void*)) override {
+    void setTermCallback(void* state, int (*termCallback)(void* state)) override {
         this->termCallbackState = state;
         this->termCallback = termCallback;
     }
@@ -316,7 +313,6 @@ protected:
     unsigned int propagation_budget; // 0 means no budget.
     void* termCallbackState;
     int (*termCallback)(void* state);
-    bool asynch_interrupt;
 
     // Learnt callback ipasir
     void* learntCallbackState;
@@ -326,7 +322,7 @@ protected:
     lbool search(); // Search for a given number of conflicts.
 
     inline bool withinBudget() {
-        return !asynch_interrupt && (termCallback == nullptr || 0 == termCallback(termCallbackState))
+        return (termCallback == nullptr || 0 == termCallback(termCallbackState))
                 && (conflict_budget == 0 || statistics.nConflicts() < conflict_budget) && (propagation_budget == 0 || statistics.nPropagations() < propagation_budget);
     }
 
@@ -373,7 +369,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // resource constraints and other interrupt related
     conflict_budget(0), propagation_budget(0),
     termCallbackState(nullptr), termCallback(nullptr),
-    asynch_interrupt(false),
     // learnt callback ipasir
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
 { }
@@ -447,10 +442,10 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
     unsigned int count = 0;
     while (num > max * simplification_threshold_factor) {
         ok &= subsumption.subsume();
-        if (isInConflictingState() || asynch_interrupt) break;
+        if (isInConflictingState()) break;
 
         ok &= elimination.eliminate();
-        if (isInConflictingState() || asynch_interrupt) break;
+        if (isInConflictingState()) break;
         
         num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nEliminated + elimination.nStrengthened;
         max = std::max(num, max);

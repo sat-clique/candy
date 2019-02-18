@@ -96,9 +96,6 @@ namespace Candy {
     	virtual void setPropBudget(uint64_t x) override {
     		m_solver->setPropBudget(x);
     	}
-    	virtual void setInterrupt(bool value) override {
-    		m_solver->setInterrupt(value);
-    	}
     	virtual void budgetOff() override {
     		m_solver->budgetOff();
     	}
