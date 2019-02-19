@@ -276,12 +276,12 @@ public:
             return c1->getLBD() < c2->getLBD(); 
         });
 
-        if (learnts.size() > 0) {
+        if (learnts.size() > 1) {
             auto begin = learnts.begin() + learnts.size()/2;
 
             if (keepMedianLBD) {
                 unsigned int median_lbd = (*begin)->getLBD();
-                while ((*begin)->getLBD() == median_lbd) {
+                while (begin != learnts.end() && (*begin)->getLBD() == median_lbd) {
                     begin++;
                 }
             }

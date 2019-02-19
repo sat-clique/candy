@@ -36,24 +36,22 @@ namespace ClauseDatabaseOptions {
     extern BoolOption opt_reestimation_reduce_lbd;
     extern BoolOption opt_keep_median_lbd;
     extern BoolOption opt_also_increase_lbd;
+    
+    extern IntOption opt_first_reduce_db;
+    extern IntOption opt_inc_reduce_db;
 }
 
 namespace SolverOptions {
     extern IntOption verb;
     extern BoolOption mod;
     extern IntOption cpu_lim;
-    extern BoolOption do_solve;
     extern StringOption opt_certified_file;
-    extern BoolOption do_gaterecognition;
     extern IntOption do_minimize;
 
     extern DoubleOption opt_K;
     extern DoubleOption opt_R;
     extern IntOption opt_size_lbd_queue;
     extern IntOption opt_size_trail_queue;
-    
-    extern IntOption opt_first_reduce_db;
-    extern IntOption opt_inc_reduce_db;
     
     extern BoolOption opt_use_lrb; // lrb branching
 
