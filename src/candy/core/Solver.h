@@ -79,26 +79,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-/**
- * \tparam TBranching   the PickBranchLit type used to choose a
- *   strategy for determining decision (ie. branching) literals.
- *   TBranching must satisfy the following conditions:
- *    - TBranching must be a class type.
- *    - TBranching::Parameters must be a class type.
- *    - TBranching must have a zero-argument constructor.
- *    - TBranching must have a constructor taking a single argument of type
- *        const Parameters& params.
- *    - TBranching must be move-assignable.
- *    - TBranching must be move-constructible.
- *    - There must be a specialization of Solver::pickBranchLit<TBranching>.
- */
 template<class TClauses = ClauseDatabase, class TAssignment = Trail, class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
 class Solver : public CandySolverInterface {
-    static_assert(std::is_class<TBranching>::value, "TBranching must be a class");
-    //static_assert(std::is_constructible<TBranching>::value, "TBranching must have a constructor without arguments");
-    //static_assert(std::is_move_assignable<TBranching>::value, "TBranching must be move-assignable");
-    //static_assert(std::is_move_constructible<TBranching>::value, "TBranching must be move-constructible");
-
 public:
     Solver();
     ~Solver();
@@ -155,27 +137,6 @@ public:
         }
     }
 
-    void propagateAndMaterializeUnitClauses() {
-        assert(trail.size() == 0);
-        std::vector<Clause*> facts = clause_db.getUnitClauses();
-        for (Clause* clause : facts) {
-            this->ok &= trail.fact(clause->first());
-        }
-        if (!isInConflictingState()) {
-            std::array<Lit, 1> unit;
-            unsigned int pos = trail.size();
-            this->ok &= (propagator.propagate() == nullptr);
-            if (!isInConflictingState()) {
-                for (auto it = trail.begin() + pos; it != trail.end(); it++) {
-                    assert(trail.reason(var(*it)) != nullptr);
-                    unit[0] = *it;
-                    Clause* new_clause = clause_db.createClause(unit.begin(), unit.end());
-                    trail.fact(new_clause->first());
-                }
-            }
-        }
-    }
-
     ClauseAllocator* setupGlobalAllocator() override {
         return clause_db.createGlobalClauseAllocator();
     }
@@ -196,9 +157,6 @@ public:
         return statistics; 
     }
 
-    void unit_resolution(); // delete satisfied clauses and eliminate false literals
-    void eliminate(); // Perform variable elimination based simplification. 
-
     BranchingDiversificationInterface* getBranchingUnit() override {
         return &branch;
     }
@@ -217,11 +175,6 @@ public:
         this->assumptions.clear();
         this->assumptions.insert(this->assumptions.end(), assumptions.begin(), assumptions.end());
         for (Lit lit : assumptions) setFrozen(var(lit), true);
-    }
-
-    // true means solver is in a conflicting state
-    bool isInConflictingState() const {
-        return !ok;
     }
 
     //TODO: use std::function<int(void*)> as type here
@@ -253,19 +206,18 @@ protected:
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
-    // Constants For restarts
+    // restarts
     double K;
     double R;
-    float sumLBD = 0; // used to compute the global average of LBD. Restarts...
-    // Bounded queues for restarts
+    float sumLBD = 0;
     bqueue<uint32_t> lbdQueue, trailQueue;
 
-    // used for reduce
+    // reduce-db
     unsigned int curRestart;
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
 
-    // constants for memory reorganization
+    // memory organization
     bool sort_watches;
 
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
@@ -273,6 +225,7 @@ protected:
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
     double simplification_threshold_factor = 0.1;
     Stamp<Var> freezes;
+
     unsigned int lastRestartWithInprocessing;
     unsigned int inprocessingFrequency;
     unsigned int lastRestartWithUnitResolution;
@@ -292,6 +245,35 @@ protected:
 private:
     template<typename Iterator>
     bool addClause(Iterator begin, Iterator end);
+
+    void unit_resolution(); // delete satisfied clauses and eliminate false literals
+    void eliminate(); // Perform variable elimination based simplification. 
+
+    // true means solver is in a conflicting state
+    bool isInConflictingState() const {
+        return !ok;
+    }
+
+    void propagateAndMaterializeUnitClauses() {
+        assert(trail.size() == 0);
+        std::vector<Clause*> facts = clause_db.getUnitClauses();
+        for (Clause* clause : facts) {
+            this->ok &= trail.fact(clause->first());
+        }
+        if (!isInConflictingState()) {
+            std::array<Lit, 1> unit;
+            unsigned int pos = trail.size();
+            this->ok &= (propagator.propagate() == nullptr);
+            if (!isInConflictingState()) {
+                for (auto it = trail.begin() + pos; it != trail.end(); it++) {
+                    assert(trail.reason(var(*it)) != nullptr);
+                    unit[0] = *it;
+                    Clause* new_clause = clause_db.createClause(unit.begin(), unit.end());
+                    trail.fact(new_clause->first());
+                }
+            }
+        }
+    }
 
 };
 

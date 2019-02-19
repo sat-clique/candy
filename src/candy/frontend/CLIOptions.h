@@ -35,6 +35,7 @@ namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern BoolOption opt_reestimation_reduce_lbd;
     extern BoolOption opt_keep_median_lbd;
+    extern BoolOption opt_also_increase_lbd;
 }
 
 namespace SolverOptions {
