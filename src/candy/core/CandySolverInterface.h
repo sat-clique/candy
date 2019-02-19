@@ -32,6 +32,7 @@ class Statistics;
 class BranchingDiversificationInterface;
 class ClauseDatabase;
 class Trail;
+class CandySolverResult;
 
 class CandySolverInterface {
 public:
@@ -49,15 +50,10 @@ public:
 	virtual ClauseDatabase& getClauseDatabase() = 0;
 	virtual Trail& getAssignment() = 0; 
 	virtual Statistics& getStatistics() = 0;
+	virtual CandySolverResult& getCandySolverResult() = 0;
 
 	virtual void setTermCallback(void* state, int (*termCallback)(void* state)) = 0;
 	virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) = 0;
-
-	// The value of a variable in the last model. The last call to solve must have been satisfiable.
-	virtual lbool modelValue(Var x) const = 0;
-	virtual lbool modelValue(Lit p) const = 0;
-    virtual Cl getModel() = 0;
-	virtual std::vector<Lit>& getConflict() = 0;
 
 };
 

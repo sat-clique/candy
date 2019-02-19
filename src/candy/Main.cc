@@ -51,6 +51,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Statistics.h"
+#include "candy/core/CandySolverInterface.h"
+#include "candy/core/CandySolverResult.h"
 #include "candy/utils/Options.h"
 #include "candy/utils/MemUtils.h"
 #include "candy/minimizer/Minimizer.h"
@@ -250,15 +252,16 @@ int main(int argc, char** argv) {
 
     if (solver != nullptr) {
         if (result == l_True && SolverOptions::mod) {
+            CandySolverResult& result = solver->getCandySolverResult();
             if (SolverOptions::do_minimize > 0) {
-                Minimizer minimizer(problem, solver->getModel());
+                Minimizer minimizer(problem, result.getModelLiterals());
                 Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
                 for (Lit lit : minimalModel) {
                     printLiteral(lit);
                 }
             } 
             else {
-                Cl model = solver->getModel();
+                Cl model = result.getModelLiterals();
                 std::cout << "v ";
                 for (Lit lit : model) {
                     printLiteral(lit);

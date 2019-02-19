@@ -74,10 +74,6 @@ namespace Candy {
         }
     }
     
-    std::vector<Lit>& SolverMock::getConflict() {
-        return m_conflictLits;
-    }
-    
     size_t SolverMock::nVars() const {
         return m_maxCreatedVar+1;
     }

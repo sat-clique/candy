@@ -31,6 +31,7 @@
 #include <candy/core/SolverTypes.h>
 #include <candy/core/Statistics.h>
 #include "candy/core/CandySolverInterface.h"
+#include "candy/core/CandySolverResult.h"
 #include <candy/core/clauses/ClauseDatabase.h>
 #include <candy/core/Trail.h>
 #include "candy/rsar/ARSolver.h"
@@ -82,11 +83,11 @@ namespace Candy {
             for (Lit lit : assumptions) setFrozen(var(lit), true);
         }
 
-    	// The value of a variable in the last model. The last call to solve must have been satisfiable.
-    	virtual lbool modelValue(Var x) const override { return l_Undef; }
-    	virtual lbool modelValue(Lit p) const override { return l_Undef; }
-        virtual Cl getModel() override { return Cl(); }
-    	virtual std::vector<Lit>& getConflict() override;
+    	virtual CandySolverResult& getCandySolverResult() override {
+            result.clear();
+            result.setConflict(m_conflictLits);
+            return result;
+        }
 
     	virtual Statistics& getStatistics() override { return *new Statistics { *this }; }
         virtual ClauseDatabase& getClauseDatabase() override { return *new ClauseDatabase { }; } 
@@ -163,6 +164,9 @@ namespace Candy {
         bool m_isParsingSet;
         
         std::vector<SolverMockEvent> m_eventLog;
+
+        CandySolverResult result;
+
     };
     
 }

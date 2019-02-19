@@ -18,6 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "candy/core/CandySolverInterface.h"
+#include "candy/core/CandySolverResult.h"
 #include "candy/frontend/CandyBuilder.h"
 #include "candy/core/SolverTypes.h"
 
@@ -44,8 +45,9 @@ class IPASIRCandy {
     void analyze() {
         fmap = new unsigned char [solver->getStatistics().nVars()];
         memset(fmap, 0, solver->getStatistics().nVars());
-        for (unsigned int i = 0; i < solver->getConflict().size(); i++) {
-            fmap[var(solver->getConflict()[i])] = 1;
+        CandySolverResult& result = solver->getCandySolverResult();
+        for (unsigned int i = 0; i < result.getConflict().size(); i++) {
+            fmap[var(result.getConflict()[i])] = 1;
         }
     }
 
@@ -95,7 +97,8 @@ public:
 
     int val(int lit) {
         if (nomodel) return 0;
-        lbool res = solver->modelValue(import(lit));
+        CandySolverResult& result = solver->getCandySolverResult();
+        lbool res = result.modelValue(import(lit));
         return (res == l_True) ? lit : -lit;
     }
 

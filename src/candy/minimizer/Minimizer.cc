@@ -19,6 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CandySolverInterface.h"
+#include "candy/core/CandySolverResult.h"
 #include "candy/frontend/CandyBuilder.h"
 
 #include "candy/gates/GateAnalyzer.h"
@@ -68,7 +69,9 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
     SolverOptions::opt_preprocessing = false;
     CandySolverInterface* solver = createSolver();
     solver->init(hittingSetProblem);
-//    solver->printDIMACS();
+
+    // compute minimal model for 
+    hittingSetProblem.printDIMACS();
 
     Cl normalizedModel;
     for (Lit lit : model) {
@@ -94,48 +97,42 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
     Cl exclude;
     Cl assume;
 
-//    if (solver->nClauses() == 0)
-//    exit(1);
 #ifndef NDEBUG
     unsigned int i = 0;
 #endif
-    bool satisfiable = true;
-    while (satisfiable) {
+    lbool satisfiable = l_True;
+    while (satisfiable == l_True) {
         exclude.clear();
         assume.clear();
 
         for (Lit lit : pModel) {
             if (sign(lit)) {
                 assume.push_back(lit);
-            }
+            } 
             else {
                 exclude.push_back(~lit);
             }
         }
 
-//        printf("Model size: %zu\n", pModel.size());
-//        printClause(pModel);
-//        printf("Exclusion clause size: %zu\n", exclude.size());
-//        printClause(exclude);
-//        printf("New Assumptions: %zu\n", assume.size());
-//        printClause(assume);
+        std::cout << "c Current Model " << pModel << std::endl;
+        std::cout << "c Assuming " << assume << std::endl;
+        std::cout << "c Excluding " << exclude << std::endl;
         assert(assume.size() >= i++);
 
         solver->init(CNFProblem { exclude });
-
         solver->setAssumptions(assume);
-        if (solver->solve() == l_True) {
-            Cl newModel = solver->getModel();
-            pModel.clear();
-            pModel.insert(pModel.end(), newModel.begin(), newModel.end());
-        }
-        else {
-            satisfiable = false;
+
+        satisfiable = solver->solve();
+
+        if (satisfiable == l_True) {
+            pModel = solver->getCandySolverResult().getModelLiterals();
         }
     }
 
     auto last = std::remove_if(pModel.begin(), pModel.end(), [](const Lit lit) { return sign(lit); });
     pModel.erase(last, pModel.end());
+
+    std::cout << "c Resulting model " << pModel << std::endl;
 
     return pModel;
 }
