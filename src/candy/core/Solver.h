@@ -72,6 +72,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
+#include "candy/core/CandySolverResult.h"
 
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
@@ -179,8 +180,8 @@ public:
         return clause_db.createGlobalClauseAllocator();
     }
 
-    std::vector<Lit>& getConflict() override {
-        return conflict;
+    CandySolverResult& getCandySolverResult() override { 
+        return result;
     }
 
     ClauseDatabase& getClauseDatabase() override {
@@ -223,24 +224,6 @@ public:
         return !ok;
     }
 
-    // The value of a variable in the last model. The last call to solve must have been satisfiable.
-    lbool modelValue(Var x) const override {
-        return model[x];
-    }
-    // The value of a literal in the last model. The last call to solve must have been satisfiable.
-    lbool modelValue(Lit p) const override {
-        return model[var(p)] ^ sign(p);
-    }
-    // create a list of literals that reflects the current assignment
-    Cl getModel() override {
-        Cl literals;
-        literals.resize(statistics.nVars());
-        for (unsigned int v = 0; v < statistics.nVars(); v++) {
-            literals[v] = model[v] == l_True ? mkLit(v, false) : model[v] == l_False ? mkLit(v, true) : lit_Undef;
-        }
-        return literals;
-    }
-
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void* state)) override {
         this->termCallbackState = state;
@@ -252,10 +235,6 @@ public:
         this->learntCallbackMaxLength = max_length;
         this->learntCallback = learntCallback;
     }
-
-    // Extra results: (read-only member variable)
-    std::vector<lbool> model; // If problem is satisfiable, this vector contains the model (if any).
-    std::vector<Lit> conflict; // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
 
 protected:
     TClauses clause_db;
@@ -269,6 +248,8 @@ protected:
 
     Statistics statistics;
     Logging logging;
+
+    CandySolverResult result;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
@@ -316,8 +297,6 @@ private:
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() : 
-    // results
-    model(), conflict(),
     // Basic Systems
     clause_db(),
     trail(),
@@ -330,6 +309,8 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // stats
     statistics(*this), 
     logging(*this),
+    // result
+    result(),
     // assumptions 
     assumptions(),
     // restarts
@@ -581,7 +562,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 } 
                 else if (trail.value(p) == l_False) {
                     std::cout << "c Conflict found during assumption propagation" << std::endl;
-                    conflict = conflict_analysis.analyzeFinal(~p);
+                    result.setConflict(conflict_analysis.analyzeFinal(~p));
                     return l_False;
                 } 
                 else {
@@ -611,9 +592,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     statistics.runtimeStart("Wallclock");
     logging.logStart();
     
-    model.clear();
-    conflict.clear();
-    // trail.reset();
+    result.clear();
 
     if (!isInConflictingState() && this->preprocessing_enabled) {
         statistics.runtimeStart("Preprocessing");
@@ -626,20 +605,19 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         status = search();
     }
     
+    result.setStatus(status);
+
     if (status == l_False) {
-        if (conflict.empty()) {
+        if (result.getConflict().empty()) {
             clause_db.emptyClause();
         }
     }
     else if (status == l_True) {
-        model.insert(model.end(), trail.assigns.begin(), trail.assigns.end());
+        result.setModel(trail);
+        elimination.extendModel(result.getModelValues());
     }
     
     trail.cancelUntil(0);
-        
-    if (status == l_True) {
-        elimination.extendModel(this->model);
-    }
     
     logging.logResult(status);
     statistics.runtimeStop("Wallclock"); 

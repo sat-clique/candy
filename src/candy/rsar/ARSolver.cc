@@ -27,6 +27,7 @@
 #include "ARSolver.h"
 
 #include "candy/core/CandySolverInterface.h"
+#include "candy/core/CandySolverResult.h"
 #include "candy/frontend/CLIOptions.h"
 #include "candy/frontend/CandyBuilder.h"
 
@@ -222,8 +223,8 @@ namespace Candy {
     std::function<std::unique_ptr<std::unordered_set<Var>>()> ARSolver::createConflictGetter() {
         return [this]() {
             auto result = std::unique_ptr<std::unordered_set<Var>>(new std::unordered_set<Var>());
-            
-            for (auto lit : m_solver->getConflict()) {
+            CandySolverResult& candy_result = m_solver->getCandySolverResult();
+            for (auto lit : candy_result.getConflict()) {
                 assert(this->m_approxLitsByAssumption.find(lit) != this->m_approxLitsByAssumption.end());
                 auto lits = this->m_approxLitsByAssumption[lit];
                 result->insert(var(lits.first));
