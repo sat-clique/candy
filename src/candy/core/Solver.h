@@ -52,8 +52,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/frontend/CLIOptions.h"
 
 #include "candy/mtl/Stamp.h"
-#include "candy/mtl/Heap.h"
-#include "candy/mtl/BoundedQueue.h"
 
 #include "candy/randomsimulation/Conjectures.h"
 #include "candy/rsar/Refinement.h"
@@ -73,6 +71,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CandySolverResult.h"
+#include "candy/core/Restart.h"
 
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
@@ -196,6 +195,8 @@ protected:
     TLearning conflict_analysis;
     TBranching branch;
 
+    Restart restart;
+
     Subsumption<TPropagate> subsumption;
     VariableElimination<TPropagate> elimination;
 
@@ -205,12 +206,6 @@ protected:
     CandySolverResult result;
 
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-
-    // restarts
-    double K;
-    double R;
-    float sumLBD = 0;
-    bqueue<uint32_t> lbdQueue, trailQueue;
 
     // reduce-db
     unsigned int curRestart;
@@ -285,6 +280,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     propagator(clause_db, trail),
 	conflict_analysis(clause_db, trail),
     branch(clause_db, trail),
+    restart(clause_db, trail),
     // simplification
     subsumption(clause_db, trail, propagator),
     elimination(clause_db, trail, propagator), 
@@ -295,9 +291,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     result(),
     // assumptions 
     assumptions(),
-    // restarts
-    K(SolverOptions::opt_K), R(SolverOptions::opt_R), sumLBD(0),
-    lbdQueue(SolverOptions::opt_size_lbd_queue), trailQueue(SolverOptions::opt_size_trail_queue),
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
     incReduceDB(SolverOptions::opt_inc_reduce_db),
@@ -444,23 +437,18 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 return l_False;
             }
             
-            trailQueue.push(trail.size());
-            if (statistics.nConflicts() > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
-                lbdQueue.fastclear(); // BLOCK RESTART (CP 2012 paper)
-            }
             conflict_analysis.handle_conflict(confl);
-            lbdQueue.push(clause_db.result.lbd);
-            sumLBD += clause_db.result.lbd;
 
             branch.process_conflict();
-
-            trail.cancelUntil(clause_db.result.backtrack_level);
+            restart.process_conflict();
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
-            trail.propagate(clause->first(), clause);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
+
+            trail.backtrack(clause_db.result.backtrack_level);
+            trail.propagate(clause->first(), clause);
             
             if (learntCallback != nullptr && clause->size() <= learntCallbackMaxLength) {
                 std::vector<int> to_send;
@@ -475,9 +463,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             logging.logLearntClause(clause);
         }
         else {
-            if (statistics.nConflicts() > 0 && (lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / statistics.nConflicts())))) {
-                lbdQueue.fastclear();
-                
+            if (restart.trigger_restart()) {                
                 branch.reset();       
                 trail.reset();         
                                 
@@ -509,10 +495,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     
                     propagator.clear();
                     clause_db.reduce();
-                    size_t before = clause_db.size();
                     clause_db.reorganize();
-
-                    std::cout << "c Memory reorganization (" << before << " clauses before, " << clause_db.size() << " clauses after" << std::endl; 
 
                     for (Clause* clause : clause_db) {
                         if (clause->size() > 2) {
@@ -599,7 +582,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         elimination.extendModel(result.getModelValues());
     }
     
-    trail.cancelUntil(0);
+    trail.backtrack(0);
     
     logging.logResult(status);
     statistics.runtimeStop("Wallclock"); 

@@ -11,6 +11,7 @@ add_library(core OBJECT
     CNFProblem.h
     SolverTypes.h
     Trail.h
+    Restart.h
     learning/ConflictAnalysis.h
     propagate/Propagate.h
     propagate/StaticPropagate.h

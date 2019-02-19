@@ -314,39 +314,6 @@ namespace Candy {
         };
     }
     
-    // TEST(RSILBranchingHeuristicsTests, givesNoAdviceForFilteredVariable) {
-    //     ClauseDatabase clause_db;
-    //     Trail trail(6);
-
-    //     MockRSARHeuristic* mockRSARHeuristic = new MockRSARHeuristic;
-        
-    //     EXPECT_CALL(*mockRSARHeuristic, probe(testing::Ge(4), testing::_)).WillRepeatedly(testing::Return(false));
-    //     EXPECT_CALL(*mockRSARHeuristic, probe(testing::Le(3), testing::_)).WillRepeatedly(testing::Return(true));
-        
-    //     std::unique_ptr<Conjectures> testData (new Conjectures());
-    //     testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
-    //     testData->addEquivalence(EquivalenceConjecture{{mkLit(4, 0), mkLit(5,1)}});
-
-    //     TestedRSILBranchingHeuristic underTest { clause_db, trail };
-    //     underTest.init(std::move(testData), false);
-
-    //     trail.newDecisionLevel();
-    //     trail.decide(4_L);
-    //     underTest.grow(6);
-    //     auto result = underTest.getAdvice();
-        
-    //     ASSERT_EQ(result, lit_Undef);
-        
-    //     trail.cancelUntil(0);
-    //     trail.newDecisionLevel();
-    //     trail.decide(5_L);
-    //     result = underTest.getAdvice();
-        
-    //     ASSERT_EQ(result, mkLit(5,0));
-
-    //     delete mockRSARHeuristic;
-    // }
-    
     TEST(RSILBranchingHeuristicsTests, givesNoBackboneAdviceWhenBackbonesDeactivated) {
         ClauseDatabase clause_db;
         Trail trail(5);
@@ -470,7 +437,7 @@ namespace Candy {
             }
         }
         
-        trail.cancelUntil(0);
+        trail.backtrack(0);
         trail.newDecisionLevel();
         trail.decide(3_L);
 
