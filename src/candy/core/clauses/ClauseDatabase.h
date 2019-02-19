@@ -71,6 +71,7 @@ private:
     const unsigned int persistentLBD;
     const bool keepMedianLBD;
     const bool reestimationReduceLBD;
+    const bool alsoIncreaseLBD;
 
     bool track_literal_occurrence;    
     std::vector<std::vector<Clause*>> variableOccurrences;
@@ -91,6 +92,7 @@ public:
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
         keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
         reestimationReduceLBD(ClauseDatabaseOptions::opt_reestimation_reduce_lbd), 
+        alsoIncreaseLBD(ClauseDatabaseOptions::opt_also_increase_lbd), 
         track_literal_occurrence(false),
         variableOccurrences(),
         binaryWatchers(), 
@@ -122,7 +124,7 @@ public:
             for (Clause* clause : involved_clauses) {
                 if (clause->isLearnt()) {
                     uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                    if (lbd < clause->getLBD()) {
+                    if (lbd < clause->getLBD() || alsoIncreaseLBD) {
                         clause->setLBD(lbd);
                     }
                 }
