@@ -35,26 +35,23 @@ namespace ClauseDatabaseOptions {
     BoolOption opt_reestimation_reduce_lbd("ClauseDatabase", "reestimate-lbd", "After conflict reduce lbds", true);
     BoolOption opt_also_increase_lbd("ClauseDatabase", "also-increase-lbd", "After conflict recalculate lbds", false);
     BoolOption opt_keep_median_lbd("ClauseDatabase", "keep-median-lbd", "Delete only clauses with lbd > median(lbd)", false);
+
+    IntOption opt_first_reduce_db("ClauseDatabase", "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
+    IntOption opt_inc_reduce_db("ClauseDatabase", "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
 }
 
 namespace SolverOptions {
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
-    BoolOption mod("MAIN", "model", "show model.", false);
-    
+    BoolOption mod("MAIN", "model", "show model.", false);    
     IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     
-    BoolOption do_solve("METHOD", "solve", "Completely turn on/off actual sat solving.", true);
     StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
-    BoolOption do_gaterecognition("METHOD", "gates", "Completely turn on/off actual gate recognition.", false);
     IntOption do_minimize("METHOD", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
     
     DoubleOption opt_K("Restarts", "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
     DoubleOption opt_R("Restarts", "R", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
     IntOption opt_size_lbd_queue("Restarts", "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT16_MAX));
     IntOption opt_size_trail_queue("Restarts", "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
-
-    IntOption opt_first_reduce_db("DB Reduction", "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
-    IntOption opt_inc_reduce_db("DB Reduction", "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
 
     DoubleOption opt_vsids_var_decay("CORE", "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
     DoubleOption opt_vsids_max_var_decay("CORE", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));

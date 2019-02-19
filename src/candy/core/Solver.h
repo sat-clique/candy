@@ -292,8 +292,8 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // assumptions 
     assumptions(),
     // reduce db heuristic control
-    curRestart(0), nbclausesbeforereduce(SolverOptions::opt_first_reduce_db),
-    incReduceDB(SolverOptions::opt_inc_reduce_db),
+    curRestart(0), nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
+    incReduceDB(ClauseDatabaseOptions::opt_inc_reduce_db),
     // memory reorganization
     sort_watches(SolverOptions::opt_sort_watches),
     // conflict state

@@ -164,11 +164,6 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    if (SolverOptions::do_gaterecognition) {
-        std::cout << "c benchmarking gate recognition. not impl. atm" << std::endl;
-        return 0;
-    }
-
     if (SolverOptions::verb > 0) {
         printProblemStatistics(problem);
     }
