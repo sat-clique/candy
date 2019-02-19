@@ -37,28 +37,28 @@ public:
     Logging(CandySolverInterface& solver_) : solver(solver_), sonification() { }
     ~Logging() { }
 
-    void logStart() {
+    inline void logStart() {
         sonification.start(solver.getStatistics().nVars(), solver.getStatistics().nClauses());
     }
 
-    void logRestart() {
+    inline void logRestart() {
         sonification.restart();
     }
 
-    void logDecision() {
+    inline void logDecision() {
         sonification.decisionLevel(solver.getAssignment().decisionLevel(), SolverOptions::opt_sonification_delay);
         sonification.assignmentLevel(solver.getAssignment().size());
     }
 
-    void logConflict() {
+    inline void logConflict() {
         sonification.conflictLevel(solver.getAssignment().size());
     }
 
-    void logLearntClause(Clause* clause) {
+    inline void logLearntClause(Clause* clause) {
         sonification.learntSize(clause->size());
     }
 
-    void logResult(lbool status) {
+    inline void logResult(lbool status) {
         if (status == l_False) {
             sonification.stop(1);
         }

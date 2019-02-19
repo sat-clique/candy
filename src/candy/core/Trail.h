@@ -247,7 +247,7 @@ public:
         }
     }
 
-    inline void cancelUntil(unsigned int level) {
+    inline void backtrack(unsigned int level) {
         if (decisionLevel() > level) {
             for (auto it = begin(level); it != end(); it++) {
                 assigns[var(*it)] = l_Undef;

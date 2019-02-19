@@ -154,7 +154,7 @@ public:
                     }
                 }
                 bool asymm = propagator.propagate() != nullptr;
-                trail.cancelUntil(0);
+                trail.backtrack(0);
                 assert(l != lit_Undef);
                 if (asymm) { // strengthen:
                     nStrengthened++;
