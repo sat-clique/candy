@@ -193,34 +193,29 @@ int main(int argc, char** argv) {
     else {
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
-
-            ClauseDatabaseOptions::opt_reestimation_reduce_lbd = false;
             SolverOptions::opt_unitresolution = 0;
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = ((count % 2) == 0);
+            SolverOptions::opt_inprocessing = (count % 2) * 300;
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
-            VariableEliminationOptions::opt_use_asymm = ((count % 4) == 2);
+            VariableEliminationOptions::opt_use_asymm = (count % 3 == 0);
             switch (count) {
                 case 0 : case 1 : //vsids
                     SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = false;
-                    SolverOptions::opt_inprocessing = (count == 1 && ParallelOptions::opt_static_database) ? 1 : 0;
                     break;
                 case 2 : case 3 : //lrb
                     SolverOptions::opt_use_lrb = true;
                     RSILOptions::opt_rsil_enable = false;
-                    SolverOptions::opt_inprocessing = 0;
                     break;
-                case 4 : case 5 : //vsids
-                    SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = false;
-                    SolverOptions::opt_inprocessing = 300;
-                    break;
-                case 6 : case 7 : //rsil
+                case 4 : case 5 : //rsil
                     SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = true;
-                    SolverOptions::opt_inprocessing = 0;
+                    break;
+                case 6 : case 7 : //vsids
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = false;
                     break;
             }
             

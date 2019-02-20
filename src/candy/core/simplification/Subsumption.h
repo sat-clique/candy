@@ -79,11 +79,7 @@ public:
 
     void attach(const Clause* clause) {
         if (abstractions.count(clause) == 0) {
-            uint64_t abstraction = 0;
-            for (Lit lit : *clause) {
-                abstraction |= 1ull << (var(lit) % 64);
-            }
-            abstractions[clause] = abstraction;
+            abstractions[clause] = clause->calc_abstraction();
             if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
                 queue.push_back(clause);
             }
@@ -113,6 +109,8 @@ bool Subsumption<TPropagate>::subsume() {
     sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { 
         return c1->size() > c2->size() || (c1->size() == c2->size() && c1->getLBD() > c2->getLBD()); 
     });
+
+    // unsigned int nDuplicates = 0;
     
     while (queue.size() > 0) {
         const Clause* clause = queue.back();
@@ -146,6 +144,9 @@ bool Subsumption<TPropagate>::subsume() {
                         clause_db.removeClause((Clause*)to_delete);
                         abstractions.erase(clause);
                         abstractions.erase(occurence);
+
+                        // nDuplicates++;
+
                         break; 
                     }
                     else {
@@ -180,6 +181,8 @@ bool Subsumption<TPropagate>::subsume() {
             }
         }
     }
+
+    // std::cout << "c Removed " << nDuplicates << " duplicates" << std::endl;
 
     propagator.clear();
     for (Clause* clause : clause_db) {
