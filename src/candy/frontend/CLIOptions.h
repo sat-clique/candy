@@ -33,9 +33,8 @@ namespace ParallelOptions {
 
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
-    extern BoolOption opt_reestimation_reduce_lbd;
+    extern BoolOption opt_recalculate_lbd;
     extern BoolOption opt_keep_median_lbd;
-    extern BoolOption opt_also_increase_lbd;
     
     extern IntOption opt_first_reduce_db;
     extern IntOption opt_inc_reduce_db;

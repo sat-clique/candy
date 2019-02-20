@@ -162,7 +162,7 @@ public:
         return size;
     }
 
-    std::vector<Clause*> collect() {
+    inline std::vector<Clause*> collect() {
         std::vector<Clause*> clauses;
         for (ClauseAllocatorPage& page : pages) {
             for (const Clause* clause : page) {
@@ -195,6 +195,71 @@ public:
 
     void free_old_pages() {
         old_pages.clear();
+    }
+
+    class DuplicateChecker {
+        std::vector<const Clause*> clauses;
+        std::unordered_map<const Clause*, uint64_t> abstractions;
+
+    public:
+        DuplicateChecker(ClauseAllocatorMemory& mem, size_t size_limit) : clauses(), abstractions() {
+            for (const ClauseAllocatorPage& page : mem.pages) {
+                for (const Clause* clause : page) {
+                    if (clause->isLearnt() && clause->size() < size_limit) {
+                        clauses.push_back(clause);
+                        abstractions[clause] = clause->calc_abstraction();
+                    }
+                }
+            }
+            sort(clauses.begin(), clauses.end(), [](const Clause* c1, const Clause* c2) { return c1->size() < c2->size(); });
+            // std::cout << "c Clauses in duplication checker: " << clauses.size() << std::endl;
+        }
+
+        bool isDuplicate(const Clause* other) {
+            for (const Clause* clause : clauses) {
+                if (clause->size() == other->size()) {
+                    if ((abstractions[clause] == other->calc_abstraction()) && clause->subsumes(*other) == lit_Undef) {
+                        if (other->isPersistent() && clause->isLearnt()) {
+                            return false;
+                        }
+                        return true;
+                    }
+                }
+                else if (clause->size() > other->size()) {
+                    break;
+                }
+            }
+            return false;
+        }
+    };
+
+    void import_without_duplicates(ClauseAllocatorMemory& other, size_t size_limit) {
+        // size_t nDuplicates = 0;
+        // size_t nImports = 0;
+        DuplicateChecker checker { *this, size_limit }; 
+        for (const ClauseAllocatorPage& page : other.pages) {
+            for (const Clause* clause : page) {
+                if (!clause->isDeleted() && clause->size() < size_limit) {
+                    if (!checker.isDuplicate(clause)) {
+                        void* new_clause = allocate(clause->size());
+                        memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
+                        // nImports++;
+                    }
+                    else {
+                        // nDuplicates++;
+                    }
+                    ((Clause*)clause)->setDeleted(); 
+                }
+                else if (clause->isPersistent()) {
+                    void* new_clause = allocate(clause->size());
+                    memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
+                    ((Clause*)clause)->setDeleted(); 
+                    // nImports++;
+                }
+            }
+        }
+        // std::cout << "Suppressed import of " << nDuplicates << " duplicates" << std::endl;
+        // std::cout << "Imported " << nImports << " clauses" << std::endl;
     }
 
     void import(ClauseAllocatorMemory& other, unsigned int size_limit) {

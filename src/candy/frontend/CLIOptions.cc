@@ -32,8 +32,7 @@ namespace ParallelOptions {
 
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Minimum LBD value for learnt clauses to be kept persistent", 3, IntRange(0, INT8_MAX));
-    BoolOption opt_reestimation_reduce_lbd("ClauseDatabase", "reestimate-lbd", "After conflict reduce lbds", true);
-    BoolOption opt_also_increase_lbd("ClauseDatabase", "also-increase-lbd", "After conflict recalculate lbds", false);
+    BoolOption opt_recalculate_lbd("ClauseDatabase", "recalculate-lbd", "After conflict recalculate lbd of involved clauses", true);
     BoolOption opt_keep_median_lbd("ClauseDatabase", "keep-median-lbd", "Delete only clauses with lbd > median(lbd)", false);
 
     IntOption opt_first_reduce_db("ClauseDatabase", "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));

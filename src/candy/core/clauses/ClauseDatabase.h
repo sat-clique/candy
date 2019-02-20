@@ -70,8 +70,7 @@ private:
 
     const unsigned int persistentLBD;
     const bool keepMedianLBD;
-    const bool reestimationReduceLBD;
-    const bool alsoIncreaseLBD;
+    const bool recalculateLBD;
 
     bool track_literal_occurrence;    
     std::vector<std::vector<Clause*>> variableOccurrences;
@@ -91,8 +90,7 @@ public:
         allocator(), clauses(), 
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
         keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
-        reestimationReduceLBD(ClauseDatabaseOptions::opt_reestimation_reduce_lbd), 
-        alsoIncreaseLBD(ClauseDatabaseOptions::opt_also_increase_lbd), 
+        recalculateLBD(ClauseDatabaseOptions::opt_recalculate_lbd), 
         track_literal_occurrence(false),
         variableOccurrences(),
         binaryWatchers(), 
@@ -120,13 +118,11 @@ public:
     }
 
     void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
-        if (reestimationReduceLBD) {
+        if (recalculateLBD) {
             for (Clause* clause : involved_clauses) {
                 if (clause->isLearnt()) {
                     uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                    if (lbd < clause->getLBD() || alsoIncreaseLBD) {
-                        clause->setLBD(lbd);
-                    }
+                    clause->setLBD(lbd);
                 }
             }
         }
