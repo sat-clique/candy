@@ -32,9 +32,11 @@ class Logging {
     CandySolverInterface& solver;
 
     SolverSonification sonification;
+    int sonification_delay;
 
 public:
-    Logging(CandySolverInterface& solver_) : solver(solver_), sonification() { }
+    Logging(CandySolverInterface& solver_)
+     : solver(solver_), sonification(), sonification_delay(SolverOptions::opt_sonification_delay) { }
     ~Logging() { }
 
     inline void logStart() {
@@ -46,7 +48,7 @@ public:
     }
 
     inline void logDecision() {
-        sonification.decisionLevel(solver.getAssignment().decisionLevel(), SolverOptions::opt_sonification_delay);
+        sonification.decisionLevel(solver.getAssignment().decisionLevel(), sonification_delay);
         sonification.assignmentLevel(solver.getAssignment().size());
     }
 
