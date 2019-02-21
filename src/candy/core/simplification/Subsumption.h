@@ -57,14 +57,11 @@ private:
     Trail& trail;
     TPropagate& propagator;
 
-    const uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
-
 public:         
     Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),
-        subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
         queue(),
         abstractions(),
         nSubsumed(0),
@@ -80,9 +77,7 @@ public:
     void attach(const Clause* clause) {
         if (abstractions.count(clause) == 0) {
             abstractions[clause] = clause->calc_abstraction();
-            if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
-                queue.push_back(clause);
-            }
+            queue.push_back(clause);
         }
     }
 
@@ -109,8 +104,6 @@ bool Subsumption<TPropagate>::subsume() {
     sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { 
         return c1->size() > c2->size() || (c1->size() == c2->size() && c1->getLBD() > c2->getLBD()); 
     });
-
-    // unsigned int nDuplicates = 0;
     
     while (queue.size() > 0) {
         const Clause* clause = queue.back();
@@ -144,9 +137,6 @@ bool Subsumption<TPropagate>::subsume() {
                         clause_db.removeClause((Clause*)to_delete);
                         abstractions.erase(clause);
                         abstractions.erase(occurence);
-
-                        // nDuplicates++;
-
                         break; 
                     }
                     else {
@@ -170,7 +160,7 @@ bool Subsumption<TPropagate>::subsume() {
                         return false;
                     }
                     else {
-                        attach(new_clause);
+                        // attach(new_clause);
                         if (new_clause->size() == 1) {
                             if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
                                 return false; 
@@ -181,8 +171,6 @@ bool Subsumption<TPropagate>::subsume() {
             }
         }
     }
-
-    // std::cout << "c Removed " << nDuplicates << " duplicates" << std::endl;
 
     propagator.clear();
     for (Clause* clause : clause_db) {
