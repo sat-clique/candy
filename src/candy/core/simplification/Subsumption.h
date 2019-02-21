@@ -74,18 +74,6 @@ public:
     unsigned int nSubsumed;
     unsigned int nStrengthened;
 
-    void attach(const Clause* clause) {
-        if (abstractions.count(clause) == 0) {
-            abstractions[clause] = clause->calc_abstraction();
-            queue.push_back(clause);
-        }
-    }
-
-    void clear() {
-        queue.clear();
-        abstractions.clear();
-    }
-
     bool subsume();
     
 }; 
@@ -98,18 +86,16 @@ bool Subsumption<TPropagate>::subsume() {
     nStrengthened = 0;
     
     for (const Clause* clause : clause_db) {
-        attach(clause);
+        abstractions[clause] = clause->calc_abstraction();
+        queue.push_back(clause);
     }
 
     sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { 
-        return c1->size() > c2->size() || (c1->size() == c2->size() && c1->getLBD() > c2->getLBD()); 
+        return c1->size() < c2->size() || (c1->size() == c2->size() && c1->getLBD() < c2->getLBD()); 
     });
     
-    while (queue.size() > 0) {
-        const Clause* clause = queue.back();
-        queue.pop_back();
-
-        if (clause->isDeleted()) continue;
+    for (const Clause* clause : queue) {
+        if (clause->isDeleted()) continue; 
         
         // Find best variable to scan:
         Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
@@ -159,18 +145,18 @@ bool Subsumption<TPropagate>::subsume() {
                     if (new_clause->size() == 0) {
                         return false;
                     }
-                    else {
-                        // attach(new_clause);
-                        if (new_clause->size() == 1) {
-                            if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
-                                return false; 
-                            }
-                        } 
+                    else if (new_clause->size() == 1) {
+                        if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
+                            return false; 
+                        }
                     }
                 }
             }
         }
     }
+
+    queue.clear();
+    abstractions.clear();
 
     propagator.clear();
     for (Clause* clause : clause_db) {
@@ -178,7 +164,6 @@ bool Subsumption<TPropagate>::subsume() {
             propagator.attachClause(clause);
         }
     }
-    clear();
 
     return true;
 }
