@@ -48,6 +48,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <functional>
 #include <type_traits>
 #include <chrono>
+#include <execinfo.h>
 
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Statistics.h"
@@ -91,6 +92,16 @@ static void just_quit(int signum) {
     _exit(1);
 }
 
+static void print_stacktrace(int signum) {
+    void *array[10];
+    size_t size = backtrace(array, 10);
+
+    // print out all the frames to stderr
+    fprintf(stderr, "c Error: signal %d:\n", signum);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    _exit(1);
+}
+
 static void installSignalHandlers(bool handleInterruptsBySolver) {
 #if defined(WIN32) && !defined(CYGWIN)
 #if defined(_MSC_VER)
@@ -102,9 +113,11 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
     if (handleInterruptsBySolver) {
         signal(SIGINT, set_interrupted);
         signal(SIGXCPU, set_interrupted);
+        signal(SIGSEGV, print_stacktrace);
     } else {
         signal(SIGINT, just_quit);
         signal(SIGXCPU, just_quit);
+        signal(SIGSEGV, print_stacktrace);
     }
 #endif
 }
@@ -194,10 +207,10 @@ int main(int argc, char** argv) {
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
             ClauseDatabaseOptions::opt_recalculate_lbd = false; 
-            SolverOptions::opt_unitresolution = 0;
+            SolverOptions::opt_unitresolution = (count == 0);
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
-            SolverOptions::opt_preprocessing = ((count % 2) == 0);
+            SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = (count % 2) * 300;
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
             VariableEliminationOptions::opt_use_asymm = (count > 5);
