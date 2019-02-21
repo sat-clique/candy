@@ -200,7 +200,7 @@ int main(int argc, char** argv) {
             SolverOptions::opt_preprocessing = ((count % 2) == 0);
             SolverOptions::opt_inprocessing = (count % 2) * 300;
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
-            VariableEliminationOptions::opt_use_asymm = (count % 3 == 0);
+            VariableEliminationOptions::opt_use_asymm = (count > 5);
             switch (count) {
                 case 0 : case 1 : //vsids
                     SolverOptions::opt_use_lrb = false;

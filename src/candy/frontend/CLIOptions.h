@@ -75,10 +75,6 @@ namespace VariableEliminationOptions {
     extern BoolOption opt_use_elim;
 }
 
-namespace SubsumptionOptions {
-    extern IntOption opt_subsumption_lim;
-}
-
 namespace GateRecognitionOptions {
     extern BoolOption opt_print_gates;
     extern IntOption opt_gr_tries;
