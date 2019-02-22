@@ -57,40 +57,34 @@ private:
     Trail& trail;
     TPropagate& propagator;
 
-    std::unordered_map<const Clause*, SubsumptionClause> abstractions;
+    std::vector<SubsumptionClause> list;
 
-    SubsumptionClause& get_subsumption_clause(const Clause* clause) {
-        if (abstractions.count(clause) == 0) {
-            abstractions[clause] = SubsumptionClause { clause }; 
-        }
-        return abstractions[clause];
-    }
+    void initialize();
+    void unique();
 
 public:   
+    unsigned int nDuplicates;
     unsigned int nSubsumed;
     unsigned int nStrengthened;      
 
     Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
-        clause_db(clause_db_),
-        trail(trail_),
-        propagator(propagator_),
-        abstractions(),
-        nSubsumed(0),
-        nStrengthened(0)
-    {}
+        clause_db(clause_db_), trail(trail_), propagator(propagator_),
+        list(),
+        nDuplicates(0), nSubsumed(0), nStrengthened(0)
+    { }
 
     bool subsume();
     
 }; 
 
 template <class TPropagate> 
-bool Subsumption<TPropagate>::subsume() {
-    assert(trail.decisionLevel() == 0);
-    
+void Subsumption<TPropagate>::initialize() {
+    list.clear();  
+
+    nDuplicates = 0;
     nSubsumed = 0;
-    nStrengthened = 0;
-    
-    std::vector<SubsumptionClause> list;
+    nStrengthened = 0;  
+
     for (const Clause* clause : clause_db) {
         if (!clause->isDeleted()) {
             list.emplace_back(clause);
@@ -100,13 +94,22 @@ bool Subsumption<TPropagate>::subsume() {
     sort(list.begin(), list.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
         return c1.size() < c2.size() || (c1.size() == c2.size() && c1.get_abstraction() < c2.get_abstraction()); 
     });
+}
 
-    // remove duplicates
-    for (auto it = list.begin(); it != list.end()-1; it++) {
-        for (auto it2 = it + 1; it2 != list.end() && it->get_abstraction() == it2->get_abstraction(); it2++) {
-            if (it->equals(*it2)) {
-                if (it->lbd() > it2->lbd() || (it->lbd() == it2->lbd() && it->get_clause() > it2->get_clause())) {
-                    clause_db.removeClause(it->get_clause());
+template <class TPropagate> 
+void Subsumption<TPropagate>::unique() { // remove duplicates
+    for (auto it1 = list.begin(); it1 != list.end(); it1++) {
+        if (it1->get_clause()->isDeleted()) {
+            continue;
+        }
+        for (auto it2 = it1+1; it2 != list.end() && it1->get_abstraction() == it2->get_abstraction(); it2++) {
+            if (it2->get_clause()->isDeleted()) {
+                continue;
+            }
+            if (it1->equals(*it2)) {
+                nDuplicates++;
+                if (it1->lbd() > it2->lbd() || (it1->lbd() == it2->lbd() && it1->get_clause() > it2->get_clause())) {
+                    clause_db.removeClause(it1->get_clause());
                 }
                 else {
                     clause_db.removeClause(it2->get_clause());
@@ -114,6 +117,14 @@ bool Subsumption<TPropagate>::subsume() {
             }
         }
     }
+}
+
+template <class TPropagate> 
+bool Subsumption<TPropagate>::subsume() {
+    assert(trail.decisionLevel() == 0);
+
+    initialize();
+    unique();
     
     for (SubsumptionClause clause : list) {
         if (clause.get_clause()->isDeleted()) {
@@ -127,12 +138,14 @@ bool Subsumption<TPropagate>::subsume() {
 
         // Search all candidates:
         const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
-        for (const Clause* candidate : occurences) {
-            if (candidate == clause.get_clause() || candidate->isDeleted()) {
+        for (const Clause* occurence : occurences) {
+            if (occurence == clause.get_clause() || occurence->isDeleted()) {
                 continue;
             }
 
-            SubsumptionClause& occurence = get_subsumption_clause(candidate);
+            std::cout << *clause.get_clause() << std::endl;
+            std::cout << *occurence << std::endl;
+
             Lit l = clause.subsumes(occurence);
 
             if (l == lit_Error) {
@@ -141,15 +154,14 @@ bool Subsumption<TPropagate>::subsume() {
 
             if (l == lit_Undef) { // remove:
                 nSubsumed++;
-                if (clause.get_clause()->isLearnt() && !occurence.get_clause()->isLearnt()) {
-                    // in case of inprocessing: recreate persistent
-                    Clause* persistent = clause_db.persistClause(clause.get_clause());
+                if (clause.get_clause()->isLearnt() && !occurence->isLearnt()) {
+                    clause_db.persistClause(clause.get_clause());
                 }
-                clause_db.removeClause(occurence.get_clause());
+                clause_db.removeClause((Clause*)occurence);
             }
             else { // strengthen:
                 nStrengthened++;                
-                Clause* new_clause = clause_db.strengthenClause(occurence.get_clause(), ~l);
+                Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
                 if (new_clause->size() == 0) {
                     return false;
                 }
@@ -162,7 +174,6 @@ bool Subsumption<TPropagate>::subsume() {
         }
     }
 
-    abstractions.clear();
     propagator.clear();
     for (Clause* clause : clause_db) {
         if (clause->size() > 2) {

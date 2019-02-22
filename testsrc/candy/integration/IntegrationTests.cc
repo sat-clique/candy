@@ -44,16 +44,17 @@ extern "C" {
 namespace Candy {
 
     static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool expectedResult, bool install_static_allocator) {
+        GTEST_COUT << filename << std::endl;
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
         // ASSERT_FALSE(problem.size() == 0) << "Could not read test problem file.";
         solver->init(problem);
         ClauseAllocator* allocator = nullptr;
         if (install_static_allocator) {
+            GTEST_COUT << "Setup Static Allocator" << std::endl;
             allocator = solver->setupGlobalAllocator();
         }
         auto result = solver->solve();
-        GTEST_COUT << filename << std::endl;
         delete solver;
         if (allocator != nullptr) {
             delete allocator;

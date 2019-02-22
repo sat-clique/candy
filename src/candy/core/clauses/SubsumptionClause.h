@@ -26,40 +26,45 @@ namespace Candy {
 
 class SubsumptionClause {
 private:
-    const Clause& clause;
+    const Clause* clause;
     uint64_t abstraction;
 
 public:
-    SubsumptionClause(const Clause* clause_) : clause(*clause_) {
-        abstraction = clause.calc_abstraction();
+    SubsumptionClause(const Clause* clause_) : clause(clause_) {
+        abstraction = clause->calc_abstraction();
     }
 
     ~SubsumptionClause() { }
 
+    inline void operator =(const SubsumptionClause& other) {
+        clause = other.clause;
+        abstraction = other.abstraction;
+    }
+
     inline const Lit& operator [](int i) const {
-        return clause[i];
+        return (*clause)[i];
     }
 
     typedef const Lit* const_iterator;
 
     inline const_iterator begin() const {
-        return clause.begin();
+        return clause->begin();
     }
 
     inline const_iterator end() const {
-        return clause.end();
+        return clause->end();
     }
 
     inline uint16_t size() const {
-        return clause.size();
+        return clause->size();
     }
 
     inline uint16_t lbd() const {
-        return clause.getLBD();
+        return clause->getLBD();
     }
 
     inline Clause* get_clause() const {
-        return (Clause*)&clause;
+        return (Clause*)clause;
     }
 
     inline uint64_t get_abstraction() const {
@@ -70,6 +75,11 @@ public:
         return this->size() == other.size()
          && this->abstraction == other.abstraction
          && this->subsumes(other) == lit_Undef;
+    }
+
+    inline Lit subsumes(const Clause* other) const {
+        SubsumptionClause sub { other };
+        return this->subsumes(sub); 
     }
 
     /**
