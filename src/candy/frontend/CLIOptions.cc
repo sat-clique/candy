@@ -75,10 +75,6 @@ namespace VariableEliminationOptions {
     BoolOption opt_use_elim("VariableElimination", "elim", "Perform variable elimination.", true);
 }
 
-namespace SubsumptionOptions {
-    IntOption opt_subsumption_lim("SIMP", "sub-lim", "Do not check for subsumption with a clause larger than this.", 100, IntRange(0, INT32_MAX));
-}
-
 namespace GateRecognitionOptions {
     BoolOption opt_print_gates("GATE RECOGNITION", "print-gates", "print gates.", false);
     IntOption opt_gr_tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 3, IntRange(0, INT32_MAX)); 
