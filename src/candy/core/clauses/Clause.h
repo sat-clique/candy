@@ -156,44 +156,6 @@ public:
         return weight;
     }
 
-    /**
-     *  subsumes : (other : const Clause&)  ->  Lit
-     *
-     *  Description:
-     *       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
-     *       by subsumption resolution.
-     *
-     *    Result:
-     *       lit_Error  - No subsumption or simplification
-     *       lit_Undef  - Clause subsumes 'other'
-     *       p          - The literal p can be deleted from 'other'
-     */
-    inline Lit subsumes(const Clause& other) const {
-        if (other.size() < size()) {
-            return lit_Error;
-        }
-
-        Lit ret = lit_Undef;
-
-        for (Lit c : *this) {
-            // search for c or ~c
-            for (Lit d : other) {
-                if (c == d) {
-                    goto ok;
-                }
-                else if (ret == lit_Undef && c == ~d) {
-                    ret = c;
-                    goto ok;
-                }
-            }
-            // did not find it
-            return lit_Error;
-            ok: ;
-        }
-
-        return ret;
-    }
-
 private:
     template<typename InputIterator>
     inline void copyLiterals(InputIterator srcBegin, InputIterator srcEnd, Lit* target) {

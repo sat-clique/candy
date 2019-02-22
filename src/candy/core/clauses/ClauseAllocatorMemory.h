@@ -26,6 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory.h>
 
 #include <candy/core/clauses/Clause.h>
+#include <candy/core/clauses/SubsumptionClause.h>
 #include <candy/core/clauses/ClauseAllocator.h>
 
 namespace Candy {
@@ -198,30 +199,29 @@ public:
     }
 
     class DuplicateChecker {
-        std::vector<const Clause*> clauses;
-        std::unordered_map<const Clause*, uint64_t> abstractions;
+        std::vector<SubsumptionClause> clauses;
 
     public:
-        DuplicateChecker(ClauseAllocatorMemory& mem, size_t size_limit) : clauses(), abstractions() {
+        DuplicateChecker(ClauseAllocatorMemory& mem, size_t size_limit) : clauses() {
             for (const ClauseAllocatorPage& page : mem.pages) {
                 for (const Clause* clause : page) {
                     if (clause->isLearnt() && clause->size() < size_limit) {
-                        clauses.push_back(clause);
-                        abstractions[clause] = clause->calc_abstraction();
+                        clauses.emplace_back(clause);
                     }
                 }
             }
-            sort(clauses.begin(), clauses.end(), [](const Clause* c1, const Clause* c2) { return c1->size() < c2->size(); });
+            sort(clauses.begin(), clauses.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
+                return c1.size() < c2.size(); 
+            });
         }
 
         bool isDuplicate(const Clause* other) {
-            for (const Clause* clause : clauses) {
-                if (clause->size() == other->size()) {
-                    if ((abstractions[clause] == other->calc_abstraction()) && clause->subsumes(*other) == lit_Undef) {
-                        return true;
-                    }
+            SubsumptionClause other_ { other };
+            for (SubsumptionClause clause : clauses) {
+                if (clause.equals(other_)) {
+                    return true;
                 }
-                else if (clause->size() > other->size()) {
+                else if (clause.size() > other_.size()) {
                     break;
                 }
             }
