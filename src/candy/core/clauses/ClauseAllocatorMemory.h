@@ -199,29 +199,29 @@ public:
     }
 
     class DuplicateChecker {
-        std::vector<SubsumptionClause> clauses;
+        std::vector<SubsumptionClause> list;
 
     public:
-        DuplicateChecker(ClauseAllocatorMemory& mem, size_t size_limit) : clauses() {
+        DuplicateChecker(ClauseAllocatorMemory& mem, size_t size_limit) : list() {
             for (const ClauseAllocatorPage& page : mem.pages) {
                 for (const Clause* clause : page) {
                     if (clause->isLearnt() && clause->size() < size_limit) {
-                        clauses.emplace_back(clause);
+                        list.emplace_back(clause);
                     }
                 }
             }
-            sort(clauses.begin(), clauses.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
-                return c1.size() < c2.size(); 
+
+            sort(list.begin(), list.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
+                return c1.size() < c2.size() || (c1.size() == c2.size() && c1.get_abstraction() < c2.get_abstraction()); 
             });
         }
 
         bool isDuplicate(const Clause* other) {
-            SubsumptionClause other_ { other };
-            for (SubsumptionClause clause : clauses) {
-                if (clause.equals(other_)) {
+            for (SubsumptionClause clause : list) {
+                if (clause.equals(other)) {
                     return true;
                 }
-                else if (clause.size() > other_.size()) {
+                else if (clause.size() > other->size()) {
                     break;
                 }
             }

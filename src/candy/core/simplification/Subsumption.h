@@ -143,9 +143,6 @@ bool Subsumption<TPropagate>::subsume() {
                 continue;
             }
 
-            std::cout << *clause.get_clause() << std::endl;
-            std::cout << *occurence << std::endl;
-
             Lit l = clause.subsumes(occurence);
 
             if (l == lit_Error) {

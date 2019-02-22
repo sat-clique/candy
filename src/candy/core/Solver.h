@@ -218,7 +218,6 @@ protected:
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
-    double simplification_threshold_factor = 0.1;
     Stamp<Var> freezes;
 
     unsigned int lastRestartWithInprocessing;
@@ -300,7 +299,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     ok(true),
     // pre- and inprocessing
     preprocessing_enabled(SolverOptions::opt_preprocessing),
-    simplification_threshold_factor(SolverOptions::opt_simplification_threshold_factor),
     freezes(),
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
     lastRestartWithUnitResolution(0), unitResolutionFrequency(SolverOptions::opt_unitresolution), 
@@ -374,18 +372,20 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
 
     clause_db.initOccurrenceTracking();
 
-    unsigned int num = 1;
-    unsigned int max = 0;
+    unsigned int num = 0;
+    unsigned int prev = -1;
     unsigned int count = 0;
-    while (num > max * simplification_threshold_factor) {
+    while (num > prev) {
+        prev = num;
+
         ok &= subsumption.subsume();
         if (isInConflictingState()) break;
 
         ok &= elimination.eliminate();
         if (isInConflictingState()) break;
         
-        num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nEliminated + elimination.nStrengthened;
-        max = std::max(num, max);
+        num = subsumption.nStrengthened + subsumption.nSubsumed + subsumption.nDuplicates + elimination.nEliminated + elimination.nStrengthened;
+
         count++;
     } 
 
@@ -402,9 +402,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
     branch.reset(); // former rebuildOrderHeap
 
     clause_db.stopOccurrenceTracking();
-    
-    std::cout << "c Subsumption Results: Subsumed " << subsumption.nStrengthened << ", Strengthened " << subsumption.nSubsumed << std::endl;
-    std::cout << "c Elimination Results: Eliminated " << elimination.nEliminated << ", Strengthened " << elimination.nStrengthened << std::endl;
 }
 
 /**************************************************************************************************
