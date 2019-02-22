@@ -83,8 +83,11 @@ public:
     }
 
     inline Lit subsumes(const Clause* other) const {
-        SubsumptionClause sub { other };
-        return this->subsumes(sub); 
+        if (other->size() >= this->size()) {
+            SubsumptionClause sub { other };
+            return this->subsumes(sub); 
+        }
+        return lit_Error;
     }
 
     /**
