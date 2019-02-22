@@ -41,7 +41,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <unordered_map>
 #include <vector>
 
-#include "candy/core/clauses/Clause.h"
+#include "candy/core/clauses/SubsumptionClause.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
@@ -57,39 +57,27 @@ private:
     Trail& trail;
     TPropagate& propagator;
 
-    const uint16_t subsumption_lim;   // Do not check if subsumption against a clause larger than this. 0 means no limit.
+    std::unordered_map<const Clause*, SubsumptionClause> abstractions;
 
-public:         
+    SubsumptionClause& get_subsumption_clause(const Clause* clause) {
+        if (abstractions.count(clause) == 0) {
+            abstractions[clause] = SubsumptionClause { clause }; 
+        }
+        return abstractions[clause];
+    }
+
+public:   
+    unsigned int nSubsumed;
+    unsigned int nStrengthened;      
+
     Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
         clause_db(clause_db_),
         trail(trail_),
         propagator(propagator_),
-        subsumption_lim(SubsumptionOptions::opt_subsumption_lim),
-        queue(),
         abstractions(),
         nSubsumed(0),
         nStrengthened(0)
     {}
-
-    std::vector<const Clause*> queue;
-    std::unordered_map<const Clause*, uint64_t> abstractions;
-
-    unsigned int nSubsumed;
-    unsigned int nStrengthened;
-
-    void attach(const Clause* clause) {
-        if (abstractions.count(clause) == 0) {
-            abstractions[clause] = clause->calc_abstraction();
-            if (subsumption_lim == 0 || clause->size() < subsumption_lim) {
-                queue.push_back(clause);
-            }
-        }
-    }
-
-    void clear() {
-        queue.clear();
-        abstractions.clear();
-    }
 
     bool subsume();
     
@@ -102,96 +90,86 @@ bool Subsumption<TPropagate>::subsume() {
     nSubsumed = 0;
     nStrengthened = 0;
     
+    std::vector<SubsumptionClause> list;
     for (const Clause* clause : clause_db) {
-        attach(clause);
+        if (!clause->isDeleted()) {
+            list.emplace_back(clause);
+        }
     }
 
-    sort(queue.begin(), queue.end(), [](const Clause* c1, const Clause* c2) { 
-        return c1->size() > c2->size() || (c1->size() == c2->size() && c1->getLBD() > c2->getLBD()); 
+    sort(list.begin(), list.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
+        return c1.size() < c2.size() || (c1.size() == c2.size() && c1.get_abstraction() < c2.get_abstraction()); 
     });
 
-    // unsigned int nDuplicates = 0;
-    
-    while (queue.size() > 0) {
-        const Clause* clause = queue.back();
-        queue.pop_back();
-
-        if (clause->isDeleted()) continue;
-        
-        // Find best variable to scan:
-        Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
-            return clause_db.numOccurences(var(l1)) < clause_db.numOccurences(var(l2));
-        }));
-
-        // Search all candidates:
-        const uint64_t clause_abstraction = abstractions[clause];
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
-        for (const Clause* occurence : occurences) {
-            if (occurence != clause && !occurence->isDeleted() && ((clause_abstraction & ~abstractions[occurence]) == 0)) {
-                Lit l = clause->subsumes(*occurence);
-
-                if (l == lit_Undef) { // remove:
-                    if (clause->size() == occurence->size()) {
-                        const Clause* to_delete = occurence;
-                        if (clause->getLBD() > occurence->getLBD()) {
-                            to_delete = clause;
-                        }
-                        else if (clause->getLBD() == occurence->getLBD()) {
-                            if (clause > occurence) {
-                                to_delete = clause;
-                            }
-                        }
-                        clause_db.removeClause((Clause*)to_delete);
-                        abstractions.erase(clause);
-                        abstractions.erase(occurence);
-
-                        // nDuplicates++;
-
-                        break; 
-                    }
-                    else {
-                        if (clause->isLearnt() && !occurence->isLearnt()) {
-                            // in case of inprocessing: recreate persistent
-                            Clause* persistent = clause_db.persistClause((Clause*)clause);
-                            abstractions[persistent]=clause_abstraction;
-                            abstractions.erase(clause);
-                        }
-                        nSubsumed++;
-                        clause_db.removeClause((Clause*)occurence);
-                        abstractions.erase(occurence);
-                    }
+    // remove duplicates
+    for (auto it = list.begin(); it != list.end()-1; it++) {
+        for (auto it2 = it + 1; it2 != list.end() && it->get_abstraction() == it2->get_abstraction(); it2++) {
+            if (it->equals(*it2)) {
+                if (it->lbd() > it2->lbd() || (it->lbd() == it2->lbd() && it->get_clause() > it2->get_clause())) {
+                    clause_db.removeClause(it->get_clause());
                 }
-                else if (l != lit_Error) { // strengthen:
-                    nStrengthened++;
-                    
-                    Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
-                    abstractions.erase(occurence);
-                    if (new_clause->size() == 0) {
-                        return false;
-                    }
-                    else {
-                        attach(new_clause);
-                        if (new_clause->size() == 1) {
-                            if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
-                                return false; 
-                            }
-                        } 
-                    }
+                else {
+                    clause_db.removeClause(it2->get_clause());
                 }
             }
         }
     }
+    
+    for (SubsumptionClause clause : list) {
+        if (clause.get_clause()->isDeleted()) {
+            continue;
+        }
+        
+        // Find best variable to scan:
+        Var best = var(*std::min_element(clause.begin(), clause.end(), [this] (Lit l1, Lit l2) {
+            return clause_db.numOccurences(var(l1)) < clause_db.numOccurences(var(l2));
+        }));
 
-    // std::cout << "c Removed " << nDuplicates << " duplicates" << std::endl;
+        // Search all candidates:
+        const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
+        for (const Clause* candidate : occurences) {
+            if (candidate == clause.get_clause() || candidate->isDeleted()) {
+                continue;
+            }
 
+            SubsumptionClause& occurence = get_subsumption_clause(candidate);
+            Lit l = clause.subsumes(occurence);
+
+            if (l == lit_Error) {
+                continue;
+            }
+
+            if (l == lit_Undef) { // remove:
+                nSubsumed++;
+                if (clause.get_clause()->isLearnt() && !occurence.get_clause()->isLearnt()) {
+                    // in case of inprocessing: recreate persistent
+                    Clause* persistent = clause_db.persistClause(clause.get_clause());
+                }
+                clause_db.removeClause(occurence.get_clause());
+            }
+            else { // strengthen:
+                nStrengthened++;                
+                Clause* new_clause = clause_db.strengthenClause(occurence.get_clause(), ~l);
+                if (new_clause->size() == 0) {
+                    return false;
+                }
+                else if (new_clause->size() == 1) {
+                    if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
+                        return false; 
+                    }
+                } 
+            }
+        }
+    }
+
+    abstractions.clear();
     propagator.clear();
     for (Clause* clause : clause_db) {
         if (clause->size() > 2) {
             propagator.attachClause(clause);
         }
     }
-    clear();
-
+    
     return true;
 }
 
