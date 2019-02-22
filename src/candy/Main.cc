@@ -96,12 +96,14 @@ static void just_quit(int signum) {
 }
 
 static void print_stacktrace(int signum) {
+#if !defined(WIN32) || defined(CYGWIN)
     void *array[10];
     size_t size = backtrace(array, 10);
 
     // print out all the frames to stderr
     fprintf(stderr, "c Error: signal %d:\n", signum);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
+#endif
     _exit(1);
 }
 
