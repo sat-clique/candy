@@ -65,7 +65,6 @@ namespace SolverOptions {
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
     IntOption opt_unitresolution("MEMORY LAYOUT", "unitresolution", "execute unitresolution with persistent clauses during search every n-th restart", 1);
-    DoubleOption opt_simplification_threshold_factor("MEMORY LAYOUT", "simplification-threshold-factor", "Simplification Threshold Factor", 0.1, DoubleRange(0, false, 1, false));
 }
 
 namespace VariableEliminationOptions {

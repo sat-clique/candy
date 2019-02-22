@@ -71,6 +71,11 @@ public:
         return abstraction;
     }
 
+    inline bool equals(const Clause* other) const {
+        SubsumptionClause sub { other };
+        return this->equals(sub); 
+    }
+
     inline bool equals(SubsumptionClause& other) const {
         return this->size() == other.size()
          && this->abstraction == other.abstraction
