@@ -373,9 +373,8 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
     clause_db.initOccurrenceTracking();
 
     unsigned int num = 0;
-    unsigned int prev = -1;
-    unsigned int count = 0;
-    while (num > prev) {
+    unsigned int prev = 0;
+    do {
         prev = num;
 
         ok &= subsumption.subsume();
@@ -385,11 +384,9 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate
         if (isInConflictingState()) break;
         
         num = subsumption.nStrengthened + subsumption.nSubsumed + subsumption.nDuplicates + elimination.nEliminated + elimination.nStrengthened;
+    } while (num > prev);
 
-        count++;
-    } 
-
-    if (inprocessingFrequency > 0 && count == 1) {
+    if (inprocessingFrequency > 0 && prev == 0) {
         inprocessingFrequency++;
     }
 
