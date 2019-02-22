@@ -79,10 +79,6 @@ namespace Candy {
         virtual void setTermCallback(void* state, int (*termCallback)(void*)) override {
             m_solver->setTermCallback(state, termCallback);
         }
-        
-        virtual void setFrozen(Var v, bool freeze) override {
-        	m_solver->setFrozen(v, freeze);
-        }
 
     	virtual void setAssumptions(const std::vector<Lit>& assumptions) override {
     		m_solver->setAssumptions(assumptions);

@@ -65,15 +65,6 @@ namespace Candy {
         m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
     }
     
-    void SolverMock::setFrozen(Var variable, bool frozen) {
-        if (frozen) {
-            m_frozenVars.insert(variable);
-        }
-        else {
-            m_frozenVars.erase(variable);
-        }
-    }
-    
     size_t SolverMock::nVars() const {
         return m_maxCreatedVar+1;
     }

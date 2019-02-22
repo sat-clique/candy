@@ -74,6 +74,10 @@ public:
     { }
 
     bool subsume();
+
+    unsigned int nTouched() {
+        return nDuplicates + nSubsumed + nStrengthened; 
+    }
     
 }; 
 
@@ -171,12 +175,7 @@ bool Subsumption<TPropagate>::subsume() {
         }
     }
 
-    propagator.clear();
-    for (Clause* clause : clause_db) {
-        if (clause->size() > 2) {
-            propagator.attachClause(clause);
-        }
-    }
+    propagator.reset();
     
     return true;
 }

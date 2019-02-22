@@ -73,12 +73,8 @@ public:
         }
     }
 
-    void reorganize() {
-        if (global_allocator == nullptr) {
-            memory.reallocate();
-            memory.free_old_pages();
-        }
-        else {
+    inline void synchronize() {
+        if (global_allocator != nullptr) {
             std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->memory_lock.lock();
             global_allocator->memory.import_without_duplicates(this->memory, global_database_size_bound);
@@ -86,10 +82,15 @@ public:
                 global_allocator->deallocate(clause);
             }
             global_allocator->memory_lock.unlock(); 
-            memory.reallocate();
-            memory.free_old_pages();
             deleted.clear();
+        }
+    }
 
+    void reorganize() {
+        memory.reallocate();
+        memory.free_old_pages();
+
+        if (global_allocator != nullptr) {
             if (global_allocator->everybody_ready()) { // all threads use new pages now
                 //free the old one and copy and cleanup the new one 
                 global_allocator->memory.free_old_pages();

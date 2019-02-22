@@ -102,6 +102,9 @@ public:
     ~ClauseDatabase() { }
 
     void initOccurrenceTracking() {
+        if (track_literal_occurrence) {
+            stopOccurrenceTracking();
+        }
         for (Clause* clause : clauses) {
             for (Lit lit : *clause) {
                 variableOccurrences[var(lit)].push_back(clause);
@@ -115,6 +118,18 @@ public:
             occ.clear();
         }
         track_literal_occurrence = false;
+    }
+
+    void initBinaryWatchers() {
+        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+            watcher.clear();
+        }
+        for (Clause* clause : clauses) {
+            if (clause->size() == 2) {
+                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
+                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
+            }
+        }
     }
 
     void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
@@ -135,20 +150,8 @@ public:
     void setGlobalClauseAllocator(ClauseAllocator* global_allocator) {
         allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
-
-        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
-            watcher.clear();
-        }
-        for (Clause* clause : clauses) {
-            if (clause->size() == 2) {
-                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
-                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
-            }
-        }
-        if (track_literal_occurrence) {
-            stopOccurrenceTracking();
-            initOccurrenceTracking();
-        }
+        initBinaryWatchers();
+        initOccurrenceTracking();
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -296,22 +299,11 @@ public:
      * Make sure all references are updated after all clauses reside in a new adress space
      */
     void reorganize() {
+        allocator.synchronize();
         allocator.reorganize();
         clauses = allocator.collect();
-
-        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
-            watcher.clear();
-        }
-        for (Clause* clause : clauses) {
-            if (clause->size() == 2) {
-                binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
-                binaryWatchers[toInt(~clause->second())].emplace_back(clause, clause->first());
-            }
-        }
-        if (track_literal_occurrence) {
-            stopOccurrenceTracking();
-            initOccurrenceTracking();
-        }
+        initBinaryWatchers();
+        initOccurrenceTracking();
     }
 
 };

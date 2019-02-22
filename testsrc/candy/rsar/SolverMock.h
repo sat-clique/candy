@@ -75,12 +75,10 @@ namespace Candy {
         void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
         void setTermCallback(void* state, int (*termCallback)(void*)) override { }
 
-        virtual void setFrozen(Var v, bool freeze) override;
-
     	virtual lbool solve() override;
 
     	virtual void setAssumptions(const std::vector<Lit>& assumptions) override { 
-            for (Lit lit : assumptions) setFrozen(var(lit), true);
+            for (Lit lit : assumptions) m_frozenVars.insert(var(lit));
         }
 
     	virtual CandySolverResult& getCandySolverResult() override {
