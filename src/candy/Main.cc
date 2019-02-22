@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
-            SolverOptions::opt_inprocessing = (count % 2) * 300;
+            SolverOptions::opt_inprocessing = (count % 2) * (300 + 10*count);
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
             VariableEliminationOptions::opt_use_asymm = (count > 5);
             switch (count) {
@@ -241,7 +241,7 @@ int main(int argc, char** argv) {
 
             while (solvers.size() <= count) { 
                 // wait till solver is initialized
-                std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(10000));
             }
         }
 
