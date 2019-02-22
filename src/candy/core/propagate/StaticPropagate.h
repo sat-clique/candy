@@ -48,9 +48,11 @@ private:
 
     std::vector<std::vector<WatcherTS*>> watchers;
 
+    bool sort_watches;
+
 public:
     StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers() { }
+        : clause_db(_clause_db), trail(_trail), watchers(), sort_watches(SolverOptions::opt_sort_watches) { }
 
     ~StaticPropagate() {
         clear();
@@ -105,6 +107,18 @@ public:
                     return w1->cref->size() < w2->cref->size();
                 });
             }
+        }
+    }
+
+    void reset() {
+        clear();
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                attachClause(clause);
+            } 
+        }
+        if (sort_watches) {
+            sortWatchers();
         }
     }
 

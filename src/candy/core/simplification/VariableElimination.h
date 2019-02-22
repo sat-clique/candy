@@ -61,13 +61,12 @@ private:
     std::vector<uint32_t> elimclauses;
     std::vector<char> eliminated;
 
-    const bool use_asymm;         // Shrink clauses by asymmetric branching.
-    const bool use_elim;          // Perform variable elimination.
+    const bool active;          // Perform variable elimination.
+
     const uint_fast8_t clause_lim;     // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
     const uint_fast8_t grow_value;     // Allow a variable elimination step to grow by a number of clauses (default to zero).
 
 public:
-    unsigned int nStrengthened;
     unsigned int nEliminated;
 
     VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
@@ -77,13 +76,15 @@ public:
         frozen(),
         elimclauses(), 
         eliminated(),
-        use_asymm(VariableEliminationOptions::opt_use_asymm),
-        use_elim(VariableEliminationOptions::opt_use_elim),
+        active(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
         grow_value(VariableEliminationOptions::opt_grow),
-        nStrengthened(0),
         nEliminated(0)
     { }
+
+    unsigned int nTouched() {
+        return nEliminated; 
+    }
 
     inline void grow(size_t size) {
         if (size > frozen.size()) {
@@ -96,17 +97,16 @@ public:
         frozen[v] = true;
     }
 
-    inline void setEliminated(Var v) {
-        eliminated[v] = true;
-    }
-
     inline bool isEliminated(Var v) const {
         return eliminated[v];
     }
 
     bool eliminate() {
-        nStrengthened = 0;
         nEliminated = 0;
+
+        if (!active) {
+            return true;
+        }
 
         std::vector<Var> variables;
         for (unsigned int v = 0; v < frozen.size(); v++) {
@@ -117,121 +117,10 @@ public:
             return this->clause_db.numOccurences(v1) > this->clause_db.numOccurences(v2);
         });
 
-        for (Var v : variables) {
-            if (trail.defines(mkLit(v, false))) continue;
-
-            if (use_asymm) {
-                if (!asymmVar(v)) {
-                    return false;
-                }
+        for (Var variable : variables) {
+            if (!eliminate(variable)) {
+                return false;
             }
-
-            if (trail.defines(mkLit(v, false))) continue;
-
-            if (use_elim) {
-                if (!eliminateVar(v)) {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
-    bool asymmVar(Var v) {
-        assert(trail.decisionLevel() == 0);
-
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(v);
-        for (const Clause* clause : occurences) {
-            if (!trail.satisfies(*clause)) {
-                trail.newDecisionLevel();
-                Lit l = lit_Undef;
-                for (Lit lit : *clause) {
-                    if (var(lit) != v && !trail.defines(lit)) {
-                        trail.decide(~lit);
-                    } else {
-                        l = lit;
-                    }
-                }
-                bool asymm = propagator.propagate() != nullptr;
-                trail.backtrack(0);
-                assert(l != lit_Undef);
-                if (asymm) { // strengthen:
-                    nStrengthened++;
-
-                    if (clause->size() > 2) {
-                        propagator.detachClause(clause);
-                    }
-                     
-                    Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
-                    if (new_clause->size() > 2) {
-                        propagator.attachClause(new_clause);
-                    }
-                    else if (new_clause->size() == 1) {
-                        return trail.fact(new_clause->first()) && propagator.propagate() == nullptr;
-                    } 
-                    else if (new_clause->size() == 0) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    bool eliminateVar(Var v) {
-        assert(!isEliminated(v));
-
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(v);
-        std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
-        for (Clause* cl : occurences) {
-            if (cl->contains(mkLit(v, false))) {
-                pos.push_back(cl);
-            } else {
-                assert(cl->contains(mkLit(v, true)));
-                neg.push_back(cl);
-            }
-        }
-        
-        // increase in number of clauses must stay within the allowed ('grow') and no clause must exceed the limit on the maximal clause size:
-        size_t cnt = 0;
-        for (Clause* pc : pos) for (Clause* nc : neg) {
-            size_t clause_size = 0;
-            if (merge(*pc, *nc, v, clause_size) && (++cnt > occurences.size() + grow_value || (clause_lim > 0 && clause_size > clause_lim))) {
-                return true;
-            } 
-        }
-        
-        if (pos.size() > neg.size()) {
-            for (Clause* c : neg) mkElimClause(elimclauses, v, *c);
-            mkElimClause(elimclauses, mkLit(v));
-        } else {
-            for (Clause* c : pos) mkElimClause(elimclauses, v, *c);
-            mkElimClause(elimclauses, ~mkLit(v));
-        } 
-
-        setEliminated(v);
-        nEliminated++;
-        
-        std::vector<Lit> resolvent;
-        for (Clause* pc : pos) for (Clause* nc : neg) {
-            if (merge(*pc, *nc, v, resolvent)) {
-                uint16_t lbd = std::min(pc->getLBD(), nc->getLBD());
-                Clause* new_clause = clause_db.createClause(resolvent.begin(), resolvent.end(), std::min(lbd, (uint16_t)(resolvent.size()-1)));
-                if (new_clause->size() > 2) {
-                    propagator.attachClause(new_clause);
-                }
-                else if (new_clause->size() == 1) {
-                    return trail.fact(new_clause->first()) && propagator.propagate() == nullptr;
-                }
-            }
-        }
-
-        for (const Clause* c : occurences) {
-            if (c->size() > 2) {
-                propagator.detachClause(c);
-            }
-            clause_db.removeClause((Clause*)c);
         }
 
         return true;
@@ -252,10 +141,76 @@ public:
     }
 
 private:
+
+    bool eliminate(Var variable) {
+        assert(!isEliminated(variable));
+        if (trail.defines(mkLit(variable, false))) return true;
+
+        const std::vector<Clause*> occurences = clause_db.copyOccurences(variable);
+        std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
+        for (Clause* cl : occurences) {
+            if (cl->contains(mkLit(variable, false))) {
+                pos.push_back(cl);
+            } else {
+                assert(cl->contains(mkLit(variable, true)));
+                neg.push_back(cl);
+            }
+        }
+        
+        // increase in number of clauses must stay within the allowed ('grow') and no clause must exceed the limit on the maximal clause size:
+        size_t cnt = 0;
+        for (Clause* pc : pos) for (Clause* nc : neg) {
+            size_t clause_size = 0;
+            if (merge(*pc, *nc, variable, clause_size) && (++cnt > occurences.size() + grow_value || (clause_lim > 0 && clause_size > clause_lim))) {
+                return true;
+            } 
+        }
+        
+        if (pos.size() > neg.size()) {
+            for (Clause* c : neg) mkElimClause(elimclauses, variable, *c);
+            mkElimClause(elimclauses, mkLit(variable));
+        } else {
+            for (Clause* c : pos) mkElimClause(elimclauses, variable, *c);
+            mkElimClause(elimclauses, ~mkLit(variable));
+        } 
+
+        eliminated[variable] = true;
+        nEliminated++;
+        
+        std::vector<Lit> resolvent;
+        for (Clause* pc : pos) for (Clause* nc : neg) {
+            if (merge(*pc, *nc, variable, resolvent)) {
+                uint16_t lbd = std::min({ pc->getLBD(), nc->getLBD(), (uint16_t)(resolvent.size()-1) });
+                Clause* new_clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
+                if (new_clause->size() > 2) {
+                    propagator.attachClause(new_clause);
+                }
+                else if (new_clause->size() == 1) {
+                    if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
+                        return false;
+                    }
+                }
+                else if (new_clause->size() == 0) {
+                    return false;
+                }
+            }
+        }
+
+        for (const Clause* c : occurences) {
+            if (c->size() > 2) {
+                propagator.detachClause(c);
+            }
+            clause_db.removeClause((Clause*)c);
+        }
+
+        return true;
+    }
+
     void mkElimClause(std::vector<uint32_t>& elimclauses, Lit x) {
         elimclauses.push_back(toInt(x));
         elimclauses.push_back(1);
     }
+
     void mkElimClause(std::vector<uint32_t>& elimclauses, Var v, const Clause& c) { 
         assert(c.contains(v));
         uint32_t first = elimclauses.size();

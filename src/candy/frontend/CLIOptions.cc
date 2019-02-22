@@ -64,7 +64,6 @@ namespace SolverOptions {
     BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
-    IntOption opt_unitresolution("MEMORY LAYOUT", "unitresolution", "execute unitresolution with persistent clauses during search every n-th restart", 1);
 }
 
 namespace VariableEliminationOptions {

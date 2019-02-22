@@ -40,25 +40,18 @@ TEST (CandyAddClauseTestPatterns, materialUnitClauses) {
   ASSERT_EQ(solver->getStatistics().nClauses(), 1ul);
 }
 
-TEST (CandyAddClauseTestPatterns, materialUnitClauses2) {
+TEST (CandyAddClauseTestPatterns, materialUnitClausesAndNoEagerUnitPropagation) {
   CNFProblem formula({{1_L}, {1_L, 2_L}});
   CandySolverInterface* solver = createSolver();
   solver->init(formula); 
   ASSERT_EQ(solver->getStatistics().nClauses(), 2ul);
 }
 
-TEST (CandyAddClauseTestPatterns, materialUnitClauses3) {
+TEST (CandyAddClauseTestPatterns, materialUnitClausesAndNoEagerUnitPropagation2) {
   CNFProblem formula({{~1_L}, {1_L, 2_L}});
   CandySolverInterface* solver = createSolver();
   solver->init(formula); 
-  ASSERT_EQ(solver->getStatistics().nClauses(), 3ul);
-}
-
-TEST (CandyAddClauseTestPatterns, lazyDeletionOfStrengthenedClauses) {
-  CNFProblem formula({{~1_L}, {1_L, 2_L, 3_L}});
-  CandySolverInterface* solver = createSolver();
-  solver->init(formula); 
-  ASSERT_EQ(solver->getStatistics().nClauses(), 3ul);
+  ASSERT_EQ(solver->getStatistics().nClauses(), 2ul);
 }
 
 TEST(SolverTests, basicIncrementalSolver) {

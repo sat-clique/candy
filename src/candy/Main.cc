@@ -211,8 +211,7 @@ int main(int argc, char** argv) {
     else {
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
-            ClauseDatabaseOptions::opt_recalculate_lbd = false; 
-            SolverOptions::opt_unitresolution = (count == 0);
+            ClauseDatabaseOptions::opt_recalculate_lbd = false;
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
@@ -242,7 +241,7 @@ int main(int argc, char** argv) {
 
             while (solvers.size() <= count) { 
                 // wait till solver is initialized
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(5000));
             }
         }
 

@@ -61,6 +61,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/branching/VSIDS.h"
 #include "candy/core/simplification/Subsumption.h"
 #include "candy/core/simplification/VariableElimination.h"
+#include "candy/core/simplification/AsymmetricVariableReduction.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
 
@@ -84,57 +85,7 @@ public:
     Solver();
     ~Solver();
 
-    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override {
-        assert(trail.decisionLevel() == 0);
-
-        if (problem.nVars() > statistics.nVars()) {
-            clause_db.grow(problem.nVars());
-            propagator.init(problem.nVars());
-            trail.grow(problem.nVars());
-            conflict_analysis.grow(problem.nVars());
-            branch.grow(problem.nVars());
-            elimination.grow(problem.nVars());
-            freezes.grow(problem.nVars());
-        }
-
-        branch.init(problem);
-
-        if (allocator == nullptr) {
-            std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
-            for (Cl* import : problem) {
-                Clause* clause = clause_db.createClause(import->begin(), import->end());
-                if (clause->size() > 2) {
-                    propagator.attachClause(clause);
-                } 
-                else if (clause->size() == 0) {
-                    this->ok = false;
-                    return;
-                }
-            }
-        } 
-        else {
-            std::cout << "c importing clauses from global allocator" << std::endl;
-            clause_db.setGlobalClauseAllocator(allocator);
-            for (Clause* clause : clause_db) {
-                if (clause->size() > 2) {
-                    propagator.attachClause(clause);
-                } 
-                else if (clause->size() == 0) {
-                    this->ok = false;
-                    return;
-                }
-            }
-        }
-
-        trail.reset();
-        propagateAndMaterializeUnitClauses();
-        if (isInConflictingState()) {
-            clause_db.emptyClause();
-        }
-        else {
-            unit_resolution();
-        }
-    }
+    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override;
 
     ClauseAllocator* setupGlobalAllocator() override {
         return clause_db.createGlobalClauseAllocator();
@@ -160,20 +111,14 @@ public:
         return &branch;
     }
 
-    void setFrozen(Var v, bool freeze) override  {
-        if (freeze) {
-            freezes.set(v);
-        } else {
-            freezes.unset(v);
-        }
-    }
-
     lbool solve() override;
 
     void setAssumptions(const std::vector<Lit>& assumptions) override {
         this->assumptions.clear();
         this->assumptions.insert(this->assumptions.end(), assumptions.begin(), assumptions.end());
-        for (Lit lit : assumptions) setFrozen(var(lit), true);
+        for (Lit lit : assumptions) {
+            elimination.lock(var(lit));
+        }
     }
 
     //TODO: use std::function<int(void*)> as type here
@@ -199,6 +144,7 @@ protected:
 
     Subsumption<TPropagate> subsumption;
     VariableElimination<TPropagate> elimination;
+    AsymmetricVariableReduction<TPropagate> reduction;
 
     Statistics statistics;
     Logging logging;
@@ -212,9 +158,6 @@ protected:
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
 
-    // memory organization
-    bool sort_watches;
-
     bool ok; // If FALSE, the constraints are already unsatisfiable. No part of the solver state may be used!
 
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
@@ -222,8 +165,6 @@ protected:
 
     unsigned int lastRestartWithInprocessing;
     unsigned int inprocessingFrequency;
-    unsigned int lastRestartWithUnitResolution;
-    unsigned int unitResolutionFrequency;
 
     // Interruption callback
     void* termCallbackState;
@@ -237,12 +178,6 @@ protected:
     lbool search(); 
 
 private:
-    template<typename Iterator>
-    bool addClause(Iterator begin, Iterator end);
-
-    void unit_resolution(); // delete satisfied clauses and eliminate false literals
-    void eliminate(); // Perform variable elimination based simplification. 
-
     // true means solver is in a conflicting state
     bool isInConflictingState() const {
         return !ok;
@@ -283,6 +218,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // simplification
     subsumption(clause_db, trail, propagator),
     elimination(clause_db, trail, propagator), 
+    reduction(clause_db, trail, propagator), 
     // stats
     statistics(*this), 
     logging(*this),
@@ -293,15 +229,12 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // reduce db heuristic control
     curRestart(0), nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
     incReduceDB(ClauseDatabaseOptions::opt_inc_reduce_db),
-    // memory reorganization
-    sort_watches(SolverOptions::opt_sort_watches),
     // conflict state
     ok(true),
     // pre- and inprocessing
     preprocessing_enabled(SolverOptions::opt_preprocessing),
     freezes(),
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
-    lastRestartWithUnitResolution(0), unitResolutionFrequency(SolverOptions::opt_unitresolution), 
     // interruption callback
     termCallbackState(nullptr), termCallback([](void*) -> int { return 0; }),
     // learnt callback ipasir
@@ -313,93 +246,49 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::unit_resolution() {
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator ) {
     assert(trail.decisionLevel() == 0);
-    assert(propagator.propagate() == nullptr);
 
-    bool satisfied = false;
-    std::vector<Lit> literals;
+    if (problem.nVars() > statistics.nVars()) {
+        clause_db.grow(problem.nVars());
+        propagator.init(problem.nVars());
+        trail.grow(problem.nVars());
+        conflict_analysis.grow(problem.nVars());
+        branch.grow(problem.nVars());
+        elimination.grow(problem.nVars());
+        reduction.grow(problem.nVars());
+    }
 
-    for (size_t i = 0, size = clause_db.size(); i < size; i++) { // use index instead of iterator, as new clauses are created here
-        const Clause* clause = clause_db[i];
+    branch.init(problem);
 
-        if (clause->isDeleted()) continue;
-
-        satisfied = false;
-        literals.clear();
-
-        for (Lit lit : *clause) {
-            lbool value = trail.value(lit);
-            if (value != l_False) {
-                satisfied |= (value == l_True);
-                literals.push_back(lit);
-            }
-        }
-
-        if (satisfied) {
-            if (literals.size() > 1) {
-                if (clause->size() > 2) {
-                    propagator.detachClause(clause);
-                }
-                clause_db.removeClause((Clause*)clause);
-            }
-        }
-        else if (literals.size() < clause->size()) {
-            if (literals.size() == 0) {
-                ok = false; 
+    if (allocator == nullptr) {
+        std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
+        for (Cl* import : problem) {
+            Clause* clause = clause_db.createClause(import->begin(), import->end());
+            if (clause->size() > 2) {
+                propagator.attachClause(clause);
+            } 
+            else if (clause->size() == 0) {
+                this->ok = false;
                 return;
             }
-            Clause* new_clause = clause_db.createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)(literals.size()-1)));
-            if (new_clause->size() == 1) {
-                trail.fact(new_clause->first());
-            }
-            else if (new_clause->size() > 2) {
-                propagator.attachClause(new_clause);
-            }
+        }
+    } 
+    else {
+        std::cout << "c importing clauses from global allocator" << std::endl;
+        clause_db.setGlobalClauseAllocator(allocator);
+        for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
-                propagator.detachClause(clause);
+                propagator.attachClause(clause);
+            } 
+            else if (clause->size() == 0) {
+                this->ok = false;
+                return;
             }
-            clause_db.removeClause((Clause*)clause);
         }
     }
 }
 
-template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::eliminate() {
-    for (unsigned int v = 0; v < statistics.nVars(); v++) {
-        elimination.lock(v);
-    }
-
-    clause_db.initOccurrenceTracking();
-
-    unsigned int num = 0;
-    unsigned int prev = 0;
-    do {
-        prev = num;
-
-        ok &= subsumption.subsume();
-        if (isInConflictingState()) break;
-
-        ok &= elimination.eliminate();
-        if (isInConflictingState()) break;
-        
-        num = subsumption.nStrengthened + subsumption.nSubsumed + subsumption.nDuplicates + elimination.nEliminated + elimination.nStrengthened;
-    } while (num > prev);
-
-    if (inprocessingFrequency > 0 && prev == 0) {
-        inprocessingFrequency++;
-    }
-
-    for (unsigned int v = 0; v < statistics.nVars(); v++) {
-        if (elimination.isEliminated(v)) {
-            branch.setDecisionVar(v, false);
-        }
-    }
-
-    branch.reset(); // former rebuildOrderHeap
-
-    clause_db.stopOccurrenceTracking();
-}
 
 /**************************************************************************************************
  *
@@ -457,58 +346,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             logging.logLearntClause(clause);
         }
         else {
-            if (restart.trigger_restart()) {                
-                branch.reset();       
-                trail.reset();         
-                                
-                // Perform clause database reduction and simplifications
-                if (statistics.nConflicts() >= (curRestart * nbclausesbeforereduce)) {
-                    curRestart = (statistics.nConflicts() / nbclausesbeforereduce) + 1;
-                    nbclausesbeforereduce += incReduceDB;
-
-                    if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart) {
-                        lastRestartWithInprocessing = curRestart;
-                        propagateAndMaterializeUnitClauses();
-                        eliminate();
-                        if (isInConflictingState()) {
-                            std::cout << "c Conflict found during inprocessing" << std::endl;
-                            return l_False;
-                        }
-                        trail.reset();
-                    }
-                    else if (unitResolutionFrequency > 0 && lastRestartWithUnitResolution + unitResolutionFrequency <= curRestart) {
-                        lastRestartWithUnitResolution = curRestart;
-                        propagateAndMaterializeUnitClauses();
-                        unit_resolution();
-                        if (isInConflictingState()) {
-                            std::cout << "c Conflict found during unit-resolution" << std::endl;
-                            return l_False;
-                        }
-                        trail.reset();
-                    }
-                    
-                    propagator.clear();
-                    clause_db.reduce();
-                    clause_db.reorganize();
-
-                    for (Clause* clause : clause_db) {
-                        if (clause->size() > 2) {
-                            propagator.attachClause(clause);
-                        } 
-                    }
-
-                    if (sort_watches) {
-                        propagator.sortWatchers();
-                    }
-                }
-
-                // multi-threaded unit-clauses fast-track
-                propagateAndMaterializeUnitClauses();
-                if (isInConflictingState()) {
-                    std::cout << "c Conflict found with unit-clauses from other threads" << std::endl;
-                    return l_False;
-                }
-                
+            if (restart.trigger_restart()) {
                 return l_Undef;
             }
             
@@ -553,15 +391,77 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     result.clear();
 
-    if (!isInConflictingState() && this->preprocessing_enabled) {
-        statistics.runtimeStart("Preprocessing");
-        eliminate();
-        statistics.runtimeStop("Preprocessing");
-    }
+    bool preprocessing = this->preprocessing_enabled;
 
     lbool status = isInConflictingState() ? l_False : l_Undef;
+
     while (status == l_Undef && termCallback(termCallbackState) == 0) {
-        status = search();
+        trail.reset();
+        branch.reset();
+
+        if (preprocessing || (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart)) {
+            lastRestartWithInprocessing = curRestart;
+            preprocessing = false; 
+            // Perfrom pre- and inprocessing
+            clause_db.initOccurrenceTracking();
+
+            propagateAndMaterializeUnitClauses();
+
+            if (!isInConflictingState()) {
+                ok &= subsumption.subsume();
+                if (subsumption.nTouched() > 0) {
+                    // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+                    clause_db.reorganize(); 
+                    propagator.reset();
+                }
+            }
+
+            if (!isInConflictingState()) {
+                ok &= reduction.reduce();
+                if (reduction.nTouched() > 0) {
+                    // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+                    clause_db.reorganize();
+                    propagator.reset();
+                }
+            }
+
+            if (!isInConflictingState()) {
+                ok &= elimination.eliminate();
+                if (elimination.nTouched() > 0) {
+                    // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+                    clause_db.reorganize();
+                    propagator.reset();
+                    for (unsigned int v = 0; v < statistics.nVars(); v++) {
+                        if (elimination.isEliminated(v)) {
+                            branch.setDecisionVar(v, false);
+                        }
+                    }
+                    branch.reset();
+                }
+            }
+
+            clause_db.stopOccurrenceTracking();
+        }
+        else if (statistics.nConflicts() >= (curRestart * nbclausesbeforereduce)) {
+            curRestart = (statistics.nConflicts() / nbclausesbeforereduce) + 1;
+            nbclausesbeforereduce += incReduceDB;
+            // Perform clause database reduction            
+            clause_db.reduce();
+            clause_db.reorganize();
+            propagator.reset();
+        }
+
+        // multi-threaded unit-clauses fast-track
+        trail.reset();
+        propagateAndMaterializeUnitClauses();
+
+        if (isInConflictingState()) {
+            clause_db.emptyClause();
+            status = l_False;
+        } 
+        else {
+            status = search();
+        }
     }
     
     result.setStatus(status);
