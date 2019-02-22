@@ -78,6 +78,7 @@ public:
             std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->memory_lock.lock();
             global_allocator->memory.import_without_duplicates(this->memory, global_database_size_bound);
+            // global_allocator->memory.import(this->memory, global_database_size_bound);
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }

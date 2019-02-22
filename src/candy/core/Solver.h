@@ -204,6 +204,46 @@ private:
         }
     }
 
+    unsigned int processClauseDatabase() {            
+        if (!isInConflictingState()) {
+            ok &= subsumption.subsume();
+            if (subsumption.nTouched() > 0) {
+                std::cout << "Subsumption " << subsumption.nTouched() << std::endl;
+                // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+                clause_db.reorganize(); 
+                propagator.reset();
+            }
+        }
+
+        if (!isInConflictingState()) {
+            ok &= reduction.reduce();
+            if (reduction.nTouched() > 0) {
+                std::cout << "Reduction " << reduction.nTouched() << std::endl;
+                // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+                clause_db.reorganize();
+                propagator.reset();
+            }
+        }
+
+        if (!isInConflictingState()) {
+            ok &= elimination.eliminate();
+            if (elimination.nTouched() > 0) {
+                std::cout << "Elimination " << elimination.nTouched() << std::endl;
+                // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+                clause_db.reorganize();
+                propagator.reset();
+                for (unsigned int v = 0; v < statistics.nVars(); v++) {
+                    if (elimination.isEliminated(v)) {
+                        branch.setDecisionVar(v, false);
+                    }
+                }
+                branch.reset();
+            }
+        }
+
+        return subsumption.nTouched() + reduction.nTouched() + elimination.nTouched();
+    }
+
 };
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -404,55 +444,30 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
             preprocessing = false; 
             // Perfrom pre- and inprocessing
             clause_db.initOccurrenceTracking();
-
             propagateAndMaterializeUnitClauses();
 
-            if (!isInConflictingState()) {
-                ok &= subsumption.subsume();
-                if (subsumption.nTouched() > 0) {
-                    // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-                    clause_db.reorganize(); 
-                    propagator.reset();
-                }
-            }
+            unsigned int max = 0;
+            unsigned int nTouched = 0;
+            do {
+                max = std::max(max, nTouched);
+                nTouched = processClauseDatabase();
+                if (isInConflictingState()) break;
+            } 
+            while (nTouched > 10 && nTouched > max / 10);
 
-            if (!isInConflictingState()) {
-                ok &= reduction.reduce();
-                if (reduction.nTouched() > 0) {
-                    // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-                    clause_db.reorganize();
-                    propagator.reset();
-                }
-            }
-
-            if (!isInConflictingState()) {
-                ok &= elimination.eliminate();
-                if (elimination.nTouched() > 0) {
-                    // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-                    clause_db.reorganize();
-                    propagator.reset();
-                    for (unsigned int v = 0; v < statistics.nVars(); v++) {
-                        if (elimination.isEliminated(v)) {
-                            branch.setDecisionVar(v, false);
-                        }
-                    }
-                    branch.reset();
-                }
-            }
-
+            trail.reset();
             clause_db.stopOccurrenceTracking();
         }
         else if (statistics.nConflicts() >= (curRestart * nbclausesbeforereduce)) {
             curRestart = (statistics.nConflicts() / nbclausesbeforereduce) + 1;
             nbclausesbeforereduce += incReduceDB;
-            // Perform clause database reduction            
+            // Perform clause database reduction 
             clause_db.reduce();
             clause_db.reorganize();
             propagator.reset();
         }
 
         // multi-threaded unit-clauses fast-track
-        trail.reset();
         propagateAndMaterializeUnitClauses();
 
         if (isInConflictingState()) {
