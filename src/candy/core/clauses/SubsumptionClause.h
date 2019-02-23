@@ -29,9 +29,17 @@ private:
     const Clause* clause;
     uint64_t abstraction;
 
+    inline uint64_t calc_abstraction(const Clause* clause) const {
+        uint64_t abstraction = 0;
+        for (Lit lit : *clause) {
+            abstraction |= 1ull << (var(lit) % 64);
+        }
+        return abstraction;
+    }
+
 public:
     SubsumptionClause(const Clause* clause_) : clause(clause_) {
-        abstraction = clause->calc_abstraction();
+        abstraction = calc_abstraction(clause_);
     }
 
     ~SubsumptionClause() { }

@@ -50,25 +50,25 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-template <class TPropagate> 
 class Subsumption { 
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
-    TPropagate& propagator;
 
     std::vector<SubsumptionClause> list;
 
     void initialize();
     void unique();
 
+    inline bool subsume(SubsumptionClause clause);
+
 public:   
     unsigned int nDuplicates;
     unsigned int nSubsumed;
     unsigned int nStrengthened;      
 
-    Subsumption(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
-        clause_db(clause_db_), trail(trail_), propagator(propagator_),
+    Subsumption(ClauseDatabase& clause_db_, Trail& trail_) : 
+        clause_db(clause_db_), trail(trail_), 
         list(),
         nDuplicates(0), nSubsumed(0), nStrengthened(0)
     { }
@@ -81,8 +81,7 @@ public:
     
 }; 
 
-template <class TPropagate> 
-void Subsumption<TPropagate>::initialize() {
+void Subsumption::initialize() {
     list.clear();  
 
     nDuplicates = 0;
@@ -100,8 +99,7 @@ void Subsumption<TPropagate>::initialize() {
     });
 }
 
-template <class TPropagate> 
-void Subsumption<TPropagate>::unique() { // remove duplicates
+void Subsumption::unique() { // remove duplicates
     for (auto it1 = list.begin(); it1 != list.end(); it1++) {
         if (it1->get_clause()->isDeleted()) {
             continue;
@@ -123,60 +121,52 @@ void Subsumption<TPropagate>::unique() { // remove duplicates
     }
 }
 
-template <class TPropagate> 
-bool Subsumption<TPropagate>::subsume() {
+bool Subsumption::subsume() {
     assert(trail.decisionLevel() == 0);
 
     initialize();
     unique();
     
     for (SubsumptionClause clause : list) {
-        if (clause.get_clause()->isDeleted()) {
-            continue;
-        }
-        
-        // Find best variable to scan:
-        Var best = var(*std::min_element(clause.begin(), clause.end(), [this] (Lit l1, Lit l2) {
-            return clause_db.numOccurences(var(l1)) < clause_db.numOccurences(var(l2));
-        }));
-
-        // Search all candidates:
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
-        for (const Clause* occurence : occurences) {
-            if (occurence == clause.get_clause() || occurence->isDeleted()) {
-                continue;
+        if (!clause.get_clause()->isDeleted()) {
+            if (!subsume(clause)) {
+                return false;
             }
+        }
+    }
+    
+    return true;
+}
 
+bool Subsumption::subsume(SubsumptionClause clause) {
+    // Find best variable to scan:
+    Var best = var(*std::min_element(clause.begin(), clause.end(), [this] (Lit l1, Lit l2) {
+        return clause_db.numOccurences(var(l1)) < clause_db.numOccurences(var(l2));
+    }));
+
+    // Search all candidates:
+    const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
+    for (const Clause* occurence : occurences) {
+        if (occurence != clause.get_clause() && !occurence->isDeleted()) {
             Lit l = clause.subsumes(occurence);
 
-            if (l == lit_Error) {
-                continue;
-            }
-
-            if (l == lit_Undef) { // remove:
+            if (l == lit_Undef) {
                 nSubsumed++;
                 if (clause.get_clause()->isLearnt() && !occurence->isLearnt()) {
                     clause_db.persistClause(clause.get_clause());
                 }
                 clause_db.removeClause((Clause*)occurence);
             }
-            else { // strengthen:
+            else if (l != lit_Error) {
                 nStrengthened++;                
                 Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
                 if (new_clause->size() == 0) {
                     return false;
                 }
-                else if (new_clause->size() == 1) {
-                    if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
-                        return false; 
-                    }
-                } 
             }
         }
     }
 
-    propagator.reset();
-    
     return true;
 }
 

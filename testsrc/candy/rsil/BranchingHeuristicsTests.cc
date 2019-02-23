@@ -374,43 +374,6 @@ namespace Candy {
         }
     }
     
-    // TEST(RSILVanishingBranchingHeuristicsTests, activityMatchesExpectedDistribution) {
-    //     ClauseDatabase clause_db;
-    //     Trail trail(5);
-
-    //     std::unique_ptr<Conjectures> testData (new Conjectures());
-
-    //     const unsigned long long halfLife = 1000ull;
-    //     const int stages = 20;
-
-    //     testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
-
-    //     TestedRSILVanishingBranchingHeuristic underTest { clause_db, trail };
-    //     underTest.init(std::move(testData), false, halfLife);
-
-    //     trail.newDecisionLevel();
-    //     trail.decide(1_L);
-    //     trail.decide(~2_L);
-    //     underTest.grow(5);
-        
-    //     std::unordered_map<uint8_t, double> distribution;
-    //     std::unordered_map<uint8_t, double> referenceDistribution;
-        
-    //     for (int stage = 0; stage < stages; ++stage) {
-    //         uint32_t definedResultCounter = 0;
-    //         for (auto i = decltype(halfLife){0}; i < halfLife; ++i) {
-    //             Lit result = underTest.getAdvice();
-    //             definedResultCounter += (result == lit_Undef) ? 0 : 1;
-    //         }
-    //         distribution[stage] = static_cast<double>(definedResultCounter) / static_cast<double>(halfLife);
-    //         referenceDistribution[stage] = 1.0f/static_cast<double>(1 << stage);
-    //     }
-        
-    //     // simple Kolomogorov-Smirnov test
-    //     double maxAbsDiff = getMaxAbsDifference(distribution, referenceDistribution);
-    //     EXPECT_LE(maxAbsDiff, 0.05f);
-    // }
-    
     TEST(RSILBudgetBranchingHeuristicsTests, producesUndefWhenBudgetIsDepleted) {
         ClauseDatabase clause_db;
         Trail trail(5);

@@ -120,6 +120,21 @@ public:
         track_literal_occurrence = false;
     }
 
+    inline size_t numOccurences(Var v) {
+        assert(track_literal_occurrence);
+        return variableOccurrences[v].size();
+    }
+
+    inline std::vector<Clause*> copyOccurences(Var v) {
+        assert(track_literal_occurrence);
+        return std::vector<Clause*>(variableOccurrences[v].begin(), variableOccurrences[v].end());
+    }
+
+    inline std::vector<Clause*>& refOccurences(Var v) {
+        assert(track_literal_occurrence);
+        return variableOccurrences[v];
+    }
+
     void initBinaryWatchers() {
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
             watcher.clear();
@@ -243,14 +258,6 @@ public:
         Clause* new_clause = createClause(clause->begin(), clause->end(), 0);
         removeClause(clause);
         return new_clause;
-    }
-
-    inline size_t numOccurences(Var v) {
-        return variableOccurrences[v].size();
-    }
-
-    inline std::vector<Clause*> copyOccurences(Var v) {
-        return std::vector<Clause*>(variableOccurrences[v].begin(), variableOccurrences[v].end());
     }
 
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
