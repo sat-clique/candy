@@ -49,36 +49,34 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/utils/Options.h"
 
 namespace Candy {
-  
-template <class TPropagate> 
+
 class VariableElimination {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
-    TPropagate& propagator;
 
-    std::vector<char> frozen;
     std::vector<uint32_t> elimclauses;
     std::vector<char> eliminated;
+    std::vector<char> frozen;
+
+    std::vector<Lit> resolvent;
 
     const bool active;          // Perform variable elimination.
 
-    const uint_fast8_t clause_lim;     // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
-    const uint_fast8_t grow_value;     // Allow a variable elimination step to grow by a number of clauses (default to zero).
+    const unsigned int clause_lim;     // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
 
 public:
     unsigned int nEliminated;
 
-    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
+    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_) : 
         clause_db(clause_db_),
         trail(trail_),
-        propagator(propagator_),
-        frozen(),
         elimclauses(), 
         eliminated(),
+        frozen(),
+        resolvent(),
         active(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
-        grow_value(VariableEliminationOptions::opt_grow),
         nEliminated(0)
     { }
 
@@ -118,8 +116,19 @@ public:
         });
 
         for (Var variable : variables) {
-            if (!eliminate(variable)) {
-                return false;
+            if (!trail.defines(mkLit(variable))) {
+                std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
+                for (Clause* cl : clause_db.refOccurences(variable)) {
+                    if (cl->contains(mkLit(variable))) {
+                        pos.push_back(cl);
+                    } else {
+                        neg.push_back(cl);
+                    }
+                }
+
+                if (!eliminate(variable, pos, neg)) { 
+                    return false;
+                }
             }
         }
 
@@ -142,26 +151,16 @@ public:
 
 private:
 
-    bool eliminate(Var variable) {
+    bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
         assert(!isEliminated(variable));
-        if (trail.defines(mkLit(variable, false))) return true;
-
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(variable);
-        std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
-        for (Clause* cl : occurences) {
-            if (cl->contains(mkLit(variable, false))) {
-                pos.push_back(cl);
-            } else {
-                assert(cl->contains(mkLit(variable, true)));
-                neg.push_back(cl);
-            }
-        }
         
-        // increase in number of clauses must stay within the allowed ('grow') and no clause must exceed the limit on the maximal clause size:
-        size_t cnt = 0;
+        size_t nResolvents = 0;
         for (Clause* pc : pos) for (Clause* nc : neg) {
             size_t clause_size = 0;
-            if (merge(*pc, *nc, variable, clause_size) && (++cnt > occurences.size() + grow_value || (clause_lim > 0 && clause_size > clause_lim))) {
+            if (!merge(*pc, *nc, variable, clause_size)) {
+                continue; // resolvent is tautology
+            }
+            if (++nResolvents > pos.size() + neg.size() || (clause_lim > 0 && clause_size > clause_lim)) {
                 return true;
             } 
         }
@@ -173,35 +172,22 @@ private:
             for (Clause* c : pos) mkElimClause(elimclauses, variable, *c);
             mkElimClause(elimclauses, ~mkLit(variable));
         } 
-
-        eliminated[variable] = true;
-        nEliminated++;
         
-        std::vector<Lit> resolvent;
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, variable, resolvent)) {
                 uint16_t lbd = std::min({ pc->getLBD(), nc->getLBD(), (uint16_t)(resolvent.size()-1) });
                 Clause* new_clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
-                if (new_clause->size() > 2) {
-                    propagator.attachClause(new_clause);
-                }
-                else if (new_clause->size() == 1) {
-                    if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
-                        return false;
-                    }
-                }
-                else if (new_clause->size() == 0) {
+                if (new_clause->size() == 0) {
                     return false;
                 }
             }
         }
 
-        for (const Clause* c : occurences) {
-            if (c->size() > 2) {
-                propagator.detachClause(c);
-            }
-            clause_db.removeClause((Clause*)c);
-        }
+        for (const Clause* c : pos) clause_db.removeClause((Clause*)c);
+        for (const Clause* c : neg) clause_db.removeClause((Clause*)c);
+
+        eliminated[variable] = true;
+        nEliminated++;
 
         return true;
     }

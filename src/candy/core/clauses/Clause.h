@@ -108,14 +108,6 @@ public:
         return literals[length-1];
     }
 
-    inline uint64_t calc_abstraction() const {
-        uint64_t abstraction = 0;
-        for (Lit lit : *this) {
-            abstraction |= 1ull << (var(lit) % 64);
-        }
-        return abstraction;
-    }
-
     bool contains(const Lit lit) const {
         return std::find(begin(), end(), lit) != end();
     }

@@ -215,7 +215,7 @@ int main(int argc, char** argv) {
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
-            SolverOptions::opt_inprocessing = (count % 2) * (300 + 10*count);
+            SolverOptions::opt_inprocessing = (100 + 10*count);
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
             VariableEliminationOptions::opt_use_asymm = (count > 5);
             switch (count) {

@@ -82,22 +82,8 @@ private:
             if (conflict) {
                 nStrengthened++;
                 Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
-
-                if (clause->size() > 2) {
-                    propagator.detachClause(clause);
-                }
-                if (new_clause->size() > 2) {
-                    propagator.attachClause(new_clause);
-                }
-                else {
-                    if (new_clause->size() == 0) {
-                        return false;
-                    }
-                    if (new_clause->size() == 1) {
-                        if (!trail.fact(new_clause->first()) || propagator.propagate() != nullptr) {
-                            return false;
-                        }
-                    }
+                if (new_clause->size() == 0) {
+                    return false;
                 }
             }
         }

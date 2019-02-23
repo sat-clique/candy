@@ -142,8 +142,8 @@ protected:
 
     Restart restart;
 
-    Subsumption<TPropagate> subsumption;
-    VariableElimination<TPropagate> elimination;
+    Subsumption subsumption;
+    VariableElimination elimination;
     AsymmetricVariableReduction<TPropagate> reduction;
 
     Statistics statistics;
@@ -204,31 +204,39 @@ private:
         }
     }
 
-    unsigned int processClauseDatabase() {            
+    unsigned int processClauseDatabase() {
+        assert(trail.size() == 0);
+
+        propagateAndMaterializeUnitClauses();
+
         if (!isInConflictingState()) {
             ok &= subsumption.subsume();
             if (subsumption.nTouched() > 0) {
-                std::cout << "Subsumption " << subsumption.nTouched() << std::endl;
+                std::cout << "c Subsumption " << subsumption.nTouched() << std::endl;
                 // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
                 clause_db.reorganize(); 
                 propagator.reset();
+                trail.reset();
+                propagateAndMaterializeUnitClauses();
             }
         }
 
         if (!isInConflictingState()) {
             ok &= reduction.reduce();
             if (reduction.nTouched() > 0) {
-                std::cout << "Reduction " << reduction.nTouched() << std::endl;
+                std::cout << "c Reduction " << reduction.nTouched() << std::endl;
                 // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
                 clause_db.reorganize();
                 propagator.reset();
+                trail.reset();
+                propagateAndMaterializeUnitClauses();
             }
         }
 
         if (!isInConflictingState()) {
             ok &= elimination.eliminate();
             if (elimination.nTouched() > 0) {
-                std::cout << "Elimination " << elimination.nTouched() << std::endl;
+                std::cout << "c Elimination " << elimination.nTouched() << std::endl;
                 // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
                 clause_db.reorganize();
                 propagator.reset();
@@ -240,6 +248,8 @@ private:
                 branch.reset();
             }
         }
+
+        trail.reset();
 
         return subsumption.nTouched() + reduction.nTouched() + elimination.nTouched();
     }
@@ -256,8 +266,8 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     branch(clause_db, trail),
     restart(clause_db, trail),
     // simplification
-    subsumption(clause_db, trail, propagator),
-    elimination(clause_db, trail, propagator), 
+    subsumption(clause_db, trail),
+    elimination(clause_db, trail), 
     reduction(clause_db, trail, propagator), 
     // stats
     statistics(*this), 
@@ -440,11 +450,11 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         branch.reset();
 
         if (preprocessing || (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart)) {
+            std::cout << "c Restart" << curRestart << ": Processing Clause Database" << std::endl;
             lastRestartWithInprocessing = curRestart;
             preprocessing = false; 
             // Perfrom pre- and inprocessing
             clause_db.initOccurrenceTracking();
-            propagateAndMaterializeUnitClauses();
 
             unsigned int max = 0;
             unsigned int nTouched = 0;
@@ -455,10 +465,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
             } 
             while (nTouched > 10 && nTouched > max / 10);
 
-            trail.reset();
             clause_db.stopOccurrenceTracking();
         }
         else if (statistics.nConflicts() >= (curRestart * nbclausesbeforereduce)) {
+            std::cout << "c Restart " << curRestart << ": Reducing Clause Database" << std::endl;
             curRestart = (statistics.nConflicts() / nbclausesbeforereduce) + 1;
             nbclausesbeforereduce += incReduceDB;
             // Perform clause database reduction 
