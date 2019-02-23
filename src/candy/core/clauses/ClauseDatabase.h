@@ -102,9 +102,6 @@ public:
     ~ClauseDatabase() { }
 
     void initOccurrenceTracking() {
-        if (track_literal_occurrence) {
-            stopOccurrenceTracking();
-        }
         for (Clause* clause : clauses) {
             for (Lit lit : *clause) {
                 variableOccurrences[var(lit)].push_back(clause);
@@ -166,7 +163,10 @@ public:
         allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
         initBinaryWatchers();
-        initOccurrenceTracking();
+        if (track_literal_occurrence) {
+            stopOccurrenceTracking();
+            initOccurrenceTracking();
+        }
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -310,7 +310,10 @@ public:
         allocator.reorganize();
         clauses = allocator.collect();
         initBinaryWatchers();
-        initOccurrenceTracking();
+        if (track_literal_occurrence) {
+            stopOccurrenceTracking();
+            initOccurrenceTracking();
+        }
     }
 
 };
