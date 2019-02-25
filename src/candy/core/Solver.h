@@ -321,8 +321,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
         augmented_database.grow(problem.nVars());
     }
 
-    branch.init(problem);
-
     if (allocator == nullptr) {
         std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
         for (Cl* import : problem) {
@@ -349,6 +347,8 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
             }
         }
     }
+
+    branch.init(problem);
 }
 
 

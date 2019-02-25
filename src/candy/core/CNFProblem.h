@@ -87,8 +87,6 @@ public:
 
     void printDIMACS() const;
 
-    std::vector<double> getLiteralRelativeOccurrences() const;
-
     void readDimacsFromStdin();
     void readDimacsFromFile(const char* filename);
 
