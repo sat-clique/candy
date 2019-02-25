@@ -57,6 +57,15 @@ namespace Candy {
 // NOTE! Variables are just integers. No abstraction here. They should be chosen from 0..N,
 // so that they can be used as array indices.
 
+// struct Var {
+// 	int32_t x;
+
+// 	operator int() const {
+// 		return x;
+// 	}
+// };
+// #define var_Undef Var { -1 }
+
 typedef int Var;
 #define var_Undef (-1)
 

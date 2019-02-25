@@ -19,7 +19,10 @@ add_library(core OBJECT
     branching/VSIDS.h
     branching/LRB.h
     simplification/Subsumption.h
+    simplification/SubsumptionClause.h
+    simplification/SubsumptionClauseDatabase.h
     simplification/VariableElimination.h
+    simplification/AsymmetricVariableReduction.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)

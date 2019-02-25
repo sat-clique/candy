@@ -112,10 +112,6 @@ public:
         return std::find(begin(), end(), lit) != end();
     }
 
-    bool contains(const Var v) const {
-        return std::find_if(begin(), end(), [v](Lit lit) { return var(lit) == v; }) != end();
-    }
-
     void printDIMACS() const {
         for (Lit it : *this) {
             printLiteral(it);

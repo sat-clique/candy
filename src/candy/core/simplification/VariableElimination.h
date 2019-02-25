@@ -43,8 +43,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector> 
 
-#include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/core/clauses/Clause.h"
+#include "candy/core/simplification/SubsumptionClauseDatabase.h"
+#include "candy/core/simplification/SubsumptionClause.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/Options.h"
 
@@ -52,7 +52,7 @@ namespace Candy {
 
 class VariableElimination {
 private:
-    ClauseDatabase& clause_db;
+    SubsumptionClauseDatabase& database;
     Trail& trail;
 
     std::vector<uint32_t> elimclauses;
@@ -68,8 +68,8 @@ private:
 public:
     unsigned int nEliminated;
 
-    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_) : 
-        clause_db(clause_db_),
+    VariableElimination(SubsumptionClauseDatabase& database_, Trail& trail_) : 
+        database(database_),
         trail(trail_),
         elimclauses(), 
         eliminated(),
@@ -112,17 +112,20 @@ public:
         }
 
         std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
-            return this->clause_db.numOccurences(v1) > this->clause_db.numOccurences(v2);
+            return database.numOccurences(v1) > database.numOccurences(v2);
         });
 
         for (Var variable : variables) {
             if (!trail.defines(mkLit(variable))) {
-                std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
-                for (Clause* cl : clause_db.refOccurences(variable)) {
-                    if (cl->contains(mkLit(variable))) {
-                        pos.push_back(cl);
-                    } else {
-                        neg.push_back(cl);
+                std::vector<SubsumptionClause*> pos, neg; // split the occurrences into positive and negative
+                for (SubsumptionClause* cl : database.refOccurences(variable)) {
+                    if (!cl->is_deleted()) {
+                        if (cl->contains(mkLit(variable))) {
+                            pos.push_back(cl);
+                        } else {
+                            assert(cl->contains(mkLit(variable, true)));
+                            neg.push_back(cl);
+                        }
                     }
                 }
 
@@ -151,14 +154,17 @@ public:
 
 private:
 
-    bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
+    bool eliminate(Var variable, std::vector<SubsumptionClause*> pos, std::vector<SubsumptionClause*> neg) {
         assert(!isEliminated(variable));
         
         size_t nResolvents = 0;
-        for (Clause* pc : pos) for (Clause* nc : neg) {
+        for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
             size_t clause_size = 0;
-            if (!merge(*pc, *nc, variable, clause_size)) {
+            if (!merge(*pc->get_clause(), *nc->get_clause(), variable, clause_size)) {
                 continue; // resolvent is tautology
+            }
+            if (clause_size == 0) {
+                return false; // resolved empty clause 
             }
             if (++nResolvents > pos.size() + neg.size() || (clause_lim > 0 && clause_size > clause_lim)) {
                 return true;
@@ -166,25 +172,23 @@ private:
         }
         
         if (pos.size() > neg.size()) {
-            for (Clause* c : neg) mkElimClause(elimclauses, variable, *c);
-            mkElimClause(elimclauses, mkLit(variable));
+            for (SubsumptionClause* c : neg) mkElimClause(variable, *c->get_clause());
+            mkElimClause(mkLit(variable));
         } else {
-            for (Clause* c : pos) mkElimClause(elimclauses, variable, *c);
-            mkElimClause(elimclauses, ~mkLit(variable));
+            for (SubsumptionClause* c : pos) mkElimClause(variable, *c->get_clause());
+            mkElimClause(~mkLit(variable));
         } 
         
-        for (Clause* pc : pos) for (Clause* nc : neg) {
-            if (merge(*pc, *nc, variable, resolvent)) {
-                uint16_t lbd = std::min({ pc->getLBD(), nc->getLBD(), (uint16_t)(resolvent.size()-1) });
-                Clause* new_clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
-                if (new_clause->size() == 0) {
-                    return false;
-                }
+        for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
+            if (merge(*pc->get_clause(), *nc->get_clause(), variable, resolvent)) {
+                uint16_t lbd = std::min({ pc->lbd(), nc->lbd(), (uint16_t)(resolvent.size()-1) });
+                database.create(resolvent.begin(), resolvent.end(), lbd);
+                assert(resolvent.size() > 0);
             }
         }
 
-        for (const Clause* c : pos) clause_db.removeClause((Clause*)c);
-        for (const Clause* c : neg) clause_db.removeClause((Clause*)c);
+        for (SubsumptionClause* clause : pos) database.remove(clause);
+        for (SubsumptionClause* clause : neg) database.remove(clause);
 
         eliminated[variable] = true;
         nEliminated++;
@@ -192,13 +196,13 @@ private:
         return true;
     }
 
-    void mkElimClause(std::vector<uint32_t>& elimclauses, Lit x) {
+    void mkElimClause(Lit x) {
         elimclauses.push_back(toInt(x));
         elimclauses.push_back(1);
     }
 
-    void mkElimClause(std::vector<uint32_t>& elimclauses, Var v, const Clause& c) { 
-        assert(c.contains(v));
+    void mkElimClause(Var v, const Clause& c) { 
+        assert(c.contains(mkLit(v)) || c.contains(mkLit(v, true)));
         uint32_t first = elimclauses.size();
         
         // Copy clause to elimclauses-vector
@@ -218,8 +222,8 @@ private:
 
     // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
     bool merge(const Clause& _ps, const Clause& _qs, Var v, std::vector<Lit>& out_clause) {
-        assert(_ps.contains(v));
-        assert(_qs.contains(v));
+        assert(_ps.contains(mkLit(v)));
+        assert(_qs.contains(mkLit(v, true)));
         out_clause.clear();
         
         bool ps_smallest = _ps.size() < _qs.size();
@@ -249,8 +253,8 @@ private:
 
     // Returns FALSE if clause is always satisfied.
     bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size) {
-        assert(_ps.contains(v));
-        assert(_qs.contains(v));
+        assert(_ps.contains(mkLit(v)));
+        assert(_qs.contains(mkLit(v, true)));
         
         bool ps_smallest = _ps.size() < _qs.size();
         const Clause& ps = ps_smallest ? _qs : _ps;
