@@ -101,24 +101,30 @@ void Subsumption::initialize() {
 
 void Subsumption::unique() { // remove duplicates
     for (auto it1 = list.begin(); it1 != list.end(); it1++) {
-        if (it1->get_clause()->isDeleted()) {
+        if (it1->get_clause() == nullptr || it1->get_clause()->isDeleted()) {
             continue;
         }
         for (auto it2 = it1+1; it2 != list.end() && it1->get_abstraction() == it2->get_abstraction(); it2++) {
-            if (it2->get_clause()->isDeleted()) {
+            if (it2->get_clause() == nullptr || it2->get_clause()->isDeleted()) {
                 continue;
             }
             if (it1->equals(*it2)) {
                 nDuplicates++;
                 if (it1->lbd() > it2->lbd() || (it1->lbd() == it2->lbd() && it1->get_clause() > it2->get_clause())) {
+                    // std::cout << *it2->get_clause() << " subsumes " << *it1->get_clause() << std::endl;
                     clause_db.removeClause(it1->get_clause());
+                    it1->clause = nullptr;
                 }
                 else {
+                    // std::cout << *it1->get_clause() << " subsumes " << *it2->get_clause() << std::endl;
                     clause_db.removeClause(it2->get_clause());
+                    it2->clause = nullptr;
                 }
+                break;
             }
         }
     }
+    list.erase(std::remove_if(list.begin(), list.end(), [](SubsumptionClause c) {return c.get_clause() == nullptr;}), list.end());
 }
 
 bool Subsumption::subsume() {

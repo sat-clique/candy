@@ -212,7 +212,11 @@ private:
         if (!isInConflictingState()) {
             ok &= subsumption.subsume();
             if (subsumption.nTouched() > 0) {
-                std::cout << "c Subsumption " << subsumption.nTouched() << std::endl;
+                std::cout << "c Subsumption touched " << subsumption.nTouched() << " clauses (" 
+                          << subsumption.nDuplicates << " duplicates, " 
+                          << subsumption.nSubsumed << " subsumed, " 
+                          << subsumption.nStrengthened << " strengthened)" 
+                          << std::endl;
                 // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
                 clause_db.reorganize(); 
                 propagator.reset();
