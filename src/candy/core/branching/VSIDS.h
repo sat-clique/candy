@@ -131,9 +131,27 @@ public:
         }
     }
 
+    std::vector<double> getLiteralRelativeOccurrences() const {
+        std::vector<double> literalOccurrence(decision.size()*2, 0.0);
+
+        if (literalOccurrence.size() > 0) {
+            for (Clause* c : clause_db) {
+                for (Lit lit : *c) {
+                    literalOccurrence[lit] += 1.0 / c->size();
+                }
+            }
+            double max = *std::max_element(literalOccurrence.begin(), literalOccurrence.end());
+            for (double& occ : literalOccurrence) {
+                occ = occ / max;
+            }
+        }
+        
+        return literalOccurrence;
+    }
+
     void init(const CNFProblem& problem) {
         if (SolverOptions::opt_sort_variables) {
-            std::vector<double> occ = problem.getLiteralRelativeOccurrences();
+            std::vector<double> occ = getLiteralRelativeOccurrences();
             for (size_t i = 0; i < problem.nVars(); i++) {
                 activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
                 polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];

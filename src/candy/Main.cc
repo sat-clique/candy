@@ -213,7 +213,6 @@ int main(int argc, char** argv) {
             std::cout << "c Initializing Solver " << count << std::endl;
             ClauseDatabaseOptions::opt_recalculate_lbd = false;
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
-            SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = (100 + 10*count);
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
