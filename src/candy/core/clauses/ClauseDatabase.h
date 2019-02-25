@@ -72,9 +72,6 @@ private:
     const bool keepMedianLBD;
     const bool recalculateLBD;
 
-    bool track_literal_occurrence;    
-    std::vector<std::vector<Clause*>> variableOccurrences;
-
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
     Certificate certificate;
@@ -91,8 +88,6 @@ public:
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
         keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
         recalculateLBD(ClauseDatabaseOptions::opt_recalculate_lbd), 
-        track_literal_occurrence(false),
-        variableOccurrences(),
         binaryWatchers(), 
         certificate(SolverOptions::opt_certified_file), 
         nReduced(0), nReduceCalls(0),
@@ -100,37 +95,6 @@ public:
     { }
 
     ~ClauseDatabase() { }
-
-    void initOccurrenceTracking() {
-        for (Clause* clause : clauses) {
-            for (Lit lit : *clause) {
-                variableOccurrences[var(lit)].push_back(clause);
-            }
-        }
-        track_literal_occurrence = true;
-    }
-
-    void stopOccurrenceTracking() {
-        for (auto& occ : variableOccurrences) {
-            occ.clear();
-        }
-        track_literal_occurrence = false;
-    }
-
-    inline size_t numOccurences(Var v) {
-        assert(track_literal_occurrence);
-        return variableOccurrences[v].size();
-    }
-
-    inline std::vector<Clause*> copyOccurences(Var v) {
-        assert(track_literal_occurrence);
-        return std::vector<Clause*>(variableOccurrences[v].begin(), variableOccurrences[v].end());
-    }
-
-    inline std::vector<Clause*>& refOccurences(Var v) {
-        assert(track_literal_occurrence);
-        return variableOccurrences[v];
-    }
 
     void initBinaryWatchers() {
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
@@ -163,10 +127,6 @@ public:
         allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
         initBinaryWatchers();
-        if (track_literal_occurrence) {
-            stopOccurrenceTracking();
-            initOccurrenceTracking();
-        }
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -188,8 +148,7 @@ public:
     }
 
     inline void grow(size_t nVars) {
-        if (variableOccurrences.size() < nVars) {
-            variableOccurrences.resize(nVars);
+        if (binaryWatchers.size() < 2*nVars) {
             binaryWatchers.resize(nVars*2);
         }
     }
@@ -204,17 +163,10 @@ public:
 
     template<typename Iterator>
     inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
-        // std::cout << "Creating clause " << lits;
         Clause* clause = new (allocator.allocate(std::distance(begin, end))) Clause(begin, end, lbd);
         clauses.push_back(clause);
 
         certificate.added(clause->begin(), clause->end());
-
-        if (track_literal_occurrence) {
-            for (Lit lit : *clause) {
-                variableOccurrences[var(lit)].push_back(clause);
-            }
-        }
 
         if (clause->size() == 2) {
             binaryWatchers[toInt(~clause->first())].emplace_back(clause, clause->second());
@@ -225,17 +177,9 @@ public:
     }
 
     inline void removeClause(Clause* clause) {
-        // std::cout << "Removing clause " << *clause;
         allocator.deallocate(clause);
 
         certificate.removed(clause->begin(), clause->end());
-        
-        if (track_literal_occurrence) {
-            for (Lit lit : *clause) {
-                auto& list = variableOccurrences[var(lit)];
-                list.erase(std::remove_if(list.begin(), list.end(), [clause](Clause* c){ return clause == c; }), list.end());
-            }
-        }
 
         if (clause->size() == 2) {
             std::vector<BinaryWatcher>& list0 = binaryWatchers[toInt(~clause->first())];
@@ -310,10 +254,6 @@ public:
         allocator.reorganize();
         clauses = allocator.collect();
         initBinaryWatchers();
-        if (track_literal_occurrence) {
-            stopOccurrenceTracking();
-            initOccurrenceTracking();
-        }
     }
 
 };

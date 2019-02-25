@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory.h>
 
 #include <candy/core/clauses/Clause.h>
-#include <candy/core/clauses/SubsumptionClause.h>
+#include <candy/core/simplification/SubsumptionClause.h>
 #include <candy/core/clauses/ClauseAllocator.h>
 
 namespace Candy {
@@ -217,8 +217,9 @@ public:
         }
 
         bool isDuplicate(const Clause* other) {
+            SubsumptionClause sub { other };
             for (SubsumptionClause clause : list) {
-                if (clause.equals(other)) {
+                if (clause.equals(&sub)) {
                     return true;
                 }
                 else if (clause.size() > other->size()) {

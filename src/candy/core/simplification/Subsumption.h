@@ -38,10 +38,14 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
+#ifndef SRC_CANDY_SUBSUMPTION_H_
+
 #include <unordered_map>
 #include <vector>
 
-#include "candy/core/clauses/SubsumptionClause.h"
+#include "candy/core/simplification/SubsumptionClause.h"
+#include "candy/core/simplification/SubsumptionClauseDatabase.h"
+
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 #include "candy/core/propagate/Propagate.h"
@@ -52,28 +56,41 @@ namespace Candy {
 
 class Subsumption { 
 private:
-    ClauseDatabase& clause_db;
-    Trail& trail;
+    SubsumptionClauseDatabase& database;
 
-    std::vector<SubsumptionClause> list;
-
-    void initialize();
-    void unique();
-
-    inline bool subsume(SubsumptionClause clause);
+    void unique(std::vector<SubsumptionClause*>& list);
+    bool subsume(SubsumptionClause* clause);
 
 public:   
     unsigned int nDuplicates;
     unsigned int nSubsumed;
     unsigned int nStrengthened;      
 
-    Subsumption(ClauseDatabase& clause_db_, Trail& trail_) : 
-        clause_db(clause_db_), trail(trail_), 
-        list(),
-        nDuplicates(0), nSubsumed(0), nStrengthened(0)
+    Subsumption(SubsumptionClauseDatabase& database_)
+     : database(database_), nDuplicates(0), nSubsumed(0), nStrengthened(0)
     { }
 
-    bool subsume();
+    bool subsume() {
+        nDuplicates = nSubsumed = nStrengthened = 0; 
+
+        std::vector<SubsumptionClause*> list { database.begin(), database.end() };
+
+        sort(list.begin(), list.end(), [](const SubsumptionClause* c1, const SubsumptionClause* c2) { 
+            return c1->size() < c2->size() || (c1->size() == c2->size() && c1->get_abstraction() < c2->get_abstraction()); 
+        });
+
+        unique(list);
+        
+        for (SubsumptionClause* clause : list) {
+            if (!clause->is_deleted()) {
+                if (!subsume(clause)) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    }
 
     unsigned int nTouched() {
         return nDuplicates + nSubsumed + nStrengthened; 
@@ -81,92 +98,57 @@ public:
     
 }; 
 
-void Subsumption::initialize() {
-    list.clear();  
-
-    nDuplicates = 0;
-    nSubsumed = 0;
-    nStrengthened = 0;  
-
-    for (const Clause* clause : clause_db) {
-        if (!clause->isDeleted()) {
-            list.emplace_back(clause);
-        }
-    }
-
-    sort(list.begin(), list.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
-        return c1.size() < c2.size() || (c1.size() == c2.size() && c1.get_abstraction() < c2.get_abstraction()); 
-    });
-}
-
-void Subsumption::unique() { // remove duplicates
+void Subsumption::unique(std::vector<SubsumptionClause*>& list) { // remove duplicates
     for (auto it1 = list.begin(); it1 != list.end(); it1++) {
-        if (it1->get_clause() == nullptr || it1->get_clause()->isDeleted()) {
-            continue;
-        }
-        for (auto it2 = it1+1; it2 != list.end() && it1->get_abstraction() == it2->get_abstraction(); it2++) {
-            if (it2->get_clause() == nullptr || it2->get_clause()->isDeleted()) {
-                continue;
+        SubsumptionClause* clause1 = *it1;
+        if (clause1->is_deleted()) continue;
+        for (auto it2 = it1+1; it2 != list.end(); it2++) {
+            SubsumptionClause* clause2 = *it2;
+            if (clause2->is_deleted()) continue;
+            if (clause1->get_abstraction() != clause2->get_abstraction()) {
+                break;
             }
-            if (it1->equals(*it2)) {
+            if (clause1->equals(clause2)) {
                 nDuplicates++;
-                if (it1->lbd() > it2->lbd() || (it1->lbd() == it2->lbd() && it1->get_clause() > it2->get_clause())) {
-                    // std::cout << *it2->get_clause() << " subsumes " << *it1->get_clause() << std::endl;
-                    clause_db.removeClause(it1->get_clause());
-                    it1->clause = nullptr;
+                if (clause1->lbd() > clause2->lbd() || (clause1->lbd() == clause2->lbd() && clause1->get_clause() > clause2->get_clause())) {
+                    database.remove(clause1);
+                    assert(clause1->is_deleted());
                 }
                 else {
-                    // std::cout << *it1->get_clause() << " subsumes " << *it2->get_clause() << std::endl;
-                    clause_db.removeClause(it2->get_clause());
-                    it2->clause = nullptr;
+                    database.remove(clause2);
+                    assert(clause2->is_deleted());
                 }
                 break;
             }
         }
     }
-    list.erase(std::remove_if(list.begin(), list.end(), [](SubsumptionClause c) {return c.get_clause() == nullptr;}), list.end());
 }
 
-bool Subsumption::subsume() {
-    assert(trail.decisionLevel() == 0);
-
-    initialize();
-    unique();
-    
-    for (SubsumptionClause clause : list) {
-        if (!clause.get_clause()->isDeleted()) {
-            if (!subsume(clause)) {
-                return false;
-            }
-        }
-    }
-    
-    return true;
-}
-
-bool Subsumption::subsume(SubsumptionClause clause) {
+bool Subsumption::subsume(SubsumptionClause* clause) {
     // Find best variable to scan:
-    Var best = var(*std::min_element(clause.begin(), clause.end(), [this] (Lit l1, Lit l2) {
-        return clause_db.numOccurences(var(l1)) < clause_db.numOccurences(var(l2));
+    Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
+        return database.numOccurences(var(l1)) < database.numOccurences(var(l2));
     }));
 
     // Search all candidates:
-    const std::vector<Clause*> occurences = clause_db.copyOccurences(best);
-    for (const Clause* occurence : occurences) {
-        if (occurence != clause.get_clause() && !occurence->isDeleted()) {
-            Lit l = clause.subsumes(occurence);
+    const std::vector<SubsumptionClause*> occurences = database.copyOccurences(best);
+    for (SubsumptionClause* occurence : occurences) {
+        if (occurence != clause && !occurence->is_deleted()) {
+            Lit l = clause->subsumes(occurence);
 
             if (l == lit_Undef) {
                 nSubsumed++;
-                if (clause.get_clause()->isLearnt() && !occurence->isLearnt()) {
-                    clause_db.persistClause(clause.get_clause());
+                if (clause->get_clause()->isLearnt() && !occurence->get_clause()->isLearnt()) {
+                    database.persist(clause);
                 }
-                clause_db.removeClause((Clause*)occurence);
+                database.remove(occurence);
             }
             else if (l != lit_Error) {
-                nStrengthened++;                
-                Clause* new_clause = clause_db.strengthenClause((Clause*)occurence, ~l);
-                if (new_clause->size() == 0) {
+                nStrengthened++;   
+                if (occurence->size() > 1) {
+                    database.strengthen(occurence, ~l);
+                }
+                else {
                     return false;
                 }
             }
@@ -177,3 +159,4 @@ bool Subsumption::subsume(SubsumptionClause clause) {
 }
 
 }
+#endif

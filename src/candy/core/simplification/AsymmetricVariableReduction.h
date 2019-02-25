@@ -43,8 +43,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector> 
 
-#include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/core/clauses/Clause.h"
+#include "candy/core/simplification/SubsumptionClauseDatabase.h"
+#include "candy/core/simplification/SubsumptionClause.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/Options.h"
 
@@ -53,7 +53,7 @@ namespace Candy {
 template <class TPropagate> 
 class AsymmetricVariableReduction {
 private:
-    ClauseDatabase& clause_db;
+    SubsumptionClauseDatabase& database;
     Trail& trail;
     TPropagate& propagator;
 
@@ -62,8 +62,8 @@ private:
     unsigned int nVars;
     
     bool reduce(Var variable) {
-        const std::vector<Clause*> occurences = clause_db.copyOccurences(variable);
-        for (const Clause* clause : occurences) if (!trail.satisfies(*clause)) {
+        const std::vector<SubsumptionClause*> occurences = database.copyOccurences(variable);
+        for (SubsumptionClause* clause : occurences) if (!trail.satisfies(*clause->get_clause())) {
             trail.newDecisionLevel();
 
             Lit l = lit_Undef;
@@ -81,8 +81,10 @@ private:
             
             if (conflict) {
                 nStrengthened++;
-                Clause* new_clause = clause_db.strengthenClause((Clause*)clause, l);
-                if (new_clause->size() == 0) {
+                if (clause->size() > 1) {
+                    database.strengthen(clause, l);
+                }
+                else {
                     return false;
                 }
             }
@@ -93,8 +95,8 @@ private:
 public:
     unsigned int nStrengthened;
 
-    AsymmetricVariableReduction(ClauseDatabase& clause_db_, Trail& trail_, TPropagate& propagator_) : 
-        clause_db(clause_db_),
+    AsymmetricVariableReduction(SubsumptionClauseDatabase& database_, Trail& trail_, TPropagate& propagator_) : 
+        database(database_),
         trail(trail_),
         propagator(propagator_),
         active(VariableEliminationOptions::opt_use_asymm), 

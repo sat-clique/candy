@@ -60,6 +60,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/propagate/Propagate.h"
 #include "candy/core/branching/VSIDS.h"
 #include "candy/core/simplification/Subsumption.h"
+#include "candy/core/simplification/SubsumptionClauseDatabase.h"
 #include "candy/core/simplification/VariableElimination.h"
 #include "candy/core/simplification/AsymmetricVariableReduction.h"
 #include "candy/core/clauses/ClauseDatabase.h"
@@ -142,6 +143,7 @@ protected:
 
     Restart restart;
 
+    SubsumptionClauseDatabase augmented_database;
     Subsumption subsumption;
     VariableElimination elimination;
     AsymmetricVariableReduction<TPropagate> reduction;
@@ -204,46 +206,45 @@ private:
         }
     }
 
-    unsigned int processClauseDatabase() {
+    void processClauseDatabase() {
         assert(trail.size() == 0);
 
-        propagateAndMaterializeUnitClauses();
+        augmented_database.initialize();
 
-        if (!isInConflictingState()) {
-            ok &= subsumption.subsume();
+        unsigned int max = 0;
+        unsigned int nTouched = 0;
+        do {
+            max = std::max(max, nTouched);
+
+            propagateAndMaterializeUnitClauses();
+
+            if (!isInConflictingState()) {
+                ok &= subsumption.subsume();
+            }
+
             if (subsumption.nTouched() > 0) {
-                std::cout << "c Subsumption touched " << subsumption.nTouched() << " clauses (" 
-                          << subsumption.nDuplicates << " duplicates, " 
-                          << subsumption.nSubsumed << " subsumed, " 
-                          << subsumption.nStrengthened << " strengthened)" 
-                          << std::endl;
-                // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-                clause_db.reorganize(); 
-                propagator.reset();
-                trail.reset();
-                propagateAndMaterializeUnitClauses();
+                augmented_database.cleanup();
+                std::cout << "c Subsumption touched " << subsumption.nTouched() << " clauses (" << subsumption.nDuplicates << " duplicates, " 
+                          << subsumption.nSubsumed << " subsumed, " << subsumption.nStrengthened << " strengthened)" << std::endl;
             }
-        }
 
-        if (!isInConflictingState()) {
-            ok &= reduction.reduce();
+            if (!isInConflictingState()) {
+                ok &= reduction.reduce();
+            }
+
             if (reduction.nTouched() > 0) {
+                augmented_database.cleanup();
                 std::cout << "c Reduction " << reduction.nTouched() << std::endl;
-                // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-                clause_db.reorganize();
-                propagator.reset();
-                trail.reset();
-                propagateAndMaterializeUnitClauses();
             }
-        }
 
-        if (!isInConflictingState()) {
-            ok &= elimination.eliminate();
+
+            if (!isInConflictingState()) {
+                ok &= elimination.eliminate();
+            }
+
             if (elimination.nTouched() > 0) {
+                augmented_database.cleanup();
                 std::cout << "c Elimination " << elimination.nTouched() << std::endl;
-                // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-                clause_db.reorganize();
-                propagator.reset();
                 for (unsigned int v = 0; v < statistics.nVars(); v++) {
                     if (elimination.isEliminated(v)) {
                         branch.setDecisionVar(v, false);
@@ -251,11 +252,16 @@ private:
                 }
                 branch.reset();
             }
-        }
 
-        trail.reset();
+            
+            trail.reset();
 
-        return subsumption.nTouched() + reduction.nTouched() + elimination.nTouched();
+            nTouched = subsumption.nTouched() + reduction.nTouched() + elimination.nTouched();
+            if (isInConflictingState()) break;
+        } 
+        while (nTouched > 10 && nTouched > max / 10);
+
+        augmented_database.clear();
     }
 
 };
@@ -270,9 +276,10 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     branch(clause_db, trail),
     restart(clause_db, trail),
     // simplification
-    subsumption(clause_db, trail),
-    elimination(clause_db, trail), 
-    reduction(clause_db, trail, propagator), 
+    augmented_database(clause_db),
+    subsumption(augmented_database),
+    elimination(augmented_database, trail), 
+    reduction(augmented_database, trail, propagator), 
     // stats
     statistics(*this), 
     logging(*this),
@@ -311,6 +318,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
         branch.grow(problem.nVars());
         elimination.grow(problem.nVars());
         reduction.grow(problem.nVars());
+        augmented_database.grow(problem.nVars());
     }
 
     branch.init(problem);
@@ -457,19 +465,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
             std::cout << "c Restart" << curRestart << ": Processing Clause Database" << std::endl;
             lastRestartWithInprocessing = curRestart;
             preprocessing = false; 
-            // Perfrom pre- and inprocessing
-            clause_db.initOccurrenceTracking();
-
-            unsigned int max = 0;
-            unsigned int nTouched = 0;
-            do {
-                max = std::max(max, nTouched);
-                nTouched = processClauseDatabase();
-                if (isInConflictingState()) break;
-            } 
-            while (nTouched > 10 && nTouched > max / 10);
-
-            clause_db.stopOccurrenceTracking();
+            processClauseDatabase();
+            // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+            clause_db.reorganize(); 
+            propagator.reset();
         }
         else if (statistics.nConflicts() >= (curRestart * nbclausesbeforereduce)) {
             std::cout << "c Restart " << curRestart << ": Reducing Clause Database" << std::endl;

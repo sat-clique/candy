@@ -26,6 +26,8 @@ namespace Candy {
 
 class SubsumptionClause {
 private:
+    const Clause* clause;
+    uint64_t abstraction;
 
     inline uint64_t calc_abstraction(const Clause* clause) const {
         uint64_t abstraction = 0;
@@ -36,9 +38,6 @@ private:
     }
 
 public:
-    const Clause* clause;
-    uint64_t abstraction;
-    
     SubsumptionClause(const Clause* clause_) : clause(clause_) {
         abstraction = calc_abstraction(clause_);
     }
@@ -80,23 +79,22 @@ public:
         return abstraction;
     }
 
-    inline bool equals(const Clause* other) const {
-        SubsumptionClause sub { other };
-        return this->equals(sub); 
+    inline void set_deleted() {
+        this->clause = nullptr;
     }
 
-    inline bool equals(SubsumptionClause& other) const {
-        return this->size() == other.size()
-         && this->abstraction == other.abstraction
+    inline bool is_deleted() const {
+        return this->clause == nullptr;
+    }
+
+    inline bool contains(Lit lit) const {
+        return clause->contains(lit);
+    }
+
+    inline bool equals(SubsumptionClause* other) const {
+        return this->size() == other->size()
+         && this->abstraction == other->abstraction
          && this->subsumes(other) == lit_Undef;
-    }
-
-    inline Lit subsumes(const Clause* other) const {
-        if (other->size() >= this->size()) {
-            SubsumptionClause sub { other };
-            return this->subsumes(sub); 
-        }
-        return lit_Error;
     }
 
     /**
@@ -111,11 +109,11 @@ public:
      *       lit_Undef  - Clause subsumes 'other'
      *       p          - The literal p can be deleted from 'other'
      */
-    inline Lit subsumes(SubsumptionClause& other) const {
-        if (other.size() >= this->size() && (abstraction & ~(other.abstraction)) == 0) {
+    inline Lit subsumes(SubsumptionClause* other) const {
+        if (other->size() >= this->size() && (abstraction & ~(other->abstraction)) == 0) {
             Lit ret = lit_Undef;
             for (Lit c : *this) {
-                for (Lit d : other) { // search for c or ~c
+                for (Lit d : *other) { // search for c or ~c
                     if (c == d) {
                         goto ok;
                     }
