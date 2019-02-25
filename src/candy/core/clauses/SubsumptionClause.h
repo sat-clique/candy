@@ -26,8 +26,6 @@ namespace Candy {
 
 class SubsumptionClause {
 private:
-    const Clause* clause;
-    uint64_t abstraction;
 
     inline uint64_t calc_abstraction(const Clause* clause) const {
         uint64_t abstraction = 0;
@@ -38,6 +36,9 @@ private:
     }
 
 public:
+    const Clause* clause;
+    uint64_t abstraction;
+    
     SubsumptionClause(const Clause* clause_) : clause(clause_) {
         abstraction = calc_abstraction(clause_);
     }
