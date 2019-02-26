@@ -156,7 +156,6 @@ protected:
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
 
     // reduce-db
-    unsigned int curRestart;
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
 
@@ -224,8 +223,8 @@ private:
 
             if (subsumption.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c Subsumption touched " << subsumption.nTouched() << " clauses (" << subsumption.nDuplicates << " duplicates, " 
-                          << subsumption.nSubsumed << " subsumed, " << subsumption.nStrengthened << " strengthened)" << std::endl;
+                std::cout << "c Subsumption eliminated " << subsumption.nDuplicates << " duplicates and subsumued " << subsumption.nSubsumed << " clauses" << std::endl;
+                std::cout << "c Subsumption strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
             if (!isInConflictingState()) {
@@ -234,7 +233,7 @@ private:
 
             if (reduction.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c Reduction " << reduction.nTouched() << std::endl;
+                std::cout << "c Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
             }
 
 
@@ -244,7 +243,7 @@ private:
 
             if (elimination.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c Elimination " << elimination.nTouched() << std::endl;
+                std::cout << "c Eliminiated " << elimination.nTouched() << " variables" << std::endl;
                 for (unsigned int v = 0; v < statistics.nVars(); v++) {
                     if (elimination.isEliminated(v)) {
                         branch.setDecisionVar(v, false);
@@ -288,7 +287,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     // assumptions 
     assumptions(),
     // reduce db heuristic control
-    curRestart(0), nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
+    nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
     incReduceDB(ClauseDatabaseOptions::opt_inc_reduce_db),
     // conflict state
     ok(true),
@@ -453,7 +452,13 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     result.clear();
 
-    bool preprocessing = this->preprocessing_enabled;
+    if (this->preprocessing_enabled) {
+        trail.reset();
+        processClauseDatabase();
+        // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
+        clause_db.reorganize(); 
+        propagator.reset();
+    }
 
     lbool status = isInConflictingState() ? l_False : l_Undef;
 
@@ -461,21 +466,21 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         trail.reset();
         branch.reset();
 
-        if (preprocessing || (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= curRestart)) {
-            std::cout << "c Restart" << curRestart << ": Processing Clause Database" << std::endl;
-            lastRestartWithInprocessing = curRestart;
-            preprocessing = false; 
-            processClauseDatabase();
-            // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-            clause_db.reorganize(); 
-            propagator.reset();
-        }
-        else if (statistics.nConflicts() >= (curRestart * nbclausesbeforereduce)) {
-            std::cout << "c Restart " << curRestart << ": Reducing Clause Database" << std::endl;
-            curRestart = (statistics.nConflicts() / nbclausesbeforereduce) + 1;
+        if (statistics.nReduceCalls() * nbclausesbeforereduce <= statistics.nConflicts()) {
+            std::cout << "c Reduction " << statistics.nReduceCalls() << "(Restart " << statistics.nRestarts() << ")" << std::endl;
             nbclausesbeforereduce += incReduceDB;
-            // Perform clause database reduction 
-            clause_db.reduce();
+
+            if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= statistics.nReduceCalls()) { 
+                // Inprocessing
+                lastRestartWithInprocessing = statistics.nReduceCalls();
+                processClauseDatabase();
+            }
+            else {
+                // Perform clause database reduction
+                size_t nReduced = clause_db.reduce();
+                std::cout << "c Reduction deleted " << nReduced << " clauses. Database size is now at " << clause_db.size() << std::endl;
+            }
+            // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
             clause_db.reorganize();
             propagator.reset();
         }

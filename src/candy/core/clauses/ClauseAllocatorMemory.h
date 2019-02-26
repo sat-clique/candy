@@ -231,6 +231,7 @@ public:
     };
 
     void import_without_duplicates(ClauseAllocatorMemory& other, size_t size_limit) {
+        size_t nDuplicates = 0;
         DuplicateChecker checker { *this, size_limit }; 
         for (const ClauseAllocatorPage& page : other.pages) {
             for (const Clause* clause : page) {
@@ -244,10 +245,14 @@ public:
                         void* new_clause = allocate(clause->size());
                         memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
                     }
+                    else {
+                        nDuplicates++;
+                    }
                     ((Clause*)clause)->setDeleted(); 
                 }
             }
         }
+        std::cout << "c Duplicates blocked on import: " << nDuplicates << std::endl;
     }
 
     void import(ClauseAllocatorMemory& other, unsigned int size_limit) {

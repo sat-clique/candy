@@ -130,6 +130,7 @@ bool Subsumption::subsume(SubsumptionClause* clause) {
         return database.numOccurences(var(l1)) < database.numOccurences(var(l2));
     }));
 
+    bool persist = false;
     // Search all candidates:
     const std::vector<SubsumptionClause*> occurences = database.copyOccurences(best);
     for (SubsumptionClause* occurence : occurences) {
@@ -139,7 +140,7 @@ bool Subsumption::subsume(SubsumptionClause* clause) {
             if (l == lit_Undef) {
                 nSubsumed++;
                 if (clause->get_clause()->isLearnt() && !occurence->get_clause()->isLearnt()) {
-                    database.persist(clause);
+                    persist = true;
                 }
                 database.remove(occurence);
             }
@@ -153,6 +154,10 @@ bool Subsumption::subsume(SubsumptionClause* clause) {
                 }
             }
         }
+    }
+
+    if (persist) {
+        database.persist(clause);
     }
 
     return true;

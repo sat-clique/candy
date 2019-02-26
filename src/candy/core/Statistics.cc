@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 Statistics::Statistics(CandySolverInterface& solver_) : solver(solver_), 
-    runtimes(), starttimes()
+    restarts(), runtimes(), starttimes()
 { }
 
 Statistics::~Statistics() { }

@@ -75,14 +75,18 @@ public:
 
     inline void synchronize() {
         if (global_allocator != nullptr) {
-            std::cout << "c " << std::this_thread::get_id() << ": global allocator imports " << memory.used()/(1024*1024) << "MB of pages and deletes " << deleted.size() << " clauses" << std::endl;
+            ClauseAllocatorMemory transit { 1 };
+            transit.import(this->memory, global_database_size_bound);
+            std::cout << "c " << std::this_thread::get_id() << ": global allocator lock: Importing " << transit.used()/1024 << "kb of pages and deleting " << deleted.size() << " clauses" << std::endl;
             global_allocator->memory_lock.lock();
-            global_allocator->memory.import_without_duplicates(this->memory, global_database_size_bound);
+            global_allocator->memory.absorb(transit);
+            // global_allocator->memory.import_without_duplicates(this->memory, global_database_size_bound);
             // global_allocator->memory.import(this->memory, global_database_size_bound);
             for (Clause* clause : this->deleted) {
                 global_allocator->deallocate(clause);
             }
             global_allocator->memory_lock.unlock(); 
+            std::cout << "c " << std::this_thread::get_id() << ": global allocator unlock: Import ready." << std::endl;
             deleted.clear();
         }
     }
