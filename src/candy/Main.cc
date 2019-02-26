@@ -40,7 +40,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <errno.h>
 #include <iostream>
-#include <signal.h>
+#include <csignal>
 #include <zlib.h>
 #include <string>
 #include <stdexcept>
@@ -103,6 +103,7 @@ static void print_stacktrace(int signum) {
     // print out all the frames to stderr
     fprintf(stderr, "c Error: signal %d:\n", signum);
     backtrace_symbols_fd(array, size, STDERR_FILENO);
+    std::raise(signum);
 #endif
     _exit(1);
 }
@@ -214,7 +215,7 @@ int main(int argc, char** argv) {
             ClauseDatabaseOptions::opt_recalculate_lbd = false;
             SolverOptions::opt_sort_watches = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
-            SolverOptions::opt_inprocessing = (100 + 10*count);
+            SolverOptions::opt_inprocessing = (17 + (11*count));
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
             VariableEliminationOptions::opt_use_asymm = (count > 5);
             switch (count) {
