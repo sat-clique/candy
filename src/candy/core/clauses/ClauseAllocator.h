@@ -90,12 +90,12 @@ public:
 
     void reorganize() {
         memory.reallocate();
-        memory.free_old_pages();
+        memory.free_phase_out_pages();
 
         if (global_allocator != nullptr) {
             if (global_allocator->everybody_ready()) { // all threads use new pages now
                 //free the old one and copy and cleanup the new one 
-                global_allocator->memory.free_old_pages();
+                global_allocator->memory.free_phase_out_pages();
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.reallocate();
                 global_allocator->memory_lock.unlock();
@@ -107,6 +107,7 @@ public:
         std::vector<Clause*> clauses = memory.collect();
         std::vector<Clause*> unit_clauses = collect_unit_clauses();
         clauses.insert(clauses.end(), unit_clauses.begin(), unit_clauses.end());
+
         if (global_allocator != nullptr) {
             global_allocator->memory_lock.lock();
             std::vector<Clause*> global_clauses = global_allocator->memory.collect();
@@ -114,6 +115,7 @@ public:
             global_allocator->set_ready(true);
             clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
         }
+
         return clauses;
     }
 

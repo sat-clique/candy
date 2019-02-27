@@ -132,11 +132,11 @@ private:
     const unsigned int default_page_size;
 
     std::vector<ClauseAllocatorPage> pages;
-    std::vector<ClauseAllocatorPage> old_pages;
+    std::vector<ClauseAllocatorPage> phase_out_pages;
 
 public:
     ClauseAllocatorMemory(unsigned int page_size_mb = 32)
-     : default_page_size(page_size_mb*1024*1024), pages(), old_pages() { }
+     : default_page_size(page_size_mb*1024*1024), pages(), phase_out_pages() { }
     ~ClauseAllocatorMemory() { }
 
     inline void* allocate(size_t length) {
@@ -176,22 +176,23 @@ public:
     }
 
     void reallocate() {
-        size_t size = used(); 
-        old_pages.clear();
-        old_pages.swap(pages);
-        pages.emplace_back(size);
-        for (ClauseAllocatorPage& old_page : old_pages) {
-            for (const Clause* old_clause : old_page) {
-                if (!old_clause->isDeleted()) {
-                    void* clause = allocate(old_clause->size());
-                    memcpy(clause, (void*)old_clause, old_page.clauseBytes(old_clause->size()));
+        if (phase_out_pages.empty()) {
+            size_t size = used(); 
+            phase_out_pages.swap(pages);
+            pages.emplace_back(size);
+            for (ClauseAllocatorPage& phase_out_page : phase_out_pages) {
+                for (const Clause* old_clause : phase_out_page) {
+                    if (!old_clause->isDeleted()) {
+                        void* clause = allocate(old_clause->size());
+                        memcpy(clause, (void*)old_clause, phase_out_page.clauseBytes(old_clause->size()));
+                    }
                 }
             }
         }
     }
 
-    void free_old_pages() {
-        old_pages.clear();
+    void free_phase_out_pages() {
+        phase_out_pages.clear();
     }
 
     void import(ClauseAllocatorMemory& other, unsigned int size_limit) {
