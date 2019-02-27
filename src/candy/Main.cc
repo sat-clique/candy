@@ -239,10 +239,10 @@ int main(int argc, char** argv) {
             
             threads.push_back(std::thread(runSolverThread, std::ref(result), std::ref(solver), std::ref(problem), std::ref(global_allocator)));
 
-            while (solvers.size() <= count) { 
-                // wait till solver is initialized
+            do { 
+                // wait till solver is initialized (and wait a bit longer)
                 std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-            }
+            } while (solvers.size() <= count);
         }
 
         for (std::thread& thread : threads) {

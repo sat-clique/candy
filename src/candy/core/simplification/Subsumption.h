@@ -112,11 +112,9 @@ void Subsumption::unique(std::vector<SubsumptionClause*>& list) { // remove dupl
                 nDuplicates++;
                 if (clause1->lbd() > clause2->lbd() || (clause1->lbd() == clause2->lbd() && clause1->get_clause() > clause2->get_clause())) {
                     database.remove(clause1);
-                    assert(clause1->is_deleted());
                 }
                 else {
                     database.remove(clause2);
-                    assert(clause2->is_deleted());
                 }
                 break;
             }
