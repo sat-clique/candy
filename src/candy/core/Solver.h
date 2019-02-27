@@ -348,19 +348,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
 }
 
 
-/**************************************************************************************************
- *
- *  search : (nof*conflicts : int) (params : const SearchParams&)  ->  [lbool]
- *
- *  Description:
- *    Search for a model the specified number of conflicts.
- *    NOTE! Use negative value for 'nof*conflicts' indicate infinity.
- *
- *  Output:
- *    'l*True' if a partial assigment that is consistent with respect to the clauseset is found. If
- *    all variables are decision variables, this means that the clause set is satisfiable. 'l*False'
- *    if the clause set is unsatisfiable. 'l*Undef' if the bound on number of conflicts is reached.
- **************************************************************************************************/
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(ok);
@@ -485,7 +472,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         propagateAndMaterializeUnitClauses();
 
         if (isInConflictingState()) {
-            clause_db.emptyClause();
             status = l_False;
         } 
         else {
