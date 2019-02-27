@@ -155,14 +155,6 @@ public:
         return false;
     }
 
-    inline size_t used() {
-        size_t size = 0;
-        for (ClauseAllocatorPage& page : pages) {
-            size += page.used();
-        }
-        return size;
-    }
-
     inline std::vector<Clause*> collect() {
         std::vector<Clause*> clauses;
         for (ClauseAllocatorPage& page : pages) {
@@ -173,6 +165,14 @@ public:
             }
         }
         return clauses;
+    }
+
+    inline size_t used() {
+        size_t size = 0;
+        for (ClauseAllocatorPage& page : pages) {
+            size += page.used();
+        }
+        return size;
     }
 
     void reallocate() {
@@ -190,69 +190,8 @@ public:
         }
     }
 
-    void clear() {
-        pages.clear();
-    }
-
     void free_old_pages() {
         old_pages.clear();
-    }
-
-    class DuplicateChecker {
-        std::vector<SubsumptionClause> list;
-
-    public:
-        DuplicateChecker(ClauseAllocatorMemory& mem, size_t size_limit) : list() {
-            for (const ClauseAllocatorPage& page : mem.pages) {
-                for (const Clause* clause : page) {
-                    if (clause->isLearnt() && clause->size() < size_limit) {
-                        list.emplace_back(clause);
-                    }
-                }
-            }
-
-            sort(list.begin(), list.end(), [](const SubsumptionClause c1, const SubsumptionClause c2) { 
-                return c1.size() < c2.size() || (c1.size() == c2.size() && c1.get_abstraction() < c2.get_abstraction()); 
-            });
-        }
-
-        bool isDuplicate(const Clause* other) {
-            SubsumptionClause sub { other };
-            for (SubsumptionClause clause : list) {
-                if (clause.equals(&sub)) {
-                    return true;
-                }
-                else if (clause.size() > other->size()) {
-                    break;
-                }
-            }
-            return false;
-        }
-    };
-
-    void import_without_duplicates(ClauseAllocatorMemory& other, size_t size_limit) {
-        size_t nDuplicates = 0;
-        DuplicateChecker checker { *this, size_limit }; 
-        for (const ClauseAllocatorPage& page : other.pages) {
-            for (const Clause* clause : page) {
-                if (clause->isPersistent()) {
-                    void* new_clause = allocate(clause->size());
-                    memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
-                    ((Clause*)clause)->setDeleted(); 
-                }
-                else if (!clause->isDeleted() && clause->size() < size_limit) {
-                    if (!checker.isDuplicate(clause)) {
-                        void* new_clause = allocate(clause->size());
-                        memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
-                    }
-                    else {
-                        nDuplicates++;
-                    }
-                    ((Clause*)clause)->setDeleted(); 
-                }
-            }
-        }
-        std::cout << "c Duplicates blocked on import: " << nDuplicates << std::endl;
     }
 
     void import(ClauseAllocatorMemory& other, unsigned int size_limit) {
@@ -271,7 +210,7 @@ public:
         for (ClauseAllocatorPage& page : other.pages) {
             pages.emplace_back(std::move(page));
         }
-        other.clear();
+        other.pages.clear();
     }
 
 };
