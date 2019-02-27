@@ -134,6 +134,9 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of variables:  %12zu                           |\n", problem.nVars());
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
+    
+CandySolverInterface* solver = nullptr;
+lbool result = l_Undef;
 
 static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, ClauseAllocator*& global_allocator) {
     std::cout << "c Sort Watches: " << SolverOptions::opt_sort_watches << std::endl;
@@ -189,9 +192,6 @@ int main(int argc, char** argv) {
 
     ClauseAllocator* global_allocator = nullptr;
     std::vector<std::thread> threads;
-    
-    CandySolverInterface* solver = nullptr;
-    lbool result = l_Undef;
 
     if (ParallelOptions::opt_threads == 1) {
         if (RSAROptions::opt_rsar_enable) {
@@ -270,10 +270,6 @@ int main(int argc, char** argv) {
             } while (solvers.size() <= count);
         }
 
-        for (std::thread& thread : threads) {
-            thread.detach();
-        }
-
         installSignalHandlers(true);
         while (result == l_Undef && !interrupted) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -311,7 +307,6 @@ int main(int argc, char** argv) {
     }
 
     #ifndef __SANITIZE_ADDRESS__
-        if (ParallelOptions::opt_threads > 1) std::terminate();
         exit((result == l_True ? 10 : result == l_False ? 20 : 0));
     #endif
     return (result == l_True ? 10 : result == l_False ? 20 : 0);
