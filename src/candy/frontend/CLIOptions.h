@@ -53,6 +53,8 @@ namespace SolverOptions {
     extern IntOption opt_size_trail_queue;
     
     extern BoolOption opt_use_lrb; // lrb branching
+    extern DoubleOption opt_lrb_step_size;
+    extern DoubleOption opt_lrb_min_step_size;
 
     extern DoubleOption opt_vsids_var_decay;
     extern DoubleOption opt_vsids_max_var_decay;

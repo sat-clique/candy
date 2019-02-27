@@ -217,7 +217,7 @@ int main(int argc, char** argv) {
             SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = (17 + (11*count));
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
-            VariableEliminationOptions::opt_use_asymm = (count > 5);
+            VariableEliminationOptions::opt_use_asymm = (count == 6) || (count == 7) || (count == 14) || (count == 15);
             switch (count) {
                 case 0 : case 1 : //vsids
                     SolverOptions::opt_use_lrb = false;
@@ -228,10 +228,35 @@ int main(int argc, char** argv) {
                     RSILOptions::opt_rsil_enable = false;
                     break;
                 case 4 : case 5 : //rsil
+                    SolverOptions::opt_vsids_var_decay = 0.75;
                     SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = true;
                     break;
                 case 6 : case 7 : //vsids
+                    SolverOptions::opt_vsids_var_decay = 0.7;
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = false;
+                    break;
+                case 8 : case 9 : //vsids
+                    SolverOptions::opt_vsids_var_decay = 0.6;
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = false;
+                    break;
+                case 10 : case 11 : //lrb
+                    SolverOptions::opt_lrb_step_size = 0.7;
+                    SolverOptions::opt_lrb_min_step_size = 0.02;
+                    SolverOptions::opt_use_lrb = true;
+                    RSILOptions::opt_rsil_enable = false;
+                    break;
+                case 12 : case 13 : //rsil
+                    GateRecognitionOptions::opt_gr_semantic = true; 
+                    RandomSimulationOptions::opt_rs_nrounds = 1048576 * 2;
+                    SolverOptions::opt_use_lrb = false;
+                    RSILOptions::opt_rsil_enable = true;
+                    break;
+                case 14 : case 15 : //vsids
+                    SolverOptions::opt_vsids_var_decay = 0.5;
+                    SolverOptions::opt_vsids_max_var_decay = 0.99;
                     SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = false;
                     break;

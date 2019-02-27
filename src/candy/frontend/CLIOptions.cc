@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 namespace ParallelOptions {
-    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 8));
+    IntOption opt_threads("ParallelOptions", "threads", "Number of threads", 1, IntRange(1, 16));
     BoolOption opt_static_propagate("ParallelOptions", "static-propagate", "use thread-safe propagation module", false);
     BoolOption opt_static_database("ParallelOptions", "static-database", "Use thread-safe static clause-allocator", false);
     IntOption opt_static_database_size_bound("ParallelOptions", "static_database_size_bound", "upper size-bound for static database", 6, IntRange(3, INT16_MAX));
@@ -57,6 +57,8 @@ namespace SolverOptions {
     BoolOption opt_vsids_extra_bump("CORE", "extra-bump", "Glucose Style Extra Bumping on current desicion level", false);
 
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
+    DoubleOption opt_lrb_step_size("CORE", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
+    DoubleOption opt_lrb_min_step_size("CORE", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
     IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
 
