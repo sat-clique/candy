@@ -256,9 +256,8 @@ private:
             trail.reset();
 
             nTouched = subsumption.nTouched() + reduction.nTouched() + elimination.nTouched();
-            if (isInConflictingState()) break;
         } 
-        while (nTouched > 10 && nTouched > max / 10);
+        while (!isInConflictingState() && nTouched > 10 && nTouched > max / 10);
 
         augmented_database.clear();
     }
