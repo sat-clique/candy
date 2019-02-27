@@ -45,12 +45,13 @@ public:
         VarOrderLt(std::vector<double>& act) : weight(act) {}
     };
 
-    LRB(ClauseDatabase& _clause_db, Trail& _trail, double _step_size = 0.4) :
+    LRB(ClauseDatabase& _clause_db, Trail& _trail) :
         clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(weight)), 
         weight(), polarity(), decision(), stamp(), 
         interval_assigned(), participated(), 
-        step_size(_step_size) {
+        step_size(SolverOptions::opt_lrb_step_size), 
+        min_step_size(SolverOptions::opt_lrb_min_step_size) {
 
     }
 
@@ -133,7 +134,7 @@ public:
                 }
             }
         }
-        if (step_size > 0.06) {
+        if (step_size > min_step_size) {
             step_size -= 10e-6;
         }
         for (auto it = trail.begin(0); it != trail.end(); it++) {
@@ -194,7 +195,8 @@ private:
     std::vector<uint32_t> interval_assigned;
     std::vector<uint32_t> participated;
 
-    double step_size; // Amount to bump next variable with.
+    double step_size; 
+    double min_step_size; 
     double initial_weight = 0.0;
     bool initial_polarity = true;
 
