@@ -92,9 +92,21 @@ public:
     }
 
     inline bool equals(SubsumptionClause* other) const {
-        return this->size() == other->size()
-         && this->abstraction == other->abstraction
-         && this->subsumes(other) == lit_Undef;
+        if (this->abstraction == other->abstraction && this->size() == other->size()) {
+            for (Lit c : *this) {
+                for (Lit d : *other) {
+                    if (c == d) {
+                        goto ok;
+                    }
+                }
+                return false; // did not find it
+                ok: ;
+            }
+            return true;
+        } 
+        else {
+            return false;
+        }
     }
 
     /**

@@ -185,7 +185,7 @@ private:
     }
 
     void propagateAndMaterializeUnitClauses() {
-        assert(trail.size() == 0);
+        assert(trail.decisionLevel() == 0);
         std::vector<Clause*> facts = clause_db.getUnitClauses();
         for (Clause* clause : facts) {
             this->ok &= trail.fact(clause->first());
@@ -206,58 +206,56 @@ private:
     }
 
     void processClauseDatabase() {
-        assert(trail.size() == 0);
+        assert(trail.decisionLevel() == 0);
 
         augmented_database.initialize();
 
-        unsigned int max = 0;
-        unsigned int nTouched = 0;
+        unsigned int total = 0;
+        unsigned int count = 0;
         do {
-            max = std::max(max, nTouched);
+            total += count;
+            count = 0;
 
             propagateAndMaterializeUnitClauses();
+            if (isInConflictingState()) break;
 
-            if (!isInConflictingState()) {
-                ok &= subsumption.subsume();
-            }
+            ok &= subsumption.subsume();
 
             if (subsumption.nTouched() > 0) {
+                count += subsumption.nTouched();
                 augmented_database.cleanup();
-                std::cout << "c Subsumption eliminated " << subsumption.nDuplicates << " duplicates and subsumued " << subsumption.nSubsumed << " clauses" << std::endl;
-                std::cout << "c Subsumption strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Subsumption eliminated " << subsumption.nDuplicates << " duplicates, subsumued " << subsumption.nSubsumed 
+                    << " clauses, strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
-            if (!isInConflictingState()) {
-                ok &= reduction.reduce();
-            }
+            propagateAndMaterializeUnitClauses();
+            if (isInConflictingState()) break;
+
+            ok &= reduction.reduce();
 
             if (reduction.nTouched() > 0) {
+                count += reduction.nTouched();
                 augmented_database.cleanup();
-                std::cout << "c Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
             }
 
+            propagateAndMaterializeUnitClauses();
+            if (isInConflictingState()) break;
 
-            if (!isInConflictingState()) {
-                ok &= elimination.eliminate();
-            }
+            ok &= elimination.eliminate();
 
             if (elimination.nTouched() > 0) {
+                count += elimination.nTouched();
                 augmented_database.cleanup();
-                std::cout << "c Eliminiated " << elimination.nTouched() << " variables" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
                 for (unsigned int v = 0; v < statistics.nVars(); v++) {
                     if (elimination.isEliminated(v)) {
                         branch.setDecisionVar(v, false);
                     }
                 }
-                branch.reset();
             }
-
-            
-            trail.reset();
-
-            nTouched = subsumption.nTouched() + reduction.nTouched() + elimination.nTouched();
         } 
-        while (!isInConflictingState() && nTouched > 10 && nTouched > max / 10);
+        while (count * 8 > total && termCallback(termCallbackState) == 0);
 
         augmented_database.clear();
     }
@@ -466,21 +464,20 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         branch.reset();
 
         if (statistics.nReduceCalls() * nbclausesbeforereduce <= statistics.nConflicts()) {
-            std::cout << "c Reduction " << statistics.nReduceCalls() << "(Restart " << statistics.nRestarts() << ")" << std::endl;
             nbclausesbeforereduce += incReduceDB;
 
             if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= statistics.nReduceCalls()) { 
-                // Inprocessing
+                std::cout << "c " << std::this_thread::get_id() << ": Inprocessing " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
                 lastRestartWithInprocessing = statistics.nReduceCalls();
                 processClauseDatabase();
             }
             else {
-                // Perform clause database reduction
-                size_t nReduced = clause_db.reduce();
-                std::cout << "c Reduction deleted " << nReduced << " clauses. Database size is now at " << clause_db.size() << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
+                clause_db.reduce();
             }
             // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
             clause_db.reorganize();
+            std::cout << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
             propagator.reset();
         }
 

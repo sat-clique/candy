@@ -77,14 +77,13 @@ public:
         if (global_allocator != nullptr) {
             ClauseAllocatorMemory transit { 1 };
             transit.import(this->memory, global_database_size_bound);
-            std::cout << "c " << std::this_thread::get_id() << ": global allocator lock: Importing " << transit.used()/1024 << "kb of pages and deleting " << deleted.size() << " clauses" << std::endl;
+            std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
             global_allocator->memory_lock.lock();
             global_allocator->memory.absorb(transit);
-            for (Clause* clause : this->deleted) {
-                global_allocator->deallocate(clause);
-            }
             global_allocator->memory_lock.unlock(); 
-            std::cout << "c " << std::this_thread::get_id() << ": global allocator unlock: Import ready." << std::endl;
+            for (Clause* clause : this->deleted) {
+                clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
+            }
             deleted.clear();
         }
     }
@@ -106,31 +105,22 @@ public:
 
     std::vector<Clause*> collect() {
         std::vector<Clause*> clauses = memory.collect();
+        std::vector<Clause*> unit_clauses = collect_unit_clauses();
+        clauses.insert(clauses.end(), unit_clauses.begin(), unit_clauses.end());
         if (global_allocator != nullptr) {
             global_allocator->memory_lock.lock();
             std::vector<Clause*> global_clauses = global_allocator->memory.collect();
             global_allocator->memory_lock.unlock();
             global_allocator->set_ready(true);
-            // global_allocator->facts_lock.lock();
-            std::vector<Clause*> global_unit_clauses = global_allocator->facts.collect();
-            // global_allocator->facts_lock.unlock();
             clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
-            clauses.insert(clauses.end(), global_unit_clauses.begin(), global_unit_clauses.end());
-        }
-        else {
-            std::vector<Clause*> unit_clauses = facts.collect();
-            clauses.insert(clauses.end(), unit_clauses.begin(), unit_clauses.end());
         }
         return clauses;
     }
 
     std::vector<Clause*> collect_unit_clauses() {
         if (global_allocator != nullptr) {
-            // global_allocator->facts_lock.lock();
-            // std::vector<Clause*> global_unit_clauses = global_allocator->collect_unit_clauses();
-            // global_allocator->facts_lock.unlock();
-            // return global_unit_clauses;
-            return global_allocator->collect_unit_clauses();
+            // these can be read without lock
+            return global_allocator->facts.collect();
         }
         else {
             return facts.collect();
@@ -146,15 +136,11 @@ public:
 
     ClauseAllocator* create_global_allocator() {
         assert(global_allocator == nullptr);
+        std::cout << "c thread creating global allocator: " << std::this_thread::get_id() << std::endl;
         global_allocator = new ClauseAllocator();
-        global_allocator->set_ready(false);
-        global_allocator->memory_lock.lock();
         global_allocator->memory.absorb(this->memory); 
-        global_allocator->memory_lock.unlock();
-        global_allocator->facts_lock.lock();
         global_allocator->facts.absorb(this->facts); 
-        global_allocator->facts_lock.unlock();
-        deleted.clear();
+        global_allocator->set_ready(false);
         return global_allocator;
     }
 

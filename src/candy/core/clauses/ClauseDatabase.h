@@ -215,7 +215,7 @@ public:
     /**
      * only call this method at decision level 0
      **/
-    size_t reduce() { 
+    void reduce() { 
         std::vector<Clause*> learnts;
 
         copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [this](Clause* clause) { 
@@ -242,9 +242,7 @@ public:
             
             nReduceCalls++;
             nReduced += std::distance(begin, learnts.end());
-            return std::distance(begin, learnts.end());
         }
-        return 0;
     }
 
     /**
