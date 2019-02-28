@@ -306,6 +306,8 @@ template<class TClauses, class TAssignment, class TPropagate, class TLearning, c
 void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator ) {
     assert(trail.decisionLevel() == 0);
 
+    statistics.runtimeStart("Wallclock");
+
     if (problem.nVars() > statistics.nVars()) {
         clause_db.grow(problem.nVars());
         propagator.init(problem.nVars());
@@ -345,6 +347,8 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
     }
 
     branch.init(problem);
+
+    statistics.runtimeStop("Wallclock");
 }
 
 

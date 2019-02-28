@@ -43,9 +43,11 @@ namespace ClauseDatabaseOptions {
 namespace SolverOptions {
     extern IntOption verb;
     extern BoolOption mod;
-    extern IntOption cpu_lim;
     extern StringOption opt_certified_file;
     extern IntOption do_minimize;
+
+    extern IntOption memory_limit;
+    extern IntOption time_limit;
 
     extern DoubleOption opt_K;
     extern DoubleOption opt_R;

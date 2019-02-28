@@ -53,12 +53,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <execinfo.h>
 #endif
 
+#include "candy/utils/Memory.h"
+#include "candy/utils/Options.h"
+
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Statistics.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
-#include "candy/utils/Options.h"
-#include "candy/utils/MemUtils.h"
 #include "candy/minimizer/Minimizer.h"
 
 #include "candy/frontend/SolverFactory.h"
@@ -72,16 +73,24 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/rsil/BranchingHeuristics.h"
 
-#if !defined(WIN32)
-#include <sys/resource.h>
-#endif
-
 using namespace Candy;
 
 static std::vector<CandySolverInterface*> solvers;
 
 static bool interrupted = false;
+static unsigned int start_time = 0;
 static int interrupted_callback(void* state) {
+    if (SolverOptions::time_limit > 0) {
+        if (start_time == 0) {
+            start_time = get_wall_time();
+        }
+        else if (get_wall_time() - start_time > SolverOptions::time_limit) {
+            interrupted = true;
+        }
+    }
+    if (SolverOptions::memory_limit > 0 && getCurrentRSS()/(1024*1024) > SolverOptions::memory_limit) {
+        interrupted = true;
+    }
     return interrupted ? 1 : 0;
 }
 
@@ -271,6 +280,7 @@ int main(int argc, char** argv) {
         }
 
         installSignalHandlers(true);
+        problem.clear();
         while (result == l_Undef && !interrupted) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
@@ -304,6 +314,10 @@ int main(int argc, char** argv) {
         }
 
         solver->getStatistics().printRuntimes();
+        std::cout << "c Peak Memory: " << getPeakRSS()/(1024*1024) << std::endl;
+        if (global_allocator != nullptr) {
+            std::cout << "c Global Allocator Memory: " << global_allocator->used_memory()/(1024*1024) << std::endl;
+        }
     }
 
     #ifndef __SANITIZE_ADDRESS__
