@@ -146,6 +146,10 @@ public:
         return global_allocator;
     }
 
+    size_t used_memory() {
+        return memory.used() + facts.used();
+    }
+
 private:
     ClauseAllocatorMemory memory;
 

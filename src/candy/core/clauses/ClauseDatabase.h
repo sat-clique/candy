@@ -253,6 +253,7 @@ public:
         allocator.reorganize();
         clauses = allocator.collect();
         initBinaryWatchers();
+        std::cout << "c Local Allocator Memory: " << allocator.used_memory()/(1024*1024) << std::endl;
     }
 
 };

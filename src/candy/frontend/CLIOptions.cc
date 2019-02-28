@@ -41,11 +41,12 @@ namespace ClauseDatabaseOptions {
 
 namespace SolverOptions {
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
-    BoolOption mod("MAIN", "model", "show model.", false);    
-    IntOption cpu_lim("MAIN", "cpu-lim", "Limit on CPU time allowed in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
-    
+    BoolOption mod("MAIN", "model", "show model.", false);        
     StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
     IntOption do_minimize("METHOD", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
+
+    IntOption memory_limit("MAIN", "memory-limit", "Limit on memory usage in mega bytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
+    IntOption time_limit("MAIN", "time-limit", "Limit on wallclock runtime in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     
     DoubleOption opt_K("Restarts", "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
     DoubleOption opt_R("Restarts", "R", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
