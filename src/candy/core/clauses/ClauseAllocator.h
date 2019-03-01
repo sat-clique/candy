@@ -131,18 +131,18 @@ public:
 
     void set_global_allocator(ClauseAllocator* global_allocator_) {
         assert(global_allocator == nullptr);
-        std::cout << "c thread registration in global allocator: " << std::this_thread::get_id() << std::endl;
+        std::cout << "c " << std::this_thread::get_id() << ": Attaching global allocator" << std::endl;
         global_allocator = global_allocator_;
         global_allocator->set_ready(false);
     }
 
     ClauseAllocator* create_global_allocator() {
         assert(global_allocator == nullptr);
-        std::cout << "c thread creating global allocator: " << std::this_thread::get_id() << std::endl;
+        std::cout << "c " << std::this_thread::get_id() << ": Creating global allocator" << std::endl;
         global_allocator = new ClauseAllocator();
         global_allocator->memory.absorb(this->memory); 
-        global_allocator->facts.absorb(this->facts); 
-        global_allocator->set_ready(false);
+        global_allocator->facts.absorb(this->facts);
+        global_allocator->set_ready(true); 
         return global_allocator;
     }
 
@@ -172,6 +172,7 @@ private:
 
     inline void set_ready(bool flag) {
         ready_lock.lock();
+        if (flag) std::cout << "c " << std::this_thread::get_id() << ": Ready using new pages" << std::endl;
         ready[std::this_thread::get_id()] = flag;
         ready_lock.unlock();
     }
