@@ -183,15 +183,16 @@ int main(int argc, char** argv) {
     CNFProblem problem{};
     try {
         if (argc == 1) {
-            printf("c Reading from standard input... Use '--help' for help.\n");
+            std::cout << "c Reading from standard input ... " << std::endl; 
             problem.readDimacsFromStdin();
         } else {
+            std::cout << "c Reading file: " << argv[1] << std::endl; 
             const char* inputFilename = argv[1];
             problem.readDimacsFromFile(inputFilename);
         }
     }
     catch (ParserException& e) {
-		printf("Caught Parser Exception\n%s\n", e.what());
+		printf("c Caught Parser Exception\n%s\n", e.what());
         return 0;
     }
 
