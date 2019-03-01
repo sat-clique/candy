@@ -105,19 +105,21 @@ void Subsumption::unique(std::vector<SubsumptionClause*>& list) { // remove dupl
         for (auto it2 = it1+1; it2 != list.end(); it2++) {
             SubsumptionClause* clause2 = *it2;
             if (clause2->is_deleted()) continue;
-            if (clause1->get_abstraction() != clause2->get_abstraction()) {
-                break;
-            }
-            if (clause1->equals(clause2)) {
-                nDuplicates++;
-                if (clause1->lbd() > clause2->lbd() || (clause1->lbd() == clause2->lbd() && clause1->get_clause() > clause2->get_clause())) {
-                    database.remove(clause1);
+            if (clause1->get_abstraction() == clause2->get_abstraction()) {
+                if (clause1->equals(clause2)) {
+                    nDuplicates++;
+                    if (clause1->lbd() > clause2->lbd() || (clause1->lbd() == clause2->lbd() && clause1->get_clause() > clause2->get_clause())) {
+                        database.remove(clause1);
+                    }
+                    else {
+                        database.remove(clause2);
+                    }
                 }
                 else {
-                    database.remove(clause2);
+                    continue;
                 }
-                break;
-            }
+            } 
+            break;
         }
     }
 }
