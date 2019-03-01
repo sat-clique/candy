@@ -482,6 +482,13 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
             status = search();
         }
     }
+
+    if (status == l_Undef) {
+        std::cout << "c " << std::this_thread::get_id() << ": Interrupted" << std::endl;
+    }
+    else {
+        std::cout << "c " << std::this_thread::get_id() << ": Found solution" << std::endl;
+    }
     
     result.setStatus(status);
 
