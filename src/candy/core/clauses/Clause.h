@@ -17,15 +17,16 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
+#include <iostream>
+#include <initializer_list>
+#include <limits>
+#include <algorithm>
+
 #ifndef SRC_CANDY_CORE_CLAUSE_H_
 #define SRC_CANDY_CORE_CLAUSE_H_
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/Statistics.h"
-
-#include <iostream>
-#include <initializer_list>
-#include <limits>
 
 namespace Candy {
 
