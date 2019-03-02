@@ -315,10 +315,9 @@ int main(int argc, char** argv) {
         }
 
         solver->getStatistics().printRuntimes();
-        std::cout << "c Peak Memory: " << getPeakRSS()/(1024*1024) << std::endl;
-        if (global_allocator != nullptr) {
-            std::cout << "c Global Allocator Memory: " << global_allocator->used_memory()/(1024*1024) << std::endl;
-        }
+        std::cout << "c Peak Memory (MB): " << getPeakRSS()/(1024*1024) << std::endl;
+        std::cout << "c Local Clauses Memory (MB): " << solver->getClauseDatabase().local_memory()/(1024*1024) << std::endl;
+        std::cout << "c Global Clauses Memory (MB): " << solver->getClauseDatabase().global_memory()/(1024*1024) << std::endl;
     }
 
     #ifndef __SANITIZE_ADDRESS__
