@@ -87,6 +87,7 @@ public:
 
     void clear() {
         for (unsigned int lit = 0; lit < watchers.size(); lit++) {
+            watchers[lit].shrink_to_fit();
             for (WatcherTS* watcher : watchers[lit]) {
                 if (watcher->cref != nullptr) {
                     watcher->cref = nullptr;

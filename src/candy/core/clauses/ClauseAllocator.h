@@ -94,6 +94,7 @@ public:
 
         if (global_allocator != nullptr) {
             if (global_allocator->everybody_ready()) { // all threads use new pages now
+                std::cout << "c " << std::this_thread::get_id() << ": Everybody using new pages, free the old ones" << std::endl;
                 //free the old one and copy and cleanup the new one 
                 global_allocator->memory.free_phase_out_pages();
                 global_allocator->memory_lock.lock();
@@ -148,6 +149,15 @@ public:
 
     size_t used_memory() {
         return memory.used() + facts.used();
+    }
+
+    size_t global_used_memory() {
+        if (global_allocator != nullptr) {
+            return global_allocator->used_memory();
+        }
+        else {
+            return 0;
+        }
     }
 
 private:

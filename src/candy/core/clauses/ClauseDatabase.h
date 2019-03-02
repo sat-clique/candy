@@ -98,6 +98,7 @@ public:
 
     void initBinaryWatchers() {
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+            watcher.shrink_to_fit();
             watcher.clear();
         }
         for (Clause* clause : clauses) {
@@ -149,7 +150,7 @@ public:
 
     inline void grow(size_t nVars) {
         if (binaryWatchers.size() < 2*nVars) {
-            binaryWatchers.resize(nVars*2);
+            binaryWatchers.resize(nVars*2+2);
         }
     }
 
@@ -253,7 +254,14 @@ public:
         allocator.reorganize();
         clauses = allocator.collect();
         initBinaryWatchers();
-        std::cout << "c Local Allocator Memory: " << allocator.used_memory()/(1024*1024) << std::endl;
+    }
+
+    size_t local_memory() {
+        return allocator.used_memory()/(1024*1024);
+    }
+
+    size_t global_memory() {
+        return allocator.global_used_memory()/(1024*1024);
     }
 
 };
