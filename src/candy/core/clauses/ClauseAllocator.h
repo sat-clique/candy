@@ -81,16 +81,19 @@ public:
                 std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.absorb(transit);
+                for (Clause* clause : this->deleted) {
+                    clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
+                }
                 global_allocator->memory_lock.unlock(); 
             }
             else {
                 std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << this->memory.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.absorb(this->memory);
+                for (Clause* clause : this->deleted) {
+                    clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
+                }
                 global_allocator->memory_lock.unlock(); 
-            }
-            for (Clause* clause : this->deleted) {
-                clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
             }
             deleted.clear();
         }
