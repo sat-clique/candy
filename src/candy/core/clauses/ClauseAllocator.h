@@ -78,7 +78,7 @@ public:
             if (global_database_size_bound > 0) {
                 ClauseAllocatorMemory transit { 1 };
                 transit.import(this->memory, global_database_size_bound);
-                std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
+                // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.absorb(transit);
                 for (Clause* clause : this->deleted) {
@@ -87,7 +87,7 @@ public:
                 global_allocator->memory_lock.unlock(); 
             }
             else {
-                std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << this->memory.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
+                // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << this->memory.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.absorb(this->memory);
                 for (Clause* clause : this->deleted) {
@@ -105,7 +105,7 @@ public:
 
         if (global_allocator != nullptr) {
             if (global_allocator->everybody_ready()) { // all threads use new pages now
-                std::cout << "c " << std::this_thread::get_id() << ": Everybody using new pages, free the old ones" << std::endl;
+                // std::cout << "c " << std::this_thread::get_id() << ": Everybody using new pages, free the old ones" << std::endl;
                 //free the old one and copy and cleanup the new one 
                 global_allocator->memory.free_phase_out_pages();
                 global_allocator->memory_lock.lock();
@@ -143,32 +143,19 @@ public:
 
     void set_global_allocator(ClauseAllocator* global_allocator_) {
         assert(global_allocator == nullptr);
-        std::cout << "c " << std::this_thread::get_id() << ": Attaching global allocator" << std::endl;
+        // std::cout << "c " << std::this_thread::get_id() << ": Attaching global allocator" << std::endl;
         global_allocator = global_allocator_;
         global_allocator->set_ready(false);
     }
 
     ClauseAllocator* create_global_allocator() {
         assert(global_allocator == nullptr);
-        std::cout << "c " << std::this_thread::get_id() << ": Creating global allocator" << std::endl;
+        // std::cout << "c " << std::this_thread::get_id() << ": Creating global allocator" << std::endl;
         global_allocator = new ClauseAllocator();
         global_allocator->memory.absorb(this->memory); 
         global_allocator->facts.absorb(this->facts);
         global_allocator->set_ready(true); 
         return global_allocator;
-    }
-
-    size_t used_memory() {
-        return memory.used() + facts.used();
-    }
-
-    size_t global_used_memory() {
-        if (global_allocator != nullptr) {
-            return global_allocator->used_memory();
-        }
-        else {
-            return 0;
-        }
     }
 
 private:
@@ -193,7 +180,7 @@ private:
 
     inline void set_ready(bool flag) {
         ready_lock.lock();
-        if (flag) std::cout << "c " << std::this_thread::get_id() << ": Ready using new pages" << std::endl;
+        // if (flag) std::cout << "c " << std::this_thread::get_id() << ": Ready using new pages" << std::endl;
         ready[std::this_thread::get_id()] = flag;
         ready_lock.unlock();
     }

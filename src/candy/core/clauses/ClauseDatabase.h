@@ -256,14 +256,6 @@ public:
         initBinaryWatchers();
     }
 
-    size_t local_memory() {
-        return allocator.used_memory()/(1024*1024);
-    }
-
-    size_t global_memory() {
-        return allocator.global_used_memory()/(1024*1024);
-    }
-
 };
 
 }

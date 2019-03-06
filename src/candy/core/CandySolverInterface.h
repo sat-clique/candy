@@ -46,9 +46,11 @@ public:
 	virtual lbool solve() = 0;
 
 	virtual BranchingDiversificationInterface* getBranchingUnit() = 0;
+
 	virtual ClauseDatabase& getClauseDatabase() = 0;
 	virtual Trail& getAssignment() = 0; 
 	virtual Statistics& getStatistics() = 0;
+
 	virtual CandySolverResult& getCandySolverResult() = 0;
 
 	virtual void setTermCallback(void* state, int (*termCallback)(void* state)) = 0;
