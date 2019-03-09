@@ -41,12 +41,12 @@ public:
     ClauseAllocator() : 
         memory(32), facts(1), deleted(), 
         global_database_size_bound(ParallelOptions::opt_static_database_size_bound),
-        global_allocator(nullptr), memory_lock(), facts_lock(), ready(), ready_lock() { }
+        global_allocator(nullptr), memory_lock(), ready(), ready_lock() { }
 
     ~ClauseAllocator() { }
 
     inline void* allocate(unsigned int length, unsigned int lbd) {
-        if (length < 2) lbd = 0;
+        if (length < 3) lbd = 0;
         if (global_allocator == nullptr || lbd != 0) {
             if (length == 1) {
                 return facts.allocate(1);
@@ -56,9 +56,9 @@ public:
         }
         else {
             assert(lbd == 0);
-            global_allocator->facts_lock.lock();
-            void* mem = global_allocator->facts.allocate(length); 
-            global_allocator->facts_lock.unlock();
+            global_allocator->memory_lock.lock();
+            void* mem = global_allocator->allocate(length, lbd);
+            global_allocator->memory_lock.unlock();
             return mem;
         } 
     }
@@ -171,7 +171,6 @@ private:
     // global allocator for multi-threaded scenario    
     ClauseAllocator* global_allocator;
     std::mutex memory_lock;
-    std::mutex facts_lock;
     
     std::unordered_map<std::thread::id, bool> ready;
     std::mutex ready_lock;
