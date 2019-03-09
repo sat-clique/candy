@@ -149,7 +149,6 @@ public:
 
     inline void persist(SubsumptionClause* subsumption_clause) {
         Clause* new_clause = clause_db.persistClause(subsumption_clause->get_clause());
-        subsumption_clause->set_deleted();
         registerSubsumptionClause(new_clause);
     }
 
