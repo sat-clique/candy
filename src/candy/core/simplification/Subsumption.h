@@ -140,6 +140,7 @@ bool Subsumption::subsume(SubsumptionClause* clause) {
             if (l == lit_Undef) {
                 nSubsumed++;
                 if (clause->get_clause()->isLearnt() && !occurence->get_clause()->isLearnt()) {
+                    database.persist(clause);
                     persist = true;
                 }
                 database.remove(occurence);
@@ -157,7 +158,7 @@ bool Subsumption::subsume(SubsumptionClause* clause) {
     }
 
     if (persist) {
-        database.persist(clause);
+        clause->set_deleted();
     }
 
     return true;
