@@ -45,8 +45,9 @@ public:
 
     ~ClauseAllocator() { }
 
-    inline void* allocate(unsigned int length) {
-        if (global_allocator == nullptr || length > 1) {
+    inline void* allocate(unsigned int length, unsigned int lbd) {
+        if (length < 2) lbd = 0;
+        if (global_allocator == nullptr || lbd != 0) {
             if (length == 1) {
                 return facts.allocate(1);
             } else {
@@ -54,23 +55,23 @@ public:
             }
         }
         else {
-            assert(length == 1);
+            assert(lbd == 0);
             global_allocator->facts_lock.lock();
-            void* mem = global_allocator->facts.allocate(1); 
+            void* mem = global_allocator->facts.allocate(length); 
             global_allocator->facts_lock.unlock();
             return mem;
         } 
     }
 
     inline void deallocate(Clause* clause) {
-        if (global_allocator == nullptr || memory.contains(clause)) { 
+        // if (global_allocator == nullptr || memory.contains(clause)) { 
             clause->setDeleted();
-        }
-        else { 
-            // in parallel scenario it is important not to delete clauses of the commonly used allocator before synchronization happens
-            // instead keep them to take care of them during synchronization
-            deleted.push_back(clause);
-        }
+        // }
+        // else { 
+        //     // in parallel scenario it is important not to delete clauses of the commonly used allocator before synchronization happens
+        //     // instead keep them to take care of them during synchronization
+        //     deleted.push_back(clause);
+        // }
     }
 
     inline void synchronize() {
@@ -81,21 +82,21 @@ public:
                 // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.absorb(transit);
-                for (Clause* clause : this->deleted) {
-                    clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
-                }
+                // for (Clause* clause : this->deleted) {
+                //     clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
+                // }
                 global_allocator->memory_lock.unlock(); 
             }
             else {
                 // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << this->memory.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
                 global_allocator->memory_lock.lock();
                 global_allocator->memory.absorb(this->memory);
-                for (Clause* clause : this->deleted) {
-                    clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
-                }
+                // for (Clause* clause : this->deleted) {
+                //     clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
+                // }
                 global_allocator->memory_lock.unlock(); 
             }
-            deleted.clear();
+            // deleted.clear();
         }
     }
 
