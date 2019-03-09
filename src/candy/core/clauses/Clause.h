@@ -34,6 +34,7 @@ class Clause {
     friend class ClauseAllocatorMemory;
     friend class ClauseAllocator;
     friend class ClauseDatabase;
+    friend class Subsumption;
     friend class Propagate;
 
 private:

@@ -199,12 +199,6 @@ public:
         return new_clause;
     }
 
-    Clause* persistClause(Clause* clause) {
-        Clause* new_clause = createClause(clause->begin(), clause->end(), 0);
-        removeClause(clause);
-        return new_clause;
-    }
-
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
         return binaryWatchers[toInt(lit)];
     }
