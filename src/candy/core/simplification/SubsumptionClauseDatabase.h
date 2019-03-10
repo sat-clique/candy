@@ -37,12 +37,13 @@ private:
     std::vector<SubsumptionClause*> subsumption_clauses;
     std::vector<std::vector<SubsumptionClause*>> occurrences;
 
-    inline void registerSubsumptionClause(Clause* clause) {
+    inline SubsumptionClause* registerSubsumptionClause(Clause* clause) {
         SubsumptionClause* subsumption_clause = new SubsumptionClause(clause);
         subsumption_clauses.push_back(subsumption_clause);
         for (Lit lit : *clause) {
             occurrences[var(lit)].push_back(subsumption_clause);
         }
+        return subsumption_clause;
     }
 
     inline void cleanup(std::vector<SubsumptionClause*>& list) {
@@ -129,10 +130,10 @@ public:
     }
 
     template<typename Iterator>
-    inline void create(Iterator begin, Iterator end, unsigned int lbd = 0) {
+    inline SubsumptionClause* create(Iterator begin, Iterator end, unsigned int lbd = 0) {
         assert(std::distance(begin, end) > 0);
         Clause* clause = clause_db.createClause(begin, end, lbd);
-        registerSubsumptionClause(clause);
+        return registerSubsumptionClause(clause);
     }
 
     inline void remove(SubsumptionClause* subsumption_clause) {
@@ -140,11 +141,11 @@ public:
         subsumption_clause->set_deleted();
     }
 
-    inline void strengthen(SubsumptionClause* subsumption_clause, Lit lit) {
+    inline SubsumptionClause* strengthen(SubsumptionClause* subsumption_clause, Lit lit) {
         assert(subsumption_clause->size() > 1);
         Clause* new_clause = clause_db.strengthenClause(subsumption_clause->get_clause(), lit);
         subsumption_clause->set_deleted();
-        registerSubsumptionClause(new_clause);
+        return registerSubsumptionClause(new_clause);
     }
 
 };
