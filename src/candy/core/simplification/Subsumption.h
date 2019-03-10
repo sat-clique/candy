@@ -124,7 +124,9 @@ void Subsumption::unique(std::vector<SubsumptionClause*>& list) { // remove dupl
     }
 }
 
-bool Subsumption::subsume(SubsumptionClause* clause) {
+bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
+    SubsumptionClause* clause = subsumption_clause;
+
     // Find best variable to scan:
     Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
         return database.numOccurences(var(l1)) < database.numOccurences(var(l2));
@@ -139,8 +141,8 @@ bool Subsumption::subsume(SubsumptionClause* clause) {
             if (l == lit_Undef) {
                 nSubsumed++;
                 if (clause->get_clause()->isLearnt() && !occurence->get_clause()->isLearnt()) {
-                    clause->get_clause()->setPersistent();
-                    database.create(clause->begin(), clause->end());
+                    clause = database.create(clause->begin(), clause->end());
+                    database.remove(subsumption_clause);
                 }
                 database.remove(occurence);
             }
