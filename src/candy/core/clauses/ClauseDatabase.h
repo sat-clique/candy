@@ -164,7 +164,10 @@ public:
 
     template<typename Iterator>
     inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
-        Clause* clause = new (allocator.allocate(std::distance(begin, end), lbd)) Clause(begin, end, lbd);
+        unsigned int length = std::distance(begin, end);
+        unsigned int weight = length < 3 ? 0 : lbd;
+
+        Clause* clause = new (allocator.allocate(length, weight)) Clause(begin, end, weight);
         clauses.push_back(clause);
 
         certificate.added(clause->begin(), clause->end());

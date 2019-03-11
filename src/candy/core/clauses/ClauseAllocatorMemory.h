@@ -198,7 +198,7 @@ public:
     void import(ClauseAllocatorMemory& other, unsigned int size_limit) {
         for (const ClauseAllocatorPage& page : other.pages) {
             for (const Clause* clause : page) {
-                if (clause->isPersistent() || (!clause->isDeleted() && clause->size() < size_limit)) {
+                if (clause->isPersistent() || (!clause->isDeleted() && (size_limit == 0 || clause->size() < size_limit))) {
                     void* new_clause = allocate(clause->size());
                     memcpy(new_clause, (void*)clause, page.clauseBytes(clause->size()));
                     ((Clause*)clause)->setDeleted(); 

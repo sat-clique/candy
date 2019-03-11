@@ -39,14 +39,13 @@ namespace Candy {
 class ClauseAllocator {
 public:
     ClauseAllocator() : 
-        memory(32), facts(1), deleted(), 
+        memory(32), facts(1), 
         global_database_size_bound(ParallelOptions::opt_static_database_size_bound),
         global_allocator(nullptr), memory_lock(), ready(), ready_lock() { }
 
     ~ClauseAllocator() { }
 
     inline void* allocate(unsigned int length, unsigned int lbd) {
-        if (length < 3) lbd = 0;
         if (global_allocator == nullptr || lbd != 0) {
             if (length == 1) {
                 return facts.allocate(1);
@@ -64,39 +63,17 @@ public:
     }
 
     inline void deallocate(Clause* clause) {
-        // if (global_allocator == nullptr || memory.contains(clause)) { 
-            clause->setDeleted();
-        // }
-        // else { 
-        //     // in parallel scenario it is important not to delete clauses of the commonly used allocator before synchronization happens
-        //     // instead keep them to take care of them during synchronization
-        //     deleted.push_back(clause);
-        // }
+        clause->setDeleted();
     }
 
     inline void synchronize() {
         if (global_allocator != nullptr) {
-            if (global_database_size_bound > 0) {
-                ClauseAllocatorMemory transit { 1 };
-                transit.import(this->memory, global_database_size_bound);
-                // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
-                global_allocator->memory_lock.lock();
-                global_allocator->memory.absorb(transit);
-                // for (Clause* clause : this->deleted) {
-                //     clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
-                // }
-                global_allocator->memory_lock.unlock(); 
-            }
-            else {
-                // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << this->memory.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
-                global_allocator->memory_lock.lock();
-                global_allocator->memory.absorb(this->memory);
-                // for (Clause* clause : this->deleted) {
-                //     clause->setDeleted(); // inlined: global_allocator->deallocate(clause);
-                // }
-                global_allocator->memory_lock.unlock(); 
-            }
-            // deleted.clear();
+            ClauseAllocatorMemory transit { 1 };
+            transit.import(this->memory, global_database_size_bound);
+            // std::cout << "c " << std::this_thread::get_id() << ": Global allocator imports " << transit.used()/1024 << "kb of pages and deletes " << deleted.size() << " clauses" << std::endl;
+            global_allocator->memory_lock.lock();
+            global_allocator->memory.absorb(transit);
+            global_allocator->memory_lock.unlock(); 
         }
     }
 
@@ -161,10 +138,7 @@ public:
 
 private:
     ClauseAllocatorMemory memory;
-
     ClauseAllocatorMemory facts;
-    
-    std::vector<Clause*> deleted;
 
     const unsigned int global_database_size_bound;
 
