@@ -46,7 +46,7 @@ namespace Candy {
     
     void insertVariables(const std::vector<Lit>& lits, std::unordered_set<Var>& target) {
         for (auto lit : lits) {
-            target.insert(var(lit));
+            target.insert(lit.var());
         }
     }
 

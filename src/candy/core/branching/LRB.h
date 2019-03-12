@@ -114,9 +114,9 @@ public:
     void init(const CNFProblem& problem) {
         if (SolverOptions::opt_sort_variables) {
             std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < decision.size(); i++) {
-                weight[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
-                polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
+            for (size_t i = 0; i < decision.size(); ++i) {
+                weight[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
+                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
             }
         }
         reset();
@@ -127,7 +127,7 @@ public:
         stamp.clear();
         for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
-                Var v = var(lit);
+                Var v = lit.var();
                 if (!stamp[v]) {
                     stamp.set(v);
                     participated[v]++;
@@ -138,15 +138,15 @@ public:
             step_size -= 10e-6;
         }
         for (auto it = trail.begin(0); it != trail.end(); it++) {
-            interval_assigned[var(*it)]++;
+            interval_assigned[it->var()]++;
         }
         //Todo: penalize all var not on trail
 
         double inv_step_size = 1.0 - step_size;
         unsigned int backtrack_level = clause_db.result.backtrack_level;
         for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
-            Var v = var(*it);
-            polarity[v] = sign(*it);
+            Var v = it->var();
+            polarity[v] = it->sign();
             if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
 
             if (interval_assigned[v] > 0) {
@@ -160,7 +160,7 @@ public:
     void reset() {
         std::fill(participated.begin(), participated.end(), 0);
         std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
-        std::vector<Var> vs;
+        std::vector<int> vs;
         for (Var v = 0; v < (Var)decision.size(); v++) {
             if (decision[v]) {
                 vs.push_back(v);
@@ -182,7 +182,7 @@ public:
             }
         }
 
-        return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+        return next == var_Undef ? lit_Undef : Lit(next, polarity[next]);
     }
 
 private:

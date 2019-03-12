@@ -71,26 +71,26 @@ namespace Candy {
     
     TEST(RSAREquivalenceImplications, createWithTwoVars) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         EXPECT_EQ(underTest->size(), 2ull);
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(0, 1), mkLit(10, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(0, 1), Lit(10, 0)));
     }
     
     
     TEST(RSAREquivalenceImplications, createWithThreeVars) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         EXPECT_EQ(underTest->size(), 3ull);
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(0, 1), mkLit(100, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(0, 1), mkLit(10, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(10, 0), mkLit(0, 1)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(0, 1), Lit(100, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(0, 1), Lit(10, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(10, 0), Lit(0, 1)));
     }
     
     TEST(RSAREquivalenceImplications, removeInEmpty) {
@@ -108,8 +108,8 @@ namespace Candy {
     
     TEST(RSAREquivalenceImplications, removeAllOfTwoVars) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(0);
@@ -120,15 +120,15 @@ namespace Candy {
         EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
         EXPECT_TRUE(underTest->empty());
         
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(0,1)));
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10,0)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(0,1)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10,0)));
     }
     
     
     TEST(RSAREquivalenceImplications, removeOneOfTwoVars) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(0);
@@ -138,16 +138,16 @@ namespace Candy {
         EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
         EXPECT_TRUE(underTest->empty());
         
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(0,1)));
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10,0)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(0,1)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10,0)));
     }
     
     
     TEST(RSAREquivalenceImplications, removeOneOfThreeVars) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
@@ -157,21 +157,21 @@ namespace Candy {
         EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
         EXPECT_EQ(underTest->size(), 2ull);
         
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10,0)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10,0)));
         auto holeBoundaries = getSingleOccuringLiterals(commitResult.removedImplications);
         EXPECT_TRUE(contains(testData, holeBoundaries.first));
         EXPECT_TRUE(contains(testData, holeBoundaries.second));
         EXPECT_TRUE(contains(*underTest, commitResult.newImplications));
         
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(0, 1), mkLit(100, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(0, 1), Lit(100, 0)));
     }
     
     
     TEST(RSAREquivalenceImplications, removeTwoOfThreeVars) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
@@ -182,16 +182,16 @@ namespace Candy {
         EXPECT_EQ(commitResult.removedImplications.size(), 3ull);
         EXPECT_TRUE(underTest->empty());
         
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10,0)));
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(0,1)));
-        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(100,0)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10,0)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(0,1)));
+        EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(100,0)));
     }
     
     static void test_RSAREquivalenceImplications_removeAllOfThreeVars(bool withGenDelta) {
         EquivalenceConjecture testData;
-        testData.addLit(mkLit(0, 1));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(0, 1));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         auto underTest = test_createEquivalenceImplications(testData);
         
         underTest->addVariableRemovalToWorkQueue(10);
@@ -204,9 +204,9 @@ namespace Candy {
         if (withGenDelta) {
             EXPECT_TRUE(commitResult.newImplications.empty());
             EXPECT_EQ(commitResult.removedImplications.size(), 3ull);
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10,0)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(0,1)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(100,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(0,1)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(100,0)));
         }
     }
     
@@ -221,12 +221,12 @@ namespace Candy {
     static void test_EquivalenceImplications_inflictOneSingleVariableHole(bool withGenDelta) {
         EquivalenceConjecture testData;
         
-        testData.addLit(mkLit(1000, 0));
-        testData.addLit(mkLit(10000, 0));
-        testData.addLit(mkLit(100000, 0));
-        testData.addLit(mkLit(1, 0));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(1000, 0));
+        testData.addLit(Lit(10000, 0));
+        testData.addLit(Lit(100000, 0));
+        testData.addLit(Lit(1, 0));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         
         auto underTest = test_createEquivalenceImplications(testData);
         
@@ -236,15 +236,15 @@ namespace Candy {
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
         EXPECT_EQ(underTest->size(), 5ull);
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(1, 0), mkLit(1000, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(1000, 0), mkLit(10000, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(10000, 0), mkLit(100000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(1, 0), Lit(1000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(1000, 0), Lit(10000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(10000, 0), Lit(100000, 0)));
 
         if (withGenDelta) {
             EXPECT_EQ(commitResult.newImplications.size(), 1ull);
             EXPECT_EQ(commitResult.removedImplications.size(), 2ull);
             
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(100,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(100,0)));
             auto holeBoundaries = getSingleOccuringLiterals(commitResult.removedImplications);
             EXPECT_TRUE(contains(testData, holeBoundaries.first));
             EXPECT_TRUE(contains(testData, holeBoundaries.second));
@@ -262,16 +262,16 @@ namespace Candy {
     
     static void test_EquivalenceImplications_inflictOneTreeVariableHole(bool withGenDelta) {
         // Note: This test assumes that implications are constructed such that
-        // for all but one implication, var(A) < var(B) holds.
+        // for all but one implication, A.var() < B.var() holds.
         
         EquivalenceConjecture testData;
         
-        testData.addLit(mkLit(1000, 0));
-        testData.addLit(mkLit(10000, 0));
-        testData.addLit(mkLit(100000, 0));
-        testData.addLit(mkLit(1, 0));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(1000, 0));
+        testData.addLit(Lit(10000, 0));
+        testData.addLit(Lit(100000, 0));
+        testData.addLit(Lit(1, 0));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         
         auto underTest = test_createEquivalenceImplications(testData);
         
@@ -284,15 +284,15 @@ namespace Candy {
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
         EXPECT_EQ(underTest->size(), 3ull);
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(1000, 0), mkLit(10000, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(10000, 0), mkLit(100000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(1000, 0), Lit(10000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(10000, 0), Lit(100000, 0)));
         
         if (withGenDelta) {
             EXPECT_EQ(commitResult.newImplications.size(), 1ull);
             EXPECT_EQ(commitResult.removedImplications.size(), 4ull);
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(1,0)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10,0)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(100,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(1,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(100,0)));
             auto holeBoundaries = getSingleOccuringLiterals(commitResult.removedImplications);
             EXPECT_TRUE(contains(testData, holeBoundaries.first));
             EXPECT_TRUE(contains(testData, holeBoundaries.second));
@@ -310,16 +310,16 @@ namespace Candy {
     
     static void test_EquivalenceImplications_inflictTwoOneVariableHoles(bool withGenDelta) {
         // Note: This test assumes that implications are constructed such that
-        // for all but one implication, var(A) < var(B) holds.
+        // for all but one implication, A.var() < B.var() holds.
         
         EquivalenceConjecture testData;
         
-        testData.addLit(mkLit(1000, 0));
-        testData.addLit(mkLit(10000, 0));
-        testData.addLit(mkLit(100000, 0));
-        testData.addLit(mkLit(1, 0));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(1000, 0));
+        testData.addLit(Lit(10000, 0));
+        testData.addLit(Lit(100000, 0));
+        testData.addLit(Lit(1, 0));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         
         auto underTest = test_createEquivalenceImplications(testData);
         
@@ -331,15 +331,15 @@ namespace Candy {
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
         EXPECT_EQ(underTest->size(), 4ull);
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(10, 0), mkLit(100, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(100, 0), mkLit(10000, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(10000, 0), mkLit(100000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(10, 0), Lit(100, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(100, 0), Lit(10000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(10000, 0), Lit(100000, 0)));
         
         if (withGenDelta) {
             EXPECT_EQ(commitResult.newImplications.size(), 2ull);
             EXPECT_EQ(commitResult.removedImplications.size(), 4ull);
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(1,0)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(1000,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(1,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(1000,0)));
         
             /* TODO: check if the "boundaries of the holes" are valid lits */
             EXPECT_TRUE(contains(*underTest, commitResult.newImplications));
@@ -356,16 +356,16 @@ namespace Candy {
     
     static void test_EquivalenceImplicatoins_inflictMixedSizeVariableHoles(bool withGenDelta) {
         // Note: This test assumes that implications are constructed such that
-        // for all but one implication, var(A) < var(B) holds.
+        // for all but one implication, A.var() < B.var() holds.
         
         EquivalenceConjecture testData;
         
-        testData.addLit(mkLit(1000, 0));
-        testData.addLit(mkLit(10000, 0));
-        testData.addLit(mkLit(100000, 0));
-        testData.addLit(mkLit(1, 0));
-        testData.addLit(mkLit(10, 0));
-        testData.addLit(mkLit(100, 0));
+        testData.addLit(Lit(1000, 0));
+        testData.addLit(Lit(10000, 0));
+        testData.addLit(Lit(100000, 0));
+        testData.addLit(Lit(1, 0));
+        testData.addLit(Lit(10, 0));
+        testData.addLit(Lit(100, 0));
         
         auto underTest = test_createEquivalenceImplications(testData);
         
@@ -378,15 +378,15 @@ namespace Candy {
         auto commitResult = commitWorkQueue(*underTest, withGenDelta);
         
         EXPECT_EQ(underTest->size(), 3ull);
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(10, 0), mkLit(100, 0)));
-        EXPECT_TRUE(containsEquivalence(*underTest, mkLit(100, 0), mkLit(100000, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(10, 0), Lit(100, 0)));
+        EXPECT_TRUE(containsEquivalence(*underTest, Lit(100, 0), Lit(100000, 0)));
 
         if (withGenDelta) {
             EXPECT_EQ(commitResult.newImplications.size(), 2ull);
             EXPECT_EQ(commitResult.removedImplications.size(), 5ull);
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(1,0)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(1000,0)));
-            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, mkLit(10000,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(1,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(1000,0)));
+            EXPECT_TRUE(containsLitAsAnteAndSucc(commitResult.removedImplications, Lit(10000,0)));
         
             /* TODO: check if the "boundaries of the holes" are valid lits */
         
@@ -424,24 +424,24 @@ namespace Candy {
     
     TEST(RSARBackbones, createSingle) {
         std::vector<BackboneConjecture> testData;
-        testData.push_back(BackboneConjecture(mkLit(1,0)));
+        testData.push_back(BackboneConjecture(Lit(1,0)));
         auto underTest = test_createBackbones(testData);
         
         EXPECT_EQ(underTest->size(), 1ull);
-        EXPECT_TRUE(contains(*underTest, mkLit(1,0)));
+        EXPECT_TRUE(contains(*underTest, Lit(1,0)));
     }
     
     TEST(RSARBackbones, createTriple) {
         std::vector<BackboneConjecture> testData;
-        testData.push_back(BackboneConjecture(mkLit(1,0)));
-        testData.push_back(BackboneConjecture(mkLit(2,0)));
-        testData.push_back(BackboneConjecture(mkLit(3,0)));
+        testData.push_back(BackboneConjecture(Lit(1,0)));
+        testData.push_back(BackboneConjecture(Lit(2,0)));
+        testData.push_back(BackboneConjecture(Lit(3,0)));
         auto underTest = test_createBackbones(testData);
         
         EXPECT_EQ(underTest->size(), 3ull);
-        EXPECT_TRUE(contains(*underTest, mkLit(1,0)));
-        EXPECT_TRUE(contains(*underTest, mkLit(2,0)));
-        EXPECT_TRUE(contains(*underTest, mkLit(3,0)));
+        EXPECT_TRUE(contains(*underTest, Lit(1,0)));
+        EXPECT_TRUE(contains(*underTest, Lit(2,0)));
+        EXPECT_TRUE(contains(*underTest, Lit(3,0)));
     }
     
     static void test_Backbones_removeInEmpty(bool withGenDelta) {
@@ -469,9 +469,9 @@ namespace Candy {
     
     static void test_Backbones_removeAll(bool withGenDelta) {
         std::vector<BackboneConjecture> testData;
-        testData.push_back(BackboneConjecture(mkLit(1,0)));
-        testData.push_back(BackboneConjecture(mkLit(2,0)));
-        testData.push_back(BackboneConjecture(mkLit(3,0)));
+        testData.push_back(BackboneConjecture(Lit(1,0)));
+        testData.push_back(BackboneConjecture(Lit(2,0)));
+        testData.push_back(BackboneConjecture(Lit(3,0)));
         
         auto underTest = test_createBackbones(testData);
         
@@ -485,9 +485,9 @@ namespace Candy {
         
         if (withGenDelta) {
             EXPECT_EQ(commitResult.removedBackbones.size(), 3ull);
-            EXPECT_TRUE(contains(commitResult.removedBackbones, mkLit(1,0)));
-            EXPECT_TRUE(contains(commitResult.removedBackbones, mkLit(2,0)));
-            EXPECT_TRUE(contains(commitResult.removedBackbones, mkLit(3,0)));
+            EXPECT_TRUE(contains(commitResult.removedBackbones, Lit(1,0)));
+            EXPECT_TRUE(contains(commitResult.removedBackbones, Lit(2,0)));
+            EXPECT_TRUE(contains(commitResult.removedBackbones, Lit(3,0)));
         }
     }
     
@@ -501,9 +501,9 @@ namespace Candy {
     
     static void test_Backbones_removeAllButOne(bool withGenDelta) {
         std::vector<BackboneConjecture> testData;
-        testData.push_back(BackboneConjecture(mkLit(1,0)));
-        testData.push_back(BackboneConjecture(mkLit(2,0)));
-        testData.push_back(BackboneConjecture(mkLit(3,0)));
+        testData.push_back(BackboneConjecture(Lit(1,0)));
+        testData.push_back(BackboneConjecture(Lit(2,0)));
+        testData.push_back(BackboneConjecture(Lit(3,0)));
         
         auto underTest = test_createBackbones(testData);
         
@@ -518,9 +518,9 @@ namespace Candy {
             EXPECT_EQ(commitResult.removedBackbones.size(), 2ull);
         
         
-            EXPECT_TRUE(contains(commitResult.removedBackbones, mkLit(1,0)));
-            EXPECT_TRUE(contains(commitResult.removedBackbones, mkLit(2,0)));
-            EXPECT_TRUE(contains(*underTest, mkLit(3,0)));
+            EXPECT_TRUE(contains(commitResult.removedBackbones, Lit(1,0)));
+            EXPECT_TRUE(contains(commitResult.removedBackbones, Lit(2,0)));
+            EXPECT_TRUE(contains(*underTest, Lit(3,0)));
         }
     }
     
@@ -561,10 +561,10 @@ namespace Candy {
         Conjectures testData;
         
         EquivalenceConjecture eqc;
-        eqc.addLit(mkLit(0, 1));
-        eqc.addLit(mkLit(1, 0));
+        eqc.addLit(Lit(0, 1));
+        eqc.addLit(Lit(1, 0));
         
-        BackboneConjecture bbc(mkLit(2, 0));
+        BackboneConjecture bbc(Lit(2, 0));
         
         testData.addEquivalence(eqc);
         testData.addBackbone(bbc);
@@ -609,16 +609,16 @@ namespace Candy {
         Conjectures testData;
         
         EquivalenceConjecture eqc;
-        eqc.addLit(mkLit(0, 1));
-        eqc.addLit(mkLit(1, 0));
+        eqc.addLit(Lit(0, 1));
+        eqc.addLit(Lit(1, 0));
         
         EquivalenceConjecture eqc2;
-        eqc2.addLit(mkLit(2, 1));
-        eqc2.addLit(mkLit(3, 0));
-        eqc2.addLit(mkLit(6, 0));
+        eqc2.addLit(Lit(2, 1));
+        eqc2.addLit(Lit(3, 0));
+        eqc2.addLit(Lit(6, 0));
         
-        BackboneConjecture bbc(mkLit(4, 0));
-        BackboneConjecture bbc2(mkLit(5, 0));
+        BackboneConjecture bbc(Lit(4, 0));
+        BackboneConjecture bbc2(Lit(5, 0));
         
         testData.addEquivalence(eqc);
         testData.addEquivalence(eqc2);

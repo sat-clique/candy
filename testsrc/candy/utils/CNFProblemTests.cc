@@ -14,20 +14,20 @@ using namespace Candy;
 
 TEST (CNFProblemTestPatterns, clausePersistance) {
     CNFProblem problem;
-    problem.readClause({mkLit(0, 0), mkLit(1, 0)});
-    EXPECT_TRUE(containsClause(problem, {mkLit(0, 0), mkLit(1, 0)}));
+    problem.readClause({Lit(0, 0), Lit(1, 0)});
+    EXPECT_TRUE(containsClause(problem, {Lit(0, 0), Lit(1, 0)}));
 }
 
 // CNFProblem does take care of clause-sanitation again:
 TEST (CNFProblemTestPatterns, redundandLiteralRemoval) {
     CNFProblem problem;
-    problem.readClause({mkLit(0, 0), mkLit(1, 0)});
-    EXPECT_TRUE(containsClause(problem, {mkLit(0), mkLit(1, 0)}));
+    problem.readClause({Lit(0, 0), Lit(1, 0)});
+    EXPECT_TRUE(containsClause(problem, {Lit(0), Lit(1, 0)}));
 }
 
 TEST (CNFProblemTestPatterns, tautologicClauseRemoval) {
     CNFProblem problem;
-    problem.readClause({mkLit(0, 0), mkLit(1, 0), mkLit(0, 1)});
+    problem.readClause({Lit(0, 0), Lit(1, 0), Lit(0, 1)});
     ASSERT_EQ(problem.nClauses(), 0);
 }
 

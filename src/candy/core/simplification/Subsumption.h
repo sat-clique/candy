@@ -128,12 +128,12 @@ bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
     SubsumptionClause* clause = subsumption_clause;
 
     // Find best variable to scan:
-    Var best = var(*std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
-        return database.numOccurences(var(l1)) < database.numOccurences(var(l2));
-    }));
+    Lit best = *std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
+        return database.numOccurences(l1.var()) < database.numOccurences(l2.var());
+    });
 
     // Search all candidates:
-    const std::vector<SubsumptionClause*> occurences = database.copyOccurences(best);
+    const std::vector<SubsumptionClause*> occurences = database.copyOccurences(best.var());
     for (SubsumptionClause* occurence : occurences) {
         if (occurence != clause && !occurence->is_deleted()) {
             Lit l = clause->subsumes(occurence);

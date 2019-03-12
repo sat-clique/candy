@@ -37,7 +37,7 @@ namespace Candy {
     }
     
     void SimulationVector::initialize(varsimvec_field_t pattern) {
-        for (int i = 0; i < VARSIMVECSIZE; i++) {
+        for (int i = 0; i < VARSIMVECSIZE; ++i) {
             vars[i] = pattern;
         }
     }
@@ -82,7 +82,7 @@ namespace Candy {
         m_simulationVectors = reinterpret_cast<AlignedSimVector*>(alignedMem);
         
         AlignedSimVector *toBeInitialized = m_simulationVectors;
-        for (size_t i = 0; i < m_size; i++) {
+        for (size_t i = 0; i < m_size; ++i) {
             new(toBeInitialized) SimulationVector;
             toBeInitialized->initialize(0ull);
         }

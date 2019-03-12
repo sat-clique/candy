@@ -78,17 +78,17 @@ namespace Candy {
         
         for (auto outputLit : clauseOrder.getGateOutputsOrdered()) {
             AlignedSimVector allSat = onesVector;
-            auto outputVar = var(outputLit);
+            auto outputVar = outputLit.var();
             auto& gateClauses = clauseOrder.getClauses(outputVar);
 
             for (auto clause : gateClauses) {
                 AlignedSimVector satAssgn = zeroesVector;
                 for (auto literal : *clause) {
-                    if (var(literal) == outputVar) {
+                    if (literal.var() == outputVar) {
                         continue;
                     }
                     
-                    AlignedSimVector* varAssgn = &(assignment.get(var(literal)));
+                    AlignedSimVector* varAssgn = &(assignment.get(literal.var()));
                     
 #if defined(__GNUC__) || defined(__GNUG__) || defined(__clang__)
                     varAssgn = reinterpret_cast<AlignedSimVector*>(
@@ -99,7 +99,7 @@ namespace Candy {
 #error Unsupported compiler.
 #endif
                     
-                    if (sign(literal) == true) {
+                    if (literal.sign() == true) {
                         satAssgn |= *varAssgn;
                     }
                     else {
@@ -120,7 +120,7 @@ namespace Candy {
 #error Unsupported compiler.
 #endif
 
-            if (sign(outputLit) == true) {
+            if (outputLit.sign() == true) {
                 *outputAssgn = ~allSat;
             }
             else {

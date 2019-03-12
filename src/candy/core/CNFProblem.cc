@@ -83,7 +83,7 @@ void CNFProblem::readDimacs(gzFile input_stream) {
             static Cl lits;
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                lits.push_back(mkLit(abs(plit)-1, plit < 0));
+                lits.push_back(Lit(abs(plit)-1, plit < 0));
                 if (in.eof()) {
                     throw ParserException("PARSE ERROR! Expected clause but got unexpected char: " + std::to_string(*in));
                 }
@@ -127,12 +127,12 @@ void CNFProblem::readClause(Iterator begin, Iterator end) {
         // remove redundant literals
         clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
         // skip tatological clause
-        bool isTautological = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) { return var(l1) == var(l2); });
+        bool isTautological = clause->end() != std::unique(clause->begin(), clause->end(), [](Lit l1, Lit l2) { return l1.var() == l2.var(); });
         if (isTautological) {
             delete clause;
             return;
         }
-        maxVars = std::max(maxVars, (unsigned int) 1 + var(clause->back()));
+        maxVars = std::max(maxVars, (unsigned int) 1 + clause->back().var()); 
         problem.push_back(clause);
     }
     else {

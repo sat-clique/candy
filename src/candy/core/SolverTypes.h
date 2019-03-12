@@ -57,44 +57,90 @@ namespace Candy {
 // NOTE! Variables are just integers. No abstraction here. They should be chosen from 0..N,
 // so that they can be used as array indices.
 
-// struct Var {
-// 	int32_t x;
+struct Var {
+	int32_t id;
 
-// 	operator int() const {
-// 		return x;
-// 	}
-// };
-// #define var_Undef Var { -1 }
+	inline Var() {
+		this->id = -1;
+	}
 
-typedef int Var;
-#define var_Undef (-1)
+	inline Var(int32_t id) {
+		this->id = id;
+	}
+
+	inline operator int() const {
+		return id;
+	}
+
+	inline Var& operator++ () { // prefix ++
+		++this->id;
+		return *this;
+	}
+
+	inline Var operator++ (int) { // postfix ++
+		Var result(*this);
+		++this->id;
+		return result;
+	}
+
+	inline bool operator <(Var v) const {
+		return id < v.id;
+	}
+
+	inline bool operator <(int i) const {
+		return id < i;
+	}
+};
+
+#define var_Undef Var { -1 }
 
 struct Lit {
 	int32_t x;
 
-	operator int() const {
+	inline Lit() : Lit(-1) { }
+
+	inline Lit(Var v) : Lit(v, false) { }
+
+	inline Lit(Var v, bool sign) {
+		this->x = v.id + v.id + (sign ? 1 : 0);
+	}
+
+	inline operator int() const {
 		return x;
 	}
 
-	// Use this as a constructor:
-	friend Lit mkLit(Var var, bool sign);
+	inline bool sign() const {
+		return x & 1;
+	}
 
-	bool operator ==(Lit p) const {
+	inline Var var() const {
+		return Var(x >> 1);
+	}
+
+	inline Lit operator ~ () const {
+		Lit q;
+		q.x = x ^ 1;
+		return q;
+	}
+
+	inline Lit operator ^ (bool b) const {
+		Lit q;
+		q.x = x ^ (b ? 1 : 0);
+		return q;
+	}
+
+	inline bool operator == (Lit p) const {
 		return x == p.x;
 	}
-	bool operator !=(Lit p) const {
+
+	inline bool operator != (Lit p) const {
 		return x != p.x;
 	}
-	bool operator <(Lit p) const {
+
+	inline bool operator < (Lit p) const {
 		return x < p.x;
 	} // '<' makes p, ~p adjacent in the ordering.
 };
-
-inline Lit mkLit(Var var, bool sign = false) {
-	Lit p;
-    p.x = var + var + (sign ? 1 : 0);
-	return p;
-}
 
 inline Var operator"" _V(unsigned long long n) {
     assert(n > 0);
@@ -103,54 +149,17 @@ inline Var operator"" _V(unsigned long long n) {
 
 inline Lit operator"" _L(unsigned long long n) {
     assert(n > 0);
-    return mkLit(static_cast<int>(n-1), false);
+    return Lit { Var { (int32_t)n-1 }, false };
 }
 
-inline Lit operator ~(Lit p) {
-	Lit q;
-	q.x = p.x ^ 1;
-	return q;
-}
-
-inline Lit operator ^(Lit p, bool b) {
-	Lit q;
-    q.x = p.x ^ (b ? 1 : 0);
-	return q;
-}
-
-inline bool sign(Lit p) {
-	return p.x & 1;
-}
-inline int var(Lit p) {
-	return p.x >> 1;
-}
-
-// Mapping Literals to and from compact integers suitable for array indexing:
-inline int toInt(Var v) {
-	return v;
-}
-inline int toInt(Lit p) {
-	return p.x;
-}
-inline Lit toLit(int i) {
-	Lit p;
-	p.x = i;
-	return p;
-}
-
-const Lit lit_Undef = { -2 };  // }- Useful special constants.
-const Lit lit_Error = { -1 };  // }
+const Lit lit_Undef(-1, false); // -2
+const Lit lit_Error(-1, true); // -1
 
 
 //=================================================================================================
 // Lifted booleans:
-//
-// NOTE: this implementation is optimized for the case when comparisons between values are mostly
-//       between one variable and one constant. Some care had to be taken to make sure that gcc
-//       does enough constant propagation to produce sensible code, and this appears to be somewhat
-//       fragile unfortunately.
 
-#define l_True  (lbool((uint8_t)0)) // gcc does not do constant propagation if these are real constants.
+#define l_True  (lbool((uint8_t)0))
 #define l_False (lbool((uint8_t)1))
 #define l_Undef (lbool((uint8_t)2))
 
@@ -191,23 +200,14 @@ public:
 		uint8_t v = (0xFCFCF400 >> sel) & 3;
 		return lbool(v);
 	}
-
-	friend int toInt(lbool l);
-	friend lbool toLbool(int v);
 };
-inline int toInt(lbool l) {
-	return l.value;
-}
-inline lbool toLbool(int v) {
-	return lbool((uint8_t) v);
-}
 
 typedef std::vector<Lit> Cl;
 typedef std::vector<Cl*> For;
 
 inline std::ostream& operator <<(std::ostream& stream, Lit const& lit) {
-	if (sign(lit)) stream << "-";
-	stream << var(lit)+1;
+	if (lit.sign()) stream << "-";
+	stream << lit.var()+1;
     return stream;
 }
 
@@ -228,7 +228,7 @@ inline void printLiteral(Lit lit) {
 }
 
 inline void printLiteral(Lit lit, std::vector<lbool> values) {
-    lbool value = values[var(lit)] ^ sign(lit);
+    lbool value = values[lit.var()] ^ lit.sign();
 	std::cout << lit << ":" << value;
 }
 
@@ -248,11 +248,18 @@ namespace std {
 template<>
 struct hash<Candy::Lit> {
 	std::size_t operator()(const Candy::Lit& key) const {
-		Candy::Var hashedVar = Candy::var(key);
-		if (Candy::sign(key) == 0) {
+		Candy::Var hashedVar = key.var();
+		if (key.sign() == 0) { 
 			hashedVar = ~hashedVar;
 		}
-		return std::hash<Candy::Var>()(hashedVar);
+		return std::hash<uint32_t>()(hashedVar.id);
+	}
+};
+
+template<>
+struct hash<Candy::Var> {
+	std::size_t operator()(const Candy::Var& key) const {
+		return std::hash<uint32_t>()(key.id);
 	}
 };
 

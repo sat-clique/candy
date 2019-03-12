@@ -59,8 +59,8 @@ TEST(SolverTests, basicIncrementalSolver) {
   CandySolverInterface* solver = createSolver();
   Var assumptionVar = problem.newVar();
   solver->init(problem);
-  solver->setAssumptions(Cl { mkLit(assumptionVar, 0) });
+  solver->setAssumptions(Cl { Lit(assumptionVar, 0) });
   EXPECT_TRUE(l_True == solver->solve());
-  solver->setAssumptions(Cl { mkLit(assumptionVar, 1) });
+  solver->setAssumptions(Cl { Lit(assumptionVar, 1) });
   EXPECT_TRUE(l_True == solver->solve());
 }

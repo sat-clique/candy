@@ -69,7 +69,7 @@ namespace Candy {
     
     GateStructureBuilderImpl::GateStructureBuilderImpl() : GateStructureBuilder(), m_builtClauses(new CNFProblem()),
     m_usedOutputs({}), m_gateVars({}) {
-        addClause({mkLit(0,1)});
+        addClause({Lit(0,1)});
         m_gateVars.insert(0);
     }
     
@@ -78,8 +78,8 @@ namespace Candy {
     }
     
     GateStructureBuilderImpl& GateStructureBuilderImpl::withAnd(const std::vector<Lit>& inputs, Lit output) {
-        assertContainsVariable(m_gateVars, var(output));
-        assertDoesNotContainVariable(m_usedOutputs, var(output));
+        assertContainsVariable(m_gateVars, output.var());
+        assertDoesNotContainVariable(m_usedOutputs, output.var()); 
         
         Cl fwd = negatedLits(inputs);
         fwd.push_back(output);
@@ -90,13 +90,13 @@ namespace Candy {
         }
         
         insertVariables(inputs, m_gateVars);
-        m_usedOutputs.insert(var(output));
+        m_usedOutputs.insert(output.var());
         return *this;
     }
     
     GateStructureBuilderImpl& GateStructureBuilderImpl::withOr(const std::vector<Lit>& inputs, Lit output) {
-        assertContainsVariable(m_gateVars, var(output));
-        assertDoesNotContainVariable(m_usedOutputs, var(output));
+        assertContainsVariable(m_gateVars, output.var());
+        assertDoesNotContainVariable(m_usedOutputs, output.var());
         
         Cl bwd(inputs);
         bwd.push_back(~output);
@@ -107,14 +107,14 @@ namespace Candy {
         }
         
         insertVariables(inputs, m_gateVars);
-        m_usedOutputs.insert(var(output));
+        m_usedOutputs.insert(output.var());
         return *this;
     }
     
     GateStructureBuilderImpl& GateStructureBuilderImpl::withXor(const std::vector<Lit>& inputs,
                                                                 Lit output) {
-        assertContainsVariable(m_gateVars, var(output));
-        assertDoesNotContainVariable(m_usedOutputs, var(output));
+        assertContainsVariable(m_gateVars, output.var());
+        assertDoesNotContainVariable(m_usedOutputs, output.var());
         
         assert(inputs.size() == 2ull);
         
@@ -124,7 +124,7 @@ namespace Candy {
         addClause(Cl{inputs[0], ~inputs[1], output});
         
         insertVariables(inputs, m_gateVars);
-        m_usedOutputs.insert(var(output));
+        m_usedOutputs.insert(output.var());
         
         return *this;
     }

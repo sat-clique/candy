@@ -31,7 +31,7 @@ NormalizedClauseList::NormalizedClauseList(Cube* model) {
   this->nVars = 0;
   for (std::vector<Literal>::iterator it = model->begin(); it != model->end(); ++it) {
     Literal lit = *it;
-    if (var(lit)+1 > this->nVars) this->nVars = var(lit)+1;
+    if (lit.var()+1 > this->nVars) this->nVars = lit.var()+1;
   }
 }
 
@@ -53,13 +53,13 @@ void NormalizedClauseList::add(Literals* clause) {
 }
 
 void NormalizedClauseList::addAll(ClauseList* list) {
-  for(int i = 0; i < list->size(); i++) {
+  for(int i = 0; i < list->size(); ++i) {
     this->add(list->get(i));
   }
 }
 
 Literal NormalizedClauseList::normalize(Literal lit) {
-  if (sign(lit)) {
+  if (lit.sign()) {
     (*denormalizedLiteral)[lit] = ~lit;
     (*denormalizedLiteral)[~lit] = lit;
     return ~lit;

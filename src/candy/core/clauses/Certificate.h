@@ -40,7 +40,7 @@ private:
     template<typename Iterator>
     inline void printLiterals(Iterator it, Iterator end) {
         for(; it != end; it++) {
-            *out << (var(*it) + 1) * (sign(*it) ? -1 : 1) << " ";
+            *out << (it->var() + 1) * (it->sign() ? -1 : 1) << " ";
         }
         *out << "0\n";
     }

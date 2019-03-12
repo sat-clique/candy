@@ -42,8 +42,8 @@ void Minimizer::generateHittingSetProblem(CNFProblem& clauses) {
         // create clause containing all satified literals (purified)
         Cl normalizedClause;
         for (Lit lit : *clause) {
-            if (model[var(lit)] == lit) {
-                normalizedClause.push_back(mkLit(var(lit), false));
+            if (model[lit.var()] == lit) {
+                normalizedClause.push_back(Lit(lit.var(), false));
             }
         }
         hittingSetProblem.readClause(normalizedClause);
@@ -75,7 +75,7 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
 
     Cl normalizedModel;
     for (Lit lit : model) {
-        normalizedModel.push_back(sign(lit) ? ~lit : lit); // add normalized
+        normalizedModel.push_back(lit.sign() ? ~lit : lit); // add normalized
     }
 
     // find minimal model
@@ -84,7 +84,7 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
     // translate back to original variables
     Cl denormalizedModel;
     for (Lit lit : minimizedModel) {
-        denormalizedModel.push_back(model[var(lit)]);
+        denormalizedModel.push_back(model[lit.var()]);
     }
 
     delete solver;
@@ -106,7 +106,7 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
         assume.clear();
 
         for (Lit lit : pModel) {
-            if (sign(lit)) {
+            if (lit.sign()) {
                 assume.push_back(lit);
             } 
             else {
@@ -129,7 +129,7 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
         }
     }
 
-    auto last = std::remove_if(pModel.begin(), pModel.end(), [](const Lit lit) { return sign(lit); });
+    auto last = std::remove_if(pModel.begin(), pModel.end(), [](const Lit lit) { return lit.sign(); });
     pModel.erase(last, pModel.end());
 
     std::cout << "c Resulting model " << pModel << std::endl;

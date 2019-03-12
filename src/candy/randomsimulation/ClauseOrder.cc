@@ -148,7 +148,7 @@ namespace Candy {
             //  - its output is an enabled variable
             //  - for none of its input variables i, the following holds: i is an output variable of a gate and i is disabled.
             
-            Candy::Var outputVar = var(gate.getOutput());
+            Candy::Var outputVar = gate.getOutput().var();
             
             if (m_enabledOutputs.find(outputVar) == m_enabledOutputs.end()) {
                 return; // no backtracking
@@ -156,7 +156,7 @@ namespace Candy {
             
             for (auto inputLit : gate.getInputs()) {
                 if (analyzer.getGate(inputLit).isDefined()
-                    && m_enabledOutputs.find(var(inputLit)) == m_enabledOutputs.end()) {
+                    && m_enabledOutputs.find(inputLit.var()) == m_enabledOutputs.end()) {
                     return; // no backtracking
                 }
             }
@@ -176,7 +176,7 @@ namespace Candy {
         }
         
         m_outputLitsOrdered.push_back(usedOutput);
-        auto &clausesTarget = createClauseStorage(var(usedOutput));
+        auto &clausesTarget = createClauseStorage(usedOutput.var());
         assert (clausesTarget.empty());
         clausesTarget.insert(clausesTarget.begin(), usedGateClauses->begin(), usedGateClauses->end());
     }
@@ -235,7 +235,7 @@ namespace Candy {
         
         for (auto rootClause : analyzer.getRoots()) {
             for (auto rootLit : *rootClause) {
-                m_maxVar = std::max(m_maxVar, var(rootLit));
+                m_maxVar = std::max(m_maxVar, rootLit.var());
                 if (analyzer.getGate(rootLit).isDefined()) {
                     readGatesRecursive(analyzer, rootLit, seenInputs, seenOutputs);
                 }
@@ -246,11 +246,11 @@ namespace Candy {
     void RecursiveClauseOrder::readGatesRecursive(const GateAnalyzer &analyzer, Candy::Lit output,
                                                   std::unordered_set<Candy::Var>& seenInputs,
                                                   std::unordered_set<Candy::Var>& seenOutputs) {
-        seenOutputs.insert(var(output));
+        seenOutputs.insert(output.var());
         
         auto &gate = analyzer.getGate(output);
         for (auto inputLit : gate.getInputs()) {
-            auto inputVar = var(inputLit);
+            auto inputVar = inputLit.var();
             m_maxVar = std::max(m_maxVar, inputVar);
             
             if (analyzer.getGate(inputLit).isDefined()
@@ -264,7 +264,7 @@ namespace Candy {
             }
         }
         
-        assert(seenInputs.find(var(output)) == seenInputs.end());
+        assert(seenInputs.find(output.var()) == seenInputs.end());
         
         backtrack(analyzer, gate);
     }
@@ -302,19 +302,19 @@ namespace Candy {
     struct DFSGateCollector {
         std::vector<const Gate*> backtrackSequence{};
         std::vector<Var> inputs{};
-        int maxVar = -1;
+        Var maxVar = -1;
         
         void init(size_t gateCount) {
             backtrackSequence.reserve(gateCount);
         }
         
         void backtrack(const Gate* g) {
-            maxVar = std::max(maxVar, var(g->getOutput()));
+            maxVar = std::max(maxVar, g->getOutput().var());
             backtrackSequence.push_back(g);
         }
         
         void collect(const Gate* g) {
-            maxVar = std::max(maxVar, var(g->getOutput()));
+            maxVar = std::max(maxVar, g->getOutput().var());
         }
         
         void collectInput(Var v) {
@@ -383,7 +383,7 @@ namespace Candy {
         // TODO: find a more direct way for iterating over the gates
         auto topo = getTopoOrder(m_analyzer);
         for (auto outputVar : topo.getOutputsOrdered()) {
-            auto& gate = m_analyzer.getGate(mkLit(outputVar, 1));
+            auto& gate = m_analyzer.getGate(Lit(outputVar, 1));
             if(gate.hasNonMonotonousParent()) {
                 result.insert(outputVar);
             }

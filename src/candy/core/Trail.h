@@ -87,7 +87,7 @@ public:
     void print() {
         unsigned int level = 0;
         std::cout << "Trail: ";
-        for (unsigned int i = 0; i < size(); i++) {
+        for (unsigned int i = 0; i < size(); ++i) {
             if (i == trail_lim[level]) {
                 std::cout << "'" << trail[i] << "' ";
                 level++;
@@ -166,7 +166,7 @@ public:
 
     // The current value of a literal.
     inline lbool value(Lit p) const {
-        return assigns[var(p)] ^ sign(p);
+        return assigns[p.var()] ^ p.sign();
     }
 
     inline bool satisfies(Lit lit) const {
@@ -214,8 +214,8 @@ public:
 
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
-        assigns[var(p)] = lbool(!sign(p));
-        vardata[var(p)] = VarData(nullptr, decisionLevel());
+        assigns[p.var()] = lbool(!p.sign());
+        vardata[p.var()] = VarData(nullptr, decisionLevel());
         trail[trail_size++] = p;
         nDecisions++;
     }
@@ -225,8 +225,8 @@ public:
             return false;
         }
         else {
-            assigns[var(p)] = lbool(!sign(p));
-            vardata[var(p)] = VarData(from, decisionLevel());
+            assigns[p.var()] = lbool(!p.sign());
+            vardata[p.var()] = VarData(from, decisionLevel());
             trail[trail_size++] = p;
             nPropagations++;
             return true;
@@ -235,9 +235,9 @@ public:
 
     inline bool fact(Lit p) {
         assert(decisionLevel() == 0);
-        vardata[var(p)] = VarData(nullptr, 0);
+        vardata[p.var()] = VarData(nullptr, 0);
         if (!this->defines(p)) {
-            assigns[var(p)] = lbool(!sign(p));
+            assigns[p.var()] = lbool(!p.sign());
             trail[trail_size++] = p;
             nPropagations++;
             return true;
@@ -250,7 +250,7 @@ public:
     inline void backtrack(unsigned int level) {
         if (decisionLevel() > level) {
             for (auto it = begin(level); it != end(); it++) {
-                assigns[var(*it)] = l_Undef;
+                assigns[it->var()] = l_Undef; 
             }
             qhead = trail_lim[level];
             trail_size = trail_lim[level];
@@ -260,7 +260,7 @@ public:
 
     inline void reset() {
         for (Lit lit : *this) {
-            assigns[var(lit)] = l_Undef;
+            assigns[lit.var()] = l_Undef;
         }
         qhead = 0;
         trail_size = 0;
@@ -278,7 +278,7 @@ public:
 
         for (; it != end; it++) {
         	Lit lit = *it;
-            int l = level(var(lit));
+            int l = level(lit.var());
             if (!stamp[l]) {
                 stamp.set(l);
                 nblevels++;

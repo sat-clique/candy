@@ -38,38 +38,38 @@ namespace Candy {
         auto cnf = gateBuilder->build();
         
         EXPECT_EQ(cnf->nClauses(), 1ul);
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_andGate) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withAnd({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
         auto cnf = gateBuilder->build();
         
         EXPECT_EQ(cnf->nClauses(), 4ul);
         
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 0), mkLit(2, 0), mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 1), mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(2, 1), mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(1, 0), Lit(2, 0), Lit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(1, 1), Lit(0, 0)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(2, 1), Lit(0, 0)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateStructureBuilderTest_orGate) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
         auto cnf = gateBuilder->build();
         
         EXPECT_EQ(cnf->nClauses(), 4ul);
         
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 1), mkLit(2, 1), mkLit(0, 0)})));
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(1, 0), mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(2, 0), mkLit(0, 1)})));
-        EXPECT_TRUE(containsClause(*cnf, Cl({mkLit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(1, 1), Lit(2, 1), Lit(0, 0)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(1, 0), Lit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(2, 0), Lit(0, 1)})));
+        EXPECT_TRUE(containsClause(*cnf, Cl({Lit(0, 1)})));
     }
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_simple) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
         auto formula = gateBuilder->build();
         
         GateAnalyzer ga(*formula);
@@ -79,9 +79,9 @@ namespace Candy {
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_threeGates) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1), mkLit(5, 1)}, mkLit(1,1));
-        gateBuilder->withAnd({mkLit(6, 1), mkLit(7, 1)}, mkLit(2,1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4, 1), Lit(5, 1)}, Lit(1,1));
+        gateBuilder->withAnd({Lit(6, 1), Lit(7, 1)}, Lit(2,1));
         auto formula = gateBuilder->build();
         
         GateAnalyzer ga(*formula);

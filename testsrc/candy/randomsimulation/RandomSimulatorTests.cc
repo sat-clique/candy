@@ -55,9 +55,9 @@ namespace Candy {
     TEST(RSRandomSimulatorTests, defaultImpl_detectsSingleBackboneAndSingleEq) {
         auto gateBuilder = createGateStructureBuilder();
         
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4,1)}, mkLit(1,1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4,1)}, mkLit(2,0));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4,1)}, Lit(1,1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4,1)}, Lit(2,0));
         
         auto formula = gateBuilder->build();
         
@@ -72,8 +72,8 @@ namespace Candy {
         
         EXPECT_EQ(result.getBackbones().size(), 1ul);
         EXPECT_EQ(result.getEquivalences().size(), 1ul);
-        EXPECT_TRUE(hasBackboneConj(result, mkLit(0,1)));
-        EXPECT_TRUE(hasEquivalenceConj(result, {mkLit(1,1), mkLit(2,0)}));
+        EXPECT_TRUE(hasBackboneConj(result, Lit(0,1)));
+        EXPECT_TRUE(hasEquivalenceConj(result, {Lit(1,1), Lit(2,0)}));
     }
     
     
@@ -81,13 +81,13 @@ namespace Candy {
     static void test_defaultImpl_multipleBackbones(bool autoLen) {
         auto gateBuilder = createGateStructureBuilder();
         
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1), mkLit(5,1)}, mkLit(0, 1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4,1)}, mkLit(1,1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4,1)}, mkLit(2,0));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1), Lit(5,1)}, Lit(0, 1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4,1)}, Lit(1,1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4,1)}, Lit(2,0));
         
-        gateBuilder->withAnd({mkLit(6, 1), mkLit(7,1)}, mkLit(5,1));
-        gateBuilder->withAnd({mkLit(8, 1), mkLit(9,1)}, mkLit(6,0));
-        gateBuilder->withAnd({mkLit(8, 1), mkLit(9,1)}, mkLit(7,1));
+        gateBuilder->withAnd({Lit(6, 1), Lit(7,1)}, Lit(5,1));
+        gateBuilder->withAnd({Lit(8, 1), Lit(9,1)}, Lit(6,0));
+        gateBuilder->withAnd({Lit(8, 1), Lit(9,1)}, Lit(7,1));
         
         auto formula = gateBuilder->build();
         
@@ -108,10 +108,10 @@ namespace Candy {
         
         EXPECT_EQ(result.getBackbones().size(), 2ul);
         EXPECT_EQ(result.getEquivalences().size(), 2ul);
-        EXPECT_TRUE(hasBackboneConj(result, mkLit(0,1)));
-        EXPECT_TRUE(hasBackboneConj(result, mkLit(5,0)));
-        EXPECT_TRUE(hasEquivalenceConj(result, {mkLit(1,1), mkLit(2,0)}));
-        EXPECT_TRUE(hasEquivalenceConj(result, {mkLit(6,1), mkLit(7,0)}));
+        EXPECT_TRUE(hasBackboneConj(result, Lit(0,1)));
+        EXPECT_TRUE(hasBackboneConj(result, Lit(5,0)));
+        EXPECT_TRUE(hasEquivalenceConj(result, {Lit(1,1), Lit(2,0)}));
+        EXPECT_TRUE(hasEquivalenceConj(result, {Lit(6,1), Lit(7,0)}));
     }
     
     TEST(RSRandomSimulatorTests, defaultImpl_multipleBackbones_definedRunLength) {

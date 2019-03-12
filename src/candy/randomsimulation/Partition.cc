@@ -368,7 +368,7 @@ namespace Candy {
                                                  &partitionsByID,
                                              std::vector<uint64_t> &groupIDs_detOrder,
                                              std::unordered_map<uint64_t, uint64_t> *varIdToNegGroupId) {
-        for (size_t i = 0; i < m_partitioningPos.size(); i++) {
+        for (size_t i = 0; i < m_partitioningPos.size(); ++i) {
             PartitionEntry &pePos = m_partitioningPos[i];
             PartitionEntry &peNeg = m_partitioningNeg[i];
             
@@ -447,7 +447,7 @@ namespace Candy {
                     continue;
                 }*/
                 if (!partitionEntry.backbone) {
-                    conj.addLit(mkLit(partitionEntry.varId, partitionEntry.polarity));
+                    conj.addLit(Lit(partitionEntry.varId, partitionEntry.polarity));
                 }
                 // TODO: del? setIsSweepingArtifactVariable(partitionEntry.varId, true);
             }
@@ -460,7 +460,7 @@ namespace Candy {
     void DefaultPartition::addBackbonesToConjectures(Conjectures &target) {
         for (auto &partitionEntry : m_partitioningPos) {
             if (partitionEntry.backbone) {
-                BackboneConjecture conj {mkLit(partitionEntry.varId, partitionEntry.backboneVal)};
+                BackboneConjecture conj {Lit(partitionEntry.varId, partitionEntry.backboneVal)};
                 target.addBackbone(conj);
             }
         }

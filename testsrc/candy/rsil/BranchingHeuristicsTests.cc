@@ -99,7 +99,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_givesAdviceForSingleEquivalence() {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
 
         ClauseDatabase clause_db;
         Trail trail(5);
@@ -113,7 +113,7 @@ namespace Candy {
         auto result = underTest.getAdvice();
 
         ASSERT_NE(result, lit_Undef);
-        EXPECT_EQ(result, mkLit(2, 0));
+        EXPECT_EQ(result, Lit(2, 0));
     }
     
     TEST(RSILBranchingHeuristicsTests, givesAdviceForSingleEquivalence) {
@@ -148,19 +148,19 @@ namespace Candy {
     
     TEST(RSILBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfAssigned) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfAssigned<TestedRSILBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfAssigned) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfAssigned<TestedRSILVanishingBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILBudgetBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfAssigned) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfAssigned<TestedRSILBudgetBranchingHeuristic>(std::move(testData));
     }
     
@@ -183,19 +183,19 @@ namespace Candy {
     
     TEST(RSILBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision<TestedRSILBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision<TestedRSILVanishingBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILBudgetBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision<TestedRSILBudgetBranchingHeuristic>(std::move(testData));
     }
     
@@ -217,19 +217,19 @@ namespace Candy {
     
     TEST(RSILBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfIrrelevant) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfIrrelevant<TestedRSILBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfIrrelevant) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfIrrelevant<TestedRSILVanishingBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILBudgetBranchingHeuristicsTests, givesNoAdviceForSingleEquivalenceIfIrrelevant) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
         test_givesNoAdviceForSingleEquivalenceIfIrrelevant<TestedRSILBudgetBranchingHeuristic>(std::move(testData));
     }
     
@@ -247,24 +247,24 @@ namespace Candy {
         auto result = underTest.getAdvice();
 
         ASSERT_NE(result, lit_Undef);        
-        EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
+        EXPECT_TRUE((result == Lit(1, 0)) || (result == Lit(2,0)));
     }
     
     TEST(RSILBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(3,1), Lit(2, 0)}});
         test_givesAdviceForSingleEquivalenceSize3<TestedRSILBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(3,1), Lit(2, 0)}});
         test_givesAdviceForSingleEquivalenceSize3<TestedRSILVanishingBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILBudgetBranchingHeuristicsTests, givesAdviceForSingleEquivalenceSize3) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(3,1), Lit(2, 0)}});
         test_givesAdviceForSingleEquivalenceSize3<TestedRSILBudgetBranchingHeuristic>(std::move(testData));
     }
     
@@ -283,24 +283,24 @@ namespace Candy {
         auto result = underTest.getAdvice();
 
         ASSERT_NE(result, lit_Undef);        
-        EXPECT_TRUE((result == mkLit(1, 0)) || (result == mkLit(2,0)));
+        EXPECT_TRUE((result == Lit(1, 0)) || (result == Lit(2,0)));
     }
     
     TEST(RSILBranchingHeuristicsTests, travelsUpTrail) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(3,1), Lit(2, 0)}});
         test_travelsUpTrail<TestedRSILBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, travelsUpTrail) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(3,1), Lit(2, 0)}});
         test_travelsUpTrail<TestedRSILVanishingBranchingHeuristic>(std::move(testData));
     }
     
     TEST(RSILBudgetBranchingHeuristicsTests, travelsUpTrail) {
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(3,1), mkLit(2, 0)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(3,1), Lit(2, 0)}});
         test_travelsUpTrail<TestedRSILBudgetBranchingHeuristic>(std::move(testData));
     }
     
@@ -319,18 +319,18 @@ namespace Candy {
         Trail trail(5);
 
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
-        testData->addBackbone(BackboneConjecture {mkLit(3,0)});
-        testData->addBackbone(BackboneConjecture {mkLit(4,1)});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(5,1), Lit(2, 0)}});
+        testData->addBackbone(BackboneConjecture {Lit(3,0)});
+        testData->addBackbone(BackboneConjecture {Lit(4,1)});
         
         TestedRSILBranchingHeuristic underTest { clause_db, trail };
         underTest.init(std::move(testData), false);
         
         // backbone used here if backbone-usage would be activated:
-        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,0));
+        EXPECT_EQ(underTest.getSignAdvice(Lit(3,0)), Lit(3,0));
         
-        EXPECT_EQ(underTest.getSignAdvice(mkLit(1,0)), mkLit(1,0));
-        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,1)), mkLit(3,1));
+        EXPECT_EQ(underTest.getSignAdvice(Lit(1,0)), Lit(1,0));
+        EXPECT_EQ(underTest.getSignAdvice(Lit(3,1)), Lit(3,1));
     }
     
     TEST(RSILBranchingHeuristicsTests, givesBackboneAdviceWhenBackbonesActivated) {
@@ -338,18 +338,18 @@ namespace Candy {
         Trail trail(5);
 
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(5,1), mkLit(2, 0)}});
-        testData->addBackbone(BackboneConjecture {mkLit(3,0)});
-        testData->addBackbone(BackboneConjecture {mkLit(4,1)});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(5,1), Lit(2, 0)}});
+        testData->addBackbone(BackboneConjecture {Lit(3,0)});
+        testData->addBackbone(BackboneConjecture {Lit(4,1)});
 
         TestedRSILBranchingHeuristic underTest { clause_db, trail };
         underTest.init(std::move(testData), true);
         
         // backbone used here:
-        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,0)), mkLit(3,1));
+        EXPECT_EQ(underTest.getSignAdvice(Lit(3,0)), Lit(3,1));
         
-        EXPECT_EQ(underTest.getSignAdvice(mkLit(3,1)), mkLit(3,1));
-        EXPECT_EQ(underTest.getSignAdvice(mkLit(1,0)), mkLit(1,0));
+        EXPECT_EQ(underTest.getSignAdvice(Lit(3,1)), Lit(3,1));
+        EXPECT_EQ(underTest.getSignAdvice(Lit(1,0)), Lit(1,0));
     }
     
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
@@ -357,7 +357,7 @@ namespace Candy {
         Trail trail(5);
 
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
 
         TestedRSILBranchingHeuristic underTest { clause_db, trail };
         underTest.init(std::move(testData), false);
@@ -381,7 +381,7 @@ namespace Candy {
         const uint64_t budget = 4ull;
         
         std::unique_ptr<Conjectures> testData (new Conjectures());
-        testData->addEquivalence(EquivalenceConjecture{{mkLit(1, 0), mkLit(2,1)}});
+        testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
 
         TestedRSILBudgetBranchingHeuristic underTest { clause_db, trail };
         underTest.init(std::move(testData), false, budget);

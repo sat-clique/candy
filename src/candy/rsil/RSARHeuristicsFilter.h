@@ -75,7 +75,7 @@ namespace Candy {
                 for (int i = adviceEntry.getSize()-1; i >= 0; --i) {
                     unsigned int idx = static_cast<unsigned int>(i);
                     
-                    if (probe(heuristics, var(adviceEntry.getLiteral(idx)), adviceEntry.isBackbone())) {
+                    if (probe(heuristics, adviceEntry.getLiteral(idx).var(), adviceEntry.isBackbone())) {
                         adviceEntry.removeLiteral(idx);
                     }
                 }

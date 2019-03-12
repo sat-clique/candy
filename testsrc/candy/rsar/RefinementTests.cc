@@ -40,24 +40,24 @@
 namespace Candy {
     
     TEST(RSARClauseEncoding, encodeBackbone) {
-        BackboneConjecture backbone {mkLit(10,1)};
+        BackboneConjecture backbone {Lit(10,1)};
         Var assumptionVar = 100;
         auto clause = encodeBackbone(backbone, assumptionVar);
         
         EXPECT_EQ(clause.size(), 2ull);
-        EXPECT_TRUE(contains(clause, mkLit(10,1)));
+        EXPECT_TRUE(contains(clause, Lit(10,1)));
         EXPECT_TRUE(contains(clause, deactivatedAssumptionLit(assumptionVar)));
     }
     
     TEST(RSARClauseEncoding, encodeImplication) {
-        Implication impl {mkLit(10, 0), mkLit(1, 0)};
+        Implication impl {Lit(10, 0), Lit(1, 0)};
         
         Var assumptionVar = 100;
         auto clause = encodeImplication(impl, assumptionVar);
         
         EXPECT_EQ(clause.size(), 3ull);
-        EXPECT_TRUE(contains(clause, mkLit(10,1)));
-        EXPECT_TRUE(contains(clause, mkLit(1,0)));
+        EXPECT_TRUE(contains(clause, Lit(10,1)));
+        EXPECT_TRUE(contains(clause, Lit(1,0)));
         EXPECT_TRUE(contains(clause, deactivatedAssumptionLit(assumptionVar)));
     }
     
@@ -68,8 +68,8 @@ namespace Candy {
     
     TEST(RSARClauseEncoding, assumptionLiteralRetrieval) {
         auto assumptionVar = 20;
-        auto implClause = encodeImplication(Implication{mkLit(10, 0), mkLit(100, 0)}, assumptionVar);
-        auto bbClause = encodeBackbone(BackboneConjecture{mkLit(10,0)}, assumptionVar);
+        auto implClause = encodeImplication(Implication{Lit(10, 0), Lit(100, 0)}, assumptionVar);
+        auto bbClause = encodeBackbone(BackboneConjecture{Lit(10,0)}, assumptionVar);
         
         EXPECT_EQ(getAssumptionLit(implClause), deactivatedAssumptionLit(20));
         EXPECT_EQ(getAssumptionLit(bbClause), deactivatedAssumptionLit(20));
@@ -77,17 +77,17 @@ namespace Candy {
     
     TEST(RSARClauseEncoding, nonAssumptionLiteralRetrieval) {
         auto assumptionVar = 20;
-        auto implClause = encodeImplication(Implication{mkLit(10, 0), mkLit(100, 0)}, assumptionVar);
-        auto bbClause = encodeBackbone(BackboneConjecture{mkLit(10,0)}, assumptionVar);
+        auto implClause = encodeImplication(Implication{Lit(10, 0), Lit(100, 0)}, assumptionVar);
+        auto bbClause = encodeBackbone(BackboneConjecture{Lit(10,0)}, assumptionVar);
         
         auto naLitsImpl = getNonAssumptionLits(implClause);
         EXPECT_TRUE(true);
         
-        EXPECT_TRUE((naLitsImpl == std::pair<Lit,Lit>{mkLit(10, 1), mkLit(100, 0)}
-                    || naLitsImpl == std::pair<Lit,Lit>{mkLit(100, 0), mkLit(10, 1)}));
+        EXPECT_TRUE((naLitsImpl == std::pair<Lit,Lit>{Lit(10, 1), Lit(100, 0)}
+                    || naLitsImpl == std::pair<Lit,Lit>{Lit(100, 0), Lit(10, 1)}));
         
         auto naLitsBB = getNonAssumptionLits(bbClause);
-        EXPECT_EQ(naLitsBB, (std::pair<Lit,Lit>{mkLit(10, 0), mkLit(10, 0)}));
+        EXPECT_EQ(naLitsBB, (std::pair<Lit,Lit>{Lit(10, 0), Lit(10, 0)}));
     }
     
     TEST(RSARRefinementStrategy, refineEmptyNoHeuristics) {
@@ -149,15 +149,15 @@ namespace Candy {
         Candy::Conjectures testData;
         
         EquivalenceConjecture eqc1;
-        eqc1.addLit(mkLit(0, 1));
-        eqc1.addLit(mkLit(1, 0));
-        eqc1.addLit(mkLit(2, 0));
+        eqc1.addLit(Lit(0, 1));
+        eqc1.addLit(Lit(1, 0));
+        eqc1.addLit(Lit(2, 0));
         
         EquivalenceConjecture eqc2;
-        eqc2.addLit(mkLit(3, 1));
-        eqc2.addLit(mkLit(4, 0));
+        eqc2.addLit(Lit(3, 1));
+        eqc2.addLit(Lit(4, 0));
         
-        BackboneConjecture bbc{mkLit(5,1)};
+        BackboneConjecture bbc{Lit(5,1)};
         
         testData.addEquivalence(eqc1);
         testData.addEquivalence(eqc2);
@@ -183,11 +183,11 @@ namespace Candy {
         // all equivalencies should be present
         checker->addClauses(initDelta->getNewClauses());
         EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(1, 0), mkLit(2, 0)}));
+                                            {Lit(0, 1), Lit(1, 0), Lit(2, 0)}));
         EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
-                                            {mkLit(3, 1), mkLit(4, 0)}));
+                                            {Lit(3, 1), Lit(4, 0)}));
         EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(),
-                                          mkLit(0, 1), mkLit(4, 0)));
+                                          Lit(0, 1), Lit(4, 0)));
         
      
         auto sndDelta = underTest->refine();
@@ -198,11 +198,11 @@ namespace Candy {
         // all equivalencies should remain present
         checker->addClauses(sndDelta->getNewClauses());
         EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(1, 0), mkLit(2, 0)}));
+                                            {Lit(0, 1), Lit(1, 0), Lit(2, 0)}));
         EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
-                                            {mkLit(3, 1), mkLit(4, 0)}));
+                                            {Lit(3, 1), Lit(4, 0)}));
         EXPECT_FALSE(checker->isEquivalent(sndDelta->getAssumptionLiterals(),
-                                          mkLit(0, 1), mkLit(4, 0)));
+                                          Lit(0, 1), Lit(4, 0)));
     }
     
     
@@ -220,13 +220,13 @@ namespace Candy {
         Candy::Conjectures testData;
         
         EquivalenceConjecture eqc1;
-        eqc1.addLit(mkLit(0, 1));
-        eqc1.addLit(mkLit(1, 0));
-        eqc1.addLit(mkLit(2, 0));
+        eqc1.addLit(Lit(0, 1));
+        eqc1.addLit(Lit(1, 0));
+        eqc1.addLit(Lit(2, 0));
         
         EquivalenceConjecture eqc2;
-        eqc2.addLit(mkLit(3, 1));
-        eqc2.addLit(mkLit(4, 0));
+        eqc2.addLit(Lit(3, 1));
+        eqc2.addLit(Lit(4, 0));
         
         testData.addEquivalence(eqc1);
         testData.addEquivalence(eqc2);
@@ -251,11 +251,11 @@ namespace Candy {
         
         checker->addClauses(initDelta->getNewClauses());
         EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(1, 0), mkLit(2, 0)}));
+                                            {Lit(0, 1), Lit(1, 0), Lit(2, 0)}));
         EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
-                                            {mkLit(3, 1), mkLit(4, 0)}));
+                                            {Lit(3, 1), Lit(4, 0)}));
         EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(),
-                                          mkLit(0, 1), mkLit(4, 0)));
+                                          Lit(0, 1), Lit(4, 0)));
         
         // Variable 1 removed
         auto sndDelta = underTest->refine();
@@ -265,16 +265,16 @@ namespace Candy {
         
         checker->addClauses(sndDelta->getNewClauses());
         EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(2, 0)}));
+                                            {Lit(0, 1), Lit(2, 0)}));
         
         EXPECT_FALSE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(1, 0)}));
+                                            {Lit(0, 1), Lit(1, 0)}));
         
         
         EXPECT_TRUE(checker->isAllEquivalent(sndDelta->getAssumptionLiterals(),
-                                            {mkLit(3, 1), mkLit(4, 0)}));
+                                            {Lit(3, 1), Lit(4, 0)}));
         EXPECT_FALSE(checker->isEquivalent(sndDelta->getAssumptionLiterals(),
-                                          mkLit(0, 1), mkLit(4, 0)));
+                                          Lit(0, 1), Lit(4, 0)));
         
         
         
@@ -286,16 +286,16 @@ namespace Candy {
         
         checker->addClauses(thirdDelta->getNewClauses());
         EXPECT_TRUE(checker->isAllEquivalent(thirdDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(2, 0)}));
+                                            {Lit(0, 1), Lit(2, 0)}));
         
         EXPECT_FALSE(checker->isAllEquivalent(thirdDelta->getAssumptionLiterals(),
-                                             {mkLit(0, 1), mkLit(1, 0)}));
+                                             {Lit(0, 1), Lit(1, 0)}));
         
         
         EXPECT_FALSE(checker->isAllEquivalent(thirdDelta->getAssumptionLiterals(),
-                                            {mkLit(3, 1), mkLit(4, 0)}));
+                                            {Lit(3, 1), Lit(4, 0)}));
         EXPECT_FALSE(checker->isEquivalent(thirdDelta->getAssumptionLiterals(),
-                                          mkLit(0, 1), mkLit(4, 0)));
+                                          Lit(0, 1), Lit(4, 0)));
         
         // Variable 0 removed
         auto fourthDelta = underTest->refine();
@@ -318,11 +318,11 @@ namespace Candy {
         Candy::Conjectures testData;
         
         EquivalenceConjecture eqc1;
-        eqc1.addLit(mkLit(0, 1));
-        eqc1.addLit(mkLit(1, 0));
-        eqc1.addLit(mkLit(2, 0));
+        eqc1.addLit(Lit(0, 1));
+        eqc1.addLit(Lit(1, 0));
+        eqc1.addLit(Lit(2, 0));
         
-        BackboneConjecture bbc1{mkLit(3,0)};
+        BackboneConjecture bbc1{Lit(3,0)};
         
         testData.addEquivalence(eqc1);
         testData.addBackbone(bbc1);
@@ -349,9 +349,9 @@ namespace Candy {
         // Variable 1 removed
         checker->addClauses(initDelta->getNewClauses());
         EXPECT_TRUE(checker->isAllEquivalent(initDelta->getAssumptionLiterals(),
-                                            {mkLit(0, 1), mkLit(2, 0)}));
-        EXPECT_TRUE(checker->isBackbones(initDelta->getAssumptionLiterals(), {mkLit(3,0)}));
-        EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(), mkLit(0, 1), mkLit(1, 0)));
+                                            {Lit(0, 1), Lit(2, 0)}));
+        EXPECT_TRUE(checker->isBackbones(initDelta->getAssumptionLiterals(), {Lit(3,0)}));
+        EXPECT_FALSE(checker->isEquivalent(initDelta->getAssumptionLiterals(), Lit(0, 1), Lit(1, 0)));
         
         
         // Variable 3 removed
@@ -361,7 +361,7 @@ namespace Candy {
         EXPECT_EQ(sndDelta->countEnabledClauses(), 2ull);
         
         checker->addClauses(sndDelta->getNewClauses());
-        EXPECT_FALSE(checker->isBackbones(initDelta->getAssumptionLiterals(), {mkLit(3,0)}));
+        EXPECT_FALSE(checker->isBackbones(initDelta->getAssumptionLiterals(), {Lit(3,0)}));
         
     }
 }

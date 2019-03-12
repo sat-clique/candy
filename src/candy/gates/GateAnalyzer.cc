@@ -58,7 +58,7 @@ GateAnalyzer::~GateAnalyzer() {
 std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
     std::vector<Lit> result;
     unsigned int min = UINT_MAX;
-    for (Lit l = mkLit(0, false); l.x < (int32_t)index.size(); l.x++) {
+    for (Lit l = Lit(0, false); l.x < (int32_t)index.size(); l.x++) {
         if (index[l].size() > 0 && index[l].size() < min) {
             min = index[l].size();
             result.clear();
@@ -99,13 +99,13 @@ std::vector<Cl*> GateAnalyzer::getBestRoots() {
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     CNFProblem constraint;
-    Lit alit = mkLit(problem.nVars()+assumptions.size(), false);
+    Lit alit = Lit(problem.nVars()+assumptions.size(), false);
     assumptions.push_back(~alit);
     Cl clause;
     for (const For& f : { fwd, bwd }) {
         for (Cl* cl : f) {
             for (Lit l : *cl) {
-                if (var(l) != o) {
+                if (l.var() != o) {
                     clause.push_back(l);
                 }
             }
@@ -141,7 +141,7 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inp) {
     // given a total of 2^n blocked clauses if size n+1 with n times the same variable should imply that we have no redundancy in the n inputs
     if (fwd.size() == bwd.size() && 2*fwd.size() == pow(2, inp.size()/2)) {
         std::set<Var> vars;
-        for (Lit l : inp) vars.insert(var(l));
+        for (Lit l : inp) vars.insert(l.var());
         return 2*vars.size() == inp.size();
     }
 
@@ -160,11 +160,11 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
             for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
             mono = inputs[o] == 0 || inputs[~o] == 0;
             if (!mono) pattern = pat && patternCheck(o, f, g, inp);
-            if (!mono && !pattern) semantic = sem && semanticCheck(var(o), f, g);
+            if (!mono && !pattern) semantic = sem && semanticCheck(o.var(), f, g);
 #ifdef GADebug
-            if (mono) printf("Candidate output %s%i is nested monotonically\n", sign(o)?"-":"", var(o)+1);
-            if (pattern) printf("Candidate output %s%i matches pattern\n", sign(o)?"-":"", var(o)+1);
-            if (semantic) printf("Candidate output %s%i passed semantic test\n", sign(o)?"-":"", var(o)+1);
+            if (mono) printf("Candidate output %s%i is nested monotonically\n", o.sign()?"-":"", o.var()+1);
+            if (pattern) printf("Candidate output %s%i matches pattern\n", o.sign()?"-":"", o.var()+1);
+            if (semantic) printf("Candidate output %s%i passed semantic test\n", o.sign()?"-":"", o.var()+1);
 #endif
             if (mono || pattern || semantic) {
                 nGates++;
@@ -174,11 +174,11 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
                     if (!mono) inputs[~l]++;
                 }
                 //###
-                gates[var(o)].out = o;
-                gates[var(o)].notMono = !mono;
-                gates[var(o)].fwd.insert(gates[var(o)].fwd.end(), f.begin(), f.end());
-                gates[var(o)].bwd.insert(gates[var(o)].bwd.end(), g.begin(), g.end());
-                gates[var(o)].inp.insert(gates[var(o)].inp.end(), inp.begin(), inp.end());
+                gates[o.var()].out = o;
+                gates[o.var()].notMono = !mono;
+                gates[o.var()].fwd.insert(gates[o.var()].fwd.end(), f.begin(), f.end());
+                gates[o.var()].bwd.insert(gates[o.var()].bwd.end(), g.begin(), g.end());
+                gates[o.var()].inp.insert(gates[o.var()].inp.end(), inp.begin(), inp.end());
                 //###
                 removeFromIndex(index, f);
                 removeFromIndex(index, g);
@@ -210,12 +210,12 @@ Lit GateAnalyzer::normalizeRoots() {
         inputs.resize(2 * problem.nVars() + 2, false);
         // create gate
         nGates++;
-        gates[root].out = mkLit(root, false);
+        gates[root].out = Lit(root, false);
         gates[root].notMono = false;
         std::set<Lit> inp;
         for (Cl* c : roots) {
             inp.insert(c->begin(), c->end());
-            c->push_back(mkLit(root, true));
+            c->push_back(Lit(root, true));
             gates[root].fwd.push_back(c);
         }
         gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
@@ -259,12 +259,12 @@ For GateAnalyzer::getPrunedProblem(Cl model) {
         Lit o = literals.back();
         literals.pop_back();
 
-        if (model[var(o)] == o && visited[var(o)] != o) {
-            Gate gate = gates[var(o)];
+        if (model[o.var()] == o && visited[o.var()] != o) {
+            Gate gate = gates[o.var()];
             result.insert(result.end(), gate.fwd.begin(), gate.fwd.end());
             result.insert(result.end(), gate.bwd.begin(), gate.bwd.end());
             literals.insert(literals.end(), gate.inp.begin(), gate.inp.end());
-            visited[var(o)] = o;
+            visited[o.var()] = o;
         }
     }
 
@@ -361,7 +361,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
             Cl& res = resolvents.back();
             res.insert(res.end(), a->begin(), a->end());
             res.insert(res.end(), b->begin(), b->end());
-            res.erase(std::remove_if(res.begin(), res.end(), [o](Lit l) { return var(l) == var(o); }), res.end());
+            res.erase(std::remove_if(res.begin(), res.end(), [o](Lit l) { return l.var() == o.var(); }), res.end());
         }
         if ((int)resolvents.size() > lookaheadThreshold) return false;
     }
@@ -373,13 +373,13 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 
     // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
     std::vector<Var> candidates;
-    for (Lit l : resolvents[0]) candidates.push_back(var(l));
-    for (size_t i = 1; i < resolvents.size(); i++) {
+    for (Lit l : resolvents[0]) candidates.push_back(l.var());
+    for (size_t i = 1; i < resolvents.size(); ++i) {
         if (candidates.empty()) break;
         std::vector<Var> next_candidates;
         for (Lit lit : resolvents[i]) {
-            if (find(candidates.begin(), candidates.end(), var(lit)) != candidates.end()) {
-                next_candidates.push_back(var(lit));
+            if (find(candidates.begin(), candidates.end(), lit.var()) != candidates.end()) {
+                next_candidates.push_back(lit.var());
             }
         }
         std::swap(candidates, next_candidates);
@@ -397,9 +397,9 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     std::vector<Var> inputs;
     std::vector<int> occCount(problem.nVars()+1);
     for (For formula : { f, g })  for (Cl* c : formula)  for (Lit l : *c) {
-        if (var(l) != var(o)) {
-            inputs.push_back(var(l));
-            occCount[var(l)]++;
+        if (l.var() != o.var()) {
+            inputs.push_back(l.var());
+            occCount[l.var()]++;
         }
     }
 
@@ -411,7 +411,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     for (Var cand : candidates) {
         // generate candidate definition for output
         For fwd, bwd;
-        Lit out = mkLit(cand, false);
+        Lit out = Lit(cand, false);
 
 #ifdef GADebug
         printf("candidate variable: %i\n", cand+1);
@@ -424,7 +424,7 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
                     // use clauses that constrain the inputs of our candidate gate only
                     bool is_subset = true;
                     for (Lit l : *c) {
-                        if (find(inputs.begin(), inputs.end(), var(l)) == inputs.end()) {
+                        if (find(inputs.begin(), inputs.end(), l.var()) == inputs.end()) {
                             is_subset = false;
                             break;
                         }

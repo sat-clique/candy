@@ -76,7 +76,7 @@ class Heap {
 
 public:
   Heap(const Comp& c) :
-      lt(c) {
+    lt(c) {
   }
 
   int size() const {
@@ -97,16 +97,10 @@ public:
     assert(inHeap(n));
     percolateUp(indices[n]);
   }
+  
   void increase(int n) {
     assert(inHeap(n));
     percolateDown(indices[n]);
-  }
-
-  void copyTo(Heap& copy) const {
-    copy.heap.clear();
-    copy.heap.insert(copy.heap.end(), heap.begin(), heap.end());
-    copy.indices.clear();
-    copy.indices.insert(copy.indices.end(), indices.begin(), indices.end());
   }
 
   // Safe variant of insert/decrease/increase:
@@ -145,12 +139,12 @@ public:
 
   // Rebuild the heap from scratch, using the elements in 'ns':
   void build(std::vector<int>& ns) {
-    for (int i = 0; i < (int) heap.size(); i++) {
+    for (int i = 0; i < (int) heap.size(); ++i) {
       indices[heap[i]] = -1;
     }
     heap.clear();
 
-    for (int i = 0; i < (int) ns.size(); i++) {
+    for (int i = 0; i < (int) ns.size(); ++i) {
       indices[ns[i]] = i;
       heap.push_back(ns[i]);
     }
@@ -160,7 +154,7 @@ public:
   }
 
   void clear() {
-    for (int i = 0; i < (int) heap.size(); i++) {
+    for (int i = 0; i < (int) heap.size(); ++i) {
       indices[heap[i]] = -1;
     }
     heap.clear();
@@ -168,7 +162,6 @@ public:
 
 };
 
-//=================================================================================================
 }
 
 #endif

@@ -43,8 +43,8 @@
 namespace Candy {
     static std::unique_ptr<Conjectures> makeDummyConjectures() {
         auto result = std::unique_ptr<Conjectures>(new Conjectures());
-        result->addBackbone(BackboneConjecture{mkLit(0, 1)});
-        result->addBackbone(BackboneConjecture{mkLit(1, 1)});
+        result->addBackbone(BackboneConjecture{Lit(0, 1)});
+        result->addBackbone(BackboneConjecture{Lit(1, 1)});
         return result;
     }
     
@@ -67,15 +67,15 @@ namespace Candy {
         Var maxVar = 0;
         for (auto&& equivalence : conjectures.getEquivalences()) {
             for (auto&& lit : equivalence) {
-                maxVar = std::max(maxVar, var(lit));
+                maxVar = std::max(maxVar, lit.var());
             }
         }
         for (auto&& bbConj : conjectures.getBackbones()) {
-            maxVar = std::max(maxVar, var(bbConj.getLit()));
+            maxVar = std::max(maxVar, bbConj.getLit().var());
         }
         
         std::unique_ptr<CNFProblem> result = backported_std::make_unique<CNFProblem>();
-        result->readClause({ mkLit(maxVar, 1) });
+        result->readClause({ Lit(maxVar, 1) });
         return result;
     }
     
@@ -190,44 +190,44 @@ namespace Candy {
                 // see createDefaultTestSetup() for initial conjectures and mock heuristic
                 // configuration
                 EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                    {mkLit(2, 1),
-                                                        mkLit(3, 0),
-                                                        mkLit(0, 1)}));
+                                                    {Lit(2, 1),
+                                                        Lit(3, 0),
+                                                        Lit(0, 1)}));
                 EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                    {mkLit(4, 0),
-                                                        mkLit(5, 1)}));
+                                                    {Lit(4, 0),
+                                                        Lit(5, 1)}));
                 
                 // var. 1 should be removed before the first call to solve
                 EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                 mkLit(2, 1),
-                                                 mkLit(1, 0)));
+                                                 Lit(2, 1),
+                                                 Lit(1, 0)));
                 
                 // the two "equivalency groups" should not be equivalent
                 EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                  mkLit(2, 1),
-                                                  mkLit(4, 0)));
+                                                  Lit(2, 1),
+                                                  Lit(4, 0)));
             }
             else if (round == 1) {
                 EXPECT_TRUE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                    {mkLit(2, 1),
-                                                        mkLit(3, 0),
-                                                        mkLit(0, 1)}));
+                                                    {Lit(2, 1),
+                                                        Lit(3, 0),
+                                                        Lit(0, 1)}));
 
                 
                 // var. 1 should be removed before the first call to solve
                 EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                  mkLit(2, 1),
-                                                  mkLit(1, 0)));
+                                                  Lit(2, 1),
+                                                  Lit(1, 0)));
                 
                 // the two "equivalency groups" should not be equivalent
                 EXPECT_FALSE(checker->isEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                  mkLit(2, 1),
-                                                  mkLit(4, 0)));
+                                                  Lit(2, 1),
+                                                  Lit(4, 0)));
                 
                 // the smaller "equivalency group" should not exist anymore
                 EXPECT_FALSE(checker->isAllEquivalent(solverAndMock.glucoseMock->mockctrl_getLastAssumptionLits(),
-                                                    {mkLit(4, 0),
-                                                        mkLit(5, 1)}));
+                                                    {Lit(4, 0),
+                                                        Lit(5, 1)}));
             }
             else if (round == 3) {
                 // everything should be deactivated by now

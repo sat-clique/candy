@@ -82,7 +82,7 @@ namespace Candy {
         }
         
         for (Implication impl : equivalence) {
-            Var first = var(impl.first);
+            Var first = impl.first.var();
             if (m_currentConflictVars->find(first) != m_currentConflictVars->end()) {
                 equivalence.addVariableRemovalToWorkQueue(first);
                 m_currentConflictVars->erase(first);
@@ -98,7 +98,7 @@ namespace Candy {
         }
         
         for (Lit bbLit : backbones) {
-            Var first = var(bbLit);
+            Var first = bbLit.var();
             if (m_currentConflictVars->find(first) != m_currentConflictVars->end()) {
                 backbones.addVariableRemovalToWorkQueue(first);
                 m_currentConflictVars->erase(first);
@@ -143,7 +143,7 @@ namespace Candy {
     void ARSolverGarbageCollectorHeuristic::markRemovals(EquivalenceImplications& equivalence) {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Implication impl : equivalence) {
-                Var first = var(impl.first);
+                Var first = impl.first.var();
                 equivalence.addVariableRemovalToWorkQueue(first);
             }
         }
@@ -152,7 +152,7 @@ namespace Candy {
     void ARSolverGarbageCollectorHeuristic::markRemovals(Backbones& backbones) {
         if (!m_stopAfterSecondRound || (m_round < 3)) {
             for (Lit bbLit : backbones) {
-                Var first = var(bbLit);
+                Var first = bbLit.var();
                 backbones.addVariableRemovalToWorkQueue(first);
             }
         }
@@ -196,7 +196,7 @@ namespace Candy {
     static const std::vector<Lit> deactivatedAssumptions(EncodedApproximationDelta& delta) {
         std::vector<Lit> result;
         for (auto lit : delta.getAssumptionLiterals()) {
-            result.push_back(deactivatedAssumptionLit(var(lit)));
+            result.push_back(deactivatedAssumptionLit(lit.var()));
         }
         return result;
     }
@@ -227,8 +227,8 @@ namespace Candy {
             for (auto lit : candy_result.getConflict()) {
                 assert(this->m_approxLitsByAssumption.find(lit) != this->m_approxLitsByAssumption.end());
                 auto lits = this->m_approxLitsByAssumption[lit];
-                result->insert(var(lits.first));
-                result->insert(var(lits.second));
+                result->insert(lits.first.var());
+                result->insert(lits.second.var());
             }
             
             return result;

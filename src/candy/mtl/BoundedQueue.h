@@ -108,11 +108,11 @@ public:
         if(expComputed) return value;
         double a = exp;
         value = elems[first];
-        for(int i = first; i < elems.size(); i++) {
+        for(int i = first; i < elems.size(); ++i) {
             value += a * ((double)elems[i]);
             a = a * exp;
         }
-        for(int i = 0; i < last; i++) {
+        for(int i = 0; i < last; ++i) {
             value += a * ((double)elems[i]);
             a = a * exp;
         }

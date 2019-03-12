@@ -78,21 +78,21 @@ private:
 		unsigned int clear_start = analyze_clear.size();
 
 	    analyze_stack.clear();
-	    analyze_stack.push_back(var(lit));
+	    analyze_stack.push_back(lit.var());
 
 	    while (!analyze_stack.empty()) {
 	        const Clause* clause = trail.reason(analyze_stack.back());
 	        analyze_stack.pop_back();
 
 	        for (Lit imp : *clause) {
-	            Var v = var(imp);
+	            Var v = imp.var();
 	            if (!stamp[v] && trail.level(v) > 0) {
 	                if (trail.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
 	                    stamp.set(v);
 	                    analyze_stack.push_back(v);
 	                    analyze_clear.push_back(v);
 	                } else {
-						for (unsigned int i = clear_start; i < analyze_clear.size(); i++) {
+						for (unsigned int i = clear_start; i < analyze_clear.size(); ++i) {
 							stamp.unset(analyze_clear[i]);
 						}
 						analyze_clear.resize(clear_start);
@@ -110,15 +110,15 @@ private:
 		minimized.clear();
 
 	    uint64_t abstract_level = 0;
-	    for (unsigned int i = 1; i < learnt_clause.size(); i++) {
-	        abstract_level |= abstractLevel(var(learnt_clause[i])); // (maintain an abstraction of levels involved in conflict)
+	    for (unsigned int i = 1; i < learnt_clause.size(); ++i) {
+	        abstract_level |= abstractLevel(learnt_clause[i].var()); // (maintain an abstraction of levels involved in conflict)
 	    }
 		
 		for (Lit lit : learnt_clause) {
 			if (minimized.size() == 0) { // keep asserted literal
 				minimized.push_back(lit);
 			}
-			else if (trail.reason(var(lit)) == nullptr) {
+			else if (trail.reason(lit.var()) == nullptr) {
 				minimized.push_back(lit);
 			}
 			else if (!litRedundant(lit, abstract_level)) {
@@ -138,12 +138,12 @@ private:
 	    for (BinaryWatcher w : clause_db.getBinaryWatchers(~learnt_clause[0])) {
 	        if (trail.satisfies(w.other)) {
 	            minimize = true;
-	            stamp.set(var(w.other));
+	            stamp.set(w.other.var());
 	        }
 	    }
 
 	    if (minimize) {
-	        auto end = std::remove_if(learnt_clause.begin()+1, learnt_clause.end(), [this] (Lit lit) { return stamp[var(lit)]; } );
+	        auto end = std::remove_if(learnt_clause.begin()+1, learnt_clause.end(), [this] (Lit lit) { return stamp[lit.var()]; } );
 	        learnt_clause.erase(end, learnt_clause.end());
 	    }
 	}
@@ -177,12 +177,12 @@ private:
 
 	        for (Lit lit : *confl) {
 				assert((trail.value(lit) == l_True) == (lit == asserted_literal));
-				Var v = var(lit);
+				Var v = lit.var();
 				if (lit != asserted_literal && !stamp[v]) {
 					unsigned int level = trail.level(v);
 	                stamp.set(v);
 	                if (level >= trail.decisionLevel()) {
-	                    pathC++;
+	                    ++pathC;
 	                } else if (level > 0) {
 	                    learnt_clause.push_back(lit);
 	                }
@@ -190,13 +190,13 @@ private:
 	        }
 
 	        // Select next clause to look at:
-	        while (!stamp[var(*trail_iterator)]) {
-	            trail_iterator++;
+	        while (!stamp[trail_iterator->var()]) {
+	            ++trail_iterator;
 	        }
 
 	        asserted_literal = *trail_iterator;
-	        stamp.unset(var(*trail_iterator));
-	        confl = trail.reason(var(*trail_iterator));
+	        stamp.unset(trail_iterator->var());
+	        confl = trail.reason(trail_iterator->var());
 	    }
 
 	    learnt_clause[0] = ~asserted_literal;
@@ -238,9 +238,9 @@ public:
         
 		unsigned int backtrack_level = 0;
 		if (learnt_clause.size() > 1) {
-			backtrack_level = trail.level(var(learnt_clause[1]));
-			for (unsigned int i = 2; i < learnt_clause.size(); i++) {
-				unsigned int level = trail.level(var(learnt_clause[i]));
+			backtrack_level = trail.level(learnt_clause[1].var());
+			for (unsigned int i = 2; i < learnt_clause.size(); ++i) {
+				unsigned int level = trail.level(learnt_clause[i].var());
 				if (level > backtrack_level) {
 					backtrack_level = level;
 					std::swap(learnt_clause[1], learnt_clause[i]);
@@ -266,9 +266,9 @@ public:
 
 	    if (trail.decisionLevel() > 0) {
 			stamp.clear();
-			stamp.set(var(p));
+			stamp.set(p.var());
 			for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
-				Var x = var(trail[i]);
+				Var x = trail[i].var();
 				if (stamp[x]) {
 					if (trail.reason(x) == nullptr) {
 						assert(trail.level(x) > 0);
@@ -276,15 +276,15 @@ public:
 					} else {
 						const Clause* c = trail.reason(x);
 						for (Lit lit : *c) {
-							if (trail.level(var(lit)) > 0) {
-								stamp.set(var(lit));
+							if (trail.level(lit.var()) > 0) {
+								stamp.set(lit.var());
 							}
 						}
 					}
 					stamp.unset(x);
 				}
 			}
-			stamp.unset(var(p));
+			stamp.unset(p.var());
 		}
 
 		return assumptions;

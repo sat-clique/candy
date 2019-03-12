@@ -226,7 +226,7 @@ namespace Candy {
         Backbones::CommitResult result;
         
         for (Var v : m_removalWorkQueue) {
-            Lit candidate = mkLit(v, 0);
+            Lit candidate = Lit(v, 0);
             
             if (m_backbones.find(candidate) == m_backbones.end()) {
                 candidate = ~candidate;
@@ -336,10 +336,10 @@ namespace Candy {
          */
         void updateCache();
         
-        /** Maps variables V to the implication A->B where var(A) = V. */
+        /** Maps variables V to the implication A->B where A.var() = V. */
         std::map<Var, Implication> m_implicationsByAnte;
         
-        /** Maps variables V to the implication A->B where var(B) = V. */
+        /** Maps variables V to the implication A->B where B.var() = V. */
         std::map<Var, Implication> m_implicationsBySucc;
         
         /** The cached set of implications. */
@@ -372,13 +372,13 @@ namespace Candy {
     }
     
     void EquivalenceImplicationsImpl::addImplication(Implication implication) {
-        m_implicationsByAnte[var(implication.first)] = implication;
-        m_implicationsBySucc[var(implication.second)] = implication;
+        m_implicationsByAnte[implication.first.var()] = implication;
+        m_implicationsBySucc[implication.second.var()] = implication;
     }
     
     void EquivalenceImplicationsImpl::removeImplication(Implication implication) {
-        m_implicationsByAnte.erase(var(implication.first));
-        m_implicationsBySucc.erase(var(implication.second));
+        m_implicationsByAnte.erase(implication.first.var());
+        m_implicationsBySucc.erase(implication.second.var());
     }
     
     void EquivalenceImplicationsImpl::updateCache() {
@@ -436,20 +436,20 @@ namespace Candy {
             
             
             // collect longest sequence of implications to be removed (forward part)
-            for (Var current = var(m_implicationsByAnte[first].second);
+            for (Var current = m_implicationsByAnte[first].second.var();
                  current != first
                  && m_varRemovalWorkQueue.find(current) != m_varRemovalWorkQueue.end()
                  && removalQueue.front().first != removalQueue.back().second;
-                 current = var(m_implicationsByAnte[current].second)) {
+                 current = m_implicationsByAnte[current].second.var()) {
                 
                 removalQueue.push_back(m_implicationsByAnte[current]);
             }
 
             // collect longest sequence of implications to be removed (backward part)
-            for (Var current = var(m_implicationsBySucc[first].first);
+            for (Var current = m_implicationsBySucc[first].first.var();
                  current != first && m_varRemovalWorkQueue.find(current) != m_varRemovalWorkQueue.end()
                  && removalQueue.front().first != removalQueue.back().second;
-                 current = var(m_implicationsBySucc[current].first)) {
+                 current = m_implicationsBySucc[current].first.var()) {
                 removalQueue.push_front(m_implicationsBySucc[current]);
             }
 
@@ -464,8 +464,8 @@ namespace Candy {
             Lit newSucc = removalQueue.back().second;
             
             if (newAnte != newSucc
-                && m_varRemovalWorkQueue.find(var(newAnte)) == m_varRemovalWorkQueue.end()
-                && m_varRemovalWorkQueue.find(var(newSucc)) == m_varRemovalWorkQueue.end()) {
+                && m_varRemovalWorkQueue.find(newAnte.var()) == m_varRemovalWorkQueue.end()
+                && m_varRemovalWorkQueue.find(newSucc.var()) == m_varRemovalWorkQueue.end()) {
                 // create patch X->Y
                 addImplication(Implication{newAnte, newSucc});
                 result.newImplications.push_back(Implication{newAnte, newSucc});
@@ -473,8 +473,8 @@ namespace Candy {
             
             // update removal queue
             for (auto impl : removalQueue) {
-                m_varRemovalWorkQueue.erase(var(impl.first));
-                m_varRemovalWorkQueue.erase(var(impl.second));
+                m_varRemovalWorkQueue.erase(impl.first.var());
+                m_varRemovalWorkQueue.erase(impl.second.var());
             }
             
             result.removedImplications.insert(result.removedImplications.end(),

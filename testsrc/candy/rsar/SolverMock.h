@@ -78,7 +78,7 @@ namespace Candy {
     	virtual lbool solve() override;
 
     	virtual void setAssumptions(const std::vector<Lit>& assumptions) override { 
-            for (Lit lit : assumptions) m_frozenVars.insert(var(lit));
+            for (Lit lit : assumptions) m_frozenVars.insert(lit.var());
         }
 
     	virtual CandySolverResult& getCandySolverResult() override {

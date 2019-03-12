@@ -339,10 +339,10 @@ namespace Candy {
     template<class AdviceEntryType>
     void ImplicitLearningAdvice<AdviceEntryType>::addEquivalenceConjecture(const Candy::EquivalenceConjecture &conjecture) {
         for (auto& keyLiteral : conjecture) {
-            Var keyVar = var(keyLiteral);
-            bool keySign = sign(keyLiteral);
+            Var keyVar = keyLiteral.var();
+            bool keySign = keyLiteral.sign();
             
-            assert(keyVar < static_cast<int>(m_advice.size()));
+            assert(keyVar < static_cast<Var>(m_advice.size()));
             
             // advice entries hold maxSize-1 elements (the size is given including the key)
             assert(m_advice[keyVar].getSize() < (AdviceEntryType::maxSize - 1));
@@ -360,8 +360,8 @@ namespace Candy {
     
     template<class AdviceEntryType>
     void ImplicitLearningAdvice<AdviceEntryType>::addBackboneConjecture(const Candy::BackboneConjecture &conjecture) {
-        Var key = var(conjecture.getLit());
-        assert (key < static_cast<int>(m_advice.size()));
+        Var key = conjecture.getLit().var();
+        assert (key < static_cast<Var>(m_advice.size()));
         assert (m_advice[key].getSize() == 0);
         m_advice[key].setBackbone(true);
         m_advice[key].addLiteral(conjecture.getLit());

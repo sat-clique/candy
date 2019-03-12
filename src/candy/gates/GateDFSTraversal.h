@@ -124,9 +124,9 @@ namespace Candy {
                         && !collector.pruneAt(g)) {
                         work.push(GateDFSMarkedGate{&g, false});
                     }
-                    else if (!g.isDefined() && seenInputs.find(var(input)) == seenInputs.end()) {
-                        seenInputs.emplace(var(input));
-                        collector.collectInput(var(input));
+                    else if (!g.isDefined() && seenInputs.find(input.var()) == seenInputs.end()) {
+                        seenInputs.emplace(input.var());
+                        collector.collectInput(input.var());
                     }
                 }
             }
@@ -148,7 +148,7 @@ namespace Candy {
         }
         
         void backtrack(const Gate* g) {
-            m_backtrackOutputOrder.push_back(var(g->getOutput()));
+            m_backtrackOutputOrder.push_back(g->getOutput().var());
         }
         
         void collect(const Gate* g) {

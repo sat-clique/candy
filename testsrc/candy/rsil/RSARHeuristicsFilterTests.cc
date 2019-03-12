@@ -49,8 +49,8 @@ namespace Candy {
         
         void test_noRemovalWithNullHeuristic(bool filterBackbone) {
             Conjectures testDataSrc;
-            testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-            testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+            testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
+            testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
             ImplicitLearningAdvice<AdviceEntry<3>> testData;
             testData.init(testDataSrc);
             
@@ -59,11 +59,11 @@ namespace Candy {
             
             filterWithRSARHeuristics({&nullHeuristic}, testData, filterBackbone);
             
-            EXPECT_TRUE(testData.hasPotentialAdvice(5));
-            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
-            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
-            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
-            EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+            EXPECT_TRUE(testData.hasPotentialAdvice(Var(5)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(5,1), Lit(1,0)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(1,0), Lit(5,1)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(4,1), Lit(2,0)));
+            EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(2,0), Lit(4,1)));
         }
     }
     
@@ -77,8 +77,8 @@ namespace Candy {
     
     TEST(RSILRSARHeuristicsFilterTests, allRemovedWithProbePositiveHeuristic) {
         Conjectures testDataSrc;
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
         testData.init(testDataSrc);
         
@@ -87,77 +87,77 @@ namespace Candy {
         
         filterWithRSARHeuristics({&nullHeuristic}, testData, false);
         
-        EXPECT_TRUE(testData.hasPotentialAdvice(5));
-        EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
-        EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
-        EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
-        EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+        EXPECT_TRUE(testData.hasPotentialAdvice(Var(5)));
+        EXPECT_FALSE(isEquivalenceAdvised(testData, Lit(5,1), Lit(1,0)));
+        EXPECT_FALSE(isEquivalenceAdvised(testData, Lit(1,0), Lit(5,1)));
+        EXPECT_FALSE(isEquivalenceAdvised(testData, Lit(4,1), Lit(2,0)));
+        EXPECT_FALSE(isEquivalenceAdvised(testData, Lit(2,0), Lit(4,1)));
     }
     
     TEST(RSILRSARHeuristicsFilterTests, singleEquivalenceRemoval) {
         Conjectures testDataSrc;
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
         testData.init(testDataSrc);
         
         MockHeuristic nullHeuristic;
         
-        EXPECT_CALL(nullHeuristic, probe(5, testing::_)).WillRepeatedly(testing::Return(true));
-        EXPECT_CALL(nullHeuristic, probe(testing::Lt(5), testing::_)).WillRepeatedly(testing::Return(false));
+        EXPECT_CALL(nullHeuristic, probe(Var(5), testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(testing::Lt(Var(5)), testing::_)).WillRepeatedly(testing::Return(false));
         
         filterWithRSARHeuristics({&nullHeuristic}, testData, false);
         
-        EXPECT_TRUE(testData.hasPotentialAdvice(5));
-        EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
-        EXPECT_FALSE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+        EXPECT_TRUE(testData.hasPotentialAdvice(Var(5)));
+        EXPECT_FALSE(isEquivalenceAdvised(testData, Lit(5,1), Lit(1,0)));
+        EXPECT_FALSE(isEquivalenceAdvised(testData, Lit(1,0), Lit(5,1)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(4,1), Lit(2,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(2,0), Lit(4,1)));
     }
     
     TEST(RSILRSARHeuristicsFilterTests, equivalenceDoesNotGetRemovedWithOnlyBackbone) {
         Conjectures testDataSrc;
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
         testData.init(testDataSrc);
         
         MockHeuristic nullHeuristic;
         
-        EXPECT_CALL(nullHeuristic, probe(5, testing::_)).WillRepeatedly(testing::Return(true));
-        EXPECT_CALL(nullHeuristic, probe(testing::Lt(5), testing::_)).WillRepeatedly(testing::Return(false));
+        EXPECT_CALL(nullHeuristic, probe(Var(5), testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(testing::Lt(Var(5)), testing::_)).WillRepeatedly(testing::Return(false));
         
         filterWithRSARHeuristics({&nullHeuristic}, testData, true);
         
-        EXPECT_TRUE(testData.hasPotentialAdvice(5));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+        EXPECT_TRUE(testData.hasPotentialAdvice(Var(5)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(5,1), Lit(1,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(1,0), Lit(5,1)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(4,1), Lit(2,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(2,0), Lit(4,1)));
     }
     
     TEST(RSILRSARHeuristicsFilterTests, backboneGetsRemovedWithOnlyBackbone) {
         Conjectures testDataSrc;
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
-        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(4,1), mkLit(2,0)}});
-        testDataSrc.addBackbone(BackboneConjecture{mkLit(6,1)});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
+        testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
+        testDataSrc.addBackbone(BackboneConjecture{Lit(6,1)});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
         testData.init(testDataSrc);
         
         MockHeuristic nullHeuristic;
         
-        EXPECT_CALL(nullHeuristic, probe(5, testing::_)).WillRepeatedly(testing::Return(true));
-        EXPECT_CALL(nullHeuristic, probe(6, testing::_)).WillRepeatedly(testing::Return(true));
-        EXPECT_CALL(nullHeuristic, probe(testing::Lt(5), testing::_)).WillRepeatedly(testing::Return(false));
+        EXPECT_CALL(nullHeuristic, probe(Var(5), testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(Var(6), testing::_)).WillRepeatedly(testing::Return(true));
+        EXPECT_CALL(nullHeuristic, probe(testing::Lt(Var(5)), testing::_)).WillRepeatedly(testing::Return(false));
         
         filterWithRSARHeuristics({&nullHeuristic}, testData, true);
         
-        EXPECT_TRUE(testData.hasPotentialAdvice(5));
-        EXPECT_TRUE(testData.hasPotentialAdvice(6));
-        EXPECT_EQ(testData.getAdvice(6).getSize(), 0ull);
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(5,1), mkLit(1,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(1,0), mkLit(5,1)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(4,1), mkLit(2,0)));
-        EXPECT_TRUE(isEquivalenceAdvised(testData, mkLit(2,0), mkLit(4,1)));
+        EXPECT_TRUE(testData.hasPotentialAdvice(Var(5)));
+        EXPECT_TRUE(testData.hasPotentialAdvice(Var(6)));
+        EXPECT_EQ(testData.getAdvice(Var(6)).getSize(), 0ull);
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(5,1), Lit(1,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(1,0), Lit(5,1)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(4,1), Lit(2,0)));
+        EXPECT_TRUE(isEquivalenceAdvised(testData, Lit(2,0), Lit(4,1)));
     }
 }
