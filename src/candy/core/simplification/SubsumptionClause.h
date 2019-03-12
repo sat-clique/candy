@@ -44,6 +44,11 @@ public:
 
     ~SubsumptionClause() { }
 
+    inline void reset(const Clause* clause_) {
+        clause = clause_;
+        abstraction = calc_abstraction(clause_);
+    }
+
     inline void operator =(const SubsumptionClause& other) {
         clause = other.clause;
         abstraction = other.abstraction;
