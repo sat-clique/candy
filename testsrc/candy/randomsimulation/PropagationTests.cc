@@ -105,24 +105,24 @@ namespace Candy {
     }
     
     void MockClauseOrder::addGateWithInput(Lit i) {
-        if (m_outputVariables.find(var(i)) != m_outputVariables.end()) {
+        if (m_outputVariables.find(i.var()) != m_outputVariables.end()) {
             return;
         }
-        if (m_inputVariables.find(var(i)) == m_inputVariables.end()) {
-            m_inputVariables_v.push_back(var(i));
-            m_inputVariables.insert(var(i));
+        if (m_inputVariables.find(i.var()) == m_inputVariables.end()) {
+            m_inputVariables_v.push_back(i.var());
+            m_inputVariables.insert(i.var());
         }
         
-        m_maxVar = std::max(m_maxVar, var(i));
+        m_maxVar = std::max(m_maxVar, i.var());
     }
     
     void MockClauseOrder::addGateWithOutput(Lit o) {
-        assert(m_inputVariables.find(var(o)) == m_inputVariables.end());
-        assert(m_outputVariables.find(var(o)) == m_outputVariables.end());
-        m_outputVariables.insert(var(o));
+        assert(m_inputVariables.find(o.var()) == m_inputVariables.end());
+        assert(m_outputVariables.find(o.var()) == m_outputVariables.end());
+        m_outputVariables.insert(o.var());
         m_outputs.push_back(o);
         
-        m_maxVar = std::max(m_maxVar, var(o));
+        m_maxVar = std::max(m_maxVar, o.var());
     }
     
     
@@ -136,7 +136,7 @@ namespace Candy {
             cl1->push_back(~i1);
             cl1->push_back(~i2);
             cl1->push_back(o);
-            m_gateClauses[var(o)].push_back(cl1);
+            m_gateClauses[o.var()].push_back(cl1);
         }
         else {
             addGateWithOutput(~o);
@@ -148,8 +148,8 @@ namespace Candy {
             cl3->push_back(i2);
             cl3->push_back(~o);
             
-            m_gateClauses[var(o)].push_back(cl2);
-            m_gateClauses[var(o)].push_back(cl3);
+            m_gateClauses[o.var()].push_back(cl2);
+            m_gateClauses[o.var()].push_back(cl3);
         }
     }
     
@@ -165,7 +165,7 @@ namespace Candy {
             cl1->push_back(~i2);
             cl1->push_back(~i3);
             cl1->push_back(o);
-            m_gateClauses[var(o)].push_back(cl1);
+            m_gateClauses[o.var()].push_back(cl1);
         }
         else {
             addGateWithOutput(~o);
@@ -180,9 +180,9 @@ namespace Candy {
             Cl* cl4 = new Cl();
             cl4->push_back(i3);
             cl4->push_back(~o);
-            m_gateClauses[var(o)].push_back(cl2);
-            m_gateClauses[var(o)].push_back(cl3);
-            m_gateClauses[var(o)].push_back(cl4);
+            m_gateClauses[o.var()].push_back(cl2);
+            m_gateClauses[o.var()].push_back(cl3);
+            m_gateClauses[o.var()].push_back(cl4);
         }
     }
     
@@ -196,7 +196,7 @@ namespace Candy {
             cl1->push_back(i1);
             cl1->push_back(i2);
             cl1->push_back(~o);
-            m_gateClauses[var(o)].push_back(cl1);
+            m_gateClauses[o.var()].push_back(cl1);
         }
         else {
             addGateWithOutput(o);
@@ -209,8 +209,8 @@ namespace Candy {
             cl3->push_back(o);
             
             
-            m_gateClauses[var(o)].push_back(cl2);
-            m_gateClauses[var(o)].push_back(cl3);
+            m_gateClauses[o.var()].push_back(cl2);
+            m_gateClauses[o.var()].push_back(cl3);
         }
     }
     
@@ -226,7 +226,7 @@ namespace Candy {
             cl1->push_back(i2);
             cl1->push_back(i3);
             cl1->push_back(~o);
-            m_gateClauses[var(o)].push_back(cl1);
+            m_gateClauses[o.var()].push_back(cl1);
         }
         else {
             addGateWithOutput(o);
@@ -242,9 +242,9 @@ namespace Candy {
             cl4->push_back(~i3);
             cl4->push_back(o);
             
-            m_gateClauses[var(o)].push_back(cl2);
-            m_gateClauses[var(o)].push_back(cl3);
-            m_gateClauses[var(o)].push_back(cl4);
+            m_gateClauses[o.var()].push_back(cl2);
+            m_gateClauses[o.var()].push_back(cl3);
+            m_gateClauses[o.var()].push_back(cl4);
         }
         
     }
@@ -271,7 +271,7 @@ namespace Candy {
         
         assignment.initialize(3);
         
-        mco.addAnd(mkLit(2, 1), mkLit(0, 1), mkLit(1, 1), false);
+        mco.addAnd(Lit(2, 1), Lit(0, 1), Lit(1, 1), false);
         
         assignment.get(0).vars[0] = 0x5F00ull;
         assignment.get(2).vars[0] = 0x9F00ull;
@@ -291,9 +291,9 @@ namespace Candy {
         
         assignment.initialize(7);
         
-        mco.addAnd(mkLit(2, 1), mkLit(0, 1), mkLit(1, 1), false);
-        mco.addOr(mkLit(1, 1), mkLit(3, 0), mkLit(4, 0), mkLit(5, 1), true);
-        mco.addAnd(mkLit(5, 1), mkLit(1, 0), mkLit(6, 0), true);
+        mco.addAnd(Lit(2, 1), Lit(0, 1), Lit(1, 1), false);
+        mco.addOr(Lit(1, 1), Lit(3, 0), Lit(4, 0), Lit(5, 1), true);
+        mco.addAnd(Lit(5, 1), Lit(1, 0), Lit(6, 0), true);
         
         assignment.get(0).vars[2] =  0x5F00ull;
         assignment.get(2).vars[2] =  0x9F00ull;

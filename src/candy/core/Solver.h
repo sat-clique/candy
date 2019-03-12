@@ -118,7 +118,7 @@ public:
         this->assumptions.clear();
         this->assumptions.insert(this->assumptions.end(), assumptions.begin(), assumptions.end());
         for (Lit lit : assumptions) {
-            elimination.lock(var(lit));
+            elimination.lock(lit.var());
         }
     }
 
@@ -196,7 +196,7 @@ private:
             this->ok &= (propagator.propagate() == nullptr);
             if (!isInConflictingState()) {
                 for (auto it = trail.begin() + pos; it != trail.end(); it++) {
-                    assert(trail.reason(var(*it)) != nullptr);
+                    assert(trail.reason(it->var()) != nullptr);
                     unit[0] = *it;
                     Clause* new_clause = clause_db.createClause(unit.begin(), unit.end());
                     trail.fact(new_clause->first());
@@ -386,7 +386,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                 std::vector<int> to_send;
                 to_send.reserve(clause->size() + 1);
                 for (Lit lit : *clause) {
-                    to_send.push_back((var(lit)+1)*(sign(lit)?-1:1));
+                    to_send.push_back((lit.var()+1)*(lit.sign()?-1:1));
                 }
                 to_send.push_back(0);
                 learntCallback(learntCallbackState, to_send.data());

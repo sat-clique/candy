@@ -47,7 +47,7 @@ namespace Candy {
             void backtrack(const Gate* g) {
                 bool isBorderGate = false;
                 for (Lit input : g->getInputs()) {
-                    Var inputVar = var(input);
+                    Var inputVar = input.var();
                     isBorderGate |= m_seenOuts.find(inputVar) == m_seenOuts.end();
                 }
                 
@@ -57,7 +57,7 @@ namespace Candy {
             }
             
             void collect(const Gate* g) {
-                m_seenOuts.insert(var(g->getOutput()));
+                m_seenOuts.insert(g->getOutput().var());
             }
             
             void collectInput(Var var) const {
@@ -107,7 +107,7 @@ namespace Candy {
             for(const Gate* g : gates) {
                 vars.clear();
                 for (auto input : g->getInputs()) {
-                    vars.insert(var(input));
+                    vars.insert(input.var());
                 }
                 if (vars.size() != 2) {
                     return false;
@@ -156,8 +156,8 @@ namespace Candy {
             
             for (const Gate* gate : gates) {
                 for (Lit input : gate->getInputs()) {
-                    Var inpVar = var(input);
-                    bool inpSign = sign(input);
+                    Var inpVar = input.var();
+                    bool inpSign = input.sign();
                     
                     if (literalOccurences[inpVar].hasOccured(inpSign)) {
                         return false;
@@ -223,13 +223,13 @@ namespace Candy {
                 }
                 
                 for(Lit input : gate->getInputs()) {
-                    if (seenInputVars.find(var(input)) != seenInputVars.end()) {
+                    if (seenInputVars.find(input.var()) != seenInputVars.end()) {
                         return false;
                     }
                 }
                 
                 for(Lit input : gate->getInputs()) {
-                    seenInputVars.insert(var(input));
+                    seenInputVars.insert(input.var());
                 }
             }
             

@@ -33,11 +33,11 @@ namespace Candy {
     TEST(RSConjectureFilterTest, filterBySize2) {
         Conjectures testData;
         
-        std::vector<Lit> remainingEq{mkLit(0, 1), mkLit(1, 1)};
-        Lit remainingBB = mkLit(5,1);
+        std::vector<Lit> remainingEq{Lit(0, 1), Lit(1, 1)};
+        Lit remainingBB = Lit(5,1);
         
         testData.addEquivalence(EquivalenceConjecture{remainingEq});
-        testData.addEquivalence(EquivalenceConjecture{{mkLit(2, 1), mkLit(3, 1), mkLit(4, 1)}});
+        testData.addEquivalence(EquivalenceConjecture{{Lit(2, 1), Lit(3, 1), Lit(4, 1)}});
         testData.addBackbone(BackboneConjecture{remainingBB});
         
         auto filterUnderTest = createSizeConjectureFilter(2ull);
@@ -62,11 +62,11 @@ namespace Candy {
     TEST(RSConjectureFilterTest, filterBySize1RemovesAllEquivalenceConjectures) {
         Conjectures testData;
         
-        std::vector<Lit> remainingEq{mkLit(0, 1), mkLit(1, 1)};
-        Lit remainingBB = mkLit(5,1);
+        std::vector<Lit> remainingEq{Lit(0, 1), Lit(1, 1)};
+        Lit remainingBB = Lit(5,1);
         
         testData.addEquivalence(EquivalenceConjecture{remainingEq});
-        testData.addEquivalence(EquivalenceConjecture{{mkLit(2, 1), mkLit(3, 1), mkLit(4, 1)}});
+        testData.addEquivalence(EquivalenceConjecture{{Lit(2, 1), Lit(3, 1), Lit(4, 1)}});
         testData.addBackbone(BackboneConjecture{remainingBB});
         
         auto filterUnderTest = createSizeConjectureFilter(1ull);
@@ -78,13 +78,13 @@ namespace Candy {
     TEST(RSConjectureFilterTest, backboneRemovalFilterRemovesAllBackbones) {
         Conjectures testData;
         
-        std::vector<Lit> remainingEq1{mkLit(0, 1), mkLit(1, 1)};
-        std::vector<Lit> remainingEq2{mkLit(2, 1), mkLit(3, 1)};
+        std::vector<Lit> remainingEq1{Lit(0, 1), Lit(1, 1)};
+        std::vector<Lit> remainingEq2{Lit(2, 1), Lit(3, 1)};
         
         testData.addEquivalence(EquivalenceConjecture{remainingEq1});
         testData.addEquivalence(EquivalenceConjecture{remainingEq2});
-        testData.addBackbone(BackboneConjecture{mkLit(4,1)});
-        testData.addBackbone(BackboneConjecture{mkLit(5,1)});
+        testData.addBackbone(BackboneConjecture{Lit(4,1)});
+        testData.addBackbone(BackboneConjecture{Lit(5,1)});
         
         auto filterUnderTest = createBackboneRemovalConjectureFilter();
         auto result = filterUnderTest->apply(testData);

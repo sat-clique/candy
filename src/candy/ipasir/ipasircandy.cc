@@ -39,15 +39,15 @@ class IPASIRCandy {
     bool nomodel;
 
     Lit import(int lit) {
-        return mkLit(Var(abs(lit)-1), (lit < 0));
+        return Lit(Var(abs(lit)-1), (lit < 0));
     }
 
     void analyze() {
         fmap = new unsigned char [solver->getStatistics().nVars()];
         memset(fmap, 0, solver->getStatistics().nVars());
         CandySolverResult& result = solver->getCandySolverResult();
-        for (unsigned int i = 0; i < result.getConflict().size(); i++) {
-            fmap[var(result.getConflict()[i])] = 1;
+        for (unsigned int i = 0; i < result.getConflict().size(); ++i) {
+            fmap[result.getConflict()[i].var()] = 1;
         }
     }
 
@@ -104,7 +104,7 @@ public:
 
     int failed(int lit) {
         if (!fmap) analyze();
-        int tmp = var(import(lit));
+        int tmp = import(lit).var();
         return fmap[tmp] != 0;
     }
 

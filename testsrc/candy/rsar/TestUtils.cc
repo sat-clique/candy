@@ -93,8 +93,8 @@ namespace Candy {
     bool EquivalencyCheckerImpl::isEquivalent(const std::vector<Lit>& assumptions, Lit a, Lit b) {
         std::vector<Lit> extendedAssumptions {assumptions};
         
-        Lit assumption1 = mkLit(createVariable(), 1);
-        Lit assumption2 = mkLit(createVariable(), 1);
+        Lit assumption1 = Lit(createVariable(), 1);
+        Lit assumption2 = Lit(createVariable(), 1);
         
         addClauses({Cl{assumption1, a}, Cl{assumption1, ~b}, Cl{assumption2, ~a}, Cl{assumption2, b}});
         
@@ -118,7 +118,7 @@ namespace Candy {
         
         bool allEquiv = true;
         for (size_t i = 0; i < equivalentLits.size()-1 && allEquiv; ++i) {
-            assert(var(equivalentLits[i]) <= m_maxVar && var(equivalentLits[i+1]) <= m_maxVar);
+            assert(equivalentLits[i].var() <= m_maxVar && equivalentLits[i+1].var() <= m_maxVar);
             allEquiv &= isEquivalent(assumptions, equivalentLits[i], equivalentLits[i+1]);
         }
         
@@ -128,7 +128,7 @@ namespace Candy {
     bool EquivalencyCheckerImpl::isBackbones(const std::vector<Lit>& assumptions, const std::vector<Lit>& backboneLits) {
         bool allBackbone = true;
         for (auto lit : backboneLits) {
-            Lit assumption = mkLit(createVariable(), 1);
+            Lit assumption = Lit(createVariable(), 1);
             addClauses({Cl{~lit, assumption}});
             std::vector<Lit> extendedAssumptions {assumptions};
             extendedAssumptions.push_back(~assumption);
@@ -150,25 +150,25 @@ namespace Candy {
     TEST(RSARTestUtils, EquivalencyChecker_checkEquivalences) {
         auto checker = createEquivalencyChecker();
 
-        checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
-            {mkLit(1, 0), mkLit(0, 1)},
-            {mkLit(2, 0), mkLit(3, 1)}});
+        checker->addClauses({{Lit(0, 0), Lit(1, 1)},
+            {Lit(1, 0), Lit(0, 1)},
+            {Lit(2, 0), Lit(3, 1)}});
         
-        EXPECT_FALSE(checker->isEquivalent({}, mkLit(2, 1), mkLit(3,1)));
-        EXPECT_TRUE(checker->isEquivalent({}, mkLit(0, 1), mkLit(1,1)));
-        EXPECT_FALSE(checker->isEquivalent({}, mkLit(0, 0), mkLit(1,1)));
+        EXPECT_FALSE(checker->isEquivalent({}, Lit(2, 1), Lit(3,1)));
+        EXPECT_TRUE(checker->isEquivalent({}, Lit(0, 1), Lit(1,1)));
+        EXPECT_FALSE(checker->isEquivalent({}, Lit(0, 0), Lit(1,1)));
     }
     
     TEST(RSARTestUtils, EquivalencyChecker_checkBackbones) {
         auto checker = createEquivalencyChecker();
 
-        checker->addClauses({{mkLit(0, 0), mkLit(1, 1)},
-            {mkLit(3, 0), mkLit(0, 1)},
-            {mkLit(2, 0), mkLit(3, 1)}});
+        checker->addClauses({{Lit(0, 0), Lit(1, 1)},
+            {Lit(3, 0), Lit(0, 1)},
+            {Lit(2, 0), Lit(3, 1)}});
         
         
-        EXPECT_TRUE(checker->isBackbones({mkLit(3, 1)}, {mkLit(0, 1)}));
-        EXPECT_FALSE(checker->isBackbones({mkLit(3, 1)}, {mkLit(2, 0)}));
+        EXPECT_TRUE(checker->isBackbones({Lit(3, 1)}, {Lit(0, 1)}));
+        EXPECT_FALSE(checker->isBackbones({Lit(3, 1)}, {Lit(2, 0)}));
     }
     
     
@@ -228,7 +228,7 @@ namespace Candy {
         bool result = false;
         for (auto&& clause : clauses) {
             result |= (std::find_if(clause.begin(), clause.end(), [v](Lit l) {
-                return var(l) == v;
+                return l.var() == v;
             }) != clause.end());
         }
         return result;
@@ -251,7 +251,7 @@ namespace Candy {
             auto sign = randState % 2;
             
             if (chosenVars.find(var) == chosenVars.end()) {
-                result.push_back(mkLit(var, sign));
+                result.push_back(Lit(var, sign));
                 chosenVars.insert(var);
             }
         }
@@ -338,7 +338,7 @@ namespace Candy {
             std::transform(partition[i].begin(),
                            partition[i].end(),
                            partitionVars.begin(),
-                           [](Lit lit) { return var(lit); });
+                           [](Lit lit) { return lit.var(); });
             
             fakeHeur->inStepNRemove(i, partitionVars);
         }

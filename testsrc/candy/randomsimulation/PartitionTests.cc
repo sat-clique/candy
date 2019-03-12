@@ -64,9 +64,9 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 1ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(0, 1)));
         
-        std::vector<Lit> eqConj1 = {mkLit(1, 0), mkLit(2, 1)};
+        std::vector<Lit> eqConj1 = {Lit(1, 0), Lit(2, 1)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
     }
     
@@ -106,9 +106,9 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 1ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(0, 1)));
         
-        std::vector<Lit> eqConj1 = {mkLit(1, 0), mkLit(2, 1)};
+        std::vector<Lit> eqConj1 = {Lit(1, 0), Lit(2, 1)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
     }
     
@@ -151,14 +151,14 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 2ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 2ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(1, 0)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(1, 0)));
         
-        std::vector<Lit> eqConj1 = {mkLit(3, 0),
-            mkLit(7, 1),
-            mkLit(9, 1)};
-        std::vector<Lit> eqConj2 = {mkLit(2, 0),
-            mkLit(4, 0)};
+        std::vector<Lit> eqConj1 = {Lit(3, 0),
+            Lit(7, 1),
+            Lit(9, 1)};
+        std::vector<Lit> eqConj2 = {Lit(2, 0),
+            Lit(4, 0)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj2));
     }
@@ -223,14 +223,14 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 2ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 2ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(1, 0)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(1, 0)));
         
-        std::vector<Lit> eqConj1 = {mkLit(3, 0),
-            mkLit(7, 1),
-            mkLit(9, 1)};
-        std::vector<Lit> eqConj2 = {mkLit(2, 0),
-            mkLit(4, 0)};
+        std::vector<Lit> eqConj1 = {Lit(3, 0),
+            Lit(7, 1),
+            Lit(9, 1)};
+        std::vector<Lit> eqConj2 = {Lit(2, 0),
+            Lit(4, 0)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj2));
     }
@@ -267,11 +267,11 @@ namespace Candy {
         EXPECT_EQ(conjectures.getBackbones().size(), 3ull);
         ASSERT_EQ(conjectures.getEquivalences().size(), 1ull);
         
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(0, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(3, 1)));
-        EXPECT_TRUE(hasBackboneConj(conjectures, mkLit(4, 0)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(0, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(3, 1)));
+        EXPECT_TRUE(hasBackboneConj(conjectures, Lit(4, 0)));
         
-        std::vector<Lit> eqConj1 = {mkLit(1, 0), mkLit(2, 1)};
+        std::vector<Lit> eqConj1 = {Lit(1, 0), Lit(2, 1)};
         EXPECT_TRUE(hasEquivalenceConj(conjectures, eqConj1));
     }
     

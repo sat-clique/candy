@@ -33,13 +33,13 @@
 namespace Candy {
     template<class AdviceEntryType>
     bool isEquivalenceAdvised(ImplicitLearningAdvice<AdviceEntryType>& advice, Lit key, Lit equivalentLiteral) {
-        auto& adviceEntry = advice.getAdvice(var(key));
+        auto& adviceEntry = advice.getAdvice(key.var());
         
         if (adviceEntry.isBackbone()) {
             return false;
         }
         
-        Lit searchedLit = sign(key) ? equivalentLiteral : ~equivalentLiteral;
+        Lit searchedLit = key.sign() ? equivalentLiteral : ~equivalentLiteral;
         for (size_t i = 0; i < adviceEntry.getSize(); ++i) {
             if (adviceEntry.getLiteral(i) == searchedLit) {
                 return true;
@@ -51,7 +51,7 @@ namespace Candy {
     
     template<class AdviceEntryType>
     bool isBackboneAdvised(ImplicitLearningAdvice<AdviceEntryType>& advice, Lit backboneLiteral) {
-        auto& adviceEntry = advice.getAdvice(var(backboneLiteral));
+        auto& adviceEntry = advice.getAdvice(backboneLiteral.var());
         return adviceEntry.isBackbone()
         && adviceEntry.getSize() == 1
         && adviceEntry.getLiteral(0) == backboneLiteral;

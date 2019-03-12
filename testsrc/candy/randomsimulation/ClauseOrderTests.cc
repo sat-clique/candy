@@ -96,7 +96,7 @@ namespace Candy {
     
     static void test_singleGate(ClauseOrder& underTest) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
         auto formula = gateBuilder->build();
         
         GateAnalyzer ga { *formula };
@@ -132,9 +132,9 @@ namespace Candy {
     
     static void test_fewGates(ClauseOrder& underTest) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
-        gateBuilder->withAnd({mkLit(5, 1), mkLit(4, 1)}, mkLit(3,1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4, 1)}, Lit(1,1));
+        gateBuilder->withAnd({Lit(5, 1), Lit(4, 1)}, Lit(3,1));
         
         auto formula = gateBuilder->build();
         
@@ -157,8 +157,8 @@ namespace Candy {
         EXPECT_TRUE(appearsOrdered(3, 1, underTest.getGateOutputsOrdered()));
         
         for (auto lit : underTest.getGateOutputsOrdered()) {
-            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(var(lit))));
-            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(var(lit))));
+            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(lit.var())));
+            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(lit.var())));
         }
     }
     
@@ -176,16 +176,16 @@ namespace Candy {
     
     static void test_manyGates(ClauseOrder& underTest) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0,1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1,1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0,1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4, 1)}, Lit(1,1));
         
-        gateBuilder->withAnd({mkLit(5, 1), mkLit(4, 1), mkLit(6, 1)}, mkLit(3,0));
-        gateBuilder->withAnd({mkLit(7, 0), mkLit(6, 0)}, mkLit(4,1));
+        gateBuilder->withAnd({Lit(5, 1), Lit(4, 1), Lit(6, 1)}, Lit(3,0));
+        gateBuilder->withAnd({Lit(7, 0), Lit(6, 0)}, Lit(4,1));
         
         
-        gateBuilder->withOr({mkLit(8, 1), mkLit(9,0), mkLit(5,0)}, mkLit(7,0));
-        gateBuilder->withAnd({mkLit(10, 1), mkLit(9,0), mkLit(6,0)}, mkLit(8,0));
-        gateBuilder->withAnd({mkLit(11, 1), mkLit(12,0), mkLit(13,0)}, mkLit(5,0));
+        gateBuilder->withOr({Lit(8, 1), Lit(9,0), Lit(5,0)}, Lit(7,0));
+        gateBuilder->withAnd({Lit(10, 1), Lit(9,0), Lit(6,0)}, Lit(8,0));
+        gateBuilder->withAnd({Lit(11, 1), Lit(12,0), Lit(13,0)}, Lit(5,0));
         
 
         
@@ -217,8 +217,8 @@ namespace Candy {
         EXPECT_TRUE(appearsOrdered(5, 7, underTest.getGateOutputsOrdered()));
         
         for (auto lit : underTest.getGateOutputsOrdered()) {
-            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(var(lit))));
-            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(var(lit))));
+            EXPECT_TRUE(allClausesContain(lit, underTest.getClauses(lit.var())));
+            EXPECT_TRUE(containsClauses(ga, lit, underTest.getClauses(lit.var())));
         }
     }
     
@@ -289,8 +289,8 @@ namespace Candy {
         bool foundFirstLit = false;
         bool foundSecondLit = false;
         for (auto lit : literals) {
-            foundFirstLit |= var(lit) == firstVar;
-            foundSecondLit |= var(lit) == secondVar;
+            foundFirstLit |= lit.var() == firstVar;
+            foundSecondLit |= lit.var() == secondVar;
             if (foundSecondLit && !foundFirstLit) {
                 return false;
             }

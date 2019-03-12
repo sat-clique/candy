@@ -198,14 +198,14 @@ namespace Candy {
              bbIter != delta.endRemovedBackbones(); ++bbIter) {
             auto assumptionLitIdx = m_assumptionLitsIdxByBackbone[*bbIter];
             auto& assumptionLit = m_assumptionLits[assumptionLitIdx];
-            assumptionLit = deactivatedAssumptionLit(var(assumptionLit));
+            assumptionLit = deactivatedAssumptionLit(assumptionLit.var());
         }
         
         for (auto implIter = delta.beginRemovedImplications();
              implIter != delta.endRemovedImplications(); ++implIter) {
             auto assumptionLitIdx = m_assumptionLitsIdxByImpl[*implIter];
             auto& assumptionLit = m_assumptionLits[assumptionLitIdx];
-            assumptionLit = deactivatedAssumptionLit(var(assumptionLit));
+            assumptionLit = deactivatedAssumptionLit(assumptionLit.var());
         }
     }
     
@@ -262,11 +262,11 @@ namespace Candy {
     }
     
     Lit activatedAssumptionLit(Var assumptionVar) {
-        return mkLit(assumptionVar, 0);
+        return Lit(assumptionVar, 0);
     }
     
     Lit deactivatedAssumptionLit(Var assumptionVar) {
-        return mkLit(assumptionVar, 1);
+        return Lit(assumptionVar, 1);
     }
     
     Cl encodeImplication(Implication implication, Var assumptionVar) {
@@ -290,7 +290,7 @@ namespace Candy {
     }
     
     bool isActive(Lit assumptionLit) {
-        return sign(assumptionLit) == 0;
+        return assumptionLit.sign() == 0;
     }
 
 }

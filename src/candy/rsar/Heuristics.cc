@@ -82,7 +82,7 @@ namespace Candy {
             std::unordered_map<const Gate*, std::vector<const Gate*>> result;
             
             for (auto output : gateOutputs) {
-                auto& dependentGate = analyzer.getGate(mkLit(output, 1));
+                auto& dependentGate = analyzer.getGate(Lit(output, 1));
                 for (auto inputLit : dependentGate.getInputs()) {
                     auto &gate = analyzer.getGate(inputLit);
                     if (gate.isDefined()) {
@@ -116,12 +116,12 @@ namespace Candy {
             const size_t exceedingMax = std::numeric_limits<size_t>::max();
             
             for (auto gateOutput : topo.getOutputsOrdered()) {
-                auto& gate = analyzer.getGate(mkLit(gateOutput));
+                auto& gate = analyzer.getGate(Lit(gateOutput));
                 inputDependencies[&gate].reset(new std::unordered_set<Var>{});
             }
             
             for (auto gateOutput : topo.getOutputsOrdered()) {
-                auto& gate = analyzer.getGate(mkLit(gateOutput));
+                auto& gate = analyzer.getGate(Lit(gateOutput));
                 auto& inputsViaDependencies = *inputDependencies[&gate];
                 
                 bool detectedExceedingMax =  (inputDependencyCount.find(gateOutput) != inputDependencyCount.end()
@@ -131,7 +131,7 @@ namespace Candy {
                     // update input dependencies with inputs which are not outputs of other gates
                     for (auto inpLit : gate.getInputs()) {
                         if (!analyzer.getGate(inpLit).isDefined()) {
-                            auto inpVar = var(inpLit);
+                            auto inpVar = inpLit.var();
                             inputsViaDependencies.insert(inpVar);
                             detectedExceedingMax |= inputsViaDependencies.size() > maxInputs;
                             if (detectedExceedingMax) {
@@ -144,7 +144,7 @@ namespace Candy {
                 }
                 
                 if (!detectedExceedingMax) {
-                    inputDependencyCount[var(gate.getOutput())] = inputsViaDependencies.size();
+                    inputDependencyCount[gate.getOutput().var()] = inputsViaDependencies.size();
                     
                     // move the information about input variables to the gates depending on this one
                     for (auto dependent : dependents[&gate]) {
@@ -155,9 +155,9 @@ namespace Candy {
                 else {
                     // propagate the excess to the gates depending on this one
                     
-                    inputDependencyCount[var(gate.getOutput())] = exceedingMax;
+                    inputDependencyCount[gate.getOutput().var()] = exceedingMax;
                     for (auto dependent : dependents[&gate]) {
-                        inputDependencyCount[var(dependent->getOutput())] = exceedingMax;
+                        inputDependencyCount[dependent->getOutput().var()] = exceedingMax;
                     }
                 }
 
@@ -238,7 +238,7 @@ namespace Candy {
             
             genericMarkRemovals<EquivalenceImplications, Implication>(equivalence,
                                                                       [](Implication litPair) {
-                                                                          return var(litPair.first);
+                                                                          return litPair.first.var();
                                                                       },
                                                                       m_deactivationsByStep[m_step-1]);
         }
@@ -252,7 +252,7 @@ namespace Candy {
             
             genericMarkRemovals<Backbones, Lit> (backbones,
                                                  [](Lit lit) {
-                                                     return var(lit);
+                                                     return lit.var();
                                                  },
                                                  m_deactivationsByStep[m_step-1]);
         }

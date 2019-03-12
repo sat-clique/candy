@@ -475,7 +475,7 @@ namespace Candy {
             auto i = trailStart + j;
             
             Lit cursor = trail[i];
-            Var variable = var(cursor);
+            Var variable = cursor.var();
             
             if (!m_advice.hasPotentialAdvice(variable)) {
                 continue;
@@ -492,11 +492,11 @@ namespace Candy {
                 auto idx = (randomNumber + a) % adviceSize;
                 
                 auto advisedLit = advice.getLiteral(idx);
-                if (trail.value(var(advisedLit)) == l_Undef
-                    && this->isDecisionVar(var(advisedLit))
+                if (trail.value(advisedLit.var()) == l_Undef
+                    && this->isDecisionVar(advisedLit.var())
                     && BranchingHeuristicsImpl::canUseAdvice(advice, idx)) {
                     BranchingHeuristicsImpl::usedAdvice(advice, idx);
-                    auto result = sign(cursor) ? ~advisedLit : advisedLit;
+                    auto result = cursor.sign() ? ~advisedLit : advisedLit;
                     return result;
                 }
             }
@@ -508,7 +508,7 @@ namespace Candy {
     template<class AdviceType> ATTR_ALWAYSINLINE
     inline Lit RSILBranchingHeuristic<AdviceType>::getSignAdvice(Lit literal) noexcept {
         if (m_backbonesEnabled) {
-            Var decisionVariable = var(literal);
+            Var decisionVariable = literal.var();
             if (m_advice.hasPotentialAdvice(decisionVariable)) {
                 auto& advice = m_advice.getAdvice(decisionVariable);
                 

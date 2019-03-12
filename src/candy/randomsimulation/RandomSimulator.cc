@@ -61,7 +61,7 @@ namespace Candy {
     static std::vector<Candy::Var> variables(const std::vector<Candy::Lit>& literals) {
         std::vector<Candy::Var> result;
         for (auto lit : literals) {
-            result.push_back(var(lit));
+            result.push_back(lit.var());
         }
         return result;
     }

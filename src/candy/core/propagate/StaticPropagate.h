@@ -59,7 +59,7 @@ public:
     }
 
     void init(size_t maxVars) {
-        watchers.resize(mkLit(maxVars, true));
+        watchers.resize(Lit(maxVars, true));
     }
 
     void attachClause(const Clause* clause) {
@@ -101,9 +101,8 @@ public:
 
     void sortWatchers() {
         size_t nVars = watchers.size() / 2;
-        for (size_t v = 0; v < nVars; v++) {
-            Var vVar = checked_unsignedtosigned_cast<size_t, Var>(v);
-            for (Lit l : { mkLit(vVar, false), mkLit(vVar, true) }) {
+        for (Var v = 0; v < (Var)nVars; v++) {
+            for (Lit l : { Lit(v, false), Lit(v, true) }) {
                 sort(watchers[l].begin(), watchers[l].end(), [](WatcherTS* w1, WatcherTS* w2) {
                     return w1->cref->size() < w2->cref->size();
                 });

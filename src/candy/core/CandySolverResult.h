@@ -52,7 +52,7 @@ public:
     void setModel(Trail& trail) {
         model.resize(trail.trail.size(), l_Undef);
         for (Lit lit : trail) {
-            model[var(lit)] = sign(lit) ? l_False : l_True;
+            model[lit.var()] = lit.sign() ? l_False : l_True;
         }
     }
 
@@ -65,7 +65,7 @@ public:
     }
 
     lbool modelValue(Lit p) const {
-        return model[var(p)] ^ sign(p);
+        return model[p.var()] ^ p.sign();
     }
 
     std::vector<lbool>& getModelValues() {
@@ -77,10 +77,10 @@ public:
         Var v = 0;
         for (lbool value : model) {
             if (value == l_True) {
-                model_literals.push_back(mkLit(v, false));
+                model_literals.push_back(Lit(v, false));
             }
             else if (value == l_False) {
-                model_literals.push_back(mkLit(v, true));
+                model_literals.push_back(Lit(v, true));
             }         
             v++;
         }

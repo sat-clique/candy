@@ -152,9 +152,9 @@ public:
     void init(const CNFProblem& problem) {
         if (SolverOptions::opt_sort_variables) {
             std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < problem.nVars(); i++) {
-                activity[i] = occ[mkLit(i, true)] + occ[mkLit(i, false)];
-                polarity[i] = occ[mkLit(i, true)] < occ[mkLit(i, false)];
+            for (size_t i = 0; i < problem.nVars(); ++i) {
+                activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
+                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
             }
         }
         reset();
@@ -180,7 +180,7 @@ public:
     }
 
     void varRescaleActivity() {
-        for (size_t i = 0; i < activity.size(); i++) {
+        for (size_t i = 0; i < activity.size(); ++i) {
             activity[i] *= 1e-100;
         }
         var_inc *= 1e-100;
@@ -194,7 +194,7 @@ public:
         stamp.clear();
 	    for(const Clause* clause : clause_db.result.involved_clauses) {
 	        for (Lit lit : *clause) {
-				Var v = var(lit);
+				Var v = lit.var();
 				if (!stamp[v]) {
 	                stamp.set(v);
 	                varBumpActivity(v);
@@ -204,7 +204,7 @@ public:
 
         if (glucose_style_extra_bump) {
             for (auto it = trail.begin(trail.decisionLevel()); it < trail.end(); it++) {
-                Var v = var(*it);
+                Var v = it->var();
                 if (!stamp[v] && trail.reason(v) != nullptr && trail.reason(v)->isLearnt() && trail.reason(v)->getLBD() < clause_db.result.lbd) {
                     varBumpActivity(v);
                 }
@@ -216,14 +216,14 @@ public:
         // UPDATEVARACTIVITY trick (see competition'09 Glucose companion paper)
         unsigned int backtrack_level = clause_db.result.backtrack_level;
         for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
-            Var v = var(*it);
-            polarity[v] = sign(*it);
+            Var v = it->var();
+            polarity[v] = it->sign();
             if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
         }
     }
 
     void reset() {
-        std::vector<Var> vs;
+        std::vector<int> vs;
         for (Var v = 0; v < (Var)decision.size(); v++) {
             if (decision[v]) {
                 vs.push_back(v);
@@ -245,7 +245,7 @@ public:
             }
         }
 
-        return next == var_Undef ? lit_Undef : mkLit(next, polarity[next]);
+        return next == var_Undef ? lit_Undef : Lit(next, polarity[next]);
     }
 };
 

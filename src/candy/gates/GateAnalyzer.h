@@ -93,8 +93,8 @@ public:
 
     // public getters
     int getGateCount() const { return nGates; }
-    Gate& getGate(Lit output) { return gates[var(output)]; }
-    const Gate& getGate(Lit output) const { return gates[var(output)]; }
+    Gate& getGate(Lit output) { return gates[output.var()]; }
+    const Gate& getGate(Lit output) const { return gates[output.var()]; }
 
     void printGates() {
         std::vector<Lit> outputs;
@@ -102,11 +102,11 @@ public:
         for (Cl* root : roots) {
             outputs.insert(outputs.end(), root->begin(), root->end());
         }
-        for (size_t i = 0; i < outputs.size(); i++) {
+        for (size_t i = 0; i < outputs.size(); ++i) {
             Gate& gate = getGate(outputs[i]);
 
-            if (gate.isDefined() && !done[var(outputs[i])]) {
-                done[var(outputs[i])] = true;
+            if (gate.isDefined() && !done[outputs[i].var()]) {
+                done[outputs[i].var()] = true;
                 printf("Gate with output ");
                 printLiteral(gate.getOutput());
                 printf("Is defined by clauses ");

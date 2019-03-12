@@ -41,7 +41,7 @@ private:
         SubsumptionClause* subsumption_clause = new SubsumptionClause(clause);
         subsumption_clauses.push_back(subsumption_clause);
         for (Lit lit : *clause) {
-            occurrences[var(lit)].push_back(subsumption_clause);
+            occurrences[lit.var()].push_back(subsumption_clause);
         }
         return subsumption_clause;
     }

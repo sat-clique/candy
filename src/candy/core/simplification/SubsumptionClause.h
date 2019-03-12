@@ -32,7 +32,7 @@ private:
     inline uint64_t calc_abstraction(const Clause* clause) const {
         uint64_t abstraction = 0;
         for (Lit lit : *clause) {
-            abstraction |= 1ull << (var(lit) % 64);
+            abstraction |= 1ull << (lit.var() % 64);
         }
         return abstraction;
     }

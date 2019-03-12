@@ -53,19 +53,19 @@ namespace Candy {
             static_assert(AdviceEntryType::maxSize == 3, "This test requires advice entries of size 3");
             
             Conjectures testData;
-            Lit backboneLit = mkLit(9,0);
+            Lit backboneLit = Lit(9,0);
             testData.addBackbone(BackboneConjecture{backboneLit});
             ImplicitLearningAdvice<AdviceEntryType> underTest;
             underTest.init(testData);
             
             for (Var i = 0; i < 10; ++i) {
-                if (i != var(backboneLit)) {
+                if (i != backboneLit.var()) {
                     EXPECT_FALSE(underTest.getAdvice(i).isBackbone());
                     EXPECT_EQ(underTest.getAdvice(i).getSize(), 0ull);
                 }
             }
             
-            EXPECT_TRUE(underTest.hasPotentialAdvice(var(backboneLit)));
+            EXPECT_TRUE(underTest.hasPotentialAdvice(backboneLit.var()));
             EXPECT_TRUE(isBackboneAdvised(underTest, backboneLit));
         }
         
@@ -75,16 +75,16 @@ namespace Candy {
             
             Conjectures testData;
             
-            testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0)}});
+            testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
             ImplicitLearningAdvice<AdviceEntryType> underTest;
             underTest.init(testData);
             
             EXPECT_TRUE(underTest.hasPotentialAdvice(5));
-            EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
-            EXPECT_TRUE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));
-            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,1)));
-            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,1)));
-            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(4,1)));
+            EXPECT_TRUE(isEquivalenceAdvised(underTest, Lit(5,1), Lit(1,0)));
+            EXPECT_TRUE(isEquivalenceAdvised(underTest, Lit(1,1), Lit(5,0)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(5,1), Lit(1,1)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(1,1), Lit(5,1)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(1,1), Lit(4,1)));
         }
         
         template<class AdviceEntryType>
@@ -93,12 +93,12 @@ namespace Candy {
             
             Conjectures testData;
             
-            testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{mkLit(5,1), mkLit(1,0), mkLit(2,1)}});
+            testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0), Lit(2,1)}});
             ImplicitLearningAdvice<AdviceEntryType> underTest;
             underTest.init(testData);
             
-            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(5,1), mkLit(1,0)));
-            EXPECT_FALSE(isEquivalenceAdvised(underTest, mkLit(1,1), mkLit(5,0)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(5,1), Lit(1,0)));
+            EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(1,1), Lit(5,0)));
         }
         
     }

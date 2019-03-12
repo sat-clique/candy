@@ -55,7 +55,7 @@ private:
     SubsumptionClauseDatabase& database;
     Trail& trail;
 
-    std::vector<uint32_t> elimclauses;
+    std::vector<Lit> elimclauses;
     std::vector<char> eliminated;
     std::vector<char> frozen;
 
@@ -116,14 +116,14 @@ public:
         });
 
         for (Var variable : variables) {
-            if (!trail.defines(mkLit(variable))) {
+            if (!trail.defines(Lit(variable))) {
                 std::vector<SubsumptionClause*> pos, neg; // split the occurrences into positive and negative
                 for (SubsumptionClause* cl : database.refOccurences(variable)) {
                     if (!cl->is_deleted()) {
-                        if (cl->contains(mkLit(variable))) {
+                        if (cl->contains(Lit(variable))) {
                             pos.push_back(cl);
                         } else {
-                            assert(cl->contains(mkLit(variable, true)));
+                            assert(cl->contains(Lit(variable, true)));
                             neg.push_back(cl);
                         }
                     }
@@ -142,12 +142,12 @@ public:
         Lit x;
         for (int i = elimclauses.size()-1, j; i > 0; i -= j) {
             for (j = elimclauses[i--]; j > 1; j--, i--) {
-                Lit p = toLit(elimclauses[i]); 
-                if ((model[var(p)] ^ sign(p)) != l_False)
+                Lit p = elimclauses[i]; 
+                if ((model[p.var()] ^ p.sign()) != l_False)
                     goto next;
             }
-            x = toLit(elimclauses[i]);
-            model[var(x)] = lbool(!sign(x));
+            x = elimclauses[i];
+            model[x.var()] = lbool(!x.sign());
         next: ;
         }
     }
@@ -173,10 +173,10 @@ private:
         
         if (pos.size() > neg.size()) {
             for (SubsumptionClause* c : neg) mkElimClause(variable, *c->get_clause());
-            mkElimClause(mkLit(variable));
+            mkElimClause(Lit(variable));
         } else {
             for (SubsumptionClause* c : pos) mkElimClause(variable, *c->get_clause());
-            mkElimClause(~mkLit(variable));
+            mkElimClause(~Lit(variable));
         } 
         
         for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
@@ -197,17 +197,17 @@ private:
     }
 
     void mkElimClause(Lit x) {
-        elimclauses.push_back(toInt(x));
-        elimclauses.push_back(1);
+        elimclauses.push_back(x);
+        elimclauses.push_back((Lit)1);
     }
 
     void mkElimClause(Var v, const Clause& c) { 
-        assert(c.contains(mkLit(v)) || c.contains(mkLit(v, true)));
+        assert(c.contains(Lit(v)) || c.contains(Lit(v, true)));
         uint32_t first = elimclauses.size();
         
         // Copy clause to elimclauses-vector
         for (Lit lit : c) {
-            if (var(lit) != v || first == elimclauses.size()) {
+            if (lit.var() != v || first == elimclauses.size()) {
                 elimclauses.push_back(lit);
             } else {
                 // Swap such that 'v' will occur first in the clause:
@@ -217,13 +217,13 @@ private:
         }
         
         // Store the length of the clause last:
-        elimclauses.push_back(c.size());
+        elimclauses.push_back((Lit)c.size());
     }
 
     // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
     bool merge(const Clause& _ps, const Clause& _qs, Var v, std::vector<Lit>& out_clause) {
-        assert(_ps.contains(mkLit(v)));
-        assert(_qs.contains(mkLit(v, true)));
+        assert(_ps.contains(Lit(v)));
+        assert(_qs.contains(Lit(v, true)));
         out_clause.clear();
         
         bool ps_smallest = _ps.size() < _qs.size();
@@ -231,8 +231,8 @@ private:
         const Clause& qs = ps_smallest ? _ps : _qs;
         
         for (Lit qlit : qs) {
-            if (var(qlit) != v) {
-                auto p = std::find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return var(plit) == var(qlit); });
+            if (qlit.var() != v) {
+                auto p = std::find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return plit.var() == qlit.var(); });
                 if (p == ps.end()) {
                     out_clause.push_back(qlit);
                 }
@@ -243,7 +243,7 @@ private:
         }
         
         for (Lit plit : ps) {
-            if (var(plit) != v) {
+            if (plit.var() != v) {
                 out_clause.push_back(plit);
             }
         }
@@ -253,8 +253,8 @@ private:
 
     // Returns FALSE if clause is always satisfied.
     bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size) {
-        assert(_ps.contains(mkLit(v)));
-        assert(_qs.contains(mkLit(v, true)));
+        assert(_ps.contains(Lit(v)));
+        assert(_qs.contains(Lit(v, true)));
         
         bool ps_smallest = _ps.size() < _qs.size();
         const Clause& ps = ps_smallest ? _qs : _ps;
@@ -263,8 +263,8 @@ private:
         size = ps.size() - 1;
         
         for (Lit qlit : qs) {
-            if (var(qlit) != v) {
-                auto p = std::find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return var(plit) == var(qlit); });
+            if (qlit.var() != v) {
+                auto p = std::find_if(ps.begin(), ps.end(), [qlit] (Lit plit) { return plit.var() == qlit.var(); });
                 if (p == ps.end()) {
                     size++;
                 }

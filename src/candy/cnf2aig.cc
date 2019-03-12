@@ -35,7 +35,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 using namespace Candy;
 
-const Lit lit_True = { -3 };
+const Lit lit_True(-2, true);
 
 class BinaryAndGate {
 public:
@@ -75,16 +75,16 @@ std::vector<bool>* negativeOutput;
 int gaplessMax = 0;
 std::map<Var, Var>* gapClosing = new std::map<Var, Var>();
 
-int newVar() {
-	return ++maxVariable;
+Var newVar() {
+	return Var(++maxVariable);
 }
 
 bool isVisited(Lit node) {
-	return (*visitedNodes)[toInt(node)];
+	return (*visitedNodes)[node];
 }
 
 void setVisited(Lit node) {
-	(*visitedNodes)[toInt(node)] = true;
+	(*visitedNodes)[node] = true;
 }
 
 void createAnd(Lit output, Cl cube) {
@@ -135,7 +135,7 @@ void createAndFromClauses(For& disjunctions, Lit output) {
 			registerLiteral(*(clause->begin()));
 			conj.push_back(*(clause->begin()));
 		} else {
-			Lit out = mkLit(newVar());
+			Lit out = Lit(newVar()); 
 			createAndFromClause(clause, out);
 			conj.push_back(out);
 		}
@@ -160,7 +160,7 @@ void registerLiteral(Lit lit) {
 	} else if (gates->getGate(~lit).isDefined()) {
 		literals->push_back(~lit);
 	} else {
-        inputs.insert(var(lit));
+        inputs.insert(lit.var());
 	}
 }
 
@@ -169,7 +169,7 @@ Lit convertNaryRecursive(Cl* conj) {
 		return *conj->begin();
 	}
 	if (conj->size() == 2) {
-		Lit output = mkLit(newVar());
+		Lit output = Lit(newVar());
 		createBinaryAnd(output, *conj->begin(), *conj->rbegin());
 		return output;
 	}
@@ -181,7 +181,7 @@ Lit convertNaryRecursive(Cl* conj) {
 		Cl* rights = new Cl(conj->begin() + pivot, conj->end());
 		Lit right = convertNaryRecursive(rights);
 		delete rights;
-		Lit output = mkLit(newVar());
+		Lit output = Lit(newVar());
 		createBinaryAnd(output, left, right);
 		return output;
 	}
@@ -190,7 +190,7 @@ Lit convertNaryRecursive(Cl* conj) {
 void convertNaryAndsToBinaryAnds() {
     for (AndGate a : pands) {
         if (a.conj.size() == 0) {
-            fprintf(stderr, "Warning: Conjunction Size is Zero at %i\n ", toInt(a.output));
+            fprintf(stderr, "Warning: Conjunction Size is Zero at %i\n ", a.output);
 		}
         else if (a.conj.size() == 1) {
             createBinaryAnd(a.output, *a.conj.begin(), lit_True);
@@ -215,19 +215,19 @@ void convertNaryAndsToBinaryAnds() {
  * remember output negation
  */
 Lit negOutAdaption(Lit lit) {
-	return (*negativeOutput)[var(lit)] ? ~lit : lit;
+	return (*negativeOutput)[lit.var()] ? ~lit : lit; 
 }
 
 /**
  * close gaps in variable numbers
  */
 Lit closeGaps(Lit lit) {
-	if (gapClosing->count(var(lit)) > 0) {
-		return mkLit((*gapClosing)[var(lit)], sign(lit));
+	if (gapClosing->count(lit.var()) > 0) {
+		return Lit((*gapClosing)[lit.var()], lit.sign());
 	}
 	else {
-		(*gapClosing)[var(lit)] = gaplessMax++;
-		return mkLit((*gapClosing)[var(lit)], sign(lit));
+		(*gapClosing)[lit.var()] = gaplessMax++;
+		return Lit((*gapClosing)[lit.var()], lit.sign());
 	}
 }
 
@@ -238,7 +238,7 @@ void printLit(FILE* out, Lit lit) {
 	if (lit == lit_True) {
 		fprintf(out, "1");
 	} else {
-		int num = toInt(closeGaps(negOutAdaption(lit)));
+		int num = closeGaps(negOutAdaption(lit));
 		fprintf(out, "%i", num);
 	}
 }
@@ -280,7 +280,7 @@ int main(int argc, char** argv) {
     Lit root = gates->normalizeRoots();
     literals->push_back(root);
 
-    assert(var(root) < maxVariable);
+    assert(root.var() < static_cast<Var>(maxVariable));
 
 	traverseDAG();
 
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
 	 ***/
 	negativeOutput = new std::vector<bool>(maxVariable+2, false);
     for (BinaryAndGate a : ands) {
-        if (sign(a.output)) (*negativeOutput)[var(a.output)] = true;
+        if (a.output.sign()) (*negativeOutput)[a.output.var()] = true;
 	}
 
 	// **************
@@ -300,7 +300,7 @@ int main(int argc, char** argv) {
 
     fprintf(out, "aag %i %i %i %i %i\n", maxVariable+2, (int)inputs.size(), 0, 1, (int)ands.size());
     for (Var var : inputs) {
-		printLit(out, mkLit(var));
+		printLit(out, Lit(var));
 		fprintf(out, "\n");
 	}
 	printLit(out, root);

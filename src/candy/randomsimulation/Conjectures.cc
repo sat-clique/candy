@@ -86,11 +86,11 @@ namespace Candy {
     Var Conjectures::getMaxVar() const {
         Var result = 0;
         for (auto& c : getBackbones()) {
-            result = std::max(result, var(c.getLit()));
+            result = std::max(result, c.getLit().var());
         }
         for (auto& c : getEquivalences()) {
             for (auto literal : c) {
-                result = std::max(result, var(literal));
+                result = std::max(result, literal.var());
             }
         }
         return result;

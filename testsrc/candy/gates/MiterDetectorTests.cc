@@ -34,12 +34,12 @@
 namespace Candy {
     TEST(GateMiterDetectorTests, rejectsMonotonousNonmiterStructure) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(5, 1)}, mkLit(2, 1));
-        gateBuilder->withXor({mkLit(6, 1), mkLit(7, 1)}, mkLit(3, 1));
-        gateBuilder->withXor({mkLit(7, 1), mkLit(8, 1)}, mkLit(4, 1));
-        gateBuilder->withXor({mkLit(9, 1), mkLit(10, 1)}, mkLit(5, 1));
+        gateBuilder->withAnd({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(5, 1)}, Lit(2, 1));
+        gateBuilder->withXor({Lit(6, 1), Lit(7, 1)}, Lit(3, 1));
+        gateBuilder->withXor({Lit(7, 1), Lit(8, 1)}, Lit(4, 1));
+        gateBuilder->withXor({Lit(9, 1), Lit(10, 1)}, Lit(5, 1));
 
         auto problem = gateBuilder->build();
         
@@ -51,12 +51,12 @@ namespace Candy {
     
     TEST(GateMiterDetectorTests, rejectsMonotonousMiterStructure) {
         auto gateBuilder = createGateStructureBuilder();
-        gateBuilder->withAnd({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
-        gateBuilder->withAnd({mkLit(3, 1), mkLit(5, 1)}, mkLit(2, 1));
-        gateBuilder->withXor({mkLit(6, 1), mkLit(7, 1)}, mkLit(3, 1));
-        gateBuilder->withXor({mkLit(8, 1), mkLit(9, 1)}, mkLit(4, 1));
-        gateBuilder->withXor({mkLit(10, 1), mkLit(11, 1)}, mkLit(5, 1));
+        gateBuilder->withAnd({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
+        gateBuilder->withAnd({Lit(3, 1), Lit(5, 1)}, Lit(2, 1));
+        gateBuilder->withXor({Lit(6, 1), Lit(7, 1)}, Lit(3, 1));
+        gateBuilder->withXor({Lit(8, 1), Lit(9, 1)}, Lit(4, 1));
+        gateBuilder->withXor({Lit(10, 1), Lit(11, 1)}, Lit(5, 1));
         
         auto problem = gateBuilder->build();
         
@@ -79,25 +79,25 @@ namespace Candy {
     TEST(GateMiterDetectorTests, rejectsNearMiter_nonAllXOR) {
         auto gateBuilder = createGateStructureBuilder();
         // miter "base" structure
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
-        gateBuilder->withOr({mkLit(5, 1), mkLit(6, 1)}, mkLit(2, 1));
-        gateBuilder->withXor({mkLit(7, 1), mkLit(8, 1)}, mkLit(3, 1));
-        gateBuilder->withXor({mkLit(9, 1), mkLit(10, 1)}, mkLit(4, 1));
-        gateBuilder->withXor({mkLit(11, 1), mkLit(12,1)}, mkLit(5, 1));
-        gateBuilder->withAnd({mkLit(13, 1), mkLit(14,1)}, mkLit(6, 1)); // "bad" gate
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withOr({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
+        gateBuilder->withOr({Lit(5, 1), Lit(6, 1)}, Lit(2, 1));
+        gateBuilder->withXor({Lit(7, 1), Lit(8, 1)}, Lit(3, 1));
+        gateBuilder->withXor({Lit(9, 1), Lit(10, 1)}, Lit(4, 1));
+        gateBuilder->withXor({Lit(11, 1), Lit(12,1)}, Lit(5, 1));
+        gateBuilder->withAnd({Lit(13, 1), Lit(14,1)}, Lit(6, 1)); // "bad" gate
         
         // circuit 1
-        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(7, 1));
-        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(8, 1));
+        gateBuilder->withAnd({Lit(15, 1), Lit(16, 1)}, Lit(7, 1));
+        gateBuilder->withAnd({Lit(15, 1), Lit(16, 1)}, Lit(8, 1));
         
         // circuit 2
-        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(9, 0));
-        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(10, 0));
+        gateBuilder->withOr({Lit(17, 1), Lit(18, 1)}, Lit(9, 0));
+        gateBuilder->withOr({Lit(17, 1), Lit(18, 1)}, Lit(10, 0));
         
         // circuit 3
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(11, 0));
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(12, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(11, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(12, 0));
         
         auto problem = gateBuilder->build();
         
@@ -110,25 +110,25 @@ namespace Candy {
     TEST(GateMiterDetectorTests, rejectsNearMiter_sharedInputs) {
         auto gateBuilder = createGateStructureBuilder();
         // miter "base" structure
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
-        gateBuilder->withOr({mkLit(5, 1), mkLit(6, 1)}, mkLit(2, 1));
-        gateBuilder->withXor({mkLit(7, 1), mkLit(8, 1)}, mkLit(3, 1));
-        gateBuilder->withXor({mkLit(9, 1), mkLit(10, 1)}, mkLit(4, 1));
-        gateBuilder->withXor({mkLit(11, 1), mkLit(12,1)}, mkLit(5, 1));
-        gateBuilder->withXor({mkLit(12, 1), mkLit(14,1)}, mkLit(6, 1)); // "bad" gate
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withOr({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
+        gateBuilder->withOr({Lit(5, 1), Lit(6, 1)}, Lit(2, 1));
+        gateBuilder->withXor({Lit(7, 1), Lit(8, 1)}, Lit(3, 1));
+        gateBuilder->withXor({Lit(9, 1), Lit(10, 1)}, Lit(4, 1));
+        gateBuilder->withXor({Lit(11, 1), Lit(12,1)}, Lit(5, 1));
+        gateBuilder->withXor({Lit(12, 1), Lit(14,1)}, Lit(6, 1)); // "bad" gate
         
         // circuit 1
-        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(7, 1));
-        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(8, 1));
+        gateBuilder->withAnd({Lit(15, 1), Lit(16, 1)}, Lit(7, 1));
+        gateBuilder->withAnd({Lit(15, 1), Lit(16, 1)}, Lit(8, 1));
         
         // circuit 2
-        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(9, 0));
-        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(10, 0));
+        gateBuilder->withOr({Lit(17, 1), Lit(18, 1)}, Lit(9, 0));
+        gateBuilder->withOr({Lit(17, 1), Lit(18, 1)}, Lit(10, 0));
         
         // circuit 3
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(11, 0));
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(12, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(11, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(12, 0));
         
         auto problem = gateBuilder->build();
         
@@ -141,28 +141,28 @@ namespace Candy {
     TEST(GateMiterDetectorTests, acceptsNonAIGMiter) {
         auto gateBuilder = createGateStructureBuilder();
         // miter "base" structure
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
-        gateBuilder->withOr({mkLit(5, 1), mkLit(6, 1)}, mkLit(2, 1));
-        gateBuilder->withXor({mkLit(7, 1), mkLit(8, 1)}, mkLit(3, 1));
-        gateBuilder->withXor({mkLit(9, 1), mkLit(10, 1)}, mkLit(4, 1));
-        gateBuilder->withXor({mkLit(11, 1), mkLit(12,1)}, mkLit(5, 1));
-        gateBuilder->withXor({mkLit(13, 1), mkLit(14,1)}, mkLit(6, 1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withOr({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
+        gateBuilder->withOr({Lit(5, 1), Lit(6, 1)}, Lit(2, 1));
+        gateBuilder->withXor({Lit(7, 1), Lit(8, 1)}, Lit(3, 1));
+        gateBuilder->withXor({Lit(9, 1), Lit(10, 1)}, Lit(4, 1));
+        gateBuilder->withXor({Lit(11, 1), Lit(12,1)}, Lit(5, 1));
+        gateBuilder->withXor({Lit(13, 1), Lit(14,1)}, Lit(6, 1));
         
         // circuit 1
-        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(7, 1));
-        gateBuilder->withAnd({mkLit(15, 1), mkLit(16, 1)}, mkLit(8, 1));
+        gateBuilder->withAnd({Lit(15, 1), Lit(16, 1)}, Lit(7, 1));
+        gateBuilder->withAnd({Lit(15, 1), Lit(16, 1)}, Lit(8, 1));
         
         // circuit 2
-        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(9, 0));
-        gateBuilder->withOr({mkLit(17, 1), mkLit(18, 1)}, mkLit(10, 0));
+        gateBuilder->withOr({Lit(17, 1), Lit(18, 1)}, Lit(9, 0));
+        gateBuilder->withOr({Lit(17, 1), Lit(18, 1)}, Lit(10, 0));
         
         // circuit 3
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(11, 0));
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(12, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(11, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(12, 0));
         
         // circuit 4 (var 14 remains input, "single-line circuit" case)
-        gateBuilder->withXor({mkLit(17, 1), mkLit(18, 1)}, mkLit(13, 0));
+        gateBuilder->withXor({Lit(17, 1), Lit(18, 1)}, Lit(13, 0));
         
         auto problem = gateBuilder->build();
         
@@ -186,27 +186,27 @@ namespace Candy {
     TEST(GateMiterDetectorTests, acceptsAIGMiter) {
         auto gateBuilder = createGateStructureBuilder();
         // miter "base" structure
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withOr({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
         
         addAIGXOR(*gateBuilder,
-                  mkLit(7, 1), mkLit(8, 1),
-                  mkLit(9, 1), mkLit(10, 1),
-                  mkLit(2, 1));
+                  Lit(7, 1), Lit(8, 1),
+                  Lit(9, 1), Lit(10, 1),
+                  Lit(2, 1));
         
         addAIGXOR(*gateBuilder,
-                  mkLit(11, 1), mkLit(12, 1),
-                  mkLit(13, 1), mkLit(14, 1),
-                  mkLit(3, 1));
+                  Lit(11, 1), Lit(12, 1),
+                  Lit(13, 1), Lit(14, 1),
+                  Lit(3, 1));
         
         addAIGXOR(*gateBuilder,
-                  mkLit(15, 1), mkLit(16, 1),
-                  mkLit(17, 1), mkLit(18, 1),
-                  mkLit(4, 1));
+                  Lit(15, 1), Lit(16, 1),
+                  Lit(17, 1), Lit(18, 1),
+                  Lit(4, 1));
         
         // add at least one nonmonotonously nested gate
-        gateBuilder->withAnd({mkLit(19, 1), mkLit(20, 1)}, mkLit(15, 1));
-        gateBuilder->withAnd({mkLit(19, 1), mkLit(20, 1)}, mkLit(16, 1));
+        gateBuilder->withAnd({Lit(19, 1), Lit(20, 1)}, Lit(15, 1));
+        gateBuilder->withAnd({Lit(19, 1), Lit(20, 1)}, Lit(16, 1));
         
         auto problem = gateBuilder->build();
         
@@ -219,24 +219,24 @@ namespace Candy {
     TEST(GateMiterDetectorTests, rejectsNearAIGMiter) {
         auto gateBuilder = createGateStructureBuilder();
         // miter "base" structure
-        gateBuilder->withOr({mkLit(1, 1), mkLit(2, 1)}, mkLit(0, 1));
-        gateBuilder->withOr({mkLit(3, 1), mkLit(4, 1)}, mkLit(1, 1));
+        gateBuilder->withOr({Lit(1, 1), Lit(2, 1)}, Lit(0, 1));
+        gateBuilder->withOr({Lit(3, 1), Lit(4, 1)}, Lit(1, 1));
         
         addAIGXOR(*gateBuilder,
-                  mkLit(7, 1), mkLit(8, 1),
-                  mkLit(9, 1), mkLit(10, 1),
-                  mkLit(2, 1));
+                  Lit(7, 1), Lit(8, 1),
+                  Lit(9, 1), Lit(10, 1),
+                  Lit(2, 1));
         
         addAIGXOR(*gateBuilder,
-                  mkLit(11, 1), mkLit(12, 1),
-                  mkLit(13, 1), mkLit(14, 1),
-                  mkLit(3, 1));
+                  Lit(11, 1), Lit(12, 1),
+                  Lit(13, 1), Lit(14, 1),
+                  Lit(3, 1));
         
-        gateBuilder->withAnd({mkLit(17, 1), mkLit(18, 1)}, mkLit(4, 1)); // "bad" gate
+        gateBuilder->withAnd({Lit(17, 1), Lit(18, 1)}, Lit(4, 1)); // "bad" gate
         
         // add at least one nonmonotonously nested gate
-        gateBuilder->withAnd({mkLit(19, 1), mkLit(20, 1)}, mkLit(11, 1));
-        gateBuilder->withAnd({mkLit(19, 1), mkLit(20, 1)}, mkLit(12, 1));
+        gateBuilder->withAnd({Lit(19, 1), Lit(20, 1)}, Lit(11, 1));
+        gateBuilder->withAnd({Lit(19, 1), Lit(20, 1)}, Lit(12, 1));
         
         auto problem = gateBuilder->build();
         
