@@ -141,11 +141,11 @@ public:
         subsumption_clause->set_deleted();
     }
 
-    inline SubsumptionClause* strengthen(SubsumptionClause* subsumption_clause, Lit lit) {
+    inline void strengthen(SubsumptionClause* subsumption_clause, Lit lit) {
         assert(subsumption_clause->size() > 1);
         Clause* new_clause = clause_db.strengthenClause(subsumption_clause->get_clause(), lit);
-        subsumption_clause->set_deleted();
-        return registerSubsumptionClause(new_clause);
+        subsumption_clause->reset(new_clause);
+        occurrences[lit.var()].erase(std::remove(occurrences[lit.var()].begin(), occurrences[lit.var()].end(), subsumption_clause), occurrences[lit.var()].end());
     }
 
 };
