@@ -210,21 +210,19 @@ private:
 
         augmented_database.initialize();
 
-        unsigned int total = 0;
-        unsigned int count = 0;
-        do {
-            total += count;
-            count = 0;
-
+        unsigned int num = 1;
+        unsigned int max = 0;
+        double simplification_threshold_factor = 0.1;
+        while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
             propagateAndMaterializeUnitClauses();
             if (isInConflictingState()) break;
 
             ok &= subsumption.subsume();
 
             if (subsumption.nTouched() > 0) {
-                count += subsumption.nTouched();
                 augmented_database.cleanup();
-                std::cout << "c " << std::this_thread::get_id() << ": Subsumption eliminated " << subsumption.nDuplicates << " duplicates, subsumued " << subsumption.nSubsumed 
+                std::cout << "c " << std::this_thread::get_id() << ": Subsumption eliminated " << subsumption.nDuplicates 
+                    << " duplicates, subsumued " << subsumption.nSubsumed 
                     << " clauses, strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
@@ -234,7 +232,6 @@ private:
             ok &= reduction.reduce();
 
             if (reduction.nTouched() > 0) {
-                count += reduction.nTouched();
                 augmented_database.cleanup();
                 std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
             }
@@ -245,7 +242,6 @@ private:
             ok &= elimination.eliminate();
 
             if (elimination.nTouched() > 0) {
-                count += elimination.nTouched();
                 augmented_database.cleanup();
                 std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
                 for (unsigned int v = 0; v < statistics.nVars(); v++) {
@@ -254,8 +250,10 @@ private:
                     }
                 }
             }
+
+            num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nTouched() + reduction.nTouched();
+            max = std::max(num, max);
         } 
-        while (count * 8 > total && termCallback(termCallbackState) == 0);
 
         augmented_database.clear();
     }
