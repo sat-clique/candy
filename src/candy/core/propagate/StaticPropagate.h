@@ -24,35 +24,36 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
+#include "candy/core/Memory.h"
 #include "candy/utils/CheckedCast.h"
 
 #include <array>
 
 namespace Candy {
 
-struct WatcherTS {
-    const Clause* cref;
-    Lit watch0;
-    Lit watch1;
-
-    WatcherTS(const Clause* clause, Lit one, Lit two)
-     : cref(clause), watch0(one), watch1(two) {}
-
-    ~WatcherTS() {}
-};
-
 class StaticPropagate {
+    struct Watcher {
+        const Clause* cref;
+        Lit watch0;
+        Lit watch1;
+
+        Watcher(const Clause* clause, Lit one, Lit two)
+         : cref(clause), watch0(one), watch1(two) {}
+    };
+
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
 
-    std::vector<std::vector<WatcherTS*>> watchers;
+    std::vector<std::vector<Watcher*>> watchers;
+
+    Memory<Watcher> memory;
 
     bool sort_watches;
 
 public:
     StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), sort_watches(SolverOptions::opt_sort_watches) { }
+        : clause_db(_clause_db), trail(_trail), watchers(), memory(), sort_watches(SolverOptions::opt_sort_watches) { }
 
     ~StaticPropagate() {
         clear();
@@ -64,7 +65,7 @@ public:
 
     void attachClause(const Clause* clause) {
         assert(clause->size() > 2);
-        WatcherTS* watcher = new WatcherTS(clause, clause->first(), clause->second());
+        Watcher* watcher = new (memory.allocate()) Watcher(clause, clause->first(), clause->second());
         watchers[~(clause->first())].push_back(watcher);
         watchers[~(clause->second())].push_back(watcher);
     }
@@ -72,14 +73,13 @@ public:
     void detachClause(const Clause* clause) {
         assert(clause->size() > 2);
         for (Lit lit : *clause) {
-            auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](WatcherTS* w){ return w->cref == clause; });
+            auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](Watcher* w){ return w->cref == clause; });
             if (it != watchers[~lit].end()) {
-                WatcherTS* watcher = *it;
+                Watcher* watcher = *it;
                 Lit lit0 = watcher->watch0;
                 Lit lit1 = watcher->watch1;
                 watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
                 watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
-                delete watcher;
                 break;
             }
         }
@@ -88,22 +88,16 @@ public:
     void clear() {
         for (unsigned int lit = 0; lit < watchers.size(); lit++) {
             watchers[lit].shrink_to_fit();
-            for (WatcherTS* watcher : watchers[lit]) {
-                if (watcher->cref != nullptr) {
-                    watcher->cref = nullptr;
-                } else {
-                    delete watcher;
-                }
-            }
             watchers[lit].clear();
         }
+        memory.free_all();
     }
 
     void sortWatchers() {
         size_t nVars = watchers.size() / 2;
         for (Var v = 0; v < (Var)nVars; v++) {
             for (Lit l : { Lit(v, false), Lit(v, true) }) {
-                sort(watchers[l].begin(), watchers[l].end(), [](WatcherTS* w1, WatcherTS* w2) {
+                sort(watchers[l].begin(), watchers[l].end(), [](Watcher* w1, Watcher* w2) {
                     return w1->cref->size() < w2->cref->size();
                 });
             }
@@ -148,11 +142,11 @@ public:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
     inline const Clause* propagate_watched_clauses(Lit p) {
-        std::vector<WatcherTS*>& list = watchers[p];
+        std::vector<Watcher*>& list = watchers[p];
 
         auto keep = list.begin();
         for (auto iter = list.begin(); iter != list.end(); iter++) {
-            WatcherTS* watcher = *iter;
+            Watcher* watcher = *iter;
             assert(watcher->watch0 == ~p || watcher->watch1 == ~p);
             Lit other = watcher->watch0 != ~p ? watcher->watch0 : watcher->watch1;
             lbool val = trail.value(other);

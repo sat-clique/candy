@@ -127,16 +127,13 @@ public:
     }
 
     inline std::vector<SubsumptionClause*> copyOccurences(Var v) {
-        for (SubsumptionClause* occurrence : occurrences[v]) {
-            assert(occurrence->is_deleted() || occurrence->contains(Lit(v, true)) || occurrence->contains(Lit(v, false)));
-        }
         return std::vector<SubsumptionClause*>(occurrences[v].begin(), occurrences[v].end());
     }
 
     inline std::vector<SubsumptionClause*>& refOccurences(Var v) {
-        for (SubsumptionClause* occurrence : occurrences[v]) {
-            assert(occurrence->is_deleted() || occurrence->contains(Lit(v, true)) || occurrence->contains(Lit(v, false)));
-        }
+        // for (SubsumptionClause* occurrence : occurrences[v]) {
+        //     assert(occurrence->is_deleted() || occurrence->contains(Lit(v, true)) || occurrence->contains(Lit(v, false)));
+        // }
         return occurrences[v];
     }
 
