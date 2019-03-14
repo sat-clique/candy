@@ -205,9 +205,14 @@ public:
 typedef std::vector<Lit> Cl;
 typedef std::vector<Cl*> For;
 
+inline std::ostream& operator <<(std::ostream& stream, Var const& var) {
+	stream << var+1;
+    return stream;
+}
+
 inline std::ostream& operator <<(std::ostream& stream, Lit const& lit) {
 	if (lit.sign()) stream << "-";
-	stream << lit.var()+1;
+	stream << lit.var();
     return stream;
 }
 
@@ -233,7 +238,7 @@ inline void printLiteral(Lit lit, std::vector<lbool> values) {
 }
 
 inline void printClause(Cl clause) {
-    std::cout << clause << std::endl; ;
+    std::cout << clause << std::endl;
 }
 
 inline void printDIMACS(Cl clause) {
