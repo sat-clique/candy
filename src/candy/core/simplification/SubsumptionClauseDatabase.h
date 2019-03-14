@@ -26,6 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Certificate.h"
 #include "candy/core/Trail.h"
+#include "candy/core/Memory.h"
 #include "candy/frontend/CLIOptions.h"
 
 namespace Candy {
@@ -34,22 +35,17 @@ class SubsumptionClauseDatabase {
 private:
     ClauseDatabase& clause_db;
 
-    std::vector<SubsumptionClause*> subsumption_clauses;
+    Memory<SubsumptionClause> subsumption_clauses;
     std::vector<std::vector<SubsumptionClause*>> occurrences;
 
-    inline SubsumptionClause* registerSubsumptionClause(Clause* clause) {
-        SubsumptionClause* subsumption_clause = new SubsumptionClause(clause);
-        subsumption_clauses.push_back(subsumption_clause);
-        for (Lit lit : *clause) {
-            occurrences[lit.var()].push_back(subsumption_clause);
-        }
-        return subsumption_clause;
+    inline SubsumptionClause* createSubsumptionClause(Clause* clause) {
+        return new (subsumption_clauses.allocate()) SubsumptionClause(clause);
     }
 
-    inline void cleanup(std::vector<SubsumptionClause*>& list) {
-        list.erase(std::remove_if(list.begin(), list.end(), [&](SubsumptionClause* clause) { 
-            return clause->is_deleted(); 
-        }), list.end());
+    inline void addToOccurenceLists(SubsumptionClause* subsumption_clause) {
+        for (Lit lit : *subsumption_clause->get_clause()) {
+            occurrences[lit.var()].push_back(subsumption_clause);
+        }
     }
 
 public:
@@ -68,35 +64,62 @@ public:
     }
 
     inline void initialize() {
+        std::cout << "c Initializing Subsumption Database" << std::endl;
         for (Clause* clause : clause_db) {
-            if (!clause->isDeleted()) registerSubsumptionClause(clause);
+            if (!clause->isDeleted()) createSubsumptionClause(clause);
+        }
+        subsumption_clauses.sort([](SubsumptionClause c1, SubsumptionClause c2) { 
+            return c1 < c2;
+        });
+        std::cout << "c Removing Duplicate Clauses: ";
+        unsigned int duplicates = unique();
+        std::cout << duplicates << " found" << std::endl;
+        for (const SubsumptionClause* subsumption_clause : subsumption_clauses) {
+            if (!subsumption_clause->is_deleted()) {
+                addToOccurenceLists((SubsumptionClause*)subsumption_clause);
+            }
+        }
+    }
+
+    unsigned int unique() { // remove duplicates
+        unsigned int nDuplicates = 0;
+        for (auto clause1 = subsumption_clauses.begin(); clause1 != subsumption_clauses.end(); ++clause1) {
+            if (clause1->is_deleted()) continue;
+            for (auto clause2 = clause1+1; clause2 != subsumption_clauses.end(); ++clause2) {
+                assert(clause1 != clause2);
+                if (clause2->is_deleted()) continue;
+                if (clause1->get_hash() == clause2->get_hash()) {
+                    if (clause1->equals(*clause2)) { 
+                        nDuplicates++;
+                        if (clause1->lbd() > clause2->lbd()) {
+                            remove((SubsumptionClause*)*clause1);
+                        } else {
+                            remove((SubsumptionClause*)*clause2);
+                        }
+                    }
+                    else {
+                        continue;
+                    }
+                } 
+                break;
+            }
+        }
+        return nDuplicates;
+    }
+
+    inline void clear() {
+        subsumption_clauses.free_all();
+        for (auto& occurrence : occurrences) {
+            occurrence.clear();
         }
     }
 
     inline void cleanup() {
-        std::vector<SubsumptionClause*> removed;
-        for (SubsumptionClause* clause : subsumption_clauses) {
-            if (clause->is_deleted()) {
-                removed.push_back(clause); 
-            }
-        }
-        cleanup(subsumption_clauses);
         for (auto& occurrence : occurrences) {
-            cleanup(occurrence);
+            occurrence.erase(std::remove_if(occurrence.begin(), occurrence.end(), [&](SubsumptionClause* clause) { 
+                return clause->is_deleted(); 
+            }), occurrence.end());
         }
-        for (SubsumptionClause* clause : removed) {
-            delete clause; 
-        }
-    }
-
-    inline void clear() {
-        for (SubsumptionClause* subsumption_clause : subsumption_clauses) {
-            delete subsumption_clause;
-        }
-        subsumption_clauses.clear();
-        for (auto& occurrence : occurrences) {
-            occurrence.clear();
-        }   
     }
 
     inline size_t numOccurences(Var v) {
@@ -104,14 +127,20 @@ public:
     }
 
     inline std::vector<SubsumptionClause*> copyOccurences(Var v) {
+        for (SubsumptionClause* occurrence : occurrences[v]) {
+            assert(occurrence->is_deleted() || occurrence->contains(Lit(v, true)) || occurrence->contains(Lit(v, false)));
+        }
         return std::vector<SubsumptionClause*>(occurrences[v].begin(), occurrences[v].end());
     }
 
     inline std::vector<SubsumptionClause*>& refOccurences(Var v) {
+        for (SubsumptionClause* occurrence : occurrences[v]) {
+            assert(occurrence->is_deleted() || occurrence->contains(Lit(v, true)) || occurrence->contains(Lit(v, false)));
+        }
         return occurrences[v];
     }
 
-    typedef std::vector<SubsumptionClause*>::const_iterator const_iterator;
+    typedef Memory<SubsumptionClause>::const_iterator const_iterator;
 
     inline const_iterator begin() const {
         return subsumption_clauses.begin();
@@ -121,19 +150,13 @@ public:
         return subsumption_clauses.end();
     }
 
-    inline unsigned int size() const {
-        return subsumption_clauses.size();
-    }
-
-    inline const SubsumptionClause* operator [](int i) const {
-        return subsumption_clauses[i];
-    }
-
     template<typename Iterator>
     inline SubsumptionClause* create(Iterator begin, Iterator end, unsigned int lbd = 0) {
         assert(std::distance(begin, end) > 0);
         Clause* clause = clause_db.createClause(begin, end, lbd);
-        return registerSubsumptionClause(clause);
+        SubsumptionClause* subsumption_clause = createSubsumptionClause(clause);
+        addToOccurenceLists(subsumption_clause);        
+        return subsumption_clause;
     }
 
     inline void remove(SubsumptionClause* subsumption_clause) {

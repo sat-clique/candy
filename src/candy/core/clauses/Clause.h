@@ -161,7 +161,6 @@ inline std::ostream& operator <<(std::ostream& stream, Clause const& clause) {
     for (Lit lit : clause) {
         stream << lit << " ";
     }
-    stream << std::endl; 
     return stream;
 }
 

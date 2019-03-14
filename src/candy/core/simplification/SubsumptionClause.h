@@ -21,37 +21,41 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SRC_CANDY_CORE_SUBSUMPTION_CLAUSE_H_
 
 #include "candy/core/clauses/Clause.h"
+#include <tuple>
 
 namespace Candy {
 
 class SubsumptionClause {
 private:
-    const Clause* clause;
     uint64_t abstraction;
+    uint64_t hash;
+    const Clause* clause;
 
-    inline uint64_t calc_abstraction(const Clause* clause) const {
-        uint64_t abstraction = 0;
+    inline void calc_abstraction_and_hash() {
+        abstraction = 0;
+        hash = 0;
         for (Lit lit : *clause) {
             abstraction |= 1ull << (lit.var() % 64);
+            hash += lit;
         }
-        return abstraction;
     }
 
 public:
     SubsumptionClause(const Clause* clause_) : clause(clause_) {
-        abstraction = calc_abstraction(clause_);
+        calc_abstraction_and_hash();
     }
 
     ~SubsumptionClause() { }
 
     inline void reset(const Clause* clause_) {
         clause = clause_;
-        abstraction = calc_abstraction(clause_);
+        calc_abstraction_and_hash();
     }
 
     inline void operator =(const SubsumptionClause& other) {
         clause = other.clause;
         abstraction = other.abstraction;
+        hash = other.hash;
     }
 
     inline const Lit& operator [](int i) const {
@@ -84,6 +88,10 @@ public:
         return abstraction;
     }
 
+    inline uint64_t get_hash() const {
+        return hash;
+    }
+
     inline void set_deleted() {
         this->clause = nullptr;
     }
@@ -96,8 +104,25 @@ public:
         return clause->contains(lit);
     }
 
-    inline bool equals(SubsumptionClause* other) const {
-        if (this->abstraction == other->abstraction && this->size() == other->size()) {
+    inline bool operator < (SubsumptionClause& other) { 
+        return std::tuple<uint16_t, uint64_t, uint64_t, Clause*>(this->size(), this->get_hash(), this->get_abstraction(), this->get_clause())
+             < std::tuple<uint16_t, uint64_t, uint64_t, Clause*>(other.size(), other.get_hash(), other.get_abstraction(), other.get_clause());
+    }
+
+    inline bool operator > (SubsumptionClause& other) { 
+        return other < *this;
+    }
+
+    inline bool operator <= (SubsumptionClause& other) { 
+        return !(*this > other); 
+    }
+
+    inline bool operator >= (SubsumptionClause& other) { 
+        return !(*this < other); 
+    }
+
+    inline bool equals(const SubsumptionClause* other) const {
+        if (this->hash == other->hash && this->abstraction == other->abstraction && this->size() == other->size()) {
             for (Lit c : *this) {
                 for (Lit d : *other) {
                     if (c == d) {
@@ -126,8 +151,8 @@ public:
      *       lit_Undef  - Clause subsumes 'other'
      *       p          - The literal p can be deleted from 'other'
      */
-    inline Lit subsumes(SubsumptionClause* other) const {
-        if (other->size() >= this->size() && (abstraction & ~(other->abstraction)) == 0) {
+    inline Lit subsumes(const SubsumptionClause* other) const {
+        if ((abstraction & ~(other->abstraction)) == 0 && other->size() >= this->size()) {
             Lit ret = lit_Undef;
             for (Lit c : *this) {
                 for (Lit d : *other) { // search for c or ~c

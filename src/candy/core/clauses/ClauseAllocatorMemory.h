@@ -46,8 +46,12 @@ public:
             return *this;
         }
 
-        inline bool operator!=(const const_iterator& other) const {
+        inline bool operator != (const const_iterator& other) const {
             return pos != other.pos;
+        }
+
+        inline bool operator == (const const_iterator& other) const {
+            return pos == other.pos;
         }
 
     private:
@@ -127,7 +131,71 @@ public:
     }
 };
 
+/**
+ * class ClauseAllocatorMemory:
+ * 
+ *  Manages a list of ClauseAllocatorPages
+ * 
+ * */
 class ClauseAllocatorMemory {
+public:
+    class const_iterator {
+    public:
+        const_iterator(
+            std::vector<ClauseAllocatorPage>::const_iterator page_,
+            std::vector<ClauseAllocatorPage>::const_iterator end_page_,
+            ClauseAllocatorPage::const_iterator position_,
+            ClauseAllocatorPage::const_iterator end_position_)
+         : page(page_), end_page(end_page_), position(position_), end_position(end_position_) 
+        { 
+            skip_empty_pages();
+        } 
+
+        inline const Clause* operator*() const {
+            if (position == nullptr) return nullptr; 
+            return *position;
+        }
+
+        inline const_iterator& operator++() {
+            skip_empty_pages();
+
+            if (position != nullptr) {
+                ++position;
+                skip_empty_pages();
+            }
+
+            return *this;
+        }
+
+        inline bool operator != (const const_iterator& other) const {
+            return page != other.page || position != other.position;
+        }
+
+        inline bool operator == (const const_iterator& other) const {
+            return page == other.page && position == other.position;
+        }
+
+    private:
+        std::vector<ClauseAllocatorPage>::const_iterator page;
+        std::vector<ClauseAllocatorPage>::const_iterator end_page;
+        ClauseAllocatorPage::const_iterator position;
+        ClauseAllocatorPage::const_iterator end_position;
+
+        inline void skip_empty_pages() {
+            while (position == end_position && page != end_page) {
+                page++;
+                if (page != end_page) {
+                    position = page->begin();
+                    end_position = page->end();
+                } else {
+                    position = nullptr;
+                    end_position = nullptr;
+                }
+            }
+        }
+
+    };
+
 private:
     const unsigned int default_page_size;
 
@@ -138,6 +206,15 @@ public:
     ClauseAllocatorMemory(unsigned int page_size_mb = 32)
      : default_page_size(page_size_mb*1024*1024), pages(), phase_out_pages() { }
     ~ClauseAllocatorMemory() { }
+
+    inline const_iterator begin() const {
+        if (pages.empty()) return end(); 
+        return const_iterator(pages.begin(), pages.end(), pages.begin()->begin(), pages.begin()->end());
+    }
+
+    inline const_iterator end() const {
+        return const_iterator(pages.end(), pages.end(), nullptr, nullptr);
+    }
 
     inline void* allocate(size_t length) {
         if (pages.size() == 0 || !pages.back().hasMemory(length)) { 
@@ -157,13 +234,14 @@ public:
 
     inline std::vector<Clause*> collect() {
         std::vector<Clause*> clauses;
-        for (ClauseAllocatorPage& page : pages) {
-            for (const Clause* clause : page) {
+        // for (ClauseAllocatorPage& page : pages) {
+            // for (const Clause* clause : page) {
+            for (const Clause* clause : *this) {
                 if (!clause->isDeleted()) {
                     clauses.push_back((Clause*)clause);
                 }
             }
-        }
+        // }
         return clauses;
     }
 

@@ -58,32 +58,24 @@ class Subsumption {
 private:
     SubsumptionClauseDatabase& database;
 
-    void unique(std::vector<SubsumptionClause*>& list);
+    void unique();
     bool subsume(SubsumptionClause* clause);
 
-public:   
-    unsigned int nDuplicates;
+public:
     unsigned int nSubsumed;
     unsigned int nStrengthened;      
 
     Subsumption(SubsumptionClauseDatabase& database_)
-     : database(database_), nDuplicates(0), nSubsumed(0), nStrengthened(0)
+     : database(database_), nSubsumed(0), nStrengthened(0)
     { }
 
     bool subsume() {
-        nDuplicates = nSubsumed = nStrengthened = 0; 
-
-        std::vector<SubsumptionClause*> list { database.begin(), database.end() };
-
-        sort(list.begin(), list.end(), [](const SubsumptionClause* c1, const SubsumptionClause* c2) { 
-            return c1->size() < c2->size() || (c1->size() == c2->size() && c1->get_abstraction() < c2->get_abstraction()); 
-        });
-
-        unique(list);
-        
-        for (SubsumptionClause* clause : list) {
+        nSubsumed = nStrengthened = 0; 
+                
+        for (const SubsumptionClause* clause : database) {
             if (!clause->is_deleted()) {
-                if (!subsume(clause)) {
+                // std::cout << "c Subsumption with clause " << *clause->get_clause() << "\r";
+                if (!subsume((SubsumptionClause*)clause)) {
                     return false;
                 }
             }
@@ -93,36 +85,10 @@ public:
     }
 
     unsigned int nTouched() {
-        return nDuplicates + nSubsumed + nStrengthened; 
+        return nSubsumed + nStrengthened; 
     }
     
 }; 
-
-void Subsumption::unique(std::vector<SubsumptionClause*>& list) { // remove duplicates
-    for (auto it1 = list.begin(); it1 != list.end(); it1++) {
-        SubsumptionClause* clause1 = *it1;
-        if (clause1->is_deleted()) continue;
-        for (auto it2 = it1+1; it2 != list.end(); it2++) {
-            SubsumptionClause* clause2 = *it2;
-            if (clause2->is_deleted()) continue;
-            if (clause1->get_abstraction() == clause2->get_abstraction()) {
-                if (clause1->equals(clause2)) {
-                    nDuplicates++;
-                    if (clause1->lbd() > clause2->lbd() || (clause1->lbd() == clause2->lbd() && clause1->get_clause() > clause2->get_clause())) {
-                        database.remove(clause1);
-                    }
-                    else {
-                        database.remove(clause2);
-                    }
-                }
-                else {
-                    continue;
-                }
-            } 
-            break;
-        }
-    }
-}
 
 bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
     SubsumptionClause* clause = subsumption_clause;
@@ -134,7 +100,7 @@ bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
 
     // Search all candidates:
     const std::vector<SubsumptionClause*> occurences = database.copyOccurences(best.var());
-    for (SubsumptionClause* occurence : occurences) {
+    for (const SubsumptionClause* occurence : occurences) {
         if (occurence != clause && !occurence->is_deleted()) {
             Lit l = clause->subsumes(occurence);
 
@@ -144,12 +110,12 @@ bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
                     clause = database.create(clause->begin(), clause->end());
                     database.remove(subsumption_clause);
                 }
-                database.remove(occurence);
+                database.remove((SubsumptionClause*)occurence);
             }
             else if (l != lit_Error) {
                 nStrengthened++;   
                 if (occurence->size() > 1) {
-                    database.strengthen(occurence, ~l);
+                    database.strengthen((SubsumptionClause*)occurence, ~l);
                 }
                 else {
                     return false;

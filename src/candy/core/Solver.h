@@ -221,9 +221,7 @@ private:
 
             if (subsumption.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c " << std::this_thread::get_id() << ": Subsumption eliminated " << subsumption.nDuplicates 
-                    << " duplicates, subsumued " << subsumption.nSubsumed 
-                    << " clauses, strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumued " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
             propagateAndMaterializeUnitClauses();
@@ -251,7 +249,7 @@ private:
                 }
             }
 
-            num = subsumption.nStrengthened + subsumption.nSubsumed + elimination.nTouched() + reduction.nTouched();
+            num = subsumption.nTouched() + elimination.nTouched() + reduction.nTouched();
             max = std::max(num, max);
         } 
 
