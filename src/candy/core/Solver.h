@@ -253,7 +253,7 @@ private:
             max = std::max(num, max);
         } 
 
-        augmented_database.clear();
+        augmented_database.finalize();
     }
 
 };
@@ -439,9 +439,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     if (this->preprocessing_enabled) {
         trail.reset();
         processClauseDatabase();
-        // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
-        clause_db.reorganize(); 
-        propagator.reset();
     }
 
     lbool status = isInConflictingState() ? l_False : l_Undef;

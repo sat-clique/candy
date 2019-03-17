@@ -53,9 +53,7 @@ public:
      : clause_db(clause_db), subsumption_clauses(), occurrences()
     { }
 
-    ~SubsumptionClauseDatabase() { 
-        clear();
-    }
+    ~SubsumptionClauseDatabase() { }
 
     inline void grow(size_t nVars) {
         if (nVars > occurrences.size()) {
@@ -68,12 +66,7 @@ public:
         for (Clause* clause : clause_db) {
             if (!clause->isDeleted()) createSubsumptionClause(clause);
         }
-        subsumption_clauses.sort([](SubsumptionClause c1, SubsumptionClause c2) { 
-            return c1 < c2;
-        });
-        std::cout << "c Removing Duplicate Clauses: ";
-        unsigned int duplicates = unique();
-        std::cout << duplicates << " found" << std::endl;
+        unique();        
         for (const SubsumptionClause* subsumption_clause : subsumption_clauses) {
             if (!subsumption_clause->is_deleted()) {
                 addToOccurenceLists((SubsumptionClause*)subsumption_clause);
@@ -81,8 +74,17 @@ public:
         }
     }
 
-    unsigned int unique() { // remove duplicates
+    inline void finalize() {
+        subsumption_clauses.free_all();
+        for (auto& occurrence : occurrences) {
+            occurrence.clear();
+        }
+    }
+
+    void unique() { // remove duplicates
         unsigned int nDuplicates = 0;
+        std::cout << "c Removing Duplicate Clauses: ";
+        subsumption_clauses.sort([](SubsumptionClause c1, SubsumptionClause c2) { return c1 < c2; });
         for (auto clause1 = subsumption_clauses.begin(); clause1 != subsumption_clauses.end(); ++clause1) {
             if (clause1->is_deleted()) continue;
             for (auto clause2 = clause1+1; clause2 != subsumption_clauses.end(); ++clause2) {
@@ -104,14 +106,7 @@ public:
                 break;
             }
         }
-        return nDuplicates;
-    }
-
-    inline void clear() {
-        subsumption_clauses.free_all();
-        for (auto& occurrence : occurrences) {
-            occurrence.clear();
-        }
+        std::cout << nDuplicates << " found" << std::endl;
     }
 
     inline void cleanup() {
