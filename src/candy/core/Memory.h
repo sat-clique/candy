@@ -53,6 +53,10 @@ public:
             return pos != other.pos;
         }
 
+        inline bool operator < (const const_iterator& other) const {
+            return pos < other.pos;
+        }
+
     private:
         unsigned char* pos;
 
@@ -185,6 +189,10 @@ public:
 
         inline bool operator != (const const_iterator& other) const {
             return page != other.page || position != other.position;
+        }
+
+        inline bool operator < (const const_iterator& other) const {
+            return page < other.page || position < other.position;
         }
 
     private:

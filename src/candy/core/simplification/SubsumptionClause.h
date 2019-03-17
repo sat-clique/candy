@@ -73,6 +73,7 @@ public:
     }
 
     inline uint16_t size() const {
+        if (clause == nullptr) return 0;
         return clause->size();
     }
 
@@ -123,20 +124,14 @@ public:
 
     inline bool equals(const SubsumptionClause* other) const {
         if (this->hash == other->hash && this->abstraction == other->abstraction && this->size() == other->size()) {
-            for (Lit c : *this) {
-                for (Lit d : *other) {
-                    if (c == d) {
-                        goto ok;
-                    }
+            for (Lit lit : *this) {
+                if (!other->contains(lit)) {
+                    return false;
                 }
-                return false; // did not find it
-                ok: ;
             }
             return true;
         } 
-        else {
-            return false;
-        }
+        return false;
     }
 
     /**

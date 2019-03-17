@@ -58,8 +58,8 @@ class Subsumption {
 private:
     SubsumptionClauseDatabase& database;
 
-    void unique();
     bool subsume(SubsumptionClause* clause);
+    bool unit_resolution(SubsumptionClause* clause);
 
 public:
     unsigned int nSubsumed;
@@ -75,8 +75,15 @@ public:
         for (const SubsumptionClause* clause : database) {
             if (!clause->is_deleted()) {
                 // std::cout << "c Subsumption with clause " << *clause->get_clause() << "\r";
-                if (!subsume((SubsumptionClause*)clause)) {
-                    return false;
+                if (clause->size() == 1) {
+                    if (!unit_resolution((SubsumptionClause*)clause)) {
+                        return false;
+                    }
+                }
+                else {
+                    if (!subsume((SubsumptionClause*)clause)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -89,6 +96,25 @@ public:
     }
     
 }; 
+
+bool Subsumption::unit_resolution(SubsumptionClause* clause) {
+    assert(clause->size() == 1);
+    Lit unit = clause->get_clause()->first();
+    const std::vector<SubsumptionClause*> occurences = database.copyOccurences(unit.var());
+    for (SubsumptionClause* occurence : occurences) {
+        if (occurence != clause && !occurence->is_deleted()) {
+            if (occurence->contains(unit)) {
+                database.remove(occurence);
+            } else {
+                if (occurence->size() == 1) {
+                    return false;
+                }
+                database.strengthen(occurence, unit);
+            }
+        }
+    }
+    return true;
+}
 
 bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
     SubsumptionClause* clause = subsumption_clause;
