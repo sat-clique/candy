@@ -83,7 +83,6 @@ public:
 
     void unique() { // remove duplicates
         unsigned int nDuplicates = 0;
-        std::cout << "c Removing Duplicate Clauses: ";
         subsumption_clauses.sort([](SubsumptionClause c1, SubsumptionClause c2) { return c1 < c2; });
         for (auto clause1 = subsumption_clauses.begin(); clause1 != subsumption_clauses.end(); ++clause1) {
             if (clause1->is_deleted()) continue;
@@ -106,7 +105,7 @@ public:
                 break;
             }
         }
-        std::cout << nDuplicates << " found" << std::endl;
+        std::cout << "c Removed " << nDuplicates << " Duplicate Clauses" << std::endl;
     }
 
     inline void cleanup() {
