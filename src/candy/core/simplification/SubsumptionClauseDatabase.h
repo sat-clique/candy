@@ -64,7 +64,7 @@ public:
     inline void initialize() {
         std::cout << "c Initializing Subsumption Database" << std::endl;
         for (Clause* clause : clause_db) {
-            if (!clause->isDeleted()) createSubsumptionClause(clause);
+            createSubsumptionClause(clause);
         }
         unique();        
         for (const SubsumptionClause* subsumption_clause : subsumption_clauses) {

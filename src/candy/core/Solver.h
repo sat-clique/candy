@@ -459,7 +459,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
                 std::cout << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
                 clause_db.reduce();
             }
-            // in case of global allocation synchronization now is mandatory (due to DLD: delayed lazy deletion)
             clause_db.reorganize();
             std::cout << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
             propagator.reset();
