@@ -52,8 +52,15 @@ public:
     void setModel(Trail& trail) {
         model.resize(trail.trail.size(), l_Undef);
         for (Lit lit : trail) {
-            model[lit.var()] = lit.sign() ? l_False : l_True;
+            setModelValue(lit);
         }
+    }
+
+    void setModelValue(Lit lit) {
+        if (lit.var() >= (Var)model.size()) {
+            model.resize(lit.var()+1, l_Undef);
+        }
+        model[lit.var()] = lit.sign() ? l_False : l_True;
     }
 
     void setConflict(std::vector<Lit> assumptions) {
@@ -68,21 +75,15 @@ public:
         return model[p.var()] ^ p.sign();
     }
 
-    std::vector<lbool>& getModelValues() {
-        return model;
-    }
-
     std::vector<Lit> getModelLiterals() {
         std::vector<Lit> model_literals; 
-        Var v = 0;
-        for (lbool value : model) {
-            if (value == l_True) {
+        for (Var v = 0; v < (Var)model.size(); v++) {
+            if (model[v] == l_True) {
                 model_literals.push_back(Lit(v, false));
             }
-            else if (value == l_False) {
+            else if (model[v] == l_False) {
                 model_literals.push_back(Lit(v, true));
-            }         
-            v++;
+            }
         }
         return model_literals;
     }
