@@ -90,6 +90,9 @@ option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
 # Enable Static Linking
 option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 
+# Build candy as a shared library
+option(CANDY_BUILD_SHARED_LIB "Build candy as a shared library (experimental)" OFF)
+
 # Enable Link Time Optimization in Release Builds
 option(CANDY_ENABLE_LTO "Enable linking time optimization" ON)
 
@@ -150,7 +153,10 @@ else()
         message( WARNING "GCC indicates LTO support, but binutils wrappers could not be found. Disabling LTO." )
       endif()
     endif()
+  endif()
 
+  if(CANDY_BUILD_SHARED_LIB)
+    add_definitions(-fPIC)
   endif()
 endif()
 
@@ -291,22 +297,18 @@ add_subdirectory(testsrc)
 add_subdirectory(fuzzing)
 
 ### Define and link target executables and libraries
-add_library(candystatic STATIC ${CANDY_OBJECTS})
-target_link_libraries(candystatic ${CANDY_LIBS})
+set(candylib_build_mode STATIC)
+if(CANDY_BUILD_SHARED_LIB)
+  set(candylib_build_mode SHARED)
+endif()
+
+add_library(candylib ${candylib_build_mode} ${CANDY_OBJECTS})
+target_link_libraries(candylib ${CANDY_LIBS})
 
 add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
 add_executable(cnf2aig src/candy/cnf2aig.cc $<TARGET_OBJECTS:frontend>)
 candy_executable_customizations(candy)
-target_link_libraries(candy candystatic)
-target_link_libraries(cnf2aig candystatic)
-
-### Define dynamic library
-# todo: add second run for pic objects
-#add_library(candyshared SHARED ${CANDY_OBJECTS})
-#set_property(TARGET candyshared PROPERTY POSITION_INDEPENDENT_CODE ON)
-#set_target_properties(candyshared PROPERTIES PUBLIC_HEADER $<TARGET_OBJECTS:ipasir>)
-#target_link_libraries(candyshared ${CANDY_LIBS})
-#set_target_properties(candyshared PROPERTIES LINKER_LANGUAGE CXX)
-#target_include_directories(candyshared PRIVATE src)
+target_link_libraries(candy candylib)
+target_link_libraries(cnf2aig candylib)
 
 
