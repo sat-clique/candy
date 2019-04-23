@@ -491,7 +491,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     }
     else if (status == l_True) {
         result.setModel(trail);
-        elimination.extendModel(result.getModelValues());
+        elimination.extendModel(result);
     }
     
     trail.backtrack(0);

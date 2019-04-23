@@ -21,7 +21,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define SRC_CANDY_CORE_CANDYSOLVERINTERFACE_H_
 
 #include "candy/core/SolverTypes.h"
-#include "candy/core/CNFProblem.h"
 
 #include <vector>
 
@@ -33,6 +32,7 @@ class BranchingDiversificationInterface;
 class ClauseDatabase;
 class Trail;
 class CandySolverResult;
+class CNFProblem;
 
 class CandySolverInterface {
 public:

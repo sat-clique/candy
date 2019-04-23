@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
         }
 
         installSignalHandlers(true);
-        problem.clear();
+        // problem.clear();
         while (result == l_Undef && !interrupted) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
@@ -301,9 +301,11 @@ int main(int argc, char** argv) {
                 }
             } 
             else {
+                // problem.checkResult(result);
                 Cl model = result.getModelLiterals();
-                std::cout << "v ";
+                std::cout << "v";
                 for (Lit lit : model) {
+                    std::cout << " ";
                     printLiteral(lit);
                 }
                 std::cout << " 0" << std::endl;

@@ -46,6 +46,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/simplification/SubsumptionClauseDatabase.h"
 #include "candy/core/simplification/SubsumptionClause.h"
 #include "candy/core/Trail.h"
+#include "candy/core/CandySolverResult.h"
 #include "candy/utils/Options.h"
 
 namespace Candy {
@@ -138,17 +139,22 @@ public:
         return true;
     }
 
-    void extendModel(std::vector<lbool>& model) {
-        Lit x;
-        for (int i = elimclauses.size()-1, j; i > 0; i -= j) {
-            for (j = elimclauses[i--]; j > 1; j--, i--) {
-                Lit p = elimclauses[i]; 
-                if ((model[p.var()] ^ p.sign()) != l_False)
-                    goto next;
+    void extendModel(CandySolverResult& result) {
+        int start = elimclauses.size();
+        bool satisfied = true;
+        for (int i = start, size = 0; i > 0; i--) {
+            if (i == start - size) {
+                // elimclauses[i] is last literal of current clause
+                if (!satisfied) {
+                    result.setModelValue(elimclauses[i]);
+                }
+                --i; //elimclauses[i] is size of next clause 
+                start = i;
+                size = elimclauses[i];
+                satisfied = false;
+                --i; //elimclauses[i] is first literal of next clause 
             }
-            x = elimclauses[i];
-            model[x.var()] = lbool(!x.sign());
-        next: ;
+            satisfied |= (result.modelValue(elimclauses[i]) == l_True);
         }
     }
 
@@ -171,13 +177,8 @@ private:
             } 
         }
         
-        if (pos.size() > neg.size()) {
-            for (SubsumptionClause* c : neg) mkElimClause(variable, *c->get_clause());
-            mkElimClause(Lit(variable));
-        } else {
-            for (SubsumptionClause* c : pos) mkElimClause(variable, *c->get_clause());
-            mkElimClause(~Lit(variable));
-        } 
+        for (SubsumptionClause* c : neg) mkElimClause(variable, *c->get_clause());
+        for (SubsumptionClause* c : pos) mkElimClause(variable, *c->get_clause());
         
         for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
             if (merge(*pc->get_clause(), *nc->get_clause(), variable, resolvent)) {
@@ -198,7 +199,9 @@ private:
 
     void mkElimClause(Lit x) {
         elimclauses.push_back(x);
-        elimclauses.push_back((Lit)1);
+        Lit fake;
+        fake.x = 1;
+        elimclauses.push_back(fake);
     }
 
     void mkElimClause(Var v, const Clause& c) { 
@@ -217,7 +220,9 @@ private:
         }
         
         // Store the length of the clause last:
-        elimclauses.push_back((Lit)c.size());
+        Lit fake;
+        fake.x = c.size();
+        elimclauses.push_back(fake);
     }
 
     // Returns FALSE if clause is always satisfied ('out_clause' should not be used).

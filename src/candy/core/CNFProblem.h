@@ -22,6 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/utils/StreamBuffer.h"
 #include "candy/core/SolverTypes.h"
+#include "candy/core/CandySolverResult.h"
 
 #include <vector>
 
@@ -83,6 +84,21 @@ public:
             delete clause;
         }
         problem.clear();
+    }
+
+    void checkResult(CandySolverResult& result) {
+        for (Cl* clause : problem) {
+            bool satisfied = false;
+            for (Lit lit : *clause) {
+                if (result.modelValue(lit) == l_True) {
+                    satisfied = true; 
+                    break;
+                }
+            }
+            if (!satisfied) {
+                std::cout << "c Clause not satisfied: " << *clause;
+            }
+        }
     }
 
     void printDIMACS() const;
