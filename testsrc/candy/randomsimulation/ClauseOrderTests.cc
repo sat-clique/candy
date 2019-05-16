@@ -74,7 +74,7 @@ namespace Candy {
         
         GateAnalyzer ga { *formula };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 0);
+        ASSERT_EQ(ga.getResult().getGateCount(), 0);
         
         underTest.readGates(ga);
         EXPECT_EQ(underTest.getAmountOfVars(), 0ul);
@@ -102,7 +102,7 @@ namespace Candy {
         GateAnalyzer ga { *formula };
         ga.analyze();
         
-        ASSERT_EQ(ga.getGateCount(), 1);
+        ASSERT_EQ(ga.getResult().getGateCount(), 1);
         
         underTest.readGates(ga);
         
@@ -141,7 +141,7 @@ namespace Candy {
         GateAnalyzer ga { *formula };
         ga.analyze();
         
-        ASSERT_EQ(ga.getGateCount(), 3);
+        ASSERT_EQ(ga.getResult().getGateCount(), 3);
         
         underTest.readGates(ga);
         
@@ -194,9 +194,9 @@ namespace Candy {
         GateAnalyzer ga { *formula, 0, 1, true, false, false, false };
         ga.analyze();
         
-        ASSERT_EQ(ga.getGateCount(), 7);
-        ASSERT_EQ(ga.getRoots().size(), 1ul);
-        ASSERT_EQ(ga.getRoots()[0]->size(), 1ul);
+        ASSERT_EQ(ga.getResult().getGateCount(), 7);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1ul);
+        ASSERT_EQ(ga.getResult().getRoots()[0]->size(), 1ul);
         
         underTest.readGates(ga);
         
@@ -272,7 +272,7 @@ namespace Candy {
     }
     
     static bool containsClauses(GateAnalyzer& analyzer, Lit outputLiteral, const std::vector<const Cl*>& clauses) {
-        auto &gate = analyzer.getGate(outputLiteral);
+        auto &gate = analyzer.getResult().getGate(outputLiteral);
         return gate.isDefined() && (equals(gate.getForwardClauses(), clauses) || equals(gate.getBackwardClauses(), clauses));
     }
     

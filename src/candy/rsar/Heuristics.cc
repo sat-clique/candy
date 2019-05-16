@@ -82,9 +82,9 @@ namespace Candy {
             std::unordered_map<const Gate*, std::vector<const Gate*>> result;
             
             for (auto output : gateOutputs) {
-                auto& dependentGate = analyzer.getGate(Lit(output, 1));
+                auto& dependentGate = analyzer.getResult().getGate(Lit(output, 1));
                 for (auto inputLit : dependentGate.getInputs()) {
-                    auto &gate = analyzer.getGate(inputLit);
+                    auto &gate = analyzer.getResult().getGate(inputLit);
                     if (gate.isDefined()) {
                         result[&gate].push_back(&dependentGate);
                     }
@@ -116,12 +116,12 @@ namespace Candy {
             const size_t exceedingMax = std::numeric_limits<size_t>::max();
             
             for (auto gateOutput : topo.getOutputsOrdered()) {
-                auto& gate = analyzer.getGate(Lit(gateOutput));
+                auto& gate = analyzer.getResult().getGate(Lit(gateOutput));
                 inputDependencies[&gate].reset(new std::unordered_set<Var>{});
             }
             
             for (auto gateOutput : topo.getOutputsOrdered()) {
-                auto& gate = analyzer.getGate(Lit(gateOutput));
+                auto& gate = analyzer.getResult().getGate(Lit(gateOutput));
                 auto& inputsViaDependencies = *inputDependencies[&gate];
                 
                 bool detectedExceedingMax =  (inputDependencyCount.find(gateOutput) != inputDependencyCount.end()
@@ -130,7 +130,7 @@ namespace Candy {
                 if (!detectedExceedingMax) {
                     // update input dependencies with inputs which are not outputs of other gates
                     for (auto inpLit : gate.getInputs()) {
-                        if (!analyzer.getGate(inpLit).isDefined()) {
+                        if (!analyzer.getResult().getGate(inpLit).isDefined()) {
                             auto inpVar = inpLit.var();
                             inputsViaDependencies.insert(inpVar);
                             detectedExceedingMax |= inputsViaDependencies.size() > maxInputs;

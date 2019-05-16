@@ -110,8 +110,8 @@ void traverseDAG() {
 		if (isVisited(lit)) continue;
 		setVisited(lit);
 
-		if (gates->getGate(lit).isDefined()) {
-			For& clauses = gates->getGate(lit).getForwardClauses();
+		if (gates->getResult().getGate(lit).isDefined()) {
+			For& clauses = (For&)gates->getResult().getGate(lit).getForwardClauses();
 
 			// strip output-literal from clauses
             For list;
@@ -155,9 +155,9 @@ void createAndFromClause(Cl* disj, Lit output) {
 }
 
 void registerLiteral(Lit lit) {
-	if (gates->getGate(lit).isDefined()) {
+	if (gates->getResult().getGate(lit).isDefined()) {
 		literals->push_back(lit);
-	} else if (gates->getGate(~lit).isDefined()) {
+	} else if (gates->getResult().getGate(~lit).isDefined()) {
 		literals->push_back(~lit);
 	} else {
         inputs.insert(lit.var());
@@ -277,7 +277,7 @@ int main(int argc, char** argv) {
     maxVariable = problem.nVars()+1;
 
     literals = new std::vector<Lit>();
-    Lit root = gates->normalizeRoots();
+    Lit root = gates->getResult().normalizeRoots();
     literals->push_back(root);
 
     assert(root.var() < static_cast<Var>(maxVariable));

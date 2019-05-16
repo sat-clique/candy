@@ -137,7 +137,7 @@ namespace Candy {
             if (analyzer.hasTimeout()) {
                 std::cout << "c gate analysis exceeded the preprocessing time limit." << std::endl;
             }
-            else if (analyzer.getGateCount() <= RSILOptions::opt_rsil_minGateFraction * problem.nVars()) {
+            else if (analyzer.getResult().getGateCount() <= RSILOptions::opt_rsil_minGateFraction * problem.nVars()) {
                 std::cout << "c insufficient gate count." << std::endl;
             }
             else if (RSILOptions::opt_rsil_onlyMiters && !hasPossiblyMiterStructure(analyzer)) {

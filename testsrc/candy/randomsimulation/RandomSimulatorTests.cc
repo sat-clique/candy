@@ -41,7 +41,7 @@ namespace Candy {
         
         GateAnalyzer ga { *formula };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 0);
+        ASSERT_EQ(ga.getResult().getGateCount(), 0);
 
         BitparallelRandomSimulatorBuilder simulatorBuilder { ga };
         auto underTest = simulatorBuilder.build();
@@ -63,7 +63,7 @@ namespace Candy {
         
         GateAnalyzer ga { *formula };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 3);
+        ASSERT_EQ(ga.getResult().getGateCount(), 3);
 
         BitparallelRandomSimulatorBuilder simulatorBuilder { ga };
         auto underTest = simulatorBuilder.build();
@@ -93,7 +93,7 @@ namespace Candy {
         
         GateAnalyzer ga { *formula };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 6);
+        ASSERT_EQ(ga.getResult().getGateCount(), 6);
 
         BitparallelRandomSimulatorBuilder simulatorBuilder { ga };
         auto underTest = simulatorBuilder.withReductionRateAbortThreshold(0.1f).build();

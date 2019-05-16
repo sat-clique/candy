@@ -74,7 +74,7 @@ namespace Candy {
         
         GateAnalyzer ga(*formula);
         ga.analyze();
-        EXPECT_EQ(ga.getGateCount(), 1);
+        EXPECT_EQ(ga.getResult().getGateCount(), 1);
     }
     
     TEST(RSTestMockGateStructureBuilding, GateAnalyzerTest_threeGates) {
@@ -86,6 +86,6 @@ namespace Candy {
         
         GateAnalyzer ga(*formula);
         ga.analyze();
-        EXPECT_EQ(ga.getGateCount(), 3);
+        EXPECT_EQ(ga.getResult().getGateCount(), 3);
     }
 }
