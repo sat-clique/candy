@@ -110,8 +110,8 @@ public:
                 printf("Gate with output ");
                 printLiteral(gate.getOutput());
                 printf("Is defined by clauses ");
-                printFormula(gate.getForwardClauses(), false);
-                printFormula(gate.getBackwardClauses(), true);
+                printFormula(gate.getForwardClauses());
+                printFormula(gate.getBackwardClauses());
                 outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
             }
         }
@@ -167,19 +167,6 @@ private:
 
     Cl* getArtificialRoot() {
         return artificialRoot;
-    }
-
-    void printFormula(For& f, bool nl = false) {
-        for (Cl* c : f) printClause(*c);
-        if (nl) printf("\n");
-    }
-
-    void printClause(Cl& c) {
-        for (Lit it : c) {
-          printLiteral(it);
-          printf(" ");
-        }
-        printf("0\n");
     }
 
     // main analysis routines
