@@ -13,13 +13,6 @@
 # the test output only when it fails) or ctest --verbose
 #
 #
-# To build the documentation, run
-#   make doxygen
-# or
-#   cmake --build . --target doxygen
-#
-# The documentation is generated in doc/ within your build directory.
-#
 # II. Invoking cmake
 #
 # Examples:
@@ -124,9 +117,6 @@ if(HAVE_GETRLIMIT AND HAVE_SETRLIMIT)
   add_definitions(-D CANDY_HAVE_RLIMIT)
 endif()
 
-
-### Add doxygen targets
-add_subdirectory(doc)
 
 ### Compiler flags
 
