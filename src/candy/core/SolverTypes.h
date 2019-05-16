@@ -228,6 +228,13 @@ inline std::ostream& operator <<(std::ostream& stream, Cl const& clause) {
     return stream;
 }
 
+inline std::ostream& operator <<(std::ostream& stream, For const& formula) {
+    for (const Cl* clause : formula) {
+        stream << *clause << std::endl;
+    }
+    return stream;
+}
+
 inline void printLiteral(Lit lit) {
     std::cout << lit;
 }
@@ -243,6 +250,10 @@ inline void printClause(Cl clause) {
 
 inline void printDIMACS(Cl clause) {
     std::cout << clause << "0" << std::endl;
+}
+
+inline void printFormula(For f) {
+	std::cout << f << std::endl;
 }
 
 }
