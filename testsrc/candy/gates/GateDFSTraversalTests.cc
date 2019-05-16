@@ -66,9 +66,9 @@ namespace Candy {
     
     static bool isNested(const GateAnalyzer& analyzer, const Gate& influenced, const Gate& influencer) {
         for (Lit l : influenced.getInputs()) {
-            if (analyzer.getGate(l).isDefined()) {
-                if (&analyzer.getGate(l) == &influencer
-                    || isNested(analyzer, analyzer.getGate(l), influencer)) {
+            if (analyzer.getResult().getGate(l).isDefined()) {
+                if (&analyzer.getResult().getGate(l) == &influencer
+                    || isNested(analyzer, analyzer.getResult().getGate(l), influencer)) {
                     return true;
                 }
             }
@@ -100,12 +100,12 @@ namespace Candy {
     static void test_visitDFS(CNFProblem& problem, int nExpectedGates) {
         GateAnalyzer ga(problem);
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), nExpectedGates);
+        ASSERT_EQ(ga.getResult().getGateCount(), nExpectedGates);
         
         TestGateCollector collector = traverseDFS<TestGateCollector>(ga);
         
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
-        EXPECT_EQ(collector.gateCount, static_cast<unsigned long>(ga.getGateCount()));
+        EXPECT_EQ(collector.gateCount, static_cast<unsigned long>(ga.getResult().getGateCount()));
         EXPECT_TRUE(collector.finishedCalled);
     }
     
@@ -191,7 +191,7 @@ namespace Candy {
         
         GateAnalyzer ga(*problem);
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 9);
+        ASSERT_EQ(ga.getResult().getGateCount(), 9);
         NonmonotonicPruningTestGateCollector collector = traverseDFS<NonmonotonicPruningTestGateCollector>(ga);
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
         EXPECT_EQ(collector.visitSequence.size(), 6ull);

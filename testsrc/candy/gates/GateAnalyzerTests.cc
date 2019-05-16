@@ -69,7 +69,7 @@ namespace Candy {
     }
 
     void assert_gate(GateAnalyzer& ga, Lit output, bool monotonous, IFormula fwd, IFormula bwd, ILits inputs) {
-        Gate g = ga.getGate(output);
+        Gate g = ga.getResult().getGate(output);
         ASSERT_TRUE(g.isDefined());
         ASSERT_EQ(monotonous, g.hasNonMonotonousParent());
         ASSERT_EQ(fwd.size(), g.getForwardClauses().size());
@@ -86,9 +86,9 @@ namespace Candy {
         problem.readClauses(simple_and);
         GateAnalyzer ga { problem };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 1);
-        ASSERT_EQ(ga.getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getGateCount(), 1);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L}, {~1_L, 3_L}}, {{1_L, ~2_L, ~3_L}}, {2_L, 3_L});
     }
 
@@ -98,10 +98,10 @@ namespace Candy {
         problem.readClauses(simple_xor);
         GateAnalyzer ga { problem };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 1);
-        ASSERT_EQ(ga.getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
-        Gate g = ga.getGate(1_L);
+        ASSERT_EQ(ga.getResult().getGateCount(), 1);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
+        Gate g = ga.getResult().getGate(1_L);
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
     }
 
@@ -115,9 +115,9 @@ namespace Candy {
         problem.readClauses(simple_and2);
         GateAnalyzer ga { problem };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 3);
-        ASSERT_EQ(ga.getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getGateCount(), 3);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
@@ -135,9 +135,9 @@ namespace Candy {
         problem.readClauses(stuff);
         GateAnalyzer ga { problem };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 3);
-        ASSERT_EQ(ga.getRoots().size(), 2);
-        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L, 6_L, 7_L}));
+        ASSERT_EQ(ga.getResult().getGateCount(), 3);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 2);
+        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L, 6_L, 7_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
@@ -155,11 +155,11 @@ namespace Candy {
         problem.readClauses(stuff);
         GateAnalyzer ga { problem };
         ga.analyze();
-        Lit root = ga.normalizeRoots();
+        Lit root = ga.getResult().normalizeRoots();
         ASSERT_EQ(root, 8_L);
-        ASSERT_EQ(ga.getGateCount(), 4);
-        ASSERT_EQ(ga.getRoots().size(), 1);
-        ASSERT_EQ(ga.getRootLiterals().front(), 8_L);
+        ASSERT_EQ(ga.getResult().getGateCount(), 4);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        ASSERT_EQ(ga.getResult().getRootLiterals().front(), 8_L);
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}, {~1_L, ~2_L, ~3_L}}, {{1_L, 2_L, ~3_L}, {1_L, ~2_L, 3_L}}, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, true, {{~3_L, 4_L}, {~3_L, 5_L}}, {{3_L, ~4_L, ~5_L}}, {4_L, 5_L});
@@ -176,9 +176,9 @@ namespace Candy {
         problem.readClauses(simple_and2);
         GateAnalyzer ga { problem };
         ga.analyze();
-        ASSERT_EQ(ga.getGateCount(), 3);
-        ASSERT_EQ(ga.getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getGateCount(), 3);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
         assert_gate(ga, 1_L, false, {{~1_L, 2_L, 3_L}}, {{1_L, ~2_L}, {1_L, ~3_L}}, {2_L, 3_L});
         assert_gate(ga, 2_L, false, {{~2_L, 4_L}, {~2_L, 5_L}}, {{2_L, ~4_L, ~5_L}}, {4_L, 5_L});
         assert_gate(ga, 3_L, false, {{~3_L, 6_L}, {~3_L, 7_L}}, {{3_L, ~6_L, ~7_L}}, {6_L, 7_L});

@@ -18,6 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "candy/gates/GateAnalyzer.h"
+#include "candy/gates/GateProblem.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/MemUtils.h"
@@ -31,14 +32,12 @@ namespace Candy {
 
 GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, bool patterns, bool semantic, bool holistic, 
         bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget) :
-            problem (dimacs), runtime(timeout), 
+            problem(dimacs), gate_problem(*new GateProblem { problem }), runtime(timeout), 
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
-            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), 
-            artificialRoot(nullptr)
+            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget)
 {
     runtime.start();
-    gates.resize(problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     index.resize(2 * problem.nVars());
     for (Cl* c : problem) for (Lit l : *c) {// build index
@@ -49,11 +48,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
     runtime.stop();
 }
 
-GateAnalyzer::~GateAnalyzer() {
-    if (hasArtificialRoot()) {
-        delete artificialRoot;
-    }
-}
+GateAnalyzer::~GateAnalyzer() {}
 
 std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
     std::vector<Lit> result;
@@ -167,19 +162,12 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
             if (semantic) printf("Candidate output %s%i passed semantic test\n", o.sign()?"-":"", o.var()+1);
 #endif
             if (mono || pattern || semantic) {
-                nGates++;
                 frontier.insert(frontier.end(), inp.begin(), inp.end());
                 for (Lit l : inp) {
                     inputs[l]++;
                     if (!mono) inputs[~l]++;
                 }
-                //###
-                gates[o.var()].out = o;
-                gates[o.var()].notMono = !mono;
-                gates[o.var()].fwd.insert(gates[o.var()].fwd.end(), f.begin(), f.end());
-                gates[o.var()].bwd.insert(gates[o.var()].bwd.end(), g.begin(), g.end());
-                gates[o.var()].inp.insert(gates[o.var()].inp.end(), inp.begin(), inp.end());
-                //###
+                gate_problem.addGate(o, f, g, inp, !mono); 
                 removeFromIndex(index, f);
                 removeFromIndex(index, g);
             }
@@ -198,61 +186,14 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
 }
 
 /**
- * Execute after analysis in order to
- * tronsform many roots to one big and gate with one output
- * Side-effect: introduces a fresh variable
- */
-Lit GateAnalyzer::normalizeRoots() {
-    if (roots.size() > 1 || (*roots.begin())->size() > 1) {
-        Var root = problem.nVars();
-        // grow data-structures
-        gates.resize(problem.nVars() + 1);
-        inputs.resize(2 * problem.nVars() + 2, false);
-        // create gate
-        nGates++;
-        gates[root].out = Lit(root, false);
-        gates[root].notMono = false;
-        std::set<Lit> inp;
-        for (Cl* c : roots) {
-            inp.insert(c->begin(), c->end());
-            c->push_back(Lit(root, true));
-            gates[root].fwd.push_back(c);
-        }
-        gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
-        this->roots.clear();
-        artificialRoot = new Cl();
-        artificialRoot->push_back(gates[root].out);
-        this->roots.push_back(artificialRoot);
-        assert(this->roots.size() == 1);
-        return gates[root].out;
-    }
-    else {
-        return *(*roots.begin())->begin();
-    }
-}
-
-std::vector<Lit> GateAnalyzer::getRootLiterals() {
-    std::vector<Lit> literals;
-
-    for (Cl* c : getRoots()) {
-        literals.insert(literals.end(), c->begin(), c->end());
-    }
-    std::sort(literals.begin(), literals.end());
-    auto last = std::unique(literals.begin(), literals.end());
-    literals.erase(last, literals.end());
-
-    return literals;
-}
-
-/**
  * @brief GateAnalyzer::getPrunedProblem
  * @param model
  * @return clauses of all satisfied branches
  */
 For GateAnalyzer::getPrunedProblem(Cl model) {
-    For result(this->roots.begin(), this->roots.end());
+    For result(gate_problem.roots.begin(), gate_problem.roots.end());
 
-    std::vector<Lit> literals = getRootLiterals();
+    std::vector<Lit> literals = gate_problem.getRootLiterals();
     std::vector<int> visited(model.size(), -1);
 
     while (literals.size() > 0) {
@@ -260,7 +201,7 @@ For GateAnalyzer::getPrunedProblem(Cl model) {
         literals.pop_back();
 
         if (model[o.var()] == o && visited[o.var()] != o) {
-            Gate gate = gates[o.var()];
+            Gate gate = gate_problem.gates[o.var()];
             result.insert(result.end(), gate.fwd.begin(), gate.fwd.end());
             result.insert(result.end(), gate.bwd.begin(), gate.bwd.end());
             literals.insert(literals.end(), gate.inp.begin(), gate.inp.end());
@@ -324,7 +265,7 @@ void GateAnalyzer::analyze() {
     // start recognition with unit literals
     for (Cl* c : problem) {
         if (c->size() == 1) {
-            roots.push_back(c);
+            gate_problem.roots.push_back(c);
             removeFromIndex(index, c);
             next.push_back((*c)[0]);
             inputs[(*c)[0]]++;
@@ -336,7 +277,7 @@ void GateAnalyzer::analyze() {
     // clause selection loop
     for (int k = 0; k < maxTries && !runtime.hasTimeout(); k++) {
         std::vector<Cl*> clauses = getBestRoots();
-        roots.insert(roots.end(), clauses.begin(), clauses.end());
+        gate_problem.roots.insert(gate_problem.roots.end(), clauses.begin(), clauses.end());
         for (Cl* c : clauses) {
             next.insert(next.end(), c->begin(), c->end());
             for (Lit l : *c) inputs[l]++;

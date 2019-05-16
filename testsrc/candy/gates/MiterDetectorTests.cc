@@ -45,7 +45,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 6);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 6);
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -62,7 +62,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 6);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 6);
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -72,7 +72,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 0);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 0);
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -103,7 +103,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 13);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 13);
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -134,7 +134,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 13);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 13);
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -168,7 +168,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 14);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 14);
         EXPECT_TRUE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -212,7 +212,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 13);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 13);
         EXPECT_TRUE(hasPossiblyMiterStructure(analyzer));
     }
     
@@ -242,7 +242,7 @@ namespace Candy {
         
         GateAnalyzer analyzer {*problem};
         analyzer.analyze();
-        ASSERT_EQ(analyzer.getGateCount(), 11);
+        ASSERT_EQ(analyzer.getResult().getGateCount(), 11);
         EXPECT_FALSE(hasPossiblyMiterStructure(analyzer));
     }
     

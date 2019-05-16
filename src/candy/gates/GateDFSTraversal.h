@@ -86,13 +86,13 @@ namespace Candy {
         std::unordered_set<const Gate*> visited;
         Collector collector;
         
-        collector.init(analyzer.getGateCount());
-        visited.reserve(analyzer.getGateCount());
+        collector.init(analyzer.getResult().getGateCount());
+        visited.reserve(analyzer.getResult().getGateCount());
         
         // Initialize the work stack
-        for (auto&& clause : analyzer.getRoots()) {
+        for (auto&& clause : analyzer.getResult().getRoots()) {
             for (auto lit : *clause) {
-                const Gate& g = analyzer.getGate(lit);
+                const Gate& g = analyzer.getResult().getGate(lit);
                 if (g.isDefined() && !collector.pruneAt(g)) {
                     work.push(GateDFSMarkedGate{&g, false});
                 }
@@ -118,7 +118,7 @@ namespace Candy {
                 work.push(GateDFSMarkedGate{workItem.gate, true});
                 
                 for (auto input : workItem.gate->getInputs()) {
-                    const Gate& g = analyzer.getGate(input);
+                    const Gate& g = analyzer.getResult().getGate(input);
                     if (g.isDefined()
                         && visited.find(&g) == visited.end()
                         && !collector.pruneAt(g)) {

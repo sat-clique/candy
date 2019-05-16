@@ -40,7 +40,7 @@ CandySolverInterface* createRSARSolver(CNFProblem& problem) {
 	if (analyzer.hasTimeout()) {
 		std::cout << "c gate analysis exceeded the preprocessing time limit." << std::endl;
 	}
-	else if (analyzer.getGateCount() < RSAROptions::opt_rsar_minGateCount) {
+	else if (analyzer.getResult().getGateCount() < RSAROptions::opt_rsar_minGateCount) {
 		std::cout << "c insufficient gate count." << std::endl;
 	}
 	else {

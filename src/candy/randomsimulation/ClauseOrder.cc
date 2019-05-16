@@ -155,7 +155,7 @@ namespace Candy {
             }
             
             for (auto inputLit : gate.getInputs()) {
-                if (analyzer.getGate(inputLit).isDefined()
+                if (analyzer.getResult().getGate(inputLit).isDefined()
                     && m_enabledOutputs.find(inputLit.var()) == m_enabledOutputs.end()) {
                     return; // no backtracking
                 }
@@ -227,16 +227,16 @@ namespace Candy {
     void RecursiveClauseOrder::readGates(const GateAnalyzer& analyzer) {
         ClauseOrderImplBase::readGates(analyzer);
         
-        if (analyzer.getGateCount() == 0) {
+        if (analyzer.getResult().getGateCount() == 0) {
             return;
         }
         
         std::unordered_set<Candy::Var> seenInputs {}, seenOutputs{};
         
-        for (auto rootClause : analyzer.getRoots()) {
+        for (auto rootClause : analyzer.getResult().getRoots()) {
             for (auto rootLit : *rootClause) {
                 m_maxVar = std::max(m_maxVar, rootLit.var());
-                if (analyzer.getGate(rootLit).isDefined()) {
+                if (analyzer.getResult().getGate(rootLit).isDefined()) {
                     readGatesRecursive(analyzer, rootLit, seenInputs, seenOutputs);
                 }
             }
@@ -248,12 +248,12 @@ namespace Candy {
                                                   std::unordered_set<Candy::Var>& seenOutputs) {
         seenOutputs.insert(output.var());
         
-        auto &gate = analyzer.getGate(output);
+        auto &gate = analyzer.getResult().getGate(output);
         for (auto inputLit : gate.getInputs()) {
             auto inputVar = inputLit.var();
             m_maxVar = std::max(m_maxVar, inputVar);
             
-            if (analyzer.getGate(inputLit).isDefined()
+            if (analyzer.getResult().getGate(inputLit).isDefined()
                 && seenOutputs.find(inputVar) == seenOutputs.end()) {
                 readGatesRecursive(analyzer, inputLit, seenInputs, seenOutputs);
             }
@@ -383,7 +383,7 @@ namespace Candy {
         // TODO: find a more direct way for iterating over the gates
         auto topo = getTopoOrder(m_analyzer);
         for (auto outputVar : topo.getOutputsOrdered()) {
-            auto& gate = m_analyzer.getGate(Lit(outputVar, 1));
+            auto& gate = m_analyzer.getResult().getGate(Lit(outputVar, 1));
             if(gate.hasNonMonotonousParent()) {
                 result.insert(outputVar);
             }
