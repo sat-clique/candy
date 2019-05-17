@@ -220,7 +220,6 @@ void GateAnalyzer::analyze(std::vector<Lit>& candidates) {
 #ifdef GADebug
             printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
 #endif
-
             restart = false;
 
             switch (level) {
