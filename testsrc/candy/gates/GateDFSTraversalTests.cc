@@ -102,7 +102,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), nExpectedGates);
         
-        TestGateCollector collector = traverseDFS<TestGateCollector>(ga);
+        TestGateCollector collector = traverseDFS<TestGateCollector>(ga.getGateProblem());
         
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
         EXPECT_EQ(collector.gateCount, static_cast<unsigned long>(ga.getResult().getGateCount()));
@@ -192,7 +192,7 @@ namespace Candy {
         GateAnalyzer ga(*problem);
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 9);
-        NonmonotonicPruningTestGateCollector collector = traverseDFS<NonmonotonicPruningTestGateCollector>(ga);
+        NonmonotonicPruningTestGateCollector collector = traverseDFS<NonmonotonicPruningTestGateCollector>(ga.getGateProblem());
         EXPECT_TRUE(isConsistentBacktrackSequence(ga, collector.backtrackSequence));
         EXPECT_EQ(collector.visitSequence.size(), 6ull);
         EXPECT_TRUE(containsGateWithOutput(collector.visitSequence, 0));

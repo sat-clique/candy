@@ -100,7 +100,7 @@ namespace Candy {
          */
         std::unordered_map<Var, size_t> countInputDependencies(const GateAnalyzer& analyzer, size_t maxInputs) {
             // for each gate, get the set of gates which depend on the output
-            auto topo = getTopoOrder(analyzer);
+            auto topo = getTopoOrder(analyzer.getGateProblem());
             auto dependents = getDirectlyNestedGates(analyzer, topo.getOutputsOrdered());
             
             // in topological order, do for each gate g (with output o)
