@@ -155,7 +155,8 @@ namespace Candy {
         problem.readClauses(stuff);
         GateAnalyzer ga { problem };
         ga.analyze();
-        Lit root = ga.getResult().normalizeRoots();
+        ga.getResult().normalizeRoots();
+        Lit root = ga.getResult().getRoot();
         ASSERT_EQ(root, 8_L);
         ASSERT_EQ(ga.getResult().getGateCount(), 4);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);

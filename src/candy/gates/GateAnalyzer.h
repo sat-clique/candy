@@ -60,11 +60,19 @@ public:
         return gate_problem;
     }
 
+    GateProblem& getGateProblem() const {
+        return gate_problem;
+    }
+
+    const CNFProblem& getCNFProblem() const {
+        return problem;
+    }
+
     // main analysis routine
     void analyze();
     
     // create unit-clause and use it as root node (brought back with cnf2aig integration)
-    Lit normalizeRoots();
+    void normalizeRoots();
 
     // create list of clauses of satisfied branches of the gate (brought back with minimizer integration)
     For getPrunedProblem(Cl model);
