@@ -81,18 +81,18 @@ namespace Candy {
      *   the traversal.
      */
     template<typename Collector>
-    Collector traverseDFS(const GateAnalyzer& analyzer) {
+    Collector traverseDFS(const GateProblem& gates) {
         std::stack<GateDFSMarkedGate> work;
         std::unordered_set<const Gate*> visited;
         Collector collector;
         
-        collector.init(analyzer.getResult().getGateCount());
-        visited.reserve(analyzer.getResult().getGateCount());
+        collector.init(gates.nGates());
+        visited.reserve(gates.nGates());
         
         // Initialize the work stack
-        for (auto&& clause : analyzer.getResult().getRoots()) {
+        for (auto&& clause : gates.getRoots()) {
             for (auto lit : *clause) {
-                const Gate& g = analyzer.getResult().getGate(lit);
+                const Gate& g = gates[lit.var()];
                 if (g.isDefined() && !collector.pruneAt(g)) {
                     work.push(GateDFSMarkedGate{&g, false});
                 }
@@ -118,7 +118,7 @@ namespace Candy {
                 work.push(GateDFSMarkedGate{workItem.gate, true});
                 
                 for (auto input : workItem.gate->getInputs()) {
-                    const Gate& g = analyzer.getResult().getGate(input);
+                    const Gate& g = gates[input.var()];
                     if (g.isDefined()
                         && visited.find(&g) == visited.end()
                         && !collector.pruneAt(g)) {
@@ -184,8 +184,8 @@ namespace Candy {
      *
      * TODO: documentation
      */
-    inline TopologicallyOrderedGates getTopoOrder(const GateAnalyzer& analyzer) {
-        return traverseDFS<TopologicallyOrderedGates>(analyzer);
+    inline TopologicallyOrderedGates getTopoOrder(const GateProblem& gates) {
+        return traverseDFS<TopologicallyOrderedGates>(gates);
     }
 }
 

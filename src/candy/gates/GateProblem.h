@@ -30,11 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
     
-/**
- * \defgroup Gates
- */
-    
-typedef struct Gate {
+struct Gate {
     Lit out = lit_Undef;
     For fwd, bwd;
     bool notMono = false;
@@ -61,7 +57,7 @@ typedef struct Gate {
     }
     
     inline bool hasNonMonotonousParent() const { return notMono; }
-} Gate;
+};
 
 
 class GateProblem {

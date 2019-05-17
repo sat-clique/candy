@@ -238,7 +238,7 @@ namespace Candy {
     }
     
     bool hasPossiblyMiterStructure(const GateAnalyzer& analyzer) noexcept {
-        auto borderGateCollector = traverseDFS<MonotonousRegionBorderGateCollector>(analyzer);
+        auto borderGateCollector = traverseDFS<MonotonousRegionBorderGateCollector>(analyzer.getGateProblem());
         auto& borderGates = borderGateCollector.getMonotonousRegionBorder();
         
         // Some quick preliminary checks to quickly rule out non-miters

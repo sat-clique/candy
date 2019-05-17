@@ -336,7 +336,7 @@ namespace Candy {
     };
     
     void NonrecursiveClauseOrder::readGates(const GateAnalyzer& analyzer) {
-        DFSGateCollector orderedGates = traverseDFS<DFSGateCollector>(analyzer);
+        DFSGateCollector orderedGates = traverseDFS<DFSGateCollector>(analyzer.getGateProblem());
         m_inputVariables = std::move(orderedGates.inputs);
         m_maxVar = orderedGates.maxVar;
         for (auto gate : orderedGates.backtrackSequence) {
@@ -381,7 +381,7 @@ namespace Candy {
         std::unordered_set<Candy::Var> result;
         
         // TODO: find a more direct way for iterating over the gates
-        auto topo = getTopoOrder(m_analyzer);
+        auto topo = getTopoOrder(m_analyzer.getGateProblem());
         for (auto outputVar : topo.getOutputsOrdered()) {
             auto& gate = m_analyzer.getResult().getGate(Lit(outputVar, 1));
             if(gate.hasNonMonotonousParent()) {
