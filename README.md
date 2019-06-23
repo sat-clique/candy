@@ -51,6 +51,11 @@ candy example.cnf
 
 Candy offers a multitude of options, like paramaters to tune heuristics and thresholds, or parameters to select an alternative solving strategy (e.g. *rsar* or *rsil*). If you have any questions feel free to contact [me](mailto:2.markus.iser@gmail.com).
 
-## Support
+## Credits
 
-If you like Candy and in case you want to support building of the Candy Kingdom, you can send Ethereum to the following address: **0xfa7ca55ad16f6f5fd4c425ed72d443f5d3c1a2e0**
+Credits go to Robin Freyler and Felix Kutzner for a multitude of discussions about SAT solving and structured programming, 
+we were SAT CLIQUE. The main ideas for the profound structural changes in Candy have been developed in that time. 
+
+Credits go to all the people at ITI and the students.
+
+
