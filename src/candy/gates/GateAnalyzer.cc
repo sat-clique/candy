@@ -66,8 +66,9 @@ std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
     return result;
 }
 
-std::vector<Cl*> GateAnalyzer::getBestRoots() {
-    std::vector<Cl*> clauses;
+std::vector<Cl> GateAnalyzer::getBestRoots() {
+    std::vector<Cl> clauses;
+    std::vector<Cl*> clausesp;
     std::vector<Lit> lits = getRarestLiterals(index);
     if (lits.empty()) return clauses;
     Lit best = lits.back();
@@ -86,9 +87,12 @@ std::vector<Cl*> GateAnalyzer::getBestRoots() {
 //            best = lit;
 //        }
 //    }
-    clauses.insert(clauses.end(), index[best].begin(), index[best].end());
+    clausesp.insert(clausesp.end(), index[best].begin(), index[best].end());
     index[best].clear();
-    removeFromIndex(index, clauses);
+    removeFromIndex(index, clausesp);
+
+    for (Cl* clause : clausesp) clauses.push_back(*clause);
+
     return clauses;
 }
 
@@ -185,33 +189,6 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
     return frontier;
 }
 
-/**
- * @brief GateAnalyzer::getPrunedProblem
- * @param model
- * @return clauses of all satisfied branches
- */
-For GateAnalyzer::getPrunedProblem(Cl model) {
-    For result(gate_problem.roots.begin(), gate_problem.roots.end());
-
-    std::vector<Lit> literals = gate_problem.getRootLiterals();
-    std::vector<int> visited(model.size(), -1);
-
-    while (literals.size() > 0) {
-        Lit o = literals.back();
-        literals.pop_back();
-
-        if (model[o.var()] == o && visited[o.var()] != o) {
-            Gate gate = gate_problem.gates[o.var()];
-            result.insert(result.end(), gate.fwd.begin(), gate.fwd.end());
-            result.insert(result.end(), gate.bwd.begin(), gate.bwd.end());
-            literals.insert(literals.end(), gate.inp.begin(), gate.inp.end());
-            visited[o.var()] = o;
-        }
-    }
-
-    return result;
-}
-
 void GateAnalyzer::analyze(std::vector<Lit>& candidates) {
     if (useIntensification) {
         std::vector<Lit> remainder;
@@ -264,7 +241,7 @@ void GateAnalyzer::analyze() {
     // start recognition with unit literals
     for (Cl* c : problem) {
         if (c->size() == 1) {
-            gate_problem.roots.push_back(c);
+            gate_problem.roots.push_back(*c);
             removeFromIndex(index, c);
             next.push_back((*c)[0]);
             inputs[(*c)[0]]++;
@@ -275,11 +252,11 @@ void GateAnalyzer::analyze() {
 
     // clause selection loop
     for (int k = 0; k < maxTries && !runtime.hasTimeout(); k++) {
-        std::vector<Cl*> clauses = getBestRoots();
+        std::vector<Cl> clauses = getBestRoots();
         gate_problem.roots.insert(gate_problem.roots.end(), clauses.begin(), clauses.end());
-        for (Cl* c : clauses) {
-            next.insert(next.end(), c->begin(), c->end());
-            for (Lit l : *c) inputs[l]++;
+        for (Cl& c : clauses) {
+            next.insert(next.end(), c.begin(), c.end());
+            for (Lit l : c) inputs[l]++;
         }
         analyze(next);
     }

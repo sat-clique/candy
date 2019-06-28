@@ -41,6 +41,10 @@ public:
         readClauses(formula);
     }
 
+    CNFProblem(Formula formula) : maxVars(0) {
+        readClauses(formula);
+    }
+
     CNFProblem(Cl& clause) : maxVars(0) {
         readClause(clause.begin(), clause.end());
     }

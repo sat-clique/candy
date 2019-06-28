@@ -98,6 +98,7 @@ public:
         assert(memory != nullptr);
         void* result = memory + cursor;
         cursor += clauseBytes(length);
+        assert(cursor < page_size);
         return result;
     }
 

@@ -48,24 +48,6 @@ namespace Candy {
         return true;
     }
 
-    bool contains(For& super, Cl sub) {
-        for (Cl* clause : super) {
-            if (equals(*clause, sub)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    bool containsAll(For& super, Formula sub) {
-        for (Cl& clause : sub) {
-            if (!contains(super, clause)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     bool contains(Formula super, Cl sub) {
         for (Cl& clause : super) {
             if (equals(clause, sub)) {
@@ -78,6 +60,15 @@ namespace Candy {
     bool containsAll(Formula super, For& sub) {
         for (Cl* clause : sub) {
             if (!contains(super, *clause)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool containsAll(Formula super, Formula sub) {
+        for (Cl& clause : sub) {
+            if (!contains(super, clause)) {
                 return false;
             }
         }
@@ -161,7 +152,7 @@ namespace Candy {
         assert_gate(ga, 3_L, true, simple_and2, {4_L, 5_L});
     }
 
-    TEST(GateAnalyzerTest, detectXorOfAndsPlusStuffAndNormalize) {
+    TEST(GateAnalyzerTest, normalizeIncludesRemainder) {
         CNFProblem problem;
         Formula simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
         Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
@@ -179,13 +170,10 @@ namespace Candy {
         ASSERT_EQ(ga.getResult().getGateCount(), 4);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
         ASSERT_EQ(ga.getResult().getRootLiterals().front(), 8_L);
-        assert_gate(ga, 1_L, false, simple_xor, {2_L, 3_L, ~2_L, ~3_L});
-        assert_gate(ga, 2_L, true, simple_and1, {4_L, 5_L});
-        assert_gate(ga, 3_L, true, simple_and2, {4_L, 5_L});
         assert_gate(ga, 8_L, false, {{~8_L, 1_L}, {~8_L, 6_L, 7_L}}, {1_L, 6_L, 7_L});
     }
 
-    TEST(GateAnalyzerTest, applyPruningToOrOfAnds) {
+    TEST(GateAnalyzerTest, pruningWorks) {
         CNFProblem problem;
         Formula simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
         Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
@@ -202,12 +190,12 @@ namespace Candy {
         assert_gate(ga, 1_L, false, simple_or, {2_L, 3_L});
         assert_gate(ga, 2_L, false, simple_and1, {4_L, 5_L});
         assert_gate(ga, 3_L, false, simple_and2, {6_L, 7_L});
-        For pp = ga.getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
-        ASSERT_TRUE(containsAll(pp, simple_or));
-        ASSERT_TRUE(containsAll(pp, simple_and1));
-        ASSERT_FALSE(contains(pp, Cl({~3_L, 6_L})));
-        ASSERT_FALSE(contains(pp, Cl({~3_L, 7_L})));
-        ASSERT_FALSE(contains(pp, Cl({3_L, ~6_L, ~7_L})));
+        Formula pruned = ga.getResult().getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
+        ASSERT_TRUE(containsAll(pruned, simple_or));
+        ASSERT_TRUE(containsAll(pruned, simple_and1));
+        ASSERT_FALSE(contains(pruned, Cl({~3_L, 6_L})));
+        ASSERT_FALSE(contains(pruned, Cl({~3_L, 7_L})));
+        ASSERT_FALSE(contains(pruned, Cl({3_L, ~6_L, ~7_L})));
     }
 
     //todo: fix test-case such that also the commented assertions hold
