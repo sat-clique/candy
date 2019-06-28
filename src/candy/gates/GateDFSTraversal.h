@@ -90,8 +90,8 @@ namespace Candy {
         visited.reserve(gates.nGates());
         
         // Initialize the work stack
-        for (auto&& clause : gates.getRoots()) {
-            for (auto lit : *clause) {
+        for (const Cl& clause : gates.getRoots()) {
+            for (const Lit lit : clause) {
                 const Gate& g = gates[lit.var()];
                 if (g.isDefined() && !collector.pruneAt(g)) {
                     work.push(GateDFSMarkedGate{&g, false});

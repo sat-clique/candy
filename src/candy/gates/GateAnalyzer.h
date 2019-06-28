@@ -74,9 +74,6 @@ public:
     // create unit-clause and use it as root node (brought back with cnf2aig integration)
     void normalizeRoots();
 
-    // create list of clauses of satisfied branches of the gate (brought back with minimizer integration)
-    For getPrunedProblem(Cl model);
-
 
     bool hasTimeout() const;
 
@@ -109,7 +106,7 @@ private:
 
     // clause selection heuristic
     std::vector<Lit> getRarestLiterals(std::vector<For>& index);
-    std::vector<Cl*> getBestRoots();
+    std::vector<Cl> getBestRoots();
 
     // clause patterns of full encoding
     bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
