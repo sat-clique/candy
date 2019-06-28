@@ -119,6 +119,12 @@ void CNFProblem::readClauses(For& f) {
     }
 }
 
+void CNFProblem::readClauses(Formula& f) { 
+    for (Cl& c : f) {
+        readClause(c.begin(), c.end());
+    }
+}
+
 template <typename Iterator>
 void CNFProblem::readClause(Iterator begin, Iterator end) {
     if (std::distance(begin, end) > 0) {

@@ -204,6 +204,7 @@ public:
 
 typedef std::vector<Lit> Cl;
 typedef std::vector<Cl*> For;
+typedef std::vector<Cl> Formula; 
 
 inline std::ostream& operator <<(std::ostream& stream, Var const& var) {
 	stream << var+1;
@@ -231,6 +232,13 @@ inline std::ostream& operator <<(std::ostream& stream, Cl const& clause) {
 inline std::ostream& operator <<(std::ostream& stream, For const& formula) {
     for (const Cl* clause : formula) {
         stream << *clause << std::endl;
+    }
+    return stream;
+}
+
+inline std::ostream& operator <<(std::ostream& stream, Formula const& formula) {
+    for (const Cl& clause : formula) {
+        stream << clause << std::endl;
     }
     return stream;
 }
