@@ -123,7 +123,7 @@ public:
         return gate_count;
     }
 
-    const std::vector<Cl> getRoots() const {
+    const std::vector<Cl>& getRoots() const {
         return roots;
     }
 
@@ -131,7 +131,7 @@ public:
     std::vector<Lit> getRootLiterals() {
         std::vector<Lit> literals;
 
-        for (Cl c : getRoots()) {
+        for (const Cl& c : getRoots()) {
             literals.insert(literals.end(), c.begin(), c.end());
         }
         std::sort(literals.begin(), literals.end());
@@ -179,7 +179,7 @@ public:
     void printGates() {
         std::vector<Lit> outputs;
         std::vector<bool> done(problem.nVars());
-        for (Cl root : roots) {
+        for (Cl& root : roots) {
             outputs.insert(outputs.end(), root.begin(), root.end());
         }
         for (size_t i = 0; i < outputs.size(); ++i) {
@@ -217,10 +217,10 @@ public:
         gates[root].out = Lit(root, false);
         gates[root].notMono = false;
         std::set<Lit> inp;
-        for (Cl c : roots) {
+        for (Cl& c : roots) {
             inp.insert(c.begin(), c.end());
             c.push_back(Lit(root, true));
-            gates[root].fwd.push_back(&c);
+            gates[root].fwd.push_back(new Cl(c));
         }
         gates[root].inp.insert(gates[root].inp.end(), inp.begin(), inp.end());
         this->roots.clear();

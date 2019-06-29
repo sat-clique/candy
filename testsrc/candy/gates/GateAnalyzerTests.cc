@@ -30,27 +30,32 @@
 #include <candy/gates/GateDFSTraversal.h>
 #include <candy/testutils/TestGateStructure.h>
 #include <candy/gates/GateBuilder.h>
+#include <candy/gates/GateAnalyzer.h>
 
 #include <iostream>
 #include <algorithm>
 
 namespace Candy {
 
-    bool equals(Cl clause1, Cl clause2) {
-        if (clause1.size() != clause2.size()) {
+    template<typename Iterator, typename Iterator2> 
+    bool equals(Iterator begin1, Iterator end1, Iterator2 begin2, Iterator2 end2) {
+        if (std::distance(begin1, end1) != std::distance(begin2, end2)) {
+            std::cout << "not equal " << std::distance(begin1, end1) << " " << std::distance(begin2, end2) << std::endl;
             return false;
         }
-        for (Lit lit : clause2) {
-            if(std::find(clause1.begin(), clause1.end(), lit) == clause1.end()) {
+        for (auto it = begin2; it != end2; it++) {
+            if(std::find(begin1, end1, *it) == end1) {
+                std::cout << *it << "not found" << std::endl;
                 return false;
             }
         }
         return true;
     }
 
-    bool contains(Formula super, Cl sub) {
+    template<typename Iterator> 
+    bool contains(Formula super, Iterator begin, Iterator end) {
         for (Cl& clause : super) {
-            if (equals(clause, sub)) {
+            if (equals(clause.begin(), clause.end(), begin, end)) {
                 return true;
             }
         }
@@ -59,7 +64,7 @@ namespace Candy {
 
     bool containsAll(Formula super, For& sub) {
         for (Cl* clause : sub) {
-            if (!contains(super, *clause)) {
+            if (!contains(super, clause->begin(), clause->end())) {
                 return false;
             }
         }
@@ -68,7 +73,7 @@ namespace Candy {
 
     bool containsAll(Formula super, Formula sub) {
         for (Cl& clause : sub) {
-            if (!contains(super, clause)) {
+            if (!contains(super, clause.begin(), clause.end())) {
                 return false;
             }
         }
@@ -76,12 +81,13 @@ namespace Candy {
     }
 
     void assert_gate(GateAnalyzer& ga, Lit output, bool monotonous, Formula clauses, std::initializer_list<Lit> inputs) {
-        Gate g = ga.getResult().getGate(output);
+        Gate g = ga.getResult().getGate(output); 
         ASSERT_TRUE(g.isDefined());
         ASSERT_EQ(monotonous, g.hasNonMonotonousParent());
         ASSERT_EQ(clauses.size(), g.getForwardClauses().size() + g.getBackwardClauses().size());
         ASSERT_EQ(inputs.size(), g.getInputs().size());
-        ASSERT_TRUE(equals(g.getInputs(), inputs));
+        ASSERT_TRUE(equals(g.getInputs().cbegin(), g.getInputs().cend(), inputs.begin(), inputs.end())); 
+        std::cout << "fwd " << g.getForwardClauses() << std::endl;
         ASSERT_TRUE(containsAll(clauses, g.getForwardClauses()));
         ASSERT_TRUE(containsAll(clauses, g.getBackwardClauses()));
     }
@@ -95,7 +101,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 1);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getRootLiterals().front(), 1_L);
         assert_gate(ga, 1_L, false, simple_and, {2_L, 3_L});
     }
 
@@ -108,7 +114,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 1);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getRootLiterals().front(), 1_L);
         Gate g = ga.getResult().getGate(1_L);
         assert_gate(ga, 1_L, false, simple_xor, {2_L, 3_L, ~2_L, ~3_L});
     }
@@ -126,7 +132,7 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 3);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getRootLiterals().front(), 1_L);
         assert_gate(ga, 1_L, false, simple_xor, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, simple_and1, {4_L, 5_L});
         assert_gate(ga, 3_L, true, simple_and2, {4_L, 5_L});
@@ -146,7 +152,11 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 3);
         ASSERT_EQ(ga.getResult().getRoots().size(), 2);
-        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L, 6_L, 7_L}));
+        Cl clause ({1_L, 6_L, 7_L});
+        Cl roots = ga.getResult().getRootLiterals();
+        std::cout << roots << std::endl;
+        std::cout << clause << std::endl;
+        ASSERT_TRUE(equals(roots.begin(), roots.end(), clause.begin(), clause.end()));
         assert_gate(ga, 1_L, false, simple_xor, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, simple_and1, {4_L, 5_L});
         assert_gate(ga, 3_L, true, simple_and2, {4_L, 5_L});
@@ -158,10 +168,10 @@ namespace Candy {
         Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
         Formula simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
         problem.readClause({1_L});
+        problem.readClause({6_L, 7_L});
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
-        problem.readClauses({{6_L, 7_L}});
         GateAnalyzer ga { problem };
         ga.analyze();
         ga.getResult().normalizeRoots();
@@ -170,7 +180,8 @@ namespace Candy {
         ASSERT_EQ(ga.getResult().getGateCount(), 4);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
         ASSERT_EQ(ga.getResult().getRootLiterals().front(), 8_L);
-        assert_gate(ga, 8_L, false, {{~8_L, 1_L}, {~8_L, 6_L, 7_L}}, {1_L, 6_L, 7_L});
+        Formula rootgate ({{~8_L, 1_L}, {~8_L, 6_L, 7_L}});
+        assert_gate(ga, 8_L, false, rootgate, {1_L, 6_L, 7_L});
     }
 
     TEST(GateAnalyzerTest, pruningWorks) {
@@ -186,16 +197,15 @@ namespace Candy {
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 3);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
-        ASSERT_TRUE(equals(ga.getResult().getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getRootLiterals().front(), 1_L);
         assert_gate(ga, 1_L, false, simple_or, {2_L, 3_L});
         assert_gate(ga, 2_L, false, simple_and1, {4_L, 5_L});
         assert_gate(ga, 3_L, false, simple_and2, {6_L, 7_L});
         Formula pruned = ga.getResult().getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
         ASSERT_TRUE(containsAll(pruned, simple_or));
         ASSERT_TRUE(containsAll(pruned, simple_and1));
-        ASSERT_FALSE(contains(pruned, Cl({~3_L, 6_L})));
-        ASSERT_FALSE(contains(pruned, Cl({~3_L, 7_L})));
-        ASSERT_FALSE(contains(pruned, Cl({3_L, ~6_L, ~7_L})));
+        Formula f ({Cl({~3_L, 6_L}), Cl({~3_L, 7_L}), Cl({3_L, ~6_L, ~7_L})});
+        ASSERT_FALSE(containsAll(pruned, f));
     }
 
     //todo: fix test-case such that also the commented assertions hold
