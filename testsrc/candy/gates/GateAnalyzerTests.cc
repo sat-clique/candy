@@ -40,12 +40,10 @@ namespace Candy {
     template<typename Iterator, typename Iterator2> 
     bool equals(Iterator begin1, Iterator end1, Iterator2 begin2, Iterator2 end2) {
         if (std::distance(begin1, end1) != std::distance(begin2, end2)) {
-            std::cout << "not equal " << std::distance(begin1, end1) << " " << std::distance(begin2, end2) << std::endl;
             return false;
         }
         for (auto it = begin2; it != end2; it++) {
             if(std::find(begin1, end1, *it) == end1) {
-                std::cout << *it << "not found" << std::endl;
                 return false;
             }
         }
@@ -80,14 +78,13 @@ namespace Candy {
         return true;
     }
 
-    void assert_gate(GateAnalyzer& ga, Lit output, bool monotonous, Formula clauses, std::initializer_list<Lit> inputs) {
+    void assert_gate(GateAnalyzer& ga, Lit output, bool not_monotonous, Formula clauses, std::initializer_list<Lit> inputs) {
         Gate g = ga.getResult().getGate(output); 
         ASSERT_TRUE(g.isDefined());
-        ASSERT_EQ(monotonous, g.hasNonMonotonousParent());
+        ASSERT_EQ(not_monotonous, g.hasNonMonotonousParent());
         ASSERT_EQ(clauses.size(), g.getForwardClauses().size() + g.getBackwardClauses().size());
         ASSERT_EQ(inputs.size(), g.getInputs().size());
         ASSERT_TRUE(equals(g.getInputs().cbegin(), g.getInputs().cend(), inputs.begin(), inputs.end())); 
-        std::cout << "fwd " << g.getForwardClauses() << std::endl;
         ASSERT_TRUE(containsAll(clauses, g.getForwardClauses()));
         ASSERT_TRUE(containsAll(clauses, g.getBackwardClauses()));
     }
@@ -154,8 +151,6 @@ namespace Candy {
         ASSERT_EQ(ga.getResult().getRoots().size(), 2);
         Cl clause ({1_L, 6_L, 7_L});
         Cl roots = ga.getResult().getRootLiterals();
-        std::cout << roots << std::endl;
-        std::cout << clause << std::endl;
         ASSERT_TRUE(equals(roots.begin(), roots.end(), clause.begin(), clause.end()));
         assert_gate(ga, 1_L, false, simple_xor, {2_L, 3_L, ~2_L, ~3_L});
         assert_gate(ga, 2_L, true, simple_and1, {4_L, 5_L});
@@ -214,20 +209,20 @@ namespace Candy {
         Formula simple_and = GateBuilder::and_gate(1_L, 2_L, 3_L);
         Formula simple_xor1 = GateBuilder::xor_gate(2_L, 4_L, 5_L);
         Formula simple_eq = GateBuilder::xor_gate(3_L, 6_L, ~7_L);
-        Formula simple_xor2 = GateBuilder::xor_gate(6_L, 4_L, 5_L);
+        Formula simple_or = GateBuilder::or_gate(6_L, 4_L, 5_L, true);
         problem.readClause({1_L});
         problem.readClauses(simple_and);
         problem.readClauses(simple_xor1);
         problem.readClauses(simple_eq);
-        problem.readClauses(simple_xor2);
-        GateAnalyzer ga { problem, 0, 3, true, true, true };
+        problem.readClauses(simple_or);
+        GateAnalyzer ga { problem, 0, 3, true, false, false };
         ga.analyze();
-//        ASSERT_EQ(ga.getGateCount(), 4);
-//        ASSERT_EQ(ga.getRoots().size(), 1);
-//        ASSERT_TRUE(equals(ga.getRootLiterals(), {1_L}));
+        ASSERT_EQ(ga.getResult().getGateCount(), 4);
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        ASSERT_EQ(ga.getResult().getRootLiterals().front(), 1_L);
         assert_gate(ga, 1_L, false, simple_and, {2_L, 3_L});
         assert_gate(ga, 2_L, false, simple_xor1, {4_L, 5_L, ~4_L, ~5_L});
         assert_gate(ga, 3_L, false, simple_eq, {6_L, 7_L, ~6_L, ~7_L});
-//        assert_gate(ga, 6_L, false, {{~6_L, 4_L, 5_L}, {~6_L, ~4_L, ~5_L}}, {}, {4_L, 5_L, ~4_L, ~5_L});
+        assert_gate(ga, 6_L, true, simple_or, {4_L, 5_L});
     }
 }
