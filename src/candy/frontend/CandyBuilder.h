@@ -20,11 +20,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef CANDY_BUILDER_H_
 #define CANDY_BUILDER_H_
 
-#include "candy/core/propagate/Propagate.h"
-#include "candy/core/propagate/StaticPropagate.h"
-#include "candy/core/learning/ConflictAnalysis.h"
-#include "candy/core/branching/LRB.h"
-#include "candy/core/branching/VSIDS.h"
+#include "candy/systems/propagate/Propagate.h"
+#include "candy/systems/propagate/StaticPropagate.h"
+#include "candy/systems/learning/ConflictAnalysis.h"
+#include "candy/systems/branching/LRB.h"
+#include "candy/systems/branching/VSIDS.h"
 #include "candy/rsil/BranchingHeuristics.h"
 
 namespace Candy {

@@ -26,7 +26,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Certificate.h"
 #include "candy/core/Trail.h"
-#include "candy/core/Memory.h"
+#include "candy/mtl/Memory.h"
 #include "candy/frontend/CLIOptions.h"
 
 namespace Candy {

@@ -1,5 +1,6 @@
 add_subdirectory(utils)
 add_subdirectory(core)
+add_subdirectory(systems)
 add_subdirectory(gates)
 add_subdirectory(minimizer)
 add_subdirectory(randomsimulation)

@@ -29,7 +29,7 @@
 
 #include <candy/core/SolverTypes.h>
 #include <candy/core/clauses/ClauseDatabase.h>
-#include <candy/core/branching/VSIDS.h>
+#include <candy/systems/branching/VSIDS.h>
 #include <candy/rsil/ImplicitLearningAdvice.h>
 #include <candy/randomsimulation/Conjectures.h>
 #include <candy/utils/FastRand.h>
