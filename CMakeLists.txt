@@ -274,6 +274,7 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:minimizer>
   $<TARGET_OBJECTS:core>
   $<TARGET_OBJECTS:systems>
+  $<TARGET_OBJECTS:simplification>
   $<TARGET_OBJECTS:sonification>
   $<TARGET_OBJECTS:frontend>
   $<TARGET_OBJECTS:utils>)

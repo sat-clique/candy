@@ -11,11 +11,6 @@ add_library(core OBJECT
     CNFProblem.h
     SolverTypes.h
     Trail.h
-    simplification/Subsumption.h
-    simplification/SubsumptionClause.h
-    simplification/SubsumptionClauseDatabase.h
-    simplification/VariableElimination.h
-    simplification/AsymmetricVariableReduction.h
 )
 
 #set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)
