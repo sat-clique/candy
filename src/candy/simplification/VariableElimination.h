@@ -43,8 +43,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector> 
 
-#include "candy/core/simplification/SubsumptionClauseDatabase.h"
-#include "candy/core/simplification/SubsumptionClause.h"
+#include "candy/simplification/SubsumptionClauseDatabase.h"
+#include "candy/simplification/SubsumptionClause.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/utils/Options.h"

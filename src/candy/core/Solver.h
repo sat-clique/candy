@@ -61,10 +61,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/systems/branching/VSIDS.h"
 #include "candy/systems/Restart.h"
 
-#include "candy/core/simplification/Subsumption.h"
-#include "candy/core/simplification/SubsumptionClauseDatabase.h"
-#include "candy/core/simplification/VariableElimination.h"
-#include "candy/core/simplification/AsymmetricVariableReduction.h"
+#include "candy/simplification/Subsumption.h"
+#include "candy/simplification/SubsumptionClauseDatabase.h"
+#include "candy/simplification/VariableElimination.h"
+#include "candy/simplification/AsymmetricVariableReduction.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
 

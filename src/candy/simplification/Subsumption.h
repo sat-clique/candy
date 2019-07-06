@@ -43,8 +43,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <unordered_map>
 #include <vector>
 
-#include "candy/core/simplification/SubsumptionClause.h"
-#include "candy/core/simplification/SubsumptionClauseDatabase.h"
+#include "candy/simplification/SubsumptionClause.h"
+#include "candy/simplification/SubsumptionClauseDatabase.h"
 
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
