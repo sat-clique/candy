@@ -56,9 +56,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/randomsimulation/Conjectures.h"
 #include "candy/rsar/Refinement.h"
 
-#include "candy/core/learning/ConflictAnalysis.h"
-#include "candy/core/propagate/Propagate.h"
-#include "candy/core/branching/VSIDS.h"
+#include "candy/systems/learning/ConflictAnalysis.h"
+#include "candy/systems/propagate/Propagate.h"
+#include "candy/systems/branching/VSIDS.h"
+#include "candy/systems/Restart.h"
+
 #include "candy/core/simplification/Subsumption.h"
 #include "candy/core/simplification/SubsumptionClauseDatabase.h"
 #include "candy/core/simplification/VariableElimination.h"
@@ -73,7 +75,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CandySolverResult.h"
-#include "candy/core/Restart.h"
 
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"

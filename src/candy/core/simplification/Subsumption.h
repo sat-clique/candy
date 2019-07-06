@@ -48,7 +48,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
-#include "candy/core/propagate/Propagate.h"
+#include "candy/systems/propagate/Propagate.h"
 #include "candy/mtl/Stamp.h"
 #include "candy/frontend/CLIOptions.h"
 

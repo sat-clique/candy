@@ -49,7 +49,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/core/branching/BranchingDiversificationInterface.h"
+
+#include "BranchingDiversificationInterface.h"
 
 namespace Candy {
 
