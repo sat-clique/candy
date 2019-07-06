@@ -8,4 +8,4 @@ add_library(systems OBJECT
     branching/LRB.h
 )
 
-#set_target_properties(core PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(systems PROPERTIES LINKER_LANGUAGE CXX)
