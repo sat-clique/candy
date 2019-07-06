@@ -70,7 +70,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/Statistics.h"
-#include "candy/core/Logging.h"
+#include "candy/sonification/Logging.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
