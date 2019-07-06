@@ -268,7 +268,6 @@ add_subdirectory(src)
 set(CANDY_OBJECTS
   $<TARGET_OBJECTS:gates>
   $<TARGET_OBJECTS:randomsimulation>
-  $<TARGET_OBJECTS:rsil>
   $<TARGET_OBJECTS:rsar>
   $<TARGET_OBJECTS:ipasir>
   $<TARGET_OBJECTS:minimizer>

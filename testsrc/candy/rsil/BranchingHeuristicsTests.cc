@@ -27,7 +27,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include <candy/rsil/BranchingHeuristics.h>
+#include <candy/systems/branching/rsil/BranchingHeuristics.h>
 #include <candy/testutils/TestUtils.h>
 #include <candy/core/CandySolverInterface.h>
 #include <candy/core/Trail.h>

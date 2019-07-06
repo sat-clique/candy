@@ -28,7 +28,7 @@
 #define X_FF52A936_70FC_4DD4_A1F8_EC9D6425EB9C_TESTUTILS_H
 
 #include <candy/core/SolverTypes.h>
-#include <candy/rsil/ImplicitLearningAdvice.h>
+#include <candy/systems/branching/rsil/ImplicitLearningAdvice.h>
 
 namespace Candy {
     template<class AdviceEntryType>
