@@ -25,7 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/systems/learning/ConflictAnalysis.h"
 #include "candy/systems/branching/LRB.h"
 #include "candy/systems/branching/VSIDS.h"
-#include "candy/rsil/BranchingHeuristics.h"
+#include "candy/systems/branching/rsil/BranchingHeuristics.h"
 
 namespace Candy {
 
