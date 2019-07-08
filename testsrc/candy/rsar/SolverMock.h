@@ -70,7 +70,7 @@ namespace Candy {
 
         ClauseAllocator* setupGlobalAllocator() override { return nullptr; }
 
-        virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override;
+        virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) override;
 
         void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) override { }
         void setTermCallback(void* state, int (*termCallback)(void*)) override { }

@@ -86,7 +86,7 @@ public:
     Solver();
     ~Solver();
 
-    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr) override;
+    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) override;
 
     ClauseAllocator* setupGlobalAllocator() override {
         return clause_db.createGlobalClauseAllocator();
@@ -299,7 +299,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
-void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator ) {
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator, bool lemma) {
     assert(trail.decisionLevel() == 0);
 
     statistics.runtimeStart("Wallclock");
@@ -318,7 +318,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
     if (allocator == nullptr) {
         std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
         for (Cl* import : problem) {
-            Clause* clause = clause_db.createClause(import->begin(), import->end());
+            Clause* clause = clause_db.createClause(import->begin(), import->end(), lemma ? 0 : import->size());
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             } 
