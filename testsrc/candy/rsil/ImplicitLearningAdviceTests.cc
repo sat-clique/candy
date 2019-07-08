@@ -28,7 +28,7 @@
 
 #include <gtest/gtest.h>
 #include <candy/core/SolverTypes.h>
-#include <candy/rsil/ImplicitLearningAdvice.h>
+#include <candy/systems/branching/rsil/ImplicitLearningAdvice.h>
 
 #include <iostream>
 
