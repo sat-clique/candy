@@ -71,7 +71,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/rsar/Heuristics.h"
 
 
-#include "candy/rsil/BranchingHeuristics.h"
+#include "candy/systems/branching/rsil/BranchingHeuristics.h"
 
 using namespace Candy;
 

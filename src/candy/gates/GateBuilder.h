@@ -33,16 +33,28 @@ typedef std::vector<Cl> Formula;
 
 namespace GateBuilder {
 
-Formula and_gate(Lit o, Lit l1, Lit l2) {
-    return Formula({ Cl({~o, l1}), Cl({~o, l2}), Cl({o, ~l1, ~l2}) });
+Formula and_gate(Lit o, Lit l1, Lit l2, bool full = true) {
+    if (full) {
+        return Formula({ Cl({~o, l1}), Cl({~o, l2}), Cl({o, ~l1, ~l2}) });
+    } else {
+        return Formula({ Cl({~o, l1}), Cl({~o, l2}) });
+    }
 }
 
-Formula or_gate(Lit o, Lit l1, Lit l2) {
-    return Formula({ Cl({~o, l1, l2}), Cl({o, ~l1}), Cl({o, ~l2}) });
+Formula or_gate(Lit o, Lit l1, Lit l2, bool full = true) {
+    if (full) {
+        return Formula({ Cl({~o, l1, l2}), Cl({o, ~l1}), Cl({o, ~l2}) });
+    } else {
+        return Formula({ Cl({~o, l1, l2}) });
+    }
 }
 
-Formula xor_gate(Lit o, Lit l1, Lit l2) {
-    return Formula({ Cl({~o, l1, l2}), Cl({~o, ~l1, ~l2}), Cl({o, l1, ~l2}), Cl({o, ~l1, l2}) });
+Formula xor_gate(Lit o, Lit l1, Lit l2, bool full = true) {
+    if (full) {
+        return Formula({ Cl({~o, l1, l2}), Cl({~o, ~l1, ~l2}), Cl({o, l1, ~l2}), Cl({o, ~l1, l2}) });
+    } else {
+        return Formula({ Cl({~o, l1, l2}), Cl({~o, ~l1, ~l2}) });
+    }
 }
 
 }}

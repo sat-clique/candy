@@ -3,7 +3,7 @@
 
 #include "candy/frontend/Exceptions.h"
 #include "candy/frontend/SolverFactory.h"
-#include "candy/core/branching/VSIDS.h"
+#include "candy/systems/branching/VSIDS.h"
 #include "candy/frontend/CandyBuilder.h"
 #include "util.h"
 

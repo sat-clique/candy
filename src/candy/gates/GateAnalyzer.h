@@ -70,9 +70,6 @@ public:
 
     // main analysis routine
     void analyze();
-    
-    // create unit-clause and use it as root node (brought back with cnf2aig integration)
-    void normalizeRoots();
 
 
     bool hasTimeout() const;

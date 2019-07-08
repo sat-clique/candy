@@ -28,9 +28,9 @@
 #include <gmock/gmock.h>
 #include <candy/core/SolverTypes.h>
 #include <candy/randomsimulation/Conjectures.h>
-#include <candy/rsil/ImplicitLearningAdvice.h>
+#include <candy/systems/branching/rsil/ImplicitLearningAdvice.h>
 #include <candy/rsar/Heuristics.h>
-#include <candy/rsil/RSARHeuristicsFilter.h>
+#include <candy/systems/branching/rsil/RSARHeuristicsFilter.h>
 
 #include "TestUtils.h"
 
