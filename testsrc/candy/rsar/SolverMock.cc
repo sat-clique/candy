@@ -52,7 +52,7 @@ namespace Candy {
         return lbool(result);
     }
     
-    void SolverMock::init(const CNFProblem &problem, ClauseAllocator* allocator) {
+    void SolverMock::init(const CNFProblem &problem, ClauseAllocator* allocator, bool lemma) {
         // TODO: fix the unscrupolously non-const CNFProblem interface to update
         // m_nClausesAddedSinceLastSolve
         m_maxCreatedVar = problem.nVars();
