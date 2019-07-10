@@ -492,9 +492,7 @@ namespace Candy {
                 auto idx = (randomNumber + a) % adviceSize;
                 
                 auto advisedLit = advice.getLiteral(idx);
-                if (trail.value(advisedLit.var()) == l_Undef
-                    && this->isDecisionVar(advisedLit.var())
-                    && BranchingHeuristicsImpl::canUseAdvice(advice, idx)) {
+                if (trail.value(advisedLit.var()) == l_Undef && this->isDecisionVar(advisedLit.var()) && BranchingHeuristicsImpl::canUseAdvice(advice, idx)) {
                     BranchingHeuristicsImpl::usedAdvice(advice, idx);
                     auto result = cursor.sign() ? ~advisedLit : advisedLit;
                     return result;
@@ -512,9 +510,7 @@ namespace Candy {
             if (m_advice.hasPotentialAdvice(decisionVariable)) {
                 auto& advice = m_advice.getAdvice(decisionVariable);
                 
-                if (advice.isBackbone()
-                    && BranchingHeuristicsImpl::canUseAdvice(advice, 0)
-                    && advice.getSize() == 1) {
+                if (advice.isBackbone() && BranchingHeuristicsImpl::canUseAdvice(advice, 0) && advice.getSize() == 1) {
                     assert(advice.getLiteral(0) != lit_Undef);
                     BranchingHeuristicsImpl::usedAdvice(advice, 0);
                     return ~(advice.getLiteral(0));
