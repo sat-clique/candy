@@ -363,7 +363,7 @@ namespace Candy {
         }
         
         for (auto& conjecture : conjectures.getEquivalences()) {
-            if (conjecture.size() <= AdviceEntryType::maxSize) {
+            if (conjecture.size() < AdviceEntryType::maxSize) {
                 addEquivalenceConjecture(conjecture);
             }
         }
