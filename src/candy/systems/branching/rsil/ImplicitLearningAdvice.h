@@ -298,7 +298,7 @@ namespace Candy {
          *                      be represented by \i. Note that equivalence conjectures of
          *                      size greater than tMaxAdviceSize are discarded.
          */
-        void init(const Conjectures& conjectures, int size = -1);
+        void init(const Conjectures& conjectures, size_t size);
         
         /**
          * Retrieves implicit learning heuristics advice for the variable \p v .
@@ -368,8 +368,10 @@ namespace Candy {
     }
     
     template<class AdviceEntryType>
-    void ImplicitLearningAdvice<AdviceEntryType>::init(const Conjectures& conjectures, int size) { 
-        m_advice.resize(size != -1 ? size : conjectures.getMaxVar()+1);
+    void ImplicitLearningAdvice<AdviceEntryType>::init(const Conjectures& conjectures, size_t size) { 
+        if (m_advice.size() < size) {
+            m_advice.resize(size);
+        }
         
         for (auto& conjecture : conjectures.getEquivalences()) {
             if (conjecture.size() <= AdviceEntryType::maxSize) {
