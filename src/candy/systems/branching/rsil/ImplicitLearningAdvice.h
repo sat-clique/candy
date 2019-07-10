@@ -334,7 +334,7 @@ namespace Candy {
             assert(keyVar < static_cast<Var>(m_advice.size()));
             
             // advice entries hold maxSize-1 elements (the size is given including the key)
-            assert(m_advice[keyVar].getSize() < (AdviceEntryType::maxSize - 1));
+            assert(m_advice[keyVar].getSize() <= AdviceEntryType::maxSize);
             assert(!m_advice[keyVar].isBackbone());
             
             m_advice[keyVar].setBackbone(false);
