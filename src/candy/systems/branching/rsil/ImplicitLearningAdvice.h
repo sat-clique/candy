@@ -62,16 +62,8 @@ namespace Candy {
         /** This type can be used for specialization with SFINAE (AdviceEntry<n>::BasicType is the same
          * for all admissible values of n). */
         using BasicType = AdviceEntry<2>;
-        
-        /**
-         * \class AdviceLits
-         *
-         * \ingroup RS_ImplicitLearning
-         *
-         * \brief AdviceLits stores an array of tMaxAdviceSize-1 literals.
-         */
-        using AdviceLits = std::array<Lit, tMaxAdviceSize-1>;
-        
+
+
         /** equals the tMaxAdviceSize parameter */
         static const unsigned int maxSize = tMaxAdviceSize;
         
@@ -144,10 +136,10 @@ namespace Candy {
         }
         
     private:
-        unsigned int m_size : 31;
-        unsigned int m_isBackbone : 1;
+        unsigned int m_size;
+        bool m_isBackbone;
         
-        AdviceLits m_lits;
+        std::array<Lit, tMaxAdviceSize-1> m_lits;
     };
     
     /**
@@ -327,11 +319,8 @@ namespace Candy {
         std::vector<AdviceEntryType> m_advice;
     };
     
-    //******* ImplicitLearningAdvice implementation *************************************
-    
     template<class AdviceEntryType>
-    AdviceEntryType&
-    ImplicitLearningAdvice<AdviceEntryType>::getAdvice(Var v) noexcept {
+    AdviceEntryType& ImplicitLearningAdvice<AdviceEntryType>::getAdvice(Var v) noexcept {
         assert(v < static_cast<Var>(m_advice.size()));
         return m_advice[v];
     }
