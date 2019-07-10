@@ -117,7 +117,7 @@ namespace Candy {
          * \param literal   a literal to be added to this entry.
          */
         inline void addLiteral(Lit literal) noexcept {
-            assert(static_cast<unsigned int>(m_size) < tMaxAdviceSize);
+            assert(static_cast<unsigned int>(m_size+1) < tMaxAdviceSize);
             m_lits[m_size] = literal;
             ++m_size;
         }
@@ -363,7 +363,7 @@ namespace Candy {
         }
         
         for (auto& conjecture : conjectures.getEquivalences()) {
-            if (conjecture.size() < AdviceEntryType::maxSize) {
+            if (conjecture.size() <= AdviceEntryType::maxSize) {
                 addEquivalenceConjecture(conjecture);
             }
         }
