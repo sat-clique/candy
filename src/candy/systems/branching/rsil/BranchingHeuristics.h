@@ -103,7 +103,7 @@ namespace Candy {
             generateConjectures(problem);
             if (initializationCompleted) {
                 m_backbonesEnabled = !conjectures->getBackbones().empty();
-                m_advice.init(*conjectures.get());
+                m_advice.init(*conjectures.get(), problem.nVars());
             }
     	}
 
@@ -111,7 +111,7 @@ namespace Candy {
             this->conjectures = std::move(_con); 
             initializationCompleted = true;
             m_backbonesEnabled = backbonesEnabled;
-            m_advice.init(*conjectures.get());
+            m_advice.init(*conjectures.get(), conjectures->getMaxVar()+1);
     	}
 
     	void grow() {
