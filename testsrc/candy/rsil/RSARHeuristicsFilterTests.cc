@@ -52,7 +52,7 @@ namespace Candy {
             testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
             testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
             ImplicitLearningAdvice<AdviceEntry<3>> testData;
-            testData.init(testDataSrc);
+            testData.init(testDataSrc, testDataSrc.getMaxVar()+1);
             
             MockHeuristic nullHeuristic;
             EXPECT_CALL(nullHeuristic, probe(testing::_,testing::_)).WillRepeatedly(testing::Return(false));
@@ -80,7 +80,7 @@ namespace Candy {
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
-        testData.init(testDataSrc);
+        testData.init(testDataSrc, testDataSrc.getMaxVar()+1);
         
         MockHeuristic nullHeuristic;
         EXPECT_CALL(nullHeuristic, probe(testing::_,testing::_)).WillRepeatedly(testing::Return(true));
@@ -99,7 +99,7 @@ namespace Candy {
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
-        testData.init(testDataSrc);
+        testData.init(testDataSrc, testDataSrc.getMaxVar()+1);
         
         MockHeuristic nullHeuristic;
         
@@ -120,7 +120,7 @@ namespace Candy {
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
-        testData.init(testDataSrc);
+        testData.init(testDataSrc, testDataSrc.getMaxVar()+1);
         
         MockHeuristic nullHeuristic;
         
@@ -142,7 +142,7 @@ namespace Candy {
         testDataSrc.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(4,1), Lit(2,0)}});
         testDataSrc.addBackbone(BackboneConjecture{Lit(6,1)});
         ImplicitLearningAdvice<AdviceEntry<3>> testData;
-        testData.init(testDataSrc);
+        testData.init(testDataSrc, testDataSrc.getMaxVar()+1);
         
         MockHeuristic nullHeuristic;
         
