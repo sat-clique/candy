@@ -74,6 +74,7 @@ namespace Candy {
         /// The conjectures to be used for implicit learning, e.g. obtained via random simulation.
         std::unique_ptr<Conjectures> conjectures;
         bool initializationCompleted;
+        bool blockInitialization;
 
         /**
          * A few definitions for the TBranchingHeuristic concept
@@ -100,10 +101,13 @@ namespace Candy {
 
     	virtual void init(const CNFProblem& problem) {
     		defaultBranchingHeuristic.init(problem);
-            generateConjectures(problem);
-            if (initializationCompleted) {
-                m_backbonesEnabled = !conjectures->getBackbones().empty();
-                m_advice.init(*conjectures.get());
+            if (!blockInitialization) {
+                blockInitialization = true;
+                generateConjectures(problem);
+                if (initializationCompleted) {
+                    m_backbonesEnabled = !conjectures->getBackbones().empty();
+                    m_advice.init(*conjectures.get(), problem.nVars());
+                }
             }
     	}
 
@@ -111,7 +115,7 @@ namespace Candy {
             this->conjectures = std::move(_con); 
             initializationCompleted = true;
             m_backbonesEnabled = backbonesEnabled;
-            m_advice.init(*conjectures.get());
+            m_advice.init(*conjectures.get(), conjectures->getMaxVar()+1);
     	}
 
     	void grow() {
@@ -171,7 +175,7 @@ namespace Candy {
          *
          */
         RSILBranchingHeuristic(ClauseDatabase& clause_db_, Trail& trail_) :
-            clause_db(clause_db_), trail(trail_), initializationCompleted(false), 
+            clause_db(clause_db_), trail(trail_), initializationCompleted(false), blockInitialization(false),
             defaultBranchingHeuristic(clause_db_, trail_), m_advice(),
             m_rng(0xFFFF)
         {
@@ -492,7 +496,11 @@ namespace Candy {
                 auto idx = (randomNumber + a) % adviceSize;
                 
                 auto advisedLit = advice.getLiteral(idx);
-                if (trail.value(advisedLit.var()) == l_Undef && this->isDecisionVar(advisedLit.var()) && BranchingHeuristicsImpl::canUseAdvice(advice, idx)) {
+                if (trail.value(advisedLit.var()) == l_Undef
+                     && this->isDecisionVar(advisedLit.var())
+                     && BranchingHeuristicsImpl::canUseAdvice(advice, idx)
+                    ) 
+                {
                     BranchingHeuristicsImpl::usedAdvice(advice, idx);
                     auto result = cursor.sign() ? ~advisedLit : advisedLit;
                     return result;

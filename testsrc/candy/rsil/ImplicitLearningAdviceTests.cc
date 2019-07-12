@@ -56,7 +56,7 @@ namespace Candy {
             Lit backboneLit = Lit(9,0);
             testData.addBackbone(BackboneConjecture{backboneLit});
             ImplicitLearningAdvice<AdviceEntryType> underTest;
-            underTest.init(testData);
+            underTest.init(testData, testData.getMaxVar()+1);
             
             for (Var i = 0; i < 10; ++i) {
                 if (i != backboneLit.var()) {
@@ -77,7 +77,7 @@ namespace Candy {
             
             testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0)}});
             ImplicitLearningAdvice<AdviceEntryType> underTest;
-            underTest.init(testData);
+            underTest.init(testData, testData.getMaxVar()+1);
             
             EXPECT_TRUE(underTest.hasPotentialAdvice(5));
             EXPECT_TRUE(isEquivalenceAdvised(underTest, Lit(5,1), Lit(1,0)));
@@ -95,7 +95,7 @@ namespace Candy {
             
             testData.addEquivalence(EquivalenceConjecture{std::vector<Lit>{Lit(5,1), Lit(1,0), Lit(2,1)}});
             ImplicitLearningAdvice<AdviceEntryType> underTest;
-            underTest.init(testData);
+            underTest.init(testData, testData.getMaxVar()+1);
             
             EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(5,1), Lit(1,0)));
             EXPECT_FALSE(isEquivalenceAdvised(underTest, Lit(1,1), Lit(5,0)));

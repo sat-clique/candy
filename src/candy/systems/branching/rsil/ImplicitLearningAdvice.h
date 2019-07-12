@@ -62,16 +62,8 @@ namespace Candy {
         /** This type can be used for specialization with SFINAE (AdviceEntry<n>::BasicType is the same
          * for all admissible values of n). */
         using BasicType = AdviceEntry<2>;
-        
-        /**
-         * \class AdviceLits
-         *
-         * \ingroup RS_ImplicitLearning
-         *
-         * \brief AdviceLits stores an array of tMaxAdviceSize-1 literals.
-         */
-        using AdviceLits = std::array<Lit, tMaxAdviceSize-1>;
-        
+
+
         /** equals the tMaxAdviceSize parameter */
         static const unsigned int maxSize = tMaxAdviceSize;
         
@@ -144,10 +136,10 @@ namespace Candy {
         }
         
     private:
-        unsigned int m_size : 31;
-        unsigned int m_isBackbone : 1;
+        unsigned int m_size;
+        bool m_isBackbone;
         
-        AdviceLits m_lits;
+        std::array<Lit, tMaxAdviceSize-1> m_lits;
     };
     
     /**
@@ -298,7 +290,7 @@ namespace Candy {
          *                      be represented by \i. Note that equivalence conjectures of
          *                      size greater than tMaxAdviceSize are discarded.
          */
-        void init(const Conjectures& conjectures, int size = -1);
+        void init(const Conjectures& conjectures, size_t size);
         
         /**
          * Retrieves implicit learning heuristics advice for the variable \p v .
@@ -327,11 +319,8 @@ namespace Candy {
         std::vector<AdviceEntryType> m_advice;
     };
     
-    //******* ImplicitLearningAdvice implementation *************************************
-    
     template<class AdviceEntryType>
-    AdviceEntryType&
-    ImplicitLearningAdvice<AdviceEntryType>::getAdvice(Var v) noexcept {
+    AdviceEntryType& ImplicitLearningAdvice<AdviceEntryType>::getAdvice(Var v) noexcept {
         assert(v < static_cast<Var>(m_advice.size()));
         return m_advice[v];
     }
@@ -345,7 +334,7 @@ namespace Candy {
             assert(keyVar < static_cast<Var>(m_advice.size()));
             
             // advice entries hold maxSize-1 elements (the size is given including the key)
-            assert(m_advice[keyVar].getSize() < (AdviceEntryType::maxSize - 1));
+            assert(m_advice[keyVar].getSize() <= AdviceEntryType::maxSize);
             assert(!m_advice[keyVar].isBackbone());
             
             m_advice[keyVar].setBackbone(false);
@@ -368,8 +357,10 @@ namespace Candy {
     }
     
     template<class AdviceEntryType>
-    void ImplicitLearningAdvice<AdviceEntryType>::init(const Conjectures& conjectures, int size) { 
-        m_advice.resize(size != -1 ? size : conjectures.getMaxVar()+1);
+    void ImplicitLearningAdvice<AdviceEntryType>::init(const Conjectures& conjectures, size_t size) { 
+        if (m_advice.size() < size) {
+            m_advice.resize(size);
+        }
         
         for (auto& conjecture : conjectures.getEquivalences()) {
             if (conjecture.size() <= AdviceEntryType::maxSize) {
