@@ -57,24 +57,26 @@ Karlsruhe, Germany\\
 \maketitle
 
 \begin{abstract}
-We use Candy as a platform to systematically analyse the properties of competing strategies in systems of a CDCL solver. 
+We use Candy as a platform to systematically analyse the properties of competing strategies in a portfolio. 
 \end{abstract}
 
 
 \section{Summary}
 \textbf{Candy}~\cite{CandyGithub} is a fork of \textbf{Glucose 3} \cite{Audemard:2009:Glucose,Niklas:2003:Minisat}.
-
-
-\section{Architecture and Implementation}
+One goal was to provide a flexible and efficient architecture to experiment with many different strategies. 
 Candy orchestrates a set of loosely coupled systems, 
 which mainly provide an interface for competing strategies. 
 For example, Candy provides a variety of strategies in the branching-system. 
 
-Among others, the branching system can resort to implementations of gate-analysis and random-simulation based \emph{implicit learning} (RSIL) which uses algorithms presented in~\cite{Iser:2017:RandomSimulation} and~\cite{Iser:2015:GateRecognition}. 
 
-There exists also a parallel mode with selected combinations and configurations of strategies and efficient memory sharing among threads.
+\section{Implementation}
+Among others, the branching system can resort to implementations of gate-analysis and random-simulation based \emph{implicit learning} (RSIL) which uses the algorithms which we presented in~\cite{Iser:2017:RandomSimulation} and~\cite{Iser:2015:GateRecognition}. 
 
-Candy provides an IPASIR interface~\cite{IpasirGithub} and a HordeSAT interface via CandyHorde~\cite{HordesatGithub}. 
+Now, there exists also a parallel mode with selected combinations and configurations of strategies and efficient memory sharing.
+
+
+\section{Interfaces}
+Candy provides an IPASIR interface~\cite{IpasirGithub} and an interface to the generic massively parallel SAT solver HordeSAT~\cite{HordesatGithub}. 
 The sonification interface makes solver runs even audible~\cite{CandySonification}. 
 
 
