@@ -57,46 +57,30 @@ Karlsruhe, Germany\\
 \maketitle
 
 \begin{abstract}
-Candy is a branch of the Glucose 3 SAT solver and started as a refactoring effort towards modern C++.
-The goal of the architecture is to ease implementation of new strategies and their combination with existing ones. 
-New functionality in Candy is based on gate structure analysis and random simulation. 
+We use Candy as a platform to systematically analyse the properties of competing strategies in systems of a CDCL solver. 
 \end{abstract}
 
 
-\section{Introduction}
-The development of our open-source SAT solver \textbf{Candy}\footnote{\url{https://github.com/udopia/candy-kingdom}} started as a branch of the well-known \textbf{Glucose} \cite{Audemard:2009:Glucose,Niklas:2003:Minisat} CDCL SAT solver (version 3.0).
-With Candy, we aim to facilitate the solver's development by refactoring the Glucose source code towards modern C++ and by reducing dependencies within the source code.
-This involved replacing most custom lowest-level data structures and algorithms by their C++ standard library equivalents.
-We increased the extensibility of Candy via static polymorphism, e.g. allowing the solver's decision heuristic to be customized without incurring the overhead of dynamic polymorphism. 
-This enabled us to efficiently implement variants of the Candy solver.
-Furthermore, we modularized the source code of Candy to make its subsystems reusable.
-The quality of Candy is assured by automated testing, with the functionality of Candy tested on different compilers (Clang, GCC, Microsoft C/C++) and operating systems (Linux, Apple macOS, Microsoft Windows) using continuous integration systems.
-
-Modularization allowed for the development of an imprved incremental mode as well as reusing simplifications modules for basic inprocessing. 
+\section{Summary}
+\textbf{Candy}~\cite{CandyGithub} is a fork of \textbf{Glucose 3} \cite{Audemard:2009:Glucose,Niklas:2003:Minisat}.
 
 
-\section{Improved Incremental Mode}
-We enabled several clause simplifications in Candy's incremental mode that had been deactivated in Glucose's incremental mode.
-Also, certificates for unsatisfiability can be generated in incremental mode for sub-formulas not containing assumption literals.
-This is achieved by suppressing the emission of learnt clauses containing assumption literals as well as the output of the empty clause until no assumptions are used in the resolution steps by which unsatisfiability is deduced.
+\section{Architecture and Implementation}
+Candy orchestrates a set of loosely coupled systems, 
+which mainly provide an interface for competing strategies. 
+For example, Candy provides a variety of strategies in the branching-system. 
+
+Among others, the branching system can resort to implementations of gate-analysis and random-simulation based \emph{implicit learning} (RSIL) which uses algorithms presented in~\cite{Iser:2017:RandomSimulation} and~\cite{Iser:2015:GateRecognition}. 
+
+There exists also a parallel mode with selected combinations and configurations of strategies and efficient memory sharing among threads.
+
+Candy provides an IPASIR interface~\cite{IpasirGithub} and a HordeSAT interface via CandyHorde~\cite{HordesatGithub}. 
+The sonification interface makes solver runs even audible~\cite{CandySonification}. 
 
 
-\section{Inprocessing}
-We improved the architecture of clause simplification such that Candy can now perform simplification based on clause subsumption and self-subsuming resolution during search.
-The original problem's clauses are included as well as learnt clauses that are persistent in the learnt clause database, i.e. clauses of size 2 and clauses with an LBD value no larger than 2.
-
-
-\section{Improvements Candy 2019}
-This years submitted configuration of Candy is a CDCL SAT solver which is reduced to its bones and very classic heuristics. 
-During the implemenation of a parallel version of Candy in winter 2018/19 the architecture has improved a lot. 
-
-The submitted version of Candy is from a technological point of view very similar to Glucose 3. 
-However, the architecture improved a lot in order to facilitate the systematic analysis of new technology. 
-Candy orchestrates a set of loosely coupled \emph{solver systems} including the commen CDCL algorithms and data-structures which are implemented and organized in the propagation system, the restart system, the conflict analysis / clause learning system, the branching system, and so forth. 
-All solver systems communicate state via the clause database and the assignment trail. 
-Each system can follow a variety of competing strategies. 
-It is especially easy to integrate a new strategy for a specific system. 
-As an example, different strategies for the branching system are MOMS, DLIS, VSIDS, LRB and Centrality-based branching, to name a few. 
+\section{Candy in SAT Race 2019}
+We submitted Candy in its default setting which is a configuration of strategies that is roughly similar to that inherited from Glucose 3. 
+This is the public evaluation of our baseline performance for reference. 
 
 
 \bibliographystyle{splncs03}
