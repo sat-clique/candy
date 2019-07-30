@@ -72,21 +72,6 @@ std::vector<Cl> GateAnalyzer::getBestRoots() {
     std::vector<Lit> lits = getRarestLiterals(index);
     if (lits.empty()) return clauses;
     Lit best = lits.back();
-//    int weight = 0;
-//    for (Lit lit : lits) {
-//        std::vector<Lit> others;
-//        for (Cl* clause : index[lit]) {
-//            others.insert(others.end(), clause->begin(), clause->end());
-//        }
-//        sort(others.begin(), others.end());
-//        others.erase(std::unique(others.begin(), others.end()), others.end());
-//        auto end = remove_if(others.begin(), others.end(), [lits] (Lit lit) { return std::find(lits.begin(), lits.end(), lit) == lits.end(); });
-//
-//        if (std::distance(end, others.end()) < weight) {
-//            weight = std::distance(end, others.end());
-//            best = lit;
-//        }
-//    }
     clausesp.insert(clausesp.end(), index[best].begin(), index[best].end());
     index[best].clear();
     removeFromIndex(index, clausesp);
