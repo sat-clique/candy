@@ -143,6 +143,12 @@ static void printProblemStatistics(CNFProblem& problem) {
     printf("c |  Number of variables:  %12zu                           |\n", problem.nVars());
     printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
 }
+
+static void printGateStatistics(CNFProblem& problem) {
+    GateAnalyzer analyzer { problem };
+    analyzer.analyze();
+    analyzer.getResult().printStats();
+}
     
 CandySolverInterface* solver = nullptr;
 lbool result = l_Undef;
@@ -198,6 +204,10 @@ int main(int argc, char** argv) {
 
     if (SolverOptions::verb > 0) {
         printProblemStatistics(problem);
+    }
+
+    if (SolverOptions::verb > 1) {
+        printGateStatistics(problem);
     }
 
     ClauseAllocator* global_allocator = nullptr;
