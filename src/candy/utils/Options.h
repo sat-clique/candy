@@ -26,13 +26,14 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-#ifndef Glucose_Options_h
-#define Glucose_Options_h
+#ifndef CandyOptions
+#define CandyOptions
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <iostream>
 
 #include <stdint.h>
 #include <inttypes.h>
@@ -76,9 +77,14 @@ class Option {
         }
     };
 
-    Option(const char* name_, const char* desc_, const char* cate_, const char* type_) : 
+    Option(const char* name_, const char* desc_, const char* cate_, const char* type_, const bool disabled_ = false) : 
       name(name_) , description(desc_), category(cate_), type_name(type_) { 
-        getOptionList().push_back(this);
+        if (!disabled_) {
+            getOptionList().push_back(this);
+        }
+        else {
+            std::cout << "c Option '" << name_ << "' has been disabled by the developer. You are not able to change the default setting." << std::endl;
+        }
     }
 
  public:
@@ -128,8 +134,8 @@ class DoubleOption : public Option {
     double      value;
 
  public:
-    DoubleOption(const char* c, const char* n, const char* d, double def = double(), DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false))
-        : Option(n, d, c, "<double>"), range(r), value(def) {
+    DoubleOption(const char* c, const char* n, const char* d, double def = double(), DoubleRange r = DoubleRange(-HUGE_VAL, false, HUGE_VAL, false), const bool disabled_ = false)
+        : Option(n, d, c, "<double>", disabled_), range(r), value(def) {
         // FIXME: set LC_NUMERIC to "C" to make sure that strtof/strtod parses decimal point correctly.
         len = sprintf(pattern, "-%s=", name);
     }
@@ -188,8 +194,8 @@ class IntOption : public Option {
     int32_t  value;
 
  public:
-    IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX))
-        : Option(n, d, c, "<int32>"), range(r), value(def) {
+    IntOption(const char* c, const char* n, const char* d, int32_t def = int32_t(), IntRange r = IntRange(INT32_MIN, INT32_MAX), const bool disabled_ = false)
+        : Option(n, d, c, "<int32>", disabled_), range(r), value(def) {
             len = sprintf(pattern, "-%s=", name);
         }
  
@@ -254,8 +260,8 @@ class Int64Option : public Option {
     int64_t  value;
 
  public:
-    Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX))
-        : Option(n, d, c, "<int64>"), range(r), value(def) {
+    Int64Option(const char* c, const char* n, const char* d, int64_t def = int64_t(), Int64Range r = Int64Range(INT64_MIN, INT64_MAX), const bool disabled_ = false)
+        : Option(n, d, c, "<int64>", disabled_), range(r), value(def) {
             len = sprintf(pattern, "-%s=", name);
         }
  
@@ -316,8 +322,8 @@ class StringOption : public Option {
     char* value;
 
  public:
-    StringOption(const char* c, const char* n, const char* d, const char* def = "") 
-        : Option(n, d, c, "<string>") {
+    StringOption(const char* c, const char* n, const char* d, const char* def = "", const bool disabled_ = false) 
+        : Option(n, d, c, "<string>", disabled_) {
             len = sprintf(pattern, "-%s=", name);
             value = new char[256];
             set(def);
@@ -365,8 +371,8 @@ class BoolOption : public Option {
     bool value;
 
  public:
-    BoolOption(const char* c, const char* n, const char* d, bool v) 
-        : Option(n, d, c, "<bool>"), value(v) {
+    BoolOption(const char* c, const char* n, const char* d, bool v, const bool disabled_ = false) 
+        : Option(n, d, c, "<bool>", disabled_), value(v) {
             yes_len = sprintf(yes_pattern, "-%s", name);
             no_len = sprintf(no_pattern, "-no-%s", name);
         }
