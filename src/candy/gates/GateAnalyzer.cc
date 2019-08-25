@@ -99,9 +99,9 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
         }
     }
     solver->init(constraint);
-    solver->setTermCallback(solver, [](void* solver) -> int { // todo: use semantic-conflict-budget
-        return ((CandySolverInterface*)solver)->getStatistics().nConflicts() > 1000; 
-    });
+    /*solver->setTermCallback(solver, [](void* solver) -> int { // todo: use semantic-conflict-budget
+        return ((CandySolverInterface*)solver)->getStatistics().nConflicts() > conflicts; 
+    });*/
     solver->setAssumptions(assumptions);
     bool isRightUnique = solver->solve() == l_False;
     assumptions.back() = alit;

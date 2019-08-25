@@ -299,7 +299,14 @@ target_link_libraries(candylib ${CANDY_LIBS})
 add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
 add_executable(cnf2aig src/candy/cnf2aig.cc $<TARGET_OBJECTS:frontend>)
 candy_executable_customizations(candy)
-target_link_libraries(candy candylib)
-target_link_libraries(cnf2aig candylib)
+FIND_LIBRARY (PSAPI Psapi)
+if (PSAPI)
+	target_link_libraries(candy candylib ${PSAPI})
+	target_link_libraries(cnf2aig candylib ${PSAPI})
+ELSE()
+	target_link_libraries(candy candylib)
+	target_link_libraries(cnf2aig candylib)
+ENDIF()
+
 
 

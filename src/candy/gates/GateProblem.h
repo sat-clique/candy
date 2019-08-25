@@ -176,6 +176,24 @@ public:
         return artificialRoot;
     }
 
+    void printStats() {
+        unsigned int nGates = 0;
+        unsigned int monoton = 0;
+
+        for (Gate& gate : gates) {
+            if (gate.isDefined()) {
+                nGates++;
+                if (!gate.hasNonMonotonousParent()) {
+                    monoton++;
+                }
+            }
+        }
+        std::cout << "c Variables: " << nVars() << std::endl << 
+                    "c Gates: " << nGates << std::endl << 
+                    "c Roots: " << roots.size() << std::endl << 
+                    "c Monoton: " << monoton << std::endl;
+    }
+
     void printGates() {
         std::vector<Lit> outputs;
         std::vector<bool> done(problem.nVars());

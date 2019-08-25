@@ -24,10 +24,13 @@
  
  */
 
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 namespace Candy { 
 
 #ifdef _WIN32
-#include <Windows.h>
     double get_wall_time() {
         LARGE_INTEGER time,freq;
         if (!QueryPerformanceFrequency(&freq)){
