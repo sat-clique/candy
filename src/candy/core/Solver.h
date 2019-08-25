@@ -185,6 +185,7 @@ private:
         return !ok;
     }
 
+    // important in parallel scenario
     void propagateAndMaterializeUnitClauses() {
         assert(trail.decisionLevel() == 0);
         std::vector<Clause*> facts = clause_db.getUnitClauses();
@@ -206,6 +207,7 @@ private:
         }
     }
 
+    // pre- and inprocessing
     void processClauseDatabase() {
         assert(trail.decisionLevel() == 0);
 
