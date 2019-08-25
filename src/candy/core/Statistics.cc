@@ -31,7 +31,6 @@ Statistics::Statistics(CandySolverInterface& solver_) : solver(solver_),
 
 Statistics::~Statistics() { }
 
-
 size_t Statistics::nClauses() const {
     return solver.getClauseDatabase().size();
 }
