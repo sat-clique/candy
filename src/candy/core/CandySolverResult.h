@@ -67,8 +67,13 @@ public:
         conflict.insert(conflict.end(), assumptions.begin(), assumptions.end());
     }
 
-    lbool modelValue(Var x) const {
-        return model[x];
+    // return satisfied literal for given variable
+    Lit value(Var x) const {
+        if (model[x] == l_False) {
+            return Lit(x, true);
+        } else {
+            return Lit(x, false);
+        }
     }
 
     lbool modelValue(Lit p) const {
