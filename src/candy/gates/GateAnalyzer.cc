@@ -35,7 +35,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
             problem(dimacs), gate_problem(*new GateProblem { problem }), runtime(timeout), 
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
-            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget)
+            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), assumptionCounter(0)
 {
     runtime.start();
     inputs.resize(2 * problem.nVars(), false);
@@ -83,7 +83,9 @@ std::vector<Cl> GateAnalyzer::getBestRoots() {
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     CNFProblem constraint;
-    Lit alit = Lit(problem.nVars()+assumptions.size(), false);
+    ++assumptionCounter;
+    Lit alit = Lit(problem.nVars() + assumptionCounter, false);
+    std::vector<Lit> assumptions;
     assumptions.push_back(~alit);
     Cl clause;
     for (const For& f : { fwd, bwd }) {
@@ -104,7 +106,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     });*/
     solver->setAssumptions(assumptions);
     bool isRightUnique = solver->solve() == l_False;
-    assumptions.back() = alit;
+    solver->init({{ alit }}); // disable the clauses
     return isRightUnique;
 }
 

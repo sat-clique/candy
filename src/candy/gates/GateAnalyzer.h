@@ -81,7 +81,6 @@ public:
 private:
     // problem to analyze:
     CandySolverInterface* solver;
-    std::vector<Lit> assumptions;
 
     // control structures:
     std::vector<For> index; // occurrence lists
@@ -96,6 +95,7 @@ private:
     bool useIntensification = false;
     int lookaheadThreshold = 10;
     unsigned int semanticConflictBudget = 0;
+    unsigned int assumptionCounter = 0;
 
     // main analysis routines
     void analyze(std::vector<Lit>& candidates);
