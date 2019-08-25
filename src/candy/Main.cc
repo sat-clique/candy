@@ -312,11 +312,9 @@ int main(int argc, char** argv) {
             } 
             else {
                 // problem.checkResult(result);
-                Cl model = result.getModelLiterals();
                 std::cout << "v";
-                for (Lit lit : model) {
-                    std::cout << " ";
-                    printLiteral(lit);
+                for (Var v = 0; v < (Var)problem.nVars(); v++) {
+                    std::cout << " " << result.value(v);
                 }
                 std::cout << " 0" << std::endl;
             }
