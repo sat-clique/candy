@@ -51,8 +51,7 @@ public:
         bool holistic = GateRecognitionOptions::opt_gr_holistic,
         bool lookahead = GateRecognitionOptions::opt_gr_lookahead, 
         bool intensify = GateRecognitionOptions::opt_gr_intensify, 
-        int lookahead_threshold = GateRecognitionOptions::opt_gr_lookahead_threshold,
-        unsigned int conflict_budget = GateRecognitionOptions::opt_gr_semantic_budget);
+        int lookahead_threshold = GateRecognitionOptions::opt_gr_lookahead_threshold);
 
     ~GateAnalyzer();
 
@@ -94,7 +93,6 @@ private:
     bool useLookahead = false;
     bool useIntensification = false;
     int lookaheadThreshold = 10;
-    unsigned int semanticConflictBudget = 0;
 
     // main analysis routines
     void analyze(std::vector<Lit>& candidates);

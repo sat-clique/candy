@@ -84,7 +84,6 @@ namespace GateRecognitionOptions {
     extern IntOption opt_gr_tries;
     extern BoolOption opt_gr_patterns;
     extern BoolOption opt_gr_semantic;
-    extern IntOption opt_gr_semantic_budget;
     extern IntOption opt_gr_timeout;
     extern BoolOption opt_gr_holistic;
     extern BoolOption opt_gr_lookahead;
