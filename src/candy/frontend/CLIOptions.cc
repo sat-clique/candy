@@ -42,9 +42,10 @@ namespace ClauseDatabaseOptions {
 
 namespace SolverOptions {
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
-    BoolOption mod("MAIN", "model", "show model.", false);        
+    BoolOption mod("MAIN", "model", "show model.", false);
     StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
     IntOption do_minimize("METHOD", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
+    BoolOption gate_stats("MAIN", "gate-stats", "show only gate recognizer statistics.", false);
 
     IntOption memory_limit("MAIN", "memory-limit", "Limit on memory usage in mega bytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption time_limit("MAIN", "time-limit", "Limit on wallclock runtime in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));

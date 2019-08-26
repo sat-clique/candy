@@ -235,14 +235,11 @@ public:
 
     inline std::vector<Clause*> collect() {
         std::vector<Clause*> clauses;
-        // for (ClauseAllocatorPage& page : pages) {
-            // for (const Clause* clause : page) {
-            for (const Clause* clause : *this) {
-                if (!clause->isDeleted()) {
-                    clauses.push_back((Clause*)clause);
-                }
+        for (const Clause* clause : *this) {
+            if (!clause->isDeleted()) {
+                clauses.push_back((Clause*)clause);
             }
-        // }
+        }
         return clauses;
     }
 

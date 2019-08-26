@@ -35,7 +35,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
             problem(dimacs), gate_problem(*new GateProblem { problem }), runtime(timeout), 
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
-            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget), assumptionCounter(0)
+            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget)
 {
     runtime.start();
     inputs.resize(2 * problem.nVars(), false);
@@ -43,6 +43,9 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
     for (Cl* c : problem) for (Lit l : *c) {// build index
         index[l].push_back(c);
     }
+    SolverOptions::opt_sort_variables = false;
+    SolverOptions::opt_sort_watches = false;
+    SolverOptions::opt_preprocessing = false;
     solver = createSolver(); 
     if (useHolistic) solver->init(problem);
     runtime.stop();
@@ -82,9 +85,9 @@ std::vector<Cl> GateAnalyzer::getBestRoots() {
 }
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
+    solver->getClauseDatabase().clear();
     CNFProblem constraint;
-    ++assumptionCounter;
-    Lit alit = Lit(problem.nVars() + assumptionCounter, false);
+    Lit alit = Lit(problem.nVars()+1, false);
     std::vector<Lit> assumptions;
     assumptions.push_back(~alit);
     Cl clause;
@@ -106,7 +109,6 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     });*/
     solver->setAssumptions(assumptions);
     bool isRightUnique = solver->solve() == l_False;
-    solver->init({{ alit }}); // disable the clauses
     return isRightUnique;
 }
 
@@ -142,11 +144,17 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
         For& f = index[~o], g = index[o];
         if (!runtime.hasTimeout() && f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
             bool mono = false, pattern = false, semantic = false;
+            unsigned int semPro = solver->getStatistics().nPropagations();
+            unsigned int semCon = 0;
             std::set<Lit> inp;
             for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
             mono = inputs[o] == 0 || inputs[~o] == 0;
             if (!mono) pattern = pat && patternCheck(o, f, g, inp);
-            if (!mono && !pattern) semantic = sem && semanticCheck(o.var(), f, g);
+            if (!mono && !pattern) {
+                semantic = sem && semanticCheck(o.var(), f, g);
+                semPro = solver->getStatistics().nPropagations() - semPro;
+                semCon = solver->getStatistics().nConflicts();
+            }
 #ifdef GADebug
             if (mono) printf("Candidate output %s%i is nested monotonically\n", o.sign()?"-":"", o.var()+1);
             if (pattern) printf("Candidate output %s%i matches pattern\n", o.sign()?"-":"", o.var()+1);
@@ -159,6 +167,7 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
                     if (!mono) inputs[~l]++;
                 }
                 gate_problem.addGate(o, f, g, inp, !mono); 
+                gate_problem.addGateStats(pattern, semantic, semPro, semCon);
                 removeFromIndex(index, f);
                 removeFromIndex(index, g);
             }
