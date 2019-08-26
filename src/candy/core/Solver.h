@@ -439,6 +439,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     result.clear();
 
+    // trail.reset();
+    // branch.reset();
+    // propagator.reset();
+
     if (this->preprocessing_enabled) {
         trail.reset();
         processClauseDatabase();

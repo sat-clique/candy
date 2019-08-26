@@ -161,6 +161,16 @@ public:
         reset();
     }
 
+    void reset() {
+        std::vector<int> vs;
+        for (Var v = 0; v < (Var)decision.size(); v++) {
+            if (decision[v]) {
+                vs.push_back(v);
+            }
+        }
+        order_heap.build(vs);
+    }
+
     // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
     inline void varDecayActivity() {
         var_inc *= (1 / var_decay);
@@ -221,16 +231,6 @@ public:
             polarity[v] = it->sign();
             if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
         }
-    }
-
-    void reset() {
-        std::vector<int> vs;
-        for (Var v = 0; v < (Var)decision.size(); v++) {
-            if (decision[v]) {
-                vs.push_back(v);
-            }
-        }
-        order_heap.build(vs);
     }
 
     inline Lit pickBranchLit() {

@@ -138,16 +138,29 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 }
 
 static void printProblemStatistics(CNFProblem& problem) {
-    printf("c =====================[ Problem Statistics ]======================\n");
-    printf("c |                                                               |\n");
-    printf("c |  Number of variables:  %12zu                           |\n", problem.nVars());
-    printf("c |  Number of clauses:    %12zu                           |\n", problem.nClauses());
+    std::cout << "Variables: " << problem.nVars() << std::endl;
+    std::cout << "Clauses: " << problem.nClauses() << std::endl;
 }
 
 static void printGateStatistics(CNFProblem& problem) {
     GateAnalyzer analyzer { problem };
     analyzer.analyze();
-    analyzer.getResult().printStats();
+    GateProblem gates = analyzer.getResult();
+    std::cout << "c Variables: " << problem.nVars() << std::endl;
+    std::cout << "c Clauses: " << problem.nClauses() << std::endl;
+    std::cout << "c Gates: " << gates.nGates() << std::endl;
+    std::cout << "c Monoton: " << gates.nMonotonGates() << std::endl;
+    std::cout << "c Roots: " << gates.nRoots() << std::endl; 
+    std::cout << "c StatsPatterns: " << gates.stat_patterns << std::endl; 
+    std::cout << "c StatsSemantic: " << gates.stat_semantic << std::endl; 
+    std::cout << "c HistoPropagations: "; 
+    unsigned int index = 0;
+    for (unsigned int count : gates.histogram_propagations) std::cout << " " << index++ << ":" << count; 
+    std::cout << std::endl;
+    std::cout << "c HistoConflicts: "; 
+    index = 0;
+    for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
+    std::cout << std::endl;
 }
     
 CandySolverInterface* solver = nullptr;
@@ -202,12 +215,13 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    if (SolverOptions::verb > 0) {
-        printProblemStatistics(problem);
+    if (SolverOptions::gate_stats) {
+        printGateStatistics(problem);
+        return 0;
     }
 
-    if (SolverOptions::verb > 1) {
-        printGateStatistics(problem);
+    if (SolverOptions::verb == 1) {
+        printProblemStatistics(problem);
     }
 
     ClauseAllocator* global_allocator = nullptr;

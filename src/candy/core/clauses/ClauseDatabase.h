@@ -96,6 +96,17 @@ public:
 
     ~ClauseDatabase() { }
 
+    void clear() {
+        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
+            watcher.clear();
+        }
+        for (Clause* clause : clauses) allocator.deallocate(clause);
+        clauses.clear();
+        result.nConflicts = 0;
+        nReduceCalls = 0;
+        nReduced = 0;
+    }
+
     void initBinaryWatchers() {
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
             watcher.shrink_to_fit();
