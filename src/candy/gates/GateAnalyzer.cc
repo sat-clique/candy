@@ -37,7 +37,6 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
             lookaheadThreshold(lookahead_threshold)
 {
-    runtime.start();
     inputs.resize(2 * problem.nVars(), false);
     index.resize(2 * problem.nVars());
     for (Cl* c : problem) for (Lit l : *c) {// build index
@@ -47,8 +46,6 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
     SolverOptions::opt_sort_watches = false;
     SolverOptions::opt_preprocessing = false;
     solver = createSolver(); 
-    if (useHolistic) solver->init(problem);
-    runtime.stop();
 }
 
 GateAnalyzer::~GateAnalyzer() {}
@@ -92,6 +89,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
             for (Lit l : *cl) {
                 if (l.var() != o) {
                     clause.push_back(l);
+                    if (useHolistic) constraint.readClauses(index[l]);
                 }
             }
             constraint.readClause(clause);
