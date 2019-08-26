@@ -31,11 +31,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, bool patterns, bool semantic, bool holistic, 
-        bool lookahead, bool intensify, int lookahead_threshold, unsigned int conflict_budget) :
+        bool lookahead, bool intensify, int lookahead_threshold) :
             problem(dimacs), gate_problem(*new GateProblem { problem }), runtime(timeout), 
             maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
             useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
-            lookaheadThreshold(lookahead_threshold), semanticConflictBudget(conflict_budget)
+            lookaheadThreshold(lookahead_threshold)
 {
     runtime.start();
     inputs.resize(2 * problem.nVars(), false);
@@ -85,11 +85,7 @@ std::vector<Cl> GateAnalyzer::getBestRoots() {
 }
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
-    solver->getClauseDatabase().clear();
     CNFProblem constraint;
-    Lit alit = Lit(problem.nVars()+1, false);
-    std::vector<Lit> assumptions;
-    assumptions.push_back(~alit);
     Cl clause;
     for (const For& f : { fwd, bwd }) {
         for (Cl* cl : f) {
@@ -98,18 +94,14 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
                     clause.push_back(l);
                 }
             }
-            clause.push_back(alit);
             constraint.readClause(clause);
             clause.clear();
         }
     }
+    solver->getClauseDatabase().clear();
     solver->init(constraint);
-    /*solver->setTermCallback(solver, [](void* solver) -> int { // todo: use semantic-conflict-budget
-        return ((CandySolverInterface*)solver)->getStatistics().nConflicts() > conflicts; 
-    });*/
-    solver->setAssumptions(assumptions);
-    bool isRightUnique = solver->solve() == l_False;
-    return isRightUnique;
+    lbool result = solver->solve();
+    return (result == l_False);
 }
 
 
