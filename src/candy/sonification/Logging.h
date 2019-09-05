@@ -20,6 +20,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef SRC_CANDY_CORE_LOGGING_H_
 #define SRC_CANDY_CORE_LOGGING_H_
 
+#include <string>
+#include <memory>
+#include <sstream>
+#include <iostream>
+
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/clauses/Clause.h"
 
@@ -29,15 +34,33 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 class Logging {
+    using Stream = std::ostringstream;
+    using Buffer_p = std::unique_ptr<Stream, std::function<void(Stream*)>>;
+
     CandySolverInterface& solver;
 
     SolverSonification sonification;
     int sonification_delay;
+    int verb;
 
 public:
     Logging(CandySolverInterface& solver_)
-     : solver(solver_), sonification(), sonification_delay(SolverOptions::opt_sonification_delay) { }
+     : solver(solver_), sonification(), sonification_delay(SolverOptions::opt_sonification_delay), verb(SolverOptions::verb) { }
     ~Logging() { }
+
+    void log(const std::string& msg) {
+        if (verbosity() == 2) std::cout << "c " << msg << std::endl;
+    }
+    
+    Buffer_p log() {
+        return Buffer_p(new Stream, [&](Stream* msg) {
+            if (verbosity() == 2) std::cout << "c " << msg->str() << std::endl;
+        });
+    }
+
+    inline int verbosity() {
+        return verb;
+    }
 
     inline void logStart() {
         sonification.start(solver.getStatistics().nVars(), solver.getStatistics().nClauses());
@@ -73,6 +96,13 @@ public:
     }
 
 };
+
+template <typename T>
+Logging& operator <<(Logging& log, T const& value) {
+    if (log.verbosity() == 2) std::cout << value << std::endl;
+    return log;
+}
+
 
 } /* namespace Candy */
 

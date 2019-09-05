@@ -27,6 +27,8 @@
 #ifndef SRC_CANDY_UTILS_RUNTIME_H_
 #define SRC_CANDY_UTILS_RUNTIME_H_
 
+#include <iomanip>
+
 namespace Candy { 
 
 double get_wall_time();
@@ -36,9 +38,10 @@ class Runtime {
 private:
     double timeout;
     double startTime;
-    double totalRuntime;
 
 public:
+    double totalRuntime;
+
     /**
      * Constructs a GenericRuntime object.
      *
@@ -113,6 +116,11 @@ public:
     }
 
 };
+
+inline std::ostream& operator <<(std::ostream& stream, Runtime const& runtime) {
+    stream << std::fixed << std::setw(11) << std::setprecision(6) << runtime.totalRuntime << " seconds" << std::endl;
+    return stream;
+}
 
 class OutOfTimeException {};
 
