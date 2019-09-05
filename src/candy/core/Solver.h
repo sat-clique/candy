@@ -224,7 +224,7 @@ private:
 
             if (subsumption.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumued " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
+                *logging.log() << "c " << std::this_thread::get_id() << ": Subsumption subsumued " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
             propagateAndMaterializeUnitClauses();
@@ -234,7 +234,7 @@ private:
 
             if (reduction.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
+                *logging.log() << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
             }
 
             propagateAndMaterializeUnitClauses();
@@ -244,7 +244,7 @@ private:
 
             if (elimination.nTouched() > 0) {
                 augmented_database.cleanup();
-                std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
+                *logging.log() << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
                 for (unsigned int v = 0; v < statistics.nVars(); v++) {
                     if (elimination.isEliminated(v)) {
                         branch.setDecisionVar(v, false);
@@ -319,7 +319,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
     }
 
     if (allocator == nullptr) {
-        std::cout << "c importing " << problem.nClauses() << " clauses from dimacs" << std::endl;
+        *logging.log() << "c importing " << problem.nClauses() << " clauses" << std::endl;
         for (Cl* import : problem) {
             Clause* clause = clause_db.createClause(import->begin(), import->end(), lemma ? 0 : import->size());
             if (clause->size() > 2) {
@@ -332,7 +332,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
         }
     } 
     else {
-        std::cout << "c importing clauses from global allocator" << std::endl;
+        *logging.log() << "c importing clauses from global allocator" << std::endl;
         clause_db.setGlobalClauseAllocator(allocator);
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -364,7 +364,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             logging.logConflict();
 
             if (trail.decisionLevel() == 0) {
-                std::cout << "c Conflict found by propagation at level 0" << std::endl;
+                *logging.log() << "c Conflict found by propagation at level 0" << std::endl;
                 return l_False;
             }
             
@@ -406,7 +406,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
                 else if (trail.value(p) == l_False) {
-                    std::cout << "c Conflict found during assumption propagation" << std::endl;
+                    *logging.log() << "c Conflict found during assumption propagation" << std::endl;
                     result.setConflict(conflict_analysis.analyzeFinal(~p));
                     return l_False;
                 } 
@@ -458,16 +458,16 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
             nbclausesbeforereduce += incReduceDB;
 
             if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= statistics.nReduceCalls()) { 
-                std::cout << "c " << std::this_thread::get_id() << ": Inprocessing " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
+                *logging.log() << "c " << std::this_thread::get_id() << ": Inprocessing " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
                 lastRestartWithInprocessing = statistics.nReduceCalls();
                 processClauseDatabase();
             }
             else {
-                std::cout << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
+                *logging.log() << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
                 clause_db.reduce();
             }
             clause_db.reorganize();
-            std::cout << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
+            *logging.log() << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
             propagator.reset();
         }
 
@@ -483,10 +483,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     }
 
     if (status == l_Undef) {
-        std::cout << "c " << std::this_thread::get_id() << ": Interrupted" << std::endl;
+        *logging.log() << "c " << std::this_thread::get_id() << ": Interrupted" << std::endl;
     }
     else {
-        std::cout << "c " << std::this_thread::get_id() << ": Found solution" << std::endl;
+        *logging.log() << "c " << std::this_thread::get_id() << ": " << (status == l_True ? "SAT" : "UNSAT") << std::endl;
     }
     
     result.setStatus(status);

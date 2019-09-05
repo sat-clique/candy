@@ -144,7 +144,10 @@ static void printProblemStatistics(CNFProblem& problem) {
 
 static void printGateStatistics(CNFProblem& problem) {
     GateAnalyzer analyzer { problem };
+    Runtime runtime;
+    runtime.start();
     analyzer.analyze();
+    runtime.stop();
     GateProblem gates = analyzer.getResult();
     std::cout << "c Variables: " << problem.nVars() << std::endl;
     std::cout << "c Clauses: " << problem.nClauses() << std::endl;
@@ -161,6 +164,7 @@ static void printGateStatistics(CNFProblem& problem) {
     index = 0;
     for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
     std::cout << std::endl;
+    std::cout << "c Runtime: " << runtime << std::endl;
 }
     
 CandySolverInterface* solver = nullptr;

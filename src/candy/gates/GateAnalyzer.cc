@@ -87,10 +87,11 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
     for (const For& f : { fwd, bwd }) {
         for (Cl* cl : f) {
             for (Lit l : *cl) {
-                if (l.var() != o) {
-                    clause.push_back(l);
-                    if (useHolistic) constraint.readClauses(index[l]);
-                }
+                if (l.var() != o) clause.push_back(l);
+            }
+            if (useHolistic) {
+                // include the resolution environments of each input
+                for (Lit lit : clause) constraint.readClauses(index[lit]);
             }
             constraint.readClause(clause);
             clause.clear();
