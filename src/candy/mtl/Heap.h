@@ -139,10 +139,7 @@ public:
 
   // Rebuild the heap from scratch, using the elements in 'ns':
   void build(std::vector<int>& ns) {
-    for (int i = 0; i < (int) heap.size(); ++i) {
-      indices[heap[i]] = -1;
-    }
-    heap.clear();
+    clear();
 
     for (int i = 0; i < (int) ns.size(); ++i) {
       indices[ns[i]] = i;
