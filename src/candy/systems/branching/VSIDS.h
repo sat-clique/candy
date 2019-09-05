@@ -118,20 +118,6 @@ public:
         return decision[v]; 
     }
 
-    void grow() {
-        grow(decision.size() + 1);
-    }
-
-    void grow(size_t size) {
-        if (size > decision.size()) {
-            decision.resize(size, true);
-            polarity.resize(size, initial_polarity);
-            activity.resize(size, initial_activity);
-            stamp.grow(size);
-            order_heap.grow(size);
-        }
-    }
-
     std::vector<double> getLiteralRelativeOccurrences() const {
         std::vector<double> literalOccurrence(decision.size()*2, 0.0);
 
@@ -151,6 +137,14 @@ public:
     }
 
     void init(const CNFProblem& problem) {
+        size_t previous_size = decision.size();
+        if (problem.nVars() > previous_size) {
+            decision.resize(problem.nVars(), true);
+            polarity.resize(problem.nVars(), initial_polarity);
+            activity.resize(problem.nVars(), initial_activity);
+            stamp.grow(problem.nVars());
+            order_heap.grow(problem.nVars());
+        }
         if (SolverOptions::opt_sort_variables) {
             std::vector<double> occ = getLiteralRelativeOccurrences();
             for (size_t i = 0; i < problem.nVars(); ++i) {
@@ -162,7 +156,7 @@ public:
         else {
             std::fill(polarity.begin(), polarity.end(), initial_polarity);
             std::fill(activity.begin(), activity.end(), initial_activity);
-            for (Var v = 0; v < (Var)problem.nVars(); v++) {
+            for (size_t v = previous_size; v < problem.nVars(); v++) {
                 if (!order_heap.inHeap(v) && decision[v]) {
                     order_heap.insert(v);
                 }

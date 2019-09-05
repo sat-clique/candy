@@ -105,11 +105,11 @@ namespace Candy {
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData));
         
         trail.newDecisionLevel();
         trail.decide(2_L);
-        underTest.grow(5);
         auto result = underTest.getAdvice();
 
         ASSERT_NE(result, lit_Undef);
@@ -134,13 +134,13 @@ namespace Candy {
         Trail trail(5);
 
         Heuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
         trail.decide(1_L);
         trail.decide(2_L);
         trail.decide(3_L);
-        underTest.grow(5);
         auto result = underTest.getAdvice();
 
         EXPECT_EQ(result, lit_Undef);
@@ -170,11 +170,11 @@ namespace Candy {
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
         trail.decide(2_L);
-        underTest.grow(5);
         underTest.setDecisionVar(3_V, false);
         auto result = underTest.getAdvice();
 
@@ -205,11 +205,11 @@ namespace Candy {
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
         trail.decide(5_L);
-        underTest.grow(5);
         auto result = underTest.getAdvice();
 
         EXPECT_EQ(result, lit_Undef);
@@ -239,11 +239,11 @@ namespace Candy {
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
         trail.decide(4_L);
-        underTest.grow(5);
         auto result = underTest.getAdvice();
 
         ASSERT_NE(result, lit_Undef);        
@@ -274,12 +274,12 @@ namespace Candy {
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData));
 
         trail.newDecisionLevel();
         trail.decide(4_L);
         trail.decide(5_L);
-        underTest.grow(5);
         auto result = underTest.getAdvice();
 
         ASSERT_NE(result, lit_Undef);        
@@ -324,6 +324,7 @@ namespace Candy {
         testData->addBackbone(BackboneConjecture {Lit(4,1)});
         
         TestedRSILBranchingHeuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData), false);
         
         // backbone used here if backbone-usage would be activated:
@@ -343,6 +344,7 @@ namespace Candy {
         testData->addBackbone(BackboneConjecture {Lit(4,1)});
 
         TestedRSILBranchingHeuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData), true);
         
         // backbone used here:
@@ -360,11 +362,11 @@ namespace Candy {
         testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
 
         TestedRSILBranchingHeuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData), false);
 
         trail.newDecisionLevel();
         trail.decide(2_L);
-        underTest.grow(5);
         
         int calls = 0;
         for (int i = 0; i < 100; ++i) {
@@ -384,11 +386,11 @@ namespace Candy {
         testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
 
         TestedRSILBudgetBranchingHeuristic underTest { clause_db, trail };
+        underTest.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         underTest.init(std::move(testData), false, budget);
         
         trail.newDecisionLevel();
         trail.decide(2_L);
-        underTest.grow(5);
 
         for (uint64_t i = 0; i <= budget+2; ++i) {
             Lit result = underTest.getAdvice();

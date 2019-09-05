@@ -100,7 +100,7 @@ public:
         for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
             watcher.clear();
         }
-        for (Clause* clause : clauses) allocator.deallocate(clause);
+        allocator.clear();
         clauses.clear();
         result.nConflicts = 0;
         nReduceCalls = 0;

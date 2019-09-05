@@ -118,14 +118,6 @@ namespace Candy {
             m_advice.init(*conjectures.get(), conjectures->getMaxVar()+1);
     	}
 
-    	void grow() {
-    		defaultBranchingHeuristic.grow();
-    	}
-
-    	void grow(size_t size) {
-    		defaultBranchingHeuristic.grow(size);
-    	}
-
         void process_conflict() {
             defaultBranchingHeuristic.process_conflict();
     	}
