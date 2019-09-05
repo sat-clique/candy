@@ -65,10 +65,6 @@ public:
     inline void deallocate(Clause* clause) {
         clause->setDeleted();
     }
-    
-    void clear() {
-        memory.clear();
-    }
 
     inline void synchronize() {
         if (global_allocator != nullptr) {
@@ -79,6 +75,10 @@ public:
             global_allocator->memory.absorb(transit);
             global_allocator->memory_lock.unlock(); 
         }
+    }
+    
+    void clear() {
+        memory.clear();
     }
 
     void reorganize() {
