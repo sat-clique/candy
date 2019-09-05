@@ -312,7 +312,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
         propagator.init(problem.nVars());
         trail.grow(problem.nVars());
         conflict_analysis.grow(problem.nVars());
-        branch.grow(problem.nVars());
         elimination.grow(problem.nVars());
         reduction.grow(problem.nVars());
         augmented_database.grow(problem.nVars());
@@ -438,10 +437,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     logging.logStart();
     
     result.clear();
-
-    // trail.reset();
-    // branch.reset();
-    // propagator.reset();
 
     if (this->preprocessing_enabled) {
         trail.reset();

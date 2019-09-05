@@ -269,6 +269,11 @@ public:
 
     void free_phase_out_pages() {
         phase_out_pages.clear();
+    }    
+    
+    void clear() {
+        pages.clear();
+        phase_out_pages.clear();
     }
 
     void import(ClauseAllocatorMemory& other, unsigned int size_limit) {
