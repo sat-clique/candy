@@ -157,8 +157,17 @@ public:
                 activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
                 polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
             }
+            reset();
         }
-        reset();
+        else {
+            std::fill(polarity.begin(), polarity.end(), initial_polarity);
+            std::fill(activity.begin(), activity.end(), initial_activity);
+            for (Var v = 0; v < (Var)problem.nVars(); v++) {
+                if (!order_heap.inHeap(v) && decision[v]) {
+                    order_heap.insert(v);
+                }
+            }
+        }
     }
 
     void reset() {
