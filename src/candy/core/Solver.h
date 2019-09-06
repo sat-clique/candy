@@ -307,8 +307,8 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
 
     statistics.runtimeStart("Wallclock");
 
+    clause_db.init(problem.nVars());
     if (problem.nVars() > statistics.nVars()) {
-        clause_db.grow(problem.nVars());
         propagator.init(problem.nVars());
         trail.grow(problem.nVars());
         conflict_analysis.grow(problem.nVars());
