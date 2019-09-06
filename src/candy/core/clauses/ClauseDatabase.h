@@ -66,6 +66,7 @@ class ClauseDatabase {
 private:
     ClauseAllocator allocator;
  
+    unsigned int variables;
     std::vector<Clause*> clauses; // Working set of problem clauses
 
     const unsigned int persistentLBD;
@@ -97,9 +98,7 @@ public:
     ~ClauseDatabase() { }
 
     void clear() {
-        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
-            watcher.clear();
-        }
+        binaryWatchers.clear();
         allocator.clear();
         clauses.clear();
         result.nConflicts = 0;
@@ -107,11 +106,16 @@ public:
         nReduced = 0;
     }
 
-    void initBinaryWatchers() {
-        for (std::vector<BinaryWatcher>& watcher : binaryWatchers) {
-            watcher.shrink_to_fit();
-            watcher.clear();
+    void init(size_t nVars) {
+        if (binaryWatchers.size() < 2*variables+2) {
+            variables = nVars;
+            binaryWatchers.resize(variables*2+2);
         }
+    }
+
+    void reinitBinaryWatchers() {
+        binaryWatchers.clear();
+        init(variables);
         for (Clause* clause : clauses) {
             if (clause->size() == 2) {
                 binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
@@ -138,7 +142,7 @@ public:
     void setGlobalClauseAllocator(ClauseAllocator* global_allocator) {
         allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
-        initBinaryWatchers();
+        reinitBinaryWatchers();
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -157,12 +161,6 @@ public:
 
     inline const Clause* operator [](int i) const {
         return clauses[i];
-    }
-
-    inline void grow(size_t nVars) {
-        if (binaryWatchers.size() < 2*nVars) {
-            binaryWatchers.resize(nVars*2+2);
-        }
     }
 
     void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
@@ -261,7 +259,7 @@ public:
         allocator.synchronize();
         allocator.reorganize();
         clauses = allocator.collect();
-        initBinaryWatchers();
+        reinitBinaryWatchers();
     }
 
 };
