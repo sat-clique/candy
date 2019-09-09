@@ -62,7 +62,7 @@ namespace Candy {
         bool solve();
 
         void setAssumptions(const std::vector<Lit>& assumptions) {
-            m_solver->setAssumptions(assumptions);
+            m_solver->getAssignment().setAssumptions(assumptions);
         }
         
         CandySolverInterface* m_solver;

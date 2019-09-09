@@ -120,7 +120,6 @@ namespace Candy {
     m_maxCreatedVar(-1),
     m_conflictLits(),
     m_minAssumptionVar(0),
-    m_frozenVars(),
     m_solveResultInInvocationN(),
     m_defaultSolveResult(false),
     m_callOnSolve(),

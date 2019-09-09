@@ -116,14 +116,6 @@ public:
 
     lbool solve() override;
 
-    void setAssumptions(const std::vector<Lit>& assumptions) override {
-        this->assumptions.clear();
-        this->assumptions.insert(this->assumptions.end(), assumptions.begin(), assumptions.end());
-        for (Lit lit : assumptions) {
-            elimination.lock(lit.var());
-        }
-    }
-
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void* state)) override {
         this->termCallbackState = state;
@@ -155,14 +147,11 @@ protected:
 
     CandySolverResult result;
 
-	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-
     // reduce-db
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
 
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
-    Stamp<Var> freezes;
 
     unsigned int lastRestartWithInprocessing;
     unsigned int inprocessingFrequency;
@@ -192,7 +181,6 @@ private:
             assert(clause->size() == 1);
             if (!trail.fact(clause->first())) clause_db.emptyClause();
         }
-        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
         if (!clause_db.hasEmptyClause()) {
             std::array<Lit, 1> unit;
             unsigned int pos = trail.size();
@@ -248,7 +236,7 @@ private:
                 *logging.log() << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
                 for (unsigned int v = 0; v < clause_db.nVars(); v++) {
                     if (elimination.isEliminated(v)) {
-                        branch.setDecisionVar(v, false);
+                        trail.setDecisionVar(v, false);
                     }
                 }
             }
@@ -281,14 +269,11 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     logging(*this),
     // result
     result(),
-    // assumptions 
-    assumptions(),
     // reduce db heuristic control
     nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
     incReduceDB(ClauseDatabaseOptions::opt_inc_reduce_db),
     // pre- and inprocessing
     preprocessing_enabled(SolverOptions::opt_preprocessing),
-    freezes(),
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
     // interruption callback
     termCallbackState(nullptr), termCallback([](void*) -> int { return 0; }),
@@ -303,10 +288,9 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::~Solver() {
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::clear() {
     clause_db.clear();
-    propagator.clear();
     trail.clear();
-
-    for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
+    propagator.clear();
+    branch.clear();
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -320,14 +304,6 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
     propagator.init();
     conflict_analysis.init(clause_db.nVars());
     branch.init(problem);
-
-    if (problem.nVars() > clause_db.nVars()) {
-        elimination.grow(problem.nVars());
-        reduction.grow(problem.nVars());
-        augmented_database.init();
-    }
-
-    for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
 }
 
 
@@ -335,17 +311,10 @@ template<class TClauses, class TAssignment, class TPropagate, class TLearning, c
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
-    for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
-    
     statistics.solverRestartInc();
     logging.logRestart();
     for (;;) {
-
-        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
-
         Clause* confl = (Clause*)propagator.propagate();
-
-        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
 
         logging.logDecision();
         if (confl != nullptr) { // CONFLICT
@@ -358,24 +327,16 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             
             conflict_analysis.handle_conflict(confl);
 
-            for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
-
             branch.process_conflict();
             restart.process_conflict();
-
-            for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
 
-            for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
-
             trail.backtrack(clause_db.result.backtrack_level);
             trail.propagate(clause->first(), clause);
-
-            for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
 
             if (learntCallback != nullptr && clause->size() <= learntCallbackMaxLength) {
                 std::vector<int> to_send;
@@ -395,9 +356,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             }
             
             Lit next = lit_Undef;
-            while (trail.decisionLevel() < assumptions.size()) {
-                // Perform user provided assumption:
-                Lit p = assumptions[trail.decisionLevel()];
+            while (trail.hasAssumptionsNotSet()) {
+                Lit p = trail.nextAssumption();
                 if (trail.value(p) == l_True) {
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
@@ -423,8 +383,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             // Increase decision level and enqueue 'next'
             trail.newDecisionLevel();
             trail.decide(next);
-
-            for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
         }
     }
     return l_Undef; // not reached

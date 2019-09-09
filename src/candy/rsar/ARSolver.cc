@@ -282,7 +282,7 @@ namespace Candy {
                 // can perform another step after this one => use the approximation clauses.
                 assert(currentDelta.get() != nullptr);
         
-                m_solver->setAssumptions(currentDelta->getAssumptionLiterals());
+                m_solver->getAssignment().setAssumptions(currentDelta->getAssumptionLiterals());
                 sat = m_solver->solve();
                                 
                 // the loop can safely be exited if no approximation clauses were used during solve
@@ -292,7 +292,7 @@ namespace Candy {
                 // no further steps after this one => deactivate the approximation clauses completely.
                 assert(currentDelta.get() != nullptr);
                 auto assumptions = deactivatedAssumptions(*currentDelta);
-                m_solver->setAssumptions(assumptions);
+                m_solver->getAssignment().setAssumptions(assumptions);
                 sat = m_solver->solve();
                 abort = true;
             }

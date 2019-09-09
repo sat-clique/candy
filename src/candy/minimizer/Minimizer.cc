@@ -120,7 +120,7 @@ Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
         assert(assume.size() >= i++);
 
         solver->init(CNFProblem { exclude });
-        solver->setAssumptions(assume);
+        solver->getAssignment().setAssumptions(assume);
 
         satisfiable = solver->solve();
 

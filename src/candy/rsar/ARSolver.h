@@ -84,10 +84,6 @@ namespace Candy {
             m_solver->setTermCallback(state, termCallback);
         }
 
-    	virtual void setAssumptions(const std::vector<Lit>& assumptions) override {
-    		m_solver->setAssumptions(assumptions);
-    	}
-
     	virtual lbool solve() override;
 
     	virtual CandySolverResult& getCandySolverResult() override {

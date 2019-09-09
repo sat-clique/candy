@@ -59,6 +59,11 @@ public:
         clear();
     }
 
+    void clear() {
+        watchers.clear();
+        memory.free_all();
+    }
+
     void init() {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
@@ -66,6 +71,14 @@ public:
                 attachClause(clause);
             } 
         }
+        if (sort_watches) {
+            sortWatchers();
+        }
+    }
+
+    void reset() {
+        clear();
+        init();
     }
 
     void attachClause(const Clause* clause) {
@@ -90,14 +103,6 @@ public:
         }
     }
 
-    void clear() {
-        for (unsigned int lit = 0; lit < watchers.size(); lit++) {
-            watchers[lit].shrink_to_fit();
-            watchers[lit].clear();
-        }
-        memory.free_all();
-    }
-
     void sortWatchers() {
         size_t nVars = watchers.size() / 2;
         for (Var v = 0; v < (Var)nVars; v++) {
@@ -106,18 +111,6 @@ public:
                     return w1->cref->size() < w2->cref->size();
                 });
             }
-        }
-    }
-
-    void reset() {
-        clear();
-        for (Clause* clause : clause_db) {
-            if (clause->size() > 2) {
-                attachClause(clause);
-            } 
-        }
-        if (sort_watches) {
-            sortWatchers();
         }
     }
 

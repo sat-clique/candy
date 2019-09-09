@@ -62,6 +62,7 @@ public:
     Trail() : 
         trail_size(0), qhead(0), trail(), 
         assigns(), vardata(), trail_lim(), stamp(), 
+        decision(), assumptions(), variables(0), 
         nDecisions(0), nPropagations(0)
     { }
 
@@ -77,24 +78,37 @@ public:
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
 
+    std::vector<char> decision;
+	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+    unsigned int variables;
+
     size_t nDecisions;
     size_t nPropagations;
 
+    inline unsigned int nVars() {
+        return variables;
+    }
+
     inline void init(unsigned int nVars) {
-        if (nVars > trail.size()) {
+        if (nVars > variables) {
+            variables = nVars;
             assigns.resize(nVars, l_Undef);
             vardata.resize(nVars);
             trail.resize(nVars);
             stamp.grow(nVars);
+            decision.resize(nVars, true);
         }
     }
 
     inline void clear() {
+        variables = 0;
         assigns.clear();
         vardata.clear();
         qhead = 0;
         trail_size = 0;
         trail_lim.clear(); 
+        decision.clear();
+        assumptions.clear();
     }
 
     inline void reset() {
@@ -103,6 +117,33 @@ public:
         qhead = 0;
         trail_size = 0;
         trail_lim.clear(); 
+    }
+
+    // Declare if a variable should be eligible for selection in the decision heuristic.
+    void setDecisionVar(Var v, bool b) {
+        decision[v] = b; // make sure to reset decision heuristics data-structures
+    }
+
+    bool isDecisionVar(Var v) {
+        return decision[v]; 
+    }
+
+    void setAssumptions(const std::vector<Lit>& assumptions) {
+        this->assumptions.clear();
+        for (Lit lit : assumptions) {
+            if (lit.var() > (Var)variables) {
+                init(variables);
+            }
+            this->assumptions.push_back(lit);
+        }
+    }
+
+    bool hasAssumptionsNotSet() {
+        return decisionLevel() < assumptions.size();
+    }
+
+    Lit nextAssumption() {
+        return assumptions[decisionLevel()];
     }
 
     inline const Lit operator [](unsigned int i) const {
@@ -209,7 +250,6 @@ public:
 
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
-        for (Lit l : *this) assert(l.var() < (int)trail.size());
         assigns[p.var()] = lbool(!p.sign());
         vardata[p.var()] = VarData(nullptr, decisionLevel());
         trail[trail_size++] = p;
@@ -217,7 +257,6 @@ public:
     }
 
     inline bool propagate(Lit p, Clause* from) {
-        for (Lit l : *this) assert(l.var() < (int)trail.size());
         if (this->falsifies(p)) {
             return false;
         }
@@ -232,7 +271,6 @@ public:
 
     inline bool fact(Lit p) {
         assert(decisionLevel() == 0);
-        for (Lit l : *this) assert(l.var() < (int)trail.size());
         vardata[p.var()] = VarData(nullptr, 0);
         if (!this->defines(p)) {
             assigns[p.var()] = lbool(!p.sign());
