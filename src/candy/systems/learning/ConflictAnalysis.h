@@ -220,12 +220,10 @@ public:
 
 	~ConflictAnalysis() { }
 
-	void grow() {
-		stamp.grow();
-	}
-
-	void grow(size_t size) {
-		stamp.grow(size);
+	void init(unsigned int nVars) {
+		if (nVars >= stamp.size()) {
+			stamp.grow(nVars);
+		}
 	}
 
 	void handle_conflict(Clause* confl) {

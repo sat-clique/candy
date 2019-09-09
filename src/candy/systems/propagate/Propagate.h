@@ -73,10 +73,25 @@ public:
         : clause_db(_clause_db), trail(_trail), watchers(), sort_watches(SolverOptions::opt_sort_watches) {
     }
 
-    void init(size_t maxVars) {
-        if (watchers.size() < maxVars*2+2) {
-            watchers.resize(maxVars*2+2);
+    void clear() {
+        watchers.clear();
+    }
+
+    void init() {
+        watchers.resize(Lit(clause_db.nVars(), true));
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                attachClause(clause);
+            } 
         }
+        if (sort_watches) {
+            sortWatchers();
+        }
+    }
+
+    void reset() {
+        clear();
+        init();
     }
 
     void attachClause(Clause* clause) {
@@ -93,12 +108,6 @@ public:
         list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
     }
 
-    void clear() {
-        for (std::vector<Watcher>& list : watchers) {
-            list.clear();
-        }
-    }
-
     void sortWatchers() {
         size_t nVars = watchers.size() / 2;
         for (Var v = 0; v < (Var)nVars; v++) {
@@ -107,18 +116,6 @@ public:
                     return w1.cref->size() < w2.cref->size();
                 });
             }
-        }
-    }
-
-    void reset() {
-        clear();
-        for (Clause* clause : clause_db) {
-            if (clause->size() > 2) {
-                attachClause(clause);
-            } 
-        }
-        if (sort_watches) {
-            sortWatchers();
         }
     }
 
@@ -196,6 +193,8 @@ public:
     Clause* propagate() {
         Clause* conflict = nullptr;
 
+        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
+
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
             
@@ -207,6 +206,8 @@ public:
             conflict = propagate_watched_clauses(p);
             if (conflict != nullptr) break;
         }
+
+        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
 
         return conflict;
     }

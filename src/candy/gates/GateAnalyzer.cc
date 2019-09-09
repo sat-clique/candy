@@ -97,7 +97,7 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
             clause.clear();
         }
     }
-    solver->getClauseDatabase().clear();
+    solver->clear();
     solver->init(constraint);
     lbool result = solver->solve();
     return (result == l_False);

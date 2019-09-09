@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseAllocator.h"
 #include "candy/core/clauses/Certificate.h"
 #include "candy/core/Trail.h"
+#include "candy/core/CNFProblem.h"
 #include "candy/frontend/CLIOptions.h"
 
 #ifndef CANDY_CLAUSE_DATABASE
@@ -68,6 +69,7 @@ private:
  
     unsigned int variables;
     std::vector<Clause*> clauses; // Working set of problem clauses
+    bool emptyClause_;
 
     const unsigned int persistentLBD;
     const bool keepMedianLBD;
@@ -85,14 +87,14 @@ public:
 	AnalysisResult result;
 
     ClauseDatabase() : 
-        allocator(), clauses(), 
+        allocator(), variables(0), clauses(), emptyClause_(false), 
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
         keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
         recalculateLBD(ClauseDatabaseOptions::opt_recalculate_lbd), 
         binaryWatchers(), 
         certificate(SolverOptions::opt_certified_file), 
         nReduced(0), nReduceCalls(0),
-        result() 
+        result()
     { }
 
     ~ClauseDatabase() { }
@@ -101,21 +103,31 @@ public:
         binaryWatchers.clear();
         allocator.clear();
         clauses.clear();
+        variables = 0;
+        emptyClause_ = false;
         result.nConflicts = 0;
         nReduceCalls = 0;
         nReduced = 0;
     }
 
-    void init(size_t nVars) {
-        if (binaryWatchers.size() < 2*variables+2) {
-            variables = nVars;
+    unsigned int nVars() {
+        return variables;
+    }
+
+    void init(const CNFProblem& problem, ClauseAllocator* global_allocator, bool lemma = true) {
+        if (variables < problem.nVars()) {
+            variables = problem.nVars();
             binaryWatchers.resize(variables*2+2);
         }
+        for (Cl* import : problem) {
+            createClause(import->begin(), import->end(), lemma ? 0 : import->size());
+        }
+        if (global_allocator != nullptr) setGlobalClauseAllocator(global_allocator);
     }
 
     void reinitBinaryWatchers() {
         binaryWatchers.clear();
-        init(variables);
+        binaryWatchers.resize(variables*2+2);
         for (Clause* clause : clauses) {
             if (clause->size() == 2) {
                 binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
@@ -167,7 +179,12 @@ public:
         result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
+    bool hasEmptyClause() const {
+        return emptyClause_;
+    }
+
     void emptyClause() {
+        emptyClause_ = true;
         certificate.proof();
     }
 
@@ -181,7 +198,10 @@ public:
 
         certificate.added(clause->begin(), clause->end());
 
-        if (clause->size() == 2) {
+        if (clause->size() == 0) {
+            emptyClause_ = true;
+        }
+        else if (clause->size() == 2) {
             binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
             binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
         }
@@ -212,7 +232,7 @@ public:
     }
 
     inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
-        return binaryWatchers[lit];
+        return binaryWatchers.at(lit);//[lit];
     }
 
     std::vector<Clause*> getUnitClauses() { 

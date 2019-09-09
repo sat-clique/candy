@@ -67,6 +67,10 @@ namespace Candy {
         	return maxVars++;
         }
 
+        virtual void clear() override {
+            m_solver->clear();
+        }
+
         virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) override {
             maxVars = problem.nVars();
         	m_solver->init(problem, allocator, lemma);

@@ -79,6 +79,7 @@ public:
     
     void clear() {
         memory.clear();
+        facts.clear();
     }
 
     void reorganize() {
@@ -125,14 +126,13 @@ public:
 
     void set_global_allocator(ClauseAllocator* global_allocator_) {
         assert(global_allocator == nullptr);
-        // std::cout << "c " << std::this_thread::get_id() << ": Attaching global allocator" << std::endl;
+        assert(global_allocator_ != nullptr);
         global_allocator = global_allocator_;
         global_allocator->set_ready(false);
     }
 
     ClauseAllocator* create_global_allocator() {
         assert(global_allocator == nullptr);
-        // std::cout << "c " << std::this_thread::get_id() << ": Creating global allocator" << std::endl;
         global_allocator = new ClauseAllocator();
         global_allocator->memory.absorb(this->memory); 
         global_allocator->facts.absorb(this->facts);
