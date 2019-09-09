@@ -59,8 +59,13 @@ public:
         clear();
     }
 
-    void init(size_t maxVars) {
-        watchers.resize(Lit(maxVars, true));
+    void init() {
+        watchers.resize(Lit(clause_db.nVars(), true));
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                attachClause(clause);
+            } 
+        }
     }
 
     void attachClause(const Clause* clause) {

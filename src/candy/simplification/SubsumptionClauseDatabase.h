@@ -55,14 +55,11 @@ public:
 
     ~SubsumptionClauseDatabase() { }
 
-    inline void grow(size_t nVars) {
-        if (nVars > occurrences.size()) {
-            occurrences.resize(nVars);
-        }
-    }
-
-    inline void initialize() {
+    inline void init() {
         std::cout << "c Initializing Subsumption Database" << std::endl;
+        if (clause_db.nVars() > occurrences.size()) {
+            occurrences.resize(clause_db.nVars());
+        }
         for (Clause* clause : clause_db) {
             createSubsumptionClause(clause);
         }
@@ -76,9 +73,7 @@ public:
 
     inline void finalize() {
         subsumption_clauses.free_all();
-        for (auto& occurrence : occurrences) {
-            occurrence.clear();
-        }
+        occurrences.clear();
     }
 
     void unique() { // remove duplicates

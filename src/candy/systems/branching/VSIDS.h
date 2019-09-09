@@ -136,32 +136,39 @@ public:
         return literalOccurrence;
     }
 
+    void clear() {
+        activity.clear();
+        polarity.clear();
+        decision.clear();
+        order_heap.clear();
+    }
+
     void init(const CNFProblem& problem) {
         size_t previous_size = decision.size();
-        if (problem.nVars() > previous_size) {
-            decision.resize(problem.nVars(), true);
-            polarity.resize(problem.nVars(), initial_polarity);
-            activity.resize(problem.nVars(), initial_activity);
-            stamp.grow(problem.nVars());
-            order_heap.grow(problem.nVars());
+        if (clause_db.nVars() > previous_size) {
+            activity.resize(clause_db.nVars(), initial_activity);
+            polarity.resize(clause_db.nVars(), initial_polarity);
+            decision.resize(clause_db.nVars(), true);
+            stamp.grow(clause_db.nVars());
+            order_heap.grow(clause_db.nVars());
         }
         if (SolverOptions::opt_sort_variables) {
             std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < problem.nVars(); ++i) {
+            for (size_t i = 0; i < clause_db.nVars(); ++i) {
                 activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
                 polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
             }
-            reset();
         }
-        else {
-            std::fill(polarity.begin(), polarity.end(), initial_polarity);
-            std::fill(activity.begin(), activity.end(), initial_activity);
-            for (size_t v = previous_size; v < problem.nVars(); v++) {
-                if (!order_heap.inHeap(v) && decision[v]) {
-                    order_heap.insert(v);
-                }
-            }
-        }
+        reset();
+        // else {
+        //     std::fill(polarity.begin(), polarity.end(), initial_polarity);
+        //     std::fill(activity.begin(), activity.end(), initial_activity);
+        //     for (size_t v = previous_size; v < clause_db.nVars(); v++) {
+        //         if (!order_heap.inHeap(v) && decision[v]) {
+        //             order_heap.insert(v);
+        //         }
+        //     }
+        // }
     }
 
     void reset() {

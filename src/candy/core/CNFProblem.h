@@ -22,34 +22,35 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/utils/StreamBuffer.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/core/CandySolverResult.h"
 
 #include <vector>
 
 namespace Candy {
 
+class CandySolverResult;
+
 class CNFProblem {
 
 private:
     For problem;
-    unsigned int maxVars;
+    unsigned int variables;
 
 public:
-    CNFProblem() : maxVars(0) { }
+    CNFProblem() : variables(0) { }
 
-    CNFProblem(For& formula) : maxVars(0) {
+    CNFProblem(For& formula) : variables(0) {
         readClauses(formula);
     }
 
-    CNFProblem(Formula formula) : maxVars(0) {
+    CNFProblem(Formula formula) : variables(0) {
         readClauses(formula);
     }
 
-    CNFProblem(Cl& clause) : maxVars(0) {
+    CNFProblem(Cl& clause) : variables(0) {
         readClause(clause.begin(), clause.end());
     }
 
-    CNFProblem(std::initializer_list<std::initializer_list<Lit>> formula) : maxVars(0) {
+    CNFProblem(std::initializer_list<std::initializer_list<Lit>> formula) : variables(0) {
         readClauses(formula);
     }
 
@@ -72,7 +73,7 @@ public:
     }
 
     inline size_t nVars() const {
-        return maxVars;
+        return variables;
     }
 
     inline size_t nClauses() const {
@@ -80,7 +81,7 @@ public:
     }
 
     inline int newVar() {
-        return maxVars++;
+        return variables++;
     }
 
     inline void clear() {
@@ -90,20 +91,7 @@ public:
         problem.clear();
     }
 
-    void checkResult(CandySolverResult& result) {
-        for (Cl* clause : problem) {
-            bool satisfied = false;
-            for (Lit lit : *clause) {
-                if (result.modelValue(lit) == l_True) {
-                    satisfied = true; 
-                    break;
-                }
-            }
-            if (!satisfied) {
-                std::cout << "c Clause not satisfied: " << *clause;
-            }
-        }
-    }
+    void checkResult(CandySolverResult& result);
 
     void printDIMACS() const;
 

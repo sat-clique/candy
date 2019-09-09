@@ -60,12 +60,13 @@ struct VarData {
 class Trail {
 public:
     Trail() : 
-        trail_size(0), qhead(0), trail(), assigns(), vardata(), trail_lim(), stamp(), 
+        trail_size(0), qhead(0), trail(), 
+        assigns(), vardata(), trail_lim(), stamp(), 
         nDecisions(0), nPropagations(0)
     { }
 
-    Trail(unsigned int size) : Trail() { 
-        grow(size); 
+    Trail(unsigned int nVars) : Trail() {
+        init(nVars);
     }
 
     unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
@@ -79,24 +80,34 @@ public:
     size_t nDecisions;
     size_t nPropagations;
 
-    inline const Lit operator [](unsigned int i) const {
-        assert(i < trail_size);
-        return trail[i];
+    inline void init(unsigned int nVars) {
+        if (nVars > trail.size()) {
+            assigns.resize(nVars, l_Undef);
+            vardata.resize(nVars);
+            trail.resize(nVars);
+            stamp.grow(nVars);
+        }
     }
 
-    void print() {
-        unsigned int level = 0;
-        std::cout << "Trail: ";
-        for (unsigned int i = 0; i < size(); ++i) {
-            if (i == trail_lim[level]) {
-                std::cout << "'" << trail[i] << "' ";
-                level++;
-            } 
-            else {
-                std::cout << trail[i] << " ";
-            }
-        }
-        std::cout << std::endl;
+    inline void clear() {
+        assigns.clear();
+        vardata.clear();
+        qhead = 0;
+        trail_size = 0;
+        trail_lim.clear(); 
+    }
+
+    inline void reset() {
+        std::fill(assigns.begin(), assigns.end(), l_Undef);
+        std::fill(vardata.begin(), vardata.end(), VarData { nullptr, 0 });
+        qhead = 0;
+        trail_size = 0;
+        trail_lim.clear(); 
+    }
+
+    inline const Lit operator [](unsigned int i) const {
+        assert(i < trail_size);
+        return trail.at(i);//[i];
     }
 
     typedef std::vector<Lit>::const_iterator const_iterator;
@@ -140,22 +151,6 @@ public:
         }
         else {
             return 0;
-        }
-    }
-
-    inline void grow() {
-        assigns.push_back(l_Undef);
-        vardata.emplace_back();
-        trail.push_back(lit_Undef);
-        stamp.grow();
-    }
-
-    inline void grow(size_t size) {
-        if (size > trail.size()) {
-            assigns.resize(size, l_Undef);
-            vardata.resize(size);
-            trail.resize(size);
-            stamp.grow(size);
         }
     }
 
@@ -214,6 +209,7 @@ public:
 
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
+        for (Lit l : *this) assert(l.var() < (int)trail.size());
         assigns[p.var()] = lbool(!p.sign());
         vardata[p.var()] = VarData(nullptr, decisionLevel());
         trail[trail_size++] = p;
@@ -221,6 +217,7 @@ public:
     }
 
     inline bool propagate(Lit p, Clause* from) {
+        for (Lit l : *this) assert(l.var() < (int)trail.size());
         if (this->falsifies(p)) {
             return false;
         }
@@ -235,6 +232,7 @@ public:
 
     inline bool fact(Lit p) {
         assert(decisionLevel() == 0);
+        for (Lit l : *this) assert(l.var() < (int)trail.size());
         vardata[p.var()] = VarData(nullptr, 0);
         if (!this->defines(p)) {
             assigns[p.var()] = lbool(!p.sign());
@@ -258,15 +256,6 @@ public:
         }
     }
 
-    inline void reset() {
-        for (Lit lit : *this) {
-            assigns[lit.var()] = l_Undef;
-        }
-        qhead = 0;
-        trail_size = 0;
-        trail_lim.clear(); 
-    }
-
     /**
      * Count the number of decision levels in which the given list of literals was assigned
      */
@@ -286,6 +275,21 @@ public:
         }
 
         return nblevels;
+    }
+
+    void print() {
+        unsigned int level = 0;
+        std::cout << "Trail: ";
+        for (unsigned int i = 0; i < size(); ++i) {
+            if (i == trail_lim[level]) {
+                std::cout << "'" << trail[i] << "' ";
+                level++;
+            } 
+            else {
+                std::cout << trail[i] << " ";
+            }
+        }
+        std::cout << std::endl;
     }
 
 };

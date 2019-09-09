@@ -18,6 +18,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include "candy/core/CNFProblem.h"
+#include "candy/core/CandySolverResult.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/frontend/Exceptions.h"
 
@@ -91,8 +92,8 @@ void CNFProblem::readDimacs(gzFile input_stream) {
             readClause(lits.begin(), lits.end());
         }
     }
-    if (headerVars != maxVars) {
-        fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, maxVars);
+    if (headerVars != variables) {
+        fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, variables);
     }
     if (headerClauses != problem.size()) {
         fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of clauses (declared %i, found %i).\n", headerClauses, (int)problem.size());
@@ -127,9 +128,11 @@ void CNFProblem::readClauses(Formula& f) {
 
 template <typename Iterator>
 void CNFProblem::readClause(Iterator begin, Iterator end) {
-    if (std::distance(begin, end) > 0) {
-        Cl* clause = new Cl(begin, end);
+    Cl* clause = new Cl(begin, end);
+    if (clause->size() > 0) {
         std::sort(clause->begin(), clause->end());
+        // record maximal variable
+        variables = std::max(variables, (unsigned int)clause->back().var()+1); 
         // remove redundant literals
         clause->erase(std::unique(clause->begin(), clause->end()), clause->end());
         // skip tatological clause
@@ -138,11 +141,22 @@ void CNFProblem::readClause(Iterator begin, Iterator end) {
             delete clause;
             return;
         }
-        maxVars = std::max(maxVars, (unsigned int) 1 + clause->back().var()); 
-        problem.push_back(clause);
     }
-    else {
-        problem.push_back(new Cl());
+    problem.push_back(clause);
+}
+
+void CNFProblem::checkResult(CandySolverResult& result) {
+    for (Cl* clause : problem) {
+        bool satisfied = false;
+        for (Lit lit : *clause) {
+            if (result.modelValue(lit) == l_True) {
+                satisfied = true; 
+                break;
+            }
+        }
+        if (!satisfied) {
+            std::cout << "c Clause not satisfied: " << *clause;
+        }
     }
 }
 
