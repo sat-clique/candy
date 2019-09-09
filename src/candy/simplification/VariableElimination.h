@@ -66,6 +66,17 @@ private:
 
     const unsigned int clause_lim;     // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
 
+    inline void init() {
+        nEliminated = 0;
+        if (trail.nVars() > frozen.size()) {
+            frozen.resize(trail.nVars());
+            eliminated.resize(trail.nVars());
+        }
+        for (Lit lit : trail.assumptions) {
+            lock(lit.var());
+        }
+    }
+
 public:
     unsigned int nEliminated;
 
@@ -85,13 +96,6 @@ public:
         return nEliminated; 
     }
 
-    inline void grow(size_t size) {
-        if (size > frozen.size()) {
-            frozen.resize(size);
-            eliminated.resize(size);
-        }
-    }
-
     inline void lock(Var v) {
         frozen[v] = true;
     }
@@ -101,7 +105,7 @@ public:
     }
 
     bool eliminate() {
-        nEliminated = 0;
+        init();
 
         if (!active) {
             return true;
@@ -193,6 +197,7 @@ private:
 
         eliminated[variable] = true;
         nEliminated++;
+        trail.setDecisionVar(variable, false);
 
         return true;
     }

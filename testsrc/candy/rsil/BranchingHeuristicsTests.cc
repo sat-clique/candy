@@ -102,6 +102,7 @@ namespace Candy {
         testData->addEquivalence(EquivalenceConjecture{{Lit(1, 0), Lit(2,1)}});
 
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
@@ -131,6 +132,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfAssigned(std::unique_ptr<Conjectures> testData) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
 
         Heuristic underTest { clause_db, trail };
@@ -167,6 +169,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfNotEligibleForDecision(std::unique_ptr<Conjectures> testData) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
@@ -175,7 +178,7 @@ namespace Candy {
 
         trail.newDecisionLevel();
         trail.decide(2_L);
-        underTest.setDecisionVar(3_V, false);
+        trail.setDecisionVar(3_V, false);
         auto result = underTest.getAdvice();
 
         EXPECT_EQ(result, lit_Undef);
@@ -202,6 +205,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_givesNoAdviceForSingleEquivalenceIfIrrelevant(std::unique_ptr<Conjectures> testData) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
@@ -236,6 +240,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_givesAdviceForSingleEquivalenceSize3(std::unique_ptr<Conjectures> testData) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
@@ -271,6 +276,7 @@ namespace Candy {
     template<class Heuristic>
     static void test_travelsUpTrail(std::unique_ptr<Conjectures> testData) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
         
         Heuristic underTest { clause_db, trail };
@@ -316,6 +322,7 @@ namespace Candy {
     
     TEST(RSILBranchingHeuristicsTests, givesNoBackboneAdviceWhenBackbonesDeactivated) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
 
         std::unique_ptr<Conjectures> testData (new Conjectures());
@@ -336,6 +343,7 @@ namespace Candy {
     
     TEST(RSILBranchingHeuristicsTests, givesBackboneAdviceWhenBackbonesActivated) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
 
         std::unique_ptr<Conjectures> testData (new Conjectures());
@@ -356,6 +364,7 @@ namespace Candy {
     
     TEST(RSILVanishingBranchingHeuristicsTests, isFullyActiveInFirstPeriod) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
 
         std::unique_ptr<Conjectures> testData (new Conjectures());
@@ -378,6 +387,7 @@ namespace Candy {
     
     TEST(RSILBudgetBranchingHeuristicsTests, producesUndefWhenBudgetIsDepleted) {
         ClauseDatabase clause_db;
+        clause_db.init(CNFProblem({{1_L,2_L,3_L,4_L,5_L}}));
         Trail trail(5);
 
         const uint64_t budget = 4ull;

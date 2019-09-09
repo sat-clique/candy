@@ -114,7 +114,7 @@ public:
         return variables;
     }
 
-    void init(const CNFProblem& problem, ClauseAllocator* global_allocator, bool lemma = true) {
+    void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
         if (variables < problem.nVars()) {
             variables = problem.nVars();
             binaryWatchers.resize(variables*2+2);

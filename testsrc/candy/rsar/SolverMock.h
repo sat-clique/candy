@@ -78,10 +78,6 @@ namespace Candy {
 
     	virtual lbool solve() override;
 
-    	virtual void setAssumptions(const std::vector<Lit>& assumptions) override { 
-            for (Lit lit : assumptions) m_frozenVars.insert(lit.var());
-        }
-
     	virtual CandySolverResult& getCandySolverResult() override {
             result.clear();
             result.setConflict(m_conflictLits);
@@ -150,7 +146,6 @@ namespace Candy {
         Var m_maxCreatedVar;
         std::vector<Lit> m_conflictLits;
         Var m_minAssumptionVar;
-        std::unordered_set<Var> m_frozenVars;
         std::unordered_map<int, bool> m_solveResultInInvocationN;
         bool m_defaultSolveResult;
         std::function<void(int)> m_callOnSolve;

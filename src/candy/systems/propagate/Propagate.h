@@ -193,8 +193,6 @@ public:
     Clause* propagate() {
         Clause* conflict = nullptr;
 
-        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
-
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
             
@@ -206,8 +204,6 @@ public:
             conflict = propagate_watched_clauses(p);
             if (conflict != nullptr) break;
         }
-
-        for (Lit l : trail) assert(l.var() < (int)clause_db.nVars());
 
         return conflict;
     }

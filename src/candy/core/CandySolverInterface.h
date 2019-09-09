@@ -42,8 +42,6 @@ public:
 	virtual void clear() = 0;
     virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) = 0;
 	
-	virtual void setAssumptions(const std::vector<Lit>& assumptions) = 0;
-	
 	virtual lbool solve() = 0;
 
 	virtual BranchingDiversificationInterface* getBranchingUnit() = 0;

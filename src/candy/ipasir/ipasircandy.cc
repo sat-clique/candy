@@ -87,7 +87,7 @@ public:
     int solve() {
         drop_analysis();
         solver->init(problem);
-        solver->setAssumptions(assumptions);
+        solver->getAssignment().setAssumptions(assumptions);
         lbool res = solver->solve();
         assumptions.clear();
         problem.clear();

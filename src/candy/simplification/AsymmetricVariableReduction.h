@@ -58,8 +58,6 @@ private:
     TPropagate& propagator;
 
     const bool active;
-
-    unsigned int nVars;
     
     bool reduce(Var variable) {
         const std::vector<SubsumptionClause*> occurences = database.copyOccurences(variable);
@@ -102,18 +100,11 @@ public:
         trail(trail_),
         propagator(propagator_),
         active(VariableEliminationOptions::opt_use_asymm), 
-        nVars(0),
         nStrengthened(0)
     { }
 
     unsigned int nTouched() {
         return nStrengthened; 
-    }
-
-    inline void grow(size_t size) {
-        if (size > nVars) {
-            nVars = size;
-        }
     }
 
     bool reduce() {
@@ -123,7 +114,7 @@ public:
             return true;
         }
 
-        for (Var variable = 0; variable < (Var)nVars; variable++) {
+        for (Var variable = 0; variable < (Var)trail.nVars(); variable++) {
             if (!trail.defines(Lit(variable, false))) {
                 assert(trail.decisionLevel() == 0);
                 if (!reduce(variable)) {

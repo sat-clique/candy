@@ -49,7 +49,7 @@ public:
     LRB(ClauseDatabase& _clause_db, Trail& _trail) :
         clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(weight)), 
-        weight(), polarity(), decision(), stamp(), 
+        weight(), polarity(), stamp(), 
         interval_assigned(), participated(), 
         step_size(SolverOptions::opt_lrb_step_size), 
         min_step_size(SolverOptions::opt_lrb_min_step_size) {
@@ -64,22 +64,8 @@ public:
         return trail[*(trail.trail_lim.rbegin())];
     }
 
-    // Declare if a variable should be eligible for selection in the decision heuristic.
-    void setDecisionVar(Var v, bool b) {
-        if (decision[v] != static_cast<char>(b)) {
-            decision[v] = b;
-            if (b && !order_heap.inHeap(v)) {
-                order_heap.insert(v);
-            }
-        }
-    }
-
-    bool isDecisionVar(Var v) {
-        return decision[v]; 
-    }
-
     std::vector<double> getLiteralRelativeOccurrences() const {
-        std::vector<double> literalOccurrence(decision.size()*2, 0.0);
+        std::vector<double> literalOccurrence(trail.nVars()*2, 0.0);
 
         if (literalOccurrence.size() > 0) {
             for (Clause* c : clause_db) {
@@ -96,34 +82,42 @@ public:
         return literalOccurrence;
     }
 
+    void clear() {
+        weight.clear();
+        polarity.clear();
+        order_heap.clear();
+        std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
+        std::fill(participated.begin(), participated.end(), 0);
+    }
+
     void init(const CNFProblem& problem) {
-        size_t previous_size = decision.size();
-        if (problem.nVars() > decision.size()) {
-            decision.resize(problem.nVars(), true);
-            polarity.resize(problem.nVars(), initial_polarity);
-            weight.resize(problem.nVars(), initial_weight);
-            interval_assigned.resize(problem.nVars(), 0);
-            participated.resize(problem.nVars(), 0);
-            stamp.grow(problem.nVars());
-            order_heap.grow(problem.nVars());
+        if (trail.nVars() > weight.size()) {
+            weight.resize(trail.nVars(), initial_weight);
+            polarity.resize(trail.nVars(), initial_polarity);
+            interval_assigned.resize(trail.nVars(), 0);
+            participated.resize(trail.nVars(), 0);
+            stamp.grow(trail.nVars());
+            order_heap.grow(trail.nVars());
         }
         if (SolverOptions::opt_sort_variables) {
             std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < decision.size(); ++i) {
+            for (size_t i = 0; i < trail.nVars(); ++i) {
                 weight[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
                 polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
             }
-            reset();
+            
         }
-        else {
-            std::fill(polarity.begin(), polarity.end(), initial_polarity);
-            std::fill(weight.begin(), weight.end(), initial_weight);
-            for (size_t v = previous_size; v < problem.nVars(); v++) {
-                if (!order_heap.inHeap(v) && decision[v]) {
-                    order_heap.insert(v);
-                }
+        reset();
+    }
+
+    void reset() {
+        std::vector<int> vs;
+        for (Var v = 0; v < (Var)trail.nVars(); v++) {
+            if (trail.isDecisionVar(v)) {
+                vs.push_back(v);
             }
         }
+        order_heap.build(vs);
     }
 
 
@@ -151,7 +145,7 @@ public:
         for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
             Var v = it->var();
             polarity[v] = it->sign();
-            if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
+            if (!order_heap.inHeap(v) && trail.isDecisionVar(v)) order_heap.insert(v);
 
             if (interval_assigned[v] > 0) {
                 weight[v] = inv_step_size * weight[v] + step_size * (participated[v] / interval_assigned[v]);
@@ -161,23 +155,11 @@ public:
         }
     }
 
-    void reset() {
-        std::fill(participated.begin(), participated.end(), 0);
-        std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
-        std::vector<int> vs;
-        for (Var v = 0; v < (Var)decision.size(); v++) {
-            if (decision[v]) {
-                vs.push_back(v);
-            }
-        }
-        order_heap.build(vs);
-    }
-
     inline Lit pickBranchLit() {
         Var next = var_Undef;
 
         // Weight based decision:
-        while (next == var_Undef || trail.value(next) != l_Undef || !decision[next]) {
+        while (next == var_Undef || trail.value(next) != l_Undef || !trail.isDecisionVar(next)) {
             if (order_heap.empty()) {
                 next = var_Undef;
                 break;
@@ -193,7 +175,6 @@ private:
     Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable weigh.
     std::vector<double> weight; // A heuristic measurement of the weigh of a variable.
     std::vector<char> polarity; // The preferred polarity of each variable.
-    std::vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic
     Stamp<uint32_t> stamp;
 
     std::vector<uint32_t> interval_assigned;

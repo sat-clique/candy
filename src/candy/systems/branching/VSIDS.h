@@ -71,7 +71,6 @@ public:
     Glucose::Heap<VarOrderLt> order_heap; // A priority queue of variables ordered with respect to the variable activity.
     std::vector<double> activity; // A heuristic measurement of the activity of a variable.
     std::vector<char> polarity; // The preferred polarity of each variable.
-    std::vector<char> decision; // Declares if a variable is eligible for selection in the decision heuristic
     Stamp<uint32_t> stamp;
     double var_inc; // Amount to bump next variable with.
     double var_decay;
@@ -86,12 +85,48 @@ public:
             bool _glucose_style_extra_bump = SolverOptions::opt_vsids_extra_bump) :
         clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(activity)),
-        activity(), polarity(), decision(), stamp(), 
+        activity(), polarity(), stamp(), 
         var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay),
         glucose_style_extra_bump(_glucose_style_extra_bump) {
 
     }
 
+    void clear() {
+        activity.clear();
+        polarity.clear();
+        order_heap.clear();
+    }
+
+    void init(const CNFProblem& problem) {
+        if (trail.nVars() > activity.size()) {
+            activity.resize(trail.nVars(), initial_activity);
+            polarity.resize(trail.nVars(), initial_polarity);
+            stamp.grow(trail.nVars());
+            order_heap.grow(trail.nVars());
+        }
+        if (SolverOptions::opt_sort_variables) {
+            std::vector<double> occ = getLiteralRelativeOccurrences();
+            for (size_t i = 0; i < trail.nVars(); ++i) {
+                activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
+                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
+            }
+        }
+        reset();
+    }
+
+    void reset() {
+        std::vector<int> vs;
+        for (Var v = 0; v < (Var)trail.nVars(); v++) {
+            if (trail.isDecisionVar(v)) {
+                vs.push_back(v);
+            }
+        }
+        order_heap.build(vs);
+    }
+
+    /**
+     * Branching Diversification Interface for HordeSAT integration
+     * */
     void setPolarity(Var v, bool sign) override {
         polarity[v] = sign;
     }
@@ -103,23 +138,10 @@ public:
     void setActivity(Var v, double act) {
         activity[v] = act;
     }
-
-    // Declare if a variable should be eligible for selection in the decision heuristic.
-    void setDecisionVar(Var v, bool b) {
-        if (decision[v] != static_cast<char>(b)) {
-            decision[v] = b;
-            if (b && !order_heap.inHeap(v)) {
-                order_heap.insert(v);
-            }
-        }
-    }
-
-    bool isDecisionVar(Var v) {
-        return decision[v]; 
-    }
+    /* */
 
     std::vector<double> getLiteralRelativeOccurrences() const {
-        std::vector<double> literalOccurrence(decision.size()*2, 0.0);
+        std::vector<double> literalOccurrence(trail.nVars()*2, 0.0);
 
         if (literalOccurrence.size() > 0) {
             for (Clause* c : clause_db) {
@@ -134,51 +156,6 @@ public:
         }
         
         return literalOccurrence;
-    }
-
-    void clear() {
-        activity.clear();
-        polarity.clear();
-        decision.clear();
-        order_heap.clear();
-    }
-
-    void init(const CNFProblem& problem) {
-        size_t previous_size = decision.size();
-        if (clause_db.nVars() > previous_size) {
-            activity.resize(clause_db.nVars(), initial_activity);
-            polarity.resize(clause_db.nVars(), initial_polarity);
-            decision.resize(clause_db.nVars(), true);
-            stamp.grow(clause_db.nVars());
-            order_heap.grow(clause_db.nVars());
-        }
-        if (SolverOptions::opt_sort_variables) {
-            std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < clause_db.nVars(); ++i) {
-                activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
-                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
-            }
-        }
-        reset();
-        // else {
-        //     std::fill(polarity.begin(), polarity.end(), initial_polarity);
-        //     std::fill(activity.begin(), activity.end(), initial_activity);
-        //     for (size_t v = previous_size; v < clause_db.nVars(); v++) {
-        //         if (!order_heap.inHeap(v) && decision[v]) {
-        //             order_heap.insert(v);
-        //         }
-        //     }
-        // }
-    }
-
-    void reset() {
-        std::vector<int> vs;
-        for (Var v = 0; v < (Var)decision.size(); v++) {
-            if (decision[v]) {
-                vs.push_back(v);
-            }
-        }
-        order_heap.build(vs);
     }
 
     // Decay all variables with the specified factor. Implemented by increasing the 'bump' value instead.
@@ -239,7 +216,7 @@ public:
         for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
             Var v = it->var();
             polarity[v] = it->sign();
-            if (!order_heap.inHeap(v) && decision[v]) order_heap.insert(v);
+            if (!order_heap.inHeap(v) && trail.isDecisionVar(v)) order_heap.insert(v);
         }
     }
 
@@ -247,7 +224,7 @@ public:
         Var next = var_Undef;
 
         // Activity based decision:
-        while (next == var_Undef || trail.value(next) != l_Undef || !decision[next]) {
+        while (next == var_Undef || trail.value(next) != l_Undef || !trail.isDecisionVar(next)) {
             if (order_heap.empty()) {
                 next = var_Undef;
                 break;

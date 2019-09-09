@@ -91,13 +91,9 @@ namespace Candy {
             return trail[(*trail.trail_lim.rbegin())];
         }
 
-    	void setDecisionVar(Var v, bool b) {
-    		defaultBranchingHeuristic.setDecisionVar(v, b);
-    	}
-
-    	bool isDecisionVar(Var v) {
-    		return defaultBranchingHeuristic.isDecisionVar(v);
-    	}
+        void clear() {
+            defaultBranchingHeuristic.clear();
+        }
 
     	virtual void init(const CNFProblem& problem) {
     		defaultBranchingHeuristic.init(problem);
@@ -489,7 +485,7 @@ namespace Candy {
                 
                 auto advisedLit = advice.getLiteral(idx);
                 if (trail.value(advisedLit.var()) == l_Undef
-                     && this->isDecisionVar(advisedLit.var())
+                     && this->trail.isDecisionVar(advisedLit.var())
                      && BranchingHeuristicsImpl::canUseAdvice(advice, idx)
                     ) 
                 {
