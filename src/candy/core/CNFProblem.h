@@ -91,6 +91,7 @@ public:
         problem.clear();
     }
 
+    void normalizeVariableNames();
     void checkResult(CandySolverResult& result);
 
     void printDIMACS() const;

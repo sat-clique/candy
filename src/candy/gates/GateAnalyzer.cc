@@ -39,6 +39,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, 
 {
     inputs.resize(2 * problem.nVars(), false);
     index.resize(2 * problem.nVars());
+    could_be_blocked.resize(problem.nVars(), true);
     for (Cl* c : problem) for (Lit l : *c) {// build index
         index[l].push_back(c);
     }
@@ -89,15 +90,26 @@ bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
             for (Lit l : *cl) {
                 if (l.var() != o) clause.push_back(l);
             }
-            if (useHolistic) {
-                // include the resolution environments of each input
-                for (Lit lit : clause) constraint.readClauses(index[lit]);
-            }
             constraint.readClause(clause);
             clause.clear();
         }
     }
+    if (useHolistic) {
+        // include the resolution environments of each input
+        std::vector<Cl*> resolution_environment;
+        for (Cl* clause : constraint) {
+            for (Lit lit : *clause) {
+                resolution_environment.insert(resolution_environment.end(), index[lit].begin(), index[lit].end());
+            }
+        }
+        std::sort(resolution_environment.begin(), resolution_environment.end());
+        std::vector<Cl*>::iterator end = std::unique(resolution_environment.begin(), resolution_environment.end());
+        for (auto it = resolution_environment.begin(); it != end; it++) {
+            constraint.readClause(**it);
+        }
+    }
     solver->clear();
+    constraint.normalizeVariableNames(); //<- crucial for performance
     solver->init(constraint);
     lbool result = solver->solve();
     return (result == l_False);
@@ -133,7 +145,7 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
 
     for (Lit o : candidates) {
         For& f = index[~o], g = index[o];
-        if (!runtime.hasTimeout() && f.size() > 0 && (isBlocked(o, f, g) || (lah && isBlockedAfterVE(o, f, g)))) {
+        if (!runtime.hasTimeout() && f.size() > 0 && isBlocked(o, f, g)) {
             bool mono = false, pattern = false, semantic = false;
             unsigned int semPro = solver->getStatistics().nPropagations();
             unsigned int semCon = 0;

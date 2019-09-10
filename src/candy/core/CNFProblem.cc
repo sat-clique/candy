@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/frontend/Exceptions.h"
 
 #include <vector>
+#include <unordered_map>
 
 namespace Candy {
 
@@ -158,6 +159,23 @@ void CNFProblem::checkResult(CandySolverResult& result) {
             std::cout << "c Clause not satisfied: " << *clause;
         }
     }
+}
+
+/**
+ * Use with care: renames all variables for as gap-less representation.
+ * Don't use or translate back, if you care for semantics.
+ * */
+void CNFProblem::normalizeVariableNames() {
+    std::unordered_map<Var, Var> name;
+    //name.resize(variables, -1);
+    unsigned int max = 0;
+    for (Cl* clause : problem) {
+        for (Lit& lit : *clause) {
+            if (name[lit.var()] == -1) name[lit.var()] = max++;
+            lit = Lit(name[lit.var()], lit.sign());
+        }
+    }
+    variables = max;
 }
 
 }
