@@ -84,6 +84,7 @@ private:
     // control structures:
     std::vector<For> index; // occurrence lists
     std::vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
+    std::vector<char> could_be_blocked;
 
     // heuristic configuration:
     int maxTries = 0;
@@ -116,7 +117,8 @@ private:
     }
 
     bool isBlocked(Lit o, For& f, For& g) { // assert ~o \in f[i] and o \in g[j]
-        for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) return false;
+        if (!could_be_blocked[o.var()]) return false;
+        for (Cl* a : f) for (Cl* b : g) if (!isBlocked(o, *a, *b)) { could_be_blocked[o.var()] = false; return false; }
         return true;
     }
 
@@ -134,6 +136,7 @@ private:
         for (Lit l : *clause) {
             For& h = index[l];
             h.erase(remove(h.begin(), h.end(), clause), h.end());
+            could_be_blocked[l.var()] = true;
         }
     }
 
