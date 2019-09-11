@@ -73,7 +73,6 @@ public:
 
     unsigned int stat_patterns = 0;
     unsigned int stat_semantic = 0;
-    std::vector<unsigned int> histogram_propagations;
     std::vector<unsigned int> histogram_conflicts;
 
     GateProblem(const CNFProblem& p) : 
@@ -95,14 +94,12 @@ public:
         gates[o.var()].inp.insert(gates[o.var()].inp.end(), inp.begin(), inp.end());
     }
 
-    void addGateStats(bool pattern, bool semantic, unsigned int semPro, unsigned int semCon) {
+    void addGateStats(bool pattern, bool semantic, unsigned int conflicts) {
         if (pattern) stat_patterns++;
         if (semantic) {
             stat_semantic++;
-            if (semPro >= histogram_propagations.size()) histogram_propagations.resize(semPro+1);
-            histogram_propagations[semPro]++;
-            if (semCon >= histogram_conflicts.size()) histogram_conflicts.resize(semCon+1);
-            histogram_conflicts[semCon]++;
+            if (conflicts >= histogram_conflicts.size()) histogram_conflicts.resize(conflicts+1);
+            histogram_conflicts[conflicts]++;
         }
     }
 

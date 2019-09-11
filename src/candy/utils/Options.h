@@ -227,6 +227,10 @@ class IntOption : public Option {
         value = val;
     }
 
+    int32_t get() {
+        return value;
+    }
+
     virtual void help(bool verbose = false) {
         fprintf(stderr, "  -%-12s = %-8s [", name, type_name);
         if (range.begin == INT32_MIN)
