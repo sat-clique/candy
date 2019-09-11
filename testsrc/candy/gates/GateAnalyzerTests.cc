@@ -51,16 +51,16 @@ namespace Candy {
     }
 
     template<typename Iterator> 
-    bool contains(Formula super, Iterator begin, Iterator end) {
-        for (Cl& clause : super) {
-            if (equals(clause.begin(), clause.end(), begin, end)) {
+    bool contains(For& super, Iterator begin, Iterator end) {
+        for (Cl* clause : super) {
+            if (equals(clause->begin(), clause->end(), begin, end)) {
                 return true;
             }
         }
         return false;
     }
 
-    bool containsAll(Formula super, For& sub) {
+    bool containsAll(For& super, For& sub) {
         for (Cl* clause : sub) {
             if (!contains(super, clause->begin(), clause->end())) {
                 return false;
@@ -69,16 +69,7 @@ namespace Candy {
         return true;
     }
 
-    bool containsAll(Formula super, Formula sub) {
-        for (Cl& clause : sub) {
-            if (!contains(super, clause.begin(), clause.end())) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    void assert_gate(GateAnalyzer& ga, Lit output, bool not_monotonous, Formula clauses, std::initializer_list<Lit> inputs) {
+    void assert_gate(GateAnalyzer& ga, Lit output, bool not_monotonous, For clauses, std::initializer_list<Lit> inputs) {
         Gate g = ga.getResult().getGate(output); 
         ASSERT_TRUE(g.isDefined());
         ASSERT_EQ(not_monotonous, g.hasNonMonotonousParent());
@@ -91,7 +82,7 @@ namespace Candy {
 
     TEST(GateAnalyzerTest, detectSimpleAnd) {
         CNFProblem problem;
-        Formula simple_and = GateBuilder::and_gate(1_L, 2_L, 3_L);
+        For simple_and = GateBuilder::and_gate(1_L, 2_L, 3_L);
         problem.readClause({1_L});
         problem.readClauses(simple_and);
         GateAnalyzer ga { problem };
@@ -104,7 +95,7 @@ namespace Candy {
 
     TEST(GateAnalyzerTest, detectSimpleXor) {
         CNFProblem problem;
-        Formula simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
+        For simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
         problem.readClause({1_L});
         problem.readClauses(simple_xor);
         GateAnalyzer ga { problem };
@@ -118,9 +109,9 @@ namespace Candy {
 
     TEST(GateAnalyzerTest, detectXorOfAnds) {
         CNFProblem problem;
-        Formula simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
-        Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
-        Formula simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
+        For simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
+        For simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
+        For simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
         problem.readClause({1_L});
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
@@ -135,11 +126,11 @@ namespace Candy {
         assert_gate(ga, 3_L, true, simple_and2, {4_L, 5_L});
     }
 
-    TEST(GateAnalyzerTest, detectXorOfAndsPlusStuff) {
+    TEST(GateAnalyzerTest, detectXorOfAndsWithRemainder) {
         CNFProblem problem;
-        Formula simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
-        Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
-        Formula simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
+        For simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
+        For simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
+        For simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
         problem.readClause({1_L});
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
@@ -148,8 +139,8 @@ namespace Candy {
         GateAnalyzer ga { problem };
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 3);
-        ASSERT_EQ(ga.getResult().getRoots().size(), 2);
-        Cl clause ({1_L, 6_L, 7_L});
+        ASSERT_EQ(ga.getResult().getRoots().size(), 1);
+        Cl clause ({1_L});
         Cl roots = ga.getResult().getRootLiterals();
         ASSERT_TRUE(equals(roots.begin(), roots.end(), clause.begin(), clause.end()));
         assert_gate(ga, 1_L, false, simple_xor, {2_L, 3_L, ~2_L, ~3_L});
@@ -159,15 +150,15 @@ namespace Candy {
 
     TEST(GateAnalyzerTest, normalizeIncludesRemainder) {
         CNFProblem problem;
-        Formula simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
-        Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
-        Formula simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
+        For simple_xor = GateBuilder::xor_gate(1_L, 2_L, 3_L);
+        For simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
+        For simple_and2 = GateBuilder::and_gate(3_L, 4_L, 5_L);
         problem.readClause({1_L});
         problem.readClause({6_L, 7_L});
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
-        GateAnalyzer ga { problem };
+        GateAnalyzer ga { problem, GateRecognitionMethod::Patterns, ClauseSelectionMethod::UnitClausesThenMaximalLiterals, 2 };
         ga.analyze();
         ga.getResult().normalizeRoots();
         Lit root = ga.getResult().getRoot();
@@ -175,15 +166,15 @@ namespace Candy {
         ASSERT_EQ(ga.getResult().getGateCount(), 4);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);
         ASSERT_EQ(ga.getResult().getRootLiterals().front(), 8_L);
-        Formula rootgate ({{~8_L, 1_L}, {~8_L, 6_L, 7_L}});
+        For rootgate ({new Cl({~8_L, 1_L}), new Cl({~8_L, 6_L, 7_L})});
         assert_gate(ga, 8_L, false, rootgate, {1_L, 6_L, 7_L});
     }
 
     TEST(GateAnalyzerTest, pruningWorks) {
         CNFProblem problem;
-        Formula simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
-        Formula simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
-        Formula simple_and2 = GateBuilder::and_gate(3_L, 6_L, 7_L);
+        For simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
+        For simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
+        For simple_and2 = GateBuilder::and_gate(3_L, 6_L, 7_L);
         problem.readClause({1_L});
         problem.readClauses(simple_or);
         problem.readClauses(simple_and1);
@@ -196,20 +187,20 @@ namespace Candy {
         assert_gate(ga, 1_L, false, simple_or, {2_L, 3_L});
         assert_gate(ga, 2_L, false, simple_and1, {4_L, 5_L});
         assert_gate(ga, 3_L, false, simple_and2, {6_L, 7_L});
-        Formula pruned = ga.getResult().getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
+        For pruned = ga.getResult().getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
         ASSERT_TRUE(containsAll(pruned, simple_or));
         ASSERT_TRUE(containsAll(pruned, simple_and1));
-        Formula f ({Cl({~3_L, 6_L}), Cl({~3_L, 7_L}), Cl({3_L, ~6_L, ~7_L})});
+        For f ({new Cl({~3_L, 6_L}), new Cl({~3_L, 7_L}), new Cl({3_L, ~6_L, ~7_L})});
         ASSERT_FALSE(containsAll(pruned, f));
     }
 
     //todo: fix test-case such that also the commented assertions hold
     TEST(GateAnalyzerTest, andOfXorAndPartialXorToTriggerSemanticCheck) {
         CNFProblem problem;
-        Formula simple_and = GateBuilder::and_gate(1_L, 2_L, 3_L);
-        Formula simple_xor1 = GateBuilder::xor_gate(2_L, 4_L, 5_L);
-        Formula simple_eq = GateBuilder::xor_gate(3_L, 6_L, ~7_L);
-        Formula simple_or = GateBuilder::or_gate(6_L, 4_L, 5_L, true);
+        For simple_and = GateBuilder::and_gate(1_L, 2_L, 3_L);
+        For simple_xor1 = GateBuilder::xor_gate(2_L, 4_L, 5_L);
+        For simple_eq = GateBuilder::xor_gate(3_L, 6_L, ~7_L);
+        For simple_or = GateBuilder::or_gate(6_L, 4_L, 5_L, true);
         problem.readClause({1_L});
         problem.readClauses(simple_and);
         problem.readClauses(simple_xor1);

@@ -108,7 +108,7 @@ private:
     bool useIntensification = false;
 
     // main analysis routines
-    void analyze(std::vector<Cl*>& roots);
+    void analyze(std::vector<Cl*> roots);
     std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
 
     // clause selection heuristic

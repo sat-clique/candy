@@ -196,7 +196,7 @@ namespace Candy {
         
         ASSERT_EQ(ga.getResult().getGateCount(), 7);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1ul);
-        ASSERT_EQ(ga.getResult().getRoots()[0].size(), 1ul);
+        ASSERT_EQ(ga.getResult().getRoots().front()->size(), 1ul);
         
         underTest.readGates(ga);
         

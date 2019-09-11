@@ -58,7 +58,7 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
     if (pruningActivated) {
         GateAnalyzer gateAnalyzer(problem);
         gateAnalyzer.analyze();
-        Formula clauses = gateAnalyzer.getGateProblem().getPrunedProblem(model);
+        For clauses = gateAnalyzer.getGateProblem().getPrunedProblem(model);
         CNFProblem problem { clauses }; 
         generateHittingSetProblem(problem);
     }

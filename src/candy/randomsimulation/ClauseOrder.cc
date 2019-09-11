@@ -233,8 +233,8 @@ namespace Candy {
         
         std::unordered_set<Candy::Var> seenInputs {}, seenOutputs{};
         
-        for (const Cl& rootClause : analyzer.getResult().getRoots()) {
-            for (auto rootLit : rootClause) {
+        for (const Cl* rootClause : analyzer.getResult().getRoots()) {
+            for (Lit rootLit : *rootClause) {
                 m_maxVar = std::max(m_maxVar, rootLit.var());
                 if (analyzer.getResult().getGate(rootLit).isDefined()) {
                     readGatesRecursive(analyzer, rootLit, seenInputs, seenOutputs);
