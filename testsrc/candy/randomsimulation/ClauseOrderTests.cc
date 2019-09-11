@@ -191,7 +191,7 @@ namespace Candy {
         
         auto formula = gateBuilder->build();
         
-        GateAnalyzer ga { *formula, 0, 1, true, false, false, false };
+        GateAnalyzer ga { *formula, GateRecognitionMethod::Patterns };
         ga.analyze();
         
         ASSERT_EQ(ga.getResult().getGateCount(), 7);

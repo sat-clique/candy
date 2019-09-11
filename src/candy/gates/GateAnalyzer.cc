@@ -30,23 +30,36 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, double timeout, int tries, bool patterns, bool semantic, bool holistic, 
-        bool lookahead, bool intensify, int lookahead_threshold) :
+GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, GateRecognitionMethod method, int tries, double timeout) :
             problem(dimacs), gate_problem(*new GateProblem { problem }), runtime(timeout), 
-            maxTries (tries), usePatterns (patterns), useSemantic (semantic || holistic),
-            useHolistic (holistic), useLookahead (lookahead), useIntensification (intensify),
-            lookaheadThreshold(lookahead_threshold)
+            maxTries (tries), usePatterns (false), useSemantic (false), useHolistic (false), useIntensification (false)
 {
-    inputs.resize(2 * problem.nVars(), false);
     index.resize(2 * problem.nVars());
+    inputs.resize(2 * problem.nVars(), false);
     could_be_blocked.resize(problem.nVars(), true);
-    for (Cl* c : problem) for (Lit l : *c) {// build index
+
+    // build index
+    for (Cl* c : problem) for (Lit l : *c) {
         index[l].push_back(c);
     }
-    SolverOptions::opt_sort_variables = false;
-    SolverOptions::opt_sort_watches = false;
-    SolverOptions::opt_preprocessing = false;
-    solver = createSolver(); 
+
+    switch (method) {
+        case GateRecognitionMethod::Patterns: usePatterns = true; break;
+        case GateRecognitionMethod::Semantic: useSemantic = true; break;
+        case GateRecognitionMethod::Holistic: useHolistic = true; break;
+        case GateRecognitionMethod::IntensifyPS: useIntensification = true; // fall-through:
+        case GateRecognitionMethod::PatSem: usePatterns = true; useSemantic = true; break;
+        case GateRecognitionMethod::IntensifyOSH: useIntensification = true; // fall-through:
+        case GateRecognitionMethod::PatHol: usePatterns = true; useHolistic = true; break;
+        default: usePatterns = true;
+    }
+
+    if (useSemantic || useHolistic) {
+        SolverOptions::opt_sort_variables = false;
+        SolverOptions::opt_sort_watches = false;
+        SolverOptions::opt_preprocessing = false;
+        solver = createSolver(); 
+    }
 }
 
 GateAnalyzer::~GateAnalyzer() {}
@@ -147,16 +160,12 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
         For& f = index[~o], g = index[o];
         if (!runtime.hasTimeout() && f.size() > 0 && isBlocked(o, f, g)) {
             bool mono = false, pattern = false, semantic = false;
-            unsigned int semPro = solver->getStatistics().nPropagations();
-            unsigned int semCon = 0;
             std::set<Lit> inp;
             for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
             mono = inputs[o] == 0 || inputs[~o] == 0;
             if (!mono) pattern = pat && patternCheck(o, f, g, inp);
             if (!mono && !pattern) {
                 semantic = sem && semanticCheck(o.var(), f, g);
-                semPro = solver->getStatistics().nPropagations() - semPro;
-                semCon = solver->getStatistics().nConflicts();
             }
 #ifdef GADebug
             if (mono) printf("Candidate output %s%i is nested monotonically\n", o.sign()?"-":"", o.var()+1);
@@ -170,7 +179,7 @@ std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, b
                     if (!mono) inputs[~l]++;
                 }
                 gate_problem.addGate(o, f, g, inp, !mono); 
-                gate_problem.addGateStats(pattern, semantic, semPro, semCon);
+                gate_problem.addGateStats(pattern, semantic, semantic ? solver->getStatistics().nConflicts() : 0);
                 removeFromIndex(index, f);
                 removeFromIndex(index, g);
             }
@@ -263,9 +272,12 @@ void GateAnalyzer::analyze() {
     runtime.stop();
 }
 
+bool GateAnalyzer::hasTimeout() const {
+    return runtime.hasTimeout();
+}
+
 /**
   * Experimental: Tries to detect a common sub-gate in order to decode a gate
-  */
 // precondition: ~o \in f[i] and o \in g[j]
 bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
     // generate set of non-tautological resolvents
@@ -379,9 +391,6 @@ bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
 
     return false;
 }
-
-bool GateAnalyzer::hasTimeout() const {
-    return runtime.hasTimeout();
-}
+*/
 
 }

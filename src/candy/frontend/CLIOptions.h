@@ -80,15 +80,9 @@ namespace VariableEliminationOptions {
 }
 
 namespace GateRecognitionOptions {
-    extern BoolOption opt_print_gates;
-    extern IntOption opt_gr_tries;
-    extern BoolOption opt_gr_patterns;
-    extern BoolOption opt_gr_semantic;
-    extern IntOption opt_gr_timeout;
-    extern BoolOption opt_gr_holistic;
-    extern BoolOption opt_gr_lookahead;
-    extern IntOption opt_gr_lookahead_threshold;
-    extern BoolOption opt_gr_intensify;
+    extern IntOption method;
+    extern IntOption tries;
+    extern IntOption timeout;
 }
 
 namespace RandomSimulationOptions {

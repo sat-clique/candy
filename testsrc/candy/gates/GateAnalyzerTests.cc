@@ -215,7 +215,7 @@ namespace Candy {
         problem.readClauses(simple_xor1);
         problem.readClauses(simple_eq);
         problem.readClauses(simple_or);
-        GateAnalyzer ga { problem, 0, 3, true, false, false };
+        GateAnalyzer ga { problem, GateRecognitionMethod::Patterns };
         ga.analyze();
         ASSERT_EQ(ga.getResult().getGateCount(), 4);
         ASSERT_EQ(ga.getResult().getRoots().size(), 1);

@@ -40,18 +40,23 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
+enum class GateRecognitionMethod {
+    Patterns = 0, // use gate patterns
+    Semantic = 1, // use semantic checks
+    Holistic = 2, // use semantic checks that include the resolution environment
+    PatSem = 10, // use gate patterns and semantic checks 
+    PatHol = 11, // use gate patterns and semantic checks that include the resolution environment
+    IntensifyPS = 20, // use intensification strategy from patterns to semantic
+    IntensifyOSH = 21// use intensification strategy from patterns to semantic to holistic
+};
+
 class GateAnalyzer {
 
 public:
     GateAnalyzer(const CNFProblem& dimacs, 
-        double timeout = GateRecognitionOptions::opt_gr_timeout, 
-        int tries = GateRecognitionOptions::opt_gr_tries,
-        bool patterns = GateRecognitionOptions::opt_gr_patterns, 
-        bool semantic = GateRecognitionOptions::opt_gr_semantic, 
-        bool holistic = GateRecognitionOptions::opt_gr_holistic,
-        bool lookahead = GateRecognitionOptions::opt_gr_lookahead, 
-        bool intensify = GateRecognitionOptions::opt_gr_intensify, 
-        int lookahead_threshold = GateRecognitionOptions::opt_gr_lookahead_threshold);
+        GateRecognitionMethod method = static_cast<GateRecognitionMethod>(GateRecognitionOptions::method.get()), 
+        int tries = GateRecognitionOptions::tries, 
+        double timeout = GateRecognitionOptions::timeout);
 
     ~GateAnalyzer();
 

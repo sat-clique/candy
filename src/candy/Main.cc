@@ -156,12 +156,8 @@ static void printGateStatistics(CNFProblem& problem) {
     std::cout << "c Roots: " << gates.nRoots() << std::endl; 
     std::cout << "c StatsPatterns: " << gates.stat_patterns << std::endl; 
     std::cout << "c StatsSemantic: " << gates.stat_semantic << std::endl; 
-    std::cout << "c HistoPropagations: "; 
-    unsigned int index = 0;
-    for (unsigned int count : gates.histogram_propagations) std::cout << " " << index++ << ":" << count; 
-    std::cout << std::endl;
     std::cout << "c HistoConflicts: "; 
-    index = 0;
+    unsigned int index = 0;
     for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
     std::cout << std::endl;
     std::cout << "c Runtime: " << runtime << std::endl;
@@ -287,7 +283,7 @@ int main(int argc, char** argv) {
                     RSILOptions::opt_rsil_enable = false;
                     break;
                 case 12 : case 13 : //rsil
-                    GateRecognitionOptions::opt_gr_semantic = true; 
+                    GateRecognitionOptions::method = static_cast<int>(GateRecognitionMethod::IntensifyPS); 
                     RandomSimulationOptions::opt_rs_nrounds = 1048576 * 2;
                     SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = true;
