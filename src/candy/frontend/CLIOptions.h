@@ -81,6 +81,7 @@ namespace VariableEliminationOptions {
 
 namespace GateRecognitionOptions {
     extern IntOption method;
+    extern IntOption selection;
     extern IntOption tries;
     extern IntOption timeout;
 }

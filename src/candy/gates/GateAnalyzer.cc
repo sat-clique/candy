@@ -30,15 +30,14 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, GateRecognitionMethod method, int tries, double timeout) :
-            problem(dimacs), gate_problem(*new GateProblem { problem }), runtime(timeout), 
-            maxTries (tries), usePatterns (false), useSemantic (false), useHolistic (false), useIntensification (false)
+GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod method, ClauseSelectionMethod selection, int tries, double timeout) :
+        problem(problem_), gate_problem(*new GateProblem { problem_ }), clause_selection_method(selection), runtime(timeout), 
+        maxTries (tries), usePatterns (false), useSemantic (false), useHolistic (false), useIntensification (false)
 {
     index.resize(2 * problem.nVars());
     inputs.resize(2 * problem.nVars(), false);
     could_be_blocked.resize(problem.nVars(), true);
 
-    // build index
     for (Cl* c : problem) for (Lit l : *c) {
         index[l].push_back(c);
     }
@@ -62,7 +61,7 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& dimacs, GateRecognitionMethod metho
     }
 }
 
-GateAnalyzer::~GateAnalyzer() {}
+GateAnalyzer::~GateAnalyzer() { }
 
 std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
     std::vector<Lit> result;
@@ -80,19 +79,168 @@ std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
     return result;
 }
 
-std::vector<Cl> GateAnalyzer::getBestRoots() {
-    std::vector<Cl> clauses;
-    std::vector<Cl*> clausesp;
-    std::vector<Lit> lits = getRarestLiterals(index);
-    if (lits.empty()) return clauses;
-    Lit best = lits.back();
-    clausesp.insert(clausesp.end(), index[best].begin(), index[best].end());
-    index[best].clear();
-    removeFromIndex(index, clausesp);
-
-    for (Cl* clause : clausesp) clauses.push_back(*clause);
-
+std::vector<Cl*> GateAnalyzer::getUnitClauses() {
+    std::vector<Cl*> clauses;
+    for (Cl* c : problem) {
+        if (c->size() == 1) {
+            clauses.push_back(c);
+        }
+    }
     return clauses;
+}
+
+std::vector<Cl*> GateAnalyzer::getClausesWithRareLiterals() {
+    std::vector<Cl*> clauses;
+    if (clauses.empty()) {
+        std::vector<Lit> lits = getRarestLiterals(index);
+        if (!lits.empty()) {
+            Lit best = lits.back();
+            clauses.insert(clauses.end(), index[best].begin(), index[best].end());
+        }
+    }
+    return clauses;
+}
+
+std::vector<Cl*> GateAnalyzer::getClausesWithMaximalLiterals() {
+    std::vector<Cl*> clauses;
+    if (clauses.empty()) {
+        std::vector<Lit> lits = getRarestLiterals(index);
+        if (!lits.empty()) {
+            Lit best = lits.back();
+            clauses.insert(clauses.end(), index[best].begin(), index[best].end());
+        }
+    }
+    return clauses;
+}
+
+void GateAnalyzer::analyze() {
+    runtime.start();
+
+    std::vector<Cl*> clauses = getUnitClauses();
+    unsigned int count = 0;
+
+    switch (clause_selection_method) {
+        case ClauseSelectionMethod::UnitClausesThenMaximalLiterals: 
+        case ClauseSelectionMethod::UnitClausesThenRareLiterals: 
+            analyze(clauses); count++;
+        default: break;
+    }
+
+    for (; count < maxTries && !runtime.hasTimeout(); count++) {
+        switch (clause_selection_method) {
+            case ClauseSelectionMethod::UnitClausesThenMaximalLiterals: 
+            case ClauseSelectionMethod::MaximalLiterals: 
+                clauses = getClausesWithMaximalLiterals();
+                break;
+            case ClauseSelectionMethod::UnitClausesThenRareLiterals: 
+            case ClauseSelectionMethod::RareLiterals: 
+                clauses = getClausesWithRareLiterals();
+                break;
+        }
+    }
+
+    analyze(clauses);
+
+    runtime.stop();
+}
+
+void GateAnalyzer::analyze(std::vector<Cl*>& roots) {
+    std::vector<Lit> candidates;
+
+    gate_problem.roots.insert(gate_problem.roots.end(), roots.begin(), roots.end());
+    removeFromIndex(index, roots);
+
+    for (Cl* clause : roots) {
+        candidates.insert(candidates.end(), clause->begin(), clause->end());
+        for (Lit l : *clause) inputs[l]++;
+    }
+
+    if (useIntensification) {
+        std::vector<Lit> remainder;
+        bool patterns = false, semantic = false, lookahead = false, restart = false;
+        for (int level = 0; level < 3 && !runtime.hasTimeout(); restart ? level = 0 : level++) {
+#ifdef GADebug
+            printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
+#endif
+            restart = false;
+
+            switch (level) {
+            case 0: patterns = true; semantic = false; lookahead = false; break;
+            case 1: patterns = false; semantic = true; lookahead = false; break;
+            case 2: patterns = false; semantic = true; lookahead = true; break;
+            default: assert(level >= 0 && level < 3); break;
+            }
+
+            if (!usePatterns && patterns) continue;
+            if (!useSemantic && semantic) continue;
+            if (!useHolistic && lookahead) continue;
+
+            candidates.insert(candidates.end(), remainder.begin(), remainder.end());
+            remainder.clear();
+
+            while (candidates.size() && !runtime.hasTimeout()) {
+                std::vector<Lit> frontier = analyze(candidates, patterns, semantic, lookahead);
+                if (level > 0 && frontier.size() > 0) restart = true;
+                remainder.insert(remainder.end(), candidates.begin(), candidates.end());
+                candidates.swap(frontier);
+            }
+
+            sort(remainder.begin(), remainder.end());
+            remainder.erase(unique(remainder.begin(), remainder.end()), remainder.end());
+            reverse(remainder.begin(), remainder.end());
+        }
+    }
+    else {
+        while (candidates.size() && !runtime.hasTimeout()) {
+            std::vector<Lit> frontier = analyze(candidates, usePatterns, useSemantic, useHolistic);
+            candidates.swap(frontier);
+        }
+    }
+}
+
+// main analysis routine
+std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool lah) {
+    std::vector<Lit> frontier, remainder;
+
+    for (Lit o : candidates) {
+        For& f = index[~o], g = index[o];
+        if (!runtime.hasTimeout() && f.size() > 0 && isBlocked(o, f, g)) {
+            bool mono = false, pattern = false, semantic = false;
+            std::set<Lit> inp;
+            for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
+            mono = inputs[o] == 0 || inputs[~o] == 0;
+            if (!mono) pattern = pat && patternCheck(o, f, g, inp);
+            if (!mono && !pattern) {
+                semantic = sem && semanticCheck(o.var(), f, g);
+            }
+#ifdef GADebug
+            if (mono) printf("Candidate output %s%i is nested monotonically\n", o.sign()?"-":"", o.var()+1);
+            if (pattern) printf("Candidate output %s%i matches pattern\n", o.sign()?"-":"", o.var()+1);
+            if (semantic) printf("Candidate output %s%i passed semantic test\n", o.sign()?"-":"", o.var()+1);
+#endif
+            if (mono || pattern || semantic) {
+                frontier.insert(frontier.end(), inp.begin(), inp.end());
+                for (Lit l : inp) {
+                    inputs[l]++;
+                    if (!mono) inputs[~l]++;
+                }
+                gate_problem.addGate(o, f, g, inp, !mono); 
+                gate_problem.addGateStats(pattern, semantic, semantic ? solver->getStatistics().nConflicts() : 0);
+                removeFromIndex(index, f);
+                removeFromIndex(index, g);
+            }
+            else {
+                remainder.push_back(o);
+            }
+        }
+        else {
+            remainder.push_back(o);
+        }
+    }
+
+    candidates.swap(remainder);
+
+    return frontier;
 }
 
 bool GateAnalyzer::semanticCheck(Var o, For& fwd, For& bwd) {
@@ -150,130 +298,6 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inp) {
     }
 
     return false;
-}
-
-// main analysis routine
-std::vector<Lit> GateAnalyzer::analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool lah) {
-    std::vector<Lit> frontier, remainder;
-
-    for (Lit o : candidates) {
-        For& f = index[~o], g = index[o];
-        if (!runtime.hasTimeout() && f.size() > 0 && isBlocked(o, f, g)) {
-            bool mono = false, pattern = false, semantic = false;
-            std::set<Lit> inp;
-            for (Cl* c : f) for (Lit l : *c) if (l != ~o) inp.insert(l);
-            mono = inputs[o] == 0 || inputs[~o] == 0;
-            if (!mono) pattern = pat && patternCheck(o, f, g, inp);
-            if (!mono && !pattern) {
-                semantic = sem && semanticCheck(o.var(), f, g);
-            }
-#ifdef GADebug
-            if (mono) printf("Candidate output %s%i is nested monotonically\n", o.sign()?"-":"", o.var()+1);
-            if (pattern) printf("Candidate output %s%i matches pattern\n", o.sign()?"-":"", o.var()+1);
-            if (semantic) printf("Candidate output %s%i passed semantic test\n", o.sign()?"-":"", o.var()+1);
-#endif
-            if (mono || pattern || semantic) {
-                frontier.insert(frontier.end(), inp.begin(), inp.end());
-                for (Lit l : inp) {
-                    inputs[l]++;
-                    if (!mono) inputs[~l]++;
-                }
-                gate_problem.addGate(o, f, g, inp, !mono); 
-                gate_problem.addGateStats(pattern, semantic, semantic ? solver->getStatistics().nConflicts() : 0);
-                removeFromIndex(index, f);
-                removeFromIndex(index, g);
-            }
-            else {
-                remainder.push_back(o);
-            }
-        }
-        else {
-            remainder.push_back(o);
-        }
-    }
-
-    candidates.swap(remainder);
-
-    return frontier;
-}
-
-void GateAnalyzer::analyze(std::vector<Lit>& candidates) {
-    if (useIntensification) {
-        std::vector<Lit> remainder;
-        bool patterns = false, semantic = false, lookahead = false, restart = false;
-        for (int level = 0; level < 3 && !runtime.hasTimeout(); restart ? level = 0 : level++) {
-#ifdef GADebug
-            printf("Remainder size: %zu, Intensification level: %i\n", remainder.size(), level);
-#endif
-            restart = false;
-
-            switch (level) {
-            case 0: patterns = true; semantic = false; lookahead = false; break;
-            case 1: patterns = false; semantic = true; lookahead = false; break;
-            case 2: patterns = false; semantic = true; lookahead = true; break;
-            default: assert(level >= 0 && level < 3); break;
-            }
-
-            if (!usePatterns && patterns) continue;
-            if (!useSemantic && semantic) continue;
-            if (!useLookahead && lookahead) continue;
-
-            candidates.insert(candidates.end(), remainder.begin(), remainder.end());
-            remainder.clear();
-
-            while (candidates.size() && !runtime.hasTimeout()) {
-                std::vector<Lit> frontier = analyze(candidates, patterns, semantic, lookahead);
-                if (level > 0 && frontier.size() > 0) restart = true;
-                remainder.insert(remainder.end(), candidates.begin(), candidates.end());
-                candidates.swap(frontier);
-            }
-
-            sort(remainder.begin(), remainder.end());
-            remainder.erase(unique(remainder.begin(), remainder.end()), remainder.end());
-            reverse(remainder.begin(), remainder.end());
-        }
-    }
-    else {
-        while (candidates.size() && !runtime.hasTimeout()) {
-            std::vector<Lit> frontier = analyze(candidates, usePatterns, useSemantic, useLookahead);
-            candidates.swap(frontier);
-        }
-    }
-}
-
-void GateAnalyzer::analyze() {
-    std::vector<Lit> next;
-
-    runtime.start();
-
-    // start recognition with unit literals
-    for (Cl* c : problem) {
-        if (c->size() == 1) {
-            gate_problem.roots.push_back(*c);
-            removeFromIndex(index, c);
-            next.push_back((*c)[0]);
-            inputs[(*c)[0]]++;
-        }
-    }
-
-    analyze(next);
-
-    // clause selection loop
-    for (int k = 0; k < maxTries && !runtime.hasTimeout(); k++) {
-        std::vector<Cl> clauses = getBestRoots();
-        gate_problem.roots.insert(gate_problem.roots.end(), clauses.begin(), clauses.end());
-        for (Cl& c : clauses) {
-            next.insert(next.end(), c.begin(), c.end());
-            for (Lit l : c) inputs[l]++;
-        }
-        analyze(next);
-    }
-
-    runtime.stop();
-}
-
-bool GateAnalyzer::hasTimeout() const {
-    return runtime.hasTimeout();
 }
 
 /**

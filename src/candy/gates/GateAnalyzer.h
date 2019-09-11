@@ -50,11 +50,19 @@ enum class GateRecognitionMethod {
     IntensifyOSH = 21// use intensification strategy from patterns to semantic to holistic
 };
 
+enum class ClauseSelectionMethod {
+    UnitClausesThenMaximalLiterals = 0,
+    UnitClausesThenRareLiterals = 1,
+    MaximalLiterals = 2,
+    RareLiterals = 3
+};
+
 class GateAnalyzer {
 
 public:
-    GateAnalyzer(const CNFProblem& dimacs, 
+    GateAnalyzer(const CNFProblem& problem, 
         GateRecognitionMethod method = static_cast<GateRecognitionMethod>(GateRecognitionOptions::method.get()), 
+        ClauseSelectionMethod seleciton = static_cast<ClauseSelectionMethod>(GateRecognitionOptions::selection.get()), 
         int tries = GateRecognitionOptions::tries, 
         double timeout = GateRecognitionOptions::timeout);
 
@@ -72,15 +80,16 @@ public:
         return problem;
     }
 
-    // main analysis routine
-    void analyze();
-
-
-    bool hasTimeout() const;
+    bool hasTimeout() const {
+        return runtime.hasTimeout();
+    }
 
     const CNFProblem& problem;
-    GateProblem& gate_problem;
+    GateProblem& gate_problem;    
+    ClauseSelectionMethod clause_selection_method;
     Runtime runtime;
+
+    void analyze();
 
 private:
     // problem to analyze:
@@ -92,21 +101,21 @@ private:
     std::vector<char> could_be_blocked;
 
     // heuristic configuration:
-    int maxTries = 0;
+    unsigned int maxTries = 1;
     bool usePatterns = false;
     bool useSemantic = false;
     bool useHolistic = false;
-    bool useLookahead = false;
     bool useIntensification = false;
-    int lookaheadThreshold = 10;
 
     // main analysis routines
-    void analyze(std::vector<Lit>& candidates);
+    void analyze(std::vector<Cl*>& roots);
     std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
 
     // clause selection heuristic
     std::vector<Lit> getRarestLiterals(std::vector<For>& index);
-    std::vector<Cl> getBestRoots();
+    std::vector<Cl*> getUnitClauses();
+    std::vector<Cl*> getClausesWithRareLiterals();
+    std::vector<Cl*> getClausesWithMaximalLiterals();
 
     // clause patterns of full encoding
     bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
