@@ -29,31 +29,29 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-typedef std::vector<Cl> Formula;
-
 namespace GateBuilder {
 
-Formula and_gate(Lit o, Lit l1, Lit l2, bool full = true) {
+For and_gate(Lit o, Lit l1, Lit l2, bool full = true) {
     if (full) {
-        return Formula({ Cl({~o, l1}), Cl({~o, l2}), Cl({o, ~l1, ~l2}) });
+        return For({ new Cl({~o, l1}), new Cl({~o, l2}), new Cl({o, ~l1, ~l2}) });
     } else {
-        return Formula({ Cl({~o, l1}), Cl({~o, l2}) });
+        return For({ new Cl({~o, l1}), new Cl({~o, l2}) });
     }
 }
 
-Formula or_gate(Lit o, Lit l1, Lit l2, bool full = true) {
+For or_gate(Lit o, Lit l1, Lit l2, bool full = true) {
     if (full) {
-        return Formula({ Cl({~o, l1, l2}), Cl({o, ~l1}), Cl({o, ~l2}) });
+        return For({ new Cl({~o, l1, l2}), new Cl({o, ~l1}), new Cl({o, ~l2}) });
     } else {
-        return Formula({ Cl({~o, l1, l2}) });
+        return For({ new Cl({~o, l1, l2}) });
     }
 }
 
-Formula xor_gate(Lit o, Lit l1, Lit l2, bool full = true) {
+For xor_gate(Lit o, Lit l1, Lit l2, bool full = true) {
     if (full) {
-        return Formula({ Cl({~o, l1, l2}), Cl({~o, ~l1, ~l2}), Cl({o, l1, ~l2}), Cl({o, ~l1, l2}) });
+        return For({ new Cl({~o, l1, l2}), new Cl({~o, ~l1, ~l2}), new Cl({o, l1, ~l2}), new Cl({o, ~l1, l2}) });
     } else {
-        return Formula({ Cl({~o, l1, l2}), Cl({~o, ~l1, ~l2}) });
+        return For({ new Cl({~o, l1, l2}), new Cl({~o, ~l1, ~l2}) });
     }
 }
 

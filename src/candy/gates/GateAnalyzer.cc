@@ -122,7 +122,8 @@ void GateAnalyzer::analyze() {
     switch (clause_selection_method) {
         case ClauseSelectionMethod::UnitClausesThenMaximalLiterals: 
         case ClauseSelectionMethod::UnitClausesThenRareLiterals: 
-            analyze(clauses); count++;
+            analyze(clauses); 
+            count++;
         default: break;
     }
 
@@ -137,14 +138,13 @@ void GateAnalyzer::analyze() {
                 clauses = getClausesWithRareLiterals();
                 break;
         }
+        analyze(clauses);
     }
-
-    analyze(clauses);
 
     runtime.stop();
 }
 
-void GateAnalyzer::analyze(std::vector<Cl*>& roots) {
+void GateAnalyzer::analyze(std::vector<Cl*> roots) {
     std::vector<Lit> candidates;
 
     gate_problem.roots.insert(gate_problem.roots.end(), roots.begin(), roots.end());

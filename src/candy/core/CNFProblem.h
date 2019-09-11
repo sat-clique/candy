@@ -42,10 +42,6 @@ public:
         readClauses(formula);
     }
 
-    CNFProblem(Formula formula) : variables(0) {
-        readClauses(formula);
-    }
-
     CNFProblem(Cl& clause) : variables(0) {
         readClause(clause.begin(), clause.end());
     }
@@ -104,7 +100,6 @@ public:
     
     void readClauses(std::initializer_list<std::initializer_list<Lit>> f);
     void readClauses(For& f);
-    void readClauses(Formula& f);
 
     template <typename Iterator>
     void readClause(Iterator begin, Iterator end);
