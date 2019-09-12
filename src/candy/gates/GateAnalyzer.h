@@ -84,6 +84,16 @@ public:
         return runtime.hasTimeout();
     }
 
+    For getRemainder() {
+        For remainder;
+        for (unsigned int lit = 0; lit < index.size(); lit++) {
+            remainder.insert(remainder.end(), index[lit].begin(), index[lit].end());
+        }
+        sort(remainder.begin(), remainder.end());
+        remainder.erase(std::unique(remainder.begin(), remainder.end()), remainder.end());
+        return remainder;
+    }
+
     const CNFProblem& problem;
     GateProblem& gate_problem;    
     ClauseSelectionMethod clause_selection_method;
@@ -109,7 +119,7 @@ private:
     // main analysis routines
     void gate_recognition(std::vector<Cl*> roots);
     void classic_recognition(std::vector<Lit> roots);
-    void intensification_recognition(std::vector<Lit> roots);
+    void recognition_with_intensification(std::vector<Lit> roots);
     bool isGate(Lit candidate, bool pat, bool sem, bool hol);
 
     // clause selection heuristic

@@ -117,7 +117,7 @@ namespace Candy {
                 // time it is popped, it gets backtracked.
                 work.push(GateDFSMarkedGate{workItem.gate, true});
                 
-                for (auto input : workItem.gate->getInputs()) {
+                for (auto input : workItem.gate->inp) {
                     const Gate& g = gates[input.var()];
                     if (g.isDefined()
                         && visited.find(&g) == visited.end()
@@ -148,7 +148,7 @@ namespace Candy {
         }
         
         void backtrack(const Gate* g) {
-            m_backtrackOutputOrder.push_back(g->getOutput().var());
+            m_backtrackOutputOrder.push_back(g->out.var());
         }
         
         void collect(const Gate* g) {

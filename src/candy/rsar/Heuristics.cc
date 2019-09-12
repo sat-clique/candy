@@ -83,7 +83,7 @@ namespace Candy {
             
             for (auto output : gateOutputs) {
                 auto& dependentGate = analyzer.getResult().getGate(Lit(output, 1));
-                for (auto inputLit : dependentGate.getInputs()) {
+                for (auto inputLit : dependentGate.inp) {
                     auto &gate = analyzer.getResult().getGate(inputLit);
                     if (gate.isDefined()) {
                         result[&gate].push_back(&dependentGate);
@@ -129,7 +129,7 @@ namespace Candy {
                 
                 if (!detectedExceedingMax) {
                     // update input dependencies with inputs which are not outputs of other gates
-                    for (auto inpLit : gate.getInputs()) {
+                    for (auto inpLit : gate.inp) {
                         if (!analyzer.getResult().getGate(inpLit).isDefined()) {
                             auto inpVar = inpLit.var();
                             inputsViaDependencies.insert(inpVar);
@@ -144,7 +144,7 @@ namespace Candy {
                 }
                 
                 if (!detectedExceedingMax) {
-                    inputDependencyCount[gate.getOutput().var()] = inputsViaDependencies.size();
+                    inputDependencyCount[gate.out.var()] = inputsViaDependencies.size();
                     
                     // move the information about input variables to the gates depending on this one
                     for (auto dependent : dependents[&gate]) {
@@ -155,9 +155,9 @@ namespace Candy {
                 else {
                     // propagate the excess to the gates depending on this one
                     
-                    inputDependencyCount[gate.getOutput().var()] = exceedingMax;
+                    inputDependencyCount[gate.out.var()] = exceedingMax;
                     for (auto dependent : dependents[&gate]) {
-                        inputDependencyCount[dependent->getOutput().var()] = exceedingMax;
+                        inputDependencyCount[dependent->out.var()] = exceedingMax;
                     }
                 }
 

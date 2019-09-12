@@ -148,13 +148,13 @@ namespace Candy {
             //  - its output is an enabled variable
             //  - for none of its input variables i, the following holds: i is an output variable of a gate and i is disabled.
             
-            Candy::Var outputVar = gate.getOutput().var();
+            Candy::Var outputVar = gate.out.var();
             
             if (m_enabledOutputs.find(outputVar) == m_enabledOutputs.end()) {
                 return; // no backtracking
             }
             
-            for (auto inputLit : gate.getInputs()) {
+            for (auto inputLit : gate.inp) {
                 if (analyzer.getResult().getGate(inputLit).isDefined()
                     && m_enabledOutputs.find(inputLit.var()) == m_enabledOutputs.end()) {
                     return; // no backtracking
@@ -165,14 +165,14 @@ namespace Candy {
         Candy::Lit usedOutput;
         const For *usedGateClauses;
         
-        if (gate.hasNonMonotonousParent()
-            || gate.getForwardClauses().size() <= gate.getBackwardClauses().size()) {
-            usedOutput = ~gate.getOutput();
-            usedGateClauses = &gate.getForwardClauses();
+        if (gate.hasNonMonotonicParent()
+            || gate.fwd.size() <= gate.bwd.size()) {
+            usedOutput = ~gate.out;
+            usedGateClauses = &gate.fwd;
         }
         else {
-            usedOutput = gate.getOutput();
-            usedGateClauses = &gate.getBackwardClauses();
+            usedOutput = gate.out;
+            usedGateClauses = &gate.bwd;
         }
         
         m_outputLitsOrdered.push_back(usedOutput);
@@ -249,7 +249,7 @@ namespace Candy {
         seenOutputs.insert(output.var());
         
         auto &gate = analyzer.getResult().getGate(output);
-        for (auto inputLit : gate.getInputs()) {
+        for (auto inputLit : gate.inp) {
             auto inputVar = inputLit.var();
             m_maxVar = std::max(m_maxVar, inputVar);
             
@@ -309,12 +309,12 @@ namespace Candy {
         }
         
         void backtrack(const Gate* g) {
-            maxVar = std::max(maxVar, g->getOutput().var());
+            maxVar = std::max(maxVar, g->out.var());
             backtrackSequence.push_back(g);
         }
         
         void collect(const Gate* g) {
-            maxVar = std::max(maxVar, g->getOutput().var());
+            maxVar = std::max(maxVar, g->out.var());
         }
         
         void collectInput(Var v) {
@@ -384,7 +384,7 @@ namespace Candy {
         auto topo = getTopoOrder(m_analyzer.getGateProblem());
         for (auto outputVar : topo.getOutputsOrdered()) {
             auto& gate = m_analyzer.getResult().getGate(Lit(outputVar, 1));
-            if(gate.hasNonMonotonousParent()) {
+            if(gate.hasNonMonotonicParent()) {
                 result.insert(outputVar);
             }
         }
