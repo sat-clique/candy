@@ -46,7 +46,7 @@ namespace Candy {
             
             void backtrack(const Gate* g) {
                 bool isBorderGate = false;
-                for (Lit input : g->getInputs()) {
+                for (Lit input : g->inp) {
                     Var inputVar = input.var();
                     isBorderGate |= m_seenOuts.find(inputVar) == m_seenOuts.end();
                 }
@@ -57,7 +57,7 @@ namespace Candy {
             }
             
             void collect(const Gate* g) {
-                m_seenOuts.insert(g->getOutput().var());
+                m_seenOuts.insert(g->out.var());
             }
             
             void collectInput(Var var) const {
@@ -71,8 +71,8 @@ namespace Candy {
             bool pruneAt(const Gate& g) {
                 // The nonmonotonously nested part of the gate structure is not taken
                 // into account by this heuristic
-                m_seenNonmonotonous |= g.hasNonMonotonousParent();
-                return g.hasNonMonotonousParent();
+                m_seenNonmonotonous |= g.hasNonMonotonicParent();
+                return g.hasNonMonotonicParent();
             }
             
             void finished() {
@@ -106,7 +106,7 @@ namespace Candy {
             
             for(const Gate* g : gates) {
                 vars.clear();
-                for (auto input : g->getInputs()) {
+                for (auto input : g->inp) {
                     vars.insert(input.var());
                 }
                 if (vars.size() != 2) {
@@ -155,7 +155,7 @@ namespace Candy {
             std::unordered_map<Var, SignOccurence> literalOccurences;
             
             for (const Gate* gate : gates) {
-                for (Lit input : gate->getInputs()) {
+                for (Lit input : gate->inp) {
                     Var inpVar = input.var();
                     bool inpSign = input.sign();
                     
@@ -185,7 +185,7 @@ namespace Candy {
          * \returns     true iff g is a binary XOR gate.
          */
         bool isBinaryXORGate(const Gate& g) {
-            auto& clauses = g.getForwardClauses();
+            auto& clauses = g.fwd;
             if (clauses.size() != 2ull) {
                 return false;
             }
@@ -222,13 +222,13 @@ namespace Candy {
                     return false;
                 }
                 
-                for(Lit input : gate->getInputs()) {
+                for(Lit input : gate->inp) {
                     if (seenInputVars.find(input.var()) != seenInputVars.end()) {
                         return false;
                     }
                 }
                 
-                for(Lit input : gate->getInputs()) {
+                for(Lit input : gate->inp) {
                     seenInputVars.insert(input.var());
                 }
             }

@@ -88,7 +88,7 @@ static int interrupted_callback(void* state) {
             interrupted = true;
         }
     }
-    if (SolverOptions::memory_limit > 0 && getCurrentRSS()/(1024*1024) > SolverOptions::memory_limit) {
+    if (SolverOptions::memory_limit > 0 && static_cast<int>(getCurrentRSS()/(1024*1024)) > SolverOptions::memory_limit) {
         interrupted = true;
     }
     return interrupted ? 1 : 0;
@@ -151,14 +151,23 @@ static void printGateStatistics(CNFProblem& problem) {
     GateProblem gates = analyzer.getResult();
     std::cout << "c Variables: " << problem.nVars() << std::endl;
     std::cout << "c Clauses: " << problem.nClauses() << std::endl;
+    std::cout << "c RemainingClauses: " << analyzer.getRemainder().size() << std::endl;
+    // if (analyzer.getRemainder().size() < 10) {
+    //     std::cout << "c RemainingClauses: " << analyzer.getRemainder() << std::endl;
+    // }
     std::cout << "c Gates: " << gates.nGates() << std::endl;
     std::cout << "c Monoton: " << gates.nMonotonGates() << std::endl;
     std::cout << "c Roots: " << gates.nRoots() << std::endl; 
     std::cout << "c StatsPatterns: " << gates.stat_patterns << std::endl; 
     std::cout << "c StatsSemantic: " << gates.stat_semantic << std::endl; 
+    std::cout << "c StatsHolistic: " << gates.stat_holistic << std::endl; 
     std::cout << "c HistoConflicts: "; 
     unsigned int index = 0;
     for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
+    std::cout << std::endl;
+    std::cout << "c HistoConflictsUnsuccessful: "; 
+    index = 0;
+    for (unsigned int count : gates.unsuccessful_histogram_conflicts) std::cout << " " << index++ << ":" << count;
     std::cout << std::endl;
     std::cout << "c Runtime: " << runtime << std::endl;
 }

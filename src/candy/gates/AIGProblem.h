@@ -156,7 +156,7 @@ private:
                 visited[lit] = true;
 
                 if (problem[lit.var()].isDefined()) { 
-                    For& clauses = (For&)problem[lit.var()].getForwardClauses();
+                    For& clauses = (For&)problem[lit.var()].fwd;
 
                     // strip output-literal from clauses
                     For list;

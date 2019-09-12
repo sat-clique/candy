@@ -37,26 +37,7 @@ struct Gate {
     std::vector<Lit> inp;
 
     inline bool isDefined() const { return out != lit_Undef; }
-    inline Lit getOutput() const { return out; }
-
-    
-    inline const For& getForwardClauses() const { return fwd; }
-    inline const For& getBackwardClauses() const { return bwd; }
-    inline const std::vector<Lit>& getInputs() const  { return inp; }
-    
-    inline For& getForwardClauses() {
-        return const_cast<For&>(static_cast<const Gate*>(this)->getForwardClauses());
-    }
-
-    inline For& getBackwardClauses() {
-        return const_cast<For&>(static_cast<const Gate*>(this)->getBackwardClauses());
-    }
-
-    inline std::vector<Lit>& getInputs() {
-        return const_cast<std::vector<Lit>&>(static_cast<const Gate*>(this)->getInputs());
-    }
-    
-    inline bool hasNonMonotonousParent() const { return notMono; }
+    inline bool hasNonMonotonicParent() const { return notMono; }
 };
 
 
@@ -66,6 +47,7 @@ public:
 
     // analyzer output:
     std::vector<Cl*> roots; // top-level clauses
+    std::vector<char> inputs; // mark literals which are used as input to a gate (used in detection of monotonicity)
     std::vector<Gate> gates; // stores gate-struct for every output
     unsigned int gate_count = 0;
     unsigned int monoton_gate_count = 0;
@@ -73,45 +55,83 @@ public:
 
     unsigned int stat_patterns = 0;
     unsigned int stat_semantic = 0;
+    unsigned int stat_holistic = 0;
     std::vector<unsigned int> histogram_conflicts;
+    std::vector<unsigned int> unsuccessful_histogram_conflicts;
 
     GateProblem(const CNFProblem& p) : 
         problem(p), roots(), gates(), gate_count(0), artificialRoot() 
     {
         gates.resize(problem.nVars());
         artificialRoot = new Cl();
+        inputs.resize(2 * problem.nVars(), false);
     }
 
     ~GateProblem() {
         delete artificialRoot;
     }
 
-    void addGate(Lit o, For& fwd, For& bwd, std::set<Lit>& inp, bool notMono) {
-        gates[o.var()].out = o;
-        gate_count++;
-        if (!notMono) monoton_gate_count++;
-        gates[o.var()].notMono = notMono;
-        gates[o.var()].fwd.insert(gates[o.var()].fwd.end(), fwd.begin(), fwd.end());
-        gates[o.var()].bwd.insert(gates[o.var()].bwd.end(), bwd.begin(), bwd.end());
-        gates[o.var()].inp.insert(gates[o.var()].inp.end(), inp.begin(), inp.end());
+    inline void setUsedAsInput(Lit lit) {
+        inputs[lit] = true;
     }
 
-    void addGateStats(bool pattern, bool semantic, unsigned int conflicts) {
+    inline bool isUsedAsInput(Lit lit) {
+        return inputs[lit];
+    }
+
+    inline bool isNestedMonotonic(Lit lit) {
+        return !(isUsedAsInput(lit) && isUsedAsInput(~lit));
+    }
+
+    void addGate(Lit o, For& fwd, For& bwd) {
+        Gate& gate = gates[o.var()];
+        gate.out = o;
+        gate.fwd.insert(gate.fwd.end(), fwd.begin(), fwd.end());
+        gate.bwd.insert(gate.bwd.end(), bwd.begin(), bwd.end());
+        gate.notMono = !isNestedMonotonic(o);
+        for (Cl* c : fwd) for (Lit lit : *c) {
+            if (lit != ~o) gate.inp.push_back(lit);
+        }
+        sort(gate.inp.begin(), gate.inp.end());
+        gate.inp.erase(std::unique(gate.inp.begin(), gate.inp.end()), gate.inp.end());
+        for (Lit lit : gate.inp) {
+            setUsedAsInput(lit);
+            if (gate.notMono) setUsedAsInput(~lit);
+        }
+        gate_count++;
+        if (!gate.notMono) monoton_gate_count++;
+    }
+    
+    Gate& getGate(Lit output) { 
+        return gates[output.var()]; 
+    }
+
+    inline bool isGateOutput(Lit output) const { 
+        return gates[output.var()].isDefined(); 
+    }
+
+    void addGateStats(bool pattern, bool semantic, bool holistic, unsigned int conflicts) {
         if (pattern) stat_patterns++;
         if (semantic) {
             stat_semantic++;
             if (conflicts >= histogram_conflicts.size()) histogram_conflicts.resize(conflicts+1);
             histogram_conflicts[conflicts]++;
         }
+        if (holistic) {
+            stat_holistic++;
+            if (conflicts >= histogram_conflicts.size()) histogram_conflicts.resize(conflicts+1);
+            histogram_conflicts[conflicts]++;
+        }
+    }
+    
+    void addUnsuccessfulStats(unsigned int conflicts) {
+        if (conflicts >= unsuccessful_histogram_conflicts.size()) unsuccessful_histogram_conflicts.resize(conflicts+1);
+        unsuccessful_histogram_conflicts[conflicts]++;
     }
 
     // public getters
     int getGateCount() const { 
         return gate_count; 
-    }
-    
-    Gate& getGate(Lit output) { 
-        return gates[output.var()]; 
     }
 
     typedef std::vector<Gate>::const_iterator const_iterator;
@@ -213,11 +233,11 @@ public:
             if (gate.isDefined() && !done[outputs[i].var()]) {
                 done[outputs[i].var()] = true;
                 printf("Gate with output ");
-                printLiteral(gate.getOutput());
+                printLiteral(gate.out);
                 printf("Is defined by clauses ");
-                printFormula(gate.getForwardClauses());
-                printFormula(gate.getBackwardClauses());
-                outputs.insert(outputs.end(), gate.getInputs().begin(), gate.getInputs().end());
+                printFormula(gate.fwd);
+                printFormula(gate.bwd);
+                outputs.insert(outputs.end(), gate.inp.begin(), gate.inp.end());
             }
         }
     }
