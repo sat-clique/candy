@@ -164,53 +164,65 @@ void GateAnalyzer::gate_recognition(std::vector<Cl*> roots) {
     }
 
     if (useIntensification) {
-        intensification_recognition(candidates);
+        recognition_with_intensification(candidates);
     } else {
         classic_recognition(candidates);
     }
 }
 
 void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
-    std::vector<Lit> candidates { roots.begin(), roots.end() };
+    std::vector<Lit> candidates;
+    std::vector<Lit> frontier { roots.begin(), roots.end() };
 
-    while (!candidates.empty()) {
-        Lit candidate = candidates.back();
-        candidates.pop_back();
-        if (isGate(candidate, usePatterns, useSemantic, useHolistic)) { 
-            candidates.insert(candidates.end(), gate_problem.getGate(candidate).inp.begin(), gate_problem.getGate(candidate).inp.end());
+    // std::cout << "Starting recogintion with the following roots: " << roots << std::endl;
+
+    // while (!candidates.empty()) {
+    //     Lit candidate = candidates.back();
+    //     candidates.pop_back();
+    while (!frontier.empty()) { // _breadth_ first search is important here (considering the symmetries in e.g. XOR-encodings)
+        candidates.swap(frontier);
+
+        for (Lit candidate : candidates) {
+            // std::cout << "Candidate Literal is: " << candidate << std::endl;
+            if (isGate(candidate, usePatterns, useSemantic, useHolistic)) { 
+                // std::cout << "Found gate with inputs: " << gate_problem.getGate(candidate).inp << std::endl;
+                frontier.insert(frontier.end(), gate_problem.getGate(candidate).inp.begin(), gate_problem.getGate(candidate).inp.end());
+            }
         }
+        candidates.clear();
     }
 }
 
-void GateAnalyzer::intensification_recognition(std::vector<Lit> roots) {
+void GateAnalyzer::recognition_with_intensification(std::vector<Lit> roots) {
     std::vector<Lit> candidates;
-    std::vector<Lit> remainder;
     std::vector<Lit> frontier { roots.begin(), roots.end() };
+    std::vector<Lit> remainder[3];
 
-    for (int level = 0; level < 3; level++) {
-        if (!usePatterns && level == 0 || !useSemantic && level == 1 || !useHolistic && level == 2) {
-            continue; // skip disabled levels
-        }
+    for (int level = 0; level < (useHolistic ? 3 : 2); level++) {
 
-        if (frontier.empty()) { // add remainder for processing on the next level
-            sort(remainder.begin(), remainder.end(), [](Lit l1, Lit l2) { return l1 > l2; });
-            remainder.erase(std::unique(remainder.begin(), remainder.end()), remainder.end());
-            candidates.swap(remainder);
-        } else {
-            candidates.swap(frontier);
-        }
-
+        candidates.swap(frontier);
         for (Lit candidate : candidates) {
-            if (isGate(candidate, level == 0, level == 2, level == 3)) { // try these with level 0 (pattern recognition) first
+            if (isGate(candidate, level == 0, level == 1, level == 2)) { 
+                // try these with level 0 (pattern recognition) first
                 frontier.insert(frontier.end(), gate_problem.getGate(candidate).inp.begin(), gate_problem.getGate(candidate).inp.end());
-                level = -1; // restart analysis with pattern recognition on literals in frontier
-            } else { 
-                // try again with next level
-                remainder.push_back(candidate);
+            } 
+            else { 
+                // remember for next level
+                remainder[level].push_back(candidate);
             }
         }
-
         candidates.clear();
+
+        if (!frontier.empty()) {
+            // restart analysis with pattern recognition
+            level = -1; 
+        } 
+        else { 
+            // use remainder for processing on the next level
+            sort(remainder[level].begin(), remainder[level].end(), [](Lit l1, Lit l2) { return l1 > l2; });
+            remainder[level].erase(std::unique(remainder[level].begin(), remainder[level].end()), remainder[level].end());
+            frontier.swap(remainder[level]);
+        }
     }
 }
 
@@ -228,9 +240,9 @@ bool GateAnalyzer::isGate(Lit candidate, bool pat, bool sem, bool hol) {
     For& bwd = index[candidate];
     if (fwd.size() > 0 && isBlocked(candidate, fwd, bwd)) {
         bool pattern = false, semantic = false, holistic = false;
-        bool monotonous = gate_problem.isNestedMonotonous(candidate);
+        bool monotonic = gate_problem.isNestedMonotonic(candidate);
         
-        if (!monotonous) {
+        if (!monotonic) {
             if (pat && patternCheck(candidate, fwd, bwd)) {
                 pattern = true;
             }
@@ -242,17 +254,18 @@ bool GateAnalyzer::isGate(Lit candidate, bool pat, bool sem, bool hol) {
             }
         }
 
-        if (monotonous || pattern || semantic || holistic) {
+        if (monotonic || pattern || semantic || holistic) {
             gate_problem.addGate(candidate, fwd, bwd); 
             gate_problem.addGateStats(pattern, semantic, holistic, (semantic || holistic) ? solver->getStatistics().nConflicts() : 0);
             removeFromIndex(index, gate_problem.getGate(candidate).fwd);
             removeFromIndex(index, gate_problem.getGate(candidate).bwd);
             return true;
         }
-        else {
-            return false;
+        else if (sem || hol) {
+            gate_problem.addUnsuccessfulStats(solver->getStatistics().nConflicts());
         }
     }
+    return false;
 }
 
 
