@@ -45,7 +45,7 @@ enum class GateRecognitionMethod {
     Semantic = 1, // use semantic checks
     Holistic = 2, // use semantic checks that include the resolution environment
     PatSem = 10, // use gate patterns and semantic checks 
-    PatHol = 11, // use gate patterns and semantic checks that include the resolution environment
+    PatSemHol = 11, // use gate patterns and semantic checks and holistic checks which include the resolution environment
     IntensifyPS = 20, // use intensification strategy from patterns to semantic
     IntensifyOSH = 21// use intensification strategy from patterns to semantic to holistic
 };
@@ -97,8 +97,7 @@ private:
 
     // control structures:
     std::vector<For> index; // occurrence lists
-    std::vector<char> inputs; // flags to check if both polarities of literal are used as input (monotonicity)
-    std::vector<char> could_be_blocked;
+    std::vector<char> could_be_blocked; // blockedness cache (invalidated on modifications to index)
 
     // heuristic configuration:
     unsigned int maxTries = 1;
@@ -108,8 +107,10 @@ private:
     bool useIntensification = false;
 
     // main analysis routines
-    void analyze(std::vector<Cl*> roots);
-    std::vector<Lit> analyze(std::vector<Lit>& candidates, bool pat, bool sem, bool dec);
+    void gate_recognition(std::vector<Cl*> roots);
+    void classic_recognition(std::vector<Lit> roots);
+    void intensification_recognition(std::vector<Lit> roots);
+    bool isGate(Lit candidate, bool pat, bool sem, bool hol);
 
     // clause selection heuristic
     std::vector<Lit> getRarestLiterals(std::vector<For>& index);
@@ -118,8 +119,8 @@ private:
     std::vector<Cl*> getClausesWithMaximalLiterals();
 
     // clause patterns of full encoding
-    bool patternCheck(Lit o, For& fwd, For& bwd, std::set<Lit>& inputs);
-    bool semanticCheck(Var o, For& fwd, For& bwd);
+    bool patternCheck(Lit o, For& fwd, For& bwd);
+    bool semanticCheck(Lit o, For& fwd, For& bwd, bool holistic = false);
 
     // work in progress:
     bool isBlockedAfterVE(Lit o, For& f, For& g);
@@ -154,9 +155,10 @@ private:
         }
     }
 
+    // make sure not to iterate over index content here
     void removeFromIndex(std::vector<For>& index, For& clauses) {
-        For copy(clauses.begin(), clauses.end());
-        for (Cl* c : copy) {
+        // For copy(clauses.begin(), clauses.end());
+        for (Cl* c : clauses) {
             removeFromIndex(index, c);
         }
     }

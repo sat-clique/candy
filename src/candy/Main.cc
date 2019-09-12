@@ -156,6 +156,7 @@ static void printGateStatistics(CNFProblem& problem) {
     std::cout << "c Roots: " << gates.nRoots() << std::endl; 
     std::cout << "c StatsPatterns: " << gates.stat_patterns << std::endl; 
     std::cout << "c StatsSemantic: " << gates.stat_semantic << std::endl; 
+    std::cout << "c StatsHolistic: " << gates.stat_holistic << std::endl; 
     std::cout << "c HistoConflicts: "; 
     unsigned int index = 0;
     for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
