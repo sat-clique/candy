@@ -273,7 +273,7 @@ namespace Candy {
     
     static bool containsClauses(GateAnalyzer& analyzer, Lit outputLiteral, const std::vector<const Cl*>& clauses) {
         auto &gate = analyzer.getResult().getGate(outputLiteral);
-        return gate.isDefined() && (equals(gate.getForwardClauses(), clauses) || equals(gate.getBackwardClauses(), clauses));
+        return gate.isDefined() && (equals(gate.fwd, clauses) || equals(gate.bwd, clauses));
     }
     
     static bool allClausesContain(Lit literal, const std::vector<const Cl*>& clauses) {

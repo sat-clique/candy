@@ -65,7 +65,7 @@ namespace Candy {
     };
     
     static bool isNested(const GateAnalyzer& analyzer, const Gate& influenced, const Gate& influencer) {
-        for (Lit l : influenced.getInputs()) {
+        for (Lit l : influenced.inp) {
             if (analyzer.getResult().getGate(l).isDefined()) {
                 if (&analyzer.getResult().getGate(l) == &influencer
                     || isNested(analyzer, analyzer.getResult().getGate(l), influencer)) {
@@ -154,7 +154,7 @@ namespace Candy {
         }
         
         bool pruneAt(const Gate& g) {
-            return g.hasNonMonotonousParent();
+            return g.hasNonMonotonicParent();
         }
         
         void finished() {
@@ -165,7 +165,7 @@ namespace Candy {
     namespace {
         bool containsGateWithOutput(std::vector<const Gate*>& gates, Var output) {
             return std::find_if(gates.begin(), gates.end(), [output](const Gate*& g) {
-                return g->getOutput().var() == output;
+                return g->out.var() == output;
             }) != gates.end();
         }
     }

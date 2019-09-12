@@ -70,14 +70,14 @@ namespace Candy {
     }
 
     void assert_gate(GateAnalyzer& ga, Lit output, bool not_monotonous, For clauses, std::initializer_list<Lit> inputs) {
+        ASSERT_TRUE(ga.getResult().isGateOutput(output));
         Gate g = ga.getResult().getGate(output); 
-        ASSERT_TRUE(g.isDefined());
-        ASSERT_EQ(not_monotonous, g.hasNonMonotonousParent());
-        ASSERT_EQ(clauses.size(), g.getForwardClauses().size() + g.getBackwardClauses().size());
-        ASSERT_EQ(inputs.size(), g.getInputs().size());
-        ASSERT_TRUE(equals(g.getInputs().cbegin(), g.getInputs().cend(), inputs.begin(), inputs.end())); 
-        ASSERT_TRUE(containsAll(clauses, g.getForwardClauses()));
-        ASSERT_TRUE(containsAll(clauses, g.getBackwardClauses()));
+        ASSERT_EQ(not_monotonous, g.hasNonMonotonicParent());
+        ASSERT_EQ(clauses.size(), g.fwd.size() + g.bwd.size());
+        ASSERT_EQ(inputs.size(), g.inp.size());
+        ASSERT_TRUE(equals(g.inp.cbegin(), g.inp.cend(), inputs.begin(), inputs.end())); 
+        ASSERT_TRUE(containsAll(clauses, g.fwd));
+        ASSERT_TRUE(containsAll(clauses, g.bwd));
     }
 
     TEST(GateAnalyzerTest, detectSimpleAnd) {
