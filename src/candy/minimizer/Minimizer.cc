@@ -33,7 +33,8 @@ namespace Candy {
 /**
  * Maximize the number of don't cares in the given model relative to the given projection
  */
-Minimizer::Minimizer(CNFProblem& _problem, Cl _model) : problem(_problem), model(_model), hittingSetProblem() { }
+Minimizer::Minimizer(CNFProblem& _problem, Cl _model)
+ : problem(_problem), model(_model), hittingSetProblem() { }
 
 Minimizer::~Minimizer() { }
 
@@ -93,48 +94,44 @@ Cl Minimizer::computeMinimalModel(bool pruningActivated) {
 }
 
 Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
-    Cl pModel(model.begin(), model.end());
-    Cl exclude;
-    Cl assume;
+    Cl minimize;
+    Cl assumptions;
 
-#ifndef NDEBUG
-    unsigned int i = 0;
-#endif
+    for (Lit lit : model) {
+        minimize.push_back(~lit);
+    }
+
     lbool satisfiable = l_True;
     while (satisfiable == l_True) {
-        exclude.clear();
-        assume.clear();
-
-        for (Lit lit : pModel) {
-            if (lit.sign()) {
-                assume.push_back(lit);
-            } 
-            else {
-                exclude.push_back(~lit);
-            }
-        }
-
-        std::cout << "c Current Model " << pModel << std::endl;
-        std::cout << "c Assuming " << assume << std::endl;
-        std::cout << "c Excluding " << exclude << std::endl;
-        assert(assume.size() >= i++);
-
-        solver->init(CNFProblem { exclude });
-        solver->getAssignment().setAssumptions(assume);
+        solver->init(CNFProblem { minimize });
+        solver->getAssignment().setAssumptions(assumptions);
 
         satisfiable = solver->solve();
 
         if (satisfiable == l_True) {
-            pModel = solver->getCandySolverResult().getModelLiterals();
+            CandySolverResult result = solver->getCandySolverResult();
+
+            for (Lit lit : minimize) {
+                if (result.modelValue(lit) == l_True) {
+                    assumptions.push_back(lit);
+                } 
+            }
+
+            minimize.clear();
+            for (Lit lit : model) {
+                if (result.modelValue(lit) == l_True) {
+                    minimize.push_back(~lit);
+                }
+            }      
         }
     }
 
-    auto last = std::remove_if(pModel.begin(), pModel.end(), [](const Lit lit) { return lit.sign(); });
-    pModel.erase(last, pModel.end());
+    Cl result;
+    for (Lit lit : minimize) {
+        result.push_back(~lit);
+    }
 
-    std::cout << "c Resulting model " << pModel << std::endl;
-
-    return pModel;
+    return result;
 }
 
 }
