@@ -227,7 +227,7 @@ private:
             }
 
             propagateAndMaterializeUnitClauses();
-            if (clause_db.hasEmptyClause()) break;if (clause_db.hasEmptyClause()) break;
+            if (clause_db.hasEmptyClause()) break;
 
             if (!elimination.eliminate()) clause_db.emptyClause();
 
@@ -417,7 +417,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
             else {
                 *logging.log() << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
                 clause_db.reduce();
-            }
+            }            
+            branch.process_reduce();
             clause_db.reorganize();
             *logging.log() << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
             propagator.reset();
