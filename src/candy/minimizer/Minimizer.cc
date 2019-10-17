@@ -38,7 +38,7 @@ Minimizer::Minimizer(CNFProblem& _problem, CandySolverResult& _model) : problem(
     SolverOptions::opt_inprocessing = 0;
     SolverOptions::opt_sort_variables = false;
     SolverOptions::opt_sort_watches = false; 
-    CandySolverInterface* solver = createSolver();
+    solver = createSolver();
  }
 
 Minimizer::~Minimizer() { 
@@ -51,10 +51,10 @@ For Minimizer::purify(Iterator begin, Iterator end) {
     For result;
     for (auto it = begin; it < end; it++) {
         Cl* clause = *it;
-        Cl normalizedClause;
+        Cl* normalizedClause = new Cl();
         for (Lit lit : *clause) {
             if (model.value(lit.var()) == lit) {
-                normalizedClause.push_back(Lit(lit.var(), false));
+                normalizedClause->push_back(Lit(lit.var(), false));
             }
         }
         result.push_back(normalizedClause);

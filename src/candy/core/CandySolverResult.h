@@ -40,6 +40,12 @@ class CandySolverResult {
 public:
     CandySolverResult() : status(l_Undef), model(), conflict() { }
 
+    CandySolverResult(std::initializer_list<Lit> model) : status(l_Undef), model(), conflict() { 
+        for (Lit lit : model) {
+            setModelValue(lit);
+        }
+    }
+
     void clear() {
         status = l_Undef;
         model.clear();
@@ -66,6 +72,10 @@ public:
 
     void setConflict(std::vector<Lit> assumptions) {
         conflict.insert(conflict.end(), assumptions.begin(), assumptions.end());
+    }
+
+    bool satisfies(Lit lit) {
+        return l_True == (model[lit.var()] ^ lit.sign());
     }
 
     // return satisfied literal for given variable

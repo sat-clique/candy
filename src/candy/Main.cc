@@ -329,7 +329,7 @@ int main(int argc, char** argv) {
             if (MinimizerOptions::do_minimize) {
                 Minimizer minimizer(problem, result);
                 minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal);
-                for (Lit lit : minimalModel) {
+                for (Lit lit : result.getMinimizedModelLiterals()) {
                     printLiteral(lit);
                 }
             } 
