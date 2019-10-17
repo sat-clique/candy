@@ -82,8 +82,6 @@ private:
           outputs.push_back(inputs.front());
           return outputs;
         }
-            
-        int mid = inputs.size() / 2;
 
         Cl a_inputs { inputs.begin(), inputs.begin() + inputs.size() / 2 };
         Cl b_inputs { inputs.begin() + inputs.size() / 2, inputs.end() };
@@ -101,7 +99,7 @@ private:
             carry = nextCarry;
         }
 
-        for (int i = m_min; i < a_outputs.size(); i++) {
+        for (unsigned int i = m_min; i < a_outputs.size(); i++) {
             Lit sum = Lit(out.newVar());
             Lit nextCarry = Lit(out.newVar());
             genHalfAdder(out, a_outputs[i], carry, sum, nextCarry);
@@ -121,7 +119,7 @@ private:
         For lessthan;
         
         // comparator circuit
-        for (int i = 0; i < outputs.size(); i++) {
+        for (unsigned int i = 0; i < outputs.size(); i++) {
             if ((k & 1) == 1) {
                 for (Cl* clause : lessthan) {
                     clause->push_back(~outputs[i]);

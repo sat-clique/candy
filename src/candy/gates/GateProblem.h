@@ -27,6 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
+#include "candy/core/CandySolverResult.h"
 
 namespace Candy {
     
@@ -195,18 +196,18 @@ public:
         For result(roots.begin(), roots.end());
 
         std::vector<Lit> literals = getRootLiterals();
-        std::vector<int> visited(model.size(), -1);
+        Stamp<uint8_t> visited { model.getModelLiterals().size() };
 
         while (literals.size() > 0) {
             Lit o = literals.back();
             literals.pop_back();
 
-            if (model[o.var()] == o && visited[o.var()] != o) {
+            if (model.satisfies(o) && visited[o.var()]) {
                 Gate gate = gates[o.var()];
                 for (Cl* clause : gate.fwd) result.push_back(clause);
                 for (Cl* clause : gate.bwd) result.push_back(clause);
                 literals.insert(literals.end(), gate.inp.begin(), gate.inp.end());
-                visited[o.var()] = o;
+                visited.set(o.var());
             }
         }
 

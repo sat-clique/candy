@@ -44,7 +44,7 @@ public:
 		stamp = std::numeric_limits<T>::min();
 	}
 
-	Stamp(unsigned int size) : Stamp() {
+	Stamp(size_t size) : Stamp() {
 		stamped.resize(size, std::numeric_limits<T>::min());
 		stamp = std::numeric_limits<T>::min();
 	}
