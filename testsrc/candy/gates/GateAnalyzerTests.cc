@@ -27,6 +27,8 @@
 #include <gtest/gtest.h>
 
 #include <candy/core/SolverTypes.h>
+#include <candy/core/CandySolverResult.h>
+
 #include <candy/gates/GateDFSTraversal.h>
 #include <candy/testutils/TestGateStructure.h>
 #include <candy/gates/GateBuilder.h>
@@ -187,7 +189,8 @@ namespace Candy {
         assert_gate(ga, 1_L, false, simple_or, {2_L, 3_L});
         assert_gate(ga, 2_L, false, simple_and1, {4_L, 5_L});
         assert_gate(ga, 3_L, false, simple_and2, {6_L, 7_L});
-        For pruned = ga.getResult().getPrunedProblem(Cl({1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L}));
+        CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L };
+        For pruned = ga.getResult().getPrunedProblem(model);
         ASSERT_TRUE(containsAll(pruned, simple_or));
         ASSERT_TRUE(containsAll(pruned, simple_and1));
         For f ({new Cl({~3_L, 6_L}), new Cl({~3_L, 7_L}), new Cl({3_L, ~6_L, ~7_L})});

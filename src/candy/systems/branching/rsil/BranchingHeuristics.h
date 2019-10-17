@@ -122,6 +122,9 @@ namespace Candy {
     		defaultBranchingHeuristic.reset();
         }
 
+        void process_reduce() {
+        }
+
         void generateConjectures(const CNFProblem& problem) {
             GateAnalyzer analyzer { problem };
             analyzer.analyze();
