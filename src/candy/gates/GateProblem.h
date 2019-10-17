@@ -191,7 +191,7 @@ public:
      * @param model
      * @return clauses of all satisfied branches
      */
-    For getPrunedProblem(Cl model) {
+    For getPrunedProblem(CandySolverResult& model) {
         For result(roots.begin(), roots.end());
 
         std::vector<Lit> literals = getRootLiterals();
