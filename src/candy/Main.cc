@@ -326,9 +326,9 @@ int main(int argc, char** argv) {
     if (solver != nullptr) {
         if (result == l_True && SolverOptions::mod) {
             CandySolverResult& result = solver->getCandySolverResult();
-            if (SolverOptions::do_minimize > 0) {
-                Minimizer minimizer(problem, result.getModelLiterals());
-                Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
+            if (MinimizerOptions::do_minimize) {
+                Minimizer minimizer(problem, result);
+                minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal);
                 for (Lit lit : minimalModel) {
                     printLiteral(lit);
                 }
