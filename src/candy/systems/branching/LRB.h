@@ -155,6 +155,9 @@ public:
         }
     }
 
+    void process_reduce() {
+    }
+
     inline Lit pickBranchLit() {
         Var next = var_Undef;
 

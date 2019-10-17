@@ -37,24 +37,13 @@ namespace Candy {
 
     typedef std::initializer_list<std::initializer_list<Lit>> formula;
 
-    TEST(MinimizerTest, hittingSet) {
-        CNFProblem simple_and { {{1_L}, {~1_L, 2_L}, {~1_L, 3_L}, {1_L, ~2_L, ~3_L}} };
-        Minimizer minimi(simple_and, std::vector<Lit>({ 1_L, 2_L, 3_L }));
-        minimi.generateHittingSetProblem(simple_and);
-        CNFProblem& hittingSet = minimi.getHittingSetProblem();
-
-        ASSERT_EQ(hittingSet.nClauses(), 4);
-        ASSERT_EQ(hittingSet.nVars(), 3);
-
-        for (Cl* cl : hittingSet) {
-            ASSERT_EQ(cl->size(), 1);
-        }
-    }
-
     TEST(MinimizerTest, simpleMinimize) {
-        CNFProblem simple_or = { {{1_L}, {~1_L, 2_L, 3_L}, {1_L, ~2_L}, {1_L, ~3_L}} };
-        Minimizer minimi(simple_or, std::vector<Lit>({ 1_L, 2_L, 3_L }));
-        Cl minimized = minimi.computeMinimalModel(false);
+        CNFProblem simple_or { {{1_L}, {~1_L, 2_L, 3_L}, {1_L, ~2_L}, {1_L, ~3_L}} };
+        CandySolverResult model { 1_L, 2_L, 3_L };
+        Minimizer minimi(simple_or, model);
+        minimi.mimimizeModel(false, false);
+
+        Cl minimized = model.getMinimizedModelLiterals();
 
         ASSERT_EQ(minimized.size(), 2);
 

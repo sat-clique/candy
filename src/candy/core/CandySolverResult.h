@@ -32,12 +32,19 @@ class CandySolverResult {
 
      // If problem is satisfiable, this vector contains the model
     std::vector<lbool> model;
+    std::vector<lbool> minimizedModel;
 
     // If problem is unsatisfiable (possibly under assumptions), this vector represent the final conflict clause expressed in the assumptions.
     std::vector<Lit> conflict; 
 
 public:
     CandySolverResult() : status(l_Undef), model(), conflict() { }
+
+    CandySolverResult(std::initializer_list<Lit> model) : status(l_Undef), model(), conflict() { 
+        for (Lit lit : model) {
+            setModelValue(lit);
+        }
+    }
 
     void clear() {
         status = l_Undef;
@@ -67,12 +74,20 @@ public:
         conflict.insert(conflict.end(), assumptions.begin(), assumptions.end());
     }
 
+    bool satisfies(Lit lit) {
+        return l_True == (model[lit.var()] ^ lit.sign());
+    }
+
     // return satisfied literal for given variable
     Lit value(Var x) const {
         if (model[x] == l_False) {
             return Lit(x, true);
-        } else {
+        } 
+        else if (model[x] == l_True) {
             return Lit(x, false);
+        }
+        else {
+            return lit_Undef;
         }
     }
 
@@ -81,20 +96,37 @@ public:
     }
 
     std::vector<Lit> getModelLiterals() {
-        std::vector<Lit> model_literals; 
+        std::vector<Lit> literals; 
         for (Var v = 0; v < (Var)model.size(); v++) {
-            if (model[v] == l_True) {
-                model_literals.push_back(Lit(v, false));
-            }
-            else if (model[v] == l_False) {
-                model_literals.push_back(Lit(v, true));
+            Lit lit = value(v);
+            if (lit != lit_Undef) {
+                literals.push_back(lit);
             }
         }
-        return model_literals;
+        return literals;
     }
 
     std::vector<Lit>& getConflict() {
         return conflict;
+    }
+
+    /** support for minimized models */
+    void setMinimizedModelValue(Lit lit) {
+        if (lit.var() >= (Var)minimizedModel.size()) {
+            minimizedModel.resize(lit.var()+1, l_Undef);
+        }
+        minimizedModel[lit.var()] = lit.sign() ? l_False : l_True;
+    }
+
+    std::vector<Lit> getMinimizedModelLiterals() {
+        std::vector<Lit> literals; 
+        for (Var v = 0; v < (Var)minimizedModel.size(); v++) {
+            Lit lit = value(v);
+            if (lit != lit_Undef) {
+                literals.push_back(lit);
+            }
+        }
+        return literals;
     }
 
 };
