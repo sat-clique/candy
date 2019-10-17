@@ -84,16 +84,6 @@ public:
         return runtime.hasTimeout();
     }
 
-    For getRemainder() {
-        For remainder;
-        for (unsigned int lit = 0; lit < index.size(); lit++) {
-            remainder.insert(remainder.end(), index[lit].begin(), index[lit].end());
-        }
-        sort(remainder.begin(), remainder.end());
-        remainder.erase(std::unique(remainder.begin(), remainder.end()), remainder.end());
-        return remainder;
-    }
-
     const CNFProblem& problem;
     GateProblem& gate_problem;    
     ClauseSelectionMethod clause_selection_method;
