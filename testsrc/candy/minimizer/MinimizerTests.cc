@@ -28,6 +28,7 @@
 
 #include <candy/core/SolverTypes.h>
 #include <candy/minimizer/Minimizer.h>
+#include <candy/gates/GateBuilder.h>
 
 #include <iostream>
 #include <algorithm>
@@ -38,9 +39,13 @@ namespace Candy {
     typedef std::initializer_list<std::initializer_list<Lit>> formula;
 
     TEST(MinimizerTest, simpleMinimize) {
-        CNFProblem simple_or { {{1_L}, {~1_L, 2_L, 3_L}, {1_L, ~2_L}, {1_L, ~3_L}} };
+        For simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
+        CNFProblem problem;
+        problem.readClause({ 1_L });
+        problem.readClauses(simple_or);
+
         CandySolverResult model { 1_L, 2_L, 3_L };
-        Minimizer minimi(simple_or, model);
+        Minimizer minimi(problem, model);
         minimi.mimimizeModel(false, false);
 
         Cl minimized = model.getMinimizedModelLiterals();
@@ -51,7 +56,28 @@ namespace Candy {
         bool secondLit = std::find(minimized.begin(), minimized.end(), 2_L) != minimized.end();
         bool thirdLit = std::find(minimized.begin(), minimized.end(), 3_L) != minimized.end();
         ASSERT_TRUE(firstLit);
-        ASSERT_TRUE(secondLit || thirdLit);
+        ASSERT_TRUE(secondLit ^ thirdLit);
+    }
 
+    TEST(MinimizerTest, minimizeWithPruning) {
+        For simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
+        For simple_or2 = GateBuilder::or_gate(3_L, 4_L, 5_L);
+        CNFProblem problem;
+        problem.readClause({ 1_L });
+        problem.readClauses(simple_or);
+        problem.readClauses(simple_or2);
+
+        CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
+        Minimizer minimi(problem, model);
+        minimi.mimimizeModel(true, false);
+
+        Cl minimized = model.getMinimizedModelLiterals();
+
+        ASSERT_EQ(minimized.size(), 2);
+
+        bool firstLit = std::find(minimized.begin(), minimized.end(), 1_L) != minimized.end();
+        bool secondLit = std::find(minimized.begin(), minimized.end(), 2_L) != minimized.end();
+        ASSERT_TRUE(firstLit);
+        ASSERT_TRUE(secondLit);
     }
 }
