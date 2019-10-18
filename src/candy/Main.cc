@@ -331,9 +331,11 @@ int main(int argc, char** argv) {
             if (MinimizerOptions::do_minimize) {
                 Minimizer minimizer(problem, result);
                 minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal);
+                std::cout << "c Minimized-Model: "; 
                 for (Lit lit : result.getMinimizedModelLiterals()) {
                     printLiteral(lit);
                 }
+                std::cout << "c Minimized-Model-Size: " << result.getMinimizedModelLiterals(); 
             } 
             else {
                 // problem.checkResult(result);
