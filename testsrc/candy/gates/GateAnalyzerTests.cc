@@ -175,7 +175,9 @@ namespace Candy {
     TEST(GateAnalyzerTest, pruningWorks) {
         CNFProblem problem;
         For simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
+        For simple_or_bce = GateBuilder::or_gate(1_L, 2_L, 3_L, false);
         For simple_and1 = GateBuilder::and_gate(2_L, 4_L, 5_L);
+        For simple_and1_bce = GateBuilder::and_gate(2_L, 4_L, 5_L, false);
         For simple_and2 = GateBuilder::and_gate(3_L, 6_L, 7_L);
         problem.readClause({1_L});
         problem.readClauses(simple_or);
@@ -191,10 +193,12 @@ namespace Candy {
         assert_gate(ga, 3_L, false, simple_and2, {6_L, 7_L});
         CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L };
         For pruned = ga.getResult().getPrunedProblem(model);
-        ASSERT_TRUE(containsAll(pruned, simple_or));
-        ASSERT_TRUE(containsAll(pruned, simple_and1));
-        For f ({new Cl({~3_L, 6_L}), new Cl({~3_L, 7_L}), new Cl({3_L, ~6_L, ~7_L})});
-        ASSERT_FALSE(containsAll(pruned, f));
+        std::cout << pruned << std::endl;
+        ASSERT_TRUE(containsAll(pruned, simple_or_bce));
+        ASSERT_TRUE(containsAll(pruned, simple_and1_bce));
+        for (Cl* clause : simple_and2) {
+            ASSERT_FALSE(contains(pruned, clause->begin(), clause->end()));
+        }
     }
 
     //todo: fix test-case such that also the commented assertions hold
