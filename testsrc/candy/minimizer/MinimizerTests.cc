@@ -80,4 +80,38 @@ namespace Candy {
         ASSERT_TRUE(firstLit);
         ASSERT_TRUE(secondLit);
     }
+
+    TEST(MinimizerTest, noPruningWithXOR) {
+        For simple_or = GateBuilder::xor_gate(1_L, 2_L, 3_L);
+        For simple_or2 = GateBuilder::or_gate(3_L, 4_L, 5_L);
+        CNFProblem problem;
+        problem.readClause({ 1_L });
+        problem.readClauses(simple_or);
+        problem.readClauses(simple_or2);
+
+        CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
+        Minimizer minimi(problem, model);
+        minimi.mimimizeModel(true, false);
+
+        Cl minimized = model.getMinimizedModelLiterals();
+
+        ASSERT_EQ(minimized.size(), 5);
+    }
+
+    TEST(MinimizerTest, encodeMinimal) {
+        For simple_or = GateBuilder::xor_gate(1_L, 2_L, 3_L);
+        For simple_or2 = GateBuilder::or_gate(3_L, 4_L, 5_L);
+        CNFProblem problem;
+        problem.readClause({ 1_L });
+        problem.readClauses(simple_or);
+        problem.readClauses(simple_or2);
+
+        CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
+        Minimizer minimi(problem, model);
+        minimi.mimimizeModel(true, true);
+
+        Cl minimized = model.getMinimizedModelLiterals();
+
+        ASSERT_EQ(minimized.size(), 5);
+    }
 }

@@ -204,14 +204,16 @@ public:
             literals.pop_back();
             Gate gate = gates[o.var()];
 
-            std::cout << "output " << gate.out << ", not-mono " << gate.notMono << std::endl;
-            std::cout << "satisfied " << model.satisfies(o) << std::endl;
-            std::cout << "inputs " << gate.inp << std::endl;
-            std::cout << "visited " << visited[o.var()] << std::endl;
+            if (!gate.isDefined()) continue;
+
+            // std::cout << "output " << gate.out << ", not-mono " << gate.notMono << std::endl;
+            // std::cout << "satisfied " << model.satisfies(o) << std::endl;
+            // std::cout << "inputs " << gate.inp << std::endl;
+            // std::cout << "visited " << visited[o.var()] << std::endl;
 
             if (!visited[o.var()] && (gate.hasNonMonotonicParent() || model.satisfies(o))) { // Skip "don't cares"
                 for (Cl* clause : gate.fwd) result.push_back(clause);
-                if (!gate.hasNonMonotonicParent()) { // BCE
+                if (gate.hasNonMonotonicParent()) { // BCE
                     for (Cl* clause : gate.bwd) result.push_back(clause);
                 }
                 literals.insert(literals.end(), gate.inp.begin(), gate.inp.end());
