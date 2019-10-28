@@ -27,6 +27,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <iterator>
 #include <vector>
+#include <unordered_set>
 
 namespace Candy {
 
@@ -148,6 +149,12 @@ void GateAnalyzer::analyze() {
         }
         gate_recognition(root_clauses);
     }
+
+    std::unordered_set<Cl*> remainder;
+    for (unsigned int lit = 0; lit < index.size(); lit++) {
+        remainder.insert(index[lit].begin(), index[lit].end());
+    }
+    gate_problem.remainder.insert(gate_problem.remainder.end(), remainder.begin(), remainder.end());
 
     runtime.stop();
 }

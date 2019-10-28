@@ -145,26 +145,28 @@ static void printProblemStatistics(CNFProblem& problem) {
 static void printGateStatistics(CNFProblem& problem) {
     GateAnalyzer analyzer { problem };
     Runtime runtime;
+    
     runtime.start();
     analyzer.analyze();
     runtime.stop();
+    
     GateProblem gates = analyzer.getResult();
+
     std::cout << "c Variables: " << problem.nVars() << std::endl;
     std::cout << "c Clauses: " << problem.nClauses() << std::endl;
-    std::cout << "c RemainingClauses: " << analyzer.getRemainder().size() << std::endl;
-    // if (analyzer.getRemainder().size() < 10) {
-    //     std::cout << "c RemainingClauses: " << analyzer.getRemainder() << std::endl;
-    // }
+    std::cout << "c RemainingClauses: " << gates.remainder.size() << std::endl;
     std::cout << "c Gates: " << gates.nGates() << std::endl;
     std::cout << "c Monoton: " << gates.nMonotonGates() << std::endl;
     std::cout << "c Roots: " << gates.nRoots() << std::endl; 
     std::cout << "c StatsPatterns: " << gates.stat_patterns << std::endl; 
     std::cout << "c StatsSemantic: " << gates.stat_semantic << std::endl; 
     std::cout << "c StatsHolistic: " << gates.stat_holistic << std::endl; 
+
     std::cout << "c HistoConflicts: "; 
     unsigned int index = 0;
     for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
     std::cout << std::endl;
+
     std::cout << "c HistoConflictsUnsuccessful: "; 
     index = 0;
     for (unsigned int count : gates.unsuccessful_histogram_conflicts) std::cout << " " << index++ << ":" << count;
@@ -253,6 +255,10 @@ int main(int argc, char** argv) {
         installSignalHandlers(false);
     }
     else {
+        if (ParallelOptions::opt_static_database) {
+            std::cout << "Parallel mode with static database is disabled in this version due to a bug. If you want to test it, please checkout the branch 'release_sat_2019'." << std::endl;
+            exit(0);
+        }
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads && result == l_Undef; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
             ClauseDatabaseOptions::opt_recalculate_lbd = false;
@@ -326,12 +332,14 @@ int main(int argc, char** argv) {
     if (solver != nullptr) {
         if (result == l_True && SolverOptions::mod) {
             CandySolverResult& result = solver->getCandySolverResult();
-            if (SolverOptions::do_minimize > 0) {
-                Minimizer minimizer(problem, result.getModelLiterals());
-                Cl minimalModel = minimizer.computeMinimalModel(SolverOptions::do_minimize == 2);
-                for (Lit lit : minimalModel) {
+            if (MinimizerOptions::do_minimize) {
+                Minimizer minimizer(problem, result);
+                minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal);
+                std::cout << "c Minimized-Model: "; 
+                for (Lit lit : result.getMinimizedModelLiterals()) {
                     printLiteral(lit);
                 }
+                std::cout << "c Minimized-Model-Size: " << result.getMinimizedModelLiterals(); 
             } 
             else {
                 // problem.checkResult(result);
