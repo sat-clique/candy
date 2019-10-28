@@ -33,108 +33,130 @@ namespace Candy {
 /**
  * Maximize the number of don't cares in the given model relative to the given projection
  */
-Minimizer::Minimizer(CNFProblem& _problem, Cl _model) : problem(_problem), model(_model), hittingSetProblem() { }
+Minimizer::Minimizer(CNFProblem& _problem, CandySolverResult& _model) : problem(_problem), model(_model) { 
+    SolverOptions::opt_preprocessing = false;
+    SolverOptions::opt_inprocessing = 0;
+    SolverOptions::opt_sort_variables = false;
+    SolverOptions::opt_sort_watches = false; 
+    solver = createSolver();
+ }
 
-Minimizer::~Minimizer() { }
+Minimizer::~Minimizer() { 
+    delete solver;
+}
 
-void Minimizer::generateHittingSetProblem(CNFProblem& clauses) {
-    for (Cl* clause : clauses) {
-        // create clause containing all satified literals (purified)
-        Cl normalizedClause;
+
+template<typename Iterator>
+For Minimizer::purify(Iterator begin, Iterator end) {
+    For result;
+    for (auto it = begin; it < end; it++) {
+        Cl* clause = *it;
+        Cl* normalizedClause = new Cl();
         for (Lit lit : *clause) {
-            if (model[lit.var()] == lit) {
-                normalizedClause.push_back(Lit(lit.var(), false));
+            if (model.value(lit.var()) == lit) {
+                normalizedClause->push_back(Lit(lit.var(), false));
             }
         }
-        hittingSetProblem.readClause(normalizedClause);
+        result.push_back(normalizedClause);
     }
+    return result;
 }
 
-CNFProblem& Minimizer::getHittingSetProblem() {
-    return hittingSetProblem;
-}
+void Minimizer::mimimizeModel(bool pruningActivated, bool computeMinimalModel) {
+    For hittingSetProblem;
 
-Cl Minimizer::computeMinimalModel(bool pruningActivated) {
     if (pruningActivated) {
         GateAnalyzer gateAnalyzer(problem);
         gateAnalyzer.analyze();
         For clauses = gateAnalyzer.getGateProblem().getPrunedProblem(model);
-        CNFProblem problem { clauses }; 
-        generateHittingSetProblem(problem);
+        hittingSetProblem = purify(clauses.begin(), clauses.end());
     }
     else {
-        generateHittingSetProblem(problem);
-    }
-
-    SolverOptions::opt_preprocessing = false;
-    CandySolverInterface* solver = createSolver();
-    solver->init(hittingSetProblem);
-
-    // compute minimal model for 
-    hittingSetProblem.printDIMACS();
-
-    Cl normalizedModel;
-    for (Lit lit : model) {
-        normalizedModel.push_back(lit.sign() ? ~lit : lit); // add normalized
+        hittingSetProblem = purify(problem.begin(), problem.end());
     }
 
     // find minimal model
-    Cl minimizedModel = iterativeMinimization(solver, normalizedModel);
+    Cl minimizedModel = iterativeMinimization(hittingSetProblem, computeMinimalModel);
 
-    // translate back to original variables
-    Cl denormalizedModel;
+    // translate back to original polarity
     for (Lit lit : minimizedModel) {
-        denormalizedModel.push_back(model[lit.var()]);
+        if (model.modelValue(lit) == l_True) {
+            model.setMinimizedModelValue(lit);
+        }
+        else {
+            model.setMinimizedModelValue(~lit);
+        }
     }
-
-    delete solver;
-
-    return denormalizedModel;
 }
 
-Cl Minimizer::iterativeMinimization(CandySolverInterface* solver, Cl model) {
-    Cl pModel(model.begin(), model.end());
-    Cl exclude;
-    Cl assume;
+Cl Minimizer::iterativeMinimization(For hittingSetProblem, bool computeMinimalModel) {
+    Cl cardinality;
+    Cl assumptions;
 
-#ifndef NDEBUG
-    unsigned int i = 0;
-#endif
+    solver->init(CNFProblem { hittingSetProblem });
+
+    for (Var v = 0; v < (Var)this->problem.nVars(); v++) {
+        cardinality.push_back(Lit(v, true));
+    }
+
     lbool satisfiable = l_True;
     while (satisfiable == l_True) {
-        exclude.clear();
-        assume.clear();
-
-        for (Lit lit : pModel) {
-            if (lit.sign()) {
-                assume.push_back(lit);
-            } 
-            else {
-                exclude.push_back(~lit);
-            }
-        }
-
-        std::cout << "c Current Model " << pModel << std::endl;
-        std::cout << "c Assuming " << assume << std::endl;
-        std::cout << "c Excluding " << exclude << std::endl;
-        assert(assume.size() >= i++);
-
-        solver->init(CNFProblem { exclude });
-        solver->getAssignment().setAssumptions(assume);
+        solver->init(CNFProblem { cardinality });
+        solver->getAssignment().setAssumptions(assumptions);
 
         satisfiable = solver->solve();
 
         if (satisfiable == l_True) {
-            pModel = solver->getCandySolverResult().getModelLiterals();
+            CandySolverResult result = solver->getCandySolverResult();
+
+            cardinality.clear();
+            assumptions.clear();
+            for (Var v = 0; v < (Var)this->problem.nVars(); v++) {
+                if (result.modelValue(Lit(v, false)) == l_True) {
+                    cardinality.push_back(Lit(v, true));
+                }
+                else {
+                    assumptions.push_back(Lit(v, true));
+                }
+            }      
         }
     }
 
-    auto last = std::remove_if(pModel.begin(), pModel.end(), [](const Lit lit) { return lit.sign(); });
-    pModel.erase(last, pModel.end());
+    if (computeMinimalModel) {
+        CNFProblem counter, lessthan;
+        Cl variables;
+        for (Var v = 0; v < (Var)this->problem.nVars(); v++) {
+            variables.push_back(Lit(v, false));
+        }
+        Cl outputs = genParCounter(counter, variables);
+        solver->init(counter);
+        satisfiable = l_True;
+        while (satisfiable == l_True) {
+            lessthan.clear();
+            genLessThanConstraint(lessthan, outputs, cardinality.size());
+            solver->init(lessthan);
 
-    std::cout << "c Resulting model " << pModel << std::endl;
+            satisfiable = solver->solve();
 
-    return pModel;
+            if (satisfiable == l_True) {
+                CandySolverResult result = solver->getCandySolverResult();
+
+                cardinality.clear();
+                for (Var v = 0; v < (Var)this->problem.nVars(); v++) {
+                    if (result.modelValue(Lit(v, false)) == l_True) {
+                        cardinality.push_back(Lit(v, true));
+                    }
+                }      
+            }
+        }
+    }
+
+    Cl result;
+    for (Lit lit : cardinality) {
+        result.push_back(~lit);
+    }
+
+    return result;
 }
 
 }

@@ -40,11 +40,16 @@ namespace ClauseDatabaseOptions {
     IntOption opt_inc_reduce_db("ClauseDatabase", "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
 }
 
+namespace MinimizerOptions {
+    BoolOption do_minimize("Minimizer", "minimize", "Activate Model Minimization.", false);
+    BoolOption minimize_pruned("Minimizer", "minimize_pruned", "Activate Pruning.", false);;
+    BoolOption minimize_minimal("Minimizer", "minimize_minimal", "Activate Minimal Model Computation.", false);;
+}
+
 namespace SolverOptions {
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
     BoolOption mod("MAIN", "model", "show model.", false);
     StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
-    IntOption do_minimize("METHOD", "minimize", "Model Minimization (0=none, 1=normal, 2=pruning).", 0, IntRange(0, 2));
     BoolOption gate_stats("MAIN", "gate-stats", "show only gate recognizer statistics.", false);
 
     IntOption memory_limit("MAIN", "memory-limit", "Limit on memory usage in mega bytes.\n", INT32_MAX, IntRange(0, INT32_MAX));

@@ -41,11 +41,16 @@ namespace ClauseDatabaseOptions {
     extern IntOption opt_inc_reduce_db;
 }
 
+namespace MinimizerOptions {
+    extern BoolOption do_minimize;
+    extern BoolOption minimize_pruned;
+    extern BoolOption minimize_minimal;
+}
+
 namespace SolverOptions {
     extern IntOption verb;
     extern BoolOption mod;
     extern StringOption opt_certified_file;
-    extern IntOption do_minimize;
     extern BoolOption gate_stats;
 
     extern IntOption memory_limit;

@@ -42,11 +42,13 @@ private:
 public:
 	Stamp() : stamped() {
 		stamp = std::numeric_limits<T>::min();
+		clear();
 	}
 
-	Stamp(unsigned int size) : Stamp() {
+	Stamp(size_t size) : Stamp() {
 		stamped.resize(size, std::numeric_limits<T>::min());
 		stamp = std::numeric_limits<T>::min();
+		clear();
 	}
 
 	~Stamp() { }
