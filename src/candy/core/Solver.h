@@ -418,8 +418,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
                 *logging.log() << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
                 clause_db.reduce();
             }            
-            branch.process_reduce();
             clause_db.reorganize();
+            branch.process_reduce();
             *logging.log() << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
             propagator.reset();
         }
