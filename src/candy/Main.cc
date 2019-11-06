@@ -334,7 +334,7 @@ int main(int argc, char** argv) {
             CandySolverResult& result = solver->getCandySolverResult();
             if (MinimizerOptions::do_minimize) {
                 Minimizer minimizer(problem, result);
-                minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal);
+                minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal, MinimizerOptions::minimize_project);
                 std::cout << "c Minimized-Model: "; 
                 for (Lit lit : result.getMinimizedModelLiterals()) {
                     printLiteral(lit);

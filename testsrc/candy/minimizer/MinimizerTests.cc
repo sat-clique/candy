@@ -46,7 +46,7 @@ namespace Candy {
 
         CandySolverResult model { 1_L, 2_L, 3_L };
         Minimizer minimi(problem, model);
-        minimi.mimimizeModel(false, false);
+        minimi.mimimizeModel(false, false, false);
 
         Cl minimized = model.getMinimizedModelLiterals();
 
@@ -69,7 +69,7 @@ namespace Candy {
 
         CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
         Minimizer minimi(problem, model);
-        minimi.mimimizeModel(true, false);
+        minimi.mimimizeModel(true, false, false);
 
         Cl minimized = model.getMinimizedModelLiterals();
 
@@ -91,7 +91,7 @@ namespace Candy {
 
         CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
         Minimizer minimi(problem, model);
-        minimi.mimimizeModel(true, false);
+        minimi.mimimizeModel(true, false, false);
 
         Cl minimized = model.getMinimizedModelLiterals();
 
@@ -108,10 +108,49 @@ namespace Candy {
 
         CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
         Minimizer minimi(problem, model);
-        minimi.mimimizeModel(true, true);
+        minimi.mimimizeModel(true, true, false);
 
         Cl minimized = model.getMinimizedModelLiterals();
 
         ASSERT_EQ(minimized.size(), 5);
+    }
+
+    TEST(MinimizerTest, minimizeWithPruningAndProjection) {
+        For simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
+        For simple_or2 = GateBuilder::or_gate(3_L, 4_L, 5_L);
+        CNFProblem problem;
+        problem.readClause({ 1_L });
+        problem.readClauses(simple_or);
+        problem.readClauses(simple_or2);
+
+        CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L };
+        Minimizer minimi(problem, model);
+        minimi.mimimizeModel(true, false, true);
+
+        Cl minimized = model.getMinimizedModelLiterals();
+
+        ASSERT_EQ(minimized.size(), 1);
+        ASSERT_TRUE(minimized.front() == 2_L);
+    }
+
+    TEST(MinimizerTest, minimizeWithProjection) {
+        For simple_or = GateBuilder::or_gate(1_L, 2_L, 3_L);
+        For simple_and = GateBuilder::and_gate(3_L, 4_L, 5_L);
+        CNFProblem problem;
+        problem.readClause({ 1_L });
+        problem.readClauses(simple_or);
+        problem.readClauses(simple_and);
+
+        CandySolverResult model { 1_L, 2_L, 3_L, 4_L, 5_L };
+        Minimizer minimi(problem, model);
+        minimi.mimimizeModel(false, false, true);
+
+        Cl minimized = model.getMinimizedModelLiterals();
+
+        ASSERT_EQ(minimized.size(), 2);
+        bool firstLit = std::find(minimized.begin(), minimized.end(), 4_L) != minimized.end();
+        bool secondLit = std::find(minimized.begin(), minimized.end(), 5_L) != minimized.end();
+        ASSERT_TRUE(firstLit);
+        ASSERT_TRUE(secondLit);
     }
 }
