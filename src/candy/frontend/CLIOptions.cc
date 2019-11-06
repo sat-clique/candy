@@ -42,8 +42,9 @@ namespace ClauseDatabaseOptions {
 
 namespace MinimizerOptions {
     BoolOption do_minimize("Minimizer", "minimize", "Activate Model Minimization.", false);
-    BoolOption minimize_pruned("Minimizer", "minimize_pruned", "Activate Pruning.", false);;
-    BoolOption minimize_minimal("Minimizer", "minimize_minimal", "Activate Minimal Model Computation.", false);;
+    BoolOption minimize_pruned("Minimizer", "minimize_pruned", "Activate Pruning.", false);
+    BoolOption minimize_minimal("Minimizer", "minimize_minimal", "Activate Minimal Model Computation.", false);
+    BoolOption minimize_project("Minimizer", "minimize_minimal", "Project to input variables.", false);
 }
 
 namespace SolverOptions {
