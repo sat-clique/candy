@@ -121,9 +121,8 @@ public:
     std::vector<Lit> getMinimizedModelLiterals() {
         std::vector<Lit> literals; 
         for (Var v = 0; v < (Var)minimizedModel.size(); v++) {
-            Lit lit = value(v);
-            if (lit != lit_Undef) {
-                literals.push_back(lit);
+            if (minimizedModel[v] != l_Undef) {
+                literals.push_back(value(v));
             }
         }
         return literals;

@@ -139,7 +139,7 @@ public:
     Minimizer(CNFProblem& _problem, CandySolverResult& _model);
     virtual ~Minimizer();
 
-    void mimimizeModel(bool pruningActivated, bool computeMinimalModel);
+    void mimimizeModel(bool pruningActivated, bool computeMinimalModel, bool projectToInputs);
 
 };
 

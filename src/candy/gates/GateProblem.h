@@ -247,7 +247,7 @@ public:
                 done[outputs[i].var()] = true;
                 printf("Gate with output ");
                 printLiteral(gate.out);
-                printf("Is defined by clauses ");
+                printf(" is defined by clauses ");
                 printFormula(gate.fwd);
                 printFormula(gate.bwd);
                 outputs.insert(outputs.end(), gate.inp.begin(), gate.inp.end());
