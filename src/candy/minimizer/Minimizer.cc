@@ -62,24 +62,40 @@ For Minimizer::purify(Iterator begin, Iterator end) {
     return result;
 }
 
-void Minimizer::mimimizeModel(bool pruningActivated, bool computeMinimalModel) {
+void Minimizer::mimimizeModel(bool pruningActivated, bool computeMinimalModel, bool projectToInputs) {
     For hittingSetProblem;
+    Cl minimizedModel;
 
-    if (pruningActivated) {
+    if (pruningActivated || projectToInputs) {
         GateAnalyzer gateAnalyzer(problem);
         gateAnalyzer.analyze();
-        For clauses = gateAnalyzer.getGateProblem().getPrunedProblem(model);
-        hittingSetProblem = purify(clauses.begin(), clauses.end());
+
+        if (pruningActivated) {
+            For clauses = gateAnalyzer.getGateProblem().getPrunedProblem(model);
+            hittingSetProblem = purify(clauses.begin(), clauses.end());
+        }
+        else {
+            hittingSetProblem = purify(problem.begin(), problem.end()); 
+        }
+
+        minimizedModel = iterativeMinimization(hittingSetProblem, computeMinimalModel);
+
+        if (projectToInputs) {
+            auto end = remove_if(minimizedModel.begin(), minimizedModel.end(), 
+                [gateAnalyzer](Lit lit) { 
+                    return gateAnalyzer.getGateProblem().isGateOutput(lit); 
+                });
+            minimizedModel.erase(end, minimizedModel.end());
+        }
     }
     else {
         hittingSetProblem = purify(problem.begin(), problem.end());
+        minimizedModel = iterativeMinimization(hittingSetProblem, computeMinimalModel);
     }
-
-    // find minimal model
-    Cl minimizedModel = iterativeMinimization(hittingSetProblem, computeMinimalModel);
 
     // translate back to original polarity
     for (Lit lit : minimizedModel) {
+        std::cout << lit << std::endl;
         if (model.modelValue(lit) == l_True) {
             model.setMinimizedModelValue(lit);
         }

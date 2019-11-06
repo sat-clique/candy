@@ -45,6 +45,7 @@ namespace MinimizerOptions {
     extern BoolOption do_minimize;
     extern BoolOption minimize_pruned;
     extern BoolOption minimize_minimal;
+    extern BoolOption minimize_project;
 }
 
 namespace SolverOptions {
