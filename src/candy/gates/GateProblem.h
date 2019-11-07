@@ -197,7 +197,7 @@ public:
         For result(roots.begin(), roots.end());
 
         std::vector<Lit> literals = getRootLiterals();
-        Stamp<uint8_t> visited { model.getModelLiterals().size() };
+        Stamp<uint8_t> visited { problem.nVars() };
 
         while (literals.size() > 0) {
             Lit o = literals.back();

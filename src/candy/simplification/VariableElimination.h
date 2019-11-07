@@ -158,7 +158,7 @@ public:
                 satisfied = false;
                 --i; //elimclauses[i] is first literal of next clause 
             }
-            satisfied |= (result.modelValue(elimclauses[i]) == l_True);
+            satisfied |= result.satisfies(elimclauses[i]);
         }
     }
 
