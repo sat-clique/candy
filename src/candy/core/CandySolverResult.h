@@ -57,7 +57,6 @@ public:
     }
     
     void setModel(Trail& trail) {
-        model.resize(trail.trail.size(), l_Undef);
         for (Lit lit : trail) {
             setModelValue(lit);
         }
@@ -75,7 +74,7 @@ public:
     }
 
     bool satisfies(Lit lit) {
-        return l_True == (model[lit.var()] ^ lit.sign());
+        return (Var)model.size() > lit.var() && l_True == (model[lit.var()] ^ lit.sign());
     }
 
     // return satisfied literal for given variable
@@ -91,16 +90,14 @@ public:
         }
     }
 
-    lbool modelValue(Lit p) const {
-        return model[p.var()] ^ p.sign();
-    }
-
     std::vector<Lit> getModelLiterals() {
         std::vector<Lit> literals; 
         for (Var v = 0; v < (Var)model.size(); v++) {
-            Lit lit = value(v);
-            if (lit != lit_Undef) {
-                literals.push_back(lit);
+            if (model[v] == l_True) {
+                literals.push_back(Lit(v, false));
+            }
+            else if (model[v] == l_False) {
+                literals.push_back(Lit(v, true));
             }
         }
         return literals;
@@ -121,8 +118,11 @@ public:
     std::vector<Lit> getMinimizedModelLiterals() {
         std::vector<Lit> literals; 
         for (Var v = 0; v < (Var)minimizedModel.size(); v++) {
-            if (minimizedModel[v] != l_Undef) {
-                literals.push_back(value(v));
+            if (minimizedModel[v] == l_True) {
+                literals.push_back(Lit(v, false));
+            }
+            else if (minimizedModel[v] == l_False) {
+                literals.push_back(Lit(v, true));
             }
         }
         return literals;

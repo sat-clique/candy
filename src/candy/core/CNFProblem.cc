@@ -46,7 +46,7 @@ void CNFProblem::readDimacsFromStdin() {
 void CNFProblem::readDimacsFromFile(const char* filename) {
     gzFile in = gzopen(filename, "rb");
     if (in == NULL) {
-        throw ParserException(std::string("ERROR! Could not open file") + filename);
+        throw ParserException(std::string("ERROR! Could not open file"));
     }
     readDimacs(in);
     gzclose(in);
@@ -144,7 +144,7 @@ void CNFProblem::checkResult(CandySolverResult& result) {
     for (Cl* clause : problem) {
         bool satisfied = false;
         for (Lit lit : *clause) {
-            if (result.modelValue(lit) == l_True) {
+            if (result.satisfies(lit)) {
                 satisfied = true; 
                 break;
             }

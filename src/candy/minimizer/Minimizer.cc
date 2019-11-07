@@ -95,8 +95,7 @@ void Minimizer::mimimizeModel(bool pruningActivated, bool computeMinimalModel, b
 
     // translate back to original polarity
     for (Lit lit : minimizedModel) {
-        std::cout << lit << std::endl;
-        if (model.modelValue(lit) == l_True) {
+        if (model.satisfies(lit)) {
             model.setMinimizedModelValue(lit);
         }
         else {
@@ -128,7 +127,7 @@ Cl Minimizer::iterativeMinimization(For hittingSetProblem, bool computeMinimalMo
             cardinality.clear();
             assumptions.clear();
             for (Var v = 0; v < (Var)this->problem.nVars(); v++) {
-                if (result.modelValue(Lit(v, false)) == l_True) {
+                if (result.satisfies(Lit(v, false))) {
                     cardinality.push_back(Lit(v, true));
                 }
                 else {
@@ -159,7 +158,7 @@ Cl Minimizer::iterativeMinimization(For hittingSetProblem, bool computeMinimalMo
 
                 cardinality.clear();
                 for (Var v = 0; v < (Var)this->problem.nVars(); v++) {
-                    if (result.modelValue(Lit(v, false)) == l_True) {
+                    if (result.satisfies(Lit(v, false))) {
                         cardinality.push_back(Lit(v, true));
                     }
                 }      
