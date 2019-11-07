@@ -98,8 +98,7 @@ public:
     int val(int lit) {
         if (nomodel) return 0;
         CandySolverResult& result = solver->getCandySolverResult();
-        lbool res = result.modelValue(import(lit));
-        return (res == l_True) ? lit : -lit;
+        return result.satisfies(import(lit)) ? lit : -lit;
     }
 
     int failed(int lit) {

@@ -330,22 +330,23 @@ int main(int argc, char** argv) {
     printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
 
     if (solver != nullptr) {
+        CandySolverResult& model = solver->getCandySolverResult();
+
+        if (result == l_True && MinimizerOptions::do_minimize) {
+            Minimizer minimizer(problem, model);
+            std::cout << "c Minimizing Model" << std::endl;
+            minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal, MinimizerOptions::minimize_project);
+            std::cout << "c Minimized-Model-Size: " << model.getMinimizedModelLiterals().size() << std::endl; 
+        }
         if (result == l_True && SolverOptions::mod) {
-            CandySolverResult& result = solver->getCandySolverResult();
             if (MinimizerOptions::do_minimize) {
-                Minimizer minimizer(problem, result);
-                minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal, MinimizerOptions::minimize_project);
-                std::cout << "c Minimized-Model: "; 
-                for (Lit lit : result.getMinimizedModelLiterals()) {
-                    printLiteral(lit);
-                }
-                std::cout << "c Minimized-Model-Size: " << result.getMinimizedModelLiterals(); 
+                std::cout << "c Minimized-Model: " << model.getMinimizedModelLiterals() << std::endl;
             } 
             else {
                 // problem.checkResult(result);
                 std::cout << "v";
                 for (Var v = 0; v < (Var)problem.nVars(); v++) {
-                    std::cout << " " << result.value(v);
+                    std::cout << " " << model.value(v);
                 }
                 std::cout << " 0" << std::endl;
             }
