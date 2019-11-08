@@ -334,9 +334,13 @@ int main(int argc, char** argv) {
 
         if (result == l_True && MinimizerOptions::do_minimize) {
             Minimizer minimizer(problem, model);
+            Runtime runtime;
             std::cout << "c Minimizing Model" << std::endl;
+            runtime.start();
             minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal, MinimizerOptions::minimize_project);
+            runtime.stop();
             std::cout << "c Minimized-Model-Size: " << model.getMinimizedModelLiterals().size() << std::endl; 
+            std::cout << "c Minimizer-Runtime: " << std::fixed << std::setprecision(2) << runtime.getRuntime() << std::endl;
         }
         if (result == l_True && SolverOptions::mod) {
             if (MinimizerOptions::do_minimize) {
