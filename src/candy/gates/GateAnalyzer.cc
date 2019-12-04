@@ -31,24 +31,15 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod method, ClauseSelectionMethod selection, int tries, double timeout) :
-        problem(problem_), gate_problem(*new GateProblem { problem_ }), clause_selection_method(selection), runtime(timeout), 
+GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod method, int tries, double timeout) :
+        problem(problem_), gate_problem(*new GateProblem { problem_ }), runtime(timeout), index(problem_), 
         maxTries (tries), usePatterns (false), useSemantic (false), useHolistic (false), useIntensification (false)
 {
-    index.resize(2 * problem.nVars());
-    could_be_blocked.resize(problem.nVars(), true);
-
-    for (Cl* c : problem) for (Lit l : *c) {
-        index[l].push_back(c);
-    }
-
     switch (method) {
         case GateRecognitionMethod::Patterns: usePatterns = true; break;
         case GateRecognitionMethod::Semantic: useSemantic = true; break;
         case GateRecognitionMethod::Holistic: useHolistic = true; break;
-        case GateRecognitionMethod::IntensifyPS: useIntensification = true; // fall-through:
         case GateRecognitionMethod::PatSem: usePatterns = true; useSemantic = true; break;
-        case GateRecognitionMethod::IntensifyOSH: useIntensification = true; // fall-through:
         case GateRecognitionMethod::PatSemHol: usePatterns = true; useSemantic = true; useHolistic = true; break;
         default: usePatterns = true;
     }
@@ -63,54 +54,13 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod met
 
 GateAnalyzer::~GateAnalyzer() { }
 
-/**
- * Clause Selection Heuristics
- * */
-std::vector<Lit> GateAnalyzer::getRarestLiterals(std::vector<For>& index) {
-    std::vector<Lit> result;
-    unsigned int min = UINT_MAX;
-    for (Lit l = Lit(0, false); l.x < (int32_t)index.size(); l.x++) {
-        if (index[l].size() > 0 && index[l].size() < min) {
-            min = index[l].size();
-            result.clear();
-            result.push_back(l);
-        }
-        else if (index[l].size() == min) {
-            result.push_back(l);
-        }
-    }
-    return result;
-}
+
 
 std::vector<Cl*> GateAnalyzer::getUnitClauses() {
     std::vector<Cl*> clauses;
     for (Cl* c : problem) {
         if (c->size() == 1) {
             clauses.push_back(c);
-        }
-    }
-    return clauses;
-}
-
-std::vector<Cl*> GateAnalyzer::getClausesWithRareLiterals() {
-    std::vector<Cl*> clauses;
-    if (clauses.empty()) {
-        std::vector<Lit> lits = getRarestLiterals(index);
-        if (!lits.empty()) {
-            Lit best = lits.back();
-            clauses.insert(clauses.end(), index[best].begin(), index[best].end());
-        }
-    }
-    return clauses;
-}
-
-std::vector<Cl*> GateAnalyzer::getClausesWithMaximalLiterals() {
-    std::vector<Cl*> clauses;
-    if (clauses.empty()) {
-        std::vector<Lit> lits = getRarestLiterals(index);
-        if (!lits.empty()) {
-            Lit best = lits.back();
-            clauses.insert(clauses.end(), index[best].begin(), index[best].end());
         }
     }
     return clauses;
@@ -125,33 +75,30 @@ std::vector<Cl*> GateAnalyzer::getClausesWithMaximalLiterals() {
 void GateAnalyzer::analyze() {
     runtime.start();
 
-    std::vector<Cl*> root_clauses = getUnitClauses();
-    unsigned int count = 0;
+    std::vector<Cl*> root_clauses;
 
-    switch (clause_selection_method) {
-        case ClauseSelectionMethod::UnitClausesThenMaximalLiterals: 
-        case ClauseSelectionMethod::UnitClausesThenRareLiterals: 
-            gate_recognition(root_clauses); 
-            count++;
-        default: break;
-    }
-
-    for (; count < maxTries && !runtime.hasTimeout(); count++) {
-        switch (clause_selection_method) {
-            case ClauseSelectionMethod::UnitClausesThenMaximalLiterals: 
-            case ClauseSelectionMethod::MaximalLiterals: 
-                root_clauses = getClausesWithMaximalLiterals();
-                break;
-            case ClauseSelectionMethod::UnitClausesThenRareLiterals: 
-            case ClauseSelectionMethod::RareLiterals: 
-                root_clauses = getClausesWithRareLiterals();
-                break;
+    for (unsigned int count = 0; (maxTries == 0 || count < maxTries) && !runtime.hasTimeout(); count++) {
+        if (count == 0) {
+            root_clauses = getUnitClauses();
         }
+        else {
+            Lit lit = index.getMinimallyUnblockedLiteral();
+            if (lit != lit_Undef) {
+                root_clauses = index.getUnblockedClauses(lit);
+            }
+            else {
+                break;
+            }
+        }
+
+        if (root_clauses.empty()) continue;
+        
         gate_recognition(root_clauses);
     }
 
     std::unordered_set<Cl*> remainder;
-    for (unsigned int lit = 0; lit < index.size(); lit++) {
+    for (size_t lit = 0; lit < index.size(); lit++) {
+        //if (index[lit].size() > 0) std::cout << "Remainder " << index[lit] << std::endl;
         remainder.insert(index[lit].begin(), index[lit].end());
     }
     gate_problem.remainder.insert(gate_problem.remainder.end(), remainder.begin(), remainder.end());
@@ -162,10 +109,10 @@ void GateAnalyzer::analyze() {
 void GateAnalyzer::gate_recognition(std::vector<Cl*> roots) {
     std::vector<Lit> candidates;
 
-    gate_problem.roots.insert(gate_problem.roots.end(), roots.begin(), roots.end());
-    removeFromIndex(index, roots);
+    index.remove(roots);
 
     for (Cl* clause : roots) {
+        gate_problem.roots.push_back(clause);
         candidates.insert(candidates.end(), clause->begin(), clause->end());
         for (Lit l : *clause) gate_problem.setUsedAsInput(l);
     }
@@ -181,7 +128,7 @@ void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
     std::vector<Lit> candidates;
     std::vector<Lit> frontier { roots.begin(), roots.end() };
 
-    // std::cout << "Starting recogintion with the following roots: " << roots << std::endl;
+    //std::cout << "Starting recogintion with the following roots: " << roots << std::endl;
 
     // while (!candidates.empty()) {
     //     Lit candidate = candidates.back();
@@ -190,9 +137,9 @@ void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
         candidates.swap(frontier);
 
         for (Lit candidate : candidates) {
-            // std::cout << "Candidate Literal is: " << candidate << std::endl;
+            //std::cout << "Candidate Literal is: " << candidate << std::endl;
             if (isGate(candidate, usePatterns, useSemantic, useHolistic)) { 
-                // std::cout << "Found gate with inputs: " << gate_problem.getGate(candidate).inp << std::endl;
+                //std::cout << "Found gate with inputs: " << gate_problem.getGate(candidate).inp << std::endl;
                 frontier.insert(frontier.end(), gate_problem.getGate(candidate).inp.begin(), gate_problem.getGate(candidate).inp.end());
             }
         }
@@ -243,9 +190,9 @@ void GateAnalyzer::recognition_with_intensification(std::vector<Lit> roots) {
  * Uses only the methods activated by the given flags
  * */
 bool GateAnalyzer::isGate(Lit candidate, bool pat, bool sem, bool hol) {
-    For& fwd = index[~candidate]; 
-    For& bwd = index[candidate];
-    if (fwd.size() > 0 && isBlocked(candidate, fwd, bwd)) {
+    if (index[~candidate].size() > 0 && index.isBlockedSet(candidate)) {
+        const For& fwd = index[~candidate];
+        const For& bwd = index[candidate];
         bool pattern = false, semantic = false, holistic = false;
         bool monotonic = gate_problem.isNestedMonotonic(candidate);
         
@@ -264,8 +211,8 @@ bool GateAnalyzer::isGate(Lit candidate, bool pat, bool sem, bool hol) {
         if (monotonic || pattern || semantic || holistic) {
             gate_problem.addGate(candidate, fwd, bwd); 
             gate_problem.addGateStats(pattern, semantic, holistic, (semantic || holistic) ? solver->getStatistics().nConflicts() : 0);
-            removeFromIndex(index, gate_problem.getGate(candidate).fwd);
-            removeFromIndex(index, gate_problem.getGate(candidate).bwd);
+            index.remove(gate_problem.getGate(candidate).fwd);
+            index.remove(gate_problem.getGate(candidate).bwd);
             return true;
         }
         else if (sem || hol) {
@@ -278,7 +225,7 @@ bool GateAnalyzer::isGate(Lit candidate, bool pat, bool sem, bool hol) {
 
 // clause patterns of full encoding
 // precondition: fwd blocks bwd on the o
-bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd) {
+bool GateAnalyzer::patternCheck(Lit o, const For& fwd, const For& bwd) {
     // check if fwd and bwd constrain exactly the same inputs (in opposite polarity)
     std::set<Lit> fwd_inp, bwd_inp;
     for (Cl* c : fwd) for (Lit l : *c) if (l != ~o) fwd_inp.insert(l);
@@ -307,7 +254,7 @@ bool GateAnalyzer::patternCheck(Lit o, For& fwd, For& bwd) {
     return false;
 }
 
-bool GateAnalyzer::semanticCheck(Lit o, For& fwd, For& bwd, bool holistic) {
+bool GateAnalyzer::semanticCheck(Lit o, const For& fwd, const For& bwd, bool holistic) {
     CNFProblem constraint;
     Cl clause;
     for (const For& f : { fwd, bwd }) {
@@ -339,122 +286,5 @@ bool GateAnalyzer::semanticCheck(Lit o, For& fwd, For& bwd, bool holistic) {
     lbool result = solver->solve();
     return (result == l_False);
 }
-
-/**
-  * Experimental: Tries to detect a common sub-gate in order to decode a gate
-// precondition: ~o \in f[i] and o \in g[j]
-bool GateAnalyzer::isBlockedAfterVE(Lit o, For& f, For& g) {
-    // generate set of non-tautological resolvents
-    
-    std::vector<Cl> resolvents;
-    for (Cl* a : f) for (Cl* b : g) {
-        if (!isBlocked(o, *a, *b)) {
-            resolvents.resize(resolvents.size() + 1); // new clause gets created at the back
-            Cl& res = resolvents.back();
-            res.insert(res.end(), a->begin(), a->end());
-            res.insert(res.end(), b->begin(), b->end());
-            res.erase(std::remove_if(res.begin(), res.end(), [o](Lit l) { return l.var() == o.var(); }), res.end());
-        }
-        if ((int)resolvents.size() > lookaheadThreshold) return false;
-    }
-    if (resolvents.empty()) return true; // the set is trivially blocked
-
-#ifdef GADebug
-    printf("Found %zu non-tautologic resolvents\n", resolvents.size());
-#endif
-
-    // generate set of literals whose variable occurs in every non-taut. resolvent (by successive intersection of resolvents)
-    std::vector<Var> candidates;
-    for (Lit l : resolvents[0]) candidates.push_back(l.var());
-    for (size_t i = 1; i < resolvents.size(); ++i) {
-        if (candidates.empty()) break;
-        std::vector<Var> next_candidates;
-        for (Lit lit : resolvents[i]) {
-            if (find(candidates.begin(), candidates.end(), lit.var()) != candidates.end()) {
-                next_candidates.push_back(lit.var());
-            }
-        }
-        std::swap(candidates, next_candidates);
-        next_candidates.clear();
-    }
-    if (candidates.empty()) return false; // no candidate output
-
-#ifdef GADebug
-    printf("Found %zu candidate variables for functional elimination: ", candidates.size());
-    for (Var v : candidates) printf("%i ", v+1);
-    printf("\n");
-#endif
-
-    // generate set of input variables of candidate gate (o, f, g)
-    std::vector<Var> inputs;
-    std::vector<int> occCount(problem.nVars()+1);
-    for (For formula : { f, g })  for (Cl* c : formula)  for (Lit l : *c) {
-        if (l.var() != o.var()) {
-            inputs.push_back(l.var());
-            occCount[l.var()]++;
-        }
-    }
-
-    sort(inputs.begin(), inputs.end());
-    inputs.erase(unique(inputs.begin(), inputs.end()), inputs.end());
-
-    sort(candidates.begin(), candidates.end(), [occCount](Var a, Var b) { return occCount[a] < occCount[b]; });
-
-    for (Var cand : candidates) {
-        // generate candidate definition for output
-        For fwd, bwd;
-        Lit out = Lit(cand, false);
-
-#ifdef GADebug
-        printf("candidate variable: %i\n", cand+1);
-#endif
-
-        for (Lit lit : { out, ~out })
-            for (Cl* c : index[lit]) {
-                // clauses of candidate gate (o, f, g) are still part of index (skip them)
-                if (find(f.begin(), f.end(), c) == f.end() && find(g.begin(), g.end(), c) == g.end()) {
-                    // use clauses that constrain the inputs of our candidate gate only
-                    bool is_subset = true;
-                    for (Lit l : *c) {
-                        if (find(inputs.begin(), inputs.end(), l.var()) == inputs.end()) {
-                            is_subset = false;
-                            break;
-                        }
-                    }
-                    if (is_subset) {
-                        if (lit == ~out) fwd.push_back(c);
-                        else bwd.push_back(c);
-                    }
-                }
-            }
-
-#ifdef GADebug
-        printf("Found %zu clauses for candidate variable %i\n", fwd.size() + bwd.size(), cand+1);
-#endif
-
-        // if candidate definition is functional
-        if ((fwd.size() > 0 || bwd.size() > 0) && isBlocked(out, fwd, bwd) && semanticCheck(cand, fwd, bwd)) {
-            // split resolvents by output literal 'out' of the function defined by 'fwd' and 'bwd'
-            For res_fwd, res_bwd;
-            for (Cl& res : resolvents) {
-                if (find(res.begin(), res.end(), ~out) != res.end()) {
-                    res_fwd.push_back(&res);
-                } else {
-                    res_bwd.push_back(&res);
-                }
-            }
-            if ((res_fwd.size() == 0 || bwd.size() > 0) && (res_bwd.size() == 0 || fwd.size() > 0))
-                if (isBlocked(out, res_fwd, bwd) && isBlocked(~out, res_bwd, fwd)) {
-#ifdef GADebug
-                    printf("Blocked elimination found for candidate variable %i\n", cand+1);
-#endif
-                    return true;
-                }
-        }
-    }
-
-    return false;
-}
-*/
 
 }

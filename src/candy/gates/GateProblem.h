@@ -85,7 +85,7 @@ public:
         return !(isUsedAsInput(lit) && isUsedAsInput(~lit));
     }
 
-    void addGate(Lit o, For& fwd, For& bwd) {
+    void addGate(Lit o, const For& fwd, const For& bwd) {
         Gate& gate = gates[o.var()];
         gate.out = o;
         gate.fwd.insert(gate.fwd.end(), fwd.begin(), fwd.end());
@@ -275,6 +275,8 @@ public:
         gates[root].out = Lit(root, false);
         gates[root].notMono = false;
         std::set<Lit> inp;
+        roots.insert(roots.end(), remainder.begin(), remainder.end());
+        remainder.clear();
         for (Cl* c : roots) {
             inp.insert(c->begin(), c->end());
             c->push_back(Lit(root, true));
