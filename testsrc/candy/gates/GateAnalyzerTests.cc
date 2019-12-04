@@ -160,7 +160,7 @@ namespace Candy {
         problem.readClauses(simple_xor);
         problem.readClauses(simple_and1);
         problem.readClauses(simple_and2);
-        GateAnalyzer ga { problem, GateRecognitionMethod::Patterns, ClauseSelectionMethod::UnitClausesThenMaximalLiterals, 2 };
+        GateAnalyzer ga { problem, GateRecognitionMethod::Patterns, 2 };
         ga.analyze();
         ga.getResult().normalizeRoots();
         Lit root = ga.getResult().getRoot();
@@ -193,7 +193,7 @@ namespace Candy {
         assert_gate(ga, 3_L, false, simple_and2, {6_L, 7_L});
         CandySolverResult model { 1_L, 2_L, ~3_L, 4_L, 5_L, 6_L, 7_L };
         For pruned = ga.getResult().getPrunedProblem(model);
-        std::cout << pruned << std::endl;
+        //std::cout << pruned << std::endl;
         ASSERT_TRUE(containsAll(pruned, simple_or_bce));
         ASSERT_TRUE(containsAll(pruned, simple_and1_bce));
         for (Cl* clause : simple_and2) {
