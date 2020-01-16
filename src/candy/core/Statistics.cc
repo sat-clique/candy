@@ -86,32 +86,32 @@ void Statistics::printRuntimes() {
 }
 
 void Statistics::printIncrementalStats() {
-    printf("c restarts              : %lu\n", restarts);
+    printf("c restarts              : %zu\n", restarts);
 
-    printf("c nb ReduceDB           : %lu\n", nReduceCalls());
-    printf("c nb removed Clauses    : %lu\n", nReduced());
+    printf("c nb ReduceDB           : %zu\n", nReduceCalls());
+    printf("c nb removed Clauses    : %zu\n", nReduced());
 
-    printf("c conflicts             : %lu\n", nConflicts());
-    printf("c decisions             : %lu\n", nDecisions());
-    printf("c propagations          : %lu\n", nPropagations());
+    printf("c conflicts             : %zu\n", nConflicts());
+    printf("c decisions             : %zu\n", nDecisions());
+    printf("c propagations          : %zu\n", nPropagations());
 }
 
 
 void Statistics::printIntermediateStats() {
-    printf("c | %5lu (%lu conflicts in avg) | %10lu %10lu %5lu |\n", restarts, (nConflicts() / restarts), nClauses(), nReduceCalls(), nReduced());
+    printf("c | %5zu (%zu conflicts in avg) | %10zu %10zu %5zu |\n", restarts, (nConflicts() / restarts), nClauses(), nReduceCalls(), nReduced());
 }
 
 void Statistics::printFinalStats() {
     double cpu_time = get_cpu_time();
     printf("c =================================================================\n");
-    printf("c restarts              : %lu (%lu conflicts in avg)\n", restarts, (restarts > 0 ? (nConflicts() / restarts) : 0));
+    printf("c restarts              : %zu (%zu conflicts in avg)\n", restarts, (restarts > 0 ? (nConflicts() / restarts) : 0));
 
-    printf("c nb ReduceDB           : %lu\n", nReduceCalls());
-    printf("c nb removed Clauses    : %lu\n", nReduced());
+    printf("c nb ReduceDB           : %zu\n", nReduceCalls());
+    printf("c nb removed Clauses    : %zu\n", nReduced());
 
-    printf("c conflicts             : %-12lu   (%.0f /sec)\n", nConflicts(), nConflicts() / runtimes["Wallclock"]);
-    printf("c decisions             : %-12lu   (%.0f /sec)\n", nDecisions(), nDecisions() / runtimes["Wallclock"]);
-    printf("c propagations          : %-12lu   (%.0f /sec)\n", nPropagations(), nPropagations() / runtimes["Wallclock"]);
+    printf("c conflicts             : %-12zu   (%.0f /sec)\n", nConflicts(), nConflicts() / runtimes["Wallclock"]);
+    printf("c decisions             : %-12zu   (%.0f /sec)\n", nDecisions(), nDecisions() / runtimes["Wallclock"]);
+    printf("c propagations          : %-12zu   (%.0f /sec)\n", nPropagations(), nPropagations() / runtimes["Wallclock"]);
 
     double mem_used = 0; //memUsedPeak();
     if (mem_used != 0) {
