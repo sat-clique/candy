@@ -55,7 +55,7 @@ CandySolverInterface* CandyBuilder<TPropagate, TLearning, TBranching>::build() {
     return new Solver<ClauseDatabase, Trail, TPropagate, TLearning, TBranching>();
 }
 
-CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, unsigned int rsil_adv_size) {
+CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool vsidsc, bool rsil, unsigned int rsil_adv_size) {
     CandyBuilder<> builder { }; 
 
     if (lrb) {
@@ -117,6 +117,15 @@ CandySolverInterface* createSolver(bool staticPropagate, bool lrb, bool rsil, un
                     return builder.branchWithRSILBudgeted2().build();
                 }
             }
+        }
+    }
+    else if (vsidsc) {
+       if (staticPropagate) {
+            std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, VSIDSC>" << std::endl;
+            return builder.branchWithVSIDSC().propagateStaticClauses().build();
+        } else {
+            std::cout << "c Building Solver of Type Solver<Propagate, ConflictAnalysis, VSIDSC>" << std::endl;
+            return builder.branchWithVSIDSC().build();
         }
     }
     else {

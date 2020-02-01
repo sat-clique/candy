@@ -59,6 +59,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/systems/learning/ConflictAnalysis.h"
 #include "candy/systems/propagate/Propagate.h"
 #include "candy/systems/branching/VSIDS.h"
+#include "candy/systems/branching/VSIDSC.h"
 #include "candy/systems/Restart.h"
 
 #include "candy/simplification/Subsumption.h"
@@ -213,7 +214,7 @@ private:
 
             if (subsumption.nTouched() > 0) {
                 augmented_database.cleanup();
-                *logging.log() << "c " << std::this_thread::get_id() << ": Subsumption subsumued " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
+                *logging.log() << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
             propagateAndMaterializeUnitClauses();

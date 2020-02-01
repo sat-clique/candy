@@ -22,15 +22,16 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/SolverTypes.h"
 
-namespace Candy {
+namespace Candy
+{
 
-class BranchingDiversificationInterface {
+class BranchingDiversificationInterface
+{
 public:
     virtual void setPolarity(Var v, bool sign) = 0;
     virtual Lit getLastDecision() = 0;
-
 };
 
-}
+} // namespace Candy
 
 #endif

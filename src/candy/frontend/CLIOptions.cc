@@ -65,6 +65,15 @@ namespace SolverOptions {
     DoubleOption opt_vsids_max_var_decay("CORE", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
     BoolOption opt_vsids_extra_bump("CORE", "extra-bump", "Glucose Style Extra Bumping on current desicion level", false);
 
+    BoolOption opt_use_vsidsc("BRANCHING", "use-vsidsc", "use VSIDS branching heuristic with centrality (default: use VSIDS)", false);
+    IntOption opt_vsidsc_mult("BRANCHING", "vsidsc-mult", "VSIDSC multiplier for centrality values", 1, IntRange(1, INT16_MAX));
+    BoolOption opt_vsidsc_bump("BRANCHING", "vsidsc-bump", "use VSIDSC bumping based on centrality value", true);
+    BoolOption opt_vsidsc_scope("BRANCHING", "vsidsc-lwcc", "VSIDSC uses LWCC graph scope (default: FULL)", false);
+    DoubleOption opt_vsidsc_samplesize("BRANCHING", "vsidsc-sample-size", "VSIDSC sample size for centrality calculation (only for vsidsc-centralities 0, 1)", 1.0, DoubleRange(0.0, false, 1.0, true));
+    DoubleOption opt_vsidsc_samplesize_decay("BRANCHING", "vsidsc-sample-size-decay", "VSIDSC decay sample size by factor for repeated centrality calculations (1=no decay)", 1.0, DoubleRange(0.0, false, 1.0, true));
+    DoubleOption opt_vsidsc_dbsize_recalc("BRANCHING", "vsidsc-dbsize-recalc", "VSIDSC centrality recalc upon db_reduce if db_size grew by this factor since last calculation (1=every db_size increase, 0=once at start)", 0.0, DoubleRange(0.0, false, 10.0, true));
+    BoolOption opt_vsidsc_debug("BRANCHING", "vsidsc-debug", "Active Centrality debugging", false);
+
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
     DoubleOption opt_lrb_step_size("CORE", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("CORE", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
