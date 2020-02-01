@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/systems/learning/ConflictAnalysis.h"
 #include "candy/systems/branching/LRB.h"
 #include "candy/systems/branching/VSIDS.h"
+#include "candy/systems/branching/VSIDSC.h"
 #include "candy/systems/branching/rsil/BranchingHeuristics.h"
 
 namespace Candy {
@@ -38,6 +39,10 @@ public:
 
     constexpr auto branchWithVSIDS() const -> CandyBuilder<TPropagate, TLearning, VSIDS> {
         return CandyBuilder<TPropagate, TLearning, VSIDS>();
+    }
+
+    constexpr auto branchWithVSIDSC() const -> CandyBuilder<TPropagate, TLearning, VSIDSC> {
+        return CandyBuilder<TPropagate, TLearning, VSIDSC>();
     }
 
     constexpr auto branchWithLRB() const -> CandyBuilder<TPropagate, TLearning, LRB> {
@@ -76,7 +81,7 @@ public:
 
 };
 
-CandySolverInterface* createSolver(bool staticPropagate = false, bool lrb = false, bool rsil = false, unsigned int rsil_adv_size = 3);
+CandySolverInterface* createSolver(bool staticPropagate = false, bool lrb = false, bool vsidsc = false, bool rsil = false, unsigned int rsil_adv_size = 3);
 
 }
 
