@@ -84,9 +84,8 @@ namespace VariableEliminationOptions {
 }
 
 namespace GateRecognitionOptions {
-    IntOption method("GATE RECOGNITION", "gate-recognition-method", "0 = patterns, 1 = semantic, 2 = holistic,\n 10 = patterns, semantic, 11 = patterns, semantic, holistic,\n 20 = intensify(patterns, semantic), 21 = intensify(patterns, semantic, holistic)", 10, IntRange(0, 30));
-    IntOption selection("GATE RECOGNITION", "gate-selection-method", "0 = unit-maximal, 1 = unit-rare, 2 = maximal, 3 = rare", 0, IntRange(0, 3));
-    IntOption tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion", 0, IntRange(0, INT32_MAX)); 
+    IntOption method("GATE RECOGNITION", "gate-recognition-method", "0 = patterns, 1 = semantic, 2 = holistic,\n 10 = patterns, semantic, 11 = patterns, semantic, holistic", 10, IntRange(0, 30));
+    IntOption tries("GATE RECOGNITION", "gate-tries", "Number of heuristic clause selections to enter recursion (0 -> unlimited)", 0, IntRange(0, INT32_MAX)); 
     IntOption timeout("GATE RECOGNITION", "gate-timeout", "Enable Gate Detection Timeout (seconds)", 0, IntRange(0, INT32_MAX));
 }
 
