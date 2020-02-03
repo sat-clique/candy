@@ -298,7 +298,7 @@ int main(int argc, char** argv) {
                     RSILOptions::opt_rsil_enable = false;
                     break;
                 case 12 : case 13 : //rsil
-                    GateRecognitionOptions::method = static_cast<int>(GateRecognitionMethod::IntensifyPS); 
+                    GateRecognitionOptions::tries = 10;
                     RandomSimulationOptions::opt_rs_nrounds = 1048576 * 2;
                     SolverOptions::opt_use_lrb = false;
                     RSILOptions::opt_rsil_enable = true;
