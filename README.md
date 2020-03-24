@@ -59,3 +59,21 @@ we were SAT CLIQUE. The main ideas for the profound structural changes in Candy 
 Credits go to all the people at ITI and the students.
 
 
+## Build and make on Windows
+- mingw installed ([mingw-64 (posix)](https://sourceforge.net/projects/mingw-w64/files/Toolchains%20targetting%20Win32/Personal%20Builds/mingw-builds/installer/mingw-w64-install.exe/download))
+- mingw32-pthreads (mingw32-libpthreadgc-dll, mingw32-libpthreadgc-dev, mingw32-pthreads-w32*)
+- mingw32-libz-dll and mingw32-libz-dev
+- mingw32-libgomp-dll for OpenMP (if needed)
+- everything else required to compile c/c++
+- mingw64\bin directory added to PATH
+
+```bash
+mkdir release
+cd release
+cmake -G "MinGW Makefiles" -DZLIB_INCLUDE_DIR=<mingw-include-dir> -DZLIB_LIBRARY=<path-to-mingw-libz.a> -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release ..
+cmake --bild . --target candy
+```
+
+example path-to-mingw-include-dir: C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include
+
+example path-to-mingw-libz: C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libz.a
