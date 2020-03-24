@@ -69,6 +69,15 @@ namespace SolverOptions {
     extern DoubleOption opt_vsids_var_decay;
     extern DoubleOption opt_vsids_max_var_decay;
     extern BoolOption opt_vsids_extra_bump;
+
+    extern BoolOption opt_use_vsidsc; // vsids with centrality
+    extern IntOption opt_vsidsc_mult; // centrality mult factor [1..]
+    extern BoolOption opt_vsidsc_bump; // bump based on centrality
+    extern BoolOption opt_vsidsc_scope; // centrality calc: scope for graph FULL / LWCC
+    extern DoubleOption opt_vsidsc_samplesize; // centrality calc: samplesize ]0,1.0]
+    extern DoubleOption opt_vsidsc_samplesize_decay;
+    extern DoubleOption opt_vsidsc_dbsize_recalc;
+    extern BoolOption opt_vsidsc_debug; // Centrality Debugging
     
     extern IntOption opt_sonification_delay;
     

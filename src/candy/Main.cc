@@ -183,7 +183,7 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
     std::cout << "c Preprocessing: " << SolverOptions::opt_preprocessing << std::endl;
     std::cout << "c Inprocessing: " << SolverOptions::opt_inprocessing << std::endl;
 
-    CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable);
+    CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, SolverOptions::opt_use_vsidsc, RSILOptions::opt_rsil_enable);
 
     solver_->init(problem, global_allocator);
 
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
             solver = createRSARSolver(problem);
         }
         else {
-            solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
+            solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, SolverOptions::opt_use_vsidsc, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
         }
         solvers.push_back(solver); 
 
@@ -362,6 +362,14 @@ int main(int argc, char** argv) {
 
         solver->getStatistics().printRuntimes();
         std::cout << "c Peak Memory (MB): " << getPeakRSS()/(1024*1024) << std::endl;
+
+        // Currently only VSIDSC supports enhanced brancher statistics
+        if (SolverOptions::opt_use_vsidsc) {
+            VSIDSC *brancher = dynamic_cast<VSIDSC*>(solver->getBranchingUnit());
+            if (brancher) {
+                brancher->getStatistics().printFinalStats();
+            }
+        }
     }
 
     #ifndef __SANITIZE_ADDRESS__
