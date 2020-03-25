@@ -61,6 +61,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/systems/branching/VSIDS.h"
 #include "candy/systems/branching/VSIDSC.h"
 #include "candy/systems/Restart.h"
+#include "candy/systems/ReduceDB.h"
 
 #include "candy/simplification/Subsumption.h"
 #include "candy/simplification/SubsumptionClauseDatabase.h"
@@ -137,6 +138,7 @@ protected:
     TBranching branch;
 
     Restart restart;
+    ReduceDB reduce;
 
     SubsumptionClauseDatabase augmented_database;
     Subsumption subsumption;
@@ -147,10 +149,6 @@ protected:
     Logging logging;
 
     CandySolverResult result;
-
-    // reduce-db
-    unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
-    unsigned int incReduceDB;
 
     bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
 
@@ -260,6 +258,7 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
 	conflict_analysis(clause_db, trail),
     branch(clause_db, trail),
     restart(clause_db, trail),
+    reduce(clause_db, trail),
     // simplification
     augmented_database(clause_db),
     subsumption(augmented_database),
@@ -270,9 +269,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     logging(*this),
     // result
     result(),
-    // reduce db heuristic control
-    nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
-    incReduceDB(ClauseDatabaseOptions::opt_inc_reduce_db),
     // pre- and inprocessing
     preprocessing_enabled(SolverOptions::opt_preprocessing),
     lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
@@ -407,21 +403,16 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         trail.reset();
         branch.reset();
 
-        if (statistics.nReduceCalls() * nbclausesbeforereduce <= statistics.nConflicts()) {
-            nbclausesbeforereduce += incReduceDB;
-
-            if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= statistics.nReduceCalls()) { 
-                *logging.log() << "c " << std::this_thread::get_id() << ": Inprocessing " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
-                lastRestartWithInprocessing = statistics.nReduceCalls();
+        if (reduce.trigger_reduce()) {
+            if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= reduce.nReduceCalls()) { 
+                lastRestartWithInprocessing = reduce.nReduceCalls();
                 processClauseDatabase();
             }
             else {
-                *logging.log() << "c " << std::this_thread::get_id() << ": Reduction " << statistics.nReduceCalls() << " (Restart " << statistics.nRestarts() << ", Database size " << clause_db.size() << ")." << std::endl;
-                clause_db.reduce();
+                reduce.reduce();
             }            
             clause_db.reorganize();
             branch.process_reduce();
-            *logging.log() << "c " << std::this_thread::get_id() << ": Database size is now " << clause_db.size() << std::endl;
             propagator.reset();
         }
 

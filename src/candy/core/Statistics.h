@@ -43,17 +43,12 @@ public:
     Statistics(CandySolverInterface& solver);
     ~Statistics();
 
-    void printIncrementalStats();
-    void printIntermediateStats();
-    void printFinalStats();
-
-
-    size_t nClauses() const;
-    size_t nConflicts() const;
-    size_t nReduceCalls() const;
-    size_t nReduced() const;
+    void printStats();
 
     size_t nVars() const;
+    size_t nClauses() const;
+
+    size_t nConflicts() const;
     size_t nPropagations() const;
     size_t nDecisions() const;
 
