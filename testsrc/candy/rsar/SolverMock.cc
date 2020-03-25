@@ -65,8 +65,16 @@ namespace Candy {
         m_eventLog.push_back(SolverMockEvent::ADD_PROBLEM);
     }
     
-    size_t SolverMock::nVars() const {
+    unsigned int SolverMock::nVars() const {
         return m_maxCreatedVar+1;
+    }
+    
+    unsigned int SolverMock::nClauses() const {
+        return m_addedClauses.size();
+    }
+    
+    unsigned int SolverMock::nConflicts() const {
+        return 0;
     }
     
     void SolverMock::mockctrl_setConflictLits(const std::vector<Lit> & conflictLits) {

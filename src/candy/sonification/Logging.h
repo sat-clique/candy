@@ -62,8 +62,8 @@ public:
         return verb;
     }
 
-    inline void logStart() {
-        sonification.start(solver.getStatistics().nVars(), solver.getStatistics().nClauses());
+    inline void logStart(unsigned int nVars, unsigned int nClauses) {
+        sonification.start(nVars, nClauses);
     }
 
     inline void logRestart() {
@@ -106,4 +106,4 @@ Logging& operator <<(Logging& log, T const& value) {
 
 } /* namespace Candy */
 
-#endif /* SRC_CANDY_CORE_STATISTICS_H_ */
+#endif /* SRC_CANDY_CORE_LOGGING_H_ */

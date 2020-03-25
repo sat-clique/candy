@@ -29,7 +29,6 @@
 
 #include <candy/core/CNFProblem.h>
 #include <candy/core/SolverTypes.h>
-#include <candy/core/Statistics.h>
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
 #include <candy/core/clauses/ClauseDatabase.h>
@@ -84,11 +83,14 @@ namespace Candy {
             return result;
         }
 
-    	virtual Statistics& getStatistics() override { return *new Statistics { *this }; }
         virtual ClauseDatabase& getClauseDatabase() override { return *new ClauseDatabase { }; } 
         virtual Trail& getAssignment() override { return *new Trail { }; }
 
-        size_t nVars() const;
+        unsigned int nVars() const override;
+        unsigned int nClauses() const override;
+        unsigned int nConflicts() const override;
+
+        void printStats() override { }
 
         /** Sets the literals returned by getConflict(). */
         void mockctrl_setConflictLits(const std::vector<Lit> &conflictLits);

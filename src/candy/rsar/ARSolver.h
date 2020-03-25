@@ -84,14 +84,26 @@ namespace Candy {
             m_solver->setTermCallback(state, termCallback);
         }
 
+        unsigned int nVars() const override {
+            return m_solver->nVars();
+        }
+
+        unsigned int nClauses() const override {
+            return m_solver->nClauses();
+        }
+
+        unsigned int nConflicts() const override {
+            return m_solver->nConflicts();
+        }
+
+        void printStats() override {
+            m_solver->printStats();
+        }
+
     	virtual lbool solve() override;
 
     	virtual CandySolverResult& getCandySolverResult() override {
     		return m_solver->getCandySolverResult();
-    	}
-
-    	virtual Statistics& getStatistics() override {
-    		return m_solver->getStatistics();
     	}
 
     	virtual ClauseDatabase& getClauseDatabase() override {

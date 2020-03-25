@@ -1,7 +1,5 @@
 add_library(core OBJECT
     Solver.h
-    Statistics.cc
-    Statistics.h
     clauses/Clause.h
     clauses/ClauseAllocator.h
     clauses/ClauseAllocatorMemory.h

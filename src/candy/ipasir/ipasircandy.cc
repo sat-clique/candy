@@ -43,8 +43,8 @@ class IPASIRCandy {
     }
 
     void analyze() {
-        fmap = new unsigned char [solver->getStatistics().nVars()];
-        memset(fmap, 0, solver->getStatistics().nVars());
+        fmap = new unsigned char [solver->nVars()];
+        memset(fmap, 0, solver->nVars());
         CandySolverResult& result = solver->getCandySolverResult();
         for (unsigned int i = 0; i < result.getConflict().size(); ++i) {
             fmap[result.getConflict()[i].var()] = 1;

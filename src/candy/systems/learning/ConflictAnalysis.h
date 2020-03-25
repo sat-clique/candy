@@ -43,7 +43,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/mtl/Stamp.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/core/Statistics.h"
 #include "candy/core/Trail.h"
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseDatabase.h"

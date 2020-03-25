@@ -22,11 +22,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <limits>
 #include <algorithm>
 
+#include "candy/core/SolverTypes.h"
+
 #ifndef SRC_CANDY_CORE_CLAUSE_H_
 #define SRC_CANDY_CORE_CLAUSE_H_
-
-#include "candy/core/SolverTypes.h"
-#include "candy/core/Statistics.h"
 
 namespace Candy {
 
