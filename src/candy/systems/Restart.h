@@ -31,6 +31,8 @@ class Restart {
     ClauseDatabase& clause_db;
     Trail& trail;
 
+    unsigned int restarts;
+
     double K;
     double R;
     float sumLBD = 0;
@@ -38,7 +40,7 @@ class Restart {
 
 public:
     Restart(ClauseDatabase& clause_db_, Trail& trail_)
-     : clause_db(clause_db_), trail(trail_),
+     : clause_db(clause_db_), trail(trail_), restarts(0), 
         K(SolverOptions::opt_K), 
         R(SolverOptions::opt_R), 
         sumLBD(0),
@@ -46,6 +48,10 @@ public:
         trailQueue(SolverOptions::opt_size_trail_queue) { }
     
     ~Restart() { }
+
+    unsigned int nRestarts() const {
+        return restarts;
+    }
 
     inline void process_conflict() {
         trailQueue.push(trail.size());
@@ -59,6 +65,7 @@ public:
     inline bool trigger_restart() {
         if (clause_db.result.nConflicts > 0 && lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / clause_db.result.nConflicts))) {
             lbdQueue.fastclear();
+            restarts++;
             return true;
         }
         return false;

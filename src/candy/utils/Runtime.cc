@@ -69,8 +69,8 @@ namespace Candy {
         return (double)time.tv_sec + (double)time.tv_usec * .000001;
     }
 
-    double get_cpu_time() {
-        return (double)clock() / CLOCKS_PER_SEC;
+    unsigned int get_cpu_time() {
+        return (unsigned int)((double)clock() / (double)CLOCKS_PER_SEC);
     }
 #endif
 

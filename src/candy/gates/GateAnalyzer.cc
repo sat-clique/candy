@@ -210,13 +210,13 @@ bool GateAnalyzer::isGate(Lit candidate, bool pat, bool sem, bool hol) {
 
         if (monotonic || pattern || semantic || holistic) {
             gate_problem.addGate(candidate, fwd, bwd); 
-            gate_problem.addGateStats(pattern, semantic, holistic, (semantic || holistic) ? solver->getStatistics().nConflicts() : 0);
+            gate_problem.addGateStats(pattern, semantic, holistic, (semantic || holistic) ? solver->nConflicts() : 0);
             index.remove(gate_problem.getGate(candidate).fwd);
             index.remove(gate_problem.getGate(candidate).bwd);
             return true;
         }
         else if (sem || hol) {
-            gate_problem.addUnsuccessfulStats(solver->getStatistics().nConflicts());
+            gate_problem.addUnsuccessfulStats(solver->nConflicts());
         }
     }
     return false;

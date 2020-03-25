@@ -43,12 +43,15 @@ public:
     virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) = 0;
 	
 	virtual lbool solve() = 0;
+	virtual void printStats() = 0;
+	virtual unsigned int nVars() const = 0;
+	virtual unsigned int nClauses() const = 0;
+	virtual unsigned int nConflicts() const = 0;
 
 	virtual BranchingDiversificationInterface* getBranchingUnit() = 0;
 
 	virtual ClauseDatabase& getClauseDatabase() = 0;
 	virtual Trail& getAssignment() = 0; 
-	virtual Statistics& getStatistics() = 0;
 
 	virtual CandySolverResult& getCandySolverResult() = 0;
 

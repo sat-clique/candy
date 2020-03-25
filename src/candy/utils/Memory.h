@@ -5,6 +5,9 @@
  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
 
+#ifndef SRC_CANDY_UTILS_MEMORY_H_
+#define SRC_CANDY_UTILS_MEMORY_H_
+
 #if defined(_WIN32)
 #define NOMINMAX
 #include <windows.h>
@@ -36,7 +39,7 @@
  * memory use) measured in bytes, or zero if the value cannot be
  * determined on this OS.
  */
-size_t getPeakRSS( )
+static size_t getPeakRSS( )
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -79,7 +82,7 @@ size_t getPeakRSS( )
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-size_t getCurrentRSS( )
+static size_t getCurrentRSS( )
 {
 #if defined(_WIN32)
     /* Windows -------------------------------------------------- */
@@ -115,3 +118,5 @@ size_t getCurrentRSS( )
     return (size_t)0L;          /* Unsupported. */
 #endif
 }
+
+#endif

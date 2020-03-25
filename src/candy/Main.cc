@@ -57,7 +57,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/utils/Options.h"
 
 #include "candy/core/CNFProblem.h"
-#include "candy/core/Statistics.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/minimizer/Minimizer.h"
@@ -357,11 +356,8 @@ int main(int argc, char** argv) {
         }
 
         if (SolverOptions::verb > 0) {
-            solver->getStatistics().printStats();
+            solver->printStats();
         }
-
-        solver->getStatistics().printRuntimes();
-        std::cout << "c Peak Memory (MB): " << getPeakRSS()/(1024*1024) << std::endl;
 
         // Currently only VSIDSC supports enhanced brancher statistics
         if (SolverOptions::opt_use_vsidsc) {

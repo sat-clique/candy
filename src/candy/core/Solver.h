@@ -71,7 +71,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/Clause.h"
 
 #include "candy/core/CandySolverInterface.h"
-#include "candy/core/Statistics.h"
 #include "candy/sonification/Logging.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
@@ -80,6 +79,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
+#include "candy/utils/Memory.h"
 
 namespace Candy {
 
@@ -108,15 +108,37 @@ public:
         return trail;
     }
 
-    Statistics& getStatistics() override {
-        return statistics; 
-    }
-
     BranchingDiversificationInterface* getBranchingUnit() override {
         return &branch;
     }
 
+    unsigned int nVars() const override {
+        return trail.vardata.size();
+    }
+
+    unsigned int nClauses() const override {
+        return clause_db.size();
+    }
+
+    unsigned int nConflicts() const override {
+        return clause_db.result.nConflicts;
+    }
+
+    unsigned int nPropagations() const {
+        return trail.nPropagations;
+    }
+
+    unsigned int nDecisions() const {
+        return trail.nDecisions;
+    }
+
+    unsigned int nRestarts() const {
+        return restart.nRestarts();
+    }
+
     lbool solve() override;
+
+    void printStats();
 
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void* state)) override {
@@ -145,7 +167,6 @@ protected:
     VariableElimination elimination;
     AsymmetricVariableReduction<TPropagate> reduction;
 
-    Statistics statistics;
     Logging logging;
 
     CandySolverResult result;
@@ -247,6 +268,18 @@ private:
         augmented_database.finalize();
     }
 
+    void ipasir_callback(Clause* clause) {
+        if (learntCallback != nullptr && clause->size() <= learntCallbackMaxLength) {
+            std::vector<int> to_send;
+            to_send.reserve(clause->size() + 1);
+            for (Lit lit : *clause) {
+                to_send.push_back((lit.var()+1)*(lit.sign()?-1:1));
+            }
+            to_send.push_back(0);
+            learntCallback(learntCallbackState, to_send.data());
+        }
+    }
+
 };
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
@@ -265,7 +298,6 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     elimination(augmented_database, trail), 
     reduction(augmented_database, trail, propagator), 
     // stats
-    statistics(*this), 
     logging(*this),
     // result
     result(),
@@ -308,7 +340,6 @@ template<class TClauses, class TAssignment, class TPropagate, class TLearning, c
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
-    statistics.solverRestartInc();
     logging.logRestart();
     for (;;) {
         Clause* confl = (Clause*)propagator.propagate();
@@ -334,17 +365,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
             trail.backtrack(clause_db.result.backtrack_level);
             trail.propagate(clause->first(), clause);
-
-            if (learntCallback != nullptr && clause->size() <= learntCallbackMaxLength) {
-                std::vector<int> to_send;
-                to_send.reserve(clause->size() + 1);
-                for (Lit lit : *clause) {
-                    to_send.push_back((lit.var()+1)*(lit.sign()?-1:1));
-                }
-                to_send.push_back(0);
-                learntCallback(learntCallbackState, to_send.data());
-            }
-
+            ipasir_callback(clause);
             logging.logLearntClause(clause);
         }
         else {
@@ -387,8 +408,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() {
-    statistics.runtimeStart("Wallclock");
-    logging.logStart();
+    logging.logStart(nVars(), nClauses());
     
     result.clear();
 
@@ -449,8 +469,18 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     trail.backtrack(0);
     
     logging.logResult(status);
-    statistics.runtimeStop("Wallclock"); 
     return status;
+}
+
+template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
+void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::printStats() {
+    std::cout << "c" << std::setw(80) << std::setfill('*') << std::endl;
+    std::cout << "c" << std::setw(18) << "restarts:" << nRestarts() << std::endl;
+    std::cout << "c" << std::setw(18) << "conflicts:" << nConflicts() << std::endl;
+    std::cout << "c" << std::setw(18) << "decisions:" << nDecisions() << std::endl;
+    std::cout << "c" << std::setw(18) << "propagations:" << nPropagations() << std::endl;
+    std::cout << "c" << std::setw(18) << "peak memory (mb): " << getPeakRSS()/(1024*1024) << std::endl;
+    std::cout << "c" << std::setw(18) << "cpu time (s):" << get_cpu_time() << std::endl;
 }
 
 }
