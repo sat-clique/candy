@@ -23,11 +23,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifdef SONIFICATION
 #include <osc/OscOutboundPacketStream.h>
 #include <ip/UdpSocket.h>
+#include <unistd.h>
 #include <chrono>
+#include <thread>
 #endif
-
-#define DEFAULT_ADDRESS "127.0.0.1"
-#define DEFAULT_PORT 7000
 
 #define OUTPUT_BUFFER_SIZE 2048
 
@@ -40,16 +39,40 @@ private:
     void* transmitSocket;
     void* scheduleOffset;
 #endif
+    int delay;
 
 public:
-	Sonification();
-	Sonification(int port);
-	Sonification(const char* address, int port);
+#ifdef SONIFICATION
+    Sonification(const char* address, int port, int delay_) :
+        transmitSocket(IpEndpointName(address, port)), scheduleOffset(std::chrono::system_clock::now()), delay(delay_)
+    { }
+#else
+    Sonification(const char* address, int port, int delay_) : 
+        transmitSocket(nullptr), scheduleOffset(nullptr), delay(delay_) 
+    { }
+#endif
 
-	virtual ~Sonification();
+    virtual ~Sonification() { }
 
-	void sendNumber(const char* name, int value);
-	void scheduleSendNumber(const char* name, int value, int delay = 1);
+    void send(const char* name, int value, bool wait = false) {    
+#ifdef SONIFICATION
+    if (wait) {
+        std::this_thread::sleep_until(scheduleOffset + std::chrono::milliseconds(delay));
+        scheduleOffset = std::chrono::system_clock::now();
+    }
+
+    char buffer[OUTPUT_BUFFER_SIZE];
+    osc::OutboundPacketStream p(buffer, OUTPUT_BUFFER_SIZE);
+
+    p << osc::BeginBundleImmediate
+        << osc::BeginMessage( name )
+            << value << osc::EndMessage
+        << osc::EndBundle;
+
+    transmitSocket.Send(p.Data(), p.Size());
+#endif
+}
+
 };
 
 #endif /* SRC_SONIFICATION_SONIFICATION_H_ */

@@ -79,12 +79,16 @@ namespace SolverOptions {
     extern DoubleOption opt_vsidsc_dbsize_recalc;
     extern BoolOption opt_vsidsc_debug; // Centrality Debugging
     
-    extern IntOption opt_sonification_delay;
-    
     extern BoolOption opt_sort_watches;
     extern BoolOption opt_sort_variables;
     extern BoolOption opt_preprocessing;
     extern IntOption opt_inprocessing;
+}
+
+namespace SonificationOptions {
+    extern StringOption host;
+    extern IntOption port;
+    extern IntOption delay;
 }
 
 namespace VariableEliminationOptions {

@@ -67,11 +67,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/simplification/SubsumptionClauseDatabase.h"
 #include "candy/simplification/VariableElimination.h"
 #include "candy/simplification/AsymmetricVariableReduction.h"
+
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
-
 #include "candy/core/CandySolverInterface.h"
-#include "candy/sonification/Logging.h"
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/Trail.h"
@@ -80,6 +79,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/utils/Memory.h"
+
+#include "candy/sonification/Sonification.h"
 
 namespace Candy {
 
@@ -167,7 +168,8 @@ protected:
     VariableElimination elimination;
     AsymmetricVariableReduction<TPropagate> reduction;
 
-    Logging logging;
+    Sonification sonification;
+    unsigned int verbosity;
 
     CandySolverResult result;
 
@@ -233,7 +235,7 @@ private:
 
             if (subsumption.nTouched() > 0) {
                 augmented_database.cleanup();
-                *logging.log() << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
+                if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
             propagateAndMaterializeUnitClauses();
@@ -243,7 +245,7 @@ private:
 
             if (reduction.nTouched() > 0) {
                 augmented_database.cleanup();
-                *logging.log() << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
+                if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
             }
 
             propagateAndMaterializeUnitClauses();
@@ -253,7 +255,7 @@ private:
 
             if (elimination.nTouched() > 0) {
                 augmented_database.cleanup();
-                *logging.log() << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
+                if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
                 for (unsigned int v = 0; v < clause_db.nVars(); v++) {
                     if (elimination.isEliminated(v)) {
                         trail.setDecisionVar(v, false);
@@ -297,8 +299,9 @@ Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::Solver() :
     subsumption(augmented_database),
     elimination(augmented_database, trail), 
     reduction(augmented_database, trail, propagator), 
-    // stats
-    logging(*this),
+    // sonification
+    sonification(SonificationOptions::host, SonificationOptions::port, SonificationOptions::delay),
+    verbosity(SolverOptions::verb), 
     // result
     result(),
     // pre- and inprocessing
@@ -340,16 +343,17 @@ template<class TClauses, class TAssignment, class TPropagate, class TLearning, c
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
-    logging.logRestart();
+    sonification.send("/restart", 1);
     for (;;) {
         Clause* confl = (Clause*)propagator.propagate();
 
-        logging.logDecision();
+        sonification.send("/decision", trail.decisionLevel());
+        sonification.send("/assignments", trail.size());
         if (confl != nullptr) { // CONFLICT
-            logging.logConflict();
+            sonification.send("/conflict", trail.size(), true);
 
             if (trail.decisionLevel() == 0) {
-                *logging.log() << "c Conflict found by propagation at level 0" << std::endl;
+                if (verbosity > 1) std::cout << "c Conflict found by propagation at level 0" << std::endl;
                 return l_False;
             }
             
@@ -366,7 +370,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             trail.backtrack(clause_db.result.backtrack_level);
             trail.propagate(clause->first(), clause);
             ipasir_callback(clause);
-            logging.logLearntClause(clause);
+            sonification.send("/learnt", clause->size());
         }
         else {
             if (restart.trigger_restart()) {
@@ -380,7 +384,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
                 else if (trail.value(p) == l_False) {
-                    *logging.log() << "c Conflict found during assumption propagation" << std::endl;
+                    if (verbosity > 1) std::cout << "c Conflict found during assumption propagation" << std::endl;
                     result.setConflict(conflict_analysis.analyzeFinal(~p));
                     return l_False;
                 } 
@@ -408,7 +412,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() {
-    logging.logStart(nVars(), nClauses());
+    sonification.send("/start", 1);
+    sonification.send("/variables", nVars());
+    sonification.send("/clauses", nClauses());
     
     result.clear();
 
@@ -448,10 +454,10 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     }
 
     if (status == l_Undef) {
-        *logging.log() << "c " << std::this_thread::get_id() << ": Interrupted" << std::endl;
+        if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Interrupted" << std::endl;
     }
     else {
-        *logging.log() << "c " << std::this_thread::get_id() << ": " << (status == l_True ? "SAT" : "UNSAT") << std::endl;
+        if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": " << (status == l_True ? "SAT" : "UNSAT") << std::endl;
     }
     
     result.setStatus(status);
@@ -468,19 +474,20 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     trail.backtrack(0);
     
-    logging.logResult(status);
+    sonification.send("/stop", status == l_False ? 1 : status == l_True ? 0 : -1);
+
     return status;
 }
 
 template<class TClauses, class TAssignment, class TPropagate, class TLearning, class TBranching>
 void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::printStats() {
-    std::cout << "c" << std::setw(80) << std::setfill('*') << std::endl;
-    std::cout << "c" << std::setw(18) << "restarts:" << nRestarts() << std::endl;
-    std::cout << "c" << std::setw(18) << "conflicts:" << nConflicts() << std::endl;
-    std::cout << "c" << std::setw(18) << "decisions:" << nDecisions() << std::endl;
-    std::cout << "c" << std::setw(18) << "propagations:" << nPropagations() << std::endl;
-    std::cout << "c" << std::setw(18) << "peak memory (mb): " << getPeakRSS()/(1024*1024) << std::endl;
-    std::cout << "c" << std::setw(18) << "cpu time (s):" << get_cpu_time() << std::endl;
+    std::cout << "c ************************* " << std::endl << std::left;
+    std::cout << "c " << std::setw(20) << "restarts:" << nRestarts() << std::endl;
+    std::cout << "c " << std::setw(20) << "conflicts:" << nConflicts() << std::endl;
+    std::cout << "c " << std::setw(20) << "decisions:" << nDecisions() << std::endl;
+    std::cout << "c " << std::setw(20) << "propagations:" << nPropagations() << std::endl;
+    std::cout << "c " << std::setw(20) << "peak memory (mb):" << getPeakRSS()/(1024*1024) << std::endl;
+    std::cout << "c " << std::setw(20) << "cpu time (s):" << get_cpu_time() << std::endl;
 }
 
 }

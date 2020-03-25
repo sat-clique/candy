@@ -33,7 +33,7 @@ giOSC OSCinit 7000
 opcode fract2octave, k, kkkk
     kfract, kbasefreq, kspread, kquant xin
     if (kquant != 0) then
-	kfreq = kbasefreq * exp(log(2.0) * round(kfract * kquant * kspread) / kquant)
+	  kfreq = kbasefreq * exp(log(2.0) * round(kfract * kquant * kspread) / kquant)
     else 
       kfreq = kbasefreq * exp(log(2.0) * kfract * kspread)
     endif
@@ -62,8 +62,9 @@ endin
 
 instr sample_play
   ifn = p4
-  idur = ftsr(ifn) / ftlen(ifn)
-  ;idur = p3
+  ;idur = 1
+  ;idur = ftsr(ifn) / ftlen(ifn)
+  idur = p3
   aSamp poscil3 1, idur, ifn
   outleta "out", aSamp
 endin

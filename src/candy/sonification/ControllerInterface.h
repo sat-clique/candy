@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+Candy -- Copyright (c) 2015-2020, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -39,8 +39,8 @@ class ControllerInterface : public osc::OscPacketListener {
 	std::thread* t;
 
 public:
-	ControllerInterface();
-	virtual ~ControllerInterface();
+	ControllerInterface() {}
+	virtual ~ControllerInterface() {}
 
 	void thread_run(UdpListeningReceiveSocket* s) {
 		s->Run();
