@@ -78,12 +78,16 @@ namespace SolverOptions {
     DoubleOption opt_lrb_step_size("CORE", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("CORE", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    IntOption opt_sonification_delay("SONIFICATION", "sonification-delay", "ms delay after each event to improve realtime sonification", 0, IntRange(0, INT16_MAX));
-
     BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
     BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 17);
+}
+
+namespace SonificationOptions {
+    StringOption host("SONIFICATION", "sonification-host", "host of sound synthesizer (for osc messages)", "127.0.0.1");
+    IntOption port("SONIFICATION", "sonification-port", "port of sound synthesizer (for osc messages)", 7000, IntRange(1, 99999));
+    IntOption delay("SONIFICATION", "sonification-delay", "minimum delay (ms) between timing events to reduce number of events per second", 0, IntRange(0, INT16_MAX));
 }
 
 namespace VariableEliminationOptions {
