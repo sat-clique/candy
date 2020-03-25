@@ -37,12 +37,6 @@ size_t Statistics::nClauses() const {
 size_t Statistics::nConflicts() const {
     return solver.getClauseDatabase().result.nConflicts;
 }
-size_t Statistics::nReduceCalls() const {
-    return solver.getClauseDatabase().nReduceCalls;
-}
-size_t Statistics::nReduced() const {
-    return solver.getClauseDatabase().nReduced;
-}
 
 size_t Statistics::nVars() const {
     return solver.getAssignment().vardata.size();
@@ -85,29 +79,10 @@ void Statistics::printRuntimes() {
     }
 }
 
-void Statistics::printIncrementalStats() {
-    printf("c restarts              : %zu\n", restarts);
-
-    printf("c nb ReduceDB           : %zu\n", nReduceCalls());
-    printf("c nb removed Clauses    : %zu\n", nReduced());
-
-    printf("c conflicts             : %zu\n", nConflicts());
-    printf("c decisions             : %zu\n", nDecisions());
-    printf("c propagations          : %zu\n", nPropagations());
-}
-
-
-void Statistics::printIntermediateStats() {
-    printf("c | %5zu (%zu conflicts in avg) | %10zu %10zu %5zu |\n", restarts, (nConflicts() / restarts), nClauses(), nReduceCalls(), nReduced());
-}
-
-void Statistics::printFinalStats() {
+void Statistics::printStats() {
     double cpu_time = get_cpu_time();
     printf("c =================================================================\n");
     printf("c restarts              : %zu (%zu conflicts in avg)\n", restarts, (restarts > 0 ? (nConflicts() / restarts) : 0));
-
-    printf("c nb ReduceDB           : %zu\n", nReduceCalls());
-    printf("c nb removed Clauses    : %zu\n", nReduced());
 
     printf("c conflicts             : %-12zu   (%.0f /sec)\n", nConflicts(), nConflicts() / runtimes["Wallclock"]);
     printf("c decisions             : %-12zu   (%.0f /sec)\n", nDecisions(), nDecisions() / runtimes["Wallclock"]);

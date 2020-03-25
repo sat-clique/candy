@@ -71,8 +71,6 @@ private:
     std::vector<Clause*> clauses; // Working set of problem clauses
     bool emptyClause_;
 
-    const unsigned int persistentLBD;
-    const bool keepMedianLBD;
     const bool recalculateLBD;
 
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
@@ -80,20 +78,15 @@ private:
     Certificate certificate;
 
 public:
-
-    size_t nReduced, nReduceCalls;
     
     /* analysis result is stored here */
 	AnalysisResult result;
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
-        persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
-        keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
         recalculateLBD(ClauseDatabaseOptions::opt_recalculate_lbd), 
         binaryWatchers(), 
         certificate(SolverOptions::opt_certified_file), 
-        nReduced(0), nReduceCalls(0),
         result()
     { }
 
@@ -106,8 +99,6 @@ public:
         variables = 0;
         emptyClause_ = false;
         result.nConflicts = 0;
-        nReduceCalls = 0;
-        nReduced = 0;
     }
 
     unsigned int nVars() {
@@ -237,39 +228,6 @@ public:
 
     std::vector<Clause*> getUnitClauses() { 
         return allocator.collect_unit_clauses();
-    }
-
-    /**
-     * only call this method at decision level 0
-     **/
-    void reduce() { 
-        std::vector<Clause*> learnts;
-
-        copy_if(clauses.begin(), clauses.end(), std::back_inserter(learnts), [this](Clause* clause) { 
-            return clause->getLBD() > persistentLBD; 
-        });
-
-        std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { 
-            return c1->getLBD() < c2->getLBD(); 
-        });
-
-        if (learnts.size() > 1) {
-            auto begin = learnts.begin() + learnts.size()/2;
-
-            if (keepMedianLBD) {
-                unsigned int median_lbd = (*begin)->getLBD();
-                while (begin != learnts.end() && (*begin)->getLBD() == median_lbd) {
-                    begin++;
-                }
-            }
-
-            for_each(begin, learnts.end(), [this] (Clause* clause) { 
-                removeClause(clause); 
-            });
-            
-            nReduceCalls++;
-            nReduced += std::distance(begin, learnts.end());
-        }
     }
 
     /**

@@ -357,7 +357,7 @@ int main(int argc, char** argv) {
         }
 
         if (SolverOptions::verb > 0) {
-            solver->getStatistics().printFinalStats();
+            solver->getStatistics().printStats();
         }
 
         solver->getStatistics().printRuntimes();

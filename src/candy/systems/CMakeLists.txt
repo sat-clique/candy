@@ -1,5 +1,6 @@
 add_library(systems OBJECT
     Restart.h
+    ReduceDB.h
     learning/ConflictAnalysis.h
     propagate/Propagate.h
     propagate/StaticPropagate.h
