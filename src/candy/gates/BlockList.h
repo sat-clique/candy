@@ -22,6 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector>
 #include <set>
+#include <limits>
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/CNFProblem.h"
@@ -36,12 +37,14 @@ private:
     std::vector<For> index;
     std::vector<uint16_t> num_blocked;
 
-    bool isBlocked(Lit o, Cl& c1, Cl& c2) { // assert o \in c1 and ~o \in c2
+    const uint16_t num_blocked_invalid = std::numeric_limits<uint16_t>::max();
+
+    bool isBlocked(Lit o, Cl& c1, Cl& c2) const { // assert o \in c1 and ~o \in c2
         for (Lit l1 : c1) if (l1 != o) for (Lit l2 : c2) if (l1 == ~l2) return true;
         return false;
     }
 
-    bool isBlocked(Lit o, Cl* clause) { // assert o \in clause
+    bool isBlocked(Lit o, Cl* clause) const { // assert o \in clause
         for (Cl* c2 : index[~o]) if (!isBlocked(o, *clause, *c2)) return false;
         return true;
     }
@@ -58,21 +61,23 @@ private:
 public:
     BlockList(const CNFProblem& problem_) : problem(problem_) { 
         index.resize(2 * problem.nVars());
-        num_blocked.resize(2 * problem.nVars(), 0);
+        num_blocked.resize(2 * problem.nVars(), num_blocked_invalid);
 
         for (Cl* clause : problem_) {
             for (Lit lit : *clause) {
                 index[lit].push_back(clause);
             }
         }
-
-        for (Var v = 0; v < (Var)problem_.nVars(); v++) {
-            countBlocked(Lit(v, false));
-            countBlocked(Lit(v, true));
-        }
     }
 
     ~BlockList() { }
+
+    uint16_t getNumBlocked(Lit o) {
+        if (num_blocked[o] == num_blocked_invalid) {
+            countBlocked(o);
+        }
+        return num_blocked[o];
+    }
 
     void remove(For& clauses) {
         std::set<Var> recount;
@@ -104,7 +109,7 @@ public:
     }
 
     inline bool isBlockedSet(Lit o) {
-        return index[o].size() == num_blocked[o];
+        return index[o].size() == getNumBlocked(o);
     }
 
     Lit getMinimallyUnblockedLiteral() {
@@ -113,8 +118,11 @@ public:
         for (int v = problem.nVars()-1; v >= 0 && min > 1; v--) {
             for (Lit lit : { Lit(v, true), Lit(v, false) }) {
                 size_t total = index[lit].size();
-                size_t diff = total - num_blocked[lit];
-                if (diff > 0 && diff < min) {
+                size_t diff = total - getNumBlocked(lit);
+                if (diff == 1) {
+                    return lit;
+                }
+                else if (diff > 0 && diff < min) {
                     min = (uint16_t)diff;
                     result = lit;
                 }
@@ -123,7 +131,7 @@ public:
         return result;
     }
 
-    For getUnblockedClauses(Lit o) {
+    For getUnblockedClauses(Lit o) const {
         For result;
         for (Cl* clause : index[o]) {
             if (!isBlocked(o, clause)) {
