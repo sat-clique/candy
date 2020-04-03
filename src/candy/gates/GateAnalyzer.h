@@ -96,8 +96,7 @@ private:
     bool useHolistic = false;
 
     // main analysis routines
-    void gate_recognition(std::vector<Cl*> roots);
-    void classic_recognition(std::vector<Lit> roots);
+    void gate_recognition(std::vector<Lit> roots);
     bool isGate(Lit candidate, bool pat, bool sem, bool hol);
 
     // clause selection heuristic
