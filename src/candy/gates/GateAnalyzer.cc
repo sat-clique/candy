@@ -55,17 +55,6 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod met
 GateAnalyzer::~GateAnalyzer() { }
 
 
-
-std::vector<Cl*> GateAnalyzer::getUnitClauses() {
-    std::vector<Cl*> clauses;
-    for (Cl* c : problem) {
-        if (c->size() == 1) {
-            clauses.push_back(c);
-        }
-    }
-    return clauses;
-}
-
 /**
  * Entry Point for Gate Analysis.
  * 
@@ -78,26 +67,37 @@ void GateAnalyzer::analyze() {
     std::vector<Cl*> root_clauses;
 
     for (unsigned int count = 0; (maxTries == 0 || count < maxTries) && !runtime.hasTimeout(); count++) {
+        root_clauses.clear();
+
         if (count == 0) {
-            root_clauses = getUnitClauses();
+            for (Cl* clause : problem) {
+                if (clause->size() == 1) {
+                    root_clauses.push_back(clause);
+                }
+            }
+            index.remove(root_clauses);
         }
         else {
             Lit lit = index.getMinimallyUnblockedLiteral();
             if (lit != lit_Undef) {
-                root_clauses = index.getUnblockedClauses(lit);
+                // std::cout << "Found Minimally Unblocked Literal: " << lit << std::endl;
+                root_clauses = index.stripUnblockedClauses(lit);
             }
             else {
+                // std::cout << "No More Root Literal" << std::endl;
                 break;
             }
         }
 
-        if (root_clauses.empty()) continue;
+        if (root_clauses.empty()) {
+            // std::cout << "No More Roots" << std::endl;
+            continue;
+        }
 
-        std::vector<Lit> candidates;
+        std::vector<Lit> candidates;        
 
-        index.remove(root_clauses);
-
-        for (Cl* clause : root_clauses) {
+        // std::cout << "Selected Candidate Root Clauses: " << root_clauses << std::endl;
+        for (Cl* clause : root_clauses) {            
             gate_problem.roots.push_back(clause);
             candidates.insert(candidates.end(), clause->begin(), clause->end());
             for (Lit l : *clause) gate_problem.setUsedAsInput(l);
