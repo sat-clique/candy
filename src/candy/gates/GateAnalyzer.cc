@@ -92,8 +92,18 @@ void GateAnalyzer::analyze() {
         }
 
         if (root_clauses.empty()) continue;
-        
-        gate_recognition(root_clauses);
+
+        std::vector<Lit> candidates;
+
+        index.remove(root_clauses);
+
+        for (Cl* clause : root_clauses) {
+            gate_problem.roots.push_back(clause);
+            candidates.insert(candidates.end(), clause->begin(), clause->end());
+            for (Lit l : *clause) gate_problem.setUsedAsInput(l);
+        }
+
+        gate_recognition(candidates);
     }
 
     std::unordered_set<Cl*> remainder;
@@ -106,21 +116,7 @@ void GateAnalyzer::analyze() {
     runtime.stop();
 }
 
-void GateAnalyzer::gate_recognition(std::vector<Cl*> roots) {
-    std::vector<Lit> candidates;
-
-    index.remove(roots);
-
-    for (Cl* clause : roots) {
-        gate_problem.roots.push_back(clause);
-        candidates.insert(candidates.end(), clause->begin(), clause->end());
-        for (Lit l : *clause) gate_problem.setUsedAsInput(l);
-    }
-
-    classic_recognition(candidates);
-}
-
-void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
+void GateAnalyzer::gate_recognition(std::vector<Lit> roots) {
     std::vector<Lit> candidates;
     std::vector<Lit> frontier { roots.begin(), roots.end() };
 
