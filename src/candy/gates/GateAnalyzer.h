@@ -99,12 +99,6 @@ private:
     void gate_recognition(std::vector<Lit> roots);
     bool isGate(Lit candidate, bool pat, bool sem, bool hol);
 
-    // clause selection heuristic
-    std::vector<Lit> getRarestLiterals(std::vector<For>& index);
-    std::vector<Cl*> getUnitClauses();
-    std::vector<Cl*> getClausesWithRareLiterals();
-    std::vector<Cl*> getClausesWithMaximalLiterals();
-
     // clause patterns of full encoding
     bool patternCheck(Lit o, const For& fwd, const For& bwd);
     bool semanticCheck(Lit o, const For& fwd, const For& bwd, bool holistic = false);

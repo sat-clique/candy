@@ -109,10 +109,7 @@ public:
             for (Lit lit : { Lit(v, true), Lit(v, false) }) {
                 size_t total = index[lit].size();
                 size_t diff = total - getNumBlocked(lit);
-                if (diff == 1) {
-                    return lit;
-                }
-                else if (diff > 0 && diff < min) {
+                if (diff > 0 && diff < min) {
                     min = (uint16_t)diff;
                     result = lit;
                 }
@@ -121,13 +118,29 @@ public:
         return result;
     }
 
-    For getUnblockedClauses(Lit o) const {
+    For stripUnblockedClauses(Lit o) {
         For result;
+        
         for (Cl* clause : index[o]) {
             if (!isBlocked(o, clause)) {
                 result.push_back(clause);
             }
         }
+
+        for (Cl* clause : result) {
+            for (Lit lit : *clause) {
+                For& h = index[lit];
+                h.erase(std::remove(h.begin(), h.end(), clause), h.end());
+                if (lit != o) {
+                    num_blocked[lit] = num_blocked_invalid;
+                    num_blocked[~lit] = num_blocked_invalid;
+                }
+                else {
+                    num_blocked[~lit] = index[~lit].size();
+                }
+            }
+        }
+
         return result;
     }
 
