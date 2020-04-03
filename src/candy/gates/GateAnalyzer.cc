@@ -33,7 +33,7 @@ namespace Candy {
 
 GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod method, int tries, double timeout) :
         problem(problem_), gate_problem(*new GateProblem { problem_ }), runtime(timeout), index(problem_), 
-        maxTries (tries), usePatterns (false), useSemantic (false), useHolistic (false), useIntensification (false)
+        maxTries (tries), usePatterns (false), useSemantic (false), useHolistic (false)
 {
     switch (method) {
         case GateRecognitionMethod::Patterns: usePatterns = true; break;
@@ -117,11 +117,7 @@ void GateAnalyzer::gate_recognition(std::vector<Cl*> roots) {
         for (Lit l : *clause) gate_problem.setUsedAsInput(l);
     }
 
-    if (useIntensification) {
-        recognition_with_intensification(candidates);
-    } else {
-        classic_recognition(candidates);
-    }
+    classic_recognition(candidates);
 }
 
 void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
@@ -129,10 +125,6 @@ void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
     std::vector<Lit> frontier { roots.begin(), roots.end() };
 
     //std::cout << "Starting recogintion with the following roots: " << roots << std::endl;
-
-    // while (!candidates.empty()) {
-    //     Lit candidate = candidates.back();
-    //     candidates.pop_back();
     while (!frontier.empty()) { // _breadth_ first search is important here (considering the symmetries in e.g. XOR-encodings)
         candidates.swap(frontier);
 
@@ -144,39 +136,6 @@ void GateAnalyzer::classic_recognition(std::vector<Lit> roots) {
             }
         }
         candidates.clear();
-    }
-}
-
-void GateAnalyzer::recognition_with_intensification(std::vector<Lit> roots) {
-    std::vector<Lit> candidates;
-    std::vector<Lit> frontier { roots.begin(), roots.end() };
-    std::vector<Lit> remainder[3];
-
-    for (int level = 0; level < (useHolistic ? 3 : 2); level++) {
-
-        candidates.swap(frontier);
-        for (Lit candidate : candidates) {
-            if (isGate(candidate, level == 0, level == 1, level == 2)) { 
-                // try these with level 0 (pattern recognition) first
-                frontier.insert(frontier.end(), gate_problem.getGate(candidate).inp.begin(), gate_problem.getGate(candidate).inp.end());
-            } 
-            else { 
-                // remember for next level
-                remainder[level].push_back(candidate);
-            }
-        }
-        candidates.clear();
-
-        if (!frontier.empty()) {
-            // restart analysis with pattern recognition
-            level = -1; 
-        } 
-        else { 
-            // use remainder for processing on the next level
-            sort(remainder[level].begin(), remainder[level].end(), [](Lit l1, Lit l2) { return l1 > l2; });
-            remainder[level].erase(std::unique(remainder[level].begin(), remainder[level].end()), remainder[level].end());
-            frontier.swap(remainder[level]);
-        }
     }
 }
 

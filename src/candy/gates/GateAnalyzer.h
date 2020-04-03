@@ -94,12 +94,10 @@ private:
     bool usePatterns = false;
     bool useSemantic = false;
     bool useHolistic = false;
-    bool useIntensification = false;
 
     // main analysis routines
     void gate_recognition(std::vector<Cl*> roots);
     void classic_recognition(std::vector<Lit> roots);
-    void recognition_with_intensification(std::vector<Lit> roots);
     bool isGate(Lit candidate, bool pat, bool sem, bool hol);
 
     // clause selection heuristic
