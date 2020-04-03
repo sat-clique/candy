@@ -69,7 +69,7 @@ script:
 - ctest -V
 - if [[ ($TRAVIS_OS_NAME == 'linux') && ($CANDY_MODE == "COVERAGE") ]]; then
     cd $TRAVIS_BUILD_DIR;
-#    sonar-scanner;
+    sonar-scanner;
   fi
 after_success:
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then 
