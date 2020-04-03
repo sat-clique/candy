@@ -80,22 +80,12 @@ public:
     }
 
     void remove(For& clauses) {
-        std::set<Var> recount;
         for (Cl* clause : clauses) {
             for (Lit lit : *clause) {
                 For& h = index[lit];
                 h.erase(std::remove(h.begin(), h.end(), clause), h.end());
-                recount.insert(lit.var());
-            }
-        }
-        for (Var var : recount) {
-            Lit lit = Lit(var, false);
-            countBlocked(lit);
-            if (isBlockedSet(lit)) {
-                num_blocked[~lit] = index[~lit].size();
-            }
-            else {
-                countBlocked(~lit);
+                num_blocked[lit] = num_blocked_invalid;
+                num_blocked[~lit] = num_blocked_invalid;
             }
         }
     }
