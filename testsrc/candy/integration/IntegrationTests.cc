@@ -78,32 +78,8 @@ namespace Candy {
         testAllProblems(false, false, false, true);
     }
 
-    TEST(IntegrationTest, test_vsidsc_with_static_propagate) {
-        testAllProblems(false, true, false, true);
-    }
-
-    TEST(IntegrationTest, test_vsidsc_with_static_allocator) {
-        testAllProblems(true, false, false, true);
-    }
-
-    TEST(IntegrationTest, test_vsidsc_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, true, false, true);
-    }
-
     TEST(IntegrationTest, test_lrb) {
         testAllProblems(false, false, true, false);
-    }
-
-    TEST(IntegrationTest, test_lrb_with_static_propagate) {
-        testAllProblems(false, true, true, false);
-    }
-
-    TEST(IntegrationTest, test_lrb_with_static_allocator) {
-        testAllProblems(true, false, true, false);
-    }
-
-    TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, true, true, false);
     }
 
     TEST(IntegrationTest, test_vsids) {
@@ -116,10 +92,6 @@ namespace Candy {
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
         testAllProblems(true, false, false, false);
-    }
-
-    TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, true, false, false);
     }
     
 }
