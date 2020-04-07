@@ -62,48 +62,64 @@ namespace Candy {
         EXPECT_EQ(result, lbool(expectedResult));
     }
 
-    static void testAllProblems(bool static_allocator, bool use_ts_pr, bool use_lrb) {
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz01.cnf", true, static_allocator); 
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz02.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz03.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/fuzz04.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/trivial0.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/sat/trivial2.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/unsat/trivial1.cnf", false, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/unsat/dubois20.cnf", false, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, false), "problems/unsat/hole6.cnf", false, static_allocator);
+    static void testAllProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz01.cnf", true, static_allocator); 
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz02.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz03.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz04.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/trivial0.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/trivial2.cnf", true, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/unsat/trivial1.cnf", false, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/unsat/dubois20.cnf", false, static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/unsat/hole6.cnf", false, static_allocator);
+    }
+
+    TEST(IntegrationTest, test_vsidsc) {
+        testAllProblems(false, false, false, true);
+    }
+
+    TEST(IntegrationTest, test_vsidsc_with_static_propagate) {
+        testAllProblems(false, true, false, true);
+    }
+
+    TEST(IntegrationTest, test_vsidsc_with_static_allocator) {
+        testAllProblems(true, false, false, true);
+    }
+
+    TEST(IntegrationTest, test_vsidsc_with_static_propagate_with_static_allocator) {
+        testAllProblems(true, true, false, true);
     }
 
     TEST(IntegrationTest, test_lrb) {
-        testAllProblems(false, false, true);
+        testAllProblems(false, false, true, false);
     }
 
     TEST(IntegrationTest, test_lrb_with_static_propagate) {
-        testAllProblems(false, true, true);
-    }
-
-    TEST(IntegrationTest, test_vsids) {
-        testAllProblems(false, false, false);
-    }
-
-    TEST(IntegrationTest, test_vsids_with_static_propagate) {
-        testAllProblems(false, true, false);
+        testAllProblems(false, true, true, false);
     }
 
     TEST(IntegrationTest, test_lrb_with_static_allocator) {
-        testAllProblems(true, false, true);
+        testAllProblems(true, false, true, false);
     }
 
     TEST(IntegrationTest, test_lrb_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, true, true);
+        testAllProblems(true, true, true, false);
+    }
+
+    TEST(IntegrationTest, test_vsids) {
+        testAllProblems(false, false, false, false);
+    }
+
+    TEST(IntegrationTest, test_vsids_with_static_propagate) {
+        testAllProblems(false, true, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
-        testAllProblems(true, false, false);
+        testAllProblems(true, false, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate_with_static_allocator) {
-        testAllProblems(true, true, false);
+        testAllProblems(true, true, false, false);
     }
     
 }
