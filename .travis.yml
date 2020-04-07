@@ -13,8 +13,6 @@ sudo: required
 addons:
   sonarcloud:
     organization: "udopia-github"
-    token:
-      secure: $SONAR_TOKEN
   
 cache:
   directories:
@@ -69,7 +67,7 @@ script:
 - ctest -V
 - if [[ ($TRAVIS_OS_NAME == 'linux') && ($CANDY_MODE == "COVERAGE") ]]; then
     cd $TRAVIS_BUILD_DIR;
-    sonar-scanner -X;
+    sonar-scanner -Dsonar.verbose=true -X;
   fi
 after_success:
 - if [ "$CANDY_MODE" = "COVERAGE" ]; then 
