@@ -447,7 +447,7 @@ private:
         // Initialize the graph for centrality calculations
         void init_graph()
         {
-                graph = Graph(clause_db.nVars()); // empty graph with max number of literals
+                graph = Graph(std::max(1u, clause_db.nVars())); // empty graph with max number of literals (trivial case with 0 vars triggers assertion in graph-library)
                 for (const Clause *clause : clause_db)
                 {
                         if (clause->isDeleted())
