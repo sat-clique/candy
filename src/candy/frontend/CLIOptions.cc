@@ -81,7 +81,7 @@ namespace SolverOptions {
     BoolOption opt_sort_watches("MEMORY LAYOUT", "sort-watches", "sort watches", true);
     BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
-    IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 17);
+    IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
 }
 
 namespace SonificationOptions {
