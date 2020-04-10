@@ -381,10 +381,11 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             while (trail.hasAssumptionsNotSet()) {
                 Lit p = trail.nextAssumption();
                 if (trail.value(p) == l_True) {
+                    std::cout << "c Assumption already satisfied " << p << std::endl;
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
                 else if (trail.value(p) == l_False) {
-                    if (verbosity > 1) std::cout << "c Conflict found during assumption propagation" << std::endl;
+                    std::cout << "c Conflict found during propagation of assumption " << p << std::endl;
                     result.setConflict(conflict_analysis.analyzeFinal(~p));
                     return l_False;
                 } 
@@ -421,6 +422,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     if (this->preprocessing_enabled) {
         trail.reset();
         processClauseDatabase();
+        this->preprocessing_enabled = false;
     }
 
     lbool status = isInConflictingState() ? l_False : l_Undef;

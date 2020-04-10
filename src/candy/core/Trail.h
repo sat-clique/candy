@@ -317,10 +317,10 @@ public:
 
     void print() {
         unsigned int level = 0;
-        std::cout << "Trail: ";
-        for (unsigned int i = 0; i < size(); ++i) {
-            if (i == trail_lim[level]) {
-                std::cout << "'" << trail[i] << "' ";
+        std::cout << "Trail (size = " << trail_size << ", levels = " << trail_lim.size() << "): ";
+        for (unsigned int i = 0; i < trail_size; ++i) {
+            if (trail_lim.size() > 0 && i == trail_lim[level]) {
+                std::cout << std::endl << "'" << trail[i] << "' ";
                 level++;
             } 
             else {
