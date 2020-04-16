@@ -4,9 +4,6 @@
 [submodule "lib/oscpack"]
 	path = lib/oscpack
 	url = ../oscpack.git
-[submodule "lib/minisat"]
-	path = lib/minisat
-	url = ../minisat.git
 [submodule "lib/drat-trim"]
 	path = lib/drat-trim
 	url = https://github.com/Udopia/drat-trim.git

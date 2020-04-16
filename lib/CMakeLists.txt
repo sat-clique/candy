@@ -6,5 +6,4 @@ endif()
 
 add_subdirectory(googletest)
 add_subdirectory(oscpack)
-add_subdirectory(minisat)
 add_subdirectory(drat-trim)
