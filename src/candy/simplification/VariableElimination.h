@@ -150,6 +150,7 @@ public:
             if (i == start - size) {
                 // elimclauses[i] is last literal of current clause
                 if (!satisfied) {
+                    std::cout << "c Variable elimination fixing value of variable " << elimclauses[i] << std::endl; 
                     result.setModelValue(elimclauses[i]);
                 }
                 --i; //elimclauses[i] is size of next clause 

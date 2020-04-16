@@ -140,7 +140,7 @@ void CNFProblem::readClause(Iterator begin, Iterator end) {
     problem.push_back(clause);
 }
 
-void CNFProblem::checkResult(CandySolverResult& result) {
+bool CNFProblem::checkResult(CandySolverResult& result) {
     for (Cl* clause : problem) {
         bool satisfied = false;
         for (Lit lit : *clause) {
@@ -150,9 +150,15 @@ void CNFProblem::checkResult(CandySolverResult& result) {
             }
         }
         if (!satisfied) {
-            std::cout << "c Clause not satisfied: " << *clause;
+            std::cout << "c Clause not satisfied: " << *clause << std::endl;
+            std::cout << "c Values: ";
+            for (Lit lit : *clause) {
+                std::cout << "c (" << lit.var() << ", " << result.value(lit.var()) << ")" << std::endl;
+            }
+            return false;
         }
     }
+    return true;
 }
 
 /**

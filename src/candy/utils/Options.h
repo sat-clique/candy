@@ -83,7 +83,7 @@ class Option {
             getOptionList().push_back(this);
         }
         else {
-            std::cout << "c Option '" << name_ << "' has been disabled by the developer. You are not able to change the default setting." << std::endl;
+            std::cout << "c Option '" << name_ << "' has been disabled. You are not able to change the default setting." << std::endl;
         }
     }
 

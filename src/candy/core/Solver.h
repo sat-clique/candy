@@ -490,6 +490,7 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::printStat
     std::cout << "c " << std::setw(20) << "propagations:" << nPropagations() << std::endl;
     std::cout << "c " << std::setw(20) << "peak memory (mb):" << getPeakRSS()/(1024*1024) << std::endl;
     std::cout << "c " << std::setw(20) << "cpu time (s):" << get_cpu_time() << std::endl;
+    std::cout << "c ************************* " << std::endl << std::left;
 }
 
 }

@@ -88,7 +88,7 @@ public:
     }
 
     void normalizeVariableNames();
-    void checkResult(CandySolverResult& result);
+    bool checkResult(CandySolverResult& result);
 
     void printDIMACS() const;
 
