@@ -495,7 +495,7 @@ private:
                 for (unsigned i = 0; i < trail.nVars(); ++i)
                 {
                         // TODO: check why the result of mapNode exceeds centrality.size() in some cases
-                        if (graph.mapNode(i) < centrality.size()) {
+                        if ((size_t)graph.mapNode(i) < centrality.size()) {
                                 double newActivity = centrality[graph.mapNode(i)] * centralityFactor;
                                 setActivity(i, newActivity);
                         }

@@ -53,6 +53,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <execinfo.h>
 #endif
 
+#include "drat-trim.h"
+
 #include "candy/utils/Memory.h"
 #include "candy/utils/Options.h"
 
@@ -137,8 +139,8 @@ static void installSignalHandlers(bool handleInterruptsBySolver) {
 }
 
 static void printProblemStatistics(CNFProblem& problem) {
-    std::cout << "Variables: " << problem.nVars() << std::endl;
-    std::cout << "Clauses: " << problem.nClauses() << std::endl;
+    std::cout << "c Variables: " << problem.nVars() << std::endl;
+    std::cout << "c Clauses: " << problem.nClauses() << std::endl;
 }
 
 static void printGateStatistics(CNFProblem& problem) {
@@ -202,26 +204,34 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
 }
 
 int main(int argc, char** argv) {
+    std::cout << "c Candy is made from Glucose." << std::endl;
+
     setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or gzipped DIMACS.\n");
     parseOptions(argc, argv, true);
-    
-    if (SolverOptions::verb > 1) {
-        std::cout << "c Candy 0.7 is made of Glucose (Many thanks to the Glucose and MiniSAT teams)" << std::endl;
-    }
 
     CNFProblem problem{};
+    const char* inputFilename = nullptr;
     try {
         if (argc == 1) {
             std::cout << "c Reading from standard input ... " << std::endl; 
             problem.readDimacsFromStdin();
         } else {
             std::cout << "c Reading file: " << argv[1] << std::endl; 
-            const char* inputFilename = argv[1];
+            inputFilename = argv[1];
             problem.readDimacsFromFile(inputFilename);
         }
     }
     catch (ParserException& e) {
-		printf("c Caught Parser Exception\n%s\n", e.what());
+		std::cout << "c Caught Parser Exception: " << std::endl << e.what() << std::endl;
+        return 1;
+    }
+
+    if (TestingOptions::test_proof && strlen(SolverOptions::opt_certified_file) == 0) {
+        SolverOptions::opt_certified_file = "proof.drat";
+    }
+
+    if (TestingOptions::test_limit > 0 && (int)problem.nVars() > TestingOptions::test_limit) {
+        std::cout << "c Number of variables surpasses testing limit" << std::endl;
         return 0;
     }
 
@@ -346,7 +356,6 @@ int main(int argc, char** argv) {
                 std::cout << "c Minimized-Model: " << model.getMinimizedModelLiterals() << std::endl;
             } 
             else {
-                // problem.checkResult(result);
                 std::cout << "v";
                 for (Var v = 0; v < (Var)problem.nVars(); v++) {
                     std::cout << " " << model.value(v);
@@ -364,6 +373,29 @@ int main(int argc, char** argv) {
             VSIDSC *brancher = dynamic_cast<VSIDSC*>(solver->getBranchingUnit());
             if (brancher) {
                 brancher->getStatistics().printFinalStats();
+            }
+        }
+
+        if (TestingOptions::test_model && result == l_True) {
+            bool satisfied = problem.checkResult(model);
+            if (satisfied) {
+                std::cout << "c Result verified by result checker" << std::endl;
+                std::cout << "c *********************************" << std::endl;
+            }
+            else {
+                std::cout << "c Result could not be verified by result checker" << std::endl;
+                return 1;
+            }
+        }
+        else if (TestingOptions::test_proof && result == l_False) {
+            int proof_result = check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get()); 
+            if (0 == proof_result) {
+                std::cout << "c Result verified by proof checker" << std::endl;
+                std::cout << "c ********************************" << std::endl;
+            }
+            else {
+                std::cout << "c Result could not be verified by proof checker" << std::endl;
+                return 1;
             }
         }
     }

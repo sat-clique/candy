@@ -47,10 +47,16 @@ namespace MinimizerOptions {
     BoolOption minimize_project("Minimizer", "minimize-project", "Project to input variables.", false);
 }
 
+namespace TestingOptions {
+    BoolOption test_model("TEST", "test-model", "test model.", false);
+    BoolOption test_proof("TEST", "test-proof", "test proof.", false);
+    IntOption test_limit("TEST", "test-limit", "limit the number of variables ('0' means inactive).", 0, IntRange(0, 1000));
+}
+
 namespace SolverOptions {
     IntOption verb("MAIN", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
     BoolOption mod("MAIN", "model", "show model.", false);
-    StringOption opt_certified_file("METHOD", "certified-output", "Certified UNSAT output file", "");
+    StringOption opt_certified_file("MAIN", "certified-output", "Certified UNSAT output file", "");
     BoolOption gate_stats("MAIN", "gate-stats", "show only gate recognizer statistics.", false);
 
     IntOption memory_limit("MAIN", "memory-limit", "Limit on memory usage in mega bytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
@@ -93,7 +99,7 @@ namespace SonificationOptions {
 namespace VariableEliminationOptions {
     IntOption opt_clause_lim("VariableElimination", "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, IntRange(0, INT32_MAX));
     BoolOption opt_use_asymm("VariableElimination", "asymm", "Shrink clauses by asymmetric branching.", false, true); // disabled option
-    BoolOption opt_use_elim("VariableElimination", "elim", "Perform variable elimination.", true);
+    BoolOption opt_use_elim("VariableElimination", "elim", "Perform variable elimination.", false, true); // temp. disabled
 }
 
 namespace GateRecognitionOptions {

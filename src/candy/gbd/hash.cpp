@@ -65,9 +65,9 @@ std::string Hash::degree_hash() {
     for (unsigned int degree : degrees) {
         if (degree > 0) {
             s.append(std::to_string(degree));
+            md5.process(s.c_str(), s.length());
+            s.assign(" ");
         }
-        md5.process(s.c_str(), s.length());
-        s.assign(" ");
     }
 
     md5.finish(sig);

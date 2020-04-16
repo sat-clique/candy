@@ -265,6 +265,7 @@ endfunction()
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_SOURCE_DIR}/lib/oscpack)
+include_directories(${PROJECT_SOURCE_DIR}/lib/drat-trim)
 
 set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 
@@ -302,7 +303,7 @@ if(CANDY_BUILD_SHARED_LIB)
 endif()
 
 add_library(candylib ${candylib_build_mode} ${CANDY_OBJECTS})
-target_link_libraries(candylib ${CANDY_LIBS})
+target_link_libraries(candylib ${CANDY_LIBS} dt)
 
 add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
 add_executable(cnf2aig src/candy/cnf2aig.cc $<TARGET_OBJECTS:frontend>)

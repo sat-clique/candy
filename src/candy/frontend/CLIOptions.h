@@ -48,6 +48,12 @@ namespace MinimizerOptions {
     extern BoolOption minimize_project;
 }
 
+namespace TestingOptions {
+    extern BoolOption test_model;
+    extern BoolOption test_proof;
+    extern IntOption test_limit;
+}
+
 namespace SolverOptions {
     extern IntOption verb;
     extern BoolOption mod;
