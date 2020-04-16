@@ -294,7 +294,6 @@ set(CANDY_LIBS ${ZLIB_LIBRARIES} oscpack)
 
 add_subdirectory(lib)
 add_subdirectory(testsrc)
-add_subdirectory(fuzzing)
 
 ### Define and link target executables and libraries
 set(candylib_build_mode STATIC)
