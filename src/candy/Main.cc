@@ -379,11 +379,12 @@ int main(int argc, char** argv) {
         if (TestingOptions::test_model && result == l_True) {
             bool satisfied = problem.checkResult(model);
             if (satisfied) {
-                std::cout << "c Result verified by result checker" << std::endl;
+                std::cout << "c Result verified by model checker" << std::endl;
                 std::cout << "c *********************************" << std::endl;
+                return 0;
             }
             else {
-                std::cout << "c Result could not be verified by result checker" << std::endl;
+                std::cout << "c Result could not be verified by model checker" << std::endl;
                 return 1;
             }
         }
@@ -392,6 +393,7 @@ int main(int argc, char** argv) {
             if (0 == proof_result) {
                 std::cout << "c Result verified by proof checker" << std::endl;
                 std::cout << "c ********************************" << std::endl;
+                return 0;
             }
             else {
                 std::cout << "c Result could not be verified by proof checker" << std::endl;

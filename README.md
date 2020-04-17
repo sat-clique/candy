@@ -30,33 +30,24 @@ cmake --build .
 
 Then you can build Candy like this:
 ```bash
-mkdir release
-cd release
+mkdir build
+cd build
 cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . --target candy
-```
-
-In order to build and execute unit-tests execute:
-```bash
-cmake --build .
-ctest
+make candy
 ```
 
 ## Run
 
 In order to run candy and solve a problem `example.cnf` invoke:
 ```bash
-candy example.cnf
+./candy example.cnf
 ```
 
-Candy offers a multitude of options, like paramaters to tune heuristics and thresholds, or parameters to select an alternative solving strategy (e.g. *rsar* or *rsil*). If you have any questions feel free to contact [me](mailto:2.markus.iser@gmail.com).
+Candy offers a multitude of options, like paramaters to tune heuristics and thresholds, or parameters to select an alternative solving strategy (e.g. *rsar* or *rsil*). If you have any questions feel free to contact [me](mailto:markus.iser@kit.edu).
 
 ## Credits
 
-Credits go to Robin Freyler and Felix Kutzner for a multitude of discussions about SAT solving and structured programming, 
-we were SAT CLIQUE. The main ideas for the profound structural changes in Candy have been developed in that time. 
-
-Credits go to all the people at ITI and the students.
+Credits go to SAT CLIQUE, all the people at ITI and our students. 
 
 
 ## Build and make on Windows
