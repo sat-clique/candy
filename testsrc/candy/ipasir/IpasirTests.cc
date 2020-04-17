@@ -90,5 +90,40 @@ namespace Candy {
 
         ipasir_release(solver);
     }
+
+
+    TEST(IpasirTest, ipasir_test_failed) {
+        printf("%s", ipasir_signature());
+
+        void* solver = ipasir_init();
+
+        ipasir_add(solver, 1);
+        ipasir_add(solver, 0);
+        ipasir_assume(solver, -1);
+        int result = ipasir_solve(solver);
+        ASSERT_EQ(20, result);
+        ASSERT_EQ(1, ipasir_failed(solver, -1));
+
+        result = ipasir_solve(solver);
+        int value = ipasir_val(solver, 1);
+        ASSERT_EQ(10, result);
+        ASSERT_EQ(1, value);
+
+        ipasir_add(solver, 2);
+        ipasir_add(solver, 0);
+        ipasir_assume(solver, -1);
+        ipasir_assume(solver, 2);
+        result = ipasir_solve(solver);
+        ASSERT_EQ(20, result);
+        ASSERT_EQ(1, ipasir_failed(solver, -1));
+        ASSERT_EQ(0, ipasir_failed(solver, 2));
+
+        result = ipasir_solve(solver);
+        ASSERT_EQ(10, result);
+        ASSERT_EQ(1, ipasir_val(solver, 1));
+        ASSERT_EQ(2, ipasir_val(solver, 2));
+
+        ipasir_release(solver);
+    }
     
 }
