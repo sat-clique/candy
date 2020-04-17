@@ -74,6 +74,7 @@ int main(int argc, char** argv) {
         }
         else {
             std::cout << "c Result could not be verified by model checker" << std::endl;
+            assert(satisfied);
             return 1;
         }
     }
@@ -93,6 +94,7 @@ int main(int argc, char** argv) {
         }
         else {
             std::cout << "c Result could not be verified by proof checker" << std::endl;
+            assert(0 == proof_result);
             return 1;
         }
     }

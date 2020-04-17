@@ -474,6 +474,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         elimination.extendModel(result);
     }
     
+    trail.print();
     trail.backtrack(0);
     
     sonification.send("/stop", status == l_False ? 1 : status == l_True ? 0 : -1);

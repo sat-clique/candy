@@ -111,7 +111,7 @@ public:
             binaryWatchers.resize(variables*2+2);
         }
         for (Cl* import : problem) {
-            createClause(import->begin(), import->end(), lemma ? 0 : import->size());
+            createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
         }
         if (global_allocator != nullptr) setGlobalClauseAllocator(global_allocator);
     }
@@ -180,14 +180,14 @@ public:
     }
 
     template<typename Iterator>
-    inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0) {
+    inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0, bool lemma = false) {
         unsigned int length = std::distance(begin, end);
         unsigned int weight = length < 3 ? 0 : lbd;
 
         Clause* clause = new (allocator.allocate(length, weight)) Clause(begin, end, weight);
         clauses.push_back(clause);
 
-        certificate.added(clause->begin(), clause->end());
+        if (!lemma) certificate.added(clause->begin(), clause->end());
 
         if (clause->size() == 0) {
             emptyClause_ = true;
