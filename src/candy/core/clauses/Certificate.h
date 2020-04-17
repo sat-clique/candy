@@ -56,6 +56,10 @@ public:
     }
 
     ~Certificate() {
+        close();
+    }
+
+    inline void close() {
         if (out && out->is_open()) out->close();
         active = false;
     }

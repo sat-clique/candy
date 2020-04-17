@@ -306,14 +306,18 @@ target_link_libraries(candylib ${CANDY_LIBS} dt)
 
 add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
 add_executable(cnf2aig src/candy/cnf2aig.cc $<TARGET_OBJECTS:frontend>)
+add_executable(fuzz_ipasir src/candy/FuzzIpasir.cc $<TARGET_OBJECTS:frontend>)
+
 candy_executable_customizations(candy)
 FIND_LIBRARY (PSAPI Psapi)
 if (PSAPI)
 	target_link_libraries(candy candylib ${PSAPI})
 	target_link_libraries(cnf2aig candylib ${PSAPI})
+	target_link_libraries(fuzz_ipasir candylib ${PSAPI})
 ELSE()
 	target_link_libraries(candy candylib)
 	target_link_libraries(cnf2aig candylib)
+	target_link_libraries(fuzz_ipasir candylib)
 ENDIF()
 
 
