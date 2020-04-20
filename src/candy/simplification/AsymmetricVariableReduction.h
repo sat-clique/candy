@@ -62,7 +62,7 @@ private:
     bool reduce(Var variable) {
         const std::vector<SubsumptionClause*> occurences = database.copyOccurences(variable);
         for (SubsumptionClause* clause : occurences) {
-            if (!clause->is_deleted() && !trail.satisfies(*clause->get_clause())) {
+            if (!clause->is_deleted() && !trail.satisfies(clause->begin(), clause->end())) {
                 trail.newDecisionLevel();
 
                 Lit l = lit_Undef;

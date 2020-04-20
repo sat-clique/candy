@@ -209,24 +209,27 @@ public:
         return value(lit) == l_True;
     }
 
-    inline bool satisfies(const Clause& c) const {
-        return std::any_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_True; });
+    template<typename Iterator>
+    inline bool satisfies(Iterator begin, Iterator end) const {
+        return std::any_of(begin, end, [this] (Lit lit) { return value(lit) == l_True; });
     }
 
     inline bool falsifies(Lit lit) const {
         return value(lit) == l_False;
     }
 
-    inline bool falsifies(const Clause& c) const {
-        return std::all_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) == l_False; });
+    template<typename Iterator>
+    inline bool falsifies(Iterator begin, Iterator end) const {
+        return std::all_of(begin, end, [this] (Lit lit) { return value(lit) == l_False; });
     }
 
     inline bool defines(Lit lit) const {
         return value(lit) != l_Undef;
     }
 
-    inline bool defines(const Clause& c) const {
-        return std::all_of(c.begin(), c.end(), [this] (Lit lit) { return value(lit) != l_Undef; });
+    template<typename Iterator>
+    inline bool defines(Iterator begin, Iterator end) const {
+        return std::all_of(begin, end, [this] (Lit lit) { return value(lit) != l_Undef; });
     }
 
     // Main internal methods:
@@ -248,11 +251,15 @@ public:
         trail_lim.push_back(trail_size);
     }
 
+    inline void set_value(Lit p) {
+        assigns[p.var()] = lbool(!p.sign());
+        trail[trail_size++] = p;
+    }
+
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
-        assigns[p.var()] = lbool(!p.sign());
+        set_value(p);
         vardata[p.var()] = VarData(nullptr, decisionLevel());
-        trail[trail_size++] = p;
         nDecisions++;
     }
 
@@ -261,9 +268,8 @@ public:
             return false;
         }
         else {
-            assigns[p.var()] = lbool(!p.sign());
+            set_value(p);
             vardata[p.var()] = VarData(from, decisionLevel());
-            trail[trail_size++] = p;
             nPropagations++;
             return true;
         }
@@ -271,16 +277,15 @@ public:
 
     inline bool fact(Lit p) {
         assert(decisionLevel() == 0);
+        if (this->falsifies(p)) {
+            return false;
+        }
         vardata[p.var()] = VarData(nullptr, 0);
-        if (!this->defines(p)) {
-            assigns[p.var()] = lbool(!p.sign());
-            trail[trail_size++] = p;
+        if (!this->satisfies(p))  {
+            set_value(p);
             nPropagations++;
-            return true;
         }
-        else {
-            return this->satisfies(p);
-        }
+        return true;
     }
 
     inline void backtrack(unsigned int level) {
