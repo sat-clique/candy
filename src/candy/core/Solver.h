@@ -257,11 +257,6 @@ private:
             if (elimination.nTouched() > 0) {
                 augmented_database.cleanup();
                 if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
-                for (unsigned int v = 0; v < clause_db.nVars(); v++) {
-                    if (elimination.isEliminated(v)) {
-                        trail.setDecisionVar(v, false);
-                    }
-                }
             }
 
             num = subsumption.nTouched() + elimination.nTouched() + reduction.nTouched();
@@ -420,10 +415,17 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     result.clear();
 
+    // prepare variable elimination for new set of assumptions
+    vector<Cl> correction_set = elimination.reset();
+    for (Cl cl : correction_set) {
+        Clause* clause = clause_db.createClause(cl.begin(), cl.end());
+        if (clause->size() > 2) propagator.attachClause(clause);
+    }
+
     if (this->preprocessing_enabled) {
+        std::cout << "c Preprocessing ... " << std::endl;
         trail.reset();
         processClauseDatabase();
-        this->preprocessing_enabled = false;
     }
 
     lbool status = isInConflictingState() ? l_False : l_Undef;
@@ -434,6 +436,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
 
         if (reduce.trigger_reduce()) {
             if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= reduce.nReduceCalls()) { 
+                std::cout << "c Inprocessing ... " << std::endl;
                 lastRestartWithInprocessing = reduce.nReduceCalls();
                 processClauseDatabase();
             }
@@ -471,8 +474,8 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         }
     }
     else if (status == l_True) {
+        elimination.propagate_eliminated_variables();
         result.setModel(trail);
-        elimination.extendModel(result);
     }
     
     trail.backtrack(0);
