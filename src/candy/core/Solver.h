@@ -235,6 +235,7 @@ private:
 
             if (subsumption.nTouched() > 0) {
                 augmented_database.cleanup();
+                if (verbosity > 1) std::cout << "c Removed " << subsumption.nDuplicates << " Duplicate Clauses" << std::endl;
                 if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
@@ -474,7 +475,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         elimination.extendModel(result);
     }
     
-    trail.print();
     trail.backtrack(0);
     
     sonification.send("/stop", status == l_False ? 1 : status == l_True ? 0 : -1);

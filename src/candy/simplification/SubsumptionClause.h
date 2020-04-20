@@ -28,34 +28,30 @@ namespace Candy {
 class SubsumptionClause {
 private:
     uint64_t abstraction;
-    uint64_t hash;
     const Clause* clause;
 
-    inline void calc_abstraction_and_hash() {
+    inline void calc_abstraction() {
         abstraction = 0;
-        hash = 0;
         for (Lit lit : *clause) {
             abstraction |= 1ull << (lit.var() % 64);
-            hash += lit;
         }
     }
 
 public:
     SubsumptionClause(const Clause* clause_) : clause(clause_) {
-        calc_abstraction_and_hash();
+        calc_abstraction();
     }
 
     ~SubsumptionClause() { }
 
     inline void reset(const Clause* clause_) {
         clause = clause_;
-        calc_abstraction_and_hash();
+        calc_abstraction();
     }
 
     inline void operator =(const SubsumptionClause& other) {
         clause = other.clause;
         abstraction = other.abstraction;
-        hash = other.hash;
     }
 
     inline const Lit& operator [](int i) const {
@@ -89,10 +85,6 @@ public:
         return abstraction;
     }
 
-    inline uint64_t get_hash() const {
-        return hash;
-    }
-
     inline void set_deleted() {
         this->clause = nullptr;
     }
@@ -105,25 +97,8 @@ public:
         return clause->contains(lit);
     }
 
-    inline bool operator < (SubsumptionClause& other) { 
-        return std::tuple<uint16_t, uint64_t, uint64_t, Clause*>(this->size(), this->get_hash(), this->get_abstraction(), this->get_clause())
-             < std::tuple<uint16_t, uint64_t, uint64_t, Clause*>(other.size(), other.get_hash(), other.get_abstraction(), other.get_clause());
-    }
-
-    inline bool operator > (SubsumptionClause& other) { 
-        return other < *this;
-    }
-
-    inline bool operator <= (SubsumptionClause& other) { 
-        return !(*this > other); 
-    }
-
-    inline bool operator >= (SubsumptionClause& other) { 
-        return !(*this < other); 
-    }
-
     inline bool equals(const SubsumptionClause* other) const {
-        if (this->hash == other->hash && this->abstraction == other->abstraction && this->size() == other->size()) {
+        if (this->abstraction == other->abstraction && this->size() == other->size()) {
             for (Lit lit : *this) {
                 if (!other->contains(lit)) {
                     return false;

@@ -38,10 +38,6 @@ private:
     Memory<SubsumptionClause> subsumption_clauses;
     std::vector<std::vector<SubsumptionClause*>> occurrences;
 
-    inline SubsumptionClause* createSubsumptionClause(Clause* clause) {
-        return new (subsumption_clauses.allocate()) SubsumptionClause(clause);
-    }
-
     inline void addToOccurenceLists(SubsumptionClause* subsumption_clause) {
         for (Lit lit : *subsumption_clause->get_clause()) {
             occurrences[lit.var()].push_back(subsumption_clause);
@@ -56,51 +52,18 @@ public:
     ~SubsumptionClauseDatabase() { }
 
     inline void init() {
-        std::cout << "c Initializing Subsumption Database" << std::endl;
         if (clause_db.nVars() > occurrences.size()) {
             occurrences.resize(clause_db.nVars());
         }
         for (Clause* clause : clause_db) {
-            createSubsumptionClause(clause);
-        }
-        unique();        
-        for (const SubsumptionClause* subsumption_clause : subsumption_clauses) {
-            if (!subsumption_clause->is_deleted()) {
-                addToOccurenceLists((SubsumptionClause*)subsumption_clause);
-            }
+            SubsumptionClause* subsumption_clause = new (subsumption_clauses.allocate()) SubsumptionClause(clause);
+            addToOccurenceLists(subsumption_clause);
         }
     }
 
     inline void finalize() {
         subsumption_clauses.free_all();
         occurrences.clear();
-    }
-
-    void unique() { // remove duplicates
-        unsigned int nDuplicates = 0;
-        subsumption_clauses.sort([](SubsumptionClause c1, SubsumptionClause c2) { return c1 < c2; });
-        for (auto clause1 = subsumption_clauses.begin(); clause1 != subsumption_clauses.end(); ++clause1) {
-            if (clause1->is_deleted()) continue;
-            for (auto clause2 = clause1+1; clause2 != subsumption_clauses.end(); ++clause2) {
-                assert(clause1 != clause2);
-                if (clause2->is_deleted()) continue;
-                if (clause1->get_hash() == clause2->get_hash()) {
-                    if (clause1->equals(*clause2)) { 
-                        nDuplicates++;
-                        if (clause1->lbd() > clause2->lbd()) {
-                            remove((SubsumptionClause*)*clause1);
-                        } else {
-                            remove((SubsumptionClause*)*clause2);
-                        }
-                    }
-                    else {
-                        continue;
-                    }
-                } 
-                break;
-            }
-        }
-        std::cout << "c Removed " << nDuplicates << " Duplicate Clauses" << std::endl;
     }
 
     inline void cleanup() {
@@ -120,9 +83,6 @@ public:
     }
 
     inline std::vector<SubsumptionClause*>& refOccurences(Var v) {
-        // for (SubsumptionClause* occurrence : occurrences[v]) {
-        //     assert(occurrence->is_deleted() || occurrence->contains(Lit(v, true)) || occurrence->contains(Lit(v, false)));
-        // }
         return occurrences[v];
     }
 
@@ -140,7 +100,7 @@ public:
     inline SubsumptionClause* create(Iterator begin, Iterator end, unsigned int lbd = 0) {
         assert(std::distance(begin, end) > 0);
         Clause* clause = clause_db.createClause(begin, end, lbd);
-        SubsumptionClause* subsumption_clause = createSubsumptionClause(clause);
+        SubsumptionClause* subsumption_clause = new (subsumption_clauses.allocate()) SubsumptionClause(clause);
         addToOccurenceLists(subsumption_clause);        
         return subsumption_clause;
     }
