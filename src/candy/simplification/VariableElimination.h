@@ -56,6 +56,7 @@ private:
     SubsumptionClauseDatabase& database;
     Trail& trail;
 
+    std::vector<Var> eliminiated_variables;
     std::vector<std::vector<Cl>> eliminated_clauses;
     std::vector<char> frozen;
 
@@ -82,6 +83,7 @@ public:
     VariableElimination(SubsumptionClauseDatabase& database_, Trail& trail_) : 
         database(database_),
         trail(trail_),
+        eliminiated_variables(),
         eliminated_clauses(), 
         frozen(),
         resolvent(),
@@ -103,6 +105,7 @@ public:
                 correction_set.insert(correction_set.end(), eliminated_clauses[lit.var()].begin(), eliminated_clauses[lit.var()].end());
                 eliminated_clauses[lit.var()].clear();
                 trail.setDecisionVar(lit.var(), true);
+                eliminiated_variables.erase(std::remove(eliminiated_variables.begin(), eliminiated_variables.end(), lit.var()), eliminiated_variables.end());
             }
         }
         return correction_set;
@@ -160,15 +163,17 @@ public:
     }
 
     void propagate_eliminated_variables() {
-        for (Var var = 0; var < (Var)trail.nVars(); var++) {
-            if (isEliminated(var)) {
-                for (Cl clause : eliminated_clauses[var]) {
-                    if (!trail.satisfies(clause.begin(), clause.end())) {
-                        for (Lit lit : clause) {
-                            if (lit.var() == var) trail.set_value(lit);
+        for (auto it = eliminiated_variables.rbegin(); it != eliminiated_variables.rend(); it++) {
+            Var var = *it;
+            for (Cl clause : eliminated_clauses[var]) {
+                if (!trail.satisfies(clause.begin(), clause.end())) {
+                    for (Lit lit : clause) {
+                        if (lit.var() == var) {
+                            std::cout << "c Fixing value of variable " << var << std::endl;
+                            trail.set_value(lit);
                         }
-                        break;
                     }
+                    break;
                 }
             }
         }
@@ -179,7 +184,7 @@ private:
         assert(!isEliminated(variable));
 
         if (pos.size() == 0 || neg.size() == 0) return true;
-                
+
         size_t nResolvents = 0;
         for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
             size_t clause_size = 0;
@@ -208,8 +213,10 @@ private:
         for (SubsumptionClause* clause : pos) database.remove(clause);
         for (SubsumptionClause* clause : neg) database.remove(clause);
 
-        nEliminated++;
+        nEliminated++;        
         trail.setDecisionVar(variable, false);
+        eliminiated_variables.push_back(variable);
+        std::cout << "c Eliminated variable " << variable << std::endl;
 
         assert(eliminated_clauses[variable].size() > 0);
 
