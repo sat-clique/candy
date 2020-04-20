@@ -62,15 +62,16 @@ private:
     bool unit_resolution(SubsumptionClause* clause);
 
 public:
+    unsigned int nDuplicates;
     unsigned int nSubsumed;
     unsigned int nStrengthened;      
 
     Subsumption(SubsumptionClauseDatabase& database_)
-     : database(database_), nSubsumed(0), nStrengthened(0)
+     : database(database_), nDuplicates(0), nSubsumed(0), nStrengthened(0)
     { }
 
     bool subsume() {
-        nSubsumed = nStrengthened = 0; 
+        nDuplicates = nSubsumed = nStrengthened = 0; 
                 
         for (const SubsumptionClause* clause : database) {
             if (!clause->is_deleted()) {
@@ -131,12 +132,20 @@ bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
             Lit l = clause->subsumes(occurence);
 
             if (l == lit_Undef) {
-                nSubsumed++;
-                if (clause->get_clause()->isLearnt() && !occurence->get_clause()->isLearnt()) {
-                    clause = database.create(clause->begin(), clause->end());
-                    database.remove(subsumption_clause);
+                if (clause->size() == occurence->size() && (clause->lbd() < occurence->lbd() || clause->lbd() == occurence->lbd() && clause->get_clause() < occurence->get_clause())) { 
+                    // make sure each thread would deterministically delete the "same" duplicate
+                    nDuplicates++;
+                    database.remove((SubsumptionClause*)occurence);
                 }
-                database.remove((SubsumptionClause*)occurence);
+                else {
+                    nSubsumed++;
+                    if (occurence->get_clause()->isPersistent() && clause->get_clause()->isLearnt()) {
+                        // recreate subsuming clause persistent
+                        clause = database.create(clause->begin(), clause->end());
+                        database.remove(subsumption_clause);
+                    }
+                    database.remove((SubsumptionClause*)occurence);
+                }
             }
             else if (l != lit_Error) {
                 nStrengthened++;   
