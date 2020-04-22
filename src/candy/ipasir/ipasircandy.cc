@@ -58,7 +58,6 @@ class IPASIRCandy {
 
 public:
     IPASIRCandy() : fmap(0), nomodel(false) { 
-        VariableEliminationOptions::opt_use_elim = false;
         solver = createSolver();
     }
 
