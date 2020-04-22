@@ -65,7 +65,7 @@ public:
         std::vector<Clause*> learnts;
 
         copy_if(clause_db.begin(), clause_db.end(), std::back_inserter(learnts), [this](Clause* clause) { 
-            return clause->getLBD() > persistentLBD; 
+            return clause->getLBD() > persistentLBD && !clause->isDeleted(); 
         });
 
         std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { 

@@ -73,7 +73,7 @@ private:
             eliminated_clauses.resize(trail.nVars());
         }
         for (Lit lit : trail.assumptions) {
-            lock(lit.var());
+            frozen[lit.var()] = true;
         }
     }
 
@@ -94,29 +94,48 @@ public:
 
     inline std::vector<Cl> reset() {
         std::vector<Cl> correction_set;
+
         std::fill(frozen.begin(), frozen.end(), false);
+
         if (trail.nVars() > frozen.size()) {
             frozen.resize(trail.nVars());
             eliminated_clauses.resize(trail.nVars());
         }
         for (Lit lit : trail.assumptions) {
-            lock(lit.var());
+            frozen[lit.var()] = true;
             if (eliminated_clauses[lit.var()].size() > 0) {
                 correction_set.insert(correction_set.end(), eliminated_clauses[lit.var()].begin(), eliminated_clauses[lit.var()].end());
                 eliminated_clauses[lit.var()].clear();
                 trail.setDecisionVar(lit.var(), true);
-                eliminiated_variables.erase(std::remove(eliminiated_variables.begin(), eliminiated_variables.end(), lit.var()), eliminiated_variables.end());
+            }            
+        }
+        vector<Var> new_elim;
+        for (Var var : eliminiated_variables) {
+            if (!frozen[var]) new_elim.push_back(var);
+        }
+        eliminiated_variables.swap(new_elim);
+        return correction_set;
+    }
+
+    void propagate_eliminated_variables() {
+        for (auto it = eliminiated_variables.rbegin(); it != eliminiated_variables.rend(); it++) {
+            Var var = *it;
+            for (Cl clause : eliminated_clauses[var]) {
+                if (!trail.satisfies(clause.begin(), clause.end())) {
+                    for (Lit lit : clause) {
+                        if (lit.var() == var) {
+                            // std::cout << "c Fixing value of eliminated variable " << var << std::endl;
+                            trail.set_value(lit);
+                        }
+                    }
+                    break;
+                }
             }
         }
-        return correction_set;
     }
 
     unsigned int nTouched() {
         return nEliminated; 
-    }
-
-    inline void lock(Var v) {
-        frozen[v] = true;
     }
 
     inline bool isEliminated(Var v) const {
@@ -162,28 +181,13 @@ public:
         return true;
     }
 
-    void propagate_eliminated_variables() {
-        for (auto it = eliminiated_variables.rbegin(); it != eliminiated_variables.rend(); it++) {
-            Var var = *it;
-            for (Cl clause : eliminated_clauses[var]) {
-                if (!trail.satisfies(clause.begin(), clause.end())) {
-                    for (Lit lit : clause) {
-                        if (lit.var() == var) {
-                            std::cout << "c Fixing value of variable " << var << std::endl;
-                            trail.set_value(lit);
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    }
-
 private:
     bool eliminate(Var variable, std::vector<SubsumptionClause*> pos, std::vector<SubsumptionClause*> neg) {
         assert(!isEliminated(variable));
 
-        if (pos.size() == 0 || neg.size() == 0) return true;
+        if (pos.size() == 0 && neg.size() == 0) {
+            return true;
+        }
 
         size_t nResolvents = 0;
         for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
@@ -205,18 +209,25 @@ private:
         for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
             if (merge(*pc->get_clause(), *nc->get_clause(), variable, resolvent)) {
                 uint16_t lbd = std::min({ pc->lbd(), nc->lbd(), (uint16_t)(resolvent.size()-1) });
+                // std::cout << "c Creating resolvent " << resolvent << std::endl;
                 database.create(resolvent.begin(), resolvent.end(), lbd);
                 assert(resolvent.size() > 0);
             }
         }
 
-        for (SubsumptionClause* clause : pos) database.remove(clause);
-        for (SubsumptionClause* clause : neg) database.remove(clause);
+        for (SubsumptionClause* clause : pos) {
+            // std::cout << "c VE Removing " << *clause->get_clause() << std::endl;
+            database.remove(clause);
+        }
+        for (SubsumptionClause* clause : neg) {
+            // std::cout << "c VE Removing " << *clause->get_clause() << std::endl;
+            database.remove(clause);
+        }
 
         nEliminated++;        
         trail.setDecisionVar(variable, false);
         eliminiated_variables.push_back(variable);
-        std::cout << "c Eliminated variable " << variable << std::endl;
+        // std::cout << "c Eliminated variable " << variable << std::endl;
 
         assert(eliminated_clauses[variable].size() > 0);
 

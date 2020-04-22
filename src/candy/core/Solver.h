@@ -205,8 +205,10 @@ private:
         }
         if (!clause_db.hasEmptyClause()) {
             std::array<Lit, 1> unit;
-            unsigned int pos = trail.size();
-            if (propagator.propagate() != nullptr) clause_db.emptyClause();
+            unsigned int pos = trail.size();            
+            if (propagator.propagate() != nullptr) {
+                clause_db.emptyClause();
+            }
             if (!isInConflictingState()) {
                 for (auto it = trail.begin() + pos; it != trail.end(); it++) {
                     assert(trail.reason(it->var()) != nullptr);
@@ -377,7 +379,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
             while (trail.hasAssumptionsNotSet()) {
                 Lit p = trail.nextAssumption();
                 if (trail.value(p) == l_True) {
-                    std::cout << "c Assumption already satisfied " << p << std::endl;
+                    // std::cout << "c Assumption already satisfied " << p << std::endl;
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
                 else if (trail.value(p) == l_False) {
@@ -386,6 +388,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::search()
                     return l_False;
                 } 
                 else {
+                    // std::cout << "c Propagating Assumption " << p << std::endl;
                     next = p;
                     break;
                 }
@@ -419,6 +422,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     vector<Cl> correction_set = elimination.reset();
     for (Cl cl : correction_set) {
         Clause* clause = clause_db.createClause(cl.begin(), cl.end());
+        // std::cout << "VE Correction due to new assumptions: " << *clause << std::endl;
         if (clause->size() > 2) propagator.attachClause(clause);
     }
 
@@ -426,6 +430,7 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         std::cout << "c Preprocessing ... " << std::endl;
         trail.reset();
         processClauseDatabase();
+        propagator.reset();
     }
 
     lbool status = isInConflictingState() ? l_False : l_Undef;

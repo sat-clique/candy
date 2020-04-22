@@ -23,10 +23,10 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 #include <cstring>
 #include <fstream>
-#include <memory>
+#include <iostream>
+
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/Clause.h"
-#include "candy/utils/MemUtils.h"
 
 namespace Candy {
 
@@ -35,22 +35,21 @@ class Clause;
 class Certificate {
 private:
     bool active;
-    std::unique_ptr<std::ofstream> out;
+    std::ofstream out;
 
     template<typename Iterator>
     inline void printLiterals(Iterator it, Iterator end) {
         for(; it != end; it++) {
-            *out << (it->var() + 1) * (it->sign() ? -1 : 1) << " ";
+            out << (it->var() + 1) * (it->sign() ? -1 : 1) << " ";
         }
-        *out << "0\n";
+        out << "0" << std::endl;
     }
 
 public:
-    Certificate(const char* _out) : active(false) {
-        std::unique_ptr<std::ofstream> new_out = backported_std::make_unique<std::ofstream>(_out, std::ofstream::out);
+    Certificate(const char* _out) : active(false), out() {
+        out.open(_out, std::ios::out | std::ios::trunc );
 
-        if (new_out->is_open()) {
-            this->out = std::move(new_out);
+        if (out.is_open()) {
             this->active = true;
         }
     }
@@ -60,13 +59,13 @@ public:
     }
 
     inline void close() {
-        if (out && out->is_open()) out->close();
+        if (out.is_open()) out.close();
         active = false;
     }
 
     inline void proof() {
         if (active) {
-            *out << "0" << std::endl;
+            out << "0" << std::endl;
         }
     }
 
@@ -80,7 +79,7 @@ public:
     template<typename Iterator>
     inline void removed(Iterator it, Iterator end) {
         if (active) {
-            *out << "d ";
+            out << "d ";
             printLiterals(it, end);
         }
     }
