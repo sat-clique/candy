@@ -105,11 +105,13 @@ bool Subsumption::unit_resolution(SubsumptionClause* clause) {
     for (SubsumptionClause* occurence : occurences) {
         if (occurence != clause && !occurence->is_deleted()) {
             if (occurence->contains(unit)) {
+                // std::cout << "c " << unit << " - unit resolution removing clause " << *occurence->get_clause() << std::endl;
                 database.remove(occurence);
             } else {
                 if (occurence->size() == 1) {
                     return false;
                 }
+                // std::cout << "c " << unit << " - unit resolution strengthening clause " << *occurence->get_clause() << std::endl;
                 database.strengthen(occurence, unit);
             }
         }
@@ -135,6 +137,7 @@ bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
                 if (clause->size() == occurence->size() && (clause->lbd() < occurence->lbd() || clause->lbd() == occurence->lbd() && clause->get_clause() < occurence->get_clause())) { 
                     // make sure each thread would deterministically delete the "same" duplicate
                     nDuplicates++;
+                    // std::cout << "c Removing duplicate clause " << *occurence->get_clause() << std::endl;
                     database.remove((SubsumptionClause*)occurence);
                 }
                 else {
@@ -144,12 +147,14 @@ bool Subsumption::subsume(SubsumptionClause* subsumption_clause) {
                         clause = database.create(clause->begin(), clause->end());
                         database.remove(subsumption_clause);
                     }
+                    // std::cout << "c Removing subsumed clause " << *occurence->get_clause() << std::endl;
                     database.remove((SubsumptionClause*)occurence);
                 }
             }
             else if (l != lit_Error) {
                 nStrengthened++;   
                 if (occurence->size() > 1) {
+                    // std::cout << "c Creating self-subsuming resolvent " << *occurence->get_clause() << std::endl;
                     database.strengthen((SubsumptionClause*)occurence, ~l);
                 }
                 else {
