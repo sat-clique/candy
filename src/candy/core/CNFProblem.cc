@@ -17,13 +17,19 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
+#include "candy/utils/StreamBuffer.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/frontend/Exceptions.h"
+#include "candy/utils/Exceptions.h"
 
-#include <vector>
 #include <unordered_map>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <zlib.h>
+#include <errno.h>
+#include <string.h>
 
 namespace Candy {
 
@@ -53,8 +59,7 @@ void CNFProblem::readDimacsFromFile(const char* filename) {
 }
 
 void CNFProblem::readDimacs(gzFile input_stream) {
-    unsigned int headerVars = 0;
-    unsigned int headerClauses = 0;
+    Cl lits;
     StreamBuffer in(input_stream);
     while (!in.eof()) {
         in.skipWhitespace();
@@ -62,42 +67,24 @@ void CNFProblem::readDimacs(gzFile input_stream) {
             break;
         }
         if (*in == 'p') {
-            if (in.skipString("p cnf")) {
-                int num1 = in.readInteger();
-                int num2 = in.readInteger();
-                if (num1 < 0 || num2 < 0) {
-                    throw ParserException("PARSE ERROR! Expected positive occurence count in header but got " + std::to_string(headerVars) + " vars and " + std::to_string(headerClauses) + " clauses");
-                }
-                else {
-                    headerVars = num1;
-                    headerClauses = num2;
-                }
-                problem.reserve(headerClauses);
+            in.skipString("p cnf");
+            int headerVars = in.readInteger();
+            int headerClauses = in.readInteger();
+            if (headerVars < 0 || headerClauses < 0) {
+                throw ParserException("PARSE ERROR! Expected positive occurence count in header but got " + std::to_string(headerVars) + " vars and " + std::to_string(headerClauses) + " clauses");
             }
-            else {
-                throw ParserException("PARSE ERROR! Expected 'p cnf' but got unexpected char: " + std::to_string(*in));
-            }
+            problem.reserve(headerClauses);
         }
         else if (*in == 'c') {
             in.skipLine();
         }
         else {
-            static Cl lits;
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
-                if (in.eof()) {
-                    throw ParserException("PARSE ERROR! Expected clause but got unexpected char: " + std::to_string(*in));
-                }
             }
             readClause(lits.begin(), lits.end());
         }
-    }
-    if (headerVars != variables) {
-        fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of variables (declared %i, found %i).\n", headerVars, variables);
-    }
-    if (headerClauses != problem.size()) {
-        fprintf(stderr, "c WARNING! DIMACS header mismatch: wrong number of clauses (declared %i, found %i).\n", headerClauses, (int)problem.size());
     }
 }
 

@@ -4,6 +4,5 @@ add_library(frontend OBJECT
     CandyBuilder.h
     CandyBuilder.cc
     SolverFactory.h
-    Exceptions.h
     RandomSimulationFrontend.h)
 

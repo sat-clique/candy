@@ -17,88 +17,78 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#include <stdexcept>
-#include <limits>
-#include <algorithm>
-
 #include "candy/utils/StreamBuffer.h"
-#include "candy/frontend/Exceptions.h"
+#include "candy/utils/Exceptions.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <zlib.h>
+#include <errno.h>
+#include <string.h>
+#include <limits>
 
 namespace Candy {
 
+    /** Skip until the end of the next newline (+subsequent whitespace) */
     void StreamBuffer::skipLine() {
-        while (buf[pos] != '\n') {
-            if (eof()) return;
+        while (!eof() && (!isspace(buffer[pos]) || isblank(buffer[pos]))) {
             incPos(1);
         }
-        incPos(1);
+        skipWhitespace();
     }
 
+    /** Skip whitespace */
     void StreamBuffer::skipWhitespace() {
-        while ((buf[pos] >= 9 && buf[pos] <= 13) || buf[pos] == 32) {
+        while (!eof() && isspace(buffer[pos])) {
             incPos(1);
         }
     }
 
-    bool StreamBuffer::skipString(const char* str) {
+    /** Skip given sequence of character (+throw exceptions if input deviates) */
+    void StreamBuffer::skipString(const char* str) {
         for (; *str != '\0'; ++str, incPos(1)) {
-            if (*str != buf[pos]) {
-                return false;
+            if (*str != buffer[pos] || eof()) {
+                throw ParserException(std::string("PARSE ERROR! Expected '") + std::string(str) + std::string("' but found ") + std::string(1, buffer[pos]));
             }
         }
-        return true;
     }
 
     int StreamBuffer::readInteger() {
+        if (eof()) throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
+
+        char* str = buffer + pos;
         char* end = NULL;
-        char* str = reinterpret_cast<char*>(&buf[pos]);
+                
         errno = 0;
         long number = strtol(str, &end, 10);
-        if (end > str) {
-            if (errno == ERANGE || number <= std::numeric_limits<int>::min()/2 || number >= std::numeric_limits<int>::max()/2) {
-                throw ParserException("PARSE ERROR! Variable " + std::to_string(number) + " is out of range");
-            }
 
-            if (errno != 0) {// && errno != 25 && errno != 29) {
-                // After strtol, for reasons unknown, ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
-                // After strtol, for reasons unknown, ERRNO=29 ('Illegal seek') when reading from stdin
-                char buffer[1024];
-                std::sprintf(buffer, "PARSE ERROR! ERRNO=%i, in 'strtol' while reading '%.8s ..'\n", errno, buf.get()+pos);
-                throw ParserException(std::string(buffer));
-            }
-
-            incPos(static_cast<intptr_t>(end - str));
-
-            return static_cast<int>(number);
+        if (errno == ERANGE || 2*abs(number) >= std::numeric_limits<uint32_t>::max()) {
+            throw ParserException(std::string("PARSE ERROR! Variable out of range: ") + std::to_string(number));
         }
         else if (errno != 0) {
-            char buffer[1024];
-            std::sprintf(buffer, "PARSE ERROR! ERRNO=%i, in 'strtol' while reading '%.8s ..'\n", errno, buf.get()+pos);
-            throw ParserException(std::string(buffer));
+            // Had ERRNO=25 ('Not a typewriter') when acceptance tests are run from gTest
+            // Had ERRNO=29 ('Illegal seek') when reading from stdin
+            throw ParserException(std::string("PARSE ERROR! In 'strtol()', errno ") + std::to_string(errno) + std::string(" while reading ") + std::string(1, buffer[pos]));
         }
-        else if (eof()) {
-            throw ParserException("PARSE ERROR! Unexpected end of file");
-        }
-        else {
-            char buffer[1024];
-            std::sprintf(buffer, "PARSE ERROR! Expected integer but got unexpected char while attempting to read '%.8s ..'\n", buf.get()+pos);
-            throw ParserException(std::string(buffer));
+        else if (end > str) {
+            incPos(static_cast<intptr_t>(end - str));
+            return static_cast<int>(number);
         }
     }
 
-    void StreamBuffer::assureLookahead() {
+    void StreamBuffer::check_refill_buffer() {
         if (pos >= size - offset) {
             pos = 0;
             if (offset > 0) {
-                std::copy(&buf[size - offset], &buf[size], buf.get());
+                std::copy(&buffer[size - offset], &buffer[size], buffer);
             }
-            size = offset + gzread(in, buf.get()+offset, buffer_size-offset);
+            size = offset + gzread(in, buffer + offset, buffer_size - offset);
             offset = 0;
             if (size < buffer_size) {
                 return;
             }
             // make sure buffer ends with newline (assert: does not cut a number)
-            while (buf[size - offset - 1] != '\n' && offset < size) {
+            while (buffer[size - offset - 1] != '\n' && offset < size) {
                 offset++;
             }
         }
