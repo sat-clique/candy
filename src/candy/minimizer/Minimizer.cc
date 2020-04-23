@@ -37,7 +37,6 @@ Minimizer::Minimizer(CNFProblem& _problem, CandySolverResult& _model) : problem(
     SolverOptions::opt_preprocessing = false;
     SolverOptions::opt_inprocessing = 0;
     SolverOptions::opt_sort_variables = false;
-    SolverOptions::opt_sort_watches = false; 
     solver = createSolver();
  }
 

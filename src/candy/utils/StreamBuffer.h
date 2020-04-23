@@ -25,6 +25,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <zlib.h>
 #include <errno.h>
 #include <string.h>
+#include <iostream>
 
 namespace Candy {
 
@@ -37,37 +38,36 @@ class StreamBuffer {
     int size;
     int offset;
 
-void check_refill_buffer();
+    void check_refill_buffer();
 
 public:
-explicit StreamBuffer(gzFile i) :
-    in(i), pos(0), size(0), offset(0) {
+    StreamBuffer(gzFile file) : in(file), pos(0), size(0), offset(0) {
         buffer = new char[buffer_size];
         check_refill_buffer();
-}
+    }
 
-void skipLine();
-void skipWhitespace();
-void skipString(const char* str);
+    void skipLine();
+    void skipWhitespace();
+    void skipString(const char* str);
 
-int readInteger();
+    int readInteger();
 
-int operator *() const {
-    return (pos >= size - offset) ? EOF : buffer[pos];
-}
+    int operator *() const {
+        return (pos >= size - offset) ? EOF : buffer[pos];
+    }
 
-void operator ++() {
-    incPos(1);
-}
+    void operator ++() {
+        incPos(1);
+    }
 
-void incPos(unsigned int inc) {
-    pos += inc;
-    check_refill_buffer();
-}
+    void incPos(unsigned int inc) {
+        pos += inc;
+        check_refill_buffer();
+    }
 
-bool eof() {
-    return pos >= size - offset;
-}
+    bool eof() {
+        return pos >= size - offset;
+    }
 
 };
 

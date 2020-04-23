@@ -17,24 +17,35 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
+#include "candy/core/SolverTypes.h"
+#include "candy/core/CNFProblem.h"
+#include "candy/core/clauses/ClauseDatabase.h"
+#include "candy/core/Trail.h"
+#include "candy/systems/propagate/Propagate.h"
+
 #ifndef CANDY_DRAT_CHECKER
 #define CANDY_DRAT_CHECKER
 
 typedef struct gzFile_s *gzFile;
 
-namespace Candy { 
-
-class CNFProblem;
+namespace Candy {
 
 class DRATChecker {
 
 private:
     CNFProblem& problem;
 
-public:
-    DRATChecker(CNFProblem& problem_) : problem(problem_) { }
+    ClauseDatabase clause_db;
+    Trail trail;
+    Propagate propagator;
 
-    ~DRATChecker() { }
+    std::vector<std::vector<Clause*>> occurences;
+
+    unsigned int num_deleted;
+
+public:
+    DRATChecker(class CNFProblem& problem_);
+    ~DRATChecker();
 
     bool check_proof(const char* filename);
     long proof_size(const char* filename);
@@ -47,6 +58,8 @@ private:
 
     template <typename Iterator>
     bool check_clause_remove(Iterator begin, Iterator end);
+
+    void cleanup_deleted();
 
 };
 

@@ -61,6 +61,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/minimizer/Minimizer.h"
+#include "candy/core/DRATChecker.h"
 
 #include "candy/frontend/SolverFactory.h"
 #include "candy/frontend/CandyBuilder.h"
@@ -178,7 +179,6 @@ CandySolverInterface* solver = nullptr;
 lbool result = l_Undef;
 
 static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, ClauseAllocator*& global_allocator) {
-    std::cout << "c Sort Watches: " << SolverOptions::opt_sort_watches << std::endl;
     std::cout << "c Sort Variables: " << SolverOptions::opt_sort_variables << std::endl;
     std::cout << "c Preprocessing: " << SolverOptions::opt_preprocessing << std::endl;
     std::cout << "c Inprocessing: " << SolverOptions::opt_inprocessing << std::endl;
@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads && result == l_Undef; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
             ClauseDatabaseOptions::opt_recalculate_lbd = false;
-            SolverOptions::opt_sort_watches = ((count % 2) == 0);
+            SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = count + SolverOptions::opt_inprocessing;
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
@@ -389,15 +389,19 @@ int main(int argc, char** argv) {
             }
         }
         else if (TestingOptions::test_proof && result == l_False) {
-            int proof_result = check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get()); 
-            if (0 == proof_result) {
+            // std::string file (SolverOptions::opt_certified_file);
+            // SolverOptions::opt_certified_file = "";
+            // DRATChecker checker(problem);
+            // bool proved = checker.check_proof(file.c_str());
+            bool proved = (0 == check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get())); 
+            if (proved) {
                 std::cout << "c Result verified by proof checker" << std::endl;
                 std::cout << "c ********************************" << std::endl;
                 return 0;
             }
             else {
                 std::cout << "c Result could not be verified by proof checker" << std::endl;
-                assert(0 == proof_result);
+                assert(proved);
                 return 1;
             }
         }

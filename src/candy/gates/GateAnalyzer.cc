@@ -46,7 +46,6 @@ GateAnalyzer::GateAnalyzer(const CNFProblem& problem_, GateRecognitionMethod met
 
     if (useSemantic || useHolistic) {
         SolverOptions::opt_sort_variables = false;
-        SolverOptions::opt_sort_watches = false;
         SolverOptions::opt_preprocessing = false;
         solver = createSolver(); 
     }
