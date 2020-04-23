@@ -70,7 +70,7 @@ private:
 
 public:
     Propagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), sort_watches(SolverOptions::opt_sort_watches) {
+        : clause_db(_clause_db), trail(_trail), watchers() {
     }
 
     void clear() {
@@ -83,9 +83,6 @@ public:
             if (clause->size() > 2) {
                 attachClause(clause);
             } 
-        }
-        if (sort_watches) {
-            sortWatchers();
         }
     }
 
@@ -106,17 +103,6 @@ public:
         std::vector<Watcher>& list1 = watchers[~clause->second()];
         list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
         list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
-    }
-
-    void sortWatchers() {
-        size_t nVars = watchers.size() / 2;
-        for (Var v = 0; v < (Var)nVars; v++) {
-            for (Lit l : { Lit(v, false), Lit(v, true) }) {
-                sort(watchers[l].begin(), watchers[l].end(), [](Watcher w1, Watcher w2) {
-                    return w1.cref->size() < w2.cref->size();
-                });
-            }
-        }
     }
 
     inline Clause* propagate_binary_clauses(Lit p) {

@@ -49,11 +49,9 @@ private:
 
     Memory<Watcher> memory;
 
-    bool sort_watches;
-
 public:
     StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), memory(), sort_watches(SolverOptions::opt_sort_watches) { }
+        : clause_db(_clause_db), trail(_trail), watchers(), memory() { }
 
     ~StaticPropagate() {
         clear();
@@ -70,9 +68,6 @@ public:
             if (clause->size() > 2) {
                 attachClause(clause);
             } 
-        }
-        if (sort_watches) {
-            sortWatchers();
         }
     }
 
@@ -99,17 +94,6 @@ public:
                 watchers[~lit0].erase(std::remove(watchers[~lit0].begin(), watchers[~lit0].end(), watcher), watchers[~lit0].end());
                 watchers[~lit1].erase(std::remove(watchers[~lit1].begin(), watchers[~lit1].end(), watcher), watchers[~lit1].end());
                 break;
-            }
-        }
-    }
-
-    void sortWatchers() {
-        size_t nVars = watchers.size() / 2;
-        for (Var v = 0; v < (Var)nVars; v++) {
-            for (Lit l : { Lit(v, false), Lit(v, true) }) {
-                sort(watchers[l].begin(), watchers[l].end(), [](Watcher* w1, Watcher* w2) {
-                    return w1->cref->size() < w2->cref->size();
-                });
             }
         }
     }

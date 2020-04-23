@@ -21,8 +21,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/utils/StreamBuffer.h"
 #include "candy/utils/Exceptions.h"
-#include "candy/core/SolverTypes.h"
-#include "candy/core/CNFProblem.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,6 +33,27 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <iostream>
 
 namespace Candy {
+
+DRATChecker::DRATChecker(CNFProblem& problem_)
+ : problem(problem_), clause_db(), trail(), propagator(clause_db, trail), occurences(), num_deleted(0) 
+{ 
+    clause_db.init(problem);
+    trail.init(clause_db.nVars());
+    propagator.init();
+
+    occurences.resize(2 * clause_db.nVars());
+    for (Clause* clause : clause_db) {
+        for (Lit lit : *clause) {
+            occurences[lit].push_back(clause);
+        }
+    }
+}
+
+DRATChecker::~DRATChecker() { 
+    clause_db.clear();
+    trail.clear();
+    propagator.clear();
+}
 
 bool DRATChecker::check_proof(const char* filename) {
     gzFile in = gzopen(filename, "rb");
@@ -61,32 +80,103 @@ bool DRATChecker::check_proof(gzFile input_stream) {
             in.skipLine();
         }
         else if (*in == 'd') {
+            ++in;
+            std::cout << "c Reading Delete: ";
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
+            std::cout << lits << std::endl;
             check_clause_remove(lits.begin(), lits.end());
         }
         else {
+            std::cout << "c Reading Learned: ";
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            check_clause_add(lits.begin(), lits.end());
+            std::cout << lits << std::endl;
+            if (!check_clause_add(lits.begin(), lits.end())) {
+                return false;
+            }
         }
         in.skipWhitespace();
     }
+    return clause_db.hasEmptyClause();
 }
 
 template <typename Iterator>
 bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
-    return true;
+    bool conflict = false;
+
+    // check if clause is asymmetric tautology
+    for (auto it = begin; it != end; it++) {
+        trail.newDecisionLevel();
+        trail.decide(*it);
+    }
+    conflict = (propagator.propagate() != nullptr);
+    // if (conflict) std::cout << "Conflict" << std::endl;
+    // trail.print();
+        
+    // check if clause is resolution asymmetric tautology
+    unsigned int level = trail.decisionLevel();
+    for (auto it = begin; !conflict && it != end; it++) {
+        Lit res = *it;
+        for (Clause* clause : occurences[~res]) {//if (!clause->isDeleted()) {
+            for (Lit lit : *clause) if (lit != ~res) {
+                trail.newDecisionLevel();
+                trail.decide(lit);
+            }
+            conflict &= (propagator.propagate() != nullptr);
+            // if (conflict) std::cout << "Conflict" << std::endl;
+            // trail.print();
+
+            trail.backtrack(level);
+            if (!conflict) break;
+        }
+    }
+    trail.backtrack(0);
+
+    if (conflict) {
+        Clause* clause = clause_db.createClause(begin, end);
+        if (clause->size() > 2) {
+            propagator.attachClause(clause);
+        }
+        for (Lit lit : *clause) {
+            occurences[lit].push_back(clause);
+        }
+        return true;
+    }
+    return false;
 }
 
 template <typename Iterator>
 bool DRATChecker::check_clause_remove(Iterator begin, Iterator end) {
-    return true;
+    size_t size = std::distance(begin, end);
+    if (size > 1) {
+        for (Clause* clause : occurences[*begin]) {
+            if (size == clause->size() && std::all_of(begin+1, end, [clause](Lit lit) { return clause->contains(lit); })) {
+                clause_db.removeClause(clause);
+                if (clause->size() > 2) {
+                    propagator.detachClause(clause);
+                }
+                if (++num_deleted * 10 > clause_db.size()) cleanup_deleted();
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
+void DRATChecker::cleanup_deleted() {
+    clause_db.reorganize();
+    propagator.reset();
+    occurences.resize(2 * clause_db.nVars());
+    for (Clause* clause : clause_db) {
+        for (Lit lit : *clause) {
+            occurences[lit].push_back(clause);
+        }
+    }
+}
 
 }
