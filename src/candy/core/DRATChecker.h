@@ -17,57 +17,36 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef StreamBuffer_h
-#define StreamBuffer_h
+#ifndef CANDY_DRAT_CHECKER
+#define CANDY_DRAT_CHECKER
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <zlib.h>
-#include <errno.h>
-#include <string.h>
+typedef struct gzFile_s *gzFile;
 
-namespace Candy {
+namespace Candy { 
 
-static const int buffer_size = 1024*1024;
+class CNFProblem;
 
-class StreamBuffer {
-    gzFile in;
-    char* buffer;
-    int pos;
-    int size;
-    int offset;
+class DRATChecker {
 
-void check_refill_buffer();
+private:
+    CNFProblem& problem;
 
 public:
-explicit StreamBuffer(gzFile i) :
-    in(i), pos(0), size(0), offset(0) {
-        buffer = new char[buffer_size];
-        check_refill_buffer();
-}
+    DRATChecker(CNFProblem& problem_) : problem(problem_) { }
 
-void skipLine();
-void skipWhitespace();
-void skipString(const char* str);
+    ~DRATChecker() { }
 
-int readInteger();
+    bool check_proof(const char* filename);
+    long proof_size(const char* filename);
 
-int operator *() const {
-    return (pos >= size - offset) ? EOF : buffer[pos];
-}
+private:
+    bool check_proof(gzFile input_stream);
 
-void operator ++() {
-    incPos(1);
-}
+    template <typename Iterator>
+    bool check_clause_add(Iterator begin, Iterator end);
 
-void incPos(unsigned int inc) {
-    pos += inc;
-    check_refill_buffer();
-}
-
-bool eof() {
-    return pos >= size - offset;
-}
+    template <typename Iterator>
+    bool check_clause_remove(Iterator begin, Iterator end);
 
 };
 

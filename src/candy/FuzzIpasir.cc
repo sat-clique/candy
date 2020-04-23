@@ -1,7 +1,7 @@
 #include <candy/core/SolverTypes.h>
 #include <candy/core/CNFProblem.h>
 #include <candy/core/CandySolverResult.h>
-#include <candy/frontend/Exceptions.h>
+#include <candy/utils/Exceptions.h>
 #include <candy/core/clauses/Certificate.h>
 
 #include "drat-trim.h"
@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
     
     if (result == 10) {
         Candy::CandySolverResult model;
-        for (int var = 0; var < problem.nVars(); var++) {
+        for (Candy::Var var = 0; var < (Candy::Var)problem.nVars(); var++) {
             if (ipasir_val(solver, var+1) > 0) {
                 model.setModelValue(Candy::Lit(var, false));
             } else {

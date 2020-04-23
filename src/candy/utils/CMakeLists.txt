@@ -10,6 +10,7 @@ add_library(utils OBJECT
     StreamBuffer.h
     StreamBuffer.cc
     StringUtils.h
-    CheckedCast.h)
+    CheckedCast.h
+    Exceptions.h)
 
 

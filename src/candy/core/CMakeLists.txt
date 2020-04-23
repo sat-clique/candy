@@ -7,6 +7,8 @@ add_library(core OBJECT
     clauses/Certificate.h
     CNFProblem.cc
     CNFProblem.h
+    DRATChecker.cc
+    DRATChecker.h
     SolverTypes.h
     Trail.h
 )

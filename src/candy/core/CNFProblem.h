@@ -20,10 +20,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef CNFProblem_h
 #define CNFProblem_h
 
-#include "candy/utils/StreamBuffer.h"
 #include "candy/core/SolverTypes.h"
 
-#include <vector>
+typedef struct gzFile_s *gzFile;
 
 namespace Candy {
 

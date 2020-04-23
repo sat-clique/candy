@@ -41,7 +41,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <errno.h>
 #include <iostream>
 #include <csignal>
-#include <zlib.h>
 #include <string>
 #include <stdexcept>
 #include <regex>
@@ -65,7 +64,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/frontend/SolverFactory.h"
 #include "candy/frontend/CandyBuilder.h"
-#include "candy/frontend/Exceptions.h"
+#include "candy/utils/Exceptions.h"
 
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/rsar/ARSolver.h"
@@ -380,7 +379,7 @@ int main(int argc, char** argv) {
             bool satisfied = problem.checkResult(model);
             if (satisfied) {
                 std::cout << "c Result verified by model checker" << std::endl;
-                std::cout << "c *********************************" << std::endl;
+                std::cout << "c ********************************" << std::endl;
                 return 0;
             }
             else {
