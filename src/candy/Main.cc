@@ -48,10 +48,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <type_traits>
 #include <chrono>
 
-#if !defined(WIN32) || defined(CYGWIN)
-#include <execinfo.h>
-#endif
-
 #include "drat-trim.h"
 
 #include "candy/utils/Memory.h"
@@ -70,7 +66,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/gates/GateAnalyzer.h"
 #include "candy/rsar/ARSolver.h"
 #include "candy/rsar/Heuristics.h"
-
 
 #include "candy/systems/branching/rsil/BranchingHeuristics.h"
 
@@ -105,35 +100,20 @@ static void just_quit(int signum) {
     _exit(1);
 }
 
-static void print_stacktrace(int signum) {
-#if !defined(WIN32) || defined(CYGWIN)
-    void *array[10];
-    size_t size = backtrace(array, 10);
-
-    // print out all the frames to stderr
-    fprintf(stderr, "c Error: signal %d:\n", signum);
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
-    std::raise(signum);
-#endif
-    _exit(1);
-}
-
 static void installSignalHandlers(bool handleInterruptsBySolver) {
 #if defined(WIN32) && !defined(CYGWIN)
 #if defined(_MSC_VER)
-#pragma message ("Warning: setting signal handlers not yet implemented for Win32")
+#pragma message ("Warning: setting signal handlers not implemented for Win32")
 #else
-#warning "setting signal handlers not yet implemented for Win32"
+#warning "setting signal handlers not implemented for Win32"
 #endif
 #else
     if (handleInterruptsBySolver) {
         signal(SIGINT, set_interrupted);
         signal(SIGXCPU, set_interrupted);
-        signal(SIGSEGV, print_stacktrace);
     } else {
         signal(SIGINT, just_quit);
         signal(SIGXCPU, just_quit);
-        signal(SIGSEGV, print_stacktrace);
     }
 #endif
 }
@@ -389,11 +369,11 @@ int main(int argc, char** argv) {
             }
         }
         else if (TestingOptions::test_proof && result == l_False) {
-            // std::string file (SolverOptions::opt_certified_file);
-            // SolverOptions::opt_certified_file = "";
-            // DRATChecker checker(problem);
-            // bool proved = checker.check_proof(file.c_str());
-            bool proved = (0 == check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get())); 
+            std::string file (SolverOptions::opt_certified_file);
+            SolverOptions::opt_certified_file = "";
+            DRATChecker checker(problem);
+            bool proved = checker.check_proof(file.c_str());
+            // bool proved = (0 == check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get())); 
             if (proved) {
                 std::cout << "c Result verified by proof checker" << std::endl;
                 std::cout << "c ********************************" << std::endl;

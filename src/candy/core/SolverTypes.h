@@ -167,16 +167,8 @@ class lbool {
 	uint8_t value;
 
 public:
-	explicit lbool(uint8_t v) :
-			value(v) {
-	}
-
-	lbool() :
-			value(0) {
-	}
-	explicit lbool(bool x) :
-			value(!x) {
-	}
+	explicit lbool(uint8_t v) : value(v) {}
+	explicit lbool(bool x) : value(!x) {}	
 
 	bool operator ==(lbool b) const {
 		return (((b.value & 2) & (value & 2))
@@ -186,7 +178,7 @@ public:
 		return !(*this == b);
 	}
 	lbool operator ^(bool b) const {
-		return lbool((uint8_t) (value ^ (uint8_t) b));
+		return value == 2 ? l_Undef : lbool((uint8_t)(value ^ (uint8_t)b));
 	}
 
 	lbool operator &&(lbool b) const {

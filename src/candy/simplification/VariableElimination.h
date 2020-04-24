@@ -159,7 +159,7 @@ public:
         });
 
         for (Var variable : variables) {
-            if (!trail.defines(Lit(variable))) {
+            if (trail.value(variable) == l_Undef) {
                 std::vector<SubsumptionClause*> pos, neg; // split the occurrences into positive and negative
                 for (SubsumptionClause* cl : database.refOccurences(variable)) {
                     if (!cl->is_deleted()) {

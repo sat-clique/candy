@@ -46,6 +46,9 @@ DRATChecker::DRATChecker(CNFProblem& problem_)
         for (Lit lit : *clause) {
             occurences[lit].push_back(clause);
         }
+        if (clause->size() == 1) {
+            trail.fact(clause->first());
+        }
     }
 }
 
@@ -72,7 +75,7 @@ long DRATChecker::proof_size(const char* filename) {
 }
 
 bool DRATChecker::check_proof(gzFile input_stream) {
-    static Cl lits;
+    Cl lits;
     StreamBuffer in(input_stream);
     in.skipWhitespace();
     while (!in.eof()) {
@@ -81,21 +84,19 @@ bool DRATChecker::check_proof(gzFile input_stream) {
         }
         else if (*in == 'd') {
             ++in;
-            std::cout << "c Reading Delete: ";
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            std::cout << lits << std::endl;
+            // std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
             check_clause_remove(lits.begin(), lits.end());
         }
         else {
-            std::cout << "c Reading Learned: ";
             lits.clear();
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            std::cout << lits << std::endl;
+            // std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
             if (!check_clause_add(lits.begin(), lits.end())) {
                 return false;
             }
@@ -106,31 +107,32 @@ bool DRATChecker::check_proof(gzFile input_stream) {
 }
 
 template <typename Iterator>
-bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
-    bool conflict = false;
-
+bool DRATChecker::check_asymm(Iterator begin, Iterator end, Lit pivot) {
     // check if clause is asymmetric tautology
-    for (auto it = begin; it != end; it++) {
-        trail.newDecisionLevel();
-        trail.decide(*it);
+    for (auto it = begin; it != end; it++) if (*it != pivot) {
+        Lit lit = ~*it;
+        if (trail.falsifies(lit)) {
+            return true;
+        }
+        else if (!trail.satisfies(lit)) {
+            trail.newDecisionLevel();
+            trail.decide(lit);
+        }
     }
-    conflict = (propagator.propagate() != nullptr);
-    // if (conflict) std::cout << "Conflict" << std::endl;
-    // trail.print();
+    return propagator.propagate() != nullptr;
+}
+
+template <typename Iterator>
+bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
+    // check if clause is asymmetric tautology
+    bool conflict = check_asymm(begin, end, lit_Undef);
         
     // check if clause is resolution asymmetric tautology
     unsigned int level = trail.decisionLevel();
     for (auto it = begin; !conflict && it != end; it++) {
-        Lit res = *it;
-        for (Clause* clause : occurences[~res]) {//if (!clause->isDeleted()) {
-            for (Lit lit : *clause) if (lit != ~res) {
-                trail.newDecisionLevel();
-                trail.decide(lit);
-            }
-            conflict &= (propagator.propagate() != nullptr);
-            // if (conflict) std::cout << "Conflict" << std::endl;
-            // trail.print();
-
+        Lit pivot = *it;
+        for (Clause* clause : occurences[~pivot]) if (!clause->isDeleted()) {
+            conflict = check_asymm(clause->begin(), clause->end(), ~pivot);
             trail.backtrack(level);
             if (!conflict) break;
         }
@@ -141,6 +143,9 @@ bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
         Clause* clause = clause_db.createClause(begin, end);
         if (clause->size() > 2) {
             propagator.attachClause(clause);
+        }
+        else if (clause->size() == 1) {
+            trail.fact(clause->first());
         }
         for (Lit lit : *clause) {
             occurences[lit].push_back(clause);
