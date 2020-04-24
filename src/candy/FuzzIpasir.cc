@@ -3,8 +3,7 @@
 #include <candy/core/CandySolverResult.h>
 #include <candy/utils/Exceptions.h>
 #include <candy/core/clauses/Certificate.h>
-
-#include "drat-trim.h"
+#include <candy/core/DRATChecker.h>
 
 extern "C" {
 #include <candy/ipasir/ipasir.h>
@@ -16,9 +15,7 @@ static int c2i(Candy::Lit lit) {
 }
 
 const char* CERT = "cert.drat";
-const char* LEMM = "lemma.cnf";
 Candy::Certificate certificate(CERT);
-Candy::Certificate lemmas(LEMM);
 
 int main(int argc, char** argv) {
     std::cout << "c Candy is made from Glucose." << std::endl;
@@ -42,7 +39,6 @@ int main(int argc, char** argv) {
     void* solver = ipasir_init();
     
     for (Candy::Cl* clause : problem) {
-        lemmas.added(clause->begin(), clause->end());
         for (Candy::Lit lit : *clause) {
             ipasir_add(solver, c2i(lit));
         }
@@ -81,20 +77,20 @@ int main(int argc, char** argv) {
     else if (result == 20) {        
         for (Candy::Lit lit : *problem[0]) {
             if (ipasir_failed(solver, c2i(lit))) {
-                std::vector<Candy::Lit> unit(1, lit);
-                lemmas.added(unit.begin(), unit.end());
+                problem.readClause({ lit });
             }
         }
-        lemmas.close();
-        int proof_result = check_proof((char*)LEMM, (char*)CERT); 
-        if (0 == proof_result) {
+
+        Candy::DRATChecker checker(problem);
+        bool proved = checker.check_proof(CERT);
+        if (proved) {
             std::cout << "c Result verified by proof checker" << std::endl;
             std::cout << "c ********************************" << std::endl;
             return 0;
         }
         else {
             std::cout << "c Result could not be verified by proof checker" << std::endl;
-            assert(0 == proof_result);
+            assert(proved);
             return 1;
         }
     }
