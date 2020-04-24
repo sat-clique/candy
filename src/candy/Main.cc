@@ -48,8 +48,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <type_traits>
 #include <chrono>
 
-#include "drat-trim.h"
-
 #include "candy/utils/Memory.h"
 #include "candy/utils/Options.h"
 
