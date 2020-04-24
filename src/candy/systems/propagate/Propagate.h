@@ -66,8 +66,6 @@ private:
 
     std::vector<std::vector<Watcher>> watchers;
 
-    bool sort_watches;
-
 public:
     Propagate(ClauseDatabase& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers() {

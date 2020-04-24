@@ -57,6 +57,9 @@ private:
     bool check_clause_add(Iterator begin, Iterator end);
 
     template <typename Iterator>
+    bool check_asymm(Iterator begin, Iterator end, Lit lit);
+
+    template <typename Iterator>
     bool check_clause_remove(Iterator begin, Iterator end);
 
     void cleanup_deleted();

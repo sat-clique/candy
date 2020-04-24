@@ -67,7 +67,7 @@ private:
 
                 Lit l = lit_Undef;
                 for (Lit lit : *clause) {
-                    if (lit.var() != variable && !trail.defines(lit)) {
+                    if (lit.var() != variable && trail.value(lit.var()) == l_Undef) {
                         trail.decide(~lit);
                     } else {
                         l = lit;
@@ -115,7 +115,7 @@ public:
         }
 
         for (Var variable = 0; variable < (Var)trail.nVars(); variable++) {
-            if (!trail.defines(Lit(variable, false))) {
+            if (trail.value(variable) == l_Undef) {
                 assert(trail.decisionLevel() == 0);
                 if (!reduce(variable)) {
                     return false;

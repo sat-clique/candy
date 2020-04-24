@@ -223,15 +223,6 @@ public:
         return std::all_of(begin, end, [this] (Lit lit) { return value(lit) == l_False; });
     }
 
-    inline bool defines(Lit lit) const {
-        return value(lit) != l_Undef;
-    }
-
-    template<typename Iterator>
-    inline bool defines(Iterator begin, Iterator end) const {
-        return std::all_of(begin, end, [this] (Lit lit) { return value(lit) != l_Undef; });
-    }
-
     // Main internal methods:
     inline Clause* reason(Var x) const {
         return vardata[x].reason;
@@ -257,6 +248,7 @@ public:
     }
 
     inline void decide(Lit p) {
+        // std::cout << "Branching on " << p << std::endl;
         assert(value(p) == l_Undef);
         set_value(p);
         vardata[p.var()] = VarData(nullptr, decisionLevel());
@@ -264,6 +256,7 @@ public:
     }
 
     inline bool propagate(Lit p, Clause* from) {
+        // std::cout << "Propgating " << p << " due to " << *from << std::endl;
         if (this->falsifies(p)) {
             return false;
         }
@@ -276,6 +269,7 @@ public:
     }
 
     inline bool fact(Lit p) {
+        // std::cout << "Setting fact " << p << std::endl;
         assert(decisionLevel() == 0);
         if (this->falsifies(p)) {
             return false;
@@ -293,9 +287,9 @@ public:
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
             }
-            qhead = trail_lim[level];
+            qhead = level == 0 ? 0 : trail_lim[level];
             trail_size = trail_lim[level];
-            trail_lim.erase(trail_lim.begin() + level, trail_lim.end());
+            trail_lim.resize(level);
         }
     }
 
@@ -322,11 +316,11 @@ public:
 
     void print() {
         unsigned int level = 0;
-        std::cout << "Trail (size = " << trail_size << ", levels = " << trail_lim.size() << "): ";
+        std::cout << "cT Trail (size = " << trail_size << ", levels = " << trail_lim.size() << "): " << std::endl << "cT Level 0: ";
         for (unsigned int i = 0; i < trail_size; ++i) {
-            if (trail_lim.size() > 0 && i == trail_lim[level]) {
-                std::cout << std::endl << "'" << trail[i] << "' ";
+            if (level < trail_lim.size() && i == trail_lim[level]) {
                 level++;
+                std::cout << std::endl << "cT Level " << level << ": '" << trail[i] << "' ";
             } 
             else {
                 std::cout << trail[i] << " ";
