@@ -120,15 +120,26 @@ public:
     void propagate_eliminated_variables() {
         for (auto it = eliminiated_variables.rbegin(); it != eliminiated_variables.rend(); it++) {
             Var var = *it;
+            bool value_set = false;
             for (Cl clause : eliminated_clauses[var]) {
                 if (!trail.satisfies(clause.begin(), clause.end())) {
                     for (Lit lit : clause) {
                         if (lit.var() == var) {
                             // std::cout << "c Fixing value of eliminated variable " << var << std::endl;
                             trail.set_value(lit);
+                            value_set = true;
                         }
                     }
                     break;
+                }
+            }
+            if (!value_set) {
+                for (Lit lit : eliminated_clauses[var][0]) {
+                    if (lit.var() == var) {
+                        // std::cout << "c Fixing value of eliminated variable " << var << std::endl;
+                        trail.set_value(~lit);
+                        value_set = true;
+                    }
                 }
             }
         }
@@ -227,7 +238,7 @@ private:
         nEliminated++;        
         trail.setDecisionVar(variable, false);
         eliminiated_variables.push_back(variable);
-        // std::cout << "c Eliminated variable " << variable << std::endl;
+        std::cout << "c Eliminated variable " << variable << std::endl;
 
         assert(eliminated_clauses[variable].size() > 0);
 
