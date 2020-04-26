@@ -28,6 +28,7 @@
 
 #include <candy/core/SolverTypes.h>
 #include <candy/core/Trail.h>
+#include <candy/core/DRATChecker.h>
 #include <candy/core/CandySolverInterface.h>
 #include <candy/core/clauses/ClauseDatabase.h>
 #include <candy/frontend/CandyBuilder.h>
@@ -43,11 +44,12 @@ extern "C" {
 
 namespace Candy {
 
-    static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool expectedResult, bool install_static_allocator) {
+    static const char* CERT = "cert.drat";
+
+    static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool install_static_allocator) {
         GTEST_COUT << filename << std::endl;
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
-        // ASSERT_FALSE(problem.size() == 0) << "Could not read test problem file.";
         solver->init(problem);
         ClauseAllocator* allocator = nullptr;
         if (install_static_allocator) {
@@ -55,43 +57,80 @@ namespace Candy {
             allocator = solver->setupGlobalAllocator();
         }
         auto result = solver->solve();
+
+        if (result == l_True) {
+            CandySolverResult& model = solver->getCandySolverResult();
+            bool satisfied = problem.checkResult(model);
+            ASSERT_TRUE(satisfied);
+        }
+        else if (result == l_False) {
+            SolverOptions::opt_certified_file = "";
+            DRATChecker checker(problem);
+            bool proved = checker.check_proof(CERT);
+            ASSERT_TRUE(proved);
+        }
+
         delete solver;
         if (allocator != nullptr) {
             delete allocator;
         }
-        EXPECT_EQ(result, lbool(expectedResult));
     }
 
-    static void testAllProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz01.cnf", true, static_allocator); 
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz02.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz03.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/fuzz04.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/trivial0.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/sat/trivial2.cnf", true, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/unsat/trivial1.cnf", false, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/unsat/dubois20.cnf", false, static_allocator);
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "problems/unsat/hole6.cnf", false, static_allocator);
+    static void testTrivialProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/trivial0.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/trivial1.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/trivial2.cnf", static_allocator);
     }
 
-    TEST(IntegrationTest, test_vsidsc) {
-        testAllProblems(false, false, false, true);
+    static void testFuzzProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz01.cnf", static_allocator); 
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz02.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz03.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz04.cnf", static_allocator);
     }
 
-    TEST(IntegrationTest, test_lrb) {
-        testAllProblems(false, false, true, false);
+    static void testRealProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/dubois20.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/hole6.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/ais6.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/uf75-042.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/uuf75-042.cnf", static_allocator);
     }
 
     TEST(IntegrationTest, test_vsids) {
-        testAllProblems(false, false, false, false);
+        testTrivialProblems(false, false, false, false);
+        testFuzzProblems(false, false, false, false);
+        testRealProblems(false, false, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate) {
-        testAllProblems(false, true, false, false);
+        testFuzzProblems(false, true, false, false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
-        testAllProblems(true, false, false, false);
+        testFuzzProblems(true, false, false, false);
+    }
+
+    TEST(IntegrationTest, test_vsidsc) {
+        testFuzzProblems(false, false, false, true);
+        testRealProblems(false, false, false, false);
+    }
+
+    TEST(IntegrationTest, test_lrb) {
+        testFuzzProblems(false, false, true, false);
+        testRealProblems(false, false, false, false);
     }
     
 }

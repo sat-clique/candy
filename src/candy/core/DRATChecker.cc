@@ -63,7 +63,7 @@ bool DRATChecker::check_proof(const char* filename) {
     if (in == NULL) {
         throw ParserException("ERROR! Could not open file");
     }
-    bool result = check_proof(in);
+    bool result = clause_db.hasEmptyClause() || check_proof(in);
     gzclose(in);
     return result;
 }
@@ -88,7 +88,7 @@ bool DRATChecker::check_proof(gzFile input_stream) {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            // std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
+            std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
             check_clause_remove(lits.begin(), lits.end());
         }
         else {
@@ -96,7 +96,7 @@ bool DRATChecker::check_proof(gzFile input_stream) {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            // std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
+            std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
             if (!check_clause_add(lits.begin(), lits.end())) {
                 return false;
             }
@@ -108,6 +108,7 @@ bool DRATChecker::check_proof(gzFile input_stream) {
 
 template <typename Iterator>
 bool DRATChecker::check_asymm(Iterator begin, Iterator end, Lit pivot) {
+    if (clause_db.hasEmptyClause()) return true;
     // check if clause is asymmetric tautology
     for (auto it = begin; it != end; it++) if (*it != pivot) {
         Lit lit = ~*it;
@@ -144,11 +145,11 @@ bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
         if (clause->size() > 2) {
             propagator.attachClause(clause);
         }
-        else if (clause->size() == 1) {
-            trail.fact(clause->first());
-        }
         for (Lit lit : *clause) {
             occurences[lit].push_back(clause);
+        }
+        if (clause->size() == 1 && !trail.fact(clause->first())) {
+            clause_db.emptyClause();
         }
         return true;
     }
@@ -176,6 +177,7 @@ bool DRATChecker::check_clause_remove(Iterator begin, Iterator end) {
 void DRATChecker::cleanup_deleted() {
     clause_db.reorganize();
     propagator.reset();
+    occurences.clear();
     occurences.resize(2 * clause_db.nVars());
     for (Clause* clause : clause_db) {
         for (Lit lit : *clause) {
