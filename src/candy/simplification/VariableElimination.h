@@ -238,7 +238,7 @@ private:
         nEliminated++;        
         trail.setDecisionVar(variable, false);
         eliminiated_variables.push_back(variable);
-        std::cout << "c Eliminated variable " << variable << std::endl;
+        // std::cout << "c Eliminated variable " << variable << std::endl;
 
         assert(eliminated_clauses[variable].size() > 0);
 
