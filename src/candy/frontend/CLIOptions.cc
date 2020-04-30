@@ -84,8 +84,8 @@ namespace SolverOptions {
     DoubleOption opt_lrb_step_size("CORE", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("CORE", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", true);
-    BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
+    BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", false);
+    BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", false);
     IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
 }
 
