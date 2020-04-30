@@ -418,6 +418,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     
     result.clear();
 
+    trail.reset();
+    propagator.reset();
+
     // prepare variable elimination for new set of assumptions
     vector<Cl> correction_set = elimination.reset();
     for (Cl cl : correction_set) {
@@ -425,10 +428,9 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
         // std::cout << "VE Correction due to new assumptions: " << *clause << std::endl;
         if (clause->size() > 2) propagator.attachClause(clause);
     }
-
+    
     if (this->preprocessing_enabled) {
         std::cout << "c Preprocessing ... " << std::endl;
-        trail.reset();
         processClauseDatabase();
         propagator.reset();
     }
