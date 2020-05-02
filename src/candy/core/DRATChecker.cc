@@ -88,7 +88,7 @@ bool DRATChecker::check_proof(gzFile input_stream) {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
+            // std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
             check_clause_remove(lits.begin(), lits.end());
         }
         else {
@@ -96,7 +96,7 @@ bool DRATChecker::check_proof(gzFile input_stream) {
             for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                 lits.push_back(Lit(abs(plit)-1, plit < 0));
             }
-            std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
+            // std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
             if (!check_clause_add(lits.begin(), lits.end())) {
                 return false;
             }

@@ -27,17 +27,15 @@
 #include <gtest/gtest.h>
 
 #include <candy/core/SolverTypes.h>
-#include <candy/core/Trail.h>
+#include <candy/core/CNFProblem.h>
 #include <candy/core/CandySolverInterface.h>
-#include <candy/core/clauses/ClauseDatabase.h>
+#include <candy/core/CandySolverResult.h>
 #include <candy/frontend/CandyBuilder.h>
-
-extern "C" {
-#include <candy/ipasir/ipasir.h>
-}
 
 #include <iostream>
 #include <algorithm>
+#include <cstdlib>
+#include <string>
 
 #define GTEST_COUT std::cerr << "[ INFO     ] "
 
@@ -45,10 +43,11 @@ namespace Candy {
 
     /** Test Trail Integrity in Incremental Mode (Thanks to Maximilian Schick) */
     TEST(IntegrationTest, test_mschick) {
-        GTEST_COUT << "problems/6s33.cnf" << std::endl;
+        std::string filename = std::string(getenv("DATADIR")) + "/6s33.cnf";
+        GTEST_COUT << filename << std::endl;
 
         CNFProblem problem;
-        problem.readDimacsFromFile("problems/6s33.cnf");
+        problem.readDimacsFromFile(filename.c_str());
 
         Cl assumptions1 = { 1837_L, ~1939_L, ~426_L, ~557_L, ~661_L };
         Cl assumptions2 = { 1837_L, ~1939_L, ~426_L, ~557_L, 661_L };
@@ -63,6 +62,57 @@ namespace Candy {
         solver->getAssignment().setAssumptions(assumptions2);
         result = solver->solve();
         EXPECT_EQ(result, l_False);
+        
+        delete solver;
+    }
+
+    /** Test Trail Integrity in Incremental Mode (Model Enumeration) */
+    TEST(IntegrationTest, test_model_enumeration) {
+        std::string filename = std::string(getenv("DATADIR")) + "/sat100.cnf";
+        GTEST_COUT << filename << std::endl;
+
+        CNFProblem problem;
+        problem.readDimacsFromFile(filename.c_str());
+    
+        // Solve first time
+        CandySolverInterface* solver = createSolver();
+        solver->init(problem);
+        lbool result = solver->solve();
+        EXPECT_EQ(result, l_True);
+
+        // Solve second time, exclude first model
+        std::vector<Lit> model = solver->getCandySolverResult().getModelLiterals();
+        std::vector<Lit> clause;
+        for (Lit lit : model) clause.push_back(lit);
+        solver->init(CNFProblem { clause });
+        result = solver->solve();
+        EXPECT_EQ(result, l_True);
+        std::vector<Lit> prev = model;
+        model = solver->getCandySolverResult().getModelLiterals();
+        EXPECT_EQ(model.size(), prev.size());
+        bool different_model = false;
+        for (unsigned int i = 0; i < model.size() && !different_model; i++) {
+            EXPECT_EQ(model[i].var(), prev[i].var());
+            different_model = (model[i] != prev[i]);
+        }
+        EXPECT_TRUE(different_model);
+
+        // Count models with assumption 1_L
+        solver->getAssignment().setAssumptions({ 1_L });
+        unsigned int count = 1;
+        while (result == l_True && count < 2000) {
+            count++;
+            clause.clear();
+            for (Lit lit : model) clause.push_back(~lit);
+            solver->init(CNFProblem { clause });
+            result = solver->solve();
+            if (result == l_True) {
+                EXPECT_TRUE(std::any_of(clause.begin(), clause.end(), [solver](Lit lit) { return solver->getCandySolverResult().satisfies(lit);}));
+                EXPECT_TRUE(solver->getCandySolverResult().satisfies(1_L));
+                model = solver->getCandySolverResult().getModelLiterals();
+            }
+        }
+        EXPECT_EQ(count, 1069);
         
         delete solver;
     }

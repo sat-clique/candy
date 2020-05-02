@@ -13,9 +13,4 @@ target_link_libraries(incremental_tests ${CANDY_LIBS} gtest_main gtest)
 
 add_test(NAME incremental_module_tests COMMAND incremental_tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-file(GLOB TEST_CNF_PROBLEMS RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "problems/*.cnf")
-message("Test CNF files: ${TEST_CNF_PROBLEMS}")
-
-foreach(CNF_PROBLEM ${TEST_CNF_PROBLEMS})
-    configure_file(${CNF_PROBLEM} ${CNF_PROBLEM} COPYONLY)
-endforeach()
+set_tests_properties(incremental_module_tests PROPERTIES ENVIRONMENT DATADIR=${PROJECT_SOURCE_DIR}/data/cnf)
