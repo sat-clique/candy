@@ -92,7 +92,7 @@ public:
         nEliminated(0)
     { }
 
-    inline std::vector<Cl> reset() {
+    std::vector<Cl> reset() {
         std::vector<Cl> correction_set;
 
         std::fill(frozen.begin(), frozen.end(), false);
@@ -103,18 +103,37 @@ public:
         }
         for (Lit lit : trail.assumptions) {
             frozen[lit.var()] = true;
-            if (eliminated_clauses[lit.var()].size() > 0) {
-                correction_set.insert(correction_set.end(), eliminated_clauses[lit.var()].begin(), eliminated_clauses[lit.var()].end());
-                eliminated_clauses[lit.var()].clear();
-                trail.setDecisionVar(lit.var(), true);
-            }            
+            if (is_eliminated(lit.var())) {
+                std::vector<Cl> cor = undo_elimination(lit.var());
+                correction_set.insert(correction_set.end(), cor.begin(), cor.end());
+            }
         }
-        vector<Var> new_elim;
-        for (Var var : eliminiated_variables) {
-            if (!frozen[var]) new_elim.push_back(var);
-        }
-        eliminiated_variables.swap(new_elim);
         return correction_set;
+    }
+
+    std::vector<Cl> undo_elimination(Var var) {
+        assert(is_eliminated(var));
+        std::vector<Cl> correction_set;
+        correction_set.insert(correction_set.end(), eliminated_clauses[var].begin(), eliminated_clauses[var].end());
+        eliminated_clauses[var].clear();
+        trail.setDecisionVar(var, true);
+        unsigned int j = 0;
+        for (unsigned int i = 0; i < eliminiated_variables.size(); i++) {
+            if (eliminiated_variables[i] != var) {
+                eliminiated_variables[j] = eliminiated_variables[i];
+                j++;
+            }
+        }
+        eliminiated_variables.resize(j);
+        return correction_set;
+    }
+
+    inline bool has_eliminated_variables() const {
+        return eliminiated_variables.size() > 0;
+    }
+
+    inline bool is_eliminated(Var v) const {
+        return eliminated_clauses[v].size() > 0;
     }
 
     void propagate_eliminated_variables() {
@@ -149,10 +168,6 @@ public:
         return nEliminated; 
     }
 
-    inline bool isEliminated(Var v) const {
-        return eliminated_clauses[v].size() > 0;
-    }
-
     bool eliminate() {
         init();
 
@@ -162,7 +177,7 @@ public:
 
         std::vector<Var> variables;
         for (unsigned int v = 0; v < frozen.size(); v++) {
-            if (!frozen[v] && !isEliminated(v)) variables.push_back(v);
+            if (!frozen[v] && !is_eliminated(v)) variables.push_back(v);
         }
 
         std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
@@ -194,7 +209,7 @@ public:
 
 private:
     bool eliminate(Var variable, std::vector<SubsumptionClause*> pos, std::vector<SubsumptionClause*> neg) {
-        assert(!isEliminated(variable));
+        assert(!is_eliminated(variable));
 
         if (pos.size() == 0 && neg.size() == 0) {
             return true;

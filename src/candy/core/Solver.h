@@ -330,6 +330,16 @@ void Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::init(cons
     // always initialize clause_db _first_
     clause_db.init(problem, allocator, lemma);
 
+    for (Cl* clause : problem) {
+        if (!elimination.has_eliminated_variables()) break;
+        for (Lit lit : *clause) {
+            if (elimination.is_eliminated(lit.var())) {
+                vector<Cl> cor = elimination.undo_elimination(lit.var());
+                for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
+            }
+        }
+    }
+
     trail.init(clause_db.nVars());
     propagator.init();
     conflict_analysis.init(clause_db.nVars());
@@ -417,7 +427,6 @@ lbool Solver<TClauses, TAssignment, TPropagate, TLearning, TBranching>::solve() 
     sonification.send("/clauses", nClauses());
     
     result.clear();
-
     trail.reset();
     propagator.reset();
 

@@ -46,7 +46,6 @@ public:
 
     inline void* allocate(unsigned int length, unsigned int lbd) {
         if (global_allocator != nullptr && lbd == 0) {
-            assert(lbd == 0);
             global_allocator->memory_lock.lock();
             void* mem = global_allocator->allocate(length, lbd);
             global_allocator->memory_lock.unlock();

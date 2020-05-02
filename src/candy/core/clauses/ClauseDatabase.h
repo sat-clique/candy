@@ -217,7 +217,7 @@ public:
         assert(clause->size() > 1);
         std::vector<Lit> literals;
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
-        Clause* new_clause = createClause(literals.begin(), literals.end(), std::max(clause->getLBD()-1, 0));
+        Clause* new_clause = createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)literals.size()));
         removeClause(clause);
         return new_clause;
     }

@@ -75,6 +75,8 @@ namespace Candy {
         problem.readDimacsFromFile(filename.c_str());
     
         // Solve first time
+        SolverOptions::opt_preprocessing = false;
+        VariableEliminationOptions::opt_use_elim = false;
         CandySolverInterface* solver = createSolver();
         solver->init(problem);
         lbool result = solver->solve();
