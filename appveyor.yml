@@ -3,7 +3,7 @@ os: Visual Studio 2015
 init:
   - git config --global core.autocrlf input
 
-clone_folder: C:\projects\repos\candy-kingdom
+clone_folder: C:\projects\repos\candy
 
 platform:
   - x64
@@ -34,9 +34,7 @@ install:
   - set PATH=%PATH%;%INSTALLATION_DIR%\bin;%INSTALLATION_DIR%\lib
 
   # Build and test candy-kingdom
-  - cd %REPO_DIR%\candy-kingdom
-  - git submodule init
-  - git submodule update
+  - cd %REPO_DIR%\candy
   - mkdir ..\build
   - cd ..\build
   - cmake -G "Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX=%INSTALLATION_DIR% -DCMAKE_PREFIX_PATH=%INSTALLATION_DIR% ..\candy-kingdom

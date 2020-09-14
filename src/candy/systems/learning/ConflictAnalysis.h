@@ -47,7 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/utils/CheckedCast.h"
-#include "candy/frontend/CLIOptions.h"
+#include "candy/utils/CLIOptions.h"
 #include <vector>
 
 namespace Candy {

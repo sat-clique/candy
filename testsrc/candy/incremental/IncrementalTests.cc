@@ -30,7 +30,7 @@
 #include <candy/core/CNFProblem.h>
 #include <candy/core/CandySolverInterface.h>
 #include <candy/core/CandySolverResult.h>
-#include <candy/frontend/CandyBuilder.h>
+#include <candy/utils/CandyBuilder.h>
 
 #include <iostream>
 #include <algorithm>

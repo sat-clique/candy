@@ -31,7 +31,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <candy/core/clauses/Clause.h>
 #include <candy/core/clauses/ClauseAllocatorMemory.h>
-#include <candy/frontend/CLIOptions.h>
+#include <candy/utils/CLIOptions.h>
 
 namespace Candy {
 
