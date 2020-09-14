@@ -1,9 +1,0 @@
-[submodule "test/googletest"]
-	path = lib/googletest
-	url = https://github.com/google/googletest.git
-[submodule "lib/oscpack"]
-	path = lib/oscpack
-	url = ../oscpack.git
-[submodule "lib/drat-trim"]
-	path = lib/drat-trim
-	url = https://github.com/Udopia/drat-trim.git

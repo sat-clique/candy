@@ -75,11 +75,6 @@ option(CANDY_ENABLE_ADDRESS_SANITIZER "Just enable address sanitizer" OFF)
 # Enable -march=native - if set to OFF, at least SSE 4.1 will still be enabled.
 option(CANDY_ENABLE_NATIVEARCH "Enable -march=native" OFF)
 
-option(CANDY_ENABLE_STAREXEC_ARCH "Optimize for StarExec" OFF)
-
-# Enable Sonification
-option(CANDY_ENABLE_SONIFICATION "Enable the Glucose sonification" OFF)
-
 # Enable Static Linking
 option(CANDY_ENABLE_STATIC_LINKING "Enable static linking" OFF)
 
@@ -105,21 +100,42 @@ option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
 option(CANDY_DISABLE_RTTI OFF "Disable RTTI and defines CANDY_HAS_NO_RTTI. Use with caution.")
 
 ### Using ctest as a test
-
 enable_testing()
 
-### Platform feature checks
-INCLUDE(CheckFunctionExists)
-CHECK_FUNCTION_EXISTS(getrlimit HAVE_GETRLIMIT)
-CHECK_FUNCTION_EXISTS(setrlimit HAVE_SETRLIMIT)
+# Download and unpack googletest at configure time
+configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+endif()
+execute_process(COMMAND ${CMAKE_COMMAND} --build .
+  RESULT_VARIABLE result
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
+if(result)
+  message(FATAL_ERROR "Build step for googletest failed: ${result}")
+endif()
 
-if(HAVE_GETRLIMIT AND HAVE_SETRLIMIT)
-  add_definitions(-D CANDY_HAVE_RLIMIT)
+# Prevent overriding the parent project's compiler/linker
+# settings on Windows
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+# Add googletest directly to our build. This defines
+# the gtest and gtest_main targets.
+add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
+                 ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
+                 EXCLUDE_FROM_ALL)
+
+# The gtest/gtest_main targets carry header search path
+# dependencies automatically when using CMake 2.8.11 or
+# later. Otherwise we have to add them here ourselves.
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+  include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
 
 ### Compiler flags
-
 if(MSVC)
   set(CMAKE_CXX_FLAGS "/W3 /D __STDC_LIMIT_MACROS /D __STDC_FORMAT_MACROS /EHsc /F 134217728")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG}")
@@ -226,15 +242,6 @@ else ()
   endif()
 endif ()
 
-### Additional Preprocessor Defintions
-
-if(CANDY_ENABLE_SONIFICATION)
-  if (MSVC)
-    message(FATAL_ERROR "CANDY_ENABLE_SONIFICATION is not yet supported for MSVC")
-  endif()
-  add_definitions(-DSONIFICATION)
-endif()
-
 ### Find libraries
 # set zlib for windows with mingw
 if (MINGW)
@@ -264,34 +271,20 @@ endfunction()
 ### Set up include directories
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_SOURCE_DIR}/lib/oscpack)
-
-set(GTEST_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/lib/googletest/googletest/include" "${PROJECT_SOURCE_DIR}/lib/googletest/googlemock/include")
 
 ### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
 
 add_subdirectory(src)
 
 set(CANDY_OBJECTS
-  $<TARGET_OBJECTS:gates>
-  $<TARGET_OBJECTS:randomsimulation>
-  $<TARGET_OBJECTS:rsar>
   $<TARGET_OBJECTS:ipasir>
-  $<TARGET_OBJECTS:minimizer>
   $<TARGET_OBJECTS:core>
   $<TARGET_OBJECTS:systems>
   $<TARGET_OBJECTS:simplification>
-  $<TARGET_OBJECTS:sonification>
-  $<TARGET_OBJECTS:frontend>
-  $<TARGET_OBJECTS:utils>
-  $<TARGET_OBJECTS:teexgraph>)
+  $<TARGET_OBJECTS:utils>)
 
-### OSCPack
-link_directories(${CMAKE_BINARY_DIR}/lib/oscpack)
+set(CANDY_LIBS ${ZLIB_LIBRARIES})
 
-set(CANDY_LIBS ${ZLIB_LIBRARIES} oscpack)
-
-add_subdirectory(lib)
 add_subdirectory(testsrc)
 
 ### Define and link target executables and libraries
@@ -303,20 +296,14 @@ endif()
 add_library(candylib ${candylib_build_mode} ${CANDY_OBJECTS})
 target_link_libraries(candylib ${CANDY_LIBS})
 
-add_executable(candy src/candy/Main.cc $<TARGET_OBJECTS:frontend>)
-add_executable(cnf2aig src/candy/cnf2aig.cc $<TARGET_OBJECTS:frontend>)
-add_executable(fuzz_ipasir src/candy/FuzzIpasir.cc $<TARGET_OBJECTS:frontend>)
+add_executable(candy src/candy/Main.cc)
 
 candy_executable_customizations(candy)
 FIND_LIBRARY (PSAPI Psapi)
 if (PSAPI)
 	target_link_libraries(candy candylib ${PSAPI})
-	target_link_libraries(cnf2aig candylib ${PSAPI})
-	target_link_libraries(fuzz_ipasir candylib ${PSAPI})
 ELSE()
 	target_link_libraries(candy candylib)
-	target_link_libraries(cnf2aig candylib)
-	target_link_libraries(fuzz_ipasir candylib)
 ENDIF()
 
 

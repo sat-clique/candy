@@ -31,7 +31,7 @@
 #include <candy/core/DRATChecker.h>
 #include <candy/core/CandySolverInterface.h>
 #include <candy/core/clauses/ClauseDatabase.h>
-#include <candy/frontend/CandyBuilder.h>
+#include <candy/utils/CandyBuilder.h>
 
 extern "C" {
 #include <candy/ipasir/ipasir.h>
@@ -78,35 +78,35 @@ namespace Candy {
 
     static void testTrivialProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/trivial0.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/trivial0.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/trivial1.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/trivial1.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/trivial2.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/trivial2.cnf", static_allocator);
     }
 
     static void testFuzzProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz01.cnf", static_allocator); 
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz01.cnf", static_allocator); 
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz02.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz02.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz03.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz03.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/fuzz04.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz04.cnf", static_allocator);
     }
 
     static void testRealProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/dubois20.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/dubois20.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/hole6.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/hole6.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/ais6.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/ais6.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/uf75-042.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/uf75-042.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb, use_vsidsc), "cnf/uuf75-042.cnf", static_allocator);
+        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/uuf75-042.cnf", static_allocator);
     }
 
     TEST(IntegrationTest, test_vsids) {
@@ -121,11 +121,6 @@ namespace Candy {
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
         testFuzzProblems(true, false, false, false);
-    }
-
-    TEST(IntegrationTest, test_vsidsc) {
-        testFuzzProblems(false, false, false, true);
-        testRealProblems(false, false, false, false);
     }
 
     TEST(IntegrationTest, test_lrb) {

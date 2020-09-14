@@ -8,7 +8,7 @@
 
 #include "candy/core/CNFProblem.h"
 #include "candy/core/CandySolverInterface.h"
-#include "candy/frontend/CandyBuilder.h"
+#include "candy/utils/CandyBuilder.h"
 
 using namespace Candy;
 

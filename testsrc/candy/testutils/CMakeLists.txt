@@ -1,11 +1,8 @@
 add_library(testutils OBJECT
-    TestGateStructure.h
-    TestGateStructure.cc
     TestUtils.h
     TestUtils.cc)
 
 add_executable(testutils_tests
-    TestGateStructureTests.cc
     ${CANDY_OBJECTS}
     $<TARGET_OBJECTS:testutils>)
 

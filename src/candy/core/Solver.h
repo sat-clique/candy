@@ -49,17 +49,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory>
 #include <limits>
 
-#include "candy/frontend/CLIOptions.h"
+#include "candy/utils/CLIOptions.h"
 
 #include "candy/mtl/Stamp.h"
-
-#include "candy/randomsimulation/Conjectures.h"
-#include "candy/rsar/Refinement.h"
 
 #include "candy/systems/learning/ConflictAnalysis.h"
 #include "candy/systems/propagate/Propagate.h"
 #include "candy/systems/branching/VSIDS.h"
-#include "candy/systems/branching/VSIDSC.h"
 #include "candy/systems/Restart.h"
 #include "candy/systems/ReduceDB.h"
 
@@ -79,8 +75,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/utils/Attributes.h"
 #include "candy/utils/CheckedCast.h"
 #include "candy/utils/Memory.h"
-
-#include "candy/sonification/Sonification.h"
+#include "candy/utils/Runtime.h"
 
 namespace Candy {
 
@@ -169,7 +164,6 @@ protected:
     VariableElimination elimination;
     AsymmetricVariableReduction<TPropagate> reduction;
 
-    Sonification sonification;
     unsigned int verbosity;
 
     CandySolverResult result;
@@ -298,8 +292,6 @@ Solver<TPropagate, TLearning, TBranching>::Solver() :
     subsumption(augmented_database),
     elimination(augmented_database, trail), 
     reduction(augmented_database, trail, propagator), 
-    // sonification
-    sonification(SonificationOptions::host, SonificationOptions::port, SonificationOptions::delay),
     verbosity(SolverOptions::verb), 
     // result
     result(),
@@ -335,7 +327,7 @@ void Solver<TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, 
         if (!elimination.has_eliminated_variables()) break;
         for (Lit lit : *clause) {
             if (elimination.is_eliminated(lit.var())) {
-                vector<Cl> cor = elimination.undo_elimination(lit.var());
+                std::vector<Cl> cor = elimination.undo_elimination(lit.var());
                 for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
             }
         }
@@ -352,15 +344,10 @@ template<class TPropagate, class TLearning, class TBranching>
 lbool Solver<TPropagate, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
-    sonification.send("/restart", 1);
     for (;;) {
         Clause* confl = (Clause*)propagator.propagate();
 
-        sonification.send("/decision", trail.decisionLevel());
-        sonification.send("/assignments", trail.size());
         if (confl != nullptr) { // CONFLICT
-            sonification.send("/conflict", trail.size(), true);
-
             if (trail.decisionLevel() == 0) {
                 if (verbosity > 1) std::cout << "c Conflict found by propagation at level 0" << std::endl;
                 return l_False;
@@ -379,7 +366,6 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             trail.backtrack(clause_db.result.backtrack_level);
             trail.propagate(clause->first(), clause);
             ipasir_callback(clause);
-            sonification.send("/learnt", clause->size());
         }
         else {
             if (restart.trigger_restart()) {
@@ -423,16 +409,12 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
 
 template<class TPropagate, class TLearning, class TBranching>
 lbool Solver<TPropagate, TLearning, TBranching>::solve() {
-    sonification.send("/start", 1);
-    sonification.send("/variables", nVars());
-    sonification.send("/clauses", nClauses());
-    
     result.clear();
     trail.reset();
     propagator.reset();
 
     // prepare variable elimination for new set of assumptions
-    vector<Cl> correction_set = elimination.reset();
+    std::vector<Cl> correction_set = elimination.reset();
     for (Cl cl : correction_set) {
         Clause* clause = clause_db.createClause(cl.begin(), cl.end());
         // std::cout << "VE Correction due to new assumptions: " << *clause << std::endl;
@@ -496,8 +478,6 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
     }
     
     trail.backtrack(0);
-    
-    sonification.send("/stop", status == l_False ? 1 : status == l_True ? 0 : -1);
 
     return status;
 }

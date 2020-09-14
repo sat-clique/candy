@@ -19,7 +19,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
-#include "candy/frontend/CandyBuilder.h"
+#include "candy/utils/CandyBuilder.h"
 #include "candy/core/SolverTypes.h"
 
 #include <vector>

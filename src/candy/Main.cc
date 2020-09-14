@@ -54,18 +54,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
-#include "candy/minimizer/Minimizer.h"
 #include "candy/core/DRATChecker.h"
 
-#include "candy/frontend/SolverFactory.h"
-#include "candy/frontend/CandyBuilder.h"
+#include "candy/utils/CandyBuilder.h"
 #include "candy/utils/Exceptions.h"
-
-#include "candy/gates/GateAnalyzer.h"
-#include "candy/rsar/ARSolver.h"
-#include "candy/rsar/Heuristics.h"
-
-#include "candy/systems/branching/rsil/BranchingHeuristics.h"
+#include "candy/utils/Runtime.h"
 
 using namespace Candy;
 
@@ -120,38 +113,6 @@ static void printProblemStatistics(CNFProblem& problem) {
     std::cout << "c Variables: " << problem.nVars() << std::endl;
     std::cout << "c Clauses: " << problem.nClauses() << std::endl;
 }
-
-static void printGateStatistics(CNFProblem& problem) {
-    GateAnalyzer analyzer { problem };
-    Runtime runtime;
-    
-    runtime.start();
-    analyzer.analyze();
-    runtime.stop();
-    
-    GateProblem gates = analyzer.getResult();
-
-    std::cout << "c Variables: " << problem.nVars() << std::endl;
-    std::cout << "c Clauses: " << problem.nClauses() << std::endl;
-    std::cout << "c RemainingClauses: " << gates.remainder.size() << std::endl;
-    std::cout << "c Gates: " << gates.nGates() << std::endl;
-    std::cout << "c Monoton: " << gates.nMonotonGates() << std::endl;
-    std::cout << "c Roots: " << gates.nRoots() << std::endl; 
-    std::cout << "c StatsPatterns: " << gates.stat_patterns << std::endl; 
-    std::cout << "c StatsSemantic: " << gates.stat_semantic << std::endl; 
-    std::cout << "c StatsHolistic: " << gates.stat_holistic << std::endl; 
-
-    std::cout << "c HistoConflicts: "; 
-    unsigned int index = 0;
-    for (unsigned int count : gates.histogram_conflicts) std::cout << " " << index++ << ":" << count;
-    std::cout << std::endl;
-
-    std::cout << "c HistoConflictsUnsuccessful: "; 
-    index = 0;
-    for (unsigned int count : gates.unsuccessful_histogram_conflicts) std::cout << " " << index++ << ":" << count;
-    std::cout << std::endl;
-    std::cout << "c Runtime: " << runtime << std::endl;
-}
     
 CandySolverInterface* solver = nullptr;
 lbool result = l_Undef;
@@ -161,7 +122,7 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
     std::cout << "c Preprocessing: " << SolverOptions::opt_preprocessing << std::endl;
     std::cout << "c Inprocessing: " << SolverOptions::opt_inprocessing << std::endl;
 
-    CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, SolverOptions::opt_use_vsidsc, RSILOptions::opt_rsil_enable);
+    CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb);
 
     solver_->init(problem, global_allocator);
 
@@ -212,11 +173,6 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    if (SolverOptions::gate_stats) {
-        printGateStatistics(problem);
-        return 0;
-    }
-
     if (SolverOptions::verb == 1) {
         printProblemStatistics(problem);
     }
@@ -225,12 +181,7 @@ int main(int argc, char** argv) {
     std::vector<std::thread> threads;
 
     if (ParallelOptions::opt_threads == 1) {
-        if (RSAROptions::opt_rsar_enable) {
-            solver = createRSARSolver(problem);
-        }
-        else {
-            solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb, SolverOptions::opt_use_vsidsc, RSILOptions::opt_rsil_enable, RSILOptions::opt_rsil_advice_size);
-        }
+        solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb);
         solvers.push_back(solver); 
 
         solver->init(problem);
@@ -252,48 +203,20 @@ int main(int argc, char** argv) {
             SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = count + SolverOptions::opt_inprocessing;
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;
-            VariableEliminationOptions::opt_use_asymm = (count == 6) || (count == 7) || (count == 14) || (count == 15);
             switch (count) {
-                case 0 : case 1 : //vsids
+                case 0 : case 1 : 
                     SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = false;
                     break;
-                case 2 : case 3 : //lrb
+                case 2 : case 3 : 
                     SolverOptions::opt_use_lrb = true;
-                    RSILOptions::opt_rsil_enable = false;
                     break;
-                case 4 : case 5 : //rsil
+                case 4 : case 5 : 
                     SolverOptions::opt_vsids_var_decay = 0.75;
                     SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = true;
                     break;
-                case 6 : case 7 : //vsids
-                    SolverOptions::opt_vsids_var_decay = 0.7;
+                case 6 : case 7 : 
+                    SolverOptions::opt_vsids_var_decay = 0.9;
                     SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = false;
-                    break;
-                case 8 : case 9 : //vsids
-                    SolverOptions::opt_vsids_var_decay = 0.6;
-                    SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = false;
-                    break;
-                case 10 : case 11 : //lrb
-                    SolverOptions::opt_lrb_step_size = 0.7;
-                    SolverOptions::opt_lrb_min_step_size = 0.02;
-                    SolverOptions::opt_use_lrb = true;
-                    RSILOptions::opt_rsil_enable = false;
-                    break;
-                case 12 : case 13 : //rsil
-                    GateRecognitionOptions::tries = 10;
-                    RandomSimulationOptions::opt_rs_nrounds = 1048576 * 2;
-                    SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = true;
-                    break;
-                case 14 : case 15 : //vsids
-                    SolverOptions::opt_vsids_var_decay = 0.5;
-                    SolverOptions::opt_vsids_max_var_decay = 0.99;
-                    SolverOptions::opt_use_lrb = false;
-                    RSILOptions::opt_rsil_enable = false;
                     break;
             }
             
@@ -318,39 +241,16 @@ int main(int argc, char** argv) {
     if (solver != nullptr) {
         CandySolverResult& model = solver->getCandySolverResult();
 
-        if (result == l_True && MinimizerOptions::do_minimize) {
-            Minimizer minimizer(problem, model);
-            Runtime runtime;
-            std::cout << "c Minimizing Model" << std::endl;
-            runtime.start();
-            minimizer.mimimizeModel(MinimizerOptions::minimize_pruned, MinimizerOptions::minimize_minimal, MinimizerOptions::minimize_project);
-            runtime.stop();
-            std::cout << "c Minimized-Model-Size: " << model.getMinimizedModelLiterals().size() << std::endl; 
-            std::cout << "c Minimizer-Runtime: " << std::fixed << std::setprecision(2) << runtime.getRuntime() << std::endl;
-        }
         if (result == l_True && SolverOptions::mod) {
-            if (MinimizerOptions::do_minimize) {
-                std::cout << "c Minimized-Model: " << model.getMinimizedModelLiterals() << std::endl;
-            } 
-            else {
-                std::cout << "v";
-                for (Var v = 0; v < (Var)problem.nVars(); v++) {
-                    std::cout << " " << model.value(v);
-                }
-                std::cout << " 0" << std::endl;
+            std::cout << "v";
+            for (Var v = 0; v < (Var)problem.nVars(); v++) {
+                std::cout << " " << model.value(v);
             }
+            std::cout << " 0" << std::endl;
         }
 
         if (SolverOptions::verb > 0) {
             solver->printStats();
-        }
-
-        // Currently only VSIDSC supports enhanced brancher statistics
-        if (SolverOptions::opt_use_vsidsc) {
-            VSIDSC *brancher = dynamic_cast<VSIDSC*>(solver->getBranchingUnit());
-            if (brancher) {
-                brancher->getStatistics().printFinalStats();
-            }
         }
 
         if (TestingOptions::test_model && result == l_True) {

@@ -24,7 +24,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/Certificate.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
-#include "candy/frontend/CLIOptions.h"
+#include "candy/utils/CLIOptions.h"
 
 #ifndef CANDY_CLAUSE_DATABASE
 #define CANDY_CLAUSE_DATABASE

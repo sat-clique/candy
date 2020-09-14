@@ -1,7 +1,6 @@
 *~
 *.o
 build*/
-/lib/
 .vscode/
 
 *#
