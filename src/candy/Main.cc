@@ -198,7 +198,6 @@ int main(int argc, char** argv) {
         }
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads && result == l_Undef; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
-            ClauseDatabaseOptions::opt_recalculate_lbd = false;
             SolverOptions::opt_sort_variables = ((count % 2) == 0);
             SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = count + SolverOptions::opt_inprocessing;

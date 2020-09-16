@@ -357,6 +357,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
 
             branch.process_conflict();
             restart.process_conflict();
+            reduce.process_conflict();
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
             if (clause->size() > 2) {

@@ -32,7 +32,7 @@ class ReduceDB {
     size_t nReduced, nReduceCalls_;
 
     const unsigned int persistentLBD;
-    const bool keepMedianLBD;
+    const unsigned int volatileLBD;
 
     unsigned int nbclausesbeforereduce; // To know when it is time to reduce clause database
     unsigned int incReduceDB;
@@ -40,8 +40,8 @@ class ReduceDB {
 public:
     ReduceDB(ClauseDatabase& clause_db_, Trail& trail_)
      : clause_db(clause_db_), trail(trail_), nReduced(0), nReduceCalls_(0), 
-        persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd),
-        keepMedianLBD(ClauseDatabaseOptions::opt_keep_median_lbd), 
+        persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd), 
+        volatileLBD(ClauseDatabaseOptions::opt_volatile_lbd), 
         nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
         incReduceDB(ClauseDatabaseOptions::opt_inc_reduce_db) { }
     
@@ -56,39 +56,37 @@ public:
         nReduced = 0;
     }
 
+    void process_conflict() {
+        for (Clause* clause : clause_db.result.involved_clauses) {
+            if (clause->getLBD() > persistentLBD) {
+                uint8_t lbd = trail.computeLBD(clause->begin(), clause->end());
+                if (lbd < clause->getLBD()) clause->setLBD(lbd);
+                clause->incUsed();
+            }
+        }
+
+    }
+
     /**
      * only call this method at decision level 0
      **/
     void reduce() { 
         assert(trail.decisionLevel() == 0);
-
-        std::vector<Clause*> learnts;
-
-        copy_if(clause_db.begin(), clause_db.end(), std::back_inserter(learnts), [this](Clause* clause) { 
-            return clause->getLBD() > persistentLBD && !clause->isDeleted(); 
-        });
-
-        std::sort(learnts.begin(), learnts.end(), [](Clause* c1, Clause* c2) { 
-            return c1->getLBD() < c2->getLBD(); 
-        });
-
-        if (learnts.size() > 1) {
-            auto begin = learnts.begin() + learnts.size()/2;
-
-            if (keepMedianLBD) {
-                unsigned int median_lbd = (*begin)->getLBD();
-                while (begin != learnts.end() && (*begin)->getLBD() == median_lbd) {
-                    begin++;
+        for (Clause* learnt : clause_db) {
+            if (learnt->getLBD() > persistentLBD) {
+                if (learnt->getLBD() < volatileLBD) {
+                    if (learnt->decUsed() == 0) {
+                        clause_db.removeClause(learnt);
+                        ++nReduced;
+                    }
+                }
+                else if (learnt->decUsed() == 1) {
+                    clause_db.removeClause(learnt);
+                    ++nReduced;
                 }
             }
-
-            for_each(begin, learnts.end(), [this] (Clause* clause) { 
-                clause_db.removeClause(clause); 
-            });
-            
-            nReduceCalls_++;
-            nReduced += std::distance(begin, learnts.end());
         }
+        nReduceCalls_++;
     }
 
     inline bool trigger_reduce() {

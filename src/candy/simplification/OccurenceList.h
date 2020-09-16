@@ -65,7 +65,7 @@ public:
             occurrences.resize(clause_db.nVars());
         }
         for (Clause* clause : clause_db) {
-            addToOccurenceLists(clause);
+            if (!clause->isDeleted()) addToOccurenceLists(clause);
         }
     }
 

@@ -297,9 +297,9 @@ public:
      * Count the number of decision levels in which the given list of literals was assigned
      */
     template <typename Iterator>
-    inline uint_fast16_t computeLBD(Iterator it, Iterator end) {
+    inline uint8_t computeLBD(Iterator it, Iterator end) {
         // TODO: exclude selectors from lbd computation
-        uint_fast16_t nblevels = 0;
+        uint8_t nblevels = 0;
         stamp.clear();
 
         for (; it != end; it++) {
