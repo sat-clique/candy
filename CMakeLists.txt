@@ -18,22 +18,22 @@
 # Examples:
 #
 #  Generate a debug build:
-#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug path/to/sources
+#    cmake -DCMAKE_BUILD_TYPE=Debug path/to/sources
 #
 #  Generate a sanitizer build:
-#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_LLVM_SANITIZER=1 path/to/sources
+#    cmake -DCMAKE_BUILD_TYPE=Debug -DCANDY_ENABLE_LLVM_SANITIZER=1 path/to/sources
 #  Run with symbolizer:
 #    export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer
 #    ASAN_OPTIONS=symbolize=1 ./candy ...
 #
 #  Generate a fuzzer build:
-#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_C_COMPILER=afl-gcc -DCMAKE_CXX_COMPILER=afl-g++ -DCMAKE_BUILD_TYPE=Debug path/to/sources
+#    cmake -DCMAKE_C_COMPILER=afl-gcc -DCMAKE_CXX_COMPILER=afl-g++ -DCMAKE_BUILD_TYPE=Debug path/to/sources
 #
 #  Generate a release build:
-#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release path/to/sources
+#    cmake -DCMAKE_BUILD_TYPE=Release path/to/sources
 #
 #  Generate an Xcode IDE project (sources still remain at their original place):
-#    cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug -G Xcode path/to/sources
+#    cmake -DCMAKE_BUILD_TYPE=Debug -G Xcode path/to/sources
 #
 #  Generate an Eclipse IDE project (sources still remain at their original place):
 #    cmake -G"Eclipse CDT4 - Unix Makefiles"
@@ -54,9 +54,7 @@
 
 project(Candy)
 cmake_minimum_required(VERSION 3.5.1)
-
-# Temporary solution for shared lib
-#set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 ### Options
 
@@ -135,6 +133,11 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
 endif()
 
 
+
+if(CANDY_BUILD_SHARED_LIB)
+  set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
+
 ### Compiler flags
 if(MSVC)
   set(CMAKE_CXX_FLAGS "/W3 /D __STDC_LIMIT_MACROS /D __STDC_FORMAT_MACROS /EHsc /F 134217728")
@@ -162,9 +165,9 @@ else()
     endif()
   endif()
 
-  if(CANDY_BUILD_SHARED_LIB)
-    add_definitions(-fPIC)
-  endif()
+  #if(CANDY_BUILD_SHARED_LIB)
+  #  add_definitions(-fPIC)
+  #endif()
 endif()
 
 if(CANDY_ENABLE_DEBUG_CHECKEDCASTS)

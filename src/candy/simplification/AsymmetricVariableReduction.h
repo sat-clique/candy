@@ -43,8 +43,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector> 
 
-#include "candy/simplification/SubsumptionClauseDatabase.h"
-#include "candy/simplification/SubsumptionClause.h"
+#include "candy/simplification/OccurenceList.h"
 #include "candy/core/Trail.h"
 #include "candy/utils/Options.h"
 
@@ -53,16 +52,16 @@ namespace Candy {
 template <class TPropagate> 
 class AsymmetricVariableReduction {
 private:
-    SubsumptionClauseDatabase& database;
+    OccurenceList& database;
     Trail& trail;
     TPropagate& propagator;
 
     const bool active;
     
     bool reduce(Var variable) {
-        const std::vector<SubsumptionClause*> occurences = database.copyOccurences(variable);
-        for (SubsumptionClause* clause : occurences) {
-            if (!clause->is_deleted() && !trail.satisfies(clause->begin(), clause->end())) {
+        const std::vector<Clause*> occurences = database.copyOccurences(variable);
+        for (Clause* clause : occurences) {
+            if (!clause->isDeleted() && !trail.satisfies(clause->begin(), clause->end())) {
                 trail.newDecisionLevel();
 
                 Lit l = lit_Undef;
@@ -95,7 +94,7 @@ private:
 public:
     unsigned int nStrengthened;
 
-    AsymmetricVariableReduction(SubsumptionClauseDatabase& database_, Trail& trail_, TPropagate& propagator_) : 
+    AsymmetricVariableReduction(OccurenceList& database_, Trail& trail_, TPropagate& propagator_) : 
         database(database_),
         trail(trail_),
         propagator(propagator_),

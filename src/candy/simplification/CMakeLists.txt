@@ -1,7 +1,6 @@
 add_library(simplification OBJECT
     Subsumption.h
-    SubsumptionClause.h
-    SubsumptionClauseDatabase.h
+    OccurenceList.h
     VariableElimination.h
     AsymmetricVariableReduction.h
 )
