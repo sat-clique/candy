@@ -233,7 +233,7 @@ private:
         
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, variable, resolvent)) {
-                uint16_t lbd = std::min({ pc->getLBD(), nc->getLBD(), (uint16_t)(resolvent.size()-1) });
+                uint16_t lbd = std::min({ (uint16_t)pc->getLBD(), (uint16_t)nc->getLBD(), (uint16_t)(resolvent.size()-1) });
                 // std::cout << "c Creating resolvent " << resolvent << std::endl;
                 database.create(resolvent.begin(), resolvent.end(), lbd);
                 assert(resolvent.size() > 0);

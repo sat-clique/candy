@@ -71,8 +71,6 @@ private:
     std::vector<Clause*> clauses; // Working set of problem clauses
     bool emptyClause_;
 
-    const bool recalculateLBD;
-
     std::vector<std::vector<BinaryWatcher>> binaryWatchers;
 
     Certificate certificate;
@@ -84,7 +82,6 @@ public:
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
-        recalculateLBD(ClauseDatabaseOptions::opt_recalculate_lbd), 
         binaryWatchers(), 
         certificate(SolverOptions::opt_certified_file), 
         result()
@@ -123,17 +120,6 @@ public:
             if (clause->size() == 2) {
                 binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
                 binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
-            }
-        }
-    }
-
-    void reestimateClauseWeights(Trail& trail, std::vector<Clause*>& involved_clauses) {
-        if (recalculateLBD) {
-            for (Clause* clause : involved_clauses) {
-                if (clause->isLearnt()) {
-                    uint_fast16_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                    clause->setLBD(lbd);
-                }
             }
         }
     }
@@ -217,7 +203,7 @@ public:
         assert(clause->size() > 1);
         std::vector<Lit> literals;
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
-        Clause* new_clause = createClause(literals.begin(), literals.end(), std::min(clause->getLBD(), (uint16_t)literals.size()));
+        Clause* new_clause = createClause(literals.begin(), literals.end(), std::min((uint16_t)clause->getLBD(), (uint16_t)literals.size()));
         removeClause(clause);
         return new_clause;
     }

@@ -29,16 +29,28 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
+template<typename T>
+static uint8_t cast_uint8_t(T num) {
+    if (num > std::numeric_limits<uint8_t>::max()) {
+        return std::numeric_limits<uint8_t>::max()-1;
+    }
+    return (uint8_t)num;
+}
+
 class Clause {
+    // want to keep track of systems which use the (private) setters,
+    // in case I ever have to handle concurrency issues again
     friend class ClauseAllocatorMemory;
     friend class ClauseAllocator;
     friend class ClauseDatabase;
     friend class Subsumption;
     friend class Propagate;
+    friend class ReduceDB;
 
 private:
     uint16_t length;
-    uint16_t weight;
+    uint8_t weight;
+    uint8_t used;
 
     uint32_t abstraction;
 
@@ -51,16 +63,24 @@ private:
         literals[pos2] = tmp;
     }
 
-    inline void setDeleted() {
-        weight = std::numeric_limits<uint16_t>::max();
-    }
-
     inline void setPersistent() {
         weight = 0;
     }
 
-    inline void setLBD(uint16_t lbd) {
+    inline void setLBD(uint8_t lbd) {
         weight = lbd;
+    }
+
+    inline uint8_t incUsed() {
+        return used < 3 ? ++used : used;
+    }
+
+    inline uint8_t decUsed() {
+        return used > 0 ? --used : used;
+    }
+
+    inline void setDeleted() {
+        weight = std::numeric_limits<uint8_t>::max();
     }
 
     inline void calc_abstraction() {
@@ -72,15 +92,16 @@ private:
 
 public:
     template<typename Iterator>
-    Clause(Iterator begin, Iterator end, uint16_t lbd) {
+    Clause(Iterator begin, Iterator end, unsigned int lbd) {
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
-        weight = lbd; // not frozen, not deleted and not learnt; lbd=0
+        weight = cast_uint8_t(lbd); // not frozen, not deleted and not learnt; lbd=0
+        used = 1;
         calc_abstraction();
         assert(lbd <= length);
     }
     
-    Clause(std::initializer_list<Lit> list, uint16_t lbd = 0) : Clause(list.begin(), list.end(), lbd) { }
+    Clause(std::initializer_list<Lit> list, unsigned int lbd = 0) : Clause(list.begin(), list.end(), lbd) { }
 
     ~Clause() { }
 
@@ -149,10 +170,10 @@ public:
     }
 
     inline bool isDeleted() const {
-        return weight == std::numeric_limits<uint16_t>::max();
+        return weight == std::numeric_limits<uint8_t>::max();
     }
 
-    inline uint16_t getLBD() const {
+    inline uint8_t getLBD() const {
         return weight;
     }
 

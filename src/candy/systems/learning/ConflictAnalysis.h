@@ -245,7 +245,6 @@ public:
 			}
 		}
 
-		clause_db.reestimateClauseWeights(trail, involved_clauses);
 		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level); 
 	}
 
