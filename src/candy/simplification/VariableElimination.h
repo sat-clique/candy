@@ -43,8 +43,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include <vector> 
 
-#include "candy/simplification/SubsumptionClauseDatabase.h"
-#include "candy/simplification/SubsumptionClause.h"
+#include "candy/simplification/OccurenceList.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/utils/Options.h"
@@ -53,7 +52,7 @@ namespace Candy {
 
 class VariableElimination {
 private:
-    SubsumptionClauseDatabase& database;
+    OccurenceList& database;
     Trail& trail;
 
     std::vector<Var> eliminiated_variables;
@@ -80,7 +79,7 @@ private:
 public:
     unsigned int nEliminated;
 
-    VariableElimination(SubsumptionClauseDatabase& database_, Trail& trail_) : 
+    VariableElimination(OccurenceList& database_, Trail& trail_) : 
         database(database_),
         trail(trail_),
         eliminiated_variables(),
@@ -186,9 +185,9 @@ public:
 
         for (Var variable : variables) {
             if (trail.value(variable) == l_Undef) {
-                std::vector<SubsumptionClause*> pos, neg; // split the occurrences into positive and negative
-                for (SubsumptionClause* cl : database.refOccurences(variable)) {
-                    if (!cl->is_deleted()) {
+                std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
+                for (Clause* cl : database.refOccurences(variable)) {
+                    if (!cl->isDeleted()) {
                         if (cl->contains(Lit(variable))) {
                             pos.push_back(cl);
                         } else {
@@ -208,7 +207,7 @@ public:
     }
 
 private:
-    bool eliminate(Var variable, std::vector<SubsumptionClause*> pos, std::vector<SubsumptionClause*> neg) {
+    bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
         assert(!is_eliminated(variable));
 
         if (pos.size() == 0 && neg.size() == 0) {
@@ -216,9 +215,9 @@ private:
         }
 
         size_t nResolvents = 0;
-        for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
+        for (Clause* pc : pos) for (Clause* nc : neg) {
             size_t clause_size = 0;
-            if (!merge(*pc->get_clause(), *nc->get_clause(), variable, clause_size)) {
+            if (!merge(*pc, *nc, variable, clause_size)) {
                 continue; // resolvent is tautology
             }
             if (clause_size == 0) {
@@ -229,24 +228,24 @@ private:
             } 
         }
         
-        for (SubsumptionClause* c : neg) eliminated_clauses[variable].push_back(Cl {c->get_clause()->begin(), c->get_clause()->end()} );
-        for (SubsumptionClause* c : pos) eliminated_clauses[variable].push_back(Cl {c->get_clause()->begin(), c->get_clause()->end()} );
+        for (Clause* c : neg) eliminated_clauses[variable].push_back(Cl {c->begin(), c->end()} );
+        for (Clause* c : pos) eliminated_clauses[variable].push_back(Cl {c->begin(), c->end()} );
         
-        for (SubsumptionClause* pc : pos) for (SubsumptionClause* nc : neg) {
-            if (merge(*pc->get_clause(), *nc->get_clause(), variable, resolvent)) {
-                uint16_t lbd = std::min({ pc->lbd(), nc->lbd(), (uint16_t)(resolvent.size()-1) });
+        for (Clause* pc : pos) for (Clause* nc : neg) {
+            if (merge(*pc, *nc, variable, resolvent)) {
+                uint16_t lbd = std::min({ pc->getLBD(), nc->getLBD(), (uint16_t)(resolvent.size()-1) });
                 // std::cout << "c Creating resolvent " << resolvent << std::endl;
                 database.create(resolvent.begin(), resolvent.end(), lbd);
                 assert(resolvent.size() > 0);
             }
         }
 
-        for (SubsumptionClause* clause : pos) {
-            // std::cout << "c VE Removing " << *clause->get_clause() << std::endl;
+        for (Clause* clause : pos) {
+            // std::cout << "c VE Removing " << *clause << std::endl;
             database.remove(clause);
         }
-        for (SubsumptionClause* clause : neg) {
-            // std::cout << "c VE Removing " << *clause->get_clause() << std::endl;
+        for (Clause* clause : neg) {
+            // std::cout << "c VE Removing " << *clause << std::endl;
             database.remove(clause);
         }
 

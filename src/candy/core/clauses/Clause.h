@@ -40,6 +40,8 @@ private:
     uint16_t length;
     uint16_t weight;
 
+    uint32_t abstraction;
+
     Lit literals[1];
 
     inline void swap(uint16_t pos1, uint16_t pos2) {
@@ -61,12 +63,20 @@ private:
         weight = lbd;
     }
 
+    inline void calc_abstraction() {
+        abstraction = 0;
+        for (Lit lit : *this) {
+            abstraction |= 1ull << (lit % 32);
+        }
+    }
+
 public:
     template<typename Iterator>
     Clause(Iterator begin, Iterator end, uint16_t lbd) {
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
         weight = lbd; // not frozen, not deleted and not learnt; lbd=0
+        calc_abstraction();
         assert(lbd <= length);
     }
     
@@ -144,6 +154,53 @@ public:
 
     inline uint16_t getLBD() const {
         return weight;
+    }
+
+    inline bool equals(const Clause* other) const {
+        if (this->abstraction == other->abstraction && this->size() == other->size()) {
+            for (Lit lit : *this) {
+                if (!other->contains(lit)) {
+                    return false;
+                }
+            }
+            return true;
+        } 
+        return false;
+    }
+
+    /**
+     *  subsumes : (other : const Clause&)  ->  Lit
+     *
+     *  Description:
+     *       Checks if clause subsumes 'other', and at the same time, if it can be used to simplify 'other'
+     *       by subsumption resolution.
+     *
+     *    Result:
+     *       lit_Error  - No subsumption or simplification
+     *       lit_Undef  - Clause subsumes 'other'
+     *       p          - The literal p can be deleted from 'other'
+     */
+    inline Lit subsumes(const Clause* other) const {
+        if ((abstraction & ~(other->abstraction)) == 0 && other->size() >= this->size()) {
+            Lit ret = lit_Undef;
+            for (Lit c : *this) {
+                for (Lit d : *other) { // search for c or ~c
+                    if (c == d) {
+                        goto ok;
+                    }
+                    else if (ret == lit_Undef && c == ~d) {
+                        ret = c;
+                        goto ok;
+                    }
+                }
+                return lit_Error; // did not find it
+                ok: ;
+            }
+            return ret;
+        }
+        else {
+            return lit_Error;
+        }
     }
 
 private:

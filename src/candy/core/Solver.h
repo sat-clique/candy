@@ -60,7 +60,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/systems/ReduceDB.h"
 
 #include "candy/simplification/Subsumption.h"
-#include "candy/simplification/SubsumptionClauseDatabase.h"
+#include "candy/simplification/OccurenceList.h"
 #include "candy/simplification/VariableElimination.h"
 #include "candy/simplification/AsymmetricVariableReduction.h"
 
@@ -159,7 +159,7 @@ protected:
     Restart restart;
     ReduceDB reduce;
 
-    SubsumptionClauseDatabase augmented_database;
+    OccurenceList augmented_database;
     Subsumption subsumption;
     VariableElimination elimination;
     AsymmetricVariableReduction<TPropagate> reduction;

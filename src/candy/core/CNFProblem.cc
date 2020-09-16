@@ -150,7 +150,7 @@ bool CNFProblem::checkResult(CandySolverResult& result) {
 
 /**
  * Use with care: renames all variables for as gap-less representation.
- * Don't use or translate back, if you care for semantics.
+ * Translate back if you care about semantics.
  * */
 void CNFProblem::normalizeVariableNames() {
     std::unordered_map<Var, Var> name;

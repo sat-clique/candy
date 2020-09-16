@@ -26,7 +26,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <memory.h>
 
 #include <candy/core/clauses/Clause.h>
-#include <candy/simplification/SubsumptionClause.h>
 #include <candy/core/clauses/ClauseAllocator.h>
 
 namespace Candy {
