@@ -62,8 +62,8 @@ public:
     Trail() : 
         trail_size(0), qhead(0), trail(), 
         assigns(), vardata(), trail_lim(), stamp(), 
-        decision(), assumptions(), variables(0), 
-        nDecisions(0), nPropagations(0)
+        decision(), assumptions(), backtracked(), 
+        variables(0), nDecisions(0), nPropagations(0)
     { }
 
     Trail(unsigned int nVars) : Trail() {
@@ -80,6 +80,8 @@ public:
 
     std::vector<char> decision;
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+    std::vector<Lit> backtracked; // Last backtracked assignments to be added to var-heap
+
     unsigned int variables;
 
     size_t nDecisions;
@@ -284,6 +286,7 @@ public:
 
     inline void backtrack(unsigned int level) {
         if (decisionLevel() > level) {
+            backtracked.insert(backtracked.end(), begin(level), end());
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
             }

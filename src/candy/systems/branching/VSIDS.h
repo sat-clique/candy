@@ -77,18 +77,16 @@ public:
     double var_inc; // Amount to bump next variable with.
     double var_decay;
     const double max_var_decay;
-    const bool glucose_style_extra_bump = false;
     const bool initial_polarity = true;
     const double initial_activity = 0.0;
 
     VSIDS(ClauseDatabase &_clause_db, Trail &_trail,
           double _var_decay = SolverOptions::opt_vsids_var_decay,
-          double _max_var_decay = SolverOptions::opt_vsids_max_var_decay,
-          bool _glucose_style_extra_bump = SolverOptions::opt_vsids_extra_bump) : clause_db(_clause_db), trail(_trail),
-                                                                                  order_heap(VarOrderLt(activity)),
-                                                                                  activity(), polarity(), stamp(),
-                                                                                  var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay),
-                                                                                  glucose_style_extra_bump(_glucose_style_extra_bump)
+          double _max_var_decay = SolverOptions::opt_vsids_max_var_decay)
+           : clause_db(_clause_db), trail(_trail),
+                order_heap(VarOrderLt(activity)),
+                activity(), polarity(), stamp(),
+                var_inc(1), var_decay(_var_decay), max_var_decay(_max_var_decay)
     {
     }
 
@@ -212,34 +210,17 @@ public:
         var_inc *= 1e-100;
     }
 
-    void process_conflict()
-    {
-        if (clause_db.result.nConflicts % 5000 == 0 && var_decay < max_var_decay)
-        {
+    void process_conflict() {
+        if (clause_db.result.nConflicts % 5000 == 0 && var_decay < max_var_decay) {
             var_decay += 0.01;
         }
 
         stamp.clear();
-        for (const Clause *clause : clause_db.result.involved_clauses)
-        {
-            for (Lit lit : *clause)
-            {
+        for (const Clause *clause : clause_db.result.involved_clauses) {
+            for (Lit lit : *clause) {
                 Var v = lit.var();
-                if (!stamp[v])
-                {
+                if (!stamp[v]) {
                     stamp.set(v);
-                    varBumpActivity(v);
-                }
-            }
-        }
-
-        if (glucose_style_extra_bump)
-        {
-            for (auto it = trail.begin(trail.decisionLevel()); it < trail.end(); it++)
-            {
-                Var v = it->var();
-                if (!stamp[v] && trail.reason(v) != nullptr && trail.reason(v)->isLearnt() && trail.reason(v)->getLBD() < clause_db.result.lbd)
-                {
                     varBumpActivity(v);
                 }
             }
@@ -247,15 +228,13 @@ public:
 
         varDecayActivity();
 
-        // UPDATEVARACTIVITY trick (see competition'09 Glucose companion paper)
-        unsigned int backtrack_level = clause_db.result.backtrack_level;
-        for (auto it = trail.begin(backtrack_level); it != trail.end(); it++)
-        {
-            Var v = it->var();
-            polarity[v] = it->sign();
+        for (Lit lit : trail.backtracked) {
+            Var v = lit.var();
+            polarity[v] = lit.sign();
             if (!order_heap.inHeap(v) && trail.isDecisionVar(v))
                 order_heap.insert(v);
         }
+        trail.backtracked.clear();
     }
 
     void process_reduce()
