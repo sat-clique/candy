@@ -21,7 +21,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/core/SolverTypes.h"
-#include "candy/utils/Exceptions.h"
 
 #include <unordered_map>
 
@@ -40,27 +39,9 @@ void CNFProblem::printDIMACS() const {
     }
 }
 
-void CNFProblem::readDimacsFromStdin() {
-    gzFile in = gzdopen(0, "rb");
-    if (in == NULL) {
-        throw ParserException("ERROR! Could not open file: <stdin>");
-    }
-    readDimacs(in);
-    gzclose(in);
-}
-
 void CNFProblem::readDimacsFromFile(const char* filename) {
-    gzFile in = gzopen(filename, "rb");
-    if (in == NULL) {
-        throw ParserException(std::string("ERROR! Could not open file"));
-    }
-    readDimacs(in);
-    gzclose(in);
-}
-
-void CNFProblem::readDimacs(gzFile input_stream) {
     Cl lits;
-    StreamBuffer in(input_stream);
+    StreamBuffer in(filename);
     while (!in.eof()) {
         in.skipWhitespace();
         if (in.eof()) {

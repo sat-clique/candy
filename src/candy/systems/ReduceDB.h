@@ -39,7 +39,7 @@ class ReduceDB {
 
 public:
     ReduceDB(ClauseDatabase& clause_db_, Trail& trail_)
-     : clause_db(clause_db_), trail(trail_), nReduced(0), nReduceCalls_(0), 
+     : clause_db(clause_db_), trail(trail_), nReduced(0), nReduceCalls_(1), 
         persistentLBD(ClauseDatabaseOptions::opt_persistent_lbd), 
         volatileLBD(ClauseDatabaseOptions::opt_volatile_lbd), 
         nbclausesbeforereduce(ClauseDatabaseOptions::opt_first_reduce_db),
@@ -60,7 +60,7 @@ public:
         for (Clause* clause : clause_db.result.involved_clauses) {
             if (clause->getLBD() > persistentLBD) {
                 uint8_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                if (lbd < clause->getLBD()) clause->setLBD(lbd);
+                clause->setLBD(lbd);
                 clause->incUsed();
             }
         }
@@ -86,12 +86,12 @@ public:
                 }
             }
         }
-        nReduceCalls_++;
     }
 
     inline bool trigger_reduce() {
-        if (nReduceCalls_ * nbclausesbeforereduce <= clause_db.result.nConflicts) {
+        if (nReduceCalls_ * nbclausesbeforereduce < clause_db.result.nConflicts) {
             nbclausesbeforereduce += incReduceDB;
+            nReduceCalls_++;
             return true;
         } 
         else {

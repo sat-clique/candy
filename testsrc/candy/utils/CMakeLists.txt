@@ -1,5 +1,4 @@
 add_executable(utils_tests
-    StringUtilsTests.cc
     CNFProblemTests.cc
     StampTests.cc
     ${CANDY_OBJECTS}

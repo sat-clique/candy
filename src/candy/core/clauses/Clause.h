@@ -96,7 +96,7 @@ public:
         copyLiterals(begin, end, literals);
         length = static_cast<decltype(length)>(std::distance(begin, end));
         weight = cast_uint8_t(lbd); // not frozen, not deleted and not learnt; lbd=0
-        used = 2;
+        used = 1;
         calc_abstraction();
         assert(lbd <= length);
     }
