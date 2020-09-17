@@ -91,7 +91,6 @@ public:
 
     void printDIMACS() const;
 
-    void readDimacsFromStdin();
     void readDimacsFromFile(const char* filename);
 
     void readClause(std::initializer_list<Lit> list);
@@ -108,10 +107,6 @@ public:
     CNFProblem& operator=(const CNFProblem& other) = delete;
     CNFProblem& operator=(CNFProblem&& other) = default;
     CNFProblem(CNFProblem&& other) = default;
-
-private:
-
-    void readDimacs(gzFile input_stream);
 
 };
 

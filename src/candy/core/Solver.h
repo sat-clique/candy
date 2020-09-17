@@ -364,7 +364,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
-            
+
             trail.propagate(clause->first(), clause);
             ipasir_callback(clause);
         }
@@ -427,6 +427,8 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
         processClauseDatabase();
         propagator.reset();
     }
+    
+    std::cout << "c Searching ... " << std::endl;
 
     lbool status = isInConflictingState() ? l_False : l_Undef;
 
@@ -441,6 +443,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
                 processClauseDatabase();
             }
             else {
+                std::cout << "c Reducing ... " << std::endl;
                 reduce.reduce();
             }            
             clause_db.reorganize();
@@ -455,6 +458,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
             status = l_False;
         } 
         else {
+            if (verbosity > 1) std::cout << "c nClauses " << clause_db.size() << std::endl;
             status = search();
         }
     }

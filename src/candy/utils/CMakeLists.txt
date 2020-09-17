@@ -12,9 +12,6 @@ add_library(utils OBJECT
     FastRand.cc
     MemUtils.h
     StreamBuffer.h
-    StreamBuffer.cc
-    StringUtils.h
-    CheckedCast.h
-    Exceptions.h)
+    CheckedCast.h)
 
 

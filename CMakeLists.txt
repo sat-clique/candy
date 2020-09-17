@@ -246,19 +246,19 @@ else ()
 endif ()
 
 ### Find libraries
-# set zlib for windows with mingw
+# set libarchive for windows with mingw
 if (MINGW)
-	set(ZLIB_INCLUDE_DIR  "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include")
-	set(ZLIB_LIBRARY "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libz.a")
+	set(LibArchive_INCLUDE_DIR  "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include")
+	set(LibArchive_LIBRARY "C:/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/lib/libz.a")
 endif (MINGW)
 # end mingw config
 
-find_package(ZLIB)
-if (${ZLIB_FOUND})
-   include_directories(${ZLIB_INCLUDE_DIRS})
-else (${ZLIB_FOUND})
-   message(FATAL_ERROR "Could not find zlib.")
-endif (${ZLIB_FOUND})
+find_package(LibArchive)
+if (${LibArchive_FOUND})
+   include_directories(${LibArchive_INCLUDE_DIRS})
+else (${LibArchive_FOUND})
+   message(FATAL_ERROR "Could not find LibArchive.")
+endif (${LibArchive_FOUND})
 
 
 ### Custom functions
@@ -286,7 +286,7 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:simplification>
   $<TARGET_OBJECTS:utils>)
 
-set(CANDY_LIBS ${ZLIB_LIBRARIES})
+set(CANDY_LIBS ${LibArchive_LIBRARIES})
 
 add_subdirectory(testsrc)
 

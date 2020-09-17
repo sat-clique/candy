@@ -51,13 +51,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/utils/Memory.h"
 #include "candy/utils/Options.h"
 
+#include "candy/utils/StreamBuffer.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/CandySolverInterface.h"
 #include "candy/core/CandySolverResult.h"
 #include "candy/core/DRATChecker.h"
 
 #include "candy/utils/CandyBuilder.h"
-#include "candy/utils/Exceptions.h"
 #include "candy/utils/Runtime.h"
 
 using namespace Candy;
@@ -144,20 +144,13 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
 int main(int argc, char** argv) {
     std::cout << "c Candy is made from Glucose." << std::endl;
 
-    setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or gzipped DIMACS.\n");
+    setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or compressed DIMACS.\n");
     parseOptions(argc, argv, true);
 
     CNFProblem problem{};
-    const char* inputFilename = nullptr;
     try {
-        if (argc == 1) {
-            std::cout << "c Reading from standard input ... " << std::endl; 
-            problem.readDimacsFromStdin();
-        } else {
-            std::cout << "c Reading file: " << argv[1] << std::endl; 
-            inputFilename = argv[1];
-            problem.readDimacsFromFile(inputFilename);
-        }
+        std::cout << "c Reading file: " << argv[1] << std::endl; 
+        problem.readDimacsFromFile(argv[1]);
     }
     catch (ParserException& e) {
 		std::cout << "c Caught Parser Exception: " << std::endl << e.what() << std::endl;

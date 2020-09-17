@@ -20,7 +20,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/DRATChecker.h"
 
 #include "candy/utils/StreamBuffer.h"
-#include "candy/utils/Exceptions.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -58,25 +57,16 @@ DRATChecker::~DRATChecker() {
     propagator.clear();
 }
 
-bool DRATChecker::check_proof(const char* filename) {
-    gzFile in = gzopen(filename, "rb");
-    if (in == NULL) {
-        throw ParserException("ERROR! Could not open file");
-    }
-    bool result = clause_db.hasEmptyClause() || check_proof(in);
-    gzclose(in);
-    return result;
-}
-
 long DRATChecker::proof_size(const char* filename) {
     struct stat stat_buf;
     int rc = stat(filename, &stat_buf);
     return (rc == 0) ? stat_buf.st_size : -1;
 }
 
-bool DRATChecker::check_proof(gzFile input_stream) {
+bool DRATChecker::check_proof(const char* filename) {
     Cl lits;
-    StreamBuffer in(input_stream);
+    if (clause_db.hasEmptyClause()) return false;
+    StreamBuffer in(filename);
     in.skipWhitespace();
     while (!in.eof()) {
         if (*in == 'c') {
