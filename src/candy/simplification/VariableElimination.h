@@ -134,17 +134,13 @@ public:
     void propagate_eliminated_variables() {
         for (auto it = eliminiated_variables.rbegin(); it != eliminiated_variables.rend(); it++) {
             Var var = *it;
-            bool value_set = false;
-            for (Cl clause : eliminated_clauses[var]) {
+            for (Cl& clause : eliminated_clauses[var]) {
                 if (!trail.satisfies(clause.begin(), clause.end())) {
-                    for (Lit lit : clause) {
-                        if (lit.var() == var) {
-                            // std::cout << "c Fixing value of eliminated variable " << var << std::endl;
+                    for (Lit lit : clause) { 
+                        if (trail.value(lit) == l_Undef) {
                             trail.set_value(lit);
-                            value_set = true;
                         }
                     }
-                    break;
                 }
             }
         }
@@ -178,7 +174,6 @@ public:
                         if (cl->contains(Lit(variable))) {
                             pos.push_back(cl);
                         } else {
-                            assert(cl->contains(Lit(variable, true)));
                             neg.push_back(cl);
                         }
                     }

@@ -134,8 +134,11 @@ public:
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
             lbool val = trail.value(watcher->blocker);
+
             if (val != l_True) { // Try to avoid inspecting the clause
                 Clause* clause = watcher->cref;
+
+                if (clause->isDeleted()) continue;
 
                 if (clause->first() == ~p) { // Make sure the false literal is data[1]
                     clause->swap(0, 1);
