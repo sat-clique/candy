@@ -64,36 +64,36 @@ long DRATChecker::proof_size(const char* filename) {
 }
 
 bool DRATChecker::check_proof(const char* filename) {
-    if (clause_db.hasEmptyClause()) {
-        return true;
-    }
-    Cl lits;
-    StreamBuffer in(filename);
-    in.skipWhitespace();
-    while (!in.eof()) {
-        if (*in == 'c') {
-            in.skipLine();
-        }
-        else if (*in == 'd') {
-            ++in;
-            lits.clear();
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                lits.push_back(Lit(abs(plit)-1, plit < 0));
-            }
-            // std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
-            check_clause_remove(lits.begin(), lits.end());
-        }
-        else {
-            lits.clear();
-            for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
-                lits.push_back(Lit(abs(plit)-1, plit < 0));
-            }
-            // std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
-            if (!check_clause_add(lits.begin(), lits.end())) {
-                return false;
-            }
-        }
+    if (!clause_db.hasEmptyClause()) {
+        Cl lits;
+        StreamBuffer in(filename);
         in.skipWhitespace();
+        while (!in.eof()) {
+            if (*in == 'c') {
+                in.skipLine();
+            }
+            else if (*in == 'd') {
+                ++in;
+                lits.clear();
+                for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+                    lits.push_back(Lit(abs(plit)-1, plit < 0));
+                }
+                std::cout << "c *** Checking Delete: " << lits << " *** " << std::endl;
+                check_clause_remove(lits.begin(), lits.end());
+            }
+            else {
+                lits.clear();
+                for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
+                    lits.push_back(Lit(abs(plit)-1, plit < 0));
+                }
+                std::cout << "c *** Checking Learned: " << lits << " *** " << std::endl;
+                if (!check_clause_add(lits.begin(), lits.end())) {
+                    std::cout << "Clause add failed: " << lits << std::endl;
+                    return false;
+                }
+            }
+            in.skipWhitespace();
+        }
     }
     return clause_db.hasEmptyClause();
 }
@@ -131,6 +131,7 @@ bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
         }
     }
     trail.backtrack(0);
+    trail.backtracked.clear();
 
     if (conflict) {
         Clause* clause = clause_db.createClause(begin, end);
