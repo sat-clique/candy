@@ -354,17 +354,17 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             }
             
             conflict_analysis.handle_conflict(confl);
-
-            branch.process_conflict();
             restart.process_conflict();
             reduce.process_conflict();
+
+            trail.backtrack(clause_db.result.backtrack_level);
+            branch.process_conflict();
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
             if (clause->size() > 2) {
                 propagator.attachClause(clause);
             }
-
-            trail.backtrack(clause_db.result.backtrack_level);
+            
             trail.propagate(clause->first(), clause);
             ipasir_callback(clause);
         }

@@ -141,11 +141,11 @@ public:
         //Todo: penalize all var not on trail
 
         double inv_step_size = 1.0 - step_size;
-        unsigned int backtrack_level = clause_db.result.backtrack_level;
-        for (auto it = trail.begin(backtrack_level); it != trail.end(); it++) {
-            Var v = it->var();
-            polarity[v] = it->sign();
-            if (!order_heap.inHeap(v) && trail.isDecisionVar(v)) order_heap.insert(v);
+        for (Lit lit : trail.backtracked) {
+            Var v = lit.var();
+            polarity[v] = lit.sign();
+            if (!order_heap.inHeap(v) && trail.isDecisionVar(v))
+                order_heap.insert(v);
 
             if (interval_assigned[v] > 0) {
                 weight[v] = inv_step_size * weight[v] + step_size * (participated[v] / interval_assigned[v]);
@@ -153,6 +153,7 @@ public:
                 participated[v] = 0;
             }
         }
+        trail.backtracked.clear();
     }
 
     void process_reduce() {

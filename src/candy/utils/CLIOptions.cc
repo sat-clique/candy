@@ -61,7 +61,6 @@ namespace SolverOptions {
 
     DoubleOption opt_vsids_var_decay("CORE", "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
     DoubleOption opt_vsids_max_var_decay("CORE", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
-    BoolOption opt_vsids_extra_bump("CORE", "extra-bump", "Glucose Style Extra Bumping on current desicion level", false);
 
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
     DoubleOption opt_lrb_step_size("CORE", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
