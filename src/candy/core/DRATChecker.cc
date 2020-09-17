@@ -64,8 +64,10 @@ long DRATChecker::proof_size(const char* filename) {
 }
 
 bool DRATChecker::check_proof(const char* filename) {
+    if (clause_db.hasEmptyClause()) {
+        return true;
+    }
     Cl lits;
-    if (clause_db.hasEmptyClause()) return false;
     StreamBuffer in(filename);
     in.skipWhitespace();
     while (!in.eof()) {

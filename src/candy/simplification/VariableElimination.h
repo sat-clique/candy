@@ -113,17 +113,13 @@ public:
     std::vector<Cl> undo_elimination(Var var) {
         assert(is_eliminated(var));
         std::vector<Cl> correction_set;
-        correction_set.insert(correction_set.end(), eliminated_clauses[var].begin(), eliminated_clauses[var].end());
-        eliminated_clauses[var].clear();
-        trail.setDecisionVar(var, true);
-        unsigned int j = 0;
-        for (unsigned int i = 0; i < eliminiated_variables.size(); i++) {
-            if (eliminiated_variables[i] != var) {
-                eliminiated_variables[j] = eliminiated_variables[i];
-                j++;
-            }
+        auto begin = std::find(eliminiated_variables.begin(), eliminiated_variables.end(), var);
+        for (auto it = begin; it != eliminiated_variables.end(); it++) {
+            correction_set.insert(correction_set.end(), eliminated_clauses[*it].begin(), eliminated_clauses[*it].end());
+            eliminated_clauses[*it].clear();
+            trail.setDecisionVar(*it, true);
         }
-        eliminiated_variables.resize(j);
+        eliminiated_variables.erase(begin, eliminiated_variables.end());
         return correction_set;
     }
 
@@ -149,15 +145,6 @@ public:
                         }
                     }
                     break;
-                }
-            }
-            if (!value_set) {
-                for (Lit lit : eliminated_clauses[var][0]) {
-                    if (lit.var() == var) {
-                        // std::cout << "c Fixing value of eliminated variable " << var << std::endl;
-                        trail.set_value(~lit);
-                        value_set = true;
-                    }
                 }
             }
         }
