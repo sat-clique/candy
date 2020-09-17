@@ -80,7 +80,7 @@ public:
                         ++nReduced;
                     }
                 }
-                else if (learnt->decUsed() == 1) {
+                else if (learnt->decUsed() <= 1) {
                     clause_db.removeClause(learnt);
                     ++nReduced;
                 }
