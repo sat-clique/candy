@@ -68,7 +68,7 @@ bool DRATChecker::check_proof(const char* filename) {
         Cl lits;
         StreamBuffer in(filename);
         in.skipWhitespace();
-        while (!in.eof()) {
+        while (!in.eof() && !clause_db.hasEmptyClause()) {
             if (*in == 'c') {
                 in.skipLine();
             }
@@ -78,7 +78,7 @@ bool DRATChecker::check_proof(const char* filename) {
                 for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                     lits.push_back(Lit(abs(plit)-1, plit < 0));
                 }
-                // std::cout << "d " << lits << "0" << std::endl;
+                //std::cout << "d " << lits << "0" << std::endl;
                 check_clause_remove(lits.begin(), lits.end());
             }
             else {
@@ -86,9 +86,9 @@ bool DRATChecker::check_proof(const char* filename) {
                 for (int plit = in.readInteger(); plit != 0; plit = in.readInteger()) {
                     lits.push_back(Lit(abs(plit)-1, plit < 0));
                 }                
-                // std::cout << lits << "0" << std::endl;
+                //std::cout << lits << "0" << std::endl;
                 if (!check_clause_add(lits.begin(), lits.end())) {
-                    // std::cout << "c *** Clause add failed: " << lits << std::endl;
+                    //std::cout << "c *** Clause add failed: " << lits << std::endl;
                     return false;
                 }
             }

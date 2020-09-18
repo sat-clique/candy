@@ -250,12 +250,12 @@ int main(int argc, char** argv) {
             if (satisfied) {
                 std::cout << "c Result verified by model checker" << std::endl;
                 std::cout << "c ********************************" << std::endl;
-                return 0;
+                return 10;
             }
             else {
                 std::cout << "c Result could not be verified by model checker" << std::endl;
-                assert(satisfied);
-                return 1;
+                //assert(satisfied);
+                return 11;
             }
         }
         else if (TestingOptions::test_proof && result == l_False) {
@@ -267,12 +267,12 @@ int main(int argc, char** argv) {
             if (proved) {
                 std::cout << "c Result verified by proof checker" << std::endl;
                 std::cout << "c ********************************" << std::endl;
-                return 0;
+                return 20;
             }
             else {
                 std::cout << "c Result could not be verified by proof checker" << std::endl;
-                assert(proved);
-                return 1;
+                //assert(proved);
+                return 21;
             }
         }
     }
