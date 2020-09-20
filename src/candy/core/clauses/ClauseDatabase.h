@@ -71,26 +71,25 @@ private:
     std::vector<Clause*> clauses; // Working set of problem clauses
     bool emptyClause_;
 
-    std::vector<std::vector<BinaryWatcher>> binaryWatchers;
-
     Certificate certificate;
 
 public:
+
+    std::vector<std::vector<BinaryWatcher>> binary_watchers;
     
     /* analysis result is stored here */
 	AnalysisResult result;
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
-        binaryWatchers(), 
         certificate(SolverOptions::opt_certified_file), 
-        result()
+        binary_watchers(), result()
     { }
 
     ~ClauseDatabase() { }
 
     void clear() {
-        binaryWatchers.clear();
+        binary_watchers.clear();
         allocator.clear();
         clauses.clear();
         variables = 0;
@@ -105,7 +104,7 @@ public:
     void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
         if (variables < problem.nVars()) {
             variables = problem.nVars();
-            binaryWatchers.resize(variables*2+2);
+            binary_watchers.resize(variables*2+2);
         }
         for (Cl* import : problem) {
             createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
@@ -114,12 +113,12 @@ public:
     }
 
     void reinitBinaryWatchers() {
-        binaryWatchers.clear();
-        binaryWatchers.resize(variables*2+2);
+        binary_watchers.clear();
+        binary_watchers.resize(variables*2+2);
         for (Clause* clause : clauses) {
             if (clause->size() == 2) {
-                binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-                binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+                binary_watchers[~clause->first()].emplace_back(clause, clause->second());
+                binary_watchers[~clause->second()].emplace_back(clause, clause->first());
             }
         }
     }
@@ -179,8 +178,8 @@ public:
             emptyClause_ = true;
         }
         else if (clause->size() == 2) {
-            binaryWatchers[~clause->first()].emplace_back(clause, clause->second());
-            binaryWatchers[~clause->second()].emplace_back(clause, clause->first());
+            binary_watchers[~clause->first()].emplace_back(clause, clause->second());
+            binary_watchers[~clause->second()].emplace_back(clause, clause->first());
         }
         
         return clause;
@@ -192,8 +191,8 @@ public:
         certificate.removed(clause->begin(), clause->end());
 
         if (clause->size() == 2) {
-            std::vector<BinaryWatcher>& list0 = binaryWatchers[~clause->first()];
-            std::vector<BinaryWatcher>& list1 = binaryWatchers[~clause->second()];
+            std::vector<BinaryWatcher>& list0 = binary_watchers[~clause->first()];
+            std::vector<BinaryWatcher>& list1 = binary_watchers[~clause->second()];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list0.end());
             list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list1.end());
         }
@@ -206,10 +205,6 @@ public:
         Clause* new_clause = createClause(literals.begin(), literals.end(), std::min((uint16_t)clause->getLBD(), (uint16_t)literals.size()));
         removeClause(clause);
         return new_clause;
-    }
-
-    inline const std::vector<BinaryWatcher>& getBinaryWatchers(Lit lit) {
-        return binaryWatchers.at(lit);//[lit];
     }
 
     std::vector<Clause*> getUnitClauses() { 

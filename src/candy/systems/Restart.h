@@ -23,9 +23,26 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
 
-#include "candy/mtl/BoundedQueue.h"
-
 namespace Candy {
+
+//ExponentiallyMovingAverage
+class EMA {
+    double value;
+    float alpha, beta;
+    unsigned int wait, period;
+public:
+    EMA(double alpha_) : value(1), alpha(alpha_), beta(1), wait(1), period(1) {}
+    void update(double next) { 
+        value += beta * (next - value); 
+
+        if (beta > alpha && --wait == 0) {
+            wait = period = (2 * period);
+            beta *= .5;
+            if (beta < alpha) beta = alpha;
+        }
+    }
+    operator double() const { return value; }
+};
 
 class Restart {
     ClauseDatabase& clause_db;
@@ -33,19 +50,21 @@ class Restart {
 
     unsigned int restarts;
 
-    double K;
-    double R;
-    float sumLBD = 0;
-    bqueue<uint32_t> lbdQueue, trailQueue;
+    uint64_t minimum_conflicts;
+
+    EMA ema_lbd_narrow;
+    EMA ema_lbd_wide;
+    EMA ema_trail_narrow;
+    EMA ema_trail_wide;
+
+    double force;//1.25
+    double block;//1.4
 
 public:
     Restart(ClauseDatabase& clause_db_, Trail& trail_)
-     : clause_db(clause_db_), trail(trail_), restarts(0), 
-        K(SolverOptions::opt_K), 
-        R(SolverOptions::opt_R), 
-        sumLBD(0),
-        lbdQueue(SolverOptions::opt_size_lbd_queue), 
-        trailQueue(SolverOptions::opt_size_trail_queue) { }
+     : clause_db(clause_db_), trail(trail_), restarts(0), minimum_conflicts(1000),
+        ema_lbd_narrow(3e-2), ema_lbd_wide(1e-5), ema_trail_narrow(1e-2), ema_trail_wide(1e-5),
+        force(SolverOptions::opt_restart_force), block(SolverOptions::opt_restart_block) { }
     
     ~Restart() { }
 
@@ -54,20 +73,30 @@ public:
     }
 
     inline void process_conflict() {
-        trailQueue.push(trail.size());
-        if (clause_db.result.nConflicts > 10000 && lbdQueue.isvalid() && trail.size() > R * trailQueue.getavg()) {
-            lbdQueue.fastclear(); // BLOCK RESTART (CP 2012 paper)
-        }
-        lbdQueue.push(clause_db.result.lbd);
-        sumLBD += clause_db.result.lbd;
+        ema_trail_narrow.update(trail.size());
+        ema_trail_wide.update(trail.size());
+        ema_lbd_narrow.update(clause_db.result.lbd);
+        ema_lbd_wide.update(clause_db.result.lbd);
     }
 
     inline bool trigger_restart() {
-        if (clause_db.result.nConflicts > 0 && lbdQueue.isvalid() && ((lbdQueue.getavg() * K) > (sumLBD / clause_db.result.nConflicts))) {
-            lbdQueue.fastclear();
+        if (clause_db.result.nConflicts < minimum_conflicts) {
+            return false;
+        }
+        else {
+            // minimum_conflicts = clause_db.result.nConflicts + 2;
+            minimum_conflicts += 2;
+        }
+        if (ema_lbd_narrow / ema_lbd_wide > force) {
+            std::cout << "c Restart " << ema_lbd_narrow << " / " << ema_lbd_wide << " = " << ema_lbd_narrow / ema_lbd_wide << std::endl;
+            if (ema_trail_narrow / ema_trail_wide > block) { // block restart
+                std::cout << " c Blocked " << ema_trail_narrow << " / " << ema_trail_wide << " = " << ema_trail_narrow / ema_trail_wide << std::endl;
+                return false;
+            }
             restarts++;
             return true;
-        }
+        } else 
+            // std::cout << "No Restart " << ema_lbd_narrow << " / " << ema_lbd_wide << " = " << ema_lbd_narrow / ema_lbd_wide << std::endl;
         return false;
     }
 

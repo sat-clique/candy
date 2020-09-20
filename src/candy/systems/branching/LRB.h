@@ -141,22 +141,27 @@ public:
         //Todo: penalize all var not on trail
 
         double inv_step_size = 1.0 - step_size;
-        for (Lit lit : trail.backtracked) {
-            Var v = lit.var();
-            polarity[v] = lit.sign();
-            if (!order_heap.inHeap(v) && trail.isDecisionVar(v))
-                order_heap.insert(v);
-
+        for (auto it = trail.conflict_rbegin(); it < trail.rbegin(); it++) {
+            Var v = it->var();
             if (interval_assigned[v] > 0) {
                 weight[v] = inv_step_size * weight[v] + step_size * (participated[v] / interval_assigned[v]);
                 interval_assigned[v] = 0;
                 participated[v] = 0;
             }
         }
-        trail.backtracked.clear();
+
+        add_back(trail.conflict_rbegin(), trail.rbegin());
     }
 
-    void process_reduce() {
+    template<typename Iterator>
+    void add_back(Iterator rbegin, Iterator rend) {
+        for (auto it = rbegin; it < rend; it++) {
+            Lit lit = *it;
+            Var v = lit.var();
+            polarity[v] = lit.sign();
+            if (!order_heap.inHeap(v) && trail.isDecisionVar(v))
+                order_heap.insert(v);
+        }
     }
 
     inline Lit pickBranchLit() {

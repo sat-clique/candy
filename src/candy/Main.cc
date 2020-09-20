@@ -254,7 +254,7 @@ int main(int argc, char** argv) {
             }
             else {
                 std::cout << "c Result could not be verified by model checker" << std::endl;
-                //assert(satisfied);
+                if (TestingOptions::test_limit > 0) assert(satisfied); //fuzzing
                 return 11;
             }
         }
@@ -271,7 +271,7 @@ int main(int argc, char** argv) {
             }
             else {
                 std::cout << "c Result could not be verified by proof checker" << std::endl;
-                //assert(proved);
+                if (TestingOptions::test_limit > 0) assert(proved); //fuzzing
                 return 21;
             }
         }

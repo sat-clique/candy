@@ -46,6 +46,10 @@ namespace TestingOptions {
     extern IntOption test_limit;
 }
 
+namespace LearningOptions {
+    extern BoolOption pickback;
+}
+
 namespace SolverOptions {
     extern IntOption verb;
     extern BoolOption mod;
@@ -55,8 +59,8 @@ namespace SolverOptions {
     extern IntOption memory_limit;
     extern IntOption time_limit;
 
-    extern DoubleOption opt_K;
-    extern DoubleOption opt_R;
+    extern DoubleOption opt_restart_force;
+    extern DoubleOption opt_restart_block;
     extern IntOption opt_size_lbd_queue;
     extern IntOption opt_size_trail_queue;
     

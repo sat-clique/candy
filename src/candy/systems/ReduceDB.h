@@ -72,26 +72,29 @@ public:
      **/
     void reduce() { 
         assert(trail.decisionLevel() == 0);
+        uint32_t reduced = 0;
         for (Clause* learnt : clause_db) {
             if (learnt->getLBD() > persistentLBD) {
                 if (learnt->getLBD() < volatileLBD) {
                     if (learnt->decUsed() == 0) {
                         clause_db.removeClause(learnt);
-                        ++nReduced;
+                        ++reduced;
                     }
                 }
                 else if (learnt->decUsed() <= 1) {
                     clause_db.removeClause(learnt);
-                    ++nReduced;
+                    ++reduced;
                 }
             }
         }
+        nbclausesbeforereduce += incReduceDB;
+        nReduceCalls_++;
+        nReduced += reduced;
+        std::cout << "c Reduced " << reduced << ", remaining " << clause_db.size() << std::endl;
     }
 
     inline bool trigger_reduce() {
         if (nReduceCalls_ * nbclausesbeforereduce < clause_db.result.nConflicts) {
-            nbclausesbeforereduce += incReduceDB;
-            nReduceCalls_++;
             return true;
         } 
         else {

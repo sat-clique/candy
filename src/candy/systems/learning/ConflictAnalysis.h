@@ -128,13 +128,16 @@ private:
 	}
 
 	/******************************************************************
-	 * Minimisation with binary clauses of the asserting clause
+	 * Minimisation with binary clauses of the asserting literal
 	 ******************************************************************/
 	void minimizationWithBinaryResolution() {
 	    stamp.clear();
 
 	    bool minimize = false;
-	    for (BinaryWatcher w : clause_db.getBinaryWatchers(~learnt_clause[0])) {
+
+		//for (Lit lit : learnt_clause) if (!stamp[lit.var()])
+		Lit lit = learnt_clause[0];
+	    for (BinaryWatcher w : clause_db.binary_watchers[~lit]) {
 	        if (trail.satisfies(w.other)) {
 	            minimize = true;
 	            stamp.set(w.other.var());
@@ -225,11 +228,26 @@ public:
 		}
 	}
 
+	Lit pickback(Lit lit) {
+		const std::vector<BinaryWatcher>& bwl = clause_db.binary_watchers[~lit];
+		for (auto& bw : bwl) {
+			if (trail.value(bw.other) == l_False) {
+				return pickback(bw.other);
+			}
+		}
+		return lit;
+	}
+
 	void handle_conflict(Clause* confl) {
 		learnt_clause.clear();
 		involved_clauses.clear();
 
 		analyze(confl);
+
+		if (LearningOptions::pickback)
+		for (unsigned int i = 1; i < learnt_clause.size(); ++i) {
+			learnt_clause[i] = pickback(learnt_clause[i]);
+		}
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
         

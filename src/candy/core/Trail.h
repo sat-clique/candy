@@ -51,27 +51,17 @@ namespace Candy {
 struct VarData {
     Clause* reason;
     unsigned int level;
-    VarData() :
-        reason(nullptr), level(0) {}
-    VarData(Clause* _reason, unsigned int _level) :
-        reason(_reason), level(_level) {}
+    VarData() : reason(nullptr), level(0) {}
+    VarData(Clause* _reason, unsigned int _level) : reason(_reason), level(_level) {}
 };
 
 class Trail {
 public:
-    Trail() : 
-        trail_size(0), qhead(0), trail(), 
-        assigns(), vardata(), trail_lim(), stamp(), 
-        decision(), assumptions(), backtracked(), 
-        variables(0), nDecisions(0), nPropagations(0)
-    { }
-
-    Trail(unsigned int nVars) : Trail() {
-        init(nVars);
-    }
-
+    unsigned int nVariables;
     unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
+    unsigned int conflict_level; // stores level of last conflict
     unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
+
     std::vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
     std::vector<lbool> assigns; // The current assignments.
     std::vector<VarData> vardata; // Stores reason and level for each variable.
@@ -80,37 +70,34 @@ public:
 
     std::vector<char> decision;
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
-    std::vector<Lit> backtracked; // Last backtracked assignments to be added to var-heap
-
-    unsigned int variables;
 
     size_t nDecisions;
     size_t nPropagations;
 
-    inline unsigned int nVars() {
-        return variables;
+    Trail() : 
+        nVariables(0), trail_size(0), conflict_level(0), qhead(0), 
+        trail(), assigns(), vardata(), trail_lim(), stamp(), 
+        decision(), assumptions(), 
+        nDecisions(0), nPropagations(0)
+    { }
+
+    Trail(unsigned int nVars) : Trail() {
+        init(nVars);
     }
 
     inline void init(unsigned int nVars) {
-        if (nVars > variables) {
-            variables = nVars;
+        if (nVars > nVariables) {
+            nVariables = nVars;
+            trail.resize(nVars);
             assigns.resize(nVars, l_Undef);
             vardata.resize(nVars);
-            trail.resize(nVars);
             stamp.grow(nVars);
             decision.resize(nVars, true);
         }
     }
 
-    inline void clear() {
-        variables = 0;
-        assigns.clear();
-        vardata.clear();
-        qhead = 0;
-        trail_size = 0;
-        trail_lim.clear(); 
-        decision.clear();
-        assumptions.clear();
+    inline unsigned int nVars() {
+        return nVariables;
     }
 
     inline void reset() {
@@ -133,8 +120,8 @@ public:
     void setAssumptions(const std::vector<Lit>& assumptions) {
         this->assumptions.clear();
         for (Lit lit : assumptions) {
-            if (lit.var() > (Var)variables) {
-                init(variables);
+            if (lit.var() > (Var)nVariables) {
+                init(nVariables);
             }
             this->assumptions.push_back(lit);
         }
@@ -150,7 +137,7 @@ public:
 
     inline const Lit operator [](unsigned int i) const {
         assert(i < trail_size);
-        return trail.at(i);//[i];
+        return trail[i];
     }
 
     typedef std::vector<Lit>::const_iterator const_iterator;
@@ -162,6 +149,10 @@ public:
 
     inline const_iterator end() const {
         return trail.begin() + trail_size;
+    }
+
+    inline const_reverse_iterator conflict_rbegin() const {
+        return trail.rbegin() + (trail.size() - conflict_level);
     }
 
     inline const_reverse_iterator rbegin() const {
@@ -180,29 +171,10 @@ public:
         return trail_size;
     }
 
-    inline unsigned int size(unsigned int level) const {
-        if (level == 0) {
-            if (trail_lim.size() == 0) {
-                return trail_size;
-            }
-            else {
-                return trail_lim[0];
-            }
-        }
-        else if (trail_lim.size() > level) {
-            return trail_lim[level] - trail_lim[level-1];
-        }
-        else {
-            return 0;
-        }
-    }
-
-    // The current value of a variable.
     inline lbool value(Var x) const {
         return assigns[x];
     }
 
-    // The current value of a literal.
     inline lbool value(Lit p) const {
         return assigns[p.var()] ^ p.sign();
     }
@@ -285,8 +257,8 @@ public:
     }
 
     inline void backtrack(unsigned int level) {
+        conflict_level = trail_size;
         if (decisionLevel() > level) {
-            backtracked.insert(backtracked.end(), begin(level), end());
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
             }

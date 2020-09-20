@@ -185,11 +185,6 @@ protected:
     lbool search(); 
 
 private:
-    // true means solver is in a conflicting state
-    bool isInConflictingState() const {
-        return clause_db.hasEmptyClause();
-    }
-
     // important in parallel scenario
     void propagateAndMaterializeUnitClauses() {
         assert(trail.decisionLevel() == 0);
@@ -201,10 +196,8 @@ private:
         if (!clause_db.hasEmptyClause()) {
             std::array<Lit, 1> unit;
             unsigned int pos = trail.size();            
-            if (propagator.propagate() != nullptr) {
-                clause_db.emptyClause();
-            }
-            if (!isInConflictingState()) {
+            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
+            else {
                 for (auto it = trail.begin() + pos; it != trail.end(); it++) {
                     assert(trail.reason(it->var()) != nullptr);
                     unit[0] = *it;
@@ -225,7 +218,8 @@ private:
         unsigned int max = 0;
         double simplification_threshold_factor = 0.1;
         while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
-            propagateAndMaterializeUnitClauses();
+            // propagateAndMaterializeUnitClauses();
+            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!subsumption.subsume()) clause_db.emptyClause();
@@ -236,7 +230,8 @@ private:
                 if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
             }
 
-            propagateAndMaterializeUnitClauses();
+            // propagateAndMaterializeUnitClauses();
+            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!reduction.reduce()) clause_db.emptyClause();
@@ -246,7 +241,8 @@ private:
                 if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
             }
 
-            propagateAndMaterializeUnitClauses();
+            // propagateAndMaterializeUnitClauses();
+            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!elimination.eliminate()) clause_db.emptyClause();
@@ -311,7 +307,6 @@ Solver<TPropagate, TLearning, TBranching>::~Solver() {
 template<class TPropagate, class TLearning, class TBranching>
 void Solver<TPropagate, TLearning, TBranching>::clear() {
     clause_db.clear();
-    trail.clear();
     propagator.clear();
     branch.clear();
 }
@@ -369,7 +364,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             ipasir_callback(clause);
         }
         else {
-            if (restart.trigger_restart()) {
+            if (restart.trigger_restart() || reduce.trigger_reduce()) {
                 return l_Undef;
             }
             
@@ -414,11 +409,13 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
     trail.reset();
     propagator.reset();
 
+    // this is kind-of needed now (came in with parallel version)
+    propagateAndMaterializeUnitClauses();
+
     // prepare variable elimination for new set of assumptions
     std::vector<Cl> correction_set = elimination.reset();
     for (Cl cl : correction_set) {
         Clause* clause = clause_db.createClause(cl.begin(), cl.end());
-        // std::cout << "VE Correction due to new assumptions: " << *clause << std::endl;
         if (clause->size() > 2) propagator.attachClause(clause);
     }
     
@@ -430,11 +427,11 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
     
     std::cout << "c Searching ... " << std::endl;
 
-    lbool status = isInConflictingState() ? l_False : l_Undef;
+    lbool status = clause_db.hasEmptyClause() ? l_False : l_Undef;
 
     while (status == l_Undef && termCallback(termCallbackState) == 0) {
-        trail.reset();
-        branch.reset();
+        trail.backtrack(0);
+        branch.add_back(trail.conflict_rbegin(), trail.rbegin());
 
         if (reduce.trigger_reduce()) {
             if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= reduce.nReduceCalls()) { 
@@ -447,14 +444,14 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
                 reduce.reduce();
             }            
             clause_db.reorganize();
-            branch.process_reduce();
             propagator.reset();
         }
 
         // multi-threaded unit-clauses fast-track
-        propagateAndMaterializeUnitClauses();
+        // propagateAndMaterializeUnitClauses();
+        if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
 
-        if (isInConflictingState()) {
+        if (clause_db.hasEmptyClause()) {
             status = l_False;
         } 
         else {

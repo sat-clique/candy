@@ -35,7 +35,7 @@ namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Start of second tier of learnt clause", 3, IntRange(0, INT8_MAX));
     IntOption opt_volatile_lbd("ClauseDatabase", "volatileLBD", "Start of third tier of learnt clauses", 6, IntRange(0, INT8_MAX));
 
-    IntOption opt_first_reduce_db("ClauseDatabase", "firstReduceDB", "The number of conflicts before the first reduce DB", 2000, IntRange(0, INT16_MAX));
+    IntOption opt_first_reduce_db("ClauseDatabase", "firstReduceDB", "The number of conflicts before the first reduce DB", 3000, IntRange(0, INT16_MAX));
     IntOption opt_inc_reduce_db("ClauseDatabase", "incReduceDB", "Increment for reduce DB", 1300, IntRange(0, INT16_MAX));
 }
 
@@ -43,6 +43,10 @@ namespace TestingOptions {
     BoolOption test_model("TEST", "test-model", "test model.", false);
     BoolOption test_proof("TEST", "test-proof", "test proof.", false);
     IntOption test_limit("TEST", "test-limit", "limit the number of variables ('0' means inactive).", 0, IntRange(0, 1000));
+}
+
+namespace LearningOptions {
+    BoolOption pickback("Learning", "pickback", "pick back", false);
 }
 
 namespace SolverOptions {
@@ -54,21 +58,22 @@ namespace SolverOptions {
     IntOption memory_limit("MAIN", "memory-limit", "Limit on memory usage in mega bytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption time_limit("MAIN", "time-limit", "Limit on wallclock runtime in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     
-    DoubleOption opt_K("Restarts", "K", "The constant used to force restart", 0.8, DoubleRange(0, false, 1, false));
-    DoubleOption opt_R("Restarts", "R", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
+    DoubleOption opt_restart_force("Restarts", "restart-force", "The constant used to force restart", 1.25, DoubleRange(1, false, 5, false));
+    DoubleOption opt_restart_block("Restarts", "restart-block", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
     IntOption opt_size_lbd_queue("Restarts", "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT16_MAX));
     IntOption opt_size_trail_queue("Restarts", "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
 
-    DoubleOption opt_vsids_var_decay("CORE", "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
-    DoubleOption opt_vsids_max_var_decay("CORE", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
+    DoubleOption opt_vsids_var_decay("BRANCHING", "var-decay", "The variable activity decay factor (starting point)", 0.8, DoubleRange(0, false, 1, false));
+    DoubleOption opt_vsids_max_var_decay("BRANCHING", "max-var-decay", "The variable activity decay factor", 0.95, DoubleRange(0, false, 1, false));
 
     BoolOption opt_use_lrb("BRANCHING", "use-lrb", "use LRB branching heuristic (default: use VSIDS)", false);
-    DoubleOption opt_lrb_step_size("CORE", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
-    DoubleOption opt_lrb_min_step_size("CORE", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
+    DoubleOption opt_lrb_step_size("BRANCHING", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
+    DoubleOption opt_lrb_min_step_size("BRANCHING", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    BoolOption opt_sort_variables("MEMORY LAYOUT", "sort-variables", "sort variables", false);
+    BoolOption opt_sort_variables("BRANCHING", "sort-variables", "sort variables", false);
+
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
-    IntOption opt_inprocessing("MEMORY LAYOUT", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
+    IntOption opt_inprocessing("METHOD", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);
 }
 
 namespace VariableEliminationOptions {
