@@ -104,7 +104,7 @@ public:
     }
 
     inline Clause* propagate_binary_clauses(Lit p) {
-        const std::vector<BinaryWatcher>& list = clause_db.getBinaryWatchers(p);
+        const std::vector<BinaryWatcher>& list = clause_db.binary_watchers[p];
         for (BinaryWatcher watcher : list) {
             lbool val = trail.value(watcher.other);
             if (val == l_False) {

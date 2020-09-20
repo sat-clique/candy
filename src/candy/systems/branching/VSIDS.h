@@ -228,17 +228,18 @@ public:
 
         varDecayActivity();
 
-        for (Lit lit : trail.backtracked) {
+        add_back(trail.conflict_rbegin(), trail.rbegin());
+    }
+
+    template<typename Iterator>
+    void add_back(Iterator rbegin, Iterator rend) {
+        for (auto it = rbegin; it < rend; it++) {
+            Lit lit = *it;
             Var v = lit.var();
             polarity[v] = lit.sign();
             if (!order_heap.inHeap(v) && trail.isDecisionVar(v))
                 order_heap.insert(v);
         }
-        trail.backtracked.clear();
-    }
-
-    void process_reduce()
-    {
     }
 
     // selects the next literal to branch on

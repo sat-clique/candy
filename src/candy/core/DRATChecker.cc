@@ -53,7 +53,6 @@ DRATChecker::DRATChecker(CNFProblem& problem_)
 
 DRATChecker::~DRATChecker() { 
     clause_db.clear();
-    trail.clear();
     propagator.clear();
 }
 
@@ -132,7 +131,6 @@ bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
     }
 
     trail.backtrack(0);
-    trail.backtracked.clear();
 
     if (conflict) {
         Clause* clause = clause_db.createClause(begin, end);
@@ -178,6 +176,7 @@ void DRATChecker::cleanup_deleted() {
             occurences[lit].push_back(clause);
         }
     }
+    num_deleted = 0;
 }
 
 }
