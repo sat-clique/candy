@@ -90,7 +90,7 @@ public:
         nbclausesbeforereduce += incReduceDB;
         nReduceCalls_++;
         nReduced += reduced;
-        std::cout << "c Reduced " << reduced << ", remaining " << clause_db.size() << std::endl;
+        //std::cout << "c Reduced " << reduced << ", remaining " << clause_db.size() << std::endl;
     }
 
     inline bool trigger_reduce() {
