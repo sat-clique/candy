@@ -84,19 +84,17 @@ public:
             return false;
         }
         else {
-            // minimum_conflicts = clause_db.result.nConflicts + 2;
-            minimum_conflicts += 2;
+            minimum_conflicts = clause_db.result.nConflicts + 2;
         }
         if (ema_lbd_narrow / ema_lbd_wide > force) {
-            std::cout << "c Restart " << ema_lbd_narrow << " / " << ema_lbd_wide << " = " << ema_lbd_narrow / ema_lbd_wide << std::endl;
+            //std::cout << "c Restart " << ema_lbd_narrow << " / " << ema_lbd_wide << " = " << ema_lbd_narrow / ema_lbd_wide << std::endl;
             if (ema_trail_narrow / ema_trail_wide > block) { // block restart
-                std::cout << " c Blocked " << ema_trail_narrow << " / " << ema_trail_wide << " = " << ema_trail_narrow / ema_trail_wide << std::endl;
+                //std::cout << " c Blocked " << ema_trail_narrow << " / " << ema_trail_wide << " = " << ema_trail_narrow / ema_trail_wide << std::endl;
                 return false;
             }
             restarts++;
             return true;
-        } else 
-            // std::cout << "No Restart " << ema_lbd_narrow << " / " << ema_lbd_wide << " = " << ema_lbd_narrow / ema_lbd_wide << std::endl;
+        } 
         return false;
     }
 
