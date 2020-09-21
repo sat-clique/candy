@@ -32,26 +32,60 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 struct AnalysisResult {
-
 	AnalysisResult() : 
-		nConflicts(0), learnt_clause(), involved_clauses(), lbd(0), backtrack_level(0)
+		nConflicts(0), learnt_clause(), pickback_clause(), involved_clauses(), lbd(0), backtrack_level(0)
 	{ }
 
 	uint64_t nConflicts;
 	std::vector<Lit> learnt_clause;
+	std::vector<Lit> pickback_clause;
 	std::vector<Clause*> involved_clauses;
 	unsigned int lbd;
     unsigned int backtrack_level;
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Lit>& pickback_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
         assert(lbd_ <= learnt_clause_.size());
         nConflicts++;
         learnt_clause.swap(learnt_clause_);
+        pickback_clause.swap(pickback_clause_);
         involved_clauses.swap(involved_clauses_); 
         lbd = lbd_;
         backtrack_level = backtrack_level_;
     }
 
+};
+
+struct EliminiationResult {
+    std::vector<Var> variables;
+    std::vector<std::vector<Cl>> clauses;
+
+    EliminiationResult() : variables(), clauses() { }
+
+    inline bool has_eliminated_variables() const {
+        return variables.size() > 0;
+    }
+
+    inline bool is_eliminated(Var v) const {
+        return clauses[v].size() > 0;
+    }
+
+    inline void set_eliminated(Var var, std::vector<Clause*> pos, std::vector<Clause*> neg) {
+        variables.push_back(var);
+        for (Clause* c : pos) clauses[var].push_back(Cl {c->begin(), c->end()} );
+        for (Clause* c : neg) clauses[var].push_back(Cl {c->begin(), c->end()} );
+    }
+
+    std::vector<Cl> undo(Var var) {
+        assert(is_eliminated(var));
+        std::vector<Cl> correction_set;
+        auto begin = std::find(variables.begin(), variables.end(), var);
+        for (auto it = begin; it != variables.end(); it++) {
+            correction_set.insert(correction_set.end(), clauses[*it].begin(), clauses[*it].end());
+            clauses[*it].clear();
+        }
+        variables.erase(begin, variables.end());
+        return correction_set;
+    }
 };
 
 struct BinaryWatcher {
@@ -79,11 +113,12 @@ public:
     
     /* analysis result is stored here */
 	AnalysisResult result;
+    EliminiationResult eliminated;
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
         certificate(SolverOptions::opt_certified_file), 
-        binary_watchers(), result()
+        binary_watchers(), result(), eliminated()
     { }
 
     ~ClauseDatabase() { }
@@ -105,6 +140,7 @@ public:
         if (variables < problem.nVars()) {
             variables = problem.nVars();
             binary_watchers.resize(variables*2+2);
+            eliminated.clauses.resize(variables+1);
         }
         for (Cl* import : problem) {
             createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
@@ -149,10 +185,6 @@ public:
 
     inline const Clause* operator [](int i) const {
         return clauses[i];
-    }
-
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
-        result.setLearntClause(learnt_clause_, involved_clauses_, lbd_, backtrack_level_);
     }
 
     bool hasEmptyClause() const {

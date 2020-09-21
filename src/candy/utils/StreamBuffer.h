@@ -83,7 +83,7 @@ public:
 
     ~StreamBuffer() {
         archive_read_free(file);
-        delete buffer;
+        delete[] buffer;
     }
 
     /** Skip until the end of the next newline (+subsequent whitespace) */

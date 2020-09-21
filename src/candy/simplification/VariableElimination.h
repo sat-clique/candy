@@ -53,10 +53,9 @@ namespace Candy {
 class VariableElimination {
 private:
     OccurenceList& database;
+    ClauseDatabase& clause_db;
     Trail& trail;
 
-    std::vector<Var> eliminiated_variables;
-    std::vector<std::vector<Cl>> eliminated_clauses;
     std::vector<char> frozen;
 
     std::vector<Lit> resolvent;
@@ -65,84 +64,22 @@ private:
 
     const unsigned int clause_lim;     // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
 
-    inline void init() {
-        nEliminated = 0;
-        if (trail.nVars() > frozen.size()) {
-            frozen.resize(trail.nVars());
-            eliminated_clauses.resize(trail.nVars());
-        }
-        for (Lit lit : trail.assumptions) {
-            frozen[lit.var()] = true;
-        }
-    }
-
 public:
     unsigned int nEliminated;
 
-    VariableElimination(OccurenceList& database_, Trail& trail_) : 
+    VariableElimination(OccurenceList& database_, ClauseDatabase& clause_db_, Trail& trail_) : 
         database(database_),
+        clause_db(clause_db_),
         trail(trail_),
-        eliminiated_variables(),
-        eliminated_clauses(), 
         frozen(),
         resolvent(),
         active(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
         nEliminated(0)
-    { }
-
-    std::vector<Cl> reset() {
-        std::vector<Cl> correction_set;
-
-        std::fill(frozen.begin(), frozen.end(), false);
-
-        if (trail.nVars() > frozen.size()) {
-            frozen.resize(trail.nVars());
-            eliminated_clauses.resize(trail.nVars());
-        }
+    { 
+        frozen.resize(trail.nVars());
         for (Lit lit : trail.assumptions) {
             frozen[lit.var()] = true;
-            if (is_eliminated(lit.var())) {
-                std::vector<Cl> cor = undo_elimination(lit.var());
-                correction_set.insert(correction_set.end(), cor.begin(), cor.end());
-            }
-        }
-        return correction_set;
-    }
-
-    std::vector<Cl> undo_elimination(Var var) {
-        assert(is_eliminated(var));
-        std::vector<Cl> correction_set;
-        auto begin = std::find(eliminiated_variables.begin(), eliminiated_variables.end(), var);
-        for (auto it = begin; it != eliminiated_variables.end(); it++) {
-            correction_set.insert(correction_set.end(), eliminated_clauses[*it].begin(), eliminated_clauses[*it].end());
-            eliminated_clauses[*it].clear();
-            trail.setDecisionVar(*it, true);
-        }
-        eliminiated_variables.erase(begin, eliminiated_variables.end());
-        return correction_set;
-    }
-
-    inline bool has_eliminated_variables() const {
-        return eliminiated_variables.size() > 0;
-    }
-
-    inline bool is_eliminated(Var v) const {
-        return eliminated_clauses[v].size() > 0;
-    }
-
-    void propagate_eliminated_variables() {
-        for (auto it = eliminiated_variables.rbegin(); it != eliminiated_variables.rend(); it++) {
-            Var var = *it;
-            for (Cl& clause : eliminated_clauses[var]) {
-                if (!trail.satisfies(clause.begin(), clause.end())) {
-                    for (Lit lit : clause) { 
-                        if (trail.value(lit) == l_Undef) {
-                            trail.set_value(lit);
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -151,16 +88,15 @@ public:
     }
 
     bool eliminate() {
-        init();
-
-        if (!active) {
-            return true;
-        }
+        if (!active) return true;
+        nEliminated = 0;
 
         std::vector<Var> variables;
         for (unsigned int v = 0; v < frozen.size(); v++) {
-            if (!frozen[v] && !is_eliminated(v)) variables.push_back(v);
+            if (!frozen[v] && !clause_db.eliminated.is_eliminated(v)) variables.push_back(v);
         }
+
+        // std::cout << "Total Variables " << variables.size() << std::endl;
 
         std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
             return database.numOccurences(v1) > database.numOccurences(v2);
@@ -190,7 +126,8 @@ public:
 
 private:
     bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
-        assert(!is_eliminated(variable));
+        assert(!clause_db.eliminated.is_eliminated(variable));
+
 
         if (pos.size() == 0 && neg.size() == 0) {
             return true;
@@ -210,9 +147,6 @@ private:
             } 
         }
         
-        for (Clause* c : neg) eliminated_clauses[variable].push_back(Cl {c->begin(), c->end()} );
-        for (Clause* c : pos) eliminated_clauses[variable].push_back(Cl {c->begin(), c->end()} );
-        
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, variable, resolvent)) {
                 uint16_t lbd = std::min({ (uint16_t)pc->getLBD(), (uint16_t)nc->getLBD(), (uint16_t)(resolvent.size()-1) });
@@ -222,21 +156,14 @@ private:
             }
         }
 
-        for (Clause* clause : pos) {
-            // std::cout << "c VE Removing " << *clause << std::endl;
-            database.remove(clause);
-        }
-        for (Clause* clause : neg) {
-            // std::cout << "c VE Removing " << *clause << std::endl;
-            database.remove(clause);
-        }
+        // std::cout << "Eliminating Variable " << variable << std::endl;
+        clause_db.eliminated.set_eliminated(variable, pos, neg);
+
+        for (Clause* clause : pos) database.remove(clause);
+        for (Clause* clause : neg) database.remove(clause);
 
         nEliminated++;        
         trail.setDecisionVar(variable, false);
-        eliminiated_variables.push_back(variable);
-        // std::cout << "c Eliminated variable " << variable << std::endl;
-
-        assert(eliminated_clauses[variable].size() > 0);
 
         return true;
     }

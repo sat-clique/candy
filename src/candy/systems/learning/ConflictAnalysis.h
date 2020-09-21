@@ -46,7 +46,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/Trail.h"
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/utils/CheckedCast.h"
 #include "candy/utils/CLIOptions.h"
 #include <vector>
 
@@ -59,10 +58,7 @@ private:
 
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
-
-public:
 	std::vector<Lit> pickback_clause;
-	bool got_pickback = false;
 
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
@@ -261,12 +257,13 @@ public:
 
 		if (pickback_limit > 0) {
 			pickback_clause.clear();
-			got_pickback = false;
+			bool got_pickback = false;
 			pickback_clause.insert(pickback_clause.end(), learnt_clause.begin(), learnt_clause.end());
 			for (unsigned int i = 1; i < std::min(pickback_limit, (unsigned int)learnt_clause.size()); ++i) {
 				pickback_clause[i] = pickback(learnt_clause[i]);
 				got_pickback |= (pickback_clause[i] != learnt_clause[i]);
-			}			
+			}
+			if (!got_pickback) pickback_clause.clear();
 		}
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
@@ -283,7 +280,7 @@ public:
 			}
 		}
 
-		clause_db.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level); 
+		clause_db.result.setLearntClause(learnt_clause, pickback_clause, involved_clauses, lbd, backtrack_level); 
 	}
 
 	/**************************************************************************************************

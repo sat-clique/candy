@@ -44,9 +44,12 @@ private:
     }
 
 public:
-    OccurenceList(ClauseDatabase& clause_db)
-     : clause_db(clause_db), occurrences()
-    { }
+    OccurenceList(ClauseDatabase& clause_db) : clause_db(clause_db), occurrences() {
+        occurrences.resize(clause_db.nVars());
+        for (Clause* clause : clause_db) {
+            if (!clause->isDeleted()) addToOccurenceLists(clause);
+        } 
+    }
 
     ~OccurenceList() { }
 
@@ -58,19 +61,6 @@ public:
 
     inline const_iterator end() const {
         return clause_db.end();
-    }
-
-    inline void init() {
-        if (clause_db.nVars() > occurrences.size()) {
-            occurrences.resize(clause_db.nVars());
-        }
-        for (Clause* clause : clause_db) {
-            if (!clause->isDeleted()) addToOccurenceLists(clause);
-        }
-    }
-
-    inline void finalize() {
-        occurrences.clear();
     }
 
     inline void cleanup() {
