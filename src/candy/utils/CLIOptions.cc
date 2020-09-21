@@ -46,7 +46,7 @@ namespace TestingOptions {
 }
 
 namespace LearningOptions {
-    BoolOption pickback("Learning", "pickback", "pick back", false);
+    IntOption pickback("Learning", "pickback", "On learning pick-back given amount of literals", 0, IntRange(0, INT16_MAX));
 }
 
 namespace SolverOptions {
