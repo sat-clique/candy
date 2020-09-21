@@ -54,6 +54,9 @@ namespace Candy {
 
 class ConflictAnalysis {
 private:
+	ClauseDatabase& clause_db; 
+    Trail& trail;
+
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
 
@@ -63,9 +66,7 @@ private:
     std::vector<Var> analyze_stack;
 	std::vector<Lit> minimized;
 
-    /* pointers to solver state */
-	ClauseDatabase& clause_db; 
-    Trail& trail;
+	unsigned int pickback_limit;
 
     inline uint64_t abstractLevel(Var x) const {
         return 1ull << (trail.level(x) % 64);
@@ -213,11 +214,12 @@ private:
 
 public:
 	ConflictAnalysis(ClauseDatabase& _clause_db, Trail& _trail) :
+		clause_db(_clause_db),
+		trail(_trail),
 		stamp(),
 		analyze_clear(),
 		analyze_stack(),
-		clause_db(_clause_db),
-		trail(_trail)
+		pickback_limit(LearningOptions::pickback+1)
 	{ }
 
 	~ConflictAnalysis() { }
@@ -229,13 +231,18 @@ public:
 	}
 
 	Lit pickback(Lit lit) {
-		const std::vector<BinaryWatcher>& bwl = clause_db.binary_watchers[~lit];
-		for (auto& bw : bwl) {
-			if (trail.value(bw.other) == l_False) {
-				return pickback(bw.other);
+		Lit next = lit;
+		Lit prev = lit;
+		do {
+			prev = next;
+			for (auto& watcher : clause_db.binary_watchers[~next]) {
+				if (trail.value(watcher.other) == l_False) {
+					next = watcher.other; // found next
+					break;
+				}
 			}
-		}
-		return lit;
+		} while (next != prev && next != lit);
+		return next;
 	}
 
 	void handle_conflict(Clause* confl) {
@@ -244,8 +251,7 @@ public:
 
 		analyze(confl);
 
-		if (LearningOptions::pickback)
-		for (unsigned int i = 1; i < learnt_clause.size(); ++i) {
+		for (unsigned int i = 1; i < std::min(pickback_limit, (unsigned int)learnt_clause.size()); ++i) {
 			learnt_clause[i] = pickback(learnt_clause[i]);
 		}
 

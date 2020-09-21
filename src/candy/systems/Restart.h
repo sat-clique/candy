@@ -57,8 +57,8 @@ class Restart {
     EMA ema_trail_narrow;
     EMA ema_trail_wide;
 
-    double force;//1.25
-    double block;//1.4
+    float force;//1.25
+    float block;//1.4
 
 public:
     Restart(ClauseDatabase& clause_db_, Trail& trail_)

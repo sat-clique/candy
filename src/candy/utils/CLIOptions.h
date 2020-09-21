@@ -47,7 +47,7 @@ namespace TestingOptions {
 }
 
 namespace LearningOptions {
-    extern BoolOption pickback;
+    extern IntOption pickback;
 }
 
 namespace SolverOptions {
