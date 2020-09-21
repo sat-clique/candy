@@ -214,29 +214,22 @@ private:
         unsigned int max = 0;
         double simplification_threshold_factor = 0.1;
         while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
-            // propagateAndMaterializeUnitClauses();
+            if (num > 100) occurence_list.cleanup();
+
             if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!subsumption.subsume()) clause_db.emptyClause();
 
-            if (subsumption.nTouched() > 0) occurence_list.cleanup();
-
-            // propagateAndMaterializeUnitClauses();
             if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!reduction.reduce()) clause_db.emptyClause();
 
-            if (reduction.nTouched() > 0) occurence_list.cleanup();
-
-            // propagateAndMaterializeUnitClauses();
             if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!elimination.eliminate()) clause_db.emptyClause();
-
-            if (elimination.nTouched() > 0) occurence_list.cleanup();
 
             if (verbosity > 1) {
                 std::cout << "c " << std::this_thread::get_id() << ": Removed " << subsumption.nDuplicates << " Duplicate Clauses" << std::endl;
