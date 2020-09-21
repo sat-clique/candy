@@ -8,10 +8,5 @@ add_library(utils OBJECT
     CLIOptions.h
     CandyBuilder.cc
     CandyBuilder.h
-    FastRand.h
-    FastRand.cc
-    MemUtils.h
-    StreamBuffer.h
-    CheckedCast.h)
-
+    StreamBuffer.h)
 

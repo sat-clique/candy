@@ -25,7 +25,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/mtl/Heap.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
-#include "candy/utils/CheckedCast.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 
 #include "BranchingDiversificationInterface.h"

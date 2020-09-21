@@ -82,9 +82,6 @@ option(CANDY_BUILD_SHARED_LIB "Build candy as a shared library (experimental)" O
 # Enable Link Time Optimization in Release Builds
 option(CANDY_ENABLE_LTO "Enable linking time optimization" ON)
 
-# Enable checked casts in debug mode
-option(CANDY_ENABLE_DEBUG_CHECKEDCASTS "Enable checked casts in debug mode" ON)
-
 # Disable RTTI and defines CANDY_HAS_NO_RTTI.
 # WARNING: Enable this only AFTER having thoroughly tested the code. In some places
 # RTTI is needed for testing (and only in places where it is also safe to use a
@@ -164,14 +161,6 @@ else()
       endif()
     endif()
   endif()
-
-  #if(CANDY_BUILD_SHARED_LIB)
-  #  add_definitions(-fPIC)
-  #endif()
-endif()
-
-if(CANDY_ENABLE_DEBUG_CHECKEDCASTS)
-  add_definitions(-D DEBUG_CHECK_CASTS)
 endif()
 
 if(CANDY_ENABLE_COVERAGE)

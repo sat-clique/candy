@@ -72,8 +72,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/Trail.h"
 #include "candy/core/CandySolverResult.h"
 
-#include "candy/utils/Attributes.h"
-#include "candy/utils/CheckedCast.h"
 #include "candy/utils/Memory.h"
 #include "candy/utils/Runtime.h"
 
@@ -159,11 +157,6 @@ protected:
     Restart restart;
     ReduceDB reduce;
 
-    OccurenceList augmented_database;
-    Subsumption subsumption;
-    VariableElimination elimination;
-    AsymmetricVariableReduction<TPropagate> reduction;
-
     unsigned int verbosity;
 
     CandySolverResult result;
@@ -212,7 +205,10 @@ private:
     void processClauseDatabase() {
         assert(trail.decisionLevel() == 0);
 
-        augmented_database.init();
+        OccurenceList occurence_list { clause_db };
+        Subsumption subsumption { occurence_list };
+        VariableElimination elimination { occurence_list, clause_db, trail };
+        AsymmetricVariableReduction<TPropagate> reduction { occurence_list, trail, propagator };
 
         unsigned int num = 1;
         unsigned int max = 0;
@@ -224,11 +220,7 @@ private:
 
             if (!subsumption.subsume()) clause_db.emptyClause();
 
-            if (subsumption.nTouched() > 0) {
-                augmented_database.cleanup();
-                if (verbosity > 1) std::cout << "c Removed " << subsumption.nDuplicates << " Duplicate Clauses" << std::endl;
-                if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
-            }
+            if (subsumption.nTouched() > 0) occurence_list.cleanup();
 
             // propagateAndMaterializeUnitClauses();
             if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
@@ -236,10 +228,7 @@ private:
 
             if (!reduction.reduce()) clause_db.emptyClause();
 
-            if (reduction.nTouched() > 0) {
-                augmented_database.cleanup();
-                if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
-            }
+            if (reduction.nTouched() > 0) occurence_list.cleanup();
 
             // propagateAndMaterializeUnitClauses();
             if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
@@ -247,16 +236,18 @@ private:
 
             if (!elimination.eliminate()) clause_db.emptyClause();
 
-            if (elimination.nTouched() > 0) {
-                augmented_database.cleanup();
-                if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
+            if (elimination.nTouched() > 0) occurence_list.cleanup();
+
+            if (verbosity > 1) {
+                std::cout << "c " << std::this_thread::get_id() << ": Removed " << subsumption.nDuplicates << " Duplicate Clauses" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
+                std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
             }
 
             num = subsumption.nTouched() + elimination.nTouched() + reduction.nTouched();
             max = std::max(num, max);
         } 
-
-        augmented_database.finalize();
     }
 
     void ipasir_callback(Clause* clause) {
@@ -283,11 +274,7 @@ Solver<TPropagate, TLearning, TBranching>::Solver() :
     branch(clause_db, trail),
     restart(clause_db, trail),
     reduce(clause_db, trail),
-    // simplification
-    augmented_database(clause_db),
-    subsumption(augmented_database),
-    elimination(augmented_database, trail), 
-    reduction(augmented_database, trail, propagator), 
+    // verbosity
     verbosity(SolverOptions::verb), 
     // result
     result(),
@@ -319,10 +306,10 @@ void Solver<TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, 
     clause_db.init(problem, allocator, lemma);
 
     for (Cl* clause : problem) {
-        if (!elimination.has_eliminated_variables()) break;
+        if (!clause_db.eliminated.has_eliminated_variables()) break;
         for (Lit lit : *clause) {
-            if (elimination.is_eliminated(lit.var())) {
-                std::vector<Cl> cor = elimination.undo_elimination(lit.var());
+            if (clause_db.eliminated.is_eliminated(lit.var())) {
+                std::vector<Cl> cor = clause_db.eliminated.undo(lit.var());
                 for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
             }
         }
@@ -357,8 +344,8 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                 propagator.attachClause(clause);
             }
 
-            if (conflict_analysis.got_pickback) {
-                Clause* clause = clause_db.createClause(conflict_analysis.pickback_clause.begin(), conflict_analysis.pickback_clause.end(), clause_db.result.lbd);
+            if (clause_db.result.pickback_clause.size() > 0) {
+                Clause* clause = clause_db.createClause(clause_db.result.pickback_clause.begin(), clause_db.result.pickback_clause.end(), clause_db.result.lbd);
                 if (clause->size() > 2) {
                     propagator.attachClause(clause);
                 }
@@ -420,10 +407,13 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
     propagateAndMaterializeUnitClauses();
 
     // prepare variable elimination for new set of assumptions
-    std::vector<Cl> correction_set = elimination.reset();
-    for (Cl cl : correction_set) {
-        Clause* clause = clause_db.createClause(cl.begin(), cl.end());
-        if (clause->size() > 2) propagator.attachClause(clause);
+    for (Lit lit : trail.assumptions) if (clause_db.eliminated.is_eliminated(lit.var())) {
+        std::vector<Cl> correction_set = clause_db.eliminated.undo(lit.var());
+        for (Cl cl : correction_set) {
+            Clause* clause = clause_db.createClause(cl.begin(), cl.end());
+            if (clause->size() > 2) propagator.attachClause(clause);
+            for (Lit lit : *clause) trail.setDecisionVar(lit.var(), true);
+        }
     }
     
     if (this->preprocessing_enabled) {
@@ -482,7 +472,18 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
         }
     }
     else if (status == l_True) {
-        elimination.propagate_eliminated_variables();
+        for (auto it = clause_db.eliminated.variables.rbegin(); it != clause_db.eliminated.variables.rend(); it++) {
+            //std::cout << "Setting Eliminated Variable " << *it << std::endl;
+            for (Cl& clause : clause_db.eliminated.clauses[*it]) {
+                if (!trail.satisfies(clause.begin(), clause.end())) {
+                    for (Lit lit : clause) { 
+                        if (trail.value(lit) == l_Undef) {
+                            trail.set_value(lit);
+                        }
+                    }
+                }
+            }
+        }
         result.setModel(trail);
     }
     

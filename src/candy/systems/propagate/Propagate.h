@@ -45,7 +45,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
-#include "candy/utils/CheckedCast.h"
 
 #include <array>
 
