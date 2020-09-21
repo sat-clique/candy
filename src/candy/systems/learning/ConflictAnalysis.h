@@ -60,6 +60,10 @@ private:
 	std::vector<Lit> learnt_clause;
 	std::vector<Clause*> involved_clauses;
 
+public:
+	std::vector<Lit> pickback_clause;
+	bool got_pickback = false;
+
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
     std::vector<Var> analyze_clear;
@@ -232,16 +236,20 @@ public:
 
 	Lit pickback(Lit lit) {
 		Lit next = lit;
-		Lit prev = lit;
+		stamp.clear();
+		//std::cout << "pickback from " << lit;
 		do {
-			prev = next;
+			lit = next;
+			stamp.set(lit.var());
 			for (auto& watcher : clause_db.binary_watchers[~next]) {
-				if (trail.value(watcher.other) == l_False) {
+				//if (trail.value(watcher.other) == l_False) {
 					next = watcher.other; // found next
 					break;
-				}
+				//}
 			}
-		} while (next != prev && next != lit);
+			//if (next != lit) std::cout << " to " << next;
+		} while (next != lit && !stamp[next.var()]);
+		//std::cout << std::endl;
 		return next;
 	}
 
@@ -251,8 +259,14 @@ public:
 
 		analyze(confl);
 
-		for (unsigned int i = 1; i < std::min(pickback_limit, (unsigned int)learnt_clause.size()); ++i) {
-			learnt_clause[i] = pickback(learnt_clause[i]);
+		if (pickback_limit > 0) {
+			pickback_clause.clear();
+			got_pickback = false;
+			pickback_clause.insert(pickback_clause.end(), learnt_clause.begin(), learnt_clause.end());
+			for (unsigned int i = 1; i < std::min(pickback_limit, (unsigned int)learnt_clause.size()); ++i) {
+				pickback_clause[i] = pickback(learnt_clause[i]);
+				got_pickback |= (pickback_clause[i] != learnt_clause[i]);
+			}			
 		}
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());

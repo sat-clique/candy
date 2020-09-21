@@ -357,6 +357,13 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                 propagator.attachClause(clause);
             }
 
+            if (conflict_analysis.got_pickback) {
+                Clause* clause = clause_db.createClause(conflict_analysis.pickback_clause.begin(), conflict_analysis.pickback_clause.end(), clause_db.result.lbd);
+                if (clause->size() > 2) {
+                    propagator.attachClause(clause);
+                }
+            }
+
             trail.backtrack(clause_db.result.backtrack_level);
             branch.process_conflict();
 
