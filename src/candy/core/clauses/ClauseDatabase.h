@@ -18,6 +18,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
  **************************************************************************************************/
 
 #include <vector>
+#include <stack>
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <set>
 
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseAllocator.h"
@@ -33,21 +38,19 @@ namespace Candy {
 
 struct AnalysisResult {
 	AnalysisResult() : 
-		nConflicts(0), learnt_clause(), pickback_clause(), involved_clauses(), lbd(0), backtrack_level(0)
+		nConflicts(0), learnt_clause(), involved_clauses(), lbd(0), backtrack_level(0)
 	{ }
 
 	uint64_t nConflicts;
 	std::vector<Lit> learnt_clause;
-	std::vector<Lit> pickback_clause;
 	std::vector<Clause*> involved_clauses;
 	unsigned int lbd;
     unsigned int backtrack_level;
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Lit>& pickback_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
         assert(lbd_ <= learnt_clause_.size());
         nConflicts++;
         learnt_clause.swap(learnt_clause_);
-        pickback_clause.swap(pickback_clause_);
         involved_clauses.swap(involved_clauses_); 
         lbd = lbd_;
         backtrack_level = backtrack_level_;
@@ -93,7 +96,7 @@ struct BinaryWatcher {
     Lit other;
 
     BinaryWatcher(Clause* _clause, Lit _other)
-        : clause(_clause), other(_other) { }
+     : clause(_clause), other(_other) { }
 
 };
 
@@ -110,6 +113,7 @@ private:
 public:
 
     std::vector<std::vector<BinaryWatcher>> binary_watchers;
+    std::vector<Lit> equiv;
     
     /* analysis result is stored here */
 	AnalysisResult result;
@@ -118,13 +122,73 @@ public:
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
         certificate(SolverOptions::opt_certified_file), 
-        binary_watchers(), result(), eliminated()
+        binary_watchers(), equiv(), result(), eliminated()
     { }
 
     ~ClauseDatabase() { }
 
+	void greedy_cycle(Lit root) {
+        // std::stringbuf buf;
+        // std::ostream os(&buf);
+        static Stamp<uint8_t> b(2*nVars());
+        if (b[root]) return;
+        b.set(root);
+		std::vector<uint8_t> mark(2*nVars(), 0);
+		std::vector<Lit> parent(2*nVars(), lit_Undef);
+		std::stack<Lit> stack;
+		stack.push(root);
+		mark[root] = 2;
+		while (!stack.empty()) {
+			Lit lit = stack.top(); stack.pop();
+			for (BinaryWatcher& child : binary_watchers[lit]) {
+				if (mark[child.other] == 0) {
+					mark[child.other] = 1;
+					stack.push(child.other);
+					parent[child.other] = lit;
+                    // os << *child.clause << std::endl;
+				}
+				else if (mark[child.other] == 2) {
+                    // std::cout << buf.str();
+                    // std::cout << "found cycle on root " << root << " with clause " << *child.clause << ": ";
+                    // for (Lit iter = parent[lit.var()]; iter != lit_Undef && mark[iter] != 2; iter = parent[iter.var()]) std::cout << " " << iter << " <-> " << lit;
+                    // std::cout << std::endl;
+                    Lit iter = parent[lit];
+                    while (iter != lit_Undef) {
+                        set_eq(iter, lit);
+						mark[iter] = 2;
+                        iter = parent[iter];
+                    }
+				}
+			}
+		}
+	}
+
+    void set_eq(Lit lit1, Lit lit2) {
+        Lit rep1 = get_eq(lit1);
+        Lit rep2 = get_eq(lit2);
+        if (rep1 == ~rep2) {
+            // std::cout << "!conflicting equivalence " << rep1 << " <-> " << rep2 << std::endl;
+            assert(rep1 != ~rep2);
+            this->emptyClause();
+        }
+        // if (rep1 != rep2) std::cout << " setting " << rep1.var() << " to " << (rep1.sign() ? ~rep2 : rep2) << std::endl;
+        equiv[rep1.var()] = rep1.sign() ? ~rep2 : rep2;
+    }
+
+    Lit get_eq(Lit lit) {
+        return lit.sign() ? ~get_eq(lit.var()) : get_eq(lit.var());
+    }
+
+    Lit get_eq(Var v) {
+        Lit rep = equiv[v];
+        if (rep.var() != v) rep = rep.sign() ? ~get_eq(rep.var()) : get_eq(rep.var());
+        equiv[v] = rep;
+        return rep;
+    }
+
     void clear() {
         binary_watchers.clear();
+        equiv.clear();
         allocator.clear();
         clauses.clear();
         variables = 0;
@@ -138,9 +202,13 @@ public:
 
     void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
         if (variables < problem.nVars()) {
+            binary_watchers.resize(problem.nVars()*2+2);
+            eliminated.clauses.resize(problem.nVars()+1);
+            equiv.resize(problem.nVars()+1);
+            for (unsigned int i = variables; i < problem.nVars(); i++) {
+                equiv[i] = Lit(i);
+            }
             variables = problem.nVars();
-            binary_watchers.resize(variables*2+2);
-            eliminated.clauses.resize(variables+1);
         }
         for (Cl* import : problem) {
             createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
