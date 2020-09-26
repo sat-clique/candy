@@ -337,13 +337,6 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                 propagator.attachClause(clause);
             }
 
-            if (clause_db.result.pickback_clause.size() > 0) {
-                Clause* clause = clause_db.createClause(clause_db.result.pickback_clause.begin(), clause_db.result.pickback_clause.end(), clause_db.result.lbd);
-                if (clause->size() > 2) {
-                    propagator.attachClause(clause);
-                }
-            }
-
             trail.backtrack(clause_db.result.backtrack_level);
             branch.process_conflict();
 
@@ -375,6 +368,12 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             }
             
             if (next == lit_Undef) {
+                if (LearningOptions::pickback > 0 && clause_db.result.learnt_clause.size() > 0) {
+                    Lit pb = conflict_analysis.pickback(clause_db.result.learnt_clause[0]);
+                    if (trail.value(pb) == l_Undef) {
+                        next = pb;
+                    }
+                }
                 // New variable decision:
                 next = branch.pickBranchLit();
                 if (next == lit_Undef) { // Model found

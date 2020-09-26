@@ -47,6 +47,7 @@ namespace TestingOptions {
 
 namespace LearningOptions {
     IntOption pickback("Learning", "pickback", "On learning pick-back given amount of literals", 0, IntRange(0, INT16_MAX));
+    IntOption equiv("Learning", "equiv", "Explicit greedy handling of equivalences", 0, IntRange(0, INT16_MAX));
 }
 
 namespace SolverOptions {

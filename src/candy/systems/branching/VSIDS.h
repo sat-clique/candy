@@ -242,8 +242,7 @@ public:
     }
 
     // selects the next literal to branch on
-    inline Lit pickBranchLit()
-    {
+    inline Lit pickBranchLit() {
         Var next = var_Undef;
 
         // Activity based decision:

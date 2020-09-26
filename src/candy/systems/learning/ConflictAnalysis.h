@@ -178,8 +178,12 @@ private:
 	        assert(confl != nullptr); // (otherwise should be UIP)
 	        involved_clauses.push_back((Clause*)confl);
 
+			//std::cout << *confl << std::endl;
 	        for (Lit lit : *confl) {
-				assert((trail.value(lit) == l_True) == (lit == asserted_literal));
+				//std::cout << "lit " << lit << " asserted literal " << asserted_literal << std::endl;
+				assert((trail.value(lit) != l_True) || (lit == asserted_literal));
+				assert((trail.value(lit) == l_True) || (lit != asserted_literal));
+				// assert((trail.value(lit) == l_True) == (lit == asserted_literal));
 				Var v = lit.var();
 				if (lit != asserted_literal && !stamp[v]) {
 					unsigned int level = trail.level(v);
@@ -218,8 +222,7 @@ public:
 		trail(_trail),
 		stamp(),
 		analyze_clear(),
-		analyze_stack(),
-		pickback_limit(LearningOptions::pickback+1)
+		analyze_stack()
 	{ }
 
 	~ConflictAnalysis() { }
@@ -233,19 +236,21 @@ public:
 	Lit pickback(Lit lit) {
 		Lit next = lit;
 		stamp.clear();
-		//std::cout << "pickback from " << lit;
+		std::stack<Lit> stack;
+		// std::cout << "pickback from " << lit;
 		do {
 			lit = next;
 			stamp.set(lit.var());
+			unsigned int length = 0;
 			for (auto& watcher : clause_db.binary_watchers[~next]) {
-				//if (trail.value(watcher.other) == l_False) {
-					next = watcher.other; // found next
+				if (clause_db.binary_watchers[~watcher.other].size() > length) {
+					next = ~watcher.other;
+					// std::cout << " to " << next << " (due to " << *watcher.clause << ") ";
 					break;
-				//}
+				}
 			}
-			//if (next != lit) std::cout << " to " << next;
 		} while (next != lit && !stamp[next.var()]);
-		//std::cout << std::endl;
+		// std::cout << std::endl;
 		return next;
 	}
 
@@ -253,20 +258,22 @@ public:
 		learnt_clause.clear();
 		involved_clauses.clear();
 
+		assert(confl != nullptr);
 		analyze(confl);
 
-		if (pickback_limit > 0) {
-			pickback_clause.clear();
-			bool got_pickback = false;
-			pickback_clause.insert(pickback_clause.end(), learnt_clause.begin(), learnt_clause.end());
-			for (unsigned int i = 1; i < std::min(pickback_limit, (unsigned int)learnt_clause.size()); ++i) {
-				pickback_clause[i] = pickback(learnt_clause[i]);
-				got_pickback |= (pickback_clause[i] != learnt_clause[i]);
-			}
-			if (!got_pickback) pickback_clause.clear();
+		if (LearningOptions::equiv > 0 && learnt_clause.size() > 1) {
+			clause_db.greedy_cycle(learnt_clause[0]);
+			learnt_clause[0] = clause_db.get_eq(learnt_clause[0]);
 		}
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
+		
+		// std::sort(learnt_clause.begin(), learnt_clause.end(), [this] (Lit a, Lit b) { return trail.level(a.var()) > trail.level(b.var()); });
+		// unsigned int pos = 1;
+		// if (learnt_clause.size() > pos && trail.level(learnt_clause[0].var()) == trail.level(learnt_clause[pos].var())) {
+		// 	std::swap(learnt_clause[1], learnt_clause[pos++]);
+		// }
+		// unsigned int backtrack_level = learnt_clause.size() > 1 ? trail.level(learnt_clause[1].var()) : 0;
         
 		unsigned int backtrack_level = 0;
 		if (learnt_clause.size() > 1) {
@@ -280,7 +287,7 @@ public:
 			}
 		}
 
-		clause_db.result.setLearntClause(learnt_clause, pickback_clause, involved_clauses, lbd, backtrack_level); 
+		clause_db.result.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level); 
 	}
 
 	/**************************************************************************************************

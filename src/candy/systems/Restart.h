@@ -25,7 +25,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-//ExponentiallyMovingAverage
+//Exponential Moving Average (EMA)
+//Implementation of the "robust initialization" like in Cadical by Armin Biere
 class EMA {
     double value;
     float alpha, beta;
