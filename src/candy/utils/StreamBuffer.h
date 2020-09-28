@@ -25,8 +25,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <archive.h>
 #include <archive_entry.h>
 
-static const int buffer_size = 1024*1024;
-
 class ParserException : public std::exception {
 public:
     explicit ParserException(const std::string& what) noexcept : m_what(what) { }
@@ -40,35 +38,40 @@ private:
 
 class StreamBuffer {
     struct archive* file;
+    
+    unsigned int buffer_size;
     char* buffer;
-    int pos;
-    int size;
-    int offset;
+    
+    unsigned int pos; // current read positition
+    unsigned int end; // 1+last valid position
+    bool end_of_file; // true when last chunk of file was read to buffer
 
     void check_refill_buffer() {
-        if (pos >= size - offset) {
+        if (pos >= end && !end_of_file) {
             pos = 0;
-            if (offset > 0) {
-                std::copy(&buffer[size - offset], &buffer[size], buffer);
+            if (end > 0 && end < buffer_size) {
+                std::copy(buffer + end, buffer + buffer_size, buffer);
+                end = buffer_size - end;
+            } else {
+                end = 0;
             }
-            size = offset + archive_read_data(file, buffer + offset, buffer_size - offset);
-            offset = 0;
-            if (size < buffer_size) {
-                return;
-            }
-            // make sure buffer ends with newline (assert: does not cut a number)
-            while (buffer[size - offset - 1] != '\n' && offset < size) {
-                offset++;
+            end += archive_read_data(file, buffer + end, buffer_size - end);
+            if (end < buffer_size) {
+                end_of_file = true;
+            } else {
+                while (!isspace(buffer[end-1])) {// align buffer with word-end
+                    end--;
+                }
             }
         }
     }
 
 public:
-    StreamBuffer(const char* filename) : pos(0), size(0), offset(0) {
+    StreamBuffer(const char* filename) : buffer_size(16384), pos(0), end(0), end_of_file(false) {
         file = archive_read_new();
         archive_read_support_filter_all(file);
         archive_read_support_format_raw(file);
-        int r = archive_read_open_filename(file, filename, 16384);
+        int r = archive_read_open_filename(file, filename, buffer_size);
         if (r != ARCHIVE_OK) {
             throw ParserException(std::string("Error opening file."));
         }
@@ -110,6 +113,7 @@ public:
     }
 
     int readInteger() {
+        skipWhitespace();
         if (eof()) throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
 
         char* str = buffer + pos;
@@ -136,7 +140,7 @@ public:
     }
 
     int operator *() const {
-        return (pos >= size - offset) ? EOF : buffer[pos];
+        return eof() ? EOF : buffer[pos];
     }
 
     void operator ++() {
@@ -148,8 +152,8 @@ public:
         check_refill_buffer();
     }
 
-    bool eof() {
-        return pos >= size - offset;
+    bool eof() const {
+        return (pos >= end) && end_of_file;
     }
 
 };
