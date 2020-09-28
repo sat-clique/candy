@@ -42,11 +42,8 @@ void CNFProblem::printDIMACS() const {
 void CNFProblem::readDimacsFromFile(const char* filename) {
     Cl lits;
     StreamBuffer in(filename);
+    in.skipWhitespace();
     while (!in.eof()) {
-        in.skipWhitespace();
-        if (in.eof()) {
-            break;
-        }
         if (*in == 'p') {
             in.skipString("p cnf");
             int headerVars = in.readInteger();
@@ -66,6 +63,7 @@ void CNFProblem::readDimacsFromFile(const char* filename) {
             }
             readClause(lits.begin(), lits.end());
         }
+        in.skipWhitespace();
     }
 }
 
