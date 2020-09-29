@@ -206,9 +206,9 @@ private:
         assert(trail.decisionLevel() == 0);
 
         OccurenceList occurence_list { clause_db };
-        Subsumption subsumption { occurence_list };
+        Subsumption subsumption { clause_db, occurence_list };
         VariableElimination elimination { occurence_list, clause_db, trail };
-        AsymmetricVariableReduction<TPropagate> reduction { occurence_list, trail, propagator };
+        AsymmetricVariableReduction<TPropagate> reduction { clause_db, occurence_list, trail, propagator };
 
         unsigned int num = 1;
         unsigned int max = 0;

@@ -30,6 +30,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CLIOptions.h"
+#include "candy/mtl/State.h"
 
 #ifndef CANDY_CLAUSE_DATABASE
 #define CANDY_CLAUSE_DATABASE
@@ -130,32 +131,36 @@ public:
 	void greedy_cycle(Lit root) {
         // std::stringbuf buf;
         // std::ostream os(&buf);
-        static Stamp<uint8_t> b(2*nVars());
-        if (b[root]) return;
-        b.set(root);
-		std::vector<uint8_t> mark(2*nVars(), 0);
+        static Stamp<uint8_t> block(2*nVars());
+        if (block[root]) return;
+        block.set(root);
+		static State<uint8_t, 3> mark(2*nVars());
+        mark.clear();
 		std::vector<Lit> parent(2*nVars(), lit_Undef);
 		std::stack<Lit> stack;
 		stack.push(root);
-		mark[root] = 2;
+		mark.set(root, 2);
 		while (!stack.empty()) {
 			Lit lit = stack.top(); stack.pop();
-			for (BinaryWatcher& child : binary_watchers[lit]) {
-				if (mark[child.other] == 0) {
-					mark[child.other] = 1;
-					stack.push(child.other);
-					parent[child.other] = lit;
+			for (BinaryWatcher& watcher : binary_watchers[lit]) {
+                Lit impl = watcher.other;
+				if (mark[impl] == 0) {
+					parent[impl] = lit;
+					mark.set(impl, 1);
+					stack.push(impl);
                     // os << *child.clause << std::endl;
 				}
-				else if (mark[child.other] == 2) {
+				else if (mark[impl] == 2) {
                     // std::cout << buf.str();
                     // std::cout << "found cycle on root " << root << " with clause " << *child.clause << ": ";
                     // for (Lit iter = parent[lit.var()]; iter != lit_Undef && mark[iter] != 2; iter = parent[iter.var()]) std::cout << " " << iter << " <-> " << lit;
                     // std::cout << std::endl;
-                    Lit iter = parent[lit];
-                    while (iter != lit_Undef) {
-                        set_eq(iter, lit);
-						mark[iter] = 2;
+					parent[impl] = lit;
+                    Lit iter = impl;
+                    while (mark[parent[iter]] != 2) {
+                        block.set(iter);
+                        set_eq(parent[iter], impl);
+						mark.set(iter, 2);
                         iter = parent[iter];
                     }
 				}
@@ -166,12 +171,6 @@ public:
     void set_eq(Lit lit1, Lit lit2) {
         Lit rep1 = get_eq(lit1);
         Lit rep2 = get_eq(lit2);
-        if (rep1 == ~rep2) {
-            // std::cout << "!conflicting equivalence " << rep1 << " <-> " << rep2 << std::endl;
-            assert(rep1 != ~rep2);
-            this->emptyClause();
-        }
-        // if (rep1 != rep2) std::cout << " setting " << rep1.var() << " to " << (rep1.sign() ? ~rep2 : rep2) << std::endl;
         equiv[rep1.var()] = rep1.sign() ? ~rep2 : rep2;
     }
 
@@ -251,7 +250,7 @@ public:
         return clauses.size();
     }
 
-    inline const Clause* operator [](int i) const {
+    inline Clause* operator [](int i) const {
         return clauses[i];
     }
 
