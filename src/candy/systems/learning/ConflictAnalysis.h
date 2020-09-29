@@ -261,7 +261,7 @@ public:
 		assert(confl != nullptr);
 		analyze(confl);
 
-		if (LearningOptions::equiv > 0 && learnt_clause.size() > 1) {
+		if (LearningOptions::equiv > 0 && learnt_clause.size() > 2) {
 			clause_db.greedy_cycle(learnt_clause[0]);
 			learnt_clause[0] = clause_db.get_eq(learnt_clause[0]);
 		}

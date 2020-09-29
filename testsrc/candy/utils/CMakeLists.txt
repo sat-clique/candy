@@ -1,6 +1,7 @@
 add_executable(utils_tests
     CNFProblemTests.cc
     StampTests.cc
+    StateTests.cc
     ${CANDY_OBJECTS}
     $<TARGET_OBJECTS:testutils>)
 

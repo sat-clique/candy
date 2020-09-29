@@ -33,34 +33,22 @@ namespace Candy {
 
 class OccurenceList {
 private:
-    ClauseDatabase& clause_db;
-
     std::vector<std::vector<Clause*>> occurrences;
 
-    inline void addToOccurenceLists(Clause* clause) {
-        for (Lit lit : *clause) {
-            occurrences[lit.var()].push_back(clause);
-        }
-    }
-
 public:
-    OccurenceList(ClauseDatabase& clause_db) : clause_db(clause_db), occurrences() {
+    OccurenceList(ClauseDatabase& clause_db) : occurrences() {
         occurrences.resize(clause_db.nVars());
         for (Clause* clause : clause_db) {
-            if (!clause->isDeleted()) addToOccurenceLists(clause);
+            if (!clause->isDeleted()) add(clause);
         } 
     }
 
     ~OccurenceList() { }
 
-    typedef ClauseDatabase::const_iterator const_iterator;
-
-    inline const_iterator begin() const {
-        return clause_db.begin();
-    }
-
-    inline const_iterator end() const {
-        return clause_db.end();
+    inline void add(Clause* clause) {
+        for (Lit lit : *clause) {
+            occurrences[lit.var()].push_back(clause);
+        }
     }
 
     inline void cleanup() {
@@ -71,34 +59,16 @@ public:
         }
     }
 
-    inline size_t numOccurences(Var v) {
+    inline size_t count(Var v) {
         return occurrences[v].size();
     }
 
-    inline std::vector<Clause*> copyOccurences(Var v) {
+    inline std::vector<Clause*> copy(Var v) {
         return std::vector<Clause*>(occurrences[v].begin(), occurrences[v].end());
     }
 
-    inline std::vector<Clause*>& refOccurences(Var v) {
+    inline std::vector<Clause*>& operator [](Var v) {
         return occurrences[v];
-    }
-
-    template<typename Iterator>
-    inline Clause* create(Iterator begin, Iterator end, unsigned int lbd = 0) {
-        assert(std::distance(begin, end) > 0);
-        Clause* clause = clause_db.createClause(begin, end, lbd);
-        addToOccurenceLists(clause);
-        return clause;
-    }
-
-    inline void remove(Clause* clause) {
-        clause_db.removeClause(clause);
-    }
-
-    inline void strengthen(Clause* clause, Lit lit) {
-        assert(clause->size() > 1);
-        Clause* new_clause = clause_db.strengthenClause(clause, lit);
-        addToOccurenceLists(new_clause);
     }
 
 };

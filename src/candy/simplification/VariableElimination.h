@@ -52,7 +52,7 @@ namespace Candy {
 
 class VariableElimination {
 private:
-    OccurenceList& database;
+    OccurenceList& occurences;
     ClauseDatabase& clause_db;
     Trail& trail;
 
@@ -67,8 +67,8 @@ private:
 public:
     unsigned int nEliminated;
 
-    VariableElimination(OccurenceList& database_, ClauseDatabase& clause_db_, Trail& trail_) : 
-        database(database_),
+    VariableElimination(OccurenceList& occurences_, ClauseDatabase& clause_db_, Trail& trail_) : 
+        occurences(occurences_),
         clause_db(clause_db_),
         trail(trail_),
         frozen(),
@@ -99,13 +99,13 @@ public:
         // std::cout << "Total Variables " << variables.size() << std::endl;
 
         std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
-            return database.numOccurences(v1) > database.numOccurences(v2);
+            return occurences.count(v1) > occurences.count(v2);
         });
 
         for (Var variable : variables) {
             if (trail.value(variable) == l_Undef) {
                 std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
-                for (Clause* cl : database.refOccurences(variable)) {
+                for (Clause* cl : occurences[variable]) {
                     if (!cl->isDeleted()) {
                         if (cl->contains(Lit(variable))) {
                             pos.push_back(cl);
@@ -127,7 +127,6 @@ public:
 private:
     bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
         assert(!clause_db.eliminated.is_eliminated(variable));
-
 
         if (pos.size() == 0 && neg.size() == 0) {
             return true;
@@ -151,7 +150,8 @@ private:
             if (merge(*pc, *nc, variable, resolvent)) {
                 uint16_t lbd = std::min({ (uint16_t)pc->getLBD(), (uint16_t)nc->getLBD(), (uint16_t)(resolvent.size()-1) });
                 // std::cout << "c Creating resolvent " << resolvent << std::endl;
-                database.create(resolvent.begin(), resolvent.end(), lbd);
+                Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
+                occurences.add(clause);
                 assert(resolvent.size() > 0);
             }
         }
@@ -159,8 +159,8 @@ private:
         // std::cout << "Eliminating Variable " << variable << std::endl;
         clause_db.eliminated.set_eliminated(variable, pos, neg);
 
-        for (Clause* clause : pos) database.remove(clause);
-        for (Clause* clause : neg) database.remove(clause);
+        for (Clause* clause : pos) clause_db.removeClause(clause);
+        for (Clause* clause : neg) clause_db.removeClause(clause);
 
         nEliminated++;        
         trail.setDecisionVar(variable, false);

@@ -52,15 +52,16 @@ namespace Candy {
 template <class TPropagate> 
 class AsymmetricVariableReduction {
 private:
-    OccurenceList& database;
+    ClauseDatabase& clause_db;
+    OccurenceList& occurences;
     Trail& trail;
     TPropagate& propagator;
 
     const bool active;
     
     bool reduce(Var variable) {
-        const std::vector<Clause*> occurences = database.copyOccurences(variable);
-        for (Clause* clause : occurences) {
+        const std::vector<Clause*> list = occurences.copy(variable);
+        for (Clause* clause : list) {
             if (!clause->isDeleted() && !trail.satisfies(clause->begin(), clause->end())) {
                 trail.newDecisionLevel();
 
@@ -80,7 +81,8 @@ private:
                 if (conflict) {
                     nStrengthened++;
                     if (clause->size() > 1) {
-                        database.strengthen(clause, l);
+                        Clause* stren = clause_db.strengthenClause(clause, l);
+                        occurences.add(stren);
                     }
                     else {
                         return false;
@@ -94,8 +96,9 @@ private:
 public:
     unsigned int nStrengthened;
 
-    AsymmetricVariableReduction(OccurenceList& database_, Trail& trail_, TPropagate& propagator_) : 
-        database(database_),
+    AsymmetricVariableReduction(ClauseDatabase& clause_db_, OccurenceList& occurences_, Trail& trail_, TPropagate& propagator_) : 
+        clause_db(clause_db_), 
+        occurences(occurences_),
         trail(trail_),
         propagator(propagator_),
         active(VariableEliminationOptions::opt_use_asymm), 
