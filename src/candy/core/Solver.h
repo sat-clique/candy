@@ -374,6 +374,8 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                         next = pb;
                     }
                 }
+            }
+            if (next == lit_Undef) {
                 // New variable decision:
                 next = branch.pickBranchLit();
                 if (next == lit_Undef) { // Model found
