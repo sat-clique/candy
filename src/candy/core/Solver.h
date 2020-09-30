@@ -372,6 +372,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                     Lit pb = conflict_analysis.pickback(clause_db.result.learnt_clause[0]);
                     if (trail.value(pb) == l_Undef) {
                         next = pb;
+                        clause_db.result.learnt_clause.clear();
                     }
                 }
             }
