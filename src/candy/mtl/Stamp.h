@@ -34,7 +34,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <stddef.h>
 #include <assert.h>
 
-template <class T> class Stamp {
+template <typename T> 
+class Stamp {
 private:
 	std::vector<T> stamped;
 	T stamp;
