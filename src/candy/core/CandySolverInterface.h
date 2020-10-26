@@ -58,6 +58,8 @@ public:
 	virtual void setTermCallback(void* state, int (*termCallback)(void* state)) = 0;
 	virtual void setLearntCallback(void* state, int max_length, void (*learntCallback)(void* state, int* clause)) = 0;
 
+	virtual void dumpBinWatchStats(char* prefix) = 0;
+
 };
 
 }
