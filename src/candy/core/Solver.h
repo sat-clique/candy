@@ -146,6 +146,12 @@ public:
         this->learntCallback = learntCallback;
     }
 
+    void dumpBinWatchStats(char* prefix) {
+        for (std::vector<BinaryWatcher>& list : clause_db.binary_watchers) {
+            std::cout << prefix << list.size() << std::endl;
+        }
+    }
+
 protected:
     ClauseDatabase clause_db;
     Trail trail;
@@ -486,6 +492,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
 
     return status;
 }
+
 
 template<class TPropagate, class TLearning, class TBranching>
 void Solver<TPropagate, TLearning, TBranching>::printStats() {

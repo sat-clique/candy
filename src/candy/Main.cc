@@ -178,11 +178,13 @@ int main(int argc, char** argv) {
         solvers.push_back(solver); 
 
         solver->init(problem);
+        solver->dumpBinWatchStats("wb ");
         solver->setTermCallback(solver, interrupted_callback);
 
         installSignalHandlers(true);
         result = solver->solve();
         installSignalHandlers(false);
+        solver->dumpBinWatchStats("wa ");
     }
     else {
         if (ParallelOptions::opt_static_database) {
