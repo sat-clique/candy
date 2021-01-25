@@ -114,7 +114,7 @@ public:
 
     int readInteger() {
         skipWhitespace();
-        if (eof()) throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
+        if (eof()) return 0; //throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
 
         char* str = buffer + pos;
         char* end = NULL;
@@ -135,7 +135,7 @@ public:
             return static_cast<int>(number);
         }
         else {
-            throw ParserException(std::string("PARSE ERROR! Unexpected end of file while reading ") + std::string(1, buffer[pos]));
+            throw ParserException(std::string("PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
         }
     }
 
