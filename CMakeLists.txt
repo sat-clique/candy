@@ -271,7 +271,6 @@ add_subdirectory(src)
 set(CANDY_OBJECTS
   $<TARGET_OBJECTS:ipasir>
   $<TARGET_OBJECTS:core>
-  $<TARGET_OBJECTS:systems>
   $<TARGET_OBJECTS:simplification>
   $<TARGET_OBJECTS:utils>)
 

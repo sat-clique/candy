@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+Candy -- Copyright (c) 2015-2020, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,52 +17,18 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
+#ifndef LEARNING_INTERFACE_H_
+#define LEARNING_INTERFACE_H_
+
 #include "candy/core/SolverTypes.h"
-#include "candy/core/CNFProblem.h"
-#include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/core/Trail.h"
-#include "candy/core/systems/Propagation2WL.h"
-
-#ifndef CANDY_DRAT_CHECKER
-#define CANDY_DRAT_CHECKER
-
-typedef struct gzFile_s *gzFile;
 
 namespace Candy {
 
-class DRATChecker {
-
-private:
-    CNFProblem& problem;
-
-    ClauseDatabase clause_db;
-    Trail trail;
-    Propagation2WL propagation;
-
-    std::vector<std::vector<Clause*>> occurences;
-
-    unsigned int num_deleted;
-
+class LearningInterface {
 public:
-    DRATChecker(class CNFProblem& problem_);
-    ~DRATChecker();
-
-    bool check_proof(const char* filename);
-    long proof_size(const char* filename);
-
-private:
-    bool check_proof(gzFile input_stream);
-
-    template <typename Iterator>
-    bool check_clause_add(Iterator begin, Iterator end);
-
-    template <typename Iterator>
-    bool check_asymm(Iterator begin, Iterator end, Lit lit);
-
-    template <typename Iterator>
-    bool check_clause_remove(Iterator begin, Iterator end);
-
-    void cleanup_deleted();
+    virtual void init(unsigned int nVars) = 0;
+    virtual void handle_conflict(Clause* confl) = 0;
+    virtual std::vector<Lit> analyzeFinal(Lit p) = 0;
 
 };
 

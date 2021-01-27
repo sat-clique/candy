@@ -38,8 +38,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_CONFLICTANALYSIS_H_
-#define SRC_CANDY_CORE_CONFLICTANALYSIS_H_
+#ifndef SRC_CANDY_CORE_LEARNING1UIP_H_
+#define SRC_CANDY_CORE_LEARNING1UIP_H_
 
 #include "candy/mtl/Stamp.h"
 #include "candy/core/SolverTypes.h"
@@ -47,11 +47,12 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/utils/CLIOptions.h"
+#include "candy/core/systems/LearningInterface.h"
 #include <vector>
 
 namespace Candy {
 
-class ConflictAnalysis {
+class Learning1UIP : public LearningInterface {
 private:
 	ClauseDatabase& clause_db; 
     Trail& trail;
@@ -215,7 +216,7 @@ private:
 	}
 
 public:
-	ConflictAnalysis(ClauseDatabase& _clause_db, Trail& _trail) :
+	Learning1UIP(ClauseDatabase& _clause_db, Trail& _trail) :
 		clause_db(_clause_db),
 		trail(_trail),
 		stamp(),
@@ -223,9 +224,9 @@ public:
 		analyze_stack()
 	{ }
 
-	~ConflictAnalysis() { }
+	~Learning1UIP() { }
 
-	void init(unsigned int nVars) {
+	void init(unsigned int nVars) override {
 		if (nVars >= stamp.size()) {
 			stamp.grow(nVars);
 		}
@@ -252,7 +253,7 @@ public:
 		return next;
 	}
 
-	void handle_conflict(Clause* confl) {
+	void handle_conflict(Clause* confl) override {
 		learnt_clause.clear();
 		involved_clauses.clear();
 
@@ -296,7 +297,7 @@ public:
 	 *  Calculates and returns the set of assumptions that led to the assignment of 'p'.
 	 * 
 	 |*************************************************************************************************/
-	std::vector<Lit> analyzeFinal(Lit p) { 
+	std::vector<Lit> analyzeFinal(Lit p) override { 
 		std::vector<Lit> assumptions;
 	    assumptions.push_back(p);
 
@@ -329,4 +330,4 @@ public:
 };
 
 }
-#endif /* SRC_CANDY_CORE_CONFLICTANALYSIS_H_ */
+#endif
