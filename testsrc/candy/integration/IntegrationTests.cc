@@ -77,36 +77,42 @@ namespace Candy {
     }
 
     static void testTrivialProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        SolverOptions::opt_use_lrb = use_lrb;
+        ParallelOptions::opt_static_propagate = use_ts_pr;
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/trivial0.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/trivial0.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/trivial1.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/trivial1.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/trivial2.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/trivial2.cnf", static_allocator);
     }
 
     static void testFuzzProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        SolverOptions::opt_use_lrb = use_lrb;
+        ParallelOptions::opt_static_propagate = use_ts_pr;
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz01.cnf", static_allocator); 
+        acceptanceTest(createSolver(), "cnf/fuzz01.cnf", static_allocator); 
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz02.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/fuzz02.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz03.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/fuzz03.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/fuzz04.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/fuzz04.cnf", static_allocator);
     }
 
     static void testRealProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
+        SolverOptions::opt_use_lrb = use_lrb;
+        ParallelOptions::opt_static_propagate = use_ts_pr;
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/dubois20.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/dubois20.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/hole6.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/hole6.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/ais6.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/ais6.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/uf75-042.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/uf75-042.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(use_ts_pr, use_lrb), "cnf/uuf75-042.cnf", static_allocator);
+        acceptanceTest(createSolver(), "cnf/uuf75-042.cnf", static_allocator);
     }
 
     TEST(IntegrationTest, test_vsids) {

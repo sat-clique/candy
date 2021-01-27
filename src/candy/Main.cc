@@ -118,11 +118,7 @@ CandySolverInterface* solver = nullptr;
 lbool result = l_Undef;
 
 static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, ClauseAllocator*& global_allocator) {
-    std::cout << "c Sort Variables: " << SolverOptions::opt_sort_variables << std::endl;
-    std::cout << "c Preprocessing: " << SolverOptions::opt_preprocessing << std::endl;
-    std::cout << "c Inprocessing: " << SolverOptions::opt_inprocessing << std::endl;
-
-    CandySolverInterface* solver_ = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb);
+    CandySolverInterface* solver_ = createSolver();
 
     solver_->init(problem, global_allocator);
 
@@ -143,8 +139,6 @@ static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFPro
 
 int main(int argc, char** argv) {
     std::cout << "c Candy is made from Glucose." << std::endl;
-
-    setUsageHelp("c USAGE: %s [options] <input-file>\n\nc where input may be either in plain or compressed DIMACS.\n");
     parseOptions(argc, argv, true);
 
     CNFProblem problem{};
@@ -174,15 +168,23 @@ int main(int argc, char** argv) {
     std::vector<std::thread> threads;
 
     if (ParallelOptions::opt_threads == 1) {
-        solver = createSolver(ParallelOptions::opt_static_propagate, SolverOptions::opt_use_lrb);
+        solver = createSolver();
         solvers.push_back(solver); 
 
         solver->init(problem);
         solver->setTermCallback(solver, interrupted_callback);
 
+        for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+            std::cout << "wb " << list.size() << std::endl;
+        }
+
         installSignalHandlers(true);
         result = solver->solve();
         installSignalHandlers(false);
+
+        for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+            std::cout << "wa " << list.size() << std::endl;
+        }
     }
     else {
         if (ParallelOptions::opt_static_database) {
@@ -221,7 +223,6 @@ int main(int argc, char** argv) {
         }
 
         installSignalHandlers(true);
-        // problem.clear();
         while (result == l_Undef && !interrupted) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
@@ -263,7 +264,6 @@ int main(int argc, char** argv) {
             SolverOptions::opt_certified_file = "";
             DRATChecker checker(problem);
             bool proved = checker.check_proof(file.c_str());
-            // bool proved = (0 == check_proof((char*)inputFilename, SolverOptions::opt_certified_file.get())); 
             if (proved) {
                 std::cout << "c Result verified by proof checker" << std::endl;
                 std::cout << "c ********************************" << std::endl;

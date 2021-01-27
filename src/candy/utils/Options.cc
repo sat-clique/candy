@@ -33,8 +33,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 void parseOptions(int& argc, char** argv, bool strict) {
-    int i, j;
-    for (int i = j = 1; i < argc; i++){
+    unsigned int i = 1, j = 1;
+    for (; i < argc; i++){
         const char* str = argv[i];
         if (strstr(str, "--help") != nullptr) {
             printUsageAndExit(argc, argv, true);
@@ -48,7 +48,8 @@ void parseOptions(int& argc, char** argv, bool strict) {
 
             if (!parsed_ok) {
                 if (strict && argv[i][0] == '-') {
-                    fprintf(stderr, "ERROR! Unknown flag \"%s\". Use '--%shelp' for help.\n", argv[i], Option::getHelpPrefixString()), exit(1);
+                    fprintf(stderr, "ERROR! Unknown flag \"%s\".\n", argv[i]);
+                    printUsageAndExit(argc, argv, true);
                 }
                 else {
                     argv[j++] = argv[i];
@@ -59,14 +60,8 @@ void parseOptions(int& argc, char** argv, bool strict) {
     argc -= (i - j);
 }
 
-
-void setUsageHelp      (const char* str){ Option::getUsageString() = str; }
-void setHelpPrefixStr  (const char* str){ Option::getHelpPrefixString() = str; }
 void printUsageAndExit (int argc, char** argv, bool verbose) {
-    const char* usage = Option::getUsageString();
-    if (usage != NULL) {
-        fprintf(stderr, usage, argv[0]);
-    }
+    fprintf(stderr, "c USAGE: %s [options] <input-file>\n", argv[0]);
 
     std::sort(Option::getOptionList().begin(), Option::getOptionList().end(), Option::OptionLt());
 
@@ -89,8 +84,7 @@ void printUsageAndExit (int argc, char** argv, bool verbose) {
     }
 
     fprintf(stderr, "\nHELP OPTIONS:\n\n");
-    fprintf(stderr, "  --%shelp        Print help message.\n", Option::getHelpPrefixString());
-    fprintf(stderr, "  --%shelp-verb   Print verbose help message.\n", Option::getHelpPrefixString());
+    fprintf(stderr, "  --help        Print help message.\n");
     fprintf(stderr, "\n");
     exit(0);
 }

@@ -34,11 +34,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 DRATChecker::DRATChecker(CNFProblem& problem_)
- : problem(problem_), clause_db(), trail(), propagator(clause_db, trail), occurences(), num_deleted(0) 
+ : problem(problem_), clause_db(), trail(), propagation(clause_db, trail), occurences(), num_deleted(0) 
 { 
     clause_db.init(problem);
     trail.init(clause_db.nVars());
-    propagator.init();
+    propagation.init();
 
     occurences.resize(2 * clause_db.nVars());
     for (Clause* clause : clause_db) {
@@ -53,7 +53,7 @@ DRATChecker::DRATChecker(CNFProblem& problem_)
 
 DRATChecker::~DRATChecker() { 
     clause_db.clear();
-    propagator.clear();
+    propagation.clear();
 }
 
 long DRATChecker::proof_size(const char* filename) {
@@ -111,7 +111,7 @@ bool DRATChecker::check_asymm(Iterator begin, Iterator end, Lit pivot) {
             }
         } 
     }
-    return propagator.propagate() != nullptr;
+    return propagation.propagate() != nullptr;
 }
 
 template <typename Iterator>
@@ -135,7 +135,7 @@ bool DRATChecker::check_clause_add(Iterator begin, Iterator end) {
     if (conflict) {
         Clause* clause = clause_db.createClause(begin, end);
         if (clause->size() > 2) {
-            propagator.attachClause(clause);
+            propagation.attachClause(clause);
         }
         for (Lit lit : *clause) {
             occurences[lit].push_back(clause);
@@ -156,7 +156,7 @@ bool DRATChecker::check_clause_remove(Iterator begin, Iterator end) {
             if (size == clause->size() && std::all_of(begin+1, end, [clause](Lit lit) { return clause->contains(lit); })) {
                 clause_db.removeClause(clause);
                 if (clause->size() > 2) {
-                    propagator.detachClause(clause);
+                    propagation.detachClause(clause);
                 }
                 if (++num_deleted * 10 > clause_db.size()) cleanup_deleted();
                 return true;
@@ -168,7 +168,7 @@ bool DRATChecker::check_clause_remove(Iterator begin, Iterator end) {
 
 void DRATChecker::cleanup_deleted() {
     clause_db.reorganize();
-    propagator.reset();
+    propagation.reset();
     occurences.clear();
     occurences.resize(2 * clause_db.nVars());
     for (Clause* clause : clause_db) {

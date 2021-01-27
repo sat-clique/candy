@@ -114,7 +114,7 @@ public:
 
     int readInteger() {
         skipWhitespace();
-        if (eof()) throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
+        if (eof()) return 0; //throw ParserException(std::string("PARSE ERROR! Unexpected end of file"));
 
         char* str = buffer + pos;
         char* end = NULL;
@@ -122,7 +122,7 @@ public:
         errno = 0;
         long number = strtol(str, &end, 10);
 
-        if (errno == ERANGE || 2*abs(number) >= std::numeric_limits<uint32_t>::max()) {
+        if (errno == ERANGE || 2*labs(number) >= std::numeric_limits<uint32_t>::max()) {
             throw ParserException(std::string("PARSE ERROR! Variable out of supported range (32 bits): ") + std::to_string(number));
         }
         else if (errno != 0) {
@@ -135,7 +135,7 @@ public:
             return static_cast<int>(number);
         }
         else {
-            throw ParserException(std::string("PARSE ERROR! Unexpected end of file while reading ") + std::string(1, buffer[pos]));
+            throw ParserException(std::string("PARSE ERROR! Unexpected character ") + std::string(1, buffer[pos]));
         }
     }
 

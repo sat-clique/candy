@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+Candy -- Copyright (c) 2015-2020, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,21 +17,25 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef BRANCHING_DIVERSIFICATION_INTERFACE_H_
-#define BRANCHING_DIVERSIFICATION_INTERFACE_H_
+#ifndef PROPAGATION_INTERFACE_H_
+#define PROPAGATION_INTERFACE_H_
 
 #include "candy/core/SolverTypes.h"
 
-namespace Candy
-{
+namespace Candy {
 
-class BranchingDiversificationInterface
-{
+class Clause;
+
+class PropagationInterface {
 public:
-    virtual void setPolarity(Var v, bool sign) = 0;
-    virtual Lit getLastDecision() = 0;
+    virtual void clear() = 0;
+    virtual void init() = 0;
+    virtual void reset() = 0;
+    virtual void attachClause(Clause* clause) = 0;
+    virtual void detachClause(Clause* clause) = 0;
+    virtual Clause* propagate() = 0;
 };
 
-} // namespace Candy
+}
 
 #endif

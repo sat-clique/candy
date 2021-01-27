@@ -28,7 +28,9 @@ namespace Candy {
 
 class ClauseAllocator;
 class Statistics;
-class BranchingDiversificationInterface;
+class BranchingInterface;
+class LearningInterface;
+class PropagationInterface;
 class ClauseDatabase;
 class Trail;
 class CandySolverResult;
@@ -48,7 +50,9 @@ public:
 	virtual unsigned int nClauses() const = 0;
 	virtual unsigned int nConflicts() const = 0;
 
-	virtual BranchingDiversificationInterface* getBranchingUnit() = 0;
+	virtual BranchingInterface* getBranchingSystem() = 0;
+	virtual LearningInterface* getLearningSystem() = 0;
+	virtual PropagationInterface* getPropagationSystem() = 0;
 
 	virtual ClauseDatabase& getClauseDatabase() = 0;
 	virtual Trail& getAssignment() = 0; 
