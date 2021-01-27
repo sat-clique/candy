@@ -44,7 +44,7 @@ class Clause {
     friend class ClauseAllocator;
     friend class ClauseDatabase;
     friend class Subsumption;
-    friend class Propagate;
+    friend class Propagation2WL;
     friend class ReduceDB;
 
 private:

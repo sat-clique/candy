@@ -20,38 +20,38 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #ifndef CANDY_BUILDER_H_
 #define CANDY_BUILDER_H_
 
-#include "candy/systems/propagate/Propagate.h"
-#include "candy/systems/propagate/StaticPropagate.h"
-#include "candy/systems/learning/ConflictAnalysis.h"
-#include "candy/systems/branching/LRB.h"
-#include "candy/systems/branching/VSIDS.h"
+#include "candy/core/systems/Propagation2WL.h"
+#include "candy/core/systems/Propagation2WLStatic.h"
+#include "candy/core/systems/Learning1UIP.h"
+#include "candy/core/systems/BranchingVSIDS.h"
+#include "candy/core/systems/BranchingLRB.h"
 
 namespace Candy {
 
 class CandySolverInterface; 
 
-template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
+template<class TPropagation = Propagation2WL, class TLearning = Learning1UIP, class TBranching = BranchingVSIDS> 
 class CandyBuilder { 
 public:
     constexpr CandyBuilder() { }
 
-    constexpr auto branchWithVSIDS() const -> CandyBuilder<TPropagate, TLearning, VSIDS> {
-        return CandyBuilder<TPropagate, TLearning, VSIDS>();
+    constexpr auto branchWithVSIDS() const -> CandyBuilder<TPropagation, TLearning, BranchingVSIDS> {
+        return CandyBuilder<TPropagation, TLearning, BranchingVSIDS>();
     }
 
-    constexpr auto branchWithLRB() const -> CandyBuilder<TPropagate, TLearning, LRB> {
-        return CandyBuilder<TPropagate, TLearning, LRB>();
+    constexpr auto branchWithLRB() const -> CandyBuilder<TPropagation, TLearning, BranchingLRB> {
+        return CandyBuilder<TPropagation, TLearning, BranchingLRB>();
     }
 
-    constexpr auto propagateStaticClauses() const -> CandyBuilder<StaticPropagate, TLearning, TBranching> { 
-        return CandyBuilder<StaticPropagate, TLearning, TBranching>();
+    constexpr auto propagateStaticClauses() const -> CandyBuilder<Propagation2WLStatic, TLearning, TBranching> { 
+        return CandyBuilder<Propagation2WLStatic, TLearning, TBranching>();
     }
 
     CandySolverInterface* build();
 
 };
 
-CandySolverInterface* createSolver(bool staticPropagate = false, bool lrb = false);
+CandySolverInterface* createSolver();
 
 }
 

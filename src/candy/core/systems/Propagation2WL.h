@@ -38,14 +38,14 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_PROPAGATE_H_
-#define SRC_CANDY_CORE_PROPAGATE_H_
+#ifndef SRC_CANDY_CORE_PROPAGATION2WL_H_
+#define SRC_CANDY_CORE_PROPAGATION2WL_H_
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
-
+#include "candy/core/systems/PropagationInterface.h"
 #include <array>
 
 namespace Candy {
@@ -58,7 +58,7 @@ struct Watcher {
      : cref(cr), blocker(p) { }
 };
 
-class Propagate {
+class Propagation2WL : public PropagationInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
@@ -66,15 +66,15 @@ private:
     std::vector<std::vector<Watcher>> watchers;
 
 public:
-    Propagate(ClauseDatabase& _clause_db, Trail& _trail)
+    Propagation2WL(ClauseDatabase& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers() {
     }
 
-    void clear() {
+    void clear() override {
         watchers.clear();
     }
 
-    void init() {
+    void init() override {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -83,18 +83,18 @@ public:
         }
     }
 
-    void reset() {
+    void reset() override {
         clear();
         init();
     }
 
-    void attachClause(Clause* clause) {
+    void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         watchers[~clause->first()].emplace_back(clause, clause->second());
         watchers[~clause->second()].emplace_back(clause, clause->first());
     }
 
-    void detachClause(const Clause* clause) {
+    void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
         std::vector<Watcher>& list0 = watchers[~clause->first()];
         std::vector<Watcher>& list1 = watchers[~clause->second()];
@@ -122,7 +122,7 @@ public:
      *
      *  Description:
      *    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-     *    otherwise CRef_Undef.
+     *    otherwise nullptr.
      *
      *    Post-conditions:
      *      * the propagation queue is empty, even if there was a conflict.
@@ -176,7 +176,7 @@ public:
         return nullptr;
     }
 
-    Clause* propagate() {
+    Clause* propagate() override {
         Clause* conflict = nullptr;
 
         while (trail.qhead < trail.trail_size) {
@@ -195,6 +195,6 @@ public:
     }
 };
 
-} /* namespace Candy */
+}
 
-#endif /* SRC_CANDY_CORE_PROPAGATE_H_ */
+#endif

@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/CNFProblem.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
-#include "candy/systems/propagate/Propagate.h"
+#include "candy/core/systems/Propagation2WL.h"
 
 #ifndef CANDY_DRAT_CHECKER
 #define CANDY_DRAT_CHECKER
@@ -37,7 +37,7 @@ private:
 
     ClauseDatabase clause_db;
     Trail trail;
-    Propagate propagator;
+    Propagation2WL propagation;
 
     std::vector<std::vector<Clause*>> occurences;
 

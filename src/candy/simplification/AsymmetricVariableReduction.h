@@ -49,13 +49,13 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
   
-template <class TPropagate> 
+template <class TPropagation> 
 class AsymmetricVariableReduction {
 private:
     ClauseDatabase& clause_db;
     OccurenceList& occurences;
     Trail& trail;
-    TPropagate& propagator;
+    TPropagation& propagation;
 
     const bool active;
     
@@ -75,7 +75,7 @@ private:
                 }
                 assert(l != lit_Undef);
 
-                bool conflict = (propagator.propagate() != nullptr);
+                bool conflict = (propagation.propagate() != nullptr);
                 trail.backtrack(0);
                 
                 if (conflict) {
@@ -96,11 +96,11 @@ private:
 public:
     unsigned int nStrengthened;
 
-    AsymmetricVariableReduction(ClauseDatabase& clause_db_, OccurenceList& occurences_, Trail& trail_, TPropagate& propagator_) : 
+    AsymmetricVariableReduction(ClauseDatabase& clause_db_, OccurenceList& occurences_, Trail& trail_, TPropagation& propagator_) : 
         clause_db(clause_db_), 
         occurences(occurences_),
         trail(trail_),
-        propagator(propagator_),
+        propagation(propagator_),
         active(VariableEliminationOptions::opt_use_asymm), 
         nStrengthened(0)
     { }
