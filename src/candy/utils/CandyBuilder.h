@@ -51,7 +51,7 @@ public:
 
 };
 
-CandySolverInterface* createSolver(bool staticPropagate = false, bool lrb = false);
+CandySolverInterface* createSolver();
 
 }
 

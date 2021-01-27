@@ -53,8 +53,6 @@ namespace Candy {
 
 extern void parseOptions     (int& argc, char** argv, bool strict = false);
 extern void printUsageAndExit(int  argc, char** argv, bool verbose = false);
-extern void setUsageHelp     (const char* str);
-extern void setHelpPrefixStr (const char* str);
 
 
 //==================================================================================================
@@ -67,13 +65,11 @@ class Option {
     const char* type_name;
 
     static std::vector<Option*>& getOptionList () { static std::vector<Option*> options; return options; }
-    static const char*&  getUsageString() { static const char* usage_str; return usage_str; }
-    static const char*&  getHelpPrefixString() { static const char* help_prefix_str = ""; return help_prefix_str; }
 
     struct OptionLt {
         bool operator()(const Option* x, const Option* y) {
             int test1 = strcmp(x->category, y->category);
-            return test1 < 0 || test1 == 0 && strcmp(x->type_name, y->type_name) < 0;
+            return test1 < 0 || (test1 == 0 && strcmp(x->type_name, y->type_name) < 0);
         }
     };
 
@@ -95,8 +91,6 @@ class Option {
 
     friend  void parseOptions      (int& argc, char** argv, bool strict);
     friend  void printUsageAndExit (int  argc, char** argv, bool verbose);
-    friend  void setUsageHelp      (const char* str);
-    friend  void setHelpPrefixStr  (const char* str);
 };
 
 
@@ -348,7 +342,6 @@ class StringOption : public Option {
     }
 
     void set(const char* val) {
-        // memset(value, 0, 256);
         strncpy(value, val, 256);
     }
 

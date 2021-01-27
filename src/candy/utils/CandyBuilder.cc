@@ -33,11 +33,11 @@ CandySolverInterface* CandyBuilder<TPropagate, TLearning, TBranching>::build() {
     return new Solver<TPropagate, TLearning, TBranching>();
 }
 
-CandySolverInterface* createSolver(bool staticPropagate, bool lrb) {
+CandySolverInterface* createSolver() {
     CandyBuilder<> builder { }; 
 
-    if (lrb) {
-        if (staticPropagate) {
+    if (SolverOptions::opt_use_lrb) {
+        if (ParallelOptions::opt_static_propagate) {
             std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, LRB>" << std::endl;
             return builder.branchWithLRB().propagateStaticClauses().build();
         } else {
@@ -46,7 +46,7 @@ CandySolverInterface* createSolver(bool staticPropagate, bool lrb) {
         }
     } 
     else {
-        if (staticPropagate) {
+        if (ParallelOptions::opt_static_propagate) {
             std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, VSIDS>" << std::endl;
             return builder.propagateStaticClauses().build();
         } else {

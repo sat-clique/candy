@@ -66,8 +66,6 @@ private:
     std::vector<Var> analyze_stack;
 	std::vector<Lit> minimized;
 
-	unsigned int pickback_limit;
-
     inline uint64_t abstractLevel(Var x) const {
         return 1ull << (trail.level(x) % 64);
     }

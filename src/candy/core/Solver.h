@@ -132,7 +132,7 @@ public:
 
     lbool solve() override;
 
-    void printStats();
+    void printStats() override;
 
     //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void* state)) override {
@@ -144,12 +144,6 @@ public:
         this->learntCallbackState = state;
         this->learntCallbackMaxLength = max_length;
         this->learntCallback = learntCallback;
-    }
-
-    void dumpBinWatchStats(char* prefix) {
-        for (std::vector<BinaryWatcher>& list : clause_db.binary_watchers) {
-            std::cout << prefix << list.size() << std::endl;
-        }
     }
 
 protected:
