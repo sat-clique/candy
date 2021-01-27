@@ -53,11 +53,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/mtl/Stamp.h"
 
-#include "candy/systems/learning/ConflictAnalysis.h"
-#include "candy/systems/propagate/Propagate.h"
-#include "candy/systems/branching/VSIDS.h"
-#include "candy/systems/Restart.h"
-#include "candy/systems/ReduceDB.h"
+#include "candy/core/systems/LearningInterface.h"
+#include "candy/core/systems/Propagation2WL.h"
+#include "candy/core/systems/BranchingVSIDS.h"
+#include "candy/core/Restart.h"
+#include "candy/core/ReduceDB.h"
 
 #include "candy/simplification/Subsumption.h"
 #include "candy/simplification/OccurenceList.h"
@@ -77,7 +77,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-template<class TPropagate = Propagate, class TLearning = ConflictAnalysis, class TBranching = VSIDS> 
+template<class TPropagation = Propagation2WL, class TLearning = Learning1UIP, class TBranching = BranchingVSIDS> 
 class Solver : public CandySolverInterface {
 public:
     Solver();
@@ -102,8 +102,16 @@ public:
         return trail;
     }
 
-    BranchingDiversificationInterface* getBranchingUnit() override {
-        return &branch;
+    BranchingInterface* getBranchingSystem() override {
+        return &branching;
+    }
+
+    LearningInterface* getLearningSystem() override {
+        return &learning;
+    }
+
+    PropagationInterface* getPropagationSystem() override {
+        return &propagation;
     }
 
     unsigned int nVars() const override {
@@ -150,9 +158,9 @@ protected:
     ClauseDatabase clause_db;
     Trail trail;
 
-    TPropagate propagator;
-    TLearning conflict_analysis;
-    TBranching branch;
+    TPropagation propagation;
+    TLearning learning;
+    TBranching branching;
 
     Restart restart;
     ReduceDB reduce;
@@ -189,7 +197,7 @@ private:
         if (!clause_db.hasEmptyClause()) {
             std::array<Lit, 1> unit;
             unsigned int pos = trail.size();            
-            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
+            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
             else {
                 for (auto it = trail.begin() + pos; it != trail.end(); it++) {
                     assert(trail.reason(it->var()) != nullptr);
@@ -208,7 +216,7 @@ private:
         OccurenceList occurence_list { clause_db };
         Subsumption subsumption { clause_db, occurence_list };
         VariableElimination elimination { occurence_list, clause_db, trail };
-        AsymmetricVariableReduction<TPropagate> reduction { clause_db, occurence_list, trail, propagator };
+        AsymmetricVariableReduction<TPropagation> reduction { clause_db, occurence_list, trail, propagation };
 
         unsigned int num = 1;
         unsigned int max = 0;
@@ -216,17 +224,17 @@ private:
         while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
             if (num > 100) occurence_list.cleanup();
 
-            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
+            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!subsumption.subsume()) clause_db.emptyClause();
 
-            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
+            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!reduction.reduce()) clause_db.emptyClause();
 
-            if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
+            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
             if (!elimination.eliminate()) clause_db.emptyClause();
@@ -257,14 +265,14 @@ private:
 
 };
 
-template<class TPropagate, class TLearning, class TBranching>
-Solver<TPropagate, TLearning, TBranching>::Solver() : 
+template<class TPropagation, class TLearning, class TBranching>
+Solver<TPropagation, TLearning, TBranching>::Solver() : 
     // Basic Systems
     clause_db(),
     trail(),
-    propagator(clause_db, trail),
-	conflict_analysis(clause_db, trail),
-    branch(clause_db, trail),
+    propagation(clause_db, trail),
+	learning(clause_db, trail),
+    branching(clause_db, trail),
     restart(clause_db, trail),
     reduce(clause_db, trail),
     // verbosity
@@ -280,19 +288,19 @@ Solver<TPropagate, TLearning, TBranching>::Solver() :
     learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
 { }
 
-template<class TPropagate, class TLearning, class TBranching>
-Solver<TPropagate, TLearning, TBranching>::~Solver() {
+template<class TPropagation, class TLearning, class TBranching>
+Solver<TPropagation, TLearning, TBranching>::~Solver() {
 }
 
-template<class TPropagate, class TLearning, class TBranching>
-void Solver<TPropagate, TLearning, TBranching>::clear() {
+template<class TPropagation, class TLearning, class TBranching>
+void Solver<TPropagation, TLearning, TBranching>::clear() {
     clause_db.clear();
-    propagator.clear();
-    branch.clear();
+    propagation.clear();
+    branching.clear();
 }
 
-template<class TPropagate, class TLearning, class TBranching>
-void Solver<TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator, bool lemma) {
+template<class TPropagation, class TLearning, class TBranching>
+void Solver<TPropagation, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator, bool lemma) {
     assert(trail.decisionLevel() == 0);
 
     // always initialize clause_db _first_
@@ -309,18 +317,18 @@ void Solver<TPropagate, TLearning, TBranching>::init(const CNFProblem& problem, 
     }
 
     trail.init(clause_db.nVars());
-    propagator.init();
-    conflict_analysis.init(clause_db.nVars());
-    branch.init(problem);
+    propagation.init();
+    learning.init(clause_db.nVars());
+    branching.init(problem);
 }
 
 
-template<class TPropagate, class TLearning, class TBranching>
-lbool Solver<TPropagate, TLearning, TBranching>::search() {
+template<class TPropagation, class TLearning, class TBranching>
+lbool Solver<TPropagation, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
     for (;;) {
-        Clause* confl = (Clause*)propagator.propagate();
+        Clause* confl = (Clause*)propagation.propagate();
 
         if (confl != nullptr) { // CONFLICT
             if (trail.decisionLevel() == 0) {
@@ -328,17 +336,17 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                 return l_False;
             }
             
-            conflict_analysis.handle_conflict(confl);
+            learning.handle_conflict(confl);
             restart.process_conflict();
             reduce.process_conflict();
 
             Clause* clause = clause_db.createClause(clause_db.result.learnt_clause.begin(), clause_db.result.learnt_clause.end(), clause_db.result.lbd);
             if (clause->size() > 2) {
-                propagator.attachClause(clause);
+                propagation.attachClause(clause);
             }
 
             trail.backtrack(clause_db.result.backtrack_level);
-            branch.process_conflict();
+            branching.process_conflict();
 
             trail.propagate(clause->first(), clause);
             ipasir_callback(clause);
@@ -357,7 +365,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
                 } 
                 else if (trail.value(p) == l_False) {
                     std::cout << "c Conflict found during propagation of assumption " << p << std::endl;
-                    result.setConflict(conflict_analysis.analyzeFinal(~p));
+                    result.setConflict(learning.analyzeFinal(~p));
                     return l_False;
                 } 
                 else {
@@ -369,7 +377,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             
             if (next == lit_Undef) {
                 if (LearningOptions::pickback > 0 && clause_db.result.learnt_clause.size() > 0) {
-                    Lit pb = conflict_analysis.pickback(clause_db.result.learnt_clause[0]);
+                    Lit pb = learning.pickback(clause_db.result.learnt_clause[0]);
                     if (trail.value(pb) == l_Undef) {
                         next = pb;
                         clause_db.result.learnt_clause.clear();
@@ -378,7 +386,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
             }
             if (next == lit_Undef) {
                 // New variable decision:
-                next = branch.pickBranchLit();
+                next = branching.pickBranchLit();
                 if (next == lit_Undef) { // Model found
                     return l_True;
                 }
@@ -392,11 +400,11 @@ lbool Solver<TPropagate, TLearning, TBranching>::search() {
     return l_Undef; // not reached
 }
 
-template<class TPropagate, class TLearning, class TBranching>
-lbool Solver<TPropagate, TLearning, TBranching>::solve() {
+template<class TPropagation, class TLearning, class TBranching>
+lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     result.clear();
     trail.reset();
-    propagator.reset();
+    propagation.reset();
 
     // this is kind-of needed now (came in with parallel version)
     propagateAndMaterializeUnitClauses();
@@ -406,7 +414,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
         std::vector<Cl> correction_set = clause_db.eliminated.undo(lit.var());
         for (Cl cl : correction_set) {
             Clause* clause = clause_db.createClause(cl.begin(), cl.end());
-            if (clause->size() > 2) propagator.attachClause(clause);
+            if (clause->size() > 2) propagation.attachClause(clause);
             for (Lit lit : *clause) trail.setDecisionVar(lit.var(), true);
         }
     }
@@ -414,7 +422,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
     if (this->preprocessing_enabled) {
         std::cout << "c Preprocessing ... " << std::endl;
         processClauseDatabase();
-        propagator.reset();
+        propagation.reset();
     }
     
     std::cout << "c Searching ... " << std::endl;
@@ -423,7 +431,7 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
 
     while (status == l_Undef && termCallback(termCallbackState) == 0) {
         trail.backtrack(0);
-        branch.add_back(trail.conflict_rbegin(), trail.rbegin());
+        branching.add_back(trail.conflict_rbegin(), trail.rbegin());
 
         if (reduce.trigger_reduce()) {
             if (inprocessingFrequency > 0 && lastRestartWithInprocessing + inprocessingFrequency <= reduce.nReduceCalls()) { 
@@ -436,12 +444,12 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
                 reduce.reduce();
             }            
             clause_db.reorganize();
-            propagator.reset();
+            propagation.reset();
         }
 
         // multi-threaded unit-clauses fast-track
         // propagateAndMaterializeUnitClauses();
-        if (propagator.propagate() != nullptr) { clause_db.emptyClause(); }
+        if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
 
         if (clause_db.hasEmptyClause()) {
             status = l_False;
@@ -488,8 +496,8 @@ lbool Solver<TPropagate, TLearning, TBranching>::solve() {
 }
 
 
-template<class TPropagate, class TLearning, class TBranching>
-void Solver<TPropagate, TLearning, TBranching>::printStats() {
+template<class TPropagation, class TLearning, class TBranching>
+void Solver<TPropagation, TLearning, TBranching>::printStats() {
     std::cout << "c ************************* " << std::endl << std::left;
     std::cout << "c " << std::setw(20) << "restarts:" << nRestarts() << std::endl;
     std::cout << "c " << std::setw(20) << "conflicts:" << nConflicts() << std::endl;

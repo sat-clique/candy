@@ -17,26 +17,26 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_PROPAGATE_THREADSAFE_H_
-#define SRC_CANDY_CORE_PROPAGATE_THREADSAFE_H_
+#ifndef SRC_CANDY_CORE_PROPAGATION2WLSTATIC_H_
+#define SRC_CANDY_CORE_PROPAGATION2WLSTATIC_H_
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/Trail.h"
 #include "candy/mtl/Memory.h"
-
+#include "candy/core/systems/PropagationInterface.h"
 #include <array>
 
 namespace Candy {
 
-class StaticPropagate {
+class Propagation2WLStatic : public PropagationInterface {
     struct Watcher {
-        const Clause* cref;
+        Clause* cref;
         Lit watch0;
         Lit watch1;
 
-        Watcher(const Clause* clause, Lit one, Lit two)
+        Watcher(Clause* clause, Lit one, Lit two)
          : cref(clause), watch0(one), watch1(two) {}
     };
 
@@ -49,19 +49,19 @@ private:
     Memory<Watcher> memory;
 
 public:
-    StaticPropagate(ClauseDatabase& _clause_db, Trail& _trail)
+    Propagation2WLStatic(ClauseDatabase& _clause_db, Trail& _trail)
         : clause_db(_clause_db), trail(_trail), watchers(), memory() { }
 
-    ~StaticPropagate() {
+    ~Propagation2WLStatic() {
         clear();
     }
 
-    void clear() {
+    void clear() override {
         watchers.clear();
         memory.free_all();
     }
 
-    void init() {
+    void init() override {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -70,19 +70,19 @@ public:
         }
     }
 
-    void reset() {
+    void reset() override {
         clear();
         init();
     }
 
-    void attachClause(const Clause* clause) {
+    void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         Watcher* watcher = new (memory.allocate()) Watcher(clause, clause->first(), clause->second());
         watchers[~(clause->first())].push_back(watcher);
         watchers[~(clause->second())].push_back(watcher);
     }
 
-    void detachClause(const Clause* clause) {
+    void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
         for (Lit lit : *clause) {
             auto it = std::find_if(watchers[~lit].begin(), watchers[~lit].end(), [clause](Watcher* w){ return w->cref == clause; });
@@ -97,7 +97,7 @@ public:
         }
     }
 
-    inline const Clause* propagate_binary_clauses(Lit p) {
+    inline Clause* propagate_binary_clauses(Lit p) {
         const std::vector<BinaryWatcher>& list = clause_db.binary_watchers[p];
         for (BinaryWatcher watcher : list) {
             lbool val = trail.value(watcher.other);
@@ -117,12 +117,12 @@ public:
      *
      *  Description:
      *    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-     *    otherwise CRef_Undef.
+     *    otherwise nullptr.
      *
      *    Post-conditions:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
-    inline const Clause* propagate_watched_clauses(Lit p) {
+    inline Clause* propagate_watched_clauses(Lit p) {
         std::vector<Watcher*>& list = watchers[p];
 
         auto keep = list.begin();
@@ -132,7 +132,7 @@ public:
             Lit other = watcher->watch0 != ~p ? watcher->watch0 : watcher->watch1;
             lbool val = trail.value(other);
             if (val != l_True) { // Try to avoid inspecting the clause
-                const Clause* clause = watcher->cref;                
+                Clause* clause = watcher->cref;                
                 for (Lit lit : *clause) {
                     if (lit != ~p && lit != other && trail.value(lit) != l_False) {
                         watcher->watch0 = lit;
@@ -148,7 +148,7 @@ public:
                     return clause;
                 }
                 else { // unit
-                    trail.propagate(other, (Clause*)clause);
+                    trail.propagate(other, clause);
                 }
             }
             *keep = *iter;
@@ -160,8 +160,8 @@ public:
         return nullptr;
     }
 
-    const Clause* propagate() {
-        const Clause* conflict = nullptr;
+    Clause* propagate() override {
+        Clause* conflict = nullptr;
 
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
@@ -179,6 +179,6 @@ public:
     }
 };
 
-} /* namespace Candy */
+}
 
-#endif /* SRC_CANDY_CORE_PROPAGATE_H_ */
+#endif

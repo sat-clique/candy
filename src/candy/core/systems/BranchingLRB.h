@@ -26,12 +26,11 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/core/clauses/ClauseDatabase.h"
-
-#include "BranchingDiversificationInterface.h"
+#include "candy/core/systems/BranchingInterface.h"
 
 namespace Candy {
 
-class LRB : public BranchingDiversificationInterface {
+class BranchingLRB : public BranchingInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
@@ -45,7 +44,7 @@ public:
         VarOrderLt(std::vector<double>& act) : weight(act) {}
     };
 
-    LRB(ClauseDatabase& _clause_db, Trail& _trail) :
+    BranchingLRB(ClauseDatabase& _clause_db, Trail& _trail) :
         clause_db(_clause_db), trail(_trail), 
         order_heap(VarOrderLt(weight)), 
         weight(), polarity(), stamp(), 
@@ -81,7 +80,7 @@ public:
         return literalOccurrence;
     }
 
-    void clear() {
+    void clear() override {
         weight.clear();
         polarity.clear();
         order_heap.clear();
@@ -89,7 +88,7 @@ public:
         std::fill(participated.begin(), participated.end(), 0);
     }
 
-    void init(const CNFProblem& problem) {
+    void init(const CNFProblem& problem) override {
         if (trail.nVars() > weight.size()) {
             weight.resize(trail.nVars(), initial_weight);
             polarity.resize(trail.nVars(), initial_polarity);
@@ -109,7 +108,7 @@ public:
         reset();
     }
 
-    void reset() {
+    void reset() override {
         std::vector<int> vs;
         for (Var v = 0; v < (Var)trail.nVars(); v++) {
             if (trail.isDecisionVar(v)) {
@@ -120,7 +119,7 @@ public:
     }
 
 
-    void process_conflict() {
+    void process_conflict() override {
         stamp.clear();
         for (const Clause* clause : clause_db.result.involved_clauses) { 
             for (Lit lit : *clause) {
@@ -163,7 +162,7 @@ public:
         }
     }
 
-    inline Lit pickBranchLit() {
+    inline Lit pickBranchLit() override {
         Var next = var_Undef;
 
         // Weight based decision:

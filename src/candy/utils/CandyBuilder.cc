@@ -28,9 +28,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-template<class TPropagate, class TLearning, class TBranching> 
-CandySolverInterface* CandyBuilder<TPropagate, TLearning, TBranching>::build() {
-    return new Solver<TPropagate, TLearning, TBranching>();
+template<class TPropagation, class TLearning, class TBranching> 
+CandySolverInterface* CandyBuilder<TPropagation, TLearning, TBranching>::build() {
+    return new Solver<TPropagation, TLearning, TBranching>();
 }
 
 CandySolverInterface* createSolver() {
@@ -38,23 +38,23 @@ CandySolverInterface* createSolver() {
 
     if (SolverOptions::opt_use_lrb) {
         if (ParallelOptions::opt_static_propagate) {
-            std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, LRB>" << std::endl;
+            std::cout << "c Building Solver of Type Solver<Propagation2WLStatic, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().propagateStaticClauses().build();
         } else {
-            std::cout << "Building Solver of Type Solver<Propagate, ConflictAnalysis, LRB>" << std::endl;
+            std::cout << "Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().build();
         }
     } 
     else {
         if (ParallelOptions::opt_static_propagate) {
-            std::cout << "c Building Solver of Type Solver<StaticPropagate, ConflictAnalysis, VSIDS>" << std::endl;
+            std::cout << "c Building Solver of Type Solver<Propagation2WLStatic, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.propagateStaticClauses().build();
         } else {
-            std::cout << "c Building Solver of Type Solver<Propagate, ConflictAnalysis, VSIDS>" << std::endl;
+            std::cout << "c Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.build();
         }
     }
-    std::cout << "c Warning! Configuration Not Found. Building Solver of Type Solver<Propagate, ConflictAnalysis, VSIDS>" << std::endl;
+    std::cout << "c Warning! Configuration Not Found. Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingVSIDS>" << std::endl;
     return builder.build();
 }
 
