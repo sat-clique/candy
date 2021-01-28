@@ -155,7 +155,7 @@ private:
             }
         }
 
-        // std::cout << "Eliminating Variable " << variable << std::endl;
+        // std::cout << "Eliminated Variable " << variable << std::endl;
         clause_db.eliminated.set_eliminated(variable, pos, neg);
 
         for (Clause* clause : pos) {
