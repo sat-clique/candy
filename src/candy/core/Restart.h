@@ -103,4 +103,4 @@ public:
 
 } /* namespace Candy */
 
-#endif /* SRC_CANDY_CORE_STATISTICS_H_ */
+#endif 

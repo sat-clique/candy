@@ -482,11 +482,14 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             for (Cl& clause : clause_db.eliminated.clauses[*it]) {
                 if (!trail.satisfies(clause.begin(), clause.end())) {
                     for (Lit lit : clause) { 
-                        if (lit.var() == *it || trail.value(lit) == l_Undef) {
+                        if (lit.var() == *it) {
                             trail.set_value(lit);
                         }
                     }
                 }
+            }
+            if (trail.value(*it) == l_Undef) {
+                trail.set_value(Lit(*it));
             }
         }
         result.setModel(trail);
