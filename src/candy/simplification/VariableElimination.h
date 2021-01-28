@@ -102,9 +102,10 @@ public:
             return occurences.count(v1) > occurences.count(v2);
         });
 
+        std::vector<Clause*> pos, neg; // split occurrences by polarity
         for (Var variable : variables) {
             if (trail.value(variable) == l_Undef) {
-                std::vector<Clause*> pos, neg; // split the occurrences into positive and negative
+                pos.clear(); neg.clear();
                 for (Clause* cl : occurences[variable]) {
                     if (!cl->isDeleted()) {
                         if (cl->contains(Lit(variable))) {
@@ -128,21 +129,20 @@ private:
     bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
         assert(!clause_db.eliminated.is_eliminated(variable));
 
-        if (pos.size() == 0 && neg.size() == 0) {
+        if (pos.size() == 0 || neg.size() == 0) {
             return true;
         }
 
-        size_t nResolvents = 0;
+        unsigned int nResolvents = 0;
         for (Clause* pc : pos) for (Clause* nc : neg) {
-            size_t clause_size = 0;
-            if (!merge(*pc, *nc, variable, clause_size)) {
-                continue; // resolvent is tautology
-            }
-            if (clause_size == 0) {
-                return false; // resolved empty clause 
-            }
-            if (++nResolvents > pos.size() + neg.size() || (clause_lim > 0 && clause_size > clause_lim)) {
-                return true;
+            unsigned int clause_size = 0;
+            if (merge(*pc, *nc, variable, clause_size)) {
+                if (clause_size == 0) {
+                    return false; // resolved empty clause 
+                }
+                if (++nResolvents > pos.size() + neg.size() || (clause_lim > 0 && clause_size > clause_lim)) {
+                    return true; // out of bounds
+                }
             } 
         }
         
@@ -152,15 +152,18 @@ private:
                 // std::cout << "c Creating resolvent " << resolvent << std::endl;
                 Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
                 occurences.add(clause);
-                assert(resolvent.size() > 0);
             }
         }
 
         // std::cout << "Eliminating Variable " << variable << std::endl;
         clause_db.eliminated.set_eliminated(variable, pos, neg);
 
-        for (Clause* clause : pos) clause_db.removeClause(clause);
-        for (Clause* clause : neg) clause_db.removeClause(clause);
+        for (Clause* clause : pos) {
+            clause_db.removeClause(clause);
+        }
+        for (Clause* clause : neg) {
+            clause_db.removeClause(clause);
+        }
 
         nEliminated++;        
         trail.setDecisionVar(variable, false);
@@ -168,7 +171,7 @@ private:
         return true;
     }
 
-    // Returns FALSE if clause is always satisfied ('out_clause' should not be used).
+    // returns FALSE iff resolvent is tautologic ('out_clause' should not be used).
     bool merge(const Clause& _ps, const Clause& _qs, Var v, std::vector<Lit>& out_clause) {
         assert(_ps.contains(Lit(v)));
         assert(_qs.contains(Lit(v, true)));
@@ -199,8 +202,8 @@ private:
         return true;
     }
 
-    // Returns FALSE if clause is always satisfied.
-    bool merge(const Clause& _ps, const Clause& _qs, Var v, size_t& size) {
+    // returns FALSE iff resolvent is tautologic
+    bool merge(const Clause& _ps, const Clause& _qs, Var v, unsigned int& size) {
         assert(_ps.contains(Lit(v)));
         assert(_qs.contains(Lit(v, true)));
         

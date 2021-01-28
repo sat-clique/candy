@@ -423,6 +423,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         std::cout << "c Preprocessing ... " << std::endl;
         processClauseDatabase();
         propagation.reset();
+        propagateAndMaterializeUnitClauses();
     }
     
     std::cout << "c Searching ... " << std::endl;
@@ -442,9 +443,10 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             else {
                 std::cout << "c Reducing ... " << std::endl;
                 reduce.reduce();
-            }            
+            }
             clause_db.reorganize();
             propagation.reset();
+            propagateAndMaterializeUnitClauses();
         }
 
         // multi-threaded unit-clauses fast-track
@@ -480,7 +482,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             for (Cl& clause : clause_db.eliminated.clauses[*it]) {
                 if (!trail.satisfies(clause.begin(), clause.end())) {
                     for (Lit lit : clause) { 
-                        if (trail.value(lit) == l_Undef) {
+                        if (lit.var() == *it || trail.value(lit) == l_Undef) {
                             trail.set_value(lit);
                         }
                     }
