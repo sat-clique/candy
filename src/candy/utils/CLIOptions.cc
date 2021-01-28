@@ -59,8 +59,8 @@ namespace SolverOptions {
     IntOption memory_limit("MAIN", "memory-limit", "Limit on memory usage in mega bytes.\n", INT32_MAX, IntRange(0, INT32_MAX));
     IntOption time_limit("MAIN", "time-limit", "Limit on wallclock runtime in seconds.\n", INT32_MAX, IntRange(0, INT32_MAX));
     
-    DoubleOption opt_restart_force("Restarts", "restart-force", "The constant used to force restart", 1.25, DoubleRange(1, false, 5, false));
-    DoubleOption opt_restart_block("Restarts", "restart-block", "The constant used to block restart", 1.4, DoubleRange(1, false, 5, false));
+    DoubleOption opt_restart_force("Restarts", "restart-force", "The constant used to force restart", 1.3, DoubleRange(1, false, 5, false));
+    DoubleOption opt_restart_block("Restarts", "restart-block", "The constant used to block restart", 1.3, DoubleRange(1, false, 5, false));
     IntOption opt_size_lbd_queue("Restarts", "szLBDQueue", "The size of moving average for LBD (restarts)", 50, IntRange(10, INT16_MAX));
     IntOption opt_size_trail_queue("Restarts", "szTrailQueue", "The size of moving average for trail (block restarts)", 5000, IntRange(10, INT16_MAX));
 
