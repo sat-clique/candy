@@ -118,11 +118,15 @@ public:
     }
 
     void setAssumptions(const std::vector<Lit>& assumptions) {
+        for (Lit lit : this->assumptions) {
+            setDecisionVar(lit.var(), true);
+        }
         this->assumptions.clear();
         for (Lit lit : assumptions) {
             if (lit.var() > (Var)nVariables) {
                 init(nVariables);
             }
+            setDecisionVar(lit.var(), false);
             this->assumptions.push_back(lit);
         }
     }

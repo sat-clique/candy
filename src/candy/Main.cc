@@ -174,17 +174,17 @@ int main(int argc, char** argv) {
         solver->init(problem);
         solver->setTermCallback(solver, interrupted_callback);
 
-        for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
-            std::cout << "wb " << list.size() << std::endl;
-        }
+        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+        //     std::cout << "wb " << list.size() << std::endl;
+        // }
 
         installSignalHandlers(true);
         result = solver->solve();
         installSignalHandlers(false);
 
-        for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
-            std::cout << "wa " << list.size() << std::endl;
-        }
+        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+        //     std::cout << "wa " << list.size() << std::endl;
+        // }
     }
     else {
         if (ParallelOptions::opt_static_database) {

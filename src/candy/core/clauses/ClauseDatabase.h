@@ -59,39 +59,6 @@ struct AnalysisResult {
 
 };
 
-struct EliminiationResult {
-    std::vector<Var> variables;
-    std::vector<std::vector<Cl>> clauses;
-
-    EliminiationResult() : variables(), clauses() { }
-
-    inline bool has_eliminated_variables() const {
-        return variables.size() > 0;
-    }
-
-    inline bool is_eliminated(Var v) const {
-        return clauses[v].size() > 0;
-    }
-
-    inline void set_eliminated(Var var, std::vector<Clause*> pos, std::vector<Clause*> neg) {
-        variables.push_back(var);
-        for (Clause* c : pos) clauses[var].push_back(Cl {c->begin(), c->end()} );
-        for (Clause* c : neg) clauses[var].push_back(Cl {c->begin(), c->end()} );
-    }
-
-    std::vector<Cl> undo(Var var) {
-        assert(is_eliminated(var));
-        std::vector<Cl> correction_set;
-        auto begin = std::find(variables.begin(), variables.end(), var);
-        for (auto it = begin; it != variables.end(); it++) {
-            correction_set.insert(correction_set.end(), clauses[*it].begin(), clauses[*it].end());
-            clauses[*it].clear();
-        }
-        variables.erase(begin, variables.end());
-        return correction_set;
-    }
-};
-
 struct BinaryWatcher {
     Clause* clause;
     Lit other;
@@ -112,18 +79,16 @@ private:
     Certificate certificate;
 
 public:
-
     std::vector<std::vector<BinaryWatcher>> binary_watchers;
     std::vector<Lit> equiv;
     
     /* analysis result is stored here */
 	AnalysisResult result;
-    EliminiationResult eliminated;
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
-        certificate(SolverOptions::opt_certified_file), 
-        binary_watchers(), equiv(), result(), eliminated()
+        certificate(SolverOptions::opt_certified_file),
+        binary_watchers(), equiv(), result()
     { }
 
     ~ClauseDatabase() { }
@@ -202,7 +167,6 @@ public:
     void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
         if (variables < problem.nVars()) {
             binary_watchers.resize(problem.nVars()*2+2);
-            eliminated.clauses.resize(problem.nVars()+1);
             equiv.resize(problem.nVars()+1);
             for (unsigned int i = variables; i < problem.nVars(); i++) {
                 equiv[i] = Lit(i);
@@ -303,6 +267,7 @@ public:
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
         Clause* new_clause = createClause(literals.begin(), literals.end(), std::min((uint16_t)clause->getLBD(), (uint16_t)literals.size()));
         removeClause(clause);
+
         return new_clause;
     }
 

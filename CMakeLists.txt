@@ -52,7 +52,8 @@
 
 
 
-project(Candy)
+cmake_policy(SET CMP0048 NEW)
+project(Candy VERSION 2)
 cmake_minimum_required(VERSION 3.5.1)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 

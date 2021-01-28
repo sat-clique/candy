@@ -59,7 +59,7 @@ public:
         }
     }
 
-    inline size_t count(Var v) {
+    inline size_t count(Var v) const {
         return occurrences[v].size();
     }
 
