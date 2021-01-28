@@ -79,7 +79,6 @@ namespace SolverOptions {
 
 namespace VariableEliminationOptions {
     IntOption opt_clause_lim("VariableElimination", "cl-lim", "Variables are not eliminated if it produces a resolvent with a length above this limit.", 20, IntRange(0, INT32_MAX));
-    BoolOption opt_use_asymm("VariableElimination", "asymm", "Shrink clauses by asymmetric branching.", false, true); // disabled option
     BoolOption opt_use_elim("VariableElimination", "elim", "Perform variable elimination.", true);
 }
 

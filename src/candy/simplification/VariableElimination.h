@@ -96,8 +96,6 @@ public:
             if (!frozen[v] && !clause_db.eliminated.is_eliminated(v)) variables.push_back(v);
         }
 
-        // std::cout << "Total Variables " << variables.size() << std::endl;
-
         std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
             return occurences.count(v1) > occurences.count(v2);
         });
