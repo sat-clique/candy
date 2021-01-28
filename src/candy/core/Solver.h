@@ -62,7 +62,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/simplification/Subsumption.h"
 #include "candy/simplification/OccurenceList.h"
 #include "candy/simplification/VariableElimination.h"
-#include "candy/simplification/AsymmetricVariableReduction.h"
 
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
@@ -169,7 +168,7 @@ protected:
 
     CandySolverResult result;
 
-    bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
+    bool preprocessing_enabled;
 
     unsigned int lastRestartWithInprocessing;
     unsigned int inprocessingFrequency;
@@ -216,7 +215,6 @@ private:
         OccurenceList occurence_list { clause_db };
         Subsumption subsumption { clause_db, occurence_list };
         VariableElimination elimination { occurence_list, clause_db, trail };
-        AsymmetricVariableReduction<TPropagation> reduction { clause_db, occurence_list, trail, propagation };
 
         unsigned int num = 1;
         unsigned int max = 0;
@@ -232,21 +230,15 @@ private:
             if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
             if (clause_db.hasEmptyClause()) break;
 
-            if (!reduction.reduce()) clause_db.emptyClause();
-
-            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
-            if (clause_db.hasEmptyClause()) break;
-
             if (!elimination.eliminate()) clause_db.emptyClause();
 
             if (verbosity > 1) {
                 std::cout << "c " << std::this_thread::get_id() << ": Removed " << subsumption.nDuplicates << " Duplicate Clauses" << std::endl;
                 std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
-                std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
                 std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
             }
 
-            num = subsumption.nTouched() + elimination.nTouched() + reduction.nTouched();
+            num = subsumption.nTouched() + elimination.nTouched();
             max = std::max(num, max);
         } 
     }
