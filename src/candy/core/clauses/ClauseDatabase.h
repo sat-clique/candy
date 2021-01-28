@@ -112,7 +112,6 @@ private:
     Certificate certificate;
 
 public:
-
     std::vector<std::vector<BinaryWatcher>> binary_watchers;
     std::vector<Lit> equiv;
     
@@ -122,7 +121,7 @@ public:
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
-        certificate(SolverOptions::opt_certified_file), 
+        certificate(SolverOptions::opt_certified_file),
         binary_watchers(), equiv(), result(), eliminated()
     { }
 
@@ -303,6 +302,7 @@ public:
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
         Clause* new_clause = createClause(literals.begin(), literals.end(), std::min((uint16_t)clause->getLBD(), (uint16_t)literals.size()));
         removeClause(clause);
+
         return new_clause;
     }
 
