@@ -52,51 +52,49 @@ namespace Candy {
 
 class VariableElimination {
 private:
-    OccurenceList& occurences;
     ClauseDatabase& clause_db;
     Trail& trail;
-
-    std::vector<char> frozen;
 
     std::vector<Lit> resolvent;
 
     const bool active;          // Perform variable elimination.
-
     const unsigned int clause_lim;     // Variables are not eliminated if it produces a resolvent with a length above this limit. 0 means no limit.
 
 public:
+    std::vector<Var> variables;
+    std::vector<std::vector<Cl>> clauses;
+
     unsigned int nEliminated;
 
-    VariableElimination(OccurenceList& occurences_, ClauseDatabase& clause_db_, Trail& trail_) : 
-        occurences(occurences_),
-        clause_db(clause_db_),
-        trail(trail_),
-        frozen(),
+    unsigned int verbosity;
+
+    VariableElimination(ClauseDatabase& clause_db_, Trail& trail_) : 
+        clause_db(clause_db_), trail(trail_),
         resolvent(),
         active(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
-        nEliminated(0)
-    { 
-        frozen.resize(trail.nVars());
-        for (Lit lit : trail.assumptions) {
-            frozen[lit.var()] = true;
-        }
+        variables(), clauses(), 
+        nEliminated(0), verbosity(SolverOptions::verb)
+    { }
+
+    void init() { 
+        clauses.resize(trail.nVars());
     }
 
     unsigned int nTouched() {
         return nEliminated; 
     }
 
-    bool eliminate() {
-        if (!active) return true;
+    void eliminate(OccurenceList& occurences) {
+        if (!active) return;
         nEliminated = 0;
 
         std::vector<Var> variables;
-        for (unsigned int v = 0; v < frozen.size(); v++) {
-            if (!frozen[v] && !clause_db.eliminated.is_eliminated(v)) variables.push_back(v);
+        for (unsigned int v = 0; v < trail.nVars(); v++) {
+            if (trail.isDecisionVar(v)) variables.push_back(v);
         }
 
-        std::sort(variables.begin(), variables.end(), [this](Var v1, Var v2) { 
+        std::sort(variables.begin(), variables.end(), [&occurences](Var v1, Var v2) { 
             return occurences.count(v1) > occurences.count(v2);
         });
 
@@ -114,32 +112,62 @@ public:
                     }
                 }
 
-                if (!eliminate(variable, pos, neg)) { 
-                    return false;
-                }
+                eliminate(occurences, variable, pos, neg);
+
+                if (clause_db.hasEmptyClause()) break;
             }
         }
+        
+        if (verbosity > 1) {
+            std::cout << "c Eliminiated " << nEliminated << " variables" << std::endl;
+        }
+    }
 
-        return true;
+    bool has_eliminated_variables() const {
+        return variables.size() > 0;
+    }
+
+    bool is_eliminated(Var v) const {
+        return clauses[v].size() > 0;
+    }
+
+    void set_eliminated(Var var, std::vector<Clause*> pos, std::vector<Clause*> neg) {
+        variables.push_back(var);
+        for (Clause* c : pos) clauses[var].push_back(Cl {c->begin(), c->end()} );
+        for (Clause* c : neg) clauses[var].push_back(Cl {c->begin(), c->end()} );
+        trail.setDecisionVar(var, false);
+        nEliminated++;
+    }
+
+    std::vector<Cl> undo(Var var) {
+        assert(is_eliminated(var));
+        std::vector<Cl> correction_set;
+        auto begin = std::find(variables.begin(), variables.end(), var);
+        for (auto it = begin; it != variables.end(); it++) {
+            correction_set.insert(correction_set.end(), clauses[*it].begin(), clauses[*it].end());
+            clauses[*it].clear();
+            trail.setDecisionVar(*it, true);
+        }
+        variables.erase(begin, variables.end());
+        return correction_set;
     }
 
 private:
-    bool eliminate(Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
-        assert(!clause_db.eliminated.is_eliminated(variable));
+    void eliminate(OccurenceList& occurences, Var variable, std::vector<Clause*> pos, std::vector<Clause*> neg) {
+        assert(!is_eliminated(variable));
 
-        if (pos.size() == 0 || neg.size() == 0) {
-            return true;
-        }
+        if (pos.size() == 0 || neg.size() == 0) return;
 
         unsigned int nResolvents = 0;
         for (Clause* pc : pos) for (Clause* nc : neg) {
             unsigned int clause_size = 0;
             if (merge(*pc, *nc, variable, clause_size)) {
                 if (clause_size == 0) {
-                    return false; // resolved empty clause 
+                    clause_db.emptyClause();
+                    return;
                 }
                 if (++nResolvents > pos.size() + neg.size() || (clause_lim > 0 && clause_size > clause_lim)) {
-                    return true; // out of bounds
+                    return; // out of bounds
                 }
             } 
         }
@@ -154,7 +182,7 @@ private:
         }
 
         // std::cout << "Eliminated Variable " << variable << std::endl;
-        clause_db.eliminated.set_eliminated(variable, pos, neg);
+        set_eliminated(variable, pos, neg);
 
         for (Clause* clause : pos) {
             clause_db.removeClause(clause);
@@ -162,11 +190,6 @@ private:
         for (Clause* clause : neg) {
             clause_db.removeClause(clause);
         }
-
-        nEliminated++;        
-        trail.setDecisionVar(variable, false);
-
-        return true;
     }
 
     // returns FALSE iff resolvent is tautologic ('out_clause' should not be used).

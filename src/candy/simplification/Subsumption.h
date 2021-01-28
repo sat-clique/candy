@@ -55,41 +55,38 @@ namespace Candy {
 class Subsumption { 
 private:
     ClauseDatabase& clause_db;
-    OccurenceList& occurences;
+    Trail& trail;
 
-    bool subsume(Clause* clause);
-    bool unit_resolution(Clause* clause);
+    void subsume(OccurenceList& occurences, Clause* clause);
 
 public:
     unsigned int nDuplicates;
     unsigned int nSubsumed;
-    unsigned int nStrengthened;      
+    unsigned int nStrengthened;
 
-    Subsumption(ClauseDatabase& clause_db_, OccurenceList& occurences_)
-     : clause_db(clause_db_), occurences(occurences_), nDuplicates(0), nSubsumed(0), nStrengthened(0)
+    unsigned int verbosity;
+
+    Subsumption(ClauseDatabase& clause_db_, Trail& trail_) : 
+        clause_db(clause_db_), trail(trail_), 
+        nDuplicates(0), nSubsumed(0), nStrengthened(0), verbosity(SolverOptions::verb)
     { }
 
-    bool subsume() {
+    void init() { }
+
+    void subsume(OccurenceList& occurences) {
         nDuplicates = nSubsumed = nStrengthened = 0; 
         
-        for (unsigned int i = 0; i < clause_db.size(); i++) {
+        for (unsigned int i = 0; i < clause_db.size() && !clause_db.hasEmptyClause(); i++) {
             Clause* clause = clause_db[i];
             if (!clause->isDeleted()) {
-                // std::cout << "c Subsumption with clause " << *clause << "\r";
-                if (clause->size() == 1) {
-                    if (!unit_resolution((Clause*)clause)) {
-                        return false;
-                    }
-                }
-                else {
-                    if (!subsume((Clause*)clause)) {
-                        return false;
-                    }
-                }
+                subsume(occurences, clause);
             }
         }
         
-        return true;
+        if (verbosity > 1) {
+            std::cout << "c Removed " << nDuplicates << " Duplicate Clauses" << std::endl;
+            std::cout << "c Subsumption subsumed " << nSubsumed << " and strengthened " << nStrengthened << " clauses" << std::endl;
+        }
     }
 
     unsigned int nTouched() {
@@ -98,36 +95,13 @@ public:
     
 }; 
 
-bool Subsumption::unit_resolution(Clause* clause) {
-    assert(clause->size() == 1);
-    Lit unit = clause->first();
-    for (Clause* occurence : occurences[unit.var()]) {
-        if (occurence != clause && !occurence->isDeleted()) {
-            if (occurence->contains(unit)) {
-                // std::cout << "c " << unit << " - unit resolution removing clause " << *occurence << std::endl;
-                clause_db.removeClause(occurence);
-            } else {
-                if (occurence->size() == 1) {
-                    return false;
-                }
-                // std::cout << "c " << unit << " - unit resolution strengthening clause " << *occurence << std::endl;
-                Clause* clause = clause_db.strengthenClause(occurence, ~unit);
-                occurences.add(clause);
-            }
-        }
-    }
-    return true;
-}
-
-bool Subsumption::subsume(Clause* clause) {
+void Subsumption::subsume(OccurenceList& occurences, Clause* clause) {
     // Find best variable to scan:
-    Lit best = *std::min_element(clause->begin(), clause->end(), [this] (Lit l1, Lit l2) {
+    Lit best = *std::min_element(clause->begin(), clause->end(), [&occurences] (Lit l1, Lit l2) {
         return occurences.count(l1.var()) < occurences.count(l2.var());
     });
-
-    // Search all candidates:
-    std::vector<Clause*> list = occurences.copy(best.var());
-    for (Clause* occurence : list) {
+    for (unsigned int i = 0; i < occurences[best.var()].size() && !clause_db.hasEmptyClause(); i++) {
+        Clause* occurence = occurences[best.var()][i];
         if (occurence != clause && !occurence->isDeleted()) {
             Lit l = clause->subsumes(occurence);
 
@@ -137,7 +111,7 @@ bool Subsumption::subsume(Clause* clause) {
                 } else {
                     nSubsumed++;
                 }
-                clause->setPersistent();
+                if (occurence->isPersistent()) clause->setPersistent();
                 clause_db.removeClause(occurence);
             }
             else if (l != lit_Error) {
@@ -145,15 +119,14 @@ bool Subsumption::subsume(Clause* clause) {
                 if (occurence->size() > 1) {
                     Clause* strengthened = clause_db.strengthenClause(occurence, ~l);
                     occurences.add(strengthened);
-                    return subsume(strengthened);
-                } else {
-                    return false;
+                    subsume(occurences, strengthened);
+                } 
+                else {
+                    clause_db.emptyClause();
                 }
             }
         }
     }
-
-    return true;
 }
 
 }
