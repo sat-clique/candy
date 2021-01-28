@@ -79,8 +79,6 @@ namespace SolverOptions {
 
 namespace VariableEliminationOptions {
     extern IntOption opt_clause_lim;
-    extern IntOption opt_grow; 
-    extern BoolOption opt_use_asymm;
     extern BoolOption opt_use_elim;
 }
 

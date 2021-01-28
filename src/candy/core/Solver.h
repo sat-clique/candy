@@ -62,7 +62,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/simplification/Subsumption.h"
 #include "candy/simplification/OccurenceList.h"
 #include "candy/simplification/VariableElimination.h"
-#include "candy/simplification/AsymmetricVariableReduction.h"
 
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
@@ -165,11 +164,14 @@ protected:
     Restart restart;
     ReduceDB reduce;
 
+    Subsumption subsumption;
+    VariableElimination elimination;
+
     unsigned int verbosity;
 
     CandySolverResult result;
 
-    bool preprocessing_enabled; // do eliminate (via subsumption, asymm, elim)
+    bool preprocessing_enabled;
 
     unsigned int lastRestartWithInprocessing;
     unsigned int inprocessingFrequency;
@@ -213,10 +215,7 @@ private:
     void processClauseDatabase() {
         assert(trail.decisionLevel() == 0);
 
-        OccurenceList occurence_list { clause_db };
-        Subsumption subsumption { clause_db, occurence_list };
-        VariableElimination elimination { occurence_list, clause_db, trail };
-        AsymmetricVariableReduction<TPropagation> reduction { clause_db, occurence_list, trail, propagation };
+        OccurenceList occurence_list { clause_db };        
 
         unsigned int num = 1;
         unsigned int max = 0;
@@ -224,29 +223,15 @@ private:
         while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
             if (num > 100) occurence_list.cleanup();
 
-            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
-            if (clause_db.hasEmptyClause()) break;
+            if (clause_db.hasEmptyClause() || propagation.propagate() != nullptr) break;
 
-            if (!subsumption.subsume()) clause_db.emptyClause();
+            subsumption.subsume(occurence_list);
 
-            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
-            if (clause_db.hasEmptyClause()) break;
+            if (clause_db.hasEmptyClause() || propagation.propagate() != nullptr) break;
 
-            if (!reduction.reduce()) clause_db.emptyClause();
+            elimination.eliminate(occurence_list);
 
-            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
-            if (clause_db.hasEmptyClause()) break;
-
-            if (!elimination.eliminate()) clause_db.emptyClause();
-
-            if (verbosity > 1) {
-                std::cout << "c " << std::this_thread::get_id() << ": Removed " << subsumption.nDuplicates << " Duplicate Clauses" << std::endl;
-                std::cout << "c " << std::this_thread::get_id() << ": Subsumption subsumed " << subsumption.nSubsumed << " and strengthened " << subsumption.nStrengthened << " clauses" << std::endl;
-                std::cout << "c " << std::this_thread::get_id() << ": Reduction strengthened " << reduction.nTouched() << " clauses" << std::endl;
-                std::cout << "c " << std::this_thread::get_id() << ": Eliminiated " << elimination.nTouched() << " variables" << std::endl;
-            }
-
-            num = subsumption.nTouched() + elimination.nTouched() + reduction.nTouched();
+            num = subsumption.nTouched() + elimination.nTouched();
             max = std::max(num, max);
         } 
     }
@@ -275,6 +260,8 @@ Solver<TPropagation, TLearning, TBranching>::Solver() :
     branching(clause_db, trail),
     restart(clause_db, trail),
     reduce(clause_db, trail),
+    subsumption(clause_db, trail),
+    elimination(clause_db, trail),
     // verbosity
     verbosity(SolverOptions::verb), 
     // result
@@ -307,10 +294,10 @@ void Solver<TPropagation, TLearning, TBranching>::init(const CNFProblem& problem
     clause_db.init(problem, allocator, lemma);
 
     for (Cl* clause : problem) {
-        if (!clause_db.eliminated.has_eliminated_variables()) break;
+        if (!elimination.has_eliminated_variables()) break;
         for (Lit lit : *clause) {
-            if (clause_db.eliminated.is_eliminated(lit.var())) {
-                std::vector<Cl> cor = clause_db.eliminated.undo(lit.var());
+            if (elimination.is_eliminated(lit.var())) {
+                std::vector<Cl> cor = elimination.undo(lit.var());
                 for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
             }
         }
@@ -320,6 +307,8 @@ void Solver<TPropagation, TLearning, TBranching>::init(const CNFProblem& problem
     propagation.init();
     learning.init(clause_db.nVars());
     branching.init(problem);
+    subsumption.init();
+    elimination.init();
 }
 
 
@@ -410,8 +399,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     propagateAndMaterializeUnitClauses();
 
     // prepare variable elimination for new set of assumptions
-    for (Lit lit : trail.assumptions) if (clause_db.eliminated.is_eliminated(lit.var())) {
-        std::vector<Cl> correction_set = clause_db.eliminated.undo(lit.var());
+    for (Lit lit : trail.assumptions) if (elimination.is_eliminated(lit.var())) {
+        std::vector<Cl> correction_set = elimination.undo(lit.var());
         for (Cl cl : correction_set) {
             Clause* clause = clause_db.createClause(cl.begin(), cl.end());
             if (clause->size() > 2) propagation.attachClause(clause);
@@ -423,9 +412,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         std::cout << "c Preprocessing ... " << std::endl;
         processClauseDatabase();
         propagation.reset();
+        propagateAndMaterializeUnitClauses();
     }
-    
-    std::cout << "c Searching ... " << std::endl;
 
     lbool status = clause_db.hasEmptyClause() ? l_False : l_Undef;
 
@@ -442,9 +430,10 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             else {
                 std::cout << "c Reducing ... " << std::endl;
                 reduce.reduce();
-            }            
+            }
             clause_db.reorganize();
             propagation.reset();
+            propagateAndMaterializeUnitClauses();
         }
 
         // multi-threaded unit-clauses fast-track
@@ -475,16 +464,19 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         }
     }
     else if (status == l_True) {
-        for (auto it = clause_db.eliminated.variables.rbegin(); it != clause_db.eliminated.variables.rend(); it++) {
+        for (auto it = elimination.variables.rbegin(); it != elimination.variables.rend(); it++) {
             //std::cout << "Setting Eliminated Variable " << *it << std::endl;
-            for (Cl& clause : clause_db.eliminated.clauses[*it]) {
+            for (Cl& clause : elimination.clauses[*it]) {
                 if (!trail.satisfies(clause.begin(), clause.end())) {
                     for (Lit lit : clause) { 
-                        if (trail.value(lit) == l_Undef) {
+                        if (lit.var() == *it) {
                             trail.set_value(lit);
                         }
                     }
                 }
+            }
+            if (trail.value(*it) == l_Undef) {
+                trail.set_value(Lit(*it));
             }
         }
         result.setModel(trail);
