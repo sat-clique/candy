@@ -78,12 +78,94 @@ namespace Candy {
 
 template<class TPropagation = Propagation2WL, class TLearning = Learning1UIP, class TBranching = BranchingVSIDS> 
 class Solver : public CandySolverInterface {
-public:
-    Solver();
-    ~Solver();
+protected:
+    ClauseDatabase clause_db;
+    Trail trail;
 
-    void clear() override;
-    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) override;
+    TPropagation propagation;
+    TLearning learning;
+    TBranching branching;
+
+    Restart restart;
+    ReduceDB reduce;
+
+    Subsumption subsumption;
+    VariableElimination elimination;
+
+    unsigned int verbosity;
+
+    CandySolverResult result;
+
+    bool preprocessing_enabled;
+
+    unsigned int lastRestartWithInprocessing;
+    unsigned int inprocessingFrequency;
+
+    // Interruption callback
+    void* termCallbackState;
+    int (*termCallback)(void* state);
+
+    // Learnt callback ipasir
+    void* learntCallbackState;
+    int learntCallbackMaxLength;
+    void (*learntCallback)(void* state, int* clause);
+
+    lbool search(); 
+
+public:
+    Solver() : clause_db(), trail(),
+        // subsystems
+        propagation(clause_db, trail),
+        learning(clause_db, trail),
+        branching(clause_db, trail),
+        restart(clause_db, trail),
+        reduce(clause_db, trail),
+        subsumption(clause_db, trail),
+        elimination(clause_db, trail),
+        // verbosity
+        verbosity(SolverOptions::verb), 
+        // result
+        result(),
+        // pre- and inprocessing
+        preprocessing_enabled(SolverOptions::opt_preprocessing),
+        lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
+        // interruption callback
+        termCallbackState(nullptr), termCallback([](void*) -> int { return 0; }),
+        // learnt callback ipasir
+        learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
+    { }
+
+    ~Solver() { }
+
+    void clear() override {
+        clause_db.clear();
+        propagation.clear();
+        branching.clear();
+    }
+
+    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) override  {
+        assert(trail.decisionLevel() == 0);
+
+        // always initialize clause_db _first_
+        clause_db.init(problem, allocator, lemma);
+
+        for (Cl* clause : problem) {
+            if (!elimination.has_eliminated_variables()) break;
+            for (Lit lit : *clause) {
+                if (elimination.is_eliminated(lit.var())) {
+                    std::vector<Cl> cor = elimination.undo(lit.var());
+                    for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
+                }
+            }
+        }
+
+        trail.init(clause_db.nVars());
+        propagation.init();
+        learning.init(clause_db.nVars());
+        branching.init(problem);
+        subsumption.init();
+        elimination.init();
+    }
 
     ClauseAllocator* setupGlobalAllocator() override {
         return clause_db.createGlobalClauseAllocator();
@@ -141,7 +223,6 @@ public:
 
     void printStats() override;
 
-    //TODO: use std::function<int(void*)> as type here
     void setTermCallback(void* state, int (*termCallback)(void* state)) override {
         this->termCallbackState = state;
         this->termCallback = termCallback;
@@ -153,64 +234,7 @@ public:
         this->learntCallback = learntCallback;
     }
 
-protected:
-    ClauseDatabase clause_db;
-    Trail trail;
-
-    TPropagation propagation;
-    TLearning learning;
-    TBranching branching;
-
-    Restart restart;
-    ReduceDB reduce;
-
-    Subsumption subsumption;
-    VariableElimination elimination;
-
-    unsigned int verbosity;
-
-    CandySolverResult result;
-
-    bool preprocessing_enabled;
-
-    unsigned int lastRestartWithInprocessing;
-    unsigned int inprocessingFrequency;
-
-    // Interruption callback
-    void* termCallbackState;
-    int (*termCallback)(void* state);
-
-    // Learnt callback ipasir
-    void* learntCallbackState;
-    int learntCallbackMaxLength;
-    void (*learntCallback)(void* state, int* clause);
-
-    lbool search(); 
-
 private:
-    // important in parallel scenario
-    void propagateAndMaterializeUnitClauses() {
-        assert(trail.decisionLevel() == 0);
-        std::vector<Clause*> facts = clause_db.getUnitClauses();
-        for (Clause* clause : facts) {
-            assert(clause->size() == 1);
-            if (!trail.fact(clause->first())) clause_db.emptyClause();
-        }
-        if (!clause_db.hasEmptyClause()) {
-            std::array<Lit, 1> unit;
-            unsigned int pos = trail.size();            
-            if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
-            else {
-                for (auto it = trail.begin() + pos; it != trail.end(); it++) {
-                    assert(trail.reason(it->var()) != nullptr);
-                    unit[0] = *it;
-                    Clause* new_clause = clause_db.createClause(unit.begin(), unit.end());
-                    trail.fact(new_clause->first());
-                }
-            }
-        }
-    }
-
     // pre- and inprocessing
     void processClauseDatabase() {
         assert(trail.decisionLevel() == 0);
@@ -251,68 +275,6 @@ private:
 };
 
 template<class TPropagation, class TLearning, class TBranching>
-Solver<TPropagation, TLearning, TBranching>::Solver() : 
-    // Basic Systems
-    clause_db(),
-    trail(),
-    propagation(clause_db, trail),
-	learning(clause_db, trail),
-    branching(clause_db, trail),
-    restart(clause_db, trail),
-    reduce(clause_db, trail),
-    subsumption(clause_db, trail),
-    elimination(clause_db, trail),
-    // verbosity
-    verbosity(SolverOptions::verb), 
-    // result
-    result(),
-    // pre- and inprocessing
-    preprocessing_enabled(SolverOptions::opt_preprocessing),
-    lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
-    // interruption callback
-    termCallbackState(nullptr), termCallback([](void*) -> int { return 0; }),
-    // learnt callback ipasir
-    learntCallbackState(nullptr), learntCallbackMaxLength(0), learntCallback(nullptr)
-{ }
-
-template<class TPropagation, class TLearning, class TBranching>
-Solver<TPropagation, TLearning, TBranching>::~Solver() {
-}
-
-template<class TPropagation, class TLearning, class TBranching>
-void Solver<TPropagation, TLearning, TBranching>::clear() {
-    clause_db.clear();
-    propagation.clear();
-    branching.clear();
-}
-
-template<class TPropagation, class TLearning, class TBranching>
-void Solver<TPropagation, TLearning, TBranching>::init(const CNFProblem& problem, ClauseAllocator* allocator, bool lemma) {
-    assert(trail.decisionLevel() == 0);
-
-    // always initialize clause_db _first_
-    clause_db.init(problem, allocator, lemma);
-
-    for (Cl* clause : problem) {
-        if (!elimination.has_eliminated_variables()) break;
-        for (Lit lit : *clause) {
-            if (elimination.is_eliminated(lit.var())) {
-                std::vector<Cl> cor = elimination.undo(lit.var());
-                for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
-            }
-        }
-    }
-
-    trail.init(clause_db.nVars());
-    propagation.init();
-    learning.init(clause_db.nVars());
-    branching.init(problem);
-    subsumption.init();
-    elimination.init();
-}
-
-
-template<class TPropagation, class TLearning, class TBranching>
 lbool Solver<TPropagation, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
@@ -349,7 +311,6 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
             while (trail.hasAssumptionsNotSet()) {
                 Lit p = trail.nextAssumption();
                 if (trail.value(p) == l_True) {
-                    // std::cout << "c Assumption already satisfied " << p << std::endl;
                     trail.newDecisionLevel(); // Dummy decision level
                 } 
                 else if (trail.value(p) == l_False) {
@@ -358,30 +319,18 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
                     return l_False;
                 } 
                 else {
-                    // std::cout << "c Propagating Assumption " << p << std::endl;
                     next = p;
                     break;
                 }
             }
-            
+
             if (next == lit_Undef) {
-                if (LearningOptions::pickback > 0 && clause_db.result.learnt_clause.size() > 0) {
-                    Lit pb = learning.pickback(clause_db.result.learnt_clause[0]);
-                    if (trail.value(pb) == l_Undef) {
-                        next = pb;
-                        clause_db.result.learnt_clause.clear();
-                    }
-                }
-            }
-            if (next == lit_Undef) {
-                // New variable decision:
                 next = branching.pickBranchLit();
                 if (next == lit_Undef) { // Model found
                     return l_True;
                 }
             }
             
-            // Increase decision level and enqueue 'next'
             trail.newDecisionLevel();
             trail.decide(next);
         }
@@ -395,8 +344,11 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     trail.reset();
     propagation.reset();
 
-    // this is kind-of needed now (came in with parallel version)
-    propagateAndMaterializeUnitClauses();
+    // materialized unit-clauses for sharing (Todo: Refactor)
+    for (Clause* clause : clause_db.getUnitClauses()) {
+        if (!trail.fact(clause->first())) clause_db.emptyClause();
+    }
+    if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
 
     // prepare variable elimination for new set of assumptions
     for (Lit lit : trail.assumptions) if (elimination.is_eliminated(lit.var())) {
@@ -412,7 +364,11 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         std::cout << "c Preprocessing ... " << std::endl;
         processClauseDatabase();
         propagation.reset();
-        propagateAndMaterializeUnitClauses();
+        // materialized unit-clauses for sharing (Todo: Refactor)
+        for (Clause* clause : clause_db.getUnitClauses()) {
+            if (!trail.fact(clause->first())) clause_db.emptyClause();
+        }
+        if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
     }
 
     lbool status = clause_db.hasEmptyClause() ? l_False : l_Undef;
@@ -433,11 +389,12 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             }
             clause_db.reorganize();
             propagation.reset();
-            propagateAndMaterializeUnitClauses();
+            // materialized unit-clauses for sharing (Todo: Refactor)
+            for (Clause* clause : clause_db.getUnitClauses()) {
+                if (!trail.fact(clause->first())) clause_db.emptyClause();
+            }
         }
 
-        // multi-threaded unit-clauses fast-track
-        // propagateAndMaterializeUnitClauses();
         if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
 
         if (clause_db.hasEmptyClause()) {
