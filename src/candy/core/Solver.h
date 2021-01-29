@@ -247,11 +247,11 @@ private:
         while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
             if (num > 100) occurence_list.cleanup();
 
-            if (clause_db.hasEmptyClause() || propagation.propagate() != nullptr) break;
+            if (clause_db.hasEmptyClause() || propagation.propagate().exists()) break;
 
             subsumption.subsume(occurence_list);
 
-            if (clause_db.hasEmptyClause() || propagation.propagate() != nullptr) break;
+            if (clause_db.hasEmptyClause() || propagation.propagate().exists()) break;
 
             elimination.eliminate(occurence_list);
 
@@ -279,9 +279,9 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
     assert(!clause_db.hasEmptyClause());
 
     for (;;) {
-        Clause* confl = (Clause*)propagation.propagate();
+        Reason confl = propagation.propagate();
 
-        if (confl != nullptr) { // CONFLICT
+        if (confl.exists()) { // CONFLICT
             if (trail.decisionLevel() == 0) {
                 if (verbosity > 1) std::cout << "c Conflict found by propagation at level 0" << std::endl;
                 return l_False;
@@ -348,7 +348,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     for (Clause* clause : clause_db.getUnitClauses()) {
         if (!trail.fact(clause->first())) clause_db.emptyClause();
     }
-    if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
+    if (propagation.propagate().exists()) { clause_db.emptyClause(); }
 
     // prepare variable elimination for new set of assumptions
     for (Lit lit : trail.assumptions) if (elimination.is_eliminated(lit.var())) {
@@ -368,7 +368,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         for (Clause* clause : clause_db.getUnitClauses()) {
             if (!trail.fact(clause->first())) clause_db.emptyClause();
         }
-        if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
+        if (propagation.propagate().exists()) { clause_db.emptyClause(); }
     }
 
     lbool status = clause_db.hasEmptyClause() ? l_False : l_Undef;
@@ -395,7 +395,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             }
         }
 
-        if (propagation.propagate() != nullptr) { clause_db.emptyClause(); }
+        if (propagation.propagate().exists()) { clause_db.emptyClause(); }
 
         if (clause_db.hasEmptyClause()) {
             status = l_False;

@@ -33,7 +33,7 @@ public:
     virtual void reset() = 0;
     virtual void attachClause(Clause* clause) = 0;
     virtual void detachClause(Clause* clause) = 0;
-    virtual Clause* propagate() = 0;
+    virtual Reason propagate() = 0;
 };
 
 }

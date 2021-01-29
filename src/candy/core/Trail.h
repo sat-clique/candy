@@ -48,6 +48,77 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
+#define BIT64 (1ULL << 63)
+
+class Reason {
+    union D {
+        uintptr_t raw;
+        Clause* clause;
+        Lit binary[2];
+        D() : raw(0) {}
+    } data;
+
+public:
+    Reason() {
+        unset();
+    }
+
+    Reason(Clause* clause) {
+        set(clause);
+    }
+
+    Reason(Lit lit1, Lit lit2) {
+        set(lit1, lit2);
+    }
+
+    void unset() {
+        data.raw = 0;
+    }
+
+    bool exists() {
+        return data.raw != 0;
+    }
+
+    void set(Clause* clause) {
+        assert(clause != nullptr);
+        data.clause = clause;
+        data.raw |= BIT64;
+    }
+
+    void set(Lit lit1, Lit lit2) {
+        data.binary[0] = lit1;
+        data.binary[1] = lit2;
+    }
+
+    bool is_ptr() {
+        return data.raw & BIT64;
+    }
+
+    Clause* get_ptr() {
+        return (Clause*)(data.raw & ~BIT64);
+    }
+
+    typedef const Lit* const_iterator;
+
+    inline const_iterator begin() const {
+        if (data.raw & BIT64) {
+            Clause* clause = (Clause*)(data.raw & ~BIT64);
+            return clause->begin();
+        } else {
+            return data.binary;
+        }
+    }
+
+    inline const_iterator end() const {
+        if (data.raw & BIT64) {
+            Clause* clause = (Clause*)(data.raw & ~BIT64);
+            return clause->end();
+        } else {
+            return data.binary + 2;
+        }
+    }
+};
+
 class Trail {
 public:
     unsigned int nVariables;
@@ -58,7 +129,7 @@ public:
     std::vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
     std::vector<lbool> assigns; // The current assignments.
     std::vector<unsigned int> levels; // decision-level of assignment per variable
-    std::vector<Clause*> reasons; // reason-clause of assignment per variable
+    std::vector<Reason> reasons; // reason of assignment per variable
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
 
@@ -98,7 +169,7 @@ public:
     inline void reset() {
         std::fill(assigns.begin(), assigns.end(), l_Undef);
         std::fill(levels.begin(), levels.end(), 0);
-        std::fill(reasons.begin(), reasons.end(), nullptr);
+        std::fill(reasons.begin(), reasons.end(), Reason());
         qhead = 0;
         trail_size = 0;
         trail_lim.clear(); 
@@ -197,8 +268,7 @@ public:
         return std::all_of(begin, end, [this] (Lit lit) { return value(lit) == l_False; });
     }
 
-    // Main internal methods:
-    inline Clause* reason(Var x) const {
+    inline Reason reason(Var x) const {
         return reasons[x];
     }
 
@@ -224,7 +294,7 @@ public:
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
         set_value(p);
-        reasons[p.var()] = nullptr;
+        reasons[p.var()].unset();
         levels[p.var()] = decisionLevel();
         nDecisions++;
     }
@@ -234,7 +304,7 @@ public:
         lbool val = value(p);
         if (val != l_False) {
             set_value(p);
-            reasons[p.var()] = from;
+            reasons[p.var()].set(from);
             levels[p.var()] = decisionLevel();
             nPropagations++;
             return true;
@@ -249,7 +319,7 @@ public:
             if (val == l_Undef) {
                 set_value(p);
             }
-            reasons[p.var()] = nullptr;
+            reasons[p.var()].unset();
             levels[p.var()] = 0;
             return true;
         }
@@ -307,5 +377,5 @@ public:
 };
 }
 
-#endif /* SRC_CANDY_CORE_TRAIL_H_ */
+#endif
 

@@ -46,11 +46,11 @@ struct AnalysisResult {
 
 	uint64_t nConflicts;
 	std::vector<Lit> learnt_clause;
-	std::vector<Clause*> involved_clauses;
+	std::vector<Reason> involved_clauses;
 	unsigned int lbd;
     unsigned int backtrack_level;
 
-    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Clause*>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
+    void setLearntClause(std::vector<Lit>& learnt_clause_, std::vector<Reason>& involved_clauses_, unsigned int lbd_, unsigned int backtrack_level_) {
         assert(lbd_ <= learnt_clause_.size());
         nConflicts++;
         learnt_clause.swap(learnt_clause_);
