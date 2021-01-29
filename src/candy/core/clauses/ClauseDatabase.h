@@ -86,7 +86,7 @@ public:
 
     ~ClauseDatabase() { }
 
-    unsigned int nVars() {
+    unsigned int nVars() const {
         return variables;
     }
 

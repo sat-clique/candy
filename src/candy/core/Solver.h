@@ -196,7 +196,7 @@ public:
     }
 
     unsigned int nVars() const override {
-        return trail.vardata.size();
+        return clause_db.nVars();
     }
 
     unsigned int nClauses() const override {
