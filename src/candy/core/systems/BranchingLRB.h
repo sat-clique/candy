@@ -121,8 +121,8 @@ public:
 
     void process_conflict() override {
         stamp.clear();
-        for (const Clause* clause : clause_db.result.involved_clauses) { 
-            for (Lit lit : *clause) {
+        for (Reason reason : clause_db.result.involved_clauses) { 
+            for (Lit lit : reason) {
                 Var v = lit.var();
                 if (!stamp[v]) {
                     stamp.set(v);

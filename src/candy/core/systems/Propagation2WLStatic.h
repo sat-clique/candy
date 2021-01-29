@@ -160,7 +160,7 @@ public:
         return nullptr;
     }
 
-    Clause* propagate() override {
+    Reason propagate() override {
         Clause* conflict = nullptr;
 
         while (trail.qhead < trail.trail_size) {
@@ -168,14 +168,14 @@ public:
             
             // Propagate binary clauses
             conflict = propagate_binary_clauses(p);
-            if (conflict != nullptr) break;
+            if (conflict != nullptr) return Reason(conflict);
 
             // Propagate other 2-watched clauses
             conflict = propagate_watched_clauses(p);
-            if (conflict != nullptr) break;
+            if (conflict != nullptr) return Reason(conflict);
         }
 
-        return conflict;
+        return Reason();
     }
 };
 

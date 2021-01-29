@@ -57,11 +57,14 @@ public:
     }
 
     void process_conflict() {
-        for (Clause* clause : clause_db.result.involved_clauses) {
-            if (clause->getLBD() > persistentLBD) {
-                uint8_t lbd = trail.computeLBD(clause->begin(), clause->end());
-                clause->setLBD(lbd);
-                clause->incUsed();
+        for (Reason reason : clause_db.result.involved_clauses) {
+            if (reason.is_ptr()) {
+                Clause* clause = reason.get_ptr();
+                if (clause->getLBD() > persistentLBD) {
+                    uint8_t lbd = trail.computeLBD(clause->begin(), clause->end());
+                    clause->setLBD(lbd);
+                    clause->incUsed();
+                }
             }
         }
 
