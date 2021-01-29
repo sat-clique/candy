@@ -232,6 +232,7 @@ public:
 		}
 	}
 
+	// pickback decisions
 	Lit pickback(Lit lit) {
 		Lit next = lit;
 		stamp.clear();
@@ -266,13 +267,6 @@ public:
 		}
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
-		
-		// std::sort(learnt_clause.begin(), learnt_clause.end(), [this] (Lit a, Lit b) { return trail.level(a.var()) > trail.level(b.var()); });
-		// unsigned int pos = 1;
-		// if (learnt_clause.size() > pos && trail.level(learnt_clause[0].var()) == trail.level(learnt_clause[pos].var())) {
-		// 	std::swap(learnt_clause[1], learnt_clause[pos++]);
-		// }
-		// unsigned int backtrack_level = learnt_clause.size() > 1 ? trail.level(learnt_clause[1].var()) : 0;
         
 		unsigned int backtrack_level = 0;
 		if (learnt_clause.size() > 1) {
