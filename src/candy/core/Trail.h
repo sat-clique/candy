@@ -48,13 +48,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-struct VarData {
-    Clause* reason;
-    unsigned int level;
-    VarData() : reason(nullptr), level(0) {}
-    VarData(Clause* _reason, unsigned int _level) : reason(_reason), level(_level) {}
-};
-
 class Trail {
 public:
     unsigned int nVariables;
@@ -64,7 +57,8 @@ public:
 
     std::vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
     std::vector<lbool> assigns; // The current assignments.
-    std::vector<VarData> vardata; // Stores reason and level for each variable.
+    std::vector<unsigned int> levels; // decision-level of assignment per variable
+    std::vector<Clause*> reasons; // reason-clause of assignment per variable
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
 
@@ -76,7 +70,7 @@ public:
 
     Trail() : 
         nVariables(0), trail_size(0), conflict_level(0), qhead(0), 
-        trail(), assigns(), vardata(), trail_lim(), stamp(), 
+        trail(), assigns(), levels(), reasons(), trail_lim(), stamp(), 
         decision(), assumptions(), 
         nDecisions(0), nPropagations(0)
     { }
@@ -90,7 +84,8 @@ public:
             nVariables = nVars;
             trail.resize(nVars);
             assigns.resize(nVars, l_Undef);
-            vardata.resize(nVars);
+            levels.resize(nVars);
+            reasons.resize(nVars);
             stamp.grow(nVars);
             decision.resize(nVars, true);
         }
@@ -102,7 +97,8 @@ public:
 
     inline void reset() {
         std::fill(assigns.begin(), assigns.end(), l_Undef);
-        std::fill(vardata.begin(), vardata.end(), VarData { nullptr, 0 });
+        std::fill(levels.begin(), levels.end(), 0);
+        std::fill(reasons.begin(), reasons.end(), nullptr);
         qhead = 0;
         trail_size = 0;
         trail_lim.clear(); 
@@ -203,11 +199,11 @@ public:
 
     // Main internal methods:
     inline Clause* reason(Var x) const {
-        return vardata[x].reason;
+        return reasons[x];
     }
 
     inline unsigned int level(Var x) const {
-        return vardata[x].level;
+        return levels[x];
     }
 
     // Gives the current decisionlevel.
@@ -228,7 +224,8 @@ public:
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
         set_value(p);
-        vardata[p.var()] = VarData(nullptr, decisionLevel());
+        reasons[p.var()] = nullptr;
+        levels[p.var()] = decisionLevel();
         nDecisions++;
     }
 
@@ -237,7 +234,8 @@ public:
         lbool val = value(p);
         if (val != l_False) {
             set_value(p);
-            vardata[p.var()] = VarData(from, decisionLevel());
+            reasons[p.var()] = from;
+            levels[p.var()] = decisionLevel();
             nPropagations++;
             return true;
         }
@@ -251,7 +249,8 @@ public:
             if (val == l_Undef) {
                 set_value(p);
             }
-            vardata[p.var()] = VarData(nullptr, 0);
+            reasons[p.var()] = nullptr;
+            levels[p.var()] = 0;
             return true;
         }
         return false;
