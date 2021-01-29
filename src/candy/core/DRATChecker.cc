@@ -111,7 +111,7 @@ bool DRATChecker::check_asymm(Iterator begin, Iterator end, Lit pivot) {
             }
         } 
     }
-    return propagation.propagate() != nullptr;
+    return propagation.propagate().exists();
 }
 
 template <typename Iterator>

@@ -58,7 +58,7 @@ private:
     Trail& trail;
 
 	std::vector<Lit> learnt_clause;
-	std::vector<Clause*> involved_clauses;
+	std::vector<Reason> involved_clauses;
 	std::vector<Lit> pickback_clause;
 
 	/* some helper data-structures */
@@ -80,13 +80,13 @@ private:
 	    analyze_stack.push_back(lit.var());
 
 	    while (!analyze_stack.empty()) {
-	        const Clause* clause = trail.reason(analyze_stack.back());
+	        Reason reason = trail.reason(analyze_stack.back());
 	        analyze_stack.pop_back();
 
-	        for (Lit imp : *clause) {
+	        for (Lit imp : reason) {
 	            Var v = imp.var();
 	            if (!stamp[v] && trail.level(v) > 0) {
-	                if (trail.reason(v) != nullptr && (abstractLevel(v) & abstract_levels) != 0) {
+	                if (trail.reason(v).exists() && (abstractLevel(v) & abstract_levels) != 0) {
 	                    stamp.set(v);
 	                    analyze_stack.push_back(v);
 	                    analyze_clear.push_back(v);
@@ -117,7 +117,7 @@ private:
 			if (minimized.size() == 0) { // keep asserted literal
 				minimized.push_back(lit);
 			}
-			else if (trail.reason(lit.var()) == nullptr) {
+			else if (!trail.reason(lit.var()).exists()) {
 				minimized.push_back(lit);
 			}
 			else if (!litRedundant(lit, abstract_level)) {
@@ -167,18 +167,17 @@ private:
 	 *        rest of literals. There may be others from the same level though.
 	 *
 	 ***************************************************************************************************/
-	void analyze(const Clause* confl) {
+	void analyze(Reason confl) {
 	    learnt_clause.push_back(lit_Undef); // (leave room for the asserting literal)
 	    stamp.clear();
 
 	    Lit asserted_literal = lit_Undef;
 	    auto trail_iterator = trail.rbegin();
 	    for(int pathC = 0; pathC > 0 || asserted_literal == lit_Undef; pathC--) {
-	        assert(confl != nullptr); // (otherwise should be UIP)
-	        involved_clauses.push_back((Clause*)confl);
+	        assert(confl.exists()); // (otherwise should be UIP)
+	        involved_clauses.push_back(confl);
 
-			//std::cout << *confl << std::endl;
-	        for (Lit lit : *confl) {
+	        for (Lit lit : confl) {
 				//std::cout << "lit " << lit << " asserted literal " << asserted_literal << std::endl;
 				assert((trail.value(lit) != l_True) || (lit == asserted_literal));
 				assert((trail.value(lit) == l_True) || (lit != asserted_literal));
@@ -254,11 +253,10 @@ public:
 		return next;
 	}
 
-	void handle_conflict(Clause* confl) override {
+	void handle_conflict(Reason confl) override {
 		learnt_clause.clear();
 		involved_clauses.clear();
 
-		assert(confl != nullptr);
 		analyze(confl);
 
 		if (LearningOptions::equiv > 0 && learnt_clause.size() > 2) {
@@ -301,12 +299,12 @@ public:
 			for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
 				Var x = trail[i].var();
 				if (stamp[x]) {
-					if (trail.reason(x) == nullptr) {
+					if (!trail.reason(x).exists()) {
 						assert(trail.level(x) > 0);
 						assumptions.push_back(~trail[i]);
 					} else {
-						const Clause* c = trail.reason(x);
-						for (Lit lit : *c) {
+						Reason c = trail.reason(x);
+						for (Lit lit : c) {
 							if (trail.level(lit.var()) > 0) {
 								stamp.set(lit.var());
 							}
