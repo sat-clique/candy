@@ -47,7 +47,6 @@ namespace TestingOptions {
 }
 
 namespace LearningOptions {
-    extern IntOption pickback;
     extern IntOption equiv;
 }
 

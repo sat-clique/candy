@@ -226,7 +226,6 @@ public:
     }
 
     inline void decide(Lit p) {
-        // std::cout << "Branching on " << p << std::endl;
         assert(value(p) == l_Undef);
         set_value(p);
         vardata[p.var()] = VarData(nullptr, decisionLevel());
@@ -234,30 +233,28 @@ public:
     }
 
     inline bool propagate(Lit p, Clause* from) {
-        // std::cout << "Propgating " << p << " due to " << *from << std::endl;
-        if (this->falsifies(p)) {
-            return false;
-        }
-        else {
+        assert(value(p) != l_True);
+        lbool val = value(p);
+        if (val != l_False) {
             set_value(p);
             vardata[p.var()] = VarData(from, decisionLevel());
             nPropagations++;
             return true;
         }
+        return false;
     }
 
     inline bool fact(Lit p) {
-        // std::cout << "Setting fact " << p << std::endl;
-        assert(decisionLevel() == 0);
-        if (this->falsifies(p)) {
-            return false;
+        assert(decisionLevel() == 0);        
+        lbool val = value(p);
+        if (val != l_False) {
+            if (val == l_Undef) {
+                set_value(p);
+            }
+            vardata[p.var()] = VarData(nullptr, 0);
+            return true;
         }
-        vardata[p.var()] = VarData(nullptr, 0);
-        if (!this->satisfies(p))  {
-            set_value(p);
-            nPropagations++;
-        }
-        return true;
+        return false;
     }
 
     inline void backtrack(unsigned int level) {
