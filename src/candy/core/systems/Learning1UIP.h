@@ -262,8 +262,8 @@ public:
 		analyze(confl);
 
 		if (LearningOptions::equiv > 0 && learnt_clause.size() > 2) {
-			clause_db.greedy_cycle(learnt_clause[0]);
-			learnt_clause[0] = clause_db.get_eq(learnt_clause[0]);
+			clause_db.equiv.greedy_cycle(learnt_clause[0]);
+			learnt_clause[0] = clause_db.equiv.get_eq(learnt_clause[0]);
 		}
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());

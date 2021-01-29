@@ -9,6 +9,8 @@ add_library(core OBJECT
     clauses/ClauseAllocatorMemory.h
     clauses/ClauseDatabase.h
     clauses/Certificate.h
+    clauses/BinaryClauses.h
+    clauses/Equivalences.h
     systems/BranchingInterface.h
     systems/BranchingVSIDS.h
     systems/BranchingLRB.h
