@@ -27,6 +27,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseAllocator.h"
 #include "candy/core/clauses/Certificate.h"
+#include "candy/core/clauses/BinaryClauses.h"
+#include "candy/core/clauses/Equivalences.h"
 #include "candy/core/Trail.h"
 #include "candy/core/CNFProblem.h"
 #include "candy/utils/CLIOptions.h"
@@ -59,15 +61,6 @@ struct AnalysisResult {
 
 };
 
-struct BinaryWatcher {
-    Clause* clause;
-    Lit other;
-
-    BinaryWatcher(Clause* _clause, Lit _other)
-     : clause(_clause), other(_other) { }
-
-};
-
 class ClauseDatabase {
 private:
     ClauseAllocator allocator;
@@ -79,75 +72,33 @@ private:
     Certificate certificate;
 
 public:
-    std::vector<std::vector<BinaryWatcher>> binary_watchers;
-    std::vector<Lit> equiv;
-    
+    BinaryClauses binary_watchers;
+
     /* analysis result is stored here */
 	AnalysisResult result;
+    Equivalences equiv;
 
     ClauseDatabase() : 
         allocator(), variables(0), clauses(), emptyClause_(false), 
         certificate(SolverOptions::opt_certified_file),
-        binary_watchers(), equiv(), result()
+        binary_watchers(), result(), equiv(binary_watchers)
     { }
 
     ~ClauseDatabase() { }
 
-	void greedy_cycle(Lit root) {
-        // std::stringbuf buf;
-        // std::ostream os(&buf);
-        static Stamp<uint8_t> block(2*nVars());
-        if (block[root]) return;
-        block.set(root);
-		static State<uint8_t, 3> mark(2*nVars());
-        mark.clear();
-		std::vector<Lit> parent(2*nVars(), lit_Undef);
-		std::stack<Lit> stack;
-		stack.push(root);
-		mark.set(root, 2);
-		while (!stack.empty()) {
-			Lit lit = stack.top(); stack.pop();
-			for (BinaryWatcher& watcher : binary_watchers[lit]) {
-                Lit impl = watcher.other;
-				if (mark[impl] == 0) {
-					parent[impl] = lit;
-					mark.set(impl, 1);
-					stack.push(impl);
-                    // os << *child.clause << std::endl;
-				}
-				else if (mark[impl] == 2) {
-                    // std::cout << buf.str();
-                    // std::cout << "found cycle on root " << root << " with clause " << *child.clause << ": ";
-                    // for (Lit iter = parent[lit.var()]; iter != lit_Undef && mark[iter] != 2; iter = parent[iter.var()]) std::cout << " " << iter << " <-> " << lit;
-                    // std::cout << std::endl;
-					parent[impl] = lit;
-                    Lit iter = impl;
-                    while (mark[parent[iter]] != 2) {
-                        block.set(iter);
-                        set_eq(parent[iter], impl);
-						mark.set(iter, 2);
-                        iter = parent[iter];
-                    }
-				}
-			}
-		}
-	}
-
-    void set_eq(Lit lit1, Lit lit2) {
-        Lit rep1 = get_eq(lit1);
-        Lit rep2 = get_eq(lit2);
-        equiv[rep1.var()] = rep1.sign() ? ~rep2 : rep2;
+    unsigned int nVars() const {
+        return variables;
     }
 
-    Lit get_eq(Lit lit) {
-        return lit.sign() ? ~get_eq(lit.var()) : get_eq(lit.var());
-    }
-
-    Lit get_eq(Var v) {
-        Lit rep = equiv[v];
-        if (rep.var() != v) rep = rep.sign() ? ~get_eq(rep.var()) : get_eq(rep.var());
-        equiv[v] = rep;
-        return rep;
+    void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
+        if (variables < problem.nVars()) {
+            binary_watchers.init(problem.nVars());
+            variables = problem.nVars();
+        }
+        for (Cl* import : problem) {
+            createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
+        }
+        if (global_allocator != nullptr) setGlobalClauseAllocator(global_allocator);
     }
 
     void clear() {
@@ -160,36 +111,6 @@ public:
         result.nConflicts = 0;
     }
 
-    unsigned int nVars() {
-        return variables;
-    }
-
-    void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
-        if (variables < problem.nVars()) {
-            binary_watchers.resize(problem.nVars()*2+2);
-            equiv.resize(problem.nVars()+1);
-            for (unsigned int i = variables; i < problem.nVars(); i++) {
-                equiv[i] = Lit(i);
-            }
-            variables = problem.nVars();
-        }
-        for (Cl* import : problem) {
-            createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
-        }
-        if (global_allocator != nullptr) setGlobalClauseAllocator(global_allocator);
-    }
-
-    void reinitBinaryWatchers() {
-        binary_watchers.clear();
-        binary_watchers.resize(variables*2+2);
-        for (Clause* clause : clauses) {
-            if (clause->size() == 2) {
-                binary_watchers[~clause->first()].emplace_back(clause, clause->second());
-                binary_watchers[~clause->second()].emplace_back(clause, clause->first());
-            }
-        }
-    }
-
     ClauseAllocator* createGlobalClauseAllocator() {
         return allocator.create_global_allocator();
     }
@@ -197,7 +118,7 @@ public:
     void setGlobalClauseAllocator(ClauseAllocator* global_allocator) {
         allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
-        reinitBinaryWatchers();
+        binary_watchers.reinit(this->begin(), this->end());
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -227,6 +148,20 @@ public:
         certificate.proof();
     }
 
+    std::vector<Clause*> getUnitClauses() { 
+        return allocator.collect_unit_clauses();
+    }
+
+    /**
+     * Make sure all references are updated after all clauses reside in a new adress space
+     */
+    void reorganize() {
+        allocator.synchronize();
+        allocator.reorganize();
+        clauses = allocator.collect();
+        binary_watchers.reinit(this->begin(), this->end());
+    }
+
     template<typename Iterator>
     inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0, bool lemma = false) {
         unsigned int length = std::distance(begin, end);
@@ -241,8 +176,7 @@ public:
             emptyClause_ = true;
         }
         else if (clause->size() == 2) {
-            binary_watchers[~clause->first()].emplace_back(clause, clause->second());
-            binary_watchers[~clause->second()].emplace_back(clause, clause->first());
+            binary_watchers.add(clause);
         }
         
         return clause;
@@ -254,10 +188,7 @@ public:
         certificate.removed(clause->begin(), clause->end());
 
         if (clause->size() == 2) {
-            std::vector<BinaryWatcher>& list0 = binary_watchers[~clause->first()];
-            std::vector<BinaryWatcher>& list1 = binary_watchers[~clause->second()];
-            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list0.end());
-            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list1.end());
+            binary_watchers.remove(clause);
         }
     }
 
@@ -267,22 +198,7 @@ public:
         for (Lit literal : *clause) if (literal != lit) literals.push_back(literal);
         Clause* new_clause = createClause(literals.begin(), literals.end(), std::min((uint16_t)clause->getLBD(), (uint16_t)literals.size()));
         removeClause(clause);
-
         return new_clause;
-    }
-
-    std::vector<Clause*> getUnitClauses() { 
-        return allocator.collect_unit_clauses();
-    }
-
-    /**
-     * Make sure all references are updated after all clauses reside in a new adress space
-     */
-    void reorganize() {
-        allocator.synchronize();
-        allocator.reorganize();
-        clauses = allocator.collect();
-        reinitBinaryWatchers();
     }
 
 };
