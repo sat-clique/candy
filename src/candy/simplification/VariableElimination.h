@@ -175,13 +175,14 @@ private:
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, variable, resolvent)) {
                 uint16_t lbd = std::min({ (uint16_t)pc->getLBD(), (uint16_t)nc->getLBD(), (uint16_t)(resolvent.size()-1) });
-                // std::cout << "c Creating resolvent " << resolvent << std::endl;
+                if (verbosity > 2) std::cout << "c Creating resolvent " << resolvent << std::endl;
                 Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
                 occurences.add(clause);
+                if (trail.falsifies(clause->begin(), clause->end())) clause_db.emptyClause();
             }
         }
 
-        // std::cout << "Eliminated Variable " << variable << std::endl;
+        if (verbosity > 2) std::cout << "Eliminated Variable " << variable << std::endl;
         set_eliminated(variable, pos, neg);
 
         for (Clause* clause : pos) {

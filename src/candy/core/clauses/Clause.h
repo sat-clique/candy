@@ -21,6 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <initializer_list>
 #include <limits>
 #include <algorithm>
+#include <bitset>
 
 #include "candy/core/SolverTypes.h"
 
@@ -86,7 +87,7 @@ private:
     inline void calc_abstraction() {
         abstraction = 0;
         for (Lit lit : *this) {
-            abstraction |= 1ull << (lit % 32);
+            abstraction |= 1ull << (lit.var() % 32);
         }
     }
 
@@ -202,6 +203,7 @@ public:
      *       p          - The literal p can be deleted from 'other'
      */
     inline Lit subsumes(const Clause* other) const {
+        std::cout << std::bitset<32>(abstraction) << " & ~" << std::bitset<32>(other->abstraction) << " = " << std::bitset<32>(abstraction & ~(other->abstraction)) << std::endl;
         if ((abstraction & ~(other->abstraction)) == 0 && other->size() >= this->size()) {
             Lit ret = lit_Undef;
             for (Lit c : *this) {
