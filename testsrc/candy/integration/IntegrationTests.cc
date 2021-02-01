@@ -76,9 +76,7 @@ namespace Candy {
         }
     }
 
-    static void testTrivialProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
-        SolverOptions::opt_use_lrb = use_lrb;
-        ParallelOptions::opt_static_propagate = use_ts_pr;
+    static void testTrivialProblems(bool static_allocator) {
         SolverOptions::opt_certified_file = CERT;
         acceptanceTest(createSolver(), "cnf/trivial0.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
@@ -87,9 +85,7 @@ namespace Candy {
         acceptanceTest(createSolver(), "cnf/trivial2.cnf", static_allocator);
     }
 
-    static void testFuzzProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
-        SolverOptions::opt_use_lrb = use_lrb;
-        ParallelOptions::opt_static_propagate = use_ts_pr;
+    static void testFuzzProblems(bool static_allocator) {
         SolverOptions::opt_certified_file = CERT;
         acceptanceTest(createSolver(), "cnf/fuzz01.cnf", static_allocator); 
         SolverOptions::opt_certified_file = CERT;
@@ -100,9 +96,7 @@ namespace Candy {
         acceptanceTest(createSolver(), "cnf/fuzz04.cnf", static_allocator);
     }
 
-    static void testRealProblems(bool static_allocator, bool use_ts_pr, bool use_lrb, bool use_vsidsc) {
-        SolverOptions::opt_use_lrb = use_lrb;
-        ParallelOptions::opt_static_propagate = use_ts_pr;
+    static void testRealProblems(bool static_allocator) {
         SolverOptions::opt_certified_file = CERT;
         acceptanceTest(createSolver(), "cnf/dubois20.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
@@ -116,22 +110,43 @@ namespace Candy {
     }
 
     TEST(IntegrationTest, test_vsids) {
-        testTrivialProblems(false, false, false, false);
-        testFuzzProblems(false, false, false, false);
-        testRealProblems(false, false, false, false);
+        SolverOptions::opt_use_lrb = false;
+        ParallelOptions::opt_static_propagate = false;
+        ParallelOptions::opt_lb_propagate = false;
+        testTrivialProblems(false);
+        testFuzzProblems(false);
+        testRealProblems(false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate) {
-        testFuzzProblems(false, true, false, false);
+        SolverOptions::opt_use_lrb = false;
+        ParallelOptions::opt_static_propagate = true;
+        ParallelOptions::opt_lb_propagate = false;
+        testFuzzProblems(false);
+    }
+
+    TEST(IntegrationTest, test_vsids_with_lb_propagate) {
+        SolverOptions::opt_use_lrb = false;
+        ParallelOptions::opt_static_propagate = false;
+        ParallelOptions::opt_lb_propagate = true;
+        testTrivialProblems(false);
+        testFuzzProblems(false);
+        testRealProblems(false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
-        testFuzzProblems(true, false, false, false);
+        SolverOptions::opt_use_lrb = false;
+        ParallelOptions::opt_static_propagate = false;
+        ParallelOptions::opt_lb_propagate = false;
+        testFuzzProblems(true);
     }
 
     TEST(IntegrationTest, test_lrb) {
-        testFuzzProblems(false, false, true, false);
-        testRealProblems(false, false, false, false);
+        SolverOptions::opt_use_lrb = true;
+        ParallelOptions::opt_static_propagate = false;
+        ParallelOptions::opt_lb_propagate = false;
+        testFuzzProblems(false);
+        testRealProblems(false);
     }
     
 }

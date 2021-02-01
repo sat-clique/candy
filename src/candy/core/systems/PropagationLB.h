@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+Candy -- Copyright (c) 2020, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Candy sources are based on Glucose which is based on MiniSat (see former copyrights below). 
 Permissions and copyrights of Candy are exactly the same as Glucose and Minisat (see below).
@@ -38,8 +38,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_PROPAGATION2WL_H_
-#define SRC_CANDY_CORE_PROPAGATION2WL_H_
+#ifndef SRC_CANDY_CORE_PROPAGATION_LB_H_
+#define SRC_CANDY_CORE_PROPAGATION_LB_H_
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/ClauseDatabase.h"
@@ -50,32 +50,42 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-struct Watcher {
-    Clause* cref;
-    Lit blocker;
+struct LowerBound {
+    int32_t lb; // lower bound unassigned
+    Lit blocker; // possibly satisfied literal
+    Clause* clause;
 
-    Watcher(Clause* cr, Lit p)
-     : cref(cr), blocker(p) { }
+    LowerBound(Clause* cl) : 
+        lb(0),
+        blocker(cl->first()), 
+        clause(cl) { }
 };
 
-class Propagation2WL : public PropagationInterface {
+class PropagationLB : public PropagationInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
 
-    std::vector<std::vector<Watcher>> watchers;
+    std::vector<std::vector<LowerBound*>> bounds;
+
+    Memory<LowerBound> memory;
 
 public:
-    Propagation2WL(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers() {
+    PropagationLB(ClauseDatabase& _clause_db, Trail& _trail)
+        : clause_db(_clause_db), trail(_trail), bounds(), memory() {
+    }
+
+    ~PropagationLB() {
+        clear();
     }
 
     void clear() override {
-        watchers.clear();
+        bounds.clear();
+        memory.free_all();
     }
 
     void init() override {
-        watchers.resize(Lit(clause_db.nVars(), true));
+        bounds.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -90,16 +100,21 @@ public:
 
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        watchers[~clause->first()].emplace_back(clause, clause->second());
-        watchers[~clause->second()].emplace_back(clause, clause->first());
+        LowerBound* lb = new (memory.allocate()) LowerBound(clause);
+        for (Lit lit : *clause) {
+            bounds[~lit].push_back(lb);
+            if (trail.value(lit) != l_False) {
+                lb->lb++;
+            }
+        }
     }
 
     void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        std::vector<Watcher>& list0 = watchers[~clause->first()];
-        std::vector<Watcher>& list1 = watchers[~clause->second()];
-        list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-        list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+        for (Lit lit : *clause) {
+            bounds[~lit].erase(std::remove_if(bounds[~lit].begin(), bounds[~lit].end(), 
+                [clause](LowerBound* lb){ return lb->clause == clause; }), bounds[~lit].end());
+        }
     }
 
     inline Reason propagate_binary_clauses(Lit p) {
@@ -127,50 +142,38 @@ public:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
     Reason propagate_watched_clauses(Lit p) {
-        std::vector<Watcher>& list = watchers[p];
+        for (LowerBound* bound : bounds[p]) {
+            bound->lb--;
+            if (bound->lb <= 1) {
+                if (trail.value(bound->blocker) == l_True) {
+                    bound->lb = 1; continue;
+                }
 
-        auto keep = list.begin();
-        for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            lbool val = trail.value(watcher->blocker);
-
-            if (val != l_True) { // Try to avoid inspecting the clause
-                Clause* clause = watcher->cref;
+                Clause* clause = bound->clause;
 
                 if (clause->isDeleted()) continue;
 
-                if (clause->first() == ~p) { // Make sure the false literal is data[1]
-                    clause->swap(0, 1);
-                }
-
-                if (watcher->blocker != clause->first()) {
-                    watcher->blocker = clause->first(); 
-                    val = trail.value(clause->first());
-                }
-
-                if (val != l_True) {
-                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                        if (trail.value((*clause)[k]) != l_False) {
-                            clause->swap(1, k);
-                            watchers[~clause->second()].emplace_back(clause, clause->first());
+                bound->lb = 0;
+                for (Lit lit : *clause) {
+                    lbool val = trail.value(lit);
+                    if (val != l_False) {
+                        bound->lb++;
+                        bound->blocker = lit;
+                        if (val == l_True) {
                             goto propagate_skip;
                         }
-                    }
+                    } 
+                }
 
-                    // did not find watch
-                    if (val == l_False) { // conflict
-                        list.erase(keep, watcher);
-                        return Reason(clause);
-                    }
-                    else { // unit
-                        trail.propagate(clause->first(), clause);
-                    }
+                if (bound->lb == 0) { // conflict
+                    return Reason(clause);
+                }
+                else if (bound->lb == 1) { // unit
+                    trail.propagate(bound->blocker, clause);
                 }
             }
-            *keep = *watcher;
-            keep++;
             propagate_skip:;
         }
-        list.erase(keep, list.end());
 
         return Reason();
     }
@@ -185,7 +188,7 @@ public:
             conflict = propagate_binary_clauses(p);
             if (conflict.exists()) return conflict;
 
-            // Propagate other 2-watched clauses
+            // Propagate other clauses
             conflict = propagate_watched_clauses(p);
             if (conflict.exists()) return conflict;
         }

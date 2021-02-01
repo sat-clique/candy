@@ -22,6 +22,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/systems/Propagation2WL.h"
 #include "candy/core/systems/Propagation2WLStatic.h"
+#include "candy/core/systems/PropagationLB.h"
 #include "candy/core/systems/Learning1UIP.h"
 #include "candy/core/systems/BranchingVSIDS.h"
 #include "candy/core/systems/BranchingLRB.h"
@@ -45,6 +46,10 @@ public:
 
     constexpr auto propagateStaticClauses() const -> CandyBuilder<Propagation2WLStatic, TLearning, TBranching> { 
         return CandyBuilder<Propagation2WLStatic, TLearning, TBranching>();
+    }
+
+    constexpr auto propagateLowerBounds() const -> CandyBuilder<PropagationLB, TLearning, TBranching> { 
+        return CandyBuilder<PropagationLB, TLearning, TBranching>();
     }
 
     CandySolverInterface* build();
