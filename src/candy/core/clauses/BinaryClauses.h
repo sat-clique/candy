@@ -51,8 +51,8 @@ public:
         }
     }
 
-    inline const std::vector<Lit>& operator [](int i) const {
-        return binary_watchers[i];
+    inline const std::vector<Lit>& operator [](Lit p) const {
+        return binary_watchers[p];
     }
 
     void add(Clause* clause) {
@@ -63,8 +63,10 @@ public:
     void remove(Clause* clause) {
         std::vector<Lit>& list0 = binary_watchers[~clause->first()];
         std::vector<Lit>& list1 = binary_watchers[~clause->second()];
-        list0.erase(std::remove(list0.begin(), list0.end(), clause->second()), list0.end());
-        list1.erase(std::remove(list1.begin(), list1.end(), clause->first()), list1.end());
+        auto it = std::find(list0.begin(), list0.end(), ~clause->first());
+        if (it != list0.end()) list0.erase(it);
+        it = std::find(list1.begin(), list1.end(), ~clause->second());
+        if (it != list1.end()) list1.erase(it);
     }
 
 };
