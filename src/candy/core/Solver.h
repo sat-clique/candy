@@ -148,23 +148,12 @@ public:
 
         // always initialize clause_db _first_
         clause_db.init(problem, allocator, lemma);
-
-        for (Cl* clause : problem) {
-            if (!elimination.has_eliminated_variables()) break;
-            for (Lit lit : *clause) {
-                if (elimination.is_eliminated(lit.var())) {
-                    std::vector<Cl> cor = elimination.undo(lit.var());
-                    for (Cl& cl : cor) clause_db.createClause(cl.begin(), cl.end());
-                }
-            }
-        }
-
         trail.init(clause_db.nVars());
         propagation.init();
         learning.init(clause_db.nVars());
         branching.init(problem);
         subsumption.init();
-        elimination.init();
+        elimination.init(problem);
     }
 
     ClauseAllocator* setupGlobalAllocator() override {
@@ -342,23 +331,14 @@ template<class TPropagation, class TLearning, class TBranching>
 lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     result.clear();
     trail.reset();
+    elimination.undo_assumptions();
     propagation.reset();
 
     // materialized unit-clauses for sharing (Todo: Refactor)
     for (Clause* clause : clause_db.getUnitClauses()) {
         if (!trail.fact(clause->first())) clause_db.emptyClause();
     }
-    if (propagation.propagate().exists()) { clause_db.emptyClause(); }
-
-    // prepare variable elimination for new set of assumptions
-    for (Lit lit : trail.assumptions) if (elimination.is_eliminated(lit.var())) {
-        std::vector<Cl> correction_set = elimination.undo(lit.var());
-        for (Cl cl : correction_set) {
-            Clause* clause = clause_db.createClause(cl.begin(), cl.end());
-            if (clause->size() > 2) propagation.attachClause(clause);
-            for (Lit lit : *clause) trail.setDecisionVar(lit.var(), true);
-        }
-    }
+    if (propagation.propagate().exists()) { clause_db.emptyClause(); }    
     
     if (this->preprocessing_enabled) {
         std::cout << "c Preprocessing ... " << std::endl;
@@ -421,24 +401,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         }
     }
     else if (status == l_True) {
-        if (verbosity > 2) trail.print();
-        for (auto it = elimination.variables.rbegin(); it != elimination.variables.rend(); it++) {
-            if (verbosity > 2) std::cout << "Setting Eliminated Variable " << *it << std::endl;
-            for (Cl& clause : elimination.clauses[*it]) {
-                if (!trail.satisfies(clause.begin(), clause.end())) {
-                    for (Lit lit : clause) { 
-                        if (lit.var() == *it) {
-                            if (verbosity > 2) std::cout << "Clause " << clause << " => " << lit << std::endl;
-                            trail.set_value(lit);
-                        }
-                    }
-                }
-            }
-            if (trail.value(*it) == l_Undef) {
-                if (verbosity > 2) std::cout << " => " << Lit(*it) << std::endl;
-                trail.set_value(Lit(*it));
-            }
-        }
+        elimination.set_values();
         result.setModel(trail);
     }
     

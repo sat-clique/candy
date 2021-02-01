@@ -77,8 +77,61 @@ public:
         nEliminated(0), verbosity(SolverOptions::verb)
     { }
 
-    void init() { 
+    void init(const CNFProblem& problem) { 
         clauses.resize(trail.nVars());
+
+        for (Cl* clause : problem) {
+            if (!this->has_eliminated_variables()) break;
+            for (Lit lit : *clause) {
+                if (is_eliminated(lit.var())) {
+                    undo(lit.var());
+                }
+            }
+        }
+    }
+
+    void undo_assumptions() {
+        for (Lit lit : trail.assumptions) {
+            if (is_eliminated(lit.var())) {
+                undo(lit.var());
+            }
+        }
+    }
+
+    void undo(Var var) {
+        assert(is_eliminated(var));
+        auto begin = std::find(variables.begin(), variables.end(), var);
+        for (auto vit = begin; vit != variables.end(); vit++) {
+            for (Cl& cl : clauses[*vit]) {
+                clause_db.createClause(cl.begin(), cl.end());
+            }
+            clauses[*vit].clear();
+            trail.setDecisionVar(*vit, true);
+        }
+        variables.erase(begin, variables.end());
+    }
+
+    void set_values() {
+        if (verbosity > 2) {
+            trail.print();
+            std::cout << "Assign Eliminated Variables" << std::endl;
+        }
+        for (auto vit = variables.rbegin(); vit != variables.rend(); vit++) {
+            for (Cl& clause : clauses[*vit]) {
+                if (!trail.satisfies(clause.begin(), clause.end())) {
+                    for (Lit lit : clause) { 
+                        if (lit.var() == *vit) {
+                            if (verbosity > 2) std::cout << "Clause " << clause << " => " << lit << std::endl;
+                            trail.set_value(lit);
+                        }
+                    }
+                }
+            }
+            if (trail.value(*vit) == l_Undef) {
+                if (verbosity > 2) std::cout << " => " << Lit(*vit) << std::endl;
+                trail.set_value(Lit(*vit));
+            }
+        }
     }
 
     unsigned int nTouched() {
@@ -137,19 +190,6 @@ public:
         for (Clause* c : neg) clauses[var].push_back(Cl {c->begin(), c->end()} );
         trail.setDecisionVar(var, false);
         nEliminated++;
-    }
-
-    std::vector<Cl> undo(Var var) {
-        assert(is_eliminated(var));
-        std::vector<Cl> correction_set;
-        auto begin = std::find(variables.begin(), variables.end(), var);
-        for (auto it = begin; it != variables.end(); it++) {
-            correction_set.insert(correction_set.end(), clauses[*it].begin(), clauses[*it].end());
-            clauses[*it].clear();
-            trail.setDecisionVar(*it, true);
-        }
-        variables.erase(begin, variables.end());
-        return correction_set;
     }
 
 private:
