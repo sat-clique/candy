@@ -79,7 +79,6 @@ public:
         for (unsigned int i = 0; i < clause_db.size() && !clause_db.hasEmptyClause(); i++) {
             Clause* clause = clause_db[i];
             if (!clause->isDeleted()) {
-                if (verbosity > 2) std::cout << "Subsumption with " << *clause << std::endl;
                 subsume(occurences, clause);
             }
         }
