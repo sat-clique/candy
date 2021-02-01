@@ -143,7 +143,7 @@ public:
                 }
 
                 if (watcher->blocker != clause->first()) {
-                    watcher->blocker = clause->first(); // repair blocker (why?)
+                    watcher->blocker = clause->first(); 
                     val = trail.value(clause->first());
                 }
 

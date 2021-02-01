@@ -19,6 +19,7 @@ add_library(core OBJECT
     systems/PropagationInterface.h
     systems/Propagation2WL.h
     systems/Propagation2WLStatic.h
+    systems/PropagationLB.h
     CNFProblem.cc
     CNFProblem.h
     DRATChecker.cc
