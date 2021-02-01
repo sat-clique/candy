@@ -73,8 +73,7 @@ public:
 		mark.set(root, 2);
 		while (!stack.empty()) {
 			Lit lit = stack.top(); stack.pop();
-			for (const BinaryWatcher& watcher : binary_clauses[lit]) {
-                Lit impl = watcher.other;
+			for (Lit impl : binary_clauses[lit]) {
 				if (mark[impl] == 0) {
 					parent[impl] = lit;
 					mark.set(impl, 1);

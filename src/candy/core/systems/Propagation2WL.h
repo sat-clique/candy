@@ -102,18 +102,17 @@ public:
         list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
     }
 
-    inline Clause* propagate_binary_clauses(Lit p) {
-        const std::vector<BinaryWatcher>& list = clause_db.binary_watchers[p];
-        for (BinaryWatcher watcher : list) {
-            lbool val = trail.value(watcher.other);
-            if (val == l_False) {
-                return watcher.clause;
-            }
+    inline Reason propagate_binary_clauses(Lit p) {
+        for (Lit other : clause_db.binary_watchers[p]) {
+            lbool val = trail.value(other);
             if (val == l_Undef) {
-                trail.propagate(watcher.other, watcher.clause);
+                trail.propagate(other, Reason(~p, other));
+            }
+            if (val == l_False) {
+                return Reason(~p, other);
             }
         }
-        return nullptr;
+        return Reason();
     }
 
     /**************************************************************************************************
@@ -127,7 +126,7 @@ public:
      *    Post-conditions:
      *      * the propagation queue is empty, even if there was a conflict.
      **************************************************************************************************/
-    inline Clause* propagate_watched_clauses(Lit p) {
+    Reason propagate_watched_clauses(Lit p) {
         std::vector<Watcher>& list = watchers[p];
 
         auto keep = list.begin();
@@ -160,7 +159,7 @@ public:
                     // did not find watch
                     if (val == l_False) { // conflict
                         list.erase(keep, watcher);
-                        return clause;
+                        return Reason(clause);
                     }
                     else { // unit
                         trail.propagate(clause->first(), clause);
@@ -173,22 +172,22 @@ public:
         }
         list.erase(keep, list.end());
 
-        return nullptr;
+        return Reason();
     }
 
     Reason propagate() override {
-        Clause* conflict = nullptr;
+        Reason conflict;
 
         while (trail.qhead < trail.trail_size) {
             Lit p = trail[trail.qhead++];
             
             // Propagate binary clauses
             conflict = propagate_binary_clauses(p);
-            if (conflict != nullptr) return Reason(conflict);
+            if (conflict.exists()) return conflict;
 
             // Propagate other 2-watched clauses
             conflict = propagate_watched_clauses(p);
-            if (conflict != nullptr) return Reason(conflict);
+            if (conflict.exists()) return conflict;
         }
 
         return Reason();

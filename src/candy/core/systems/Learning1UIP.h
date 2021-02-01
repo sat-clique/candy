@@ -137,10 +137,10 @@ private:
 
 		//for (Lit lit : learnt_clause) if (!stamp[lit.var()])
 		Lit lit = learnt_clause[0];
-	    for (BinaryWatcher w : clause_db.binary_watchers[~lit]) {
-	        if (trail.satisfies(w.other)) {
+	    for (Lit other : clause_db.binary_watchers[~lit]) {
+	        if (trail.satisfies(other)) {
 	            minimize = true;
-	            stamp.set(w.other.var());
+	            stamp.set(other.var());
 	        }
 	    }
 
@@ -241,9 +241,9 @@ public:
 			lit = next;
 			stamp.set(lit.var());
 			unsigned int length = 0;
-			for (auto& watcher : clause_db.binary_watchers[~next]) {
-				if (clause_db.binary_watchers[~watcher.other].size() > length) {
-					next = ~watcher.other;
+			for (Lit other : clause_db.binary_watchers[~next]) {
+				if (clause_db.binary_watchers[~other].size() > length) {
+					next = ~other;
 					// std::cout << " to " << next << " (due to " << *watcher.clause << ") ";
 					break;
 				}
