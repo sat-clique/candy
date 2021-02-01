@@ -28,6 +28,7 @@ namespace ParallelOptions {
     extern IntOption opt_threads;
     extern IntOption opt_thread_initialization_delay;
     extern BoolOption opt_static_propagate; // thread-safe propagator
+    extern BoolOption opt_lb_propagate; // thread-safe propagator
     extern BoolOption opt_static_database;
     extern IntOption opt_static_database_size_bound;
 }

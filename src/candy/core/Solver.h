@@ -234,7 +234,7 @@ private:
         unsigned int max = 0;
         double simplification_threshold_factor = 0.1;
         while (num > max * simplification_threshold_factor && termCallback(termCallbackState) == 0) {
-            if (num > 100) occurence_list.cleanup();
+            if (num > 0.1 * nVars()) occurence_list.cleanup();
 
             if (clause_db.hasEmptyClause() || propagation.propagate().exists()) break;
 
