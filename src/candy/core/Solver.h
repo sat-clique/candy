@@ -421,7 +421,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         }
     }
     else if (status == l_True) {
-        trail.print();
+        if (verbosity > 2) trail.print();
         for (auto it = elimination.variables.rbegin(); it != elimination.variables.rend(); it++) {
             if (verbosity > 2) std::cout << "Setting Eliminated Variable " << *it << std::endl;
             for (Cl& clause : elimination.clauses[*it]) {

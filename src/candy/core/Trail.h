@@ -119,6 +119,13 @@ public:
     }
 };
 
+inline std::ostream& operator <<(std::ostream& stream, Reason const& reason) {
+    for (Lit lit : reason) {
+        stream << lit << " ";
+    }
+    return stream;
+}
+
 class Trail {
 public:
     unsigned int nVariables;
@@ -368,7 +375,7 @@ public:
                 std::cout << std::endl << "cT Level " << level << ": '" << trail[i] << "' ";
             } 
             else {
-                std::cout << trail[i] << " ";
+                std::cout << trail[i] << " (" << reason(trail[i].var()) << ") ";
             }
         }
         std::cout << std::endl;
