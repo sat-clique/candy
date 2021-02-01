@@ -63,9 +63,9 @@ public:
     void remove(Clause* clause) {
         std::vector<Lit>& list0 = binary_watchers[~clause->first()];
         std::vector<Lit>& list1 = binary_watchers[~clause->second()];
-        auto it = std::find(list0.begin(), list0.end(), ~clause->first());
+        auto it = std::find(list0.begin(), list0.end(), clause->second());
         if (it != list0.end()) list0.erase(it);
-        it = std::find(list1.begin(), list1.end(), ~clause->second());
+        it = std::find(list1.begin(), list1.end(), clause->first());
         if (it != list1.end()) list1.erase(it);
     }
 
