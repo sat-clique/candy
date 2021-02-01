@@ -421,18 +421,21 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         }
     }
     else if (status == l_True) {
+        trail.print();
         for (auto it = elimination.variables.rbegin(); it != elimination.variables.rend(); it++) {
-            //std::cout << "Setting Eliminated Variable " << *it << std::endl;
+            if (verbosity > 2) std::cout << "Setting Eliminated Variable " << *it << std::endl;
             for (Cl& clause : elimination.clauses[*it]) {
                 if (!trail.satisfies(clause.begin(), clause.end())) {
                     for (Lit lit : clause) { 
                         if (lit.var() == *it) {
+                            if (verbosity > 2) std::cout << "Clause " << clause << " => " << lit << std::endl;
                             trail.set_value(lit);
                         }
                     }
                 }
             }
             if (trail.value(*it) == l_Undef) {
+                if (verbosity > 2) std::cout << " => " << Lit(*it) << std::endl;
                 trail.set_value(Lit(*it));
             }
         }

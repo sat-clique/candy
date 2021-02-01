@@ -299,12 +299,12 @@ public:
         nDecisions++;
     }
 
-    inline bool propagate(Lit p, Clause* from) {
+    inline bool propagate(Lit p, Reason reason) {
         assert(value(p) != l_True);
         lbool val = value(p);
         if (val != l_False) {
             set_value(p);
-            reasons[p.var()].set(from);
+            reasons[p.var()] = reason;
             levels[p.var()] = decisionLevel();
             nPropagations++;
             return true;
