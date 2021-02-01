@@ -79,6 +79,7 @@ public:
         for (unsigned int i = 0; i < clause_db.size() && !clause_db.hasEmptyClause(); i++) {
             Clause* clause = clause_db[i];
             if (!clause->isDeleted()) {
+                if (verbosity > 2) std::cout << "Subsumption with " << *clause << std::endl;
                 subsume(occurences, clause);
             }
         }
@@ -112,6 +113,7 @@ void Subsumption::subsume(OccurenceList& occurences, Clause* clause) {
                     nSubsumed++;
                 }
                 if (occurence->isPersistent()) clause->setPersistent();
+                if (verbosity > 2) std::cout << *clause << " subsumes " << *occurence << std::endl;
                 clause_db.removeClause(occurence);
             }
             else if (l != lit_Error) {
@@ -119,6 +121,7 @@ void Subsumption::subsume(OccurenceList& occurences, Clause* clause) {
                 if (occurence->size() > 1) {
                     Clause* strengthened = clause_db.strengthenClause(occurence, ~l);
                     occurences.add(strengthened);
+                    if (verbosity > 2) std::cout << *clause << " strengthens " << *occurence << std::endl;
                     subsume(occurences, strengthened);
                 } 
                 else {

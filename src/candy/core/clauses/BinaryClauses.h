@@ -26,18 +26,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-struct BinaryWatcher {
-    Clause* clause;
-    Lit other;
-
-    BinaryWatcher(Clause* _clause, Lit _other)
-     : clause(_clause), other(_other) { }
-
-};
-
 class BinaryClauses {
 public:
-    std::vector<std::vector<BinaryWatcher>> binary_watchers;
+    std::vector<std::vector<Lit>> binary_watchers;
 
     BinaryClauses() : binary_watchers() {}
 
@@ -51,7 +42,7 @@ public:
 
     template<typename Iterator>
     void reinit(Iterator begin, Iterator end) {
-        for (std::vector<BinaryWatcher>& w : binary_watchers) w.clear();
+        for (std::vector<Lit>& w : binary_watchers) w.clear();
         for (Iterator it = begin; it != end; it++) {
             Clause* clause = *it;
             if (clause->size() == 2) {
@@ -60,20 +51,20 @@ public:
         }
     }
 
-    inline const std::vector<BinaryWatcher>& operator [](int i) const {
+    inline const std::vector<Lit>& operator [](int i) const {
         return binary_watchers[i];
     }
 
     void add(Clause* clause) {
-        binary_watchers[~clause->first()].emplace_back(clause, clause->second());
-        binary_watchers[~clause->second()].emplace_back(clause, clause->first());
+        binary_watchers[~clause->first()].push_back(clause->second());
+        binary_watchers[~clause->second()].push_back(clause->first());
     }
 
     void remove(Clause* clause) {
-        std::vector<BinaryWatcher>& list0 = binary_watchers[~clause->first()];
-        std::vector<BinaryWatcher>& list1 = binary_watchers[~clause->second()];
-        list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list0.end());
-        list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](BinaryWatcher w){ return w.clause == clause; }), list1.end());
+        std::vector<Lit>& list0 = binary_watchers[~clause->first()];
+        std::vector<Lit>& list1 = binary_watchers[~clause->second()];
+        list0.erase(std::remove(list0.begin(), list0.end(), clause->second()), list0.end());
+        list1.erase(std::remove(list1.begin(), list1.end(), clause->first()), list1.end());
     }
 
 };
