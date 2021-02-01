@@ -203,7 +203,6 @@ public:
      *       p          - The literal p can be deleted from 'other'
      */
     inline Lit subsumes(const Clause* other) const {
-        std::cout << std::bitset<32>(abstraction) << " & ~" << std::bitset<32>(other->abstraction) << " = " << std::bitset<32>(abstraction & ~(other->abstraction)) << std::endl;
         if ((abstraction & ~(other->abstraction)) == 0 && other->size() >= this->size()) {
             Lit ret = lit_Undef;
             for (Lit c : *this) {
