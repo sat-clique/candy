@@ -10,6 +10,7 @@ add_library(core OBJECT
     clauses/ClauseDatabase.h
     clauses/Certificate.h
     clauses/BinaryClauses.h
+    clauses/NaryClauses.h
     clauses/Equivalences.h
     systems/BranchingInterface.h
     systems/BranchingVSIDS.h

@@ -75,7 +75,7 @@ public:
         data.raw = 0;
     }
 
-    bool exists() {
+    bool exists() const {
         return data.raw != 0;
     }
 
@@ -90,29 +90,27 @@ public:
         data.binary[1] = lit2;
     }
 
-    bool is_ptr() {
+    inline bool is_ptr() const {
         return data.raw & BIT64;
     }
 
-    Clause* get_ptr() {
+    inline Clause* get_ptr() const {
         return (Clause*)(data.raw & ~BIT64);
     }
 
     typedef const Lit* const_iterator;
 
     inline const_iterator begin() const {
-        if (data.raw & BIT64) {
-            Clause* clause = (Clause*)(data.raw & ~BIT64);
-            return clause->begin();
+        if (is_ptr()) {
+            return get_ptr()->begin();
         } else {
             return data.binary;
         }
     }
 
     inline const_iterator end() const {
-        if (data.raw & BIT64) {
-            Clause* clause = (Clause*)(data.raw & ~BIT64);
-            return clause->end();
+        if (is_ptr()) {
+            return get_ptr()->end();
         } else {
             return data.binary + 2;
         }
