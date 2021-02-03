@@ -67,14 +67,8 @@ private:
 
 public:
     Propagation2WL(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers() {
-    }
-
-    void clear() override {
-        watchers.clear();
-    }
-
-    void init() override {
+        : clause_db(_clause_db), trail(_trail), watchers() 
+    {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -84,8 +78,12 @@ public:
     }
 
     void reset() override {
-        clear();
-        init();
+        for (auto& w : watchers) w.clear();
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                attachClause(clause);
+            } 
+        }
     }
 
     void attachClause(Clause* clause) override {

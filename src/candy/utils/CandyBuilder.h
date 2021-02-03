@@ -52,11 +52,11 @@ public:
         return CandyBuilder<PropagationLB, TLearning, TBranching>();
     }
 
-    CandySolverInterface* build();
+    CandySolverInterface* build(CNFProblem& problem);
 
 };
 
-CandySolverInterface* createSolver();
+CandySolverInterface* createSolver(CNFProblem& problem);
 
 }
 

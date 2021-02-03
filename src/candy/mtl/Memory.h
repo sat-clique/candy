@@ -224,7 +224,7 @@ private:
 public:
     Memory(unsigned int page_size_mb = 32)
      : default_page_size(page_size_mb*1024*1024), pages() { }
-    ~Memory() { }
+    ~Memory() { free_all(); }
 
     inline const_iterator begin() const {
         if (pages.size() == 0) return end();
