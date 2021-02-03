@@ -82,7 +82,20 @@ public:
         activity(), polarity(), stamp(),
         var_inc(1), 
         var_decay(SolverOptions::opt_vsids_var_decay), 
-        max_var_decay(SolverOptions::opt_vsids_max_var_decay) {
+        max_var_decay(SolverOptions::opt_vsids_max_var_decay) 
+    {
+        activity.resize(clause_db.nVars(), initial_activity);
+        polarity.resize(clause_db.nVars(), initial_polarity);
+        stamp.grow(clause_db.nVars());
+        order_heap.grow(clause_db.nVars());
+        if (SolverOptions::opt_sort_variables) {
+            std::vector<double> occ = getLiteralRelativeOccurrences();
+            for (size_t i = 0; i < clause_db.nVars(); ++i) {
+                activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
+                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
+            }
+        }
+        reset();
 
     }
 
@@ -110,29 +123,6 @@ public:
         }
         
         return literalOccurrence;
-    }
-
-    void clear() override {
-        activity.clear();
-        polarity.clear();
-        order_heap.clear();
-    }
-
-    void init(const CNFProblem &problem) override {
-        if (trail.nVars() > activity.size()) {
-            activity.resize(trail.nVars(), initial_activity);
-            polarity.resize(trail.nVars(), initial_polarity);
-            stamp.grow(trail.nVars());
-            order_heap.grow(trail.nVars());
-        }
-        if (SolverOptions::opt_sort_variables) {
-            std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < trail.nVars(); ++i) {
-                activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
-                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
-            }
-        }
-        reset();
     }
 
     void reset() override {

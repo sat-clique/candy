@@ -118,12 +118,20 @@ CandySolverInterface* solver = nullptr;
 lbool result = l_Undef;
 
 static void runSolverThread(lbool& result, CandySolverInterface*& solver, CNFProblem& problem, ClauseAllocator*& global_allocator) {
-    CandySolverInterface* solver_ = createSolver();
+    CandySolverInterface* solver_;
 
-    solver_->init(problem, global_allocator);
-
-    if (ParallelOptions::opt_static_database && global_allocator == nullptr) {
-        global_allocator = solver_->setupGlobalAllocator();
+    if (ParallelOptions::opt_static_database) {
+        if (global_allocator == nullptr) {
+            solver_ = createSolver(problem);
+            global_allocator = solver_->getClauseDatabase().createGlobalClauseAllocator();
+        }
+        else {
+            solver_ = createSolver(problem); // todo
+            solver_->getClauseDatabase().setGlobalClauseAllocator(global_allocator);
+        }
+    }
+    else {
+        solver_ = createSolver(problem);
     }
 
     solvers.push_back(solver_);
@@ -168,10 +176,8 @@ int main(int argc, char** argv) {
     std::vector<std::thread> threads;
 
     if (ParallelOptions::opt_threads == 1) {
-        solver = createSolver();
+        solver = createSolver(problem);
         solvers.push_back(solver); 
-
-        solver->init(problem);
         solver->setTermCallback(solver, interrupted_callback);
 
         // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {

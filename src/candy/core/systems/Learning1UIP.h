@@ -218,18 +218,12 @@ public:
 	Learning1UIP(ClauseDatabase& _clause_db, Trail& _trail) :
 		clause_db(_clause_db),
 		trail(_trail),
-		stamp(),
+		stamp(clause_db.nVars()),
 		analyze_clear(),
 		analyze_stack()
 	{ }
 
 	~Learning1UIP() { }
-
-	void init(unsigned int nVars) override {
-		if (nVars >= stamp.size()) {
-			stamp.grow(nVars);
-		}
-	}
 
 	// pickback decisions
 	Lit pickback(Lit lit) {
