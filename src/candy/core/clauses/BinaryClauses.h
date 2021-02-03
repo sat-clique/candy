@@ -30,19 +30,13 @@ class BinaryClauses {
 public:
     std::vector<std::vector<Lit>> binary_watchers;
 
-    BinaryClauses() : binary_watchers() {}
-
-    void init(unsigned int nVars) {
+    BinaryClauses(unsigned int nVars) : binary_watchers() {
         binary_watchers.resize(2*nVars);
-    }
-
-    void clear() {
-        binary_watchers.clear();
     }
 
     template<typename Iterator>
     void reinit(Iterator begin, Iterator end) {
-        for (std::vector<Lit>& w : binary_watchers) w.clear();
+        for (auto& w : binary_watchers) w.clear();
         for (Iterator it = begin; it != end; it++) {
             Clause* clause = *it;
             if (clause->size() == 2) {
@@ -63,8 +57,12 @@ public:
     void remove(Clause* clause) {
         std::vector<Lit>& list0 = binary_watchers[~clause->first()];
         std::vector<Lit>& list1 = binary_watchers[~clause->second()];
-        list0.erase(std::find(list0.begin(), list0.end(), clause->second()));
-        list1.erase(std::find(list1.begin(), list1.end(), clause->first()));
+        auto it0 = std::find(list0.begin(), list0.end(), clause->second());
+        auto it1 = std::find(list1.begin(), list1.end(), clause->first());
+        if (it0 != list0.end() && it1 != list1.end()) {
+            list0.erase(it0);
+            list1.erase(it1);
+        }
     }
 
 };

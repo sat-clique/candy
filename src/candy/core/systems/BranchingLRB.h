@@ -50,8 +50,23 @@ public:
         weight(), polarity(), stamp(), 
         interval_assigned(), participated(), 
         step_size(SolverOptions::opt_lrb_step_size), 
-        min_step_size(SolverOptions::opt_lrb_min_step_size) {
-
+        min_step_size(SolverOptions::opt_lrb_min_step_size) 
+    {
+        weight.resize(clause_db.nVars(), initial_weight);
+        polarity.resize(clause_db.nVars(), initial_polarity);
+        interval_assigned.resize(clause_db.nVars(), 0);
+        participated.resize(clause_db.nVars(), 0);
+        stamp.grow(clause_db.nVars());
+        order_heap.grow(clause_db.nVars());
+        if (SolverOptions::opt_sort_variables) {
+            std::vector<double> occ = getLiteralRelativeOccurrences();
+            for (size_t i = 0; i < clause_db.nVars(); ++i) {
+                weight[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
+                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
+            }
+            
+        }
+        reset();
     }
 
     void setPolarity(Var v, bool sign) override {
@@ -78,34 +93,6 @@ public:
         }
         
         return literalOccurrence;
-    }
-
-    void clear() override {
-        weight.clear();
-        polarity.clear();
-        order_heap.clear();
-        std::fill(interval_assigned.begin(), interval_assigned.end(), 0);
-        std::fill(participated.begin(), participated.end(), 0);
-    }
-
-    void init(const CNFProblem& problem) override {
-        if (trail.nVars() > weight.size()) {
-            weight.resize(trail.nVars(), initial_weight);
-            polarity.resize(trail.nVars(), initial_polarity);
-            interval_assigned.resize(trail.nVars(), 0);
-            participated.resize(trail.nVars(), 0);
-            stamp.grow(trail.nVars());
-            order_heap.grow(trail.nVars());
-        }
-        if (SolverOptions::opt_sort_variables) {
-            std::vector<double> occ = getLiteralRelativeOccurrences();
-            for (size_t i = 0; i < trail.nVars(); ++i) {
-                weight[i] = occ[Lit(i, true)] + occ[Lit(i, false)];
-                polarity[i] = occ[Lit(i, true)] < occ[Lit(i, false)];
-            }
-            
-        }
-        reset();
     }
 
     void reset() override {

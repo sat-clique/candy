@@ -78,37 +78,20 @@ public:
 	AnalysisResult result;
     Equivalences equiv;
 
-    ClauseDatabase() : 
-        allocator(), variables(0), clauses(), emptyClause_(false), 
+    ClauseDatabase(CNFProblem& problem) : 
+        allocator(), variables(problem.nVars()), clauses(), emptyClause_(false), 
         certificate(SolverOptions::opt_certified_file),
-        binary_watchers(), result(), equiv(binary_watchers)
-    { }
+        binary_watchers(problem.nVars()), result(), equiv(binary_watchers)
+    { 
+        for (Cl* import : problem) {
+            createClause(import->begin(), import->end(), 0, true);
+        }
+    }
 
     ~ClauseDatabase() { }
 
     unsigned int nVars() const {
         return variables;
-    }
-
-    void init(const CNFProblem& problem, ClauseAllocator* global_allocator = nullptr, bool lemma = true) {
-        if (variables < problem.nVars()) {
-            binary_watchers.init(problem.nVars());
-            variables = problem.nVars();
-        }
-        for (Cl* import : problem) {
-            createClause(import->begin(), import->end(), lemma ? 0 : import->size(), lemma);
-        }
-        if (global_allocator != nullptr) setGlobalClauseAllocator(global_allocator);
-    }
-
-    void clear() {
-        binary_watchers.clear();
-        equiv.clear();
-        allocator.clear();
-        clauses.clear();
-        variables = 0;
-        emptyClause_ = false;
-        result.nConflicts = 0;
     }
 
     ClauseAllocator* createGlobalClauseAllocator() {

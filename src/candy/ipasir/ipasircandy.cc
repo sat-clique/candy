@@ -57,9 +57,11 @@ class IPASIRCandy {
     }
 
 public:
-    IPASIRCandy() : fmap(0), nomodel(false) { 
-        solver = createSolver();
-    }
+    IPASIRCandy() : 
+        problem(), solver(nullptr), 
+        assumptions(), clause(), 
+        fmap(0), nomodel(false) 
+    { }
 
     ~IPASIRCandy() {
         drop_analysis();
@@ -85,7 +87,21 @@ public:
 
     int solve() {
         drop_analysis();
-        solver->init(problem);
+        if (solver == nullptr) {
+            solver = createSolver(problem);
+        }
+        else if (problem.nVars() <= solver->nVars()) {
+            for (Cl* clause : problem) {
+                solver->addClause(clause);
+            }
+        }
+        else {
+            CandySolverInterface* solver2 = createSolver(problem);
+            for (Clause* c : solver->getClauseDatabase()) {
+                solver2->addClause(new Cl(c->begin(), c->end()), c->isPersistent());
+            }
+            solver = solver2;
+        }
         solver->getAssignment().setAssumptions(assumptions);
         lbool res = solver->solve();
         assumptions.clear();

@@ -26,8 +26,6 @@ namespace Candy {
 
 class BranchingInterface {
 public:
-    virtual void clear() = 0;
-    virtual void init(const CNFProblem& problem) = 0;
     virtual void reset() = 0;
     virtual void process_conflict() = 0;
     virtual Lit pickBranchLit() = 0;

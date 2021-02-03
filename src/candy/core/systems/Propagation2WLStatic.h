@@ -49,19 +49,9 @@ private:
     Memory<Watcher> memory;
 
 public:
-    Propagation2WLStatic(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), memory() { }
-
-    ~Propagation2WLStatic() {
-        clear();
-    }
-
-    void clear() override {
-        watchers.clear();
-        memory.free_all();
-    }
-
-    void init() override {
+    Propagation2WLStatic(ClauseDatabase& _clause_db, Trail& _trail) : 
+        clause_db(_clause_db), trail(_trail), watchers(), memory() 
+    { 
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -70,9 +60,15 @@ public:
         }
     }
 
+    ~Propagation2WLStatic() { }
+
     void reset() override {
-        clear();
-        init();
+        for (auto& w : watchers) w.clear();
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                attachClause(clause);
+            } 
+        }
     }
 
     void attachClause(Clause* clause) override {
