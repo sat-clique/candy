@@ -71,20 +71,9 @@ private:
     Memory<LowerBound> memory;
 
 public:
-    PropagationLB(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), bounds(), memory() {
-    }
-
-    ~PropagationLB() {
-        clear();
-    }
-
-    void clear() override {
-        bounds.clear();
-        memory.free_all();
-    }
-
-    void init() override {
+    PropagationLB(ClauseDatabase& _clause_db, Trail& _trail) : 
+        clause_db(_clause_db), trail(_trail), bounds(), memory() 
+    {
         bounds.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -93,9 +82,15 @@ public:
         }
     }
 
+    ~PropagationLB() { }
+
     void reset() override {
-        clear();
-        init();
+        for (auto& b : bounds) b.clear();
+        for (Clause* clause : clause_db) {
+            if (clause->size() > 2) {
+                attachClause(clause);
+            } 
+        }
     }
 
     void attachClause(Clause* clause) override {

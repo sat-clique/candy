@@ -33,8 +33,6 @@ namespace Candy {
 class DRATChecker {
 
 private:
-    CNFProblem& problem;
-
     ClauseDatabase clause_db;
     Trail trail;
     Propagation2WL propagation;
@@ -44,7 +42,7 @@ private:
     unsigned int num_deleted;
 
 public:
-    DRATChecker(class CNFProblem& problem_);
+    DRATChecker(class CNFProblem& problem);
     ~DRATChecker();
 
     bool check_proof(const char* filename);

@@ -113,7 +113,7 @@ protected:
     lbool search(); 
 
 public:
-    Solver() : clause_db(), trail(),
+    Solver(CNFProblem& problem) : clause_db(problem), trail(problem),
         // subsystems
         propagation(clause_db, trail),
         learning(clause_db, trail),
@@ -137,27 +137,15 @@ public:
 
     ~Solver() { }
 
-    void clear() override {
-        clause_db.clear();
-        propagation.clear();
-        branching.clear();
-    }
-
-    void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) override  {
-        assert(trail.decisionLevel() == 0);
-
-        // always initialize clause_db _first_
-        clause_db.init(problem, allocator, lemma);
-        trail.init(clause_db.nVars());
-        propagation.init();
-        learning.init(clause_db.nVars());
-        branching.init(problem);
-        subsumption.init();
-        elimination.init(problem);
-    }
-
-    ClauseAllocator* setupGlobalAllocator() override {
-        return clause_db.createGlobalClauseAllocator();
+    void addClause(Cl* clause, bool lemma = true) override {
+        clause_db.createClause(clause->begin(), clause->end(), lemma ? 0 : clause->size(), true);
+        if (elimination.has_eliminated_variables()) {
+            for (auto lit = clause->begin(); lit != clause->end(); lit++) {
+                if (elimination.is_eliminated(lit->var())) {
+                    elimination.undo(lit->var());
+                }
+            }
+        }
     }
 
     CandySolverResult& getCandySolverResult() override { 
@@ -333,6 +321,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     trail.reset();
     elimination.undo_assumptions();
     propagation.reset();
+    branching.reset();
 
     // materialized unit-clauses for sharing (Todo: Refactor)
     for (Clause* clause : clause_db.getUnitClauses()) {
@@ -401,6 +390,9 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         }
     }
     else if (status == l_True) {
+        if (verbosity > 2) {
+            trail.print();
+        }     
         elimination.set_values();
         result.setModel(trail);
     }

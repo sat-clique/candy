@@ -44,6 +44,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include <vector>
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/Clause.h"
+#include "candy/core/CNFProblem.h"
 #include "candy/mtl/Stamp.h"
 
 namespace Candy {
@@ -144,27 +145,17 @@ public:
     size_t nDecisions;
     size_t nPropagations;
 
-    Trail() : 
-        nVariables(0), trail_size(0), conflict_level(0), qhead(0), 
-        trail(), assigns(), levels(), reasons(), trail_lim(), stamp(), 
+    Trail(CNFProblem& problem) : 
+        nVariables(problem.nVars()), trail_size(0), conflict_level(0), qhead(0), 
+        trail(), assigns(), levels(), reasons(), trail_lim(), stamp(problem.nVars()), 
         decision(), assumptions(), 
         nDecisions(0), nPropagations(0)
-    { }
-
-    Trail(unsigned int nVars) : Trail() {
-        init(nVars);
-    }
-
-    inline void init(unsigned int nVars) {
-        if (nVars > nVariables) {
-            nVariables = nVars;
-            trail.resize(nVars);
-            assigns.resize(nVars, l_Undef);
-            levels.resize(nVars);
-            reasons.resize(nVars);
-            stamp.grow(nVars);
-            decision.resize(nVars, true);
-        }
+    { 
+        trail.resize(problem.nVars());
+        assigns.resize(problem.nVars(), l_Undef);
+        levels.resize(problem.nVars());
+        reasons.resize(problem.nVars());
+        decision.resize(problem.nVars(), true);
     }
 
     inline unsigned int nVars() {
@@ -172,11 +163,12 @@ public:
     }
 
     inline void reset() {
+        trail_size = 0;
+        conflict_level = 0;
+        qhead = 0;
         std::fill(assigns.begin(), assigns.end(), l_Undef);
         std::fill(levels.begin(), levels.end(), 0);
         std::fill(reasons.begin(), reasons.end(), Reason());
-        qhead = 0;
-        trail_size = 0;
         trail_lim.clear(); 
     }
 
@@ -195,9 +187,7 @@ public:
         }
         this->assumptions.clear();
         for (Lit lit : assumptions) {
-            if (lit.var() > (Var)nVariables) {
-                init(nVariables);
-            }
+            assert(lit.var() < (Var)nVariables);
             setDecisionVar(lit.var(), false);
             this->assumptions.push_back(lit);
         }

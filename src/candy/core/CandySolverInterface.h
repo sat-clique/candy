@@ -38,14 +38,13 @@ class CNFProblem;
 
 class CandySolverInterface {
 public:
-	virtual ~CandySolverInterface() {};
+	virtual ~CandySolverInterface() {}
 
-	virtual ClauseAllocator* setupGlobalAllocator() = 0;
-	virtual void clear() = 0;
-    virtual void init(const CNFProblem& problem, ClauseAllocator* allocator = nullptr, bool lemma = true) = 0;
-	
+	virtual void addClause(Cl* clause, bool lemma = true) = 0;
+
 	virtual lbool solve() = 0;
 	virtual void printStats() = 0;
+
 	virtual unsigned int nVars() const = 0;
 	virtual unsigned int nClauses() const = 0;
 	virtual unsigned int nConflicts() const = 0;

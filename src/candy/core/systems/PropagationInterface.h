@@ -28,8 +28,6 @@ class Clause;
 
 class PropagationInterface {
 public:
-    virtual void clear() = 0;
-    virtual void init() = 0;
     virtual void reset() = 0;
     virtual void attachClause(Clause* clause) = 0;
     virtual void detachClause(Clause* clause) = 0;

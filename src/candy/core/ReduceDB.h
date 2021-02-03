@@ -51,11 +51,6 @@ public:
         return nReduceCalls_;
     }
 
-    void clear() {
-        nReduceCalls_ = 0;
-        nReduced = 0;
-    }
-
     void process_conflict() {
         for (Reason reason : clause_db.result.involved_clauses) {
             if (reason.is_ptr()) {

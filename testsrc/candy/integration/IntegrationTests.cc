@@ -46,15 +46,15 @@ namespace Candy {
 
     static const char* CERT = "cert.drat";
 
-    static void acceptanceTest(CandySolverInterface* solver, const char* filename, bool install_static_allocator) {
+    static void acceptanceTest(const char* filename, bool install_static_allocator) {
         GTEST_COUT << filename << std::endl;
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
-        solver->init(problem);
+        CandySolverInterface* solver = createSolver(problem);
         ClauseAllocator* allocator = nullptr;
         if (install_static_allocator) {
             GTEST_COUT << "Setup Static Allocator" << std::endl;
-            allocator = solver->setupGlobalAllocator();
+            allocator = solver->getClauseDatabase().createGlobalClauseAllocator();
         }
         auto result = solver->solve();
 
@@ -78,35 +78,35 @@ namespace Candy {
 
     static void testTrivialProblems(bool static_allocator) {
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/trivial0.cnf", static_allocator);
+        acceptanceTest("cnf/trivial0.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/trivial1.cnf", static_allocator);
+        acceptanceTest("cnf/trivial1.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/trivial2.cnf", static_allocator);
+        acceptanceTest("cnf/trivial2.cnf", static_allocator);
     }
 
     static void testFuzzProblems(bool static_allocator) {
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/fuzz01.cnf", static_allocator); 
+        acceptanceTest("cnf/fuzz01.cnf", static_allocator); 
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/fuzz02.cnf", static_allocator);
+        acceptanceTest("cnf/fuzz02.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/fuzz03.cnf", static_allocator);
+        acceptanceTest("cnf/fuzz03.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/fuzz04.cnf", static_allocator);
+        acceptanceTest("cnf/fuzz04.cnf", static_allocator);
     }
 
     static void testRealProblems(bool static_allocator) {
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/dubois20.cnf", static_allocator);
+        acceptanceTest("cnf/dubois20.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/hole6.cnf", static_allocator);
+        acceptanceTest("cnf/hole6.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/ais6.cnf", static_allocator);
+        acceptanceTest("cnf/ais6.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/uf75-042.cnf", static_allocator);
+        acceptanceTest("cnf/uf75-042.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
-        acceptanceTest(createSolver(), "cnf/uuf75-042.cnf", static_allocator);
+        acceptanceTest("cnf/uuf75-042.cnf", static_allocator);
     }
 
     TEST(IntegrationTest, test_vsids) {

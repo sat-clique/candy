@@ -33,13 +33,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-DRATChecker::DRATChecker(CNFProblem& problem_)
- : problem(problem_), clause_db(), trail(), propagation(clause_db, trail), occurences(), num_deleted(0) 
+DRATChecker::DRATChecker(CNFProblem& problem)
+ : clause_db(problem), trail(problem), propagation(clause_db, trail), occurences(), num_deleted(0) 
 { 
-    clause_db.init(problem);
-    trail.init(clause_db.nVars());
-    propagation.init();
-
     occurences.resize(2 * clause_db.nVars());
     for (Clause* clause : clause_db) {
         for (Lit lit : *clause) {
@@ -51,10 +47,7 @@ DRATChecker::DRATChecker(CNFProblem& problem_)
     }
 }
 
-DRATChecker::~DRATChecker() { 
-    clause_db.clear();
-    propagation.clear();
-}
+DRATChecker::~DRATChecker() { }
 
 long DRATChecker::proof_size(const char* filename) {
     struct stat stat_buf;

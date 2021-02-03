@@ -75,19 +75,8 @@ public:
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
         variables(), clauses(), 
         nEliminated(0), verbosity(SolverOptions::verb)
-    { }
-
-    void init(const CNFProblem& problem) { 
-        clauses.resize(trail.nVars());
-
-        for (Cl* clause : problem) {
-            if (!this->has_eliminated_variables()) break;
-            for (Lit lit : *clause) {
-                if (is_eliminated(lit.var())) {
-                    undo(lit.var());
-                }
-            }
-        }
+    { 
+        clauses.resize(clause_db.nVars());
     }
 
     void undo_assumptions() {
@@ -112,24 +101,23 @@ public:
     }
 
     void set_values() {
-        if (verbosity > 2) {
-            trail.print();
-            std::cout << "Assign Eliminated Variables" << std::endl;
-        }
-        for (auto vit = variables.rbegin(); vit != variables.rend(); vit++) {
-            for (Cl& clause : clauses[*vit]) {
-                if (!trail.satisfies(clause.begin(), clause.end())) {
-                    for (Lit lit : clause) { 
-                        if (lit.var() == *vit) {
-                            if (verbosity > 2) std::cout << "Clause " << clause << " => " << lit << std::endl;
-                            trail.set_value(lit);
+        if (has_eliminated_variables()) {
+            if (verbosity > 2) std::cout << "Assigning Eliminated Variables: " << std::endl;
+            for (auto vit = variables.rbegin(); vit != variables.rend(); vit++) {
+                for (Cl& clause : clauses[*vit]) {
+                    if (!trail.satisfies(clause.begin(), clause.end())) {
+                        for (Lit lit : clause) { 
+                            if (lit.var() == *vit) {
+                                if (verbosity > 2) std::cout << "Clause " << clause << " => " << lit << std::endl;
+                                trail.set_value(lit);
+                            }
                         }
                     }
                 }
-            }
-            if (trail.value(*vit) == l_Undef) {
-                if (verbosity > 2) std::cout << " => " << Lit(*vit) << std::endl;
-                trail.set_value(Lit(*vit));
+                if (trail.value(*vit) == l_Undef) {
+                    if (verbosity > 2) std::cout << " => " << Lit(*vit) << std::endl;
+                    trail.set_value(Lit(*vit));
+                }
             }
         }
     }
