@@ -22,28 +22,9 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/Trail.h"
+#include "candy/mtl/EMA.h"
 
 namespace Candy {
-
-//Exponential Moving Average (EMA)
-//Implementation of the "robust initialization" like in Cadical by Armin Biere
-class EMA {
-    double value;
-    float alpha, beta;
-    unsigned int wait, period;
-public:
-    EMA(double alpha_) : value(1), alpha(alpha_), beta(1), wait(1), period(1) {}
-    void update(double next) { 
-        value += beta * (next - value); 
-
-        if (beta > alpha && --wait == 0) {
-            wait = period = (2 * period);
-            beta *= .5;
-            if (beta < alpha) beta = alpha;
-        }
-    }
-    operator double() const { return value; }
-};
 
 class Restart {
     ClauseDatabase& clause_db;
