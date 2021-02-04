@@ -59,10 +59,9 @@ public:
         std::vector<Lit>& list1 = binary_watchers[~clause->second()];
         auto it0 = std::find(list0.begin(), list0.end(), clause->second());
         auto it1 = std::find(list1.begin(), list1.end(), clause->first());
-        if (it0 != list0.end() && it1 != list1.end()) {
-            list0.erase(it0);
-            list1.erase(it1);
-        }
+        assert(it0 != list0.end() && it1 != list1.end());
+        list0.erase(it0);
+        list1.erase(it1);
     }
 
 };
