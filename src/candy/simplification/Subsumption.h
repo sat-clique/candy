@@ -102,7 +102,7 @@ void Subsumption::subsume(OccurenceList& occurences, Clause* clause) {
     });
     for (unsigned int i = 0; i < occurences[best.var()].size() && !clause_db.hasEmptyClause(); i++) {
         Clause* occurence = occurences[best.var()][i];
-        if (occurence != clause && !occurence->isDeleted()) {
+        if (occurence != clause && !occurence->isDeleted() && !clause->isDeleted()) {
             Lit l = clause->subsumes(occurence);
 
             if (l == lit_Undef) { 

@@ -109,6 +109,11 @@ namespace Candy {
         acceptanceTest("cnf/uuf75-042.cnf", static_allocator);
     }
 
+    static void testFixedBugs(bool static_allocator) {
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest("cnf/dd1.cnf", static_allocator);
+    }
+
     TEST(IntegrationTest, test_vsids) {
         SolverOptions::opt_use_lrb = false;
         ParallelOptions::opt_static_propagate = false;
@@ -116,6 +121,7 @@ namespace Candy {
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
+        testFixedBugs(false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_propagate) {
