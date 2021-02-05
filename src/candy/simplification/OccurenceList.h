@@ -24,10 +24,6 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/clauses/Clause.h"
 #include "candy/core/clauses/ClauseDatabase.h"
-#include "candy/core/clauses/Certificate.h"
-#include "candy/core/Trail.h"
-#include "candy/mtl/Memory.h"
-#include "candy/utils/CLIOptions.h"
 
 namespace Candy {
 
@@ -61,10 +57,6 @@ public:
 
     inline size_t count(Var v) const {
         return occurrences[v].size();
-    }
-
-    inline std::vector<Clause*> copy(Var v) {
-        return std::vector<Clause*>(occurrences[v].begin(), occurrences[v].end());
     }
 
     inline std::vector<Clause*>& operator [](Var v) {
