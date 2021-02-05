@@ -72,7 +72,7 @@ public:
         assert(trail.decisionLevel() == 0);
         uint32_t reduced = 0;
         for (Clause* learnt : clause_db) {
-            if (learnt->getLBD() > persistentLBD) {
+            if (learnt->getLBD() > persistentLBD && !learnt->isDeleted()) {
                 if (learnt->getLBD() < volatileLBD) {
                     if (learnt->decUsed() == 0) {
                         clause_db.removeClause(learnt);
