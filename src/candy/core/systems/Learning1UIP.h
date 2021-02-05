@@ -59,7 +59,6 @@ private:
 
 	std::vector<Lit> learnt_clause;
 	std::vector<Reason> involved_clauses;
-	std::vector<Lit> pickback_clause;
 
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;
@@ -137,7 +136,7 @@ private:
 
 		//for (Lit lit : learnt_clause) if (!stamp[lit.var()])
 		Lit lit = learnt_clause[0];
-	    for (Lit other : clause_db.binary_watchers[~lit]) {
+	    for (Lit other : clause_db.binaries[~lit]) {
 	        if (trail.satisfies(other)) {
 	            minimize = true;
 	            stamp.set(other.var());
@@ -235,8 +234,8 @@ public:
 			lit = next;
 			stamp.set(lit.var());
 			unsigned int length = 0;
-			for (Lit other : clause_db.binary_watchers[~next]) {
-				if (clause_db.binary_watchers[~other].size() > length) {
+			for (Lit other : clause_db.binaries[~next]) {
+				if (clause_db.binaries[~other].size() > length) {
 					next = ~other;
 					// std::cout << " to " << next << " (due to " << *watcher.clause << ") ";
 					break;
@@ -273,44 +272,6 @@ public:
 		}
 
 		clause_db.result.setLearntClause(learnt_clause, involved_clauses, lbd, backtrack_level); 
-	}
-
-	/**************************************************************************************************
-	 *
-	 *  analyzeFinal : (p : Lit)  ->  std::vector<Lit>
-	 *
-	 *  Specialized analysis procedure to express the final conflict in terms of assumptions.
-	 *  Calculates and returns the set of assumptions that led to the assignment of 'p'.
-	 * 
-	 |*************************************************************************************************/
-	std::vector<Lit> analyzeFinal(Lit p) override { 
-		std::vector<Lit> assumptions;
-	    assumptions.push_back(p);
-
-	    if (trail.decisionLevel() > 0) {
-			stamp.clear();
-			stamp.set(p.var());
-			for (int i = trail.size() - 1; i >= (int)trail.trail_lim[0]; i--) {
-				Var x = trail[i].var();
-				if (stamp[x]) {
-					if (!trail.reason(x).exists()) {
-						assert(trail.level(x) > 0);
-						assumptions.push_back(~trail[i]);
-					} else {
-						Reason c = trail.reason(x);
-						for (Lit lit : c) {
-							if (trail.level(lit.var()) > 0) {
-								stamp.set(lit.var());
-							}
-						}
-					}
-					stamp.unset(x);
-				}
-			}
-			stamp.unset(p.var());
-		}
-
-		return assumptions;
 	}
 
 };

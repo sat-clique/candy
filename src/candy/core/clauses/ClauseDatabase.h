@@ -72,7 +72,8 @@ private:
     Certificate certificate;
 
 public:
-    BinaryClauses binary_watchers;
+    std::vector<Lit> unaries;
+    BinaryClauses binaries;
 
     /* analysis result is stored here */
 	AnalysisResult result;
@@ -81,7 +82,7 @@ public:
     ClauseDatabase(CNFProblem& problem) : 
         allocator(), variables(problem.nVars()), clauses(), emptyClause_(false), 
         certificate(SolverOptions::opt_certified_file),
-        binary_watchers(problem.nVars()), result(), equiv(binary_watchers)
+        unaries(), binaries(problem.nVars()), result(), equiv(binaries)
     { 
         for (Cl* import : problem) {
             createClause(import->begin(), import->end(), 0, true);
@@ -101,7 +102,30 @@ public:
     void setGlobalClauseAllocator(ClauseAllocator* global_allocator) {
         allocator.set_global_allocator(global_allocator);
         this->clauses = allocator.collect();
-        binary_watchers.reinit(this->begin(), this->end());
+        unaries.clear();
+        binaries.clear();
+        for (Clause* clause : clauses) {
+            if (clause->size() == 1) {
+                unaries.push_back(clause->first());
+            } else if (clause->size() == 2) {
+                binaries.add(clause);
+            }
+        }
+    }
+
+    void reorganize() {
+        allocator.synchronize(); // inactive if no global-allocator
+        allocator.reorganize(); // defrag.
+        clauses = allocator.collect();
+        unaries.clear();
+        binaries.clear();
+        for (Clause* clause : clauses) {
+            if (clause->size() == 1) {
+                unaries.push_back(clause->first());
+            } else if (clause->size() == 2) {
+                binaries.add(clause);
+            }
+        }
     }
 
     typedef std::vector<Clause*>::const_iterator const_iterator;
@@ -131,20 +155,6 @@ public:
         certificate.proof();
     }
 
-    std::vector<Clause*> getUnitClauses() { 
-        return allocator.collect_unit_clauses();
-    }
-
-    /**
-     * Make sure all references are updated after all clauses reside in a new adress space
-     */
-    void reorganize() {
-        allocator.synchronize();
-        allocator.reorganize();
-        clauses = allocator.collect();
-        binary_watchers.reinit(this->begin(), this->end());
-    }
-
     template<typename Iterator>
     inline Clause* createClause(Iterator begin, Iterator end, unsigned int lbd = 0, bool lemma = false) {
         unsigned int length = std::distance(begin, end);
@@ -158,8 +168,11 @@ public:
         if (clause->size() == 0) {
             emptyClause_ = true;
         }
+        else if (clause->size() == 1) {
+            unaries.push_back(clause->first());
+        }
         else if (clause->size() == 2) {
-            binary_watchers.add(clause);
+            binaries.add(clause);
         }
         
         return clause;
@@ -167,12 +180,7 @@ public:
 
     inline void removeClause(Clause* clause) {
         allocator.deallocate(clause);
-
         certificate.removed(clause->begin(), clause->end());
-
-        if (clause->size() == 2) {
-            binary_watchers.remove(clause);
-        }
     }
 
     Clause* strengthenClause(Clause* clause, Lit lit) {

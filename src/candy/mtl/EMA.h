@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2020, Markus Iser, KIT - Karlsruhe Institute of Technology
+EMA -- Copyright (c) 2020, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -17,18 +17,27 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef LEARNING_INTERFACE_H_
-#define LEARNING_INTERFACE_H_
+#ifndef EMA_H_
+#define EMA_H_
 
-#include "candy/core/SolverTypes.h"
-
-namespace Candy {
-
-class LearningInterface {
+//Exponential Moving Average (EMA)
+//Implementation of the "robust initialization" like in CaDiCaL by Armin Biere
+class EMA {
+    double value;
+    float alpha, beta;
+    unsigned int wait, period;
 public:
-    virtual void handle_conflict(Reason confl) = 0;
-};
+    EMA(double alpha_) : value(1), alpha(alpha_), beta(1), wait(1), period(1) {}
+    void update(double next) { 
+        value += beta * (next - value); 
 
-}
+        if (beta > alpha && --wait == 0) {
+            wait = period = (2 * period);
+            beta *= .5;
+            if (beta < alpha) beta = alpha;
+        }
+    }
+    operator double() const { return value; }
+};
 
 #endif
