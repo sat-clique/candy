@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
         solvers.push_back(solver); 
         solver->setTermCallback(solver, interrupted_callback);
 
-        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binaries) {
         //     std::cout << "wb " << list.size() << std::endl;
         // }
 
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
         result = solver->solve();
         installSignalHandlers(false);
 
-        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binaries) {
         //     std::cout << "wa " << list.size() << std::endl;
         // }
     }

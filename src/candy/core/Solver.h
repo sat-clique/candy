@@ -324,8 +324,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     branching.reset();
 
     // materialized unit-clauses for sharing (Todo: Refactor)
-    for (Clause* clause : clause_db.getUnitClauses()) {
-        if (!trail.fact(clause->first())) clause_db.emptyClause();
+    for (Lit lit : clause_db.unaries) {
+        if (!trail.fact(lit)) clause_db.emptyClause();
     }
     if (propagation.propagate().exists()) { clause_db.emptyClause(); }    
     
@@ -334,8 +334,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
         processClauseDatabase();
         propagation.reset();
         // materialized unit-clauses for sharing (Todo: Refactor)
-        for (Clause* clause : clause_db.getUnitClauses()) {
-            if (!trail.fact(clause->first())) clause_db.emptyClause();
+        for (Lit lit : clause_db.unaries) {
+            if (!trail.fact(lit)) clause_db.emptyClause();
         }
         if (propagation.propagate().exists()) { clause_db.emptyClause(); }
     }
@@ -359,8 +359,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             clause_db.reorganize();
             propagation.reset();
             // materialized unit-clauses for sharing (Todo: Refactor)
-            for (Clause* clause : clause_db.getUnitClauses()) {
-                if (!trail.fact(clause->first())) clause_db.emptyClause();
+            for (Lit lit : clause_db.unaries) {
+                if (!trail.fact(lit)) clause_db.emptyClause();
             }
         }
 

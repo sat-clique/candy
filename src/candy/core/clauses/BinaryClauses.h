@@ -34,15 +34,8 @@ public:
         binary_watchers.resize(2*nVars);
     }
 
-    template<typename Iterator>
-    void reinit(Iterator begin, Iterator end) {
+    void clear() {
         for (auto& w : binary_watchers) w.clear();
-        for (Iterator it = begin; it != end; it++) {
-            Clause* clause = *it;
-            if (clause->size() == 2) {
-                this->add(clause);
-            }
-        }
     }
 
     inline const std::vector<Lit>& operator [](Lit p) const {
@@ -50,11 +43,13 @@ public:
     }
 
     void add(Clause* clause) {
+        assert(clause->size() == 2);
         binary_watchers[~clause->first()].push_back(clause->second());
         binary_watchers[~clause->second()].push_back(clause->first());
     }
 
     void remove(Clause* clause) {
+        assert(clause->size() == 2);
         std::vector<Lit>& list0 = binary_watchers[~clause->first()];
         std::vector<Lit>& list1 = binary_watchers[~clause->second()];
         auto it0 = std::find(list0.begin(), list0.end(), clause->second());

@@ -98,28 +98,18 @@ public:
 
     std::vector<Clause*> collect() {
         std::vector<Clause*> clauses = memory.collect();
-        std::vector<Clause*> unit_clauses = collect_unit_clauses();
+        std::vector<Clause*> unit_clauses = facts.collect();
         clauses.insert(clauses.end(), unit_clauses.begin(), unit_clauses.end());
 
         if (global_allocator != nullptr) {
             global_allocator->memory_lock.lock();
-            std::vector<Clause*> global_clauses = global_allocator->memory.collect();
+            std::vector<Clause*> global_clauses = global_allocator->collect();
             global_allocator->memory_lock.unlock();
             global_allocator->set_ready(true);
             clauses.insert(clauses.end(), global_clauses.begin(), global_clauses.end());
         }
 
         return clauses;
-    }
-
-    std::vector<Clause*> collect_unit_clauses() {
-        if (global_allocator != nullptr) {
-            // these can be read without lock
-            return global_allocator->facts.collect();
-        }
-        else {
-            return facts.collect();
-        }
     }
 
     void set_global_allocator(ClauseAllocator* global_allocator_) {
