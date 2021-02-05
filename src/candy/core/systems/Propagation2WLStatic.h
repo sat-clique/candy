@@ -94,7 +94,7 @@ public:
     }
 
     inline Reason propagate_binary_clauses(Lit p) {
-        for (Lit other : clause_db.binary_watchers[p]) {
+        for (Lit other : clause_db.binaries[p]) {
             lbool val = trail.value(other);
             if (val == l_Undef) {
                 trail.propagate(other, Reason(~p, other));
