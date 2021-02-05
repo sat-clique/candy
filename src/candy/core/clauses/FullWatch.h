@@ -17,8 +17,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_SUBSUMPTION_CLAUSE_DATABASE_H_
-#define SRC_CANDY_CORE_SUBSUMPTION_CLAUSE_DATABASE_H_
+#ifndef SRC_CANDY_CORE_FULL_OCCURRENCE_H_
+#define SRC_CANDY_CORE_FULL_OCCURRENCE_H_
 
 #include <vector>
 
@@ -27,30 +27,43 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-class OccurenceList {
-private:
-    std::vector<std::vector<Clause*>> occurrences;
+struct Occurrence<N> {
+    std::array<Lit, N-1> others;
+    Clause* clause;
+
+    Occurrence(Clause* clause_, Lit lit_) : clause(clause_) {
+        assert(clause->size() = N);
+        unsigned int i = 0;
+        for (Lit lit : *clause) {
+            if (lit != lit_) others[i++] = lit; 
+        }
+    }
+}
+
+template<unsigned int N>
+class FullWatch {
+    std::vector<std::vector<Occurrence>> occurrences;
 
 public:
-    OccurenceList(ClauseDatabase& clause_db) : occurrences() {
-        occurrences.resize(clause_db.nVars());
+    FullWatch(ClauseDatabase& clause_db) : occurrences() {
+        occurrences.resize(2 * clause_db.nVars());
         for (Clause* clause : clause_db) {
-            if (!clause->isDeleted()) add(clause);
+            if (!clause->isDeleted() && clause->size() == N) add(clause);
         } 
     }
 
-    ~OccurenceList() { }
+    ~FullWatch() { }
 
     inline void add(Clause* clause) {
         for (Lit lit : *clause) {
-            occurrences[lit.var()].push_back(clause);
+            occurrences[~lit].emplace_back(clause, lit);
         }
     }
 
     inline void cleanup() {
         for (auto& occurrence : occurrences) {
-            occurrence.erase(std::remove_if(occurrence.begin(), occurrence.end(), [&](Clause* clause) { 
-                return clause->isDeleted(); 
+            occurrence.erase(std::remove_if(occurrence.begin(), occurrence.end(), [&](Occurrence o) { 
+                return o.clause->isDeleted(); 
             }), occurrence.end());
         }
     }
@@ -59,7 +72,7 @@ public:
         return occurrences[v].size();
     }
 
-    inline std::vector<Clause*>& operator [](Var v) {
+    inline std::vector<Occurrence>& operator [](Var v) {
         return occurrences[v];
     }
 
