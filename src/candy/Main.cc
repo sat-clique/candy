@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
         installSignalHandlers(false);
     }
 
-    printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+    std::cout << (result == l_True ? "s SATISFIABLE" : result == l_False ? "s UNSATISFIABLE" : "s INDETERMINATE") << std::endl;
 
     if (solver != nullptr) {
         CandySolverResult& model = solver->getCandySolverResult();
