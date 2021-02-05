@@ -141,6 +141,7 @@ public:
 
     std::vector<char> decision;
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
+    std::vector<Lit> conflicting_assumptions; // Set of conflicting assumptions (analyze_final)
 
     size_t nDecisions;
     size_t nPropagations;
@@ -148,7 +149,7 @@ public:
     Trail(CNFProblem& problem) : 
         nVariables(problem.nVars()), trail_size(0), conflict_level(0), qhead(0), 
         trail(), assigns(), levels(), reasons(), trail_lim(), stamp(problem.nVars()), 
-        decision(), assumptions(), 
+        decision(), assumptions(), conflicting_assumptions(), 
         nDecisions(0), nPropagations(0)
     { 
         trail.resize(problem.nVars());
@@ -186,6 +187,7 @@ public:
             setDecisionVar(lit.var(), true);
         }
         this->assumptions.clear();
+        this->conflicting_assumptions.clear();
         for (Lit lit : assumptions) {
             assert(lit.var() < (Var)nVariables);
             setDecisionVar(lit.var(), false);
@@ -193,13 +195,54 @@ public:
         }
     }
 
-    bool hasAssumptionsNotSet() {
-        return decisionLevel() < assumptions.size();
+    Lit nextAssumption() {
+        while (decisionLevel() < assumptions.size()) {
+            Lit p = assumptions[decisionLevel()];
+            if (value(p) == l_True) {
+                newDecisionLevel(); // Dummy decision level
+            } 
+            else if (value(p) == l_False) {
+                analyzeFinal(~p);
+                return lit_Error;
+            } 
+            else {
+                return p;
+            }
+        }
+        return lit_Undef;
     }
 
-    Lit nextAssumption() {
-        return assumptions[decisionLevel()];
-    }
+	/**************************************************************************************************
+	 *
+	 *  analyzeFinal : (p : Lit)  ->  std::vector<Lit>
+	 *
+	 *  Specialized analysis procedure to express the final conflict in terms of assumptions.
+	 *  Calculates and returns the set of assumptions that led to the assignment of 'p'.
+	 * 
+	 |*************************************************************************************************/
+	void analyzeFinal(Lit p) { 
+		conflicting_assumptions.clear();
+	    conflicting_assumptions.push_back(p);
+
+        if (decisionLevel() == 0) return;
+
+        stamp.clear();
+        stamp.set(p.var());
+
+        for (int i = trail_size - 1; i >= (int)trail_lim[0]; i--) {
+            Var x = trail[i].var();
+            if (stamp[x]) {
+                if (reason(x).exists()) {
+                    for (Lit lit : reason(x)) {
+                        stamp.set(lit.var());
+                    }
+                } else {
+                    assert(level(x) > 0);
+                    conflicting_assumptions.push_back(~trail[i]);
+                }
+            }
+        }
+	}
 
     inline const Lit operator [](unsigned int i) const {
         assert(i < trail_size);

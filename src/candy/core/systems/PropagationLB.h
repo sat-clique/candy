@@ -1,26 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2020, Markus Iser, KIT - Karlsruhe Institute of Technology
-
-Candy sources are based on Glucose which is based on MiniSat (see former copyrights below). 
-Permissions and copyrights of Candy are exactly the same as Glucose and Minisat (see below).
-
-
---------------- Former Glucose Copyrights
-
- Glucose -- Copyright (c) 2009-2014, Gilles Audemard, Laurent Simon
-                                CRIL - Univ. Artois, France
-                                LRI  - Univ. Paris Sud, France (2009-2013)
-                                Labri - Univ. Bordeaux, France
-
-Glucose sources are based on MiniSat (see below MiniSat copyrights). Permissions and copyrights of
-Glucose (sources until 2013, Glucose 3.0, single core) are exactly the same as Minisat on which it 
-is based on. (see below).
-
-
---------------- Original Minisat Copyrights
-
-Copyright (c) 2003-2006, Niklas Een, Niklas Sorensson
-Copyright (c) 2007-2010, Niklas Sorensson
+Candy -- Copyright (c) 2020-2021, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and
 associated documentation files (the "Software"), to deal in the Software without restriction,
@@ -36,7 +15,7 @@ NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPO
 NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
 DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*************************************************************************************************/
+ **************************************************************************************************/
 
 #ifndef SRC_CANDY_CORE_PROPAGATION_LB_H_
 #define SRC_CANDY_CORE_PROPAGATION_LB_H_
@@ -113,12 +92,12 @@ public:
     }
 
     inline Reason propagate_binary_clauses(Lit p) {
-        for (Lit other : clause_db.binary_watchers[p]) {
+        for (Lit other : clause_db.binaries[p]) {
             lbool val = trail.value(other);
             if (val == l_Undef) {
                 trail.propagate(other, Reason(~p, other));
             }
-            if (val == l_False) {
+            else if (val == l_False) {
                 return Reason(~p, other);
             }
         }

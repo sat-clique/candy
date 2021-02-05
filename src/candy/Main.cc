@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
         solvers.push_back(solver); 
         solver->setTermCallback(solver, interrupted_callback);
 
-        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binaries) {
         //     std::cout << "wb " << list.size() << std::endl;
         // }
 
@@ -188,7 +188,7 @@ int main(int argc, char** argv) {
         result = solver->solve();
         installSignalHandlers(false);
 
-        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binary_watchers) {
+        // for (std::vector<BinaryWatcher>& list : solver->getClauseDatabase().binaries) {
         //     std::cout << "wa " << list.size() << std::endl;
         // }
     }
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
         installSignalHandlers(false);
     }
 
-    printf(result == l_True ? "s SATISFIABLE\n" : result == l_False ? "s UNSATISFIABLE\n" : "s INDETERMINATE\n");
+    std::cout << (result == l_True ? "s SATISFIABLE" : result == l_False ? "s UNSATISFIABLE" : "s INDETERMINATE") << std::endl;
 
     if (solver != nullptr) {
         CandySolverResult& model = solver->getCandySolverResult();

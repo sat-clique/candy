@@ -27,8 +27,6 @@ namespace Candy {
 class LearningInterface {
 public:
     virtual void handle_conflict(Reason confl) = 0;
-    virtual std::vector<Lit> analyzeFinal(Lit p) = 0;
-
 };
 
 }
