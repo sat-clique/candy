@@ -224,27 +224,24 @@ public:
 		conflicting_assumptions.clear();
 	    conflicting_assumptions.push_back(p);
 
-	    if (decisionLevel() > 0) {
-			stamp.clear();
-			stamp.set(p.var());
-			for (int i = trail_size - 1; i >= (int)trail_lim[0]; i--) {
-				Var x = trail[i].var();
-				if (stamp[x]) {
-					if (!reason(x).exists()) {
-						assert(level(x) > 0);
-						conflicting_assumptions.push_back(~trail[i]);
-					} else {
-						for (Lit lit : reason(x)) {
-							if (level(lit.var()) > 0) {
-								stamp.set(lit.var());
-							}
-						}
-					}
-					stamp.unset(x);
-				}
-			}
-			stamp.unset(p.var());
-		}
+        if (decisionLevel() == 0) return;
+
+        stamp.clear();
+        stamp.set(p.var());
+
+        for (int i = trail_size - 1; i >= (int)trail_lim[0]; i--) {
+            Var x = trail[i].var();
+            if (stamp[x]) {
+                if (reason(x).exists()) {
+                    for (Lit lit : reason(x)) {
+                        stamp.set(lit.var());
+                    }
+                } else {
+                    assert(level(x) > 0);
+                    conflicting_assumptions.push_back(~trail[i]);
+                }
+            }
+        }
 	}
 
     inline const Lit operator [](unsigned int i) const {
