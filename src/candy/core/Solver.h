@@ -284,21 +284,10 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
                 return l_Undef;
             }
             
-            Lit next = lit_Undef;
-            while (trail.hasAssumptionsNotSet()) {
-                Lit p = trail.nextAssumption();
-                if (trail.value(p) == l_True) {
-                    trail.newDecisionLevel(); // Dummy decision level
-                } 
-                else if (trail.value(p) == l_False) {
-                    std::cout << "c Conflict found during propagation of assumption " << p << std::endl;
-                    result.setConflict(trail.analyzeFinal(~p));
-                    return l_False;
-                } 
-                else {
-                    next = p;
-                    break;
-                }
+            Lit next = trail.nextAssumption();
+
+            if (next == lit_Error) { // conflicting assumptions
+                return l_False;
             }
 
             if (next == lit_Undef) {
@@ -374,19 +363,15 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             status = search();
         }
     }
-
-    if (status == l_Undef) {
-        if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": Interrupted" << std::endl;
-    }
-    else {
-        if (verbosity > 1) std::cout << "c " << std::this_thread::get_id() << ": " << (status == l_True ? "SAT" : "UNSAT") << std::endl;
-    }
     
     result.setStatus(status);
 
     if (status == l_False) {
-        if (result.getConflict().empty()) {
+        if (trail.conflicting_assumptions.empty()) {
             clause_db.emptyClause();
+        }
+        else {
+            result.setConflict(trail.conflicting_assumptions);
         }
     }
     else if (status == l_True) {
