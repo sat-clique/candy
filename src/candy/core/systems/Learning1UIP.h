@@ -59,7 +59,6 @@ private:
 
 	std::vector<Lit> learnt_clause;
 	std::vector<Reason> involved_clauses;
-	std::vector<Lit> pickback_clause;
 
 	/* some helper data-structures */
     Stamp<uint32_t> stamp;

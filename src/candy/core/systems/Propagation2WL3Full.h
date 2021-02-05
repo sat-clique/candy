@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+Candy -- Copyright (c) 2015-2021, Markus Iser, KIT - Karlsruhe Institute of Technology
 
 Candy sources are based on Glucose which is based on MiniSat (see former copyrights below). 
 Permissions and copyrights of Candy are exactly the same as Glucose and Minisat (see below).
@@ -38,36 +38,38 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_PROPAGATION2WL_H_
-#define SRC_CANDY_CORE_PROPAGATION2WL_H_
+#ifndef SRC_CANDY_CORE_PROPAGATION2WL3F_H_
+#define SRC_CANDY_CORE_PROPAGATION2WL3F_H_
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/ClauseDatabase.h"
 #include "candy/core/clauses/Clause.h"
+#include "candy/core/clauses/NaryClauses.h"
 #include "candy/core/Trail.h"
 #include "candy/core/systems/PropagationInterface.h"
-#include <array>
 
 namespace Candy {
 
-struct Watcher {
-    Clause* cref;
-    Lit blocker;
+// struct Watcher {
+//     Clause* cref;
+//     Lit blocker;
 
-    Watcher(Clause* cr, Lit p)
-     : cref(cr), blocker(p) { }
-};
+//     Watcher(Clause* cr, Lit p)
+//      : cref(cr), blocker(p) { }
+// };
 
-class Propagation2WL : public PropagationInterface {
+class Propagation2WL3Full : public PropagationInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
 
     std::vector<std::vector<Watcher>> watchers;
 
+    NaryClauses<3> ternaries;
+
 public:
-    Propagation2WL(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers() 
+    Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail)
+        : clause_db(_clause_db), trail(_trail), watchers(), ternaries(_clause_db.nVars())
     {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
@@ -79,6 +81,7 @@ public:
 
     void reset() override {
         for (auto& w : watchers) w.clear();
+        ternaries.clear();
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -88,16 +91,24 @@ public:
 
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        watchers[~clause->first()].emplace_back(clause, clause->second());
-        watchers[~clause->second()].emplace_back(clause, clause->first());
+        if (clause->size() == 3) {
+            ternaries.add(clause);
+        } else {
+            watchers[~clause->first()].emplace_back(clause, clause->second());
+            watchers[~clause->second()].emplace_back(clause, clause->first());
+        }
     }
 
     void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        std::vector<Watcher>& list0 = watchers[~clause->first()];
-        std::vector<Watcher>& list1 = watchers[~clause->second()];
-        list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-        list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+        if (clause->size() == 3) {
+            ternaries.remove(clause);
+        } else {
+            std::vector<Watcher>& list0 = watchers[~clause->first()];
+            std::vector<Watcher>& list1 = watchers[~clause->second()];
+            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
+            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+        }
     }
 
     inline Reason propagate_binary_clauses(Lit p) {
@@ -108,6 +119,23 @@ public:
             }
             else if (val == l_False) {
                 return Reason(~p, other);
+            }
+        }
+        return Reason();
+    }
+
+    inline Reason propagate_ternary_clauses(Lit p) {
+        for (const Occurrence<3>& o : ternaries[p]) {
+            lbool val0 = trail.value(o.others[0]);
+            if (val0 == l_True) continue;
+            lbool val1 = trail.value(o.others[1]);
+            if (val1 == l_True) continue;
+            if (val0 == l_False) {
+                if (val1 == l_False) return Reason(o.clause);
+                else trail.propagate(o.others[1], Reason(o.clause));
+            }
+            else if (val1 == l_False) {
+                trail.propagate(o.others[0], Reason(o.clause));
             }
         }
         return Reason();
@@ -181,6 +209,10 @@ public:
             
             // Propagate binary clauses
             conflict = propagate_binary_clauses(p);
+            if (conflict.exists()) return conflict;
+            
+            // Propagate ternary clauses
+            conflict = propagate_ternary_clauses(p);
             if (conflict.exists()) return conflict;
 
             // Propagate other 2-watched clauses

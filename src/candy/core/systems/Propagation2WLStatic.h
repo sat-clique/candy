@@ -60,8 +60,6 @@ public:
         }
     }
 
-    ~Propagation2WLStatic() { }
-
     void reset() override {
         for (auto& w : watchers) w.clear();
         for (Clause* clause : clause_db) {
@@ -99,7 +97,7 @@ public:
             if (val == l_Undef) {
                 trail.propagate(other, Reason(~p, other));
             }
-            if (val == l_False) {
+            else if (val == l_False) {
                 return Reason(~p, other);
             }
         }
