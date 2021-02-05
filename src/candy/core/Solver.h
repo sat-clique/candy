@@ -292,7 +292,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
                 } 
                 else if (trail.value(p) == l_False) {
                     std::cout << "c Conflict found during propagation of assumption " << p << std::endl;
-                    result.setConflict(learning.analyzeFinal(~p));
+                    result.setConflict(trail.analyzeFinal(~p));
                     return l_False;
                 } 
                 else {
