@@ -43,6 +43,9 @@ CandySolverInterface* createSolver(CNFProblem& problem) {
         } else if (ParallelOptions::opt_lb_propagate) {
             std::cout << "c Building Solver of Type Solver<PropagationLB, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().propagateLowerBounds().build(problem);
+        } else if (ParallelOptions::opt_3full_propagate) {
+            std::cout << "c Building Solver of Type Solver<Propagation3Full, Learning1UIP, BranchingLRB>" << std::endl;
+            return builder.branchWithLRB().propagate3Full().build(problem);
         } else {
             std::cout << "Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().build(problem);
@@ -55,6 +58,9 @@ CandySolverInterface* createSolver(CNFProblem& problem) {
         } else if (ParallelOptions::opt_lb_propagate) {
             std::cout << "c Building Solver of Type Solver<PropagationLB, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.propagateLowerBounds().build(problem);
+        } else if (ParallelOptions::opt_3full_propagate) {
+            std::cout << "c Building Solver of Type Solver<Propagation3Full, Learning1UIP, BranchingVSIDS>" << std::endl;
+            return builder.propagate3Full().build(problem);
         } else {
             std::cout << "c Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.build(problem);

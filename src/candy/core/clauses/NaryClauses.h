@@ -28,16 +28,15 @@ namespace Candy {
 
 template<unsigned int N>
 struct Occurrence {
-    Lit[N-1] others;
+    Lit others[N-1];
     Clause* clause;
 
     Occurrence(Clause* clause_, Lit occ) : clause(clause_) { 
-        assert(clause_.size() == N);
         unsigned int i = 0;
-        for (Lit lit : clause) {
+        for (Lit lit : *clause) {
             if (lit != occ) others[i++] = lit;
         }
-        assert(i == N);
+        assert(i == N-1);
     }
 
     typedef const Lit* const_iterator;
@@ -57,40 +56,29 @@ class NaryClauses {
 public:
     std::vector<std::vector<Occurrence<N>>> lists;
 
-    NaryClauses() : lists() {}
-
-    void init(unsigned int nVars) {
+    NaryClauses(unsigned int nVars) : lists() {
         lists.resize(2*nVars);
     }
 
     void clear() {
-        lists.clear();
+        for (std::vector<Occurrence<N>>& occ : lists) occ.clear();
     }
 
-    template<typename Iterator>
-    void reinit(Iterator begin, Iterator end) {
-        for (std::vector<Occurrence>& occ : lists) occ.clear();
-        for (Iterator it = begin; it != end; it++) {
-            Clause* clause = *it;
-            if (clause->size() == N) {
-                this->add(clause);
-            }
-        }
-    }
-
-    inline const std::vector<Occurrence>& operator [](Lit p) const {
+    inline const std::vector<Occurrence<N>>& operator [](Lit p) const {
         return lists[p];
     }
 
     void add(Clause* clause) {
+        assert(clause->size() == N);
         for (Lit lit : *clause) {
             lists[~lit].emplace_back(clause, lit);
         }
     }
 
     void remove(Clause* clause) {
+        assert(clause->size() == N);
         for (Lit lit : *clause) {
-            lists[~lit].erase(std::find(lists[~lit].begin(), lists[~lit].end(), [clause](Occurrence o) { return o.clause == clause; }));
+            lists[~lit].erase(std::find_if(lists[~lit].begin(), lists[~lit].end(), [clause](Occurrence<N> o) { return o.clause == clause; }));
         }
     }
 
