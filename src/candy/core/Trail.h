@@ -201,6 +201,43 @@ public:
         return assumptions[decisionLevel()];
     }
 
+	/**************************************************************************************************
+	 *
+	 *  analyzeFinal : (p : Lit)  ->  std::vector<Lit>
+	 *
+	 *  Specialized analysis procedure to express the final conflict in terms of assumptions.
+	 *  Calculates and returns the set of assumptions that led to the assignment of 'p'.
+	 * 
+	 |*************************************************************************************************/
+	std::vector<Lit> analyzeFinal(Lit p) { 
+		std::vector<Lit> assumptions;
+	    assumptions.push_back(p);
+
+	    if (decisionLevel() > 0) {
+			stamp.clear();
+			stamp.set(p.var());
+			for (int i = trail_size - 1; i >= (int)trail_lim[0]; i--) {
+				Var x = trail[i].var();
+				if (stamp[x]) {
+					if (!reason(x).exists()) {
+						assert(level(x) > 0);
+						assumptions.push_back(~trail[i]);
+					} else {
+						for (Lit lit : reason(x)) {
+							if (level(lit.var()) > 0) {
+								stamp.set(lit.var());
+							}
+						}
+					}
+					stamp.unset(x);
+				}
+			}
+			stamp.unset(p.var());
+		}
+
+		return assumptions;
+	}
+
     inline const Lit operator [](unsigned int i) const {
         assert(i < trail_size);
         return trail[i];
