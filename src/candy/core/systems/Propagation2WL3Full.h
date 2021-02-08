@@ -129,7 +129,11 @@ public:
             lbool val0 = trail.value(o.others[0]);
             if (val0 == l_True) continue;
             lbool val1 = trail.value(o.others[1]);
-            if (val1 == l_True) continue;
+            if (val1 == l_True) {
+                Occurrence<3>& os = (Occurrence<3>&)o;
+                std::swap(os.others[0], os.others[1]);
+                continue;
+            }
             if (val0 == l_False) {
                 if (val1 == l_False) return Reason(o.clause);
                 else trail.propagate(o.others[1], Reason(o.clause));
