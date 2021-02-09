@@ -134,7 +134,10 @@ public:
                 continue;
             }
             if (val0 == l_False) {
-                if (val1 == l_False) return Reason(o.clause);
+                if (val1 == l_False) {
+                    return Reason(~p, o.others[0], o.others[1]);
+                    //return Reason(o.clause);
+                }
                 else trail.propagate(o.others[1], Reason(o.clause));
             }
             else if (val1 == l_False) {
