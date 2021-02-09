@@ -44,6 +44,12 @@ CandySolverInterface* createSolver(CNFProblem& problem) {
             return builder.branchWithLRB().propagateLowerBounds().build(problem);
         } else if (ParallelOptions::opt_3full_propagate) {
             return builder.branchWithLRB().propagate3Full().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 3) {
+            return builder.branchWithLRB().propagateX3().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 4) {
+            return builder.branchWithLRB().propagateX4().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 5) {
+            return builder.branchWithLRB().propagateX5().build(problem);
         } else {
             return builder.branchWithLRB().build(problem);
         }
@@ -55,6 +61,12 @@ CandySolverInterface* createSolver(CNFProblem& problem) {
             return builder.propagateLowerBounds().build(problem);
         } else if (ParallelOptions::opt_3full_propagate) {
             return builder.propagate3Full().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 3) {
+            return builder.propagateX3().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 4) {
+            return builder.propagateX4().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 5) {
+            return builder.propagateX5().build(problem);
         } else {
             return builder.build(problem);
         }

@@ -125,13 +125,12 @@ public:
     }
 
     inline Reason propagate_ternary_clauses(Lit p) {
-        for (const Occurrence<3>& o : ternaries[p]) {
+        for (Occurrence<3>& o : ternaries[p]) {
             lbool val0 = trail.value(o.others[0]);
             if (val0 == l_True) continue;
             lbool val1 = trail.value(o.others[1]);
             if (val1 == l_True) {
-                Occurrence<3>& os = (Occurrence<3>&)o;
-                std::swap(os.others[0], os.others[1]);
+                std::swap(o.others[0], o.others[1]);
                 continue;
             }
             if (val0 == l_False) {
