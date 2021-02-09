@@ -30,6 +30,7 @@ namespace ParallelOptions {
     extern BoolOption opt_static_propagate; // thread-safe propagator
     extern BoolOption opt_lb_propagate; // thread-safe propagator
     extern BoolOption opt_3full_propagate; // ternary clauses full
+    extern IntOption opt_Xfull_propagate; // X-Z clauses full
     extern BoolOption opt_static_database;
     extern IntOption opt_static_database_size_bound;
 }

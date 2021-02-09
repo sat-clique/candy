@@ -23,6 +23,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/systems/Propagation2WL.h"
 #include "candy/core/systems/Propagation2WLStatic.h"
 #include "candy/core/systems/Propagation2WL3Full.h"
+#include "candy/core/systems/Propagation2WLX.h"
 #include "candy/core/systems/PropagationLB.h"
 #include "candy/core/systems/Learning1UIP.h"
 #include "candy/core/systems/BranchingVSIDS.h"
@@ -55,6 +56,18 @@ public:
 
     constexpr auto propagate3Full() const -> CandyBuilder<Propagation2WL3Full, TLearning, TBranching> { 
         return CandyBuilder<Propagation2WL3Full, TLearning, TBranching>();
+    }
+
+    constexpr auto propagateX3() const -> CandyBuilder<Propagation2WLX<3>, TLearning, TBranching> { 
+        return CandyBuilder<Propagation2WLX<3>, TLearning, TBranching>();
+    }
+
+    constexpr auto propagateX4() const -> CandyBuilder<Propagation2WLX<3, 4>, TLearning, TBranching> { 
+        return CandyBuilder<Propagation2WLX<3, 4>, TLearning, TBranching>();
+    }
+
+    constexpr auto propagateX5() const -> CandyBuilder<Propagation2WLX<3, 4, 5>, TLearning, TBranching> { 
+        return CandyBuilder<Propagation2WLX<3, 4, 5>, TLearning, TBranching>();
     }
 
     CandySolverInterface* build(CNFProblem& problem);

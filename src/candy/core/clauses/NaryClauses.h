@@ -39,13 +39,13 @@ struct Occurrence {
         assert(i == N-1);
     }
 
-    typedef const Lit* const_iterator;
+    typedef Lit* iterator;
 
-    inline const_iterator begin() const {
+    inline iterator begin() {
         return others;
     }
 
-    inline const_iterator end() const {
+    inline iterator end() {
         return others + N-1;
     }
     
@@ -64,7 +64,7 @@ public:
         for (std::vector<Occurrence<N>>& occ : lists) occ.clear();
     }
 
-    inline const std::vector<Occurrence<N>>& operator [](Lit p) const {
+    inline std::vector<Occurrence<N>>& operator [](Lit p) {
         return lists[p];
     }
 

@@ -38,8 +38,8 @@ DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
 OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *************************************************************************************************/
 
-#ifndef SRC_CANDY_CORE_PROPAGATION2WL3F_H_
-#define SRC_CANDY_CORE_PROPAGATION2WL3F_H_
+#ifndef SRC_CANDY_CORE_PROPAGATION2WLX_H_
+#define SRC_CANDY_CORE_PROPAGATION2WLX_H_
 
 #include "candy/core/SolverTypes.h"
 #include "candy/core/clauses/ClauseDatabase.h"
@@ -58,18 +58,83 @@ namespace Candy {
 //      : cref(cr), blocker(p) { }
 // };
 
-class Propagation2WL3Full : public PropagationInterface {
-private:
+template<unsigned int X>
+class PropagateX {
+public:
+    NaryClauses<X> nary;
+
+    PropagateX(unsigned int nVars) : nary(nVars) {}
+
+    inline Reason propagate_nary_clauses(Trail& trail, Lit p) {
+        for (const Occurrence<X>& o : nary[p]) {
+            Lit prop = lit_Undef;
+            for (Lit lit : o.others) {
+                lbool val = trail.value(lit);
+                if (val == l_True) {
+                    goto continue2;
+                }
+                else if (val == l_Undef) {
+                    if (prop == lit_Undef) {
+                        prop = lit;
+                    } else {
+                        goto continue2;
+                    }
+                }
+            }
+            if (prop == lit_Undef) {
+                return Reason(o.clause);
+            } 
+            else {
+                trail.propagate(prop, Reason(o.clause));
+            }
+            continue2:;
+        }
+        return Reason();
+    }
+
+    inline void clear() {
+        nary.clear();
+    }
+
+    inline void attach(Clause* clause) {
+        nary.add(clause);
+    }
+
+    inline void detach(Clause* clause) {
+        nary.remove(clause);
+    }
+};
+
+template<> class PropagateX<0> {
+public:
+    PropagateX(unsigned int nVars) {}
+    inline Reason propagate_nary_clauses(Trail& trail, Lit p) { return Reason(); }
+    inline void clear() {}
+    inline void attach(Clause* clause) {}
+    inline void detach(Clause* clause) {}
+};
+
+template<> class PropagateX<1> : public PropagateX<0> {
+public:
+    PropagateX(unsigned int nVars) : PropagateX<0>(nVars) {}
+};
+
+template<> class PropagateX<2> : public PropagateX<0> {
+public:
+    PropagateX(unsigned int nVars) : PropagateX<0>(nVars) {}
+};
+
+template<unsigned int X = 0, unsigned int Y = 1, unsigned int Z = 2>
+class Propagation2WLX : public PropagationInterface, public PropagateX<X>, public PropagateX<Y>, public PropagateX<Z> {
     ClauseDatabase& clause_db;
     Trail& trail;
 
     std::vector<std::vector<Watcher>> watchers;
 
-    NaryClauses<3> ternaries;
-
 public:
-    Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), ternaries(_clause_db.nVars())
+    Propagation2WLX(ClauseDatabase& _clause_db, Trail& _trail) : 
+        PropagateX<X>(_clause_db.nVars()), PropagateX<Y>(_clause_db.nVars()), PropagateX<Z>(_clause_db.nVars()), 
+        clause_db(_clause_db), trail(_trail), watchers()
     {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
@@ -81,7 +146,9 @@ public:
 
     void reset() override {
         for (auto& w : watchers) w.clear();
-        ternaries.clear();
+        PropagateX<X>::clear();
+        PropagateX<Y>::clear();
+        PropagateX<Z>::clear();
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -91,9 +158,17 @@ public:
 
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        if (clause->size() == 3) {
-            ternaries.add(clause);
-        } else {
+
+        if (clause->size() == X) {
+            PropagateX<X>::attach(clause);
+        } 
+        else if (clause->size() == Y) {
+            PropagateX<Y>::attach(clause);
+        }
+        else if (clause->size() == Z) {
+            PropagateX<Z>::attach(clause);
+        }
+        else {
             watchers[~clause->first()].emplace_back(clause, clause->second());
             watchers[~clause->second()].emplace_back(clause, clause->first());
         }
@@ -101,9 +176,17 @@ public:
 
     void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        if (clause->size() == 3) {
-            ternaries.remove(clause);
-        } else {
+        
+        if (clause->size() == X) {
+            PropagateX<X>::detach(clause);
+        } 
+        else if (clause->size() == Y) {
+            PropagateX<Y>::detach(clause);
+        }
+        else if (clause->size() == Z) {
+            PropagateX<Z>::detach(clause);
+        }
+        else {
             std::vector<Watcher>& list0 = watchers[~clause->first()];
             std::vector<Watcher>& list1 = watchers[~clause->second()];
             list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
@@ -124,37 +207,6 @@ public:
         return Reason();
     }
 
-    inline Reason propagate_ternary_clauses(Lit p) {
-        for (Occurrence<3>& o : ternaries[p]) {
-            lbool val0 = trail.value(o.others[0]);
-            if (val0 == l_True) continue;
-            lbool val1 = trail.value(o.others[1]);
-            if (val1 == l_True) {
-                std::swap(o.others[0], o.others[1]);
-                continue;
-            }
-            if (val0 == l_False) {
-                if (val1 == l_False) return Reason(o.clause);
-                else trail.propagate(o.others[1], Reason(o.clause));
-            }
-            else if (val1 == l_False) {
-                trail.propagate(o.others[0], Reason(o.clause));
-            }
-        }
-        return Reason();
-    }
-
-    /**************************************************************************************************
-     *
-     *  propagate : [void]  ->  [Clause*]
-     *
-     *  Description:
-     *    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-     *    otherwise nullptr.
-     *
-     *    Post-conditions:
-     *      * the propagation queue is empty, even if there was a conflict.
-     **************************************************************************************************/
     Reason propagate_watched_clauses(Lit p) {
         std::vector<Watcher>& list = watchers[p];
 
@@ -214,8 +266,16 @@ public:
             conflict = propagate_binary_clauses(p);
             if (conflict.exists()) return conflict;
             
-            // Propagate ternary clauses
-            conflict = propagate_ternary_clauses(p);
+            // Propagate X-ary clauses
+            conflict = PropagateX<X>::propagate_nary_clauses(trail, p);
+            if (conflict.exists()) return conflict;
+
+            // Propagate Y-ary clauses
+            conflict = PropagateX<Y>::propagate_nary_clauses(trail, p);
+            if (conflict.exists()) return conflict;
+
+            // Propagate Z-ary clauses
+            conflict = PropagateX<Z>::propagate_nary_clauses(trail, p);
             if (conflict.exists()) return conflict;
 
             // Propagate other 2-watched clauses
