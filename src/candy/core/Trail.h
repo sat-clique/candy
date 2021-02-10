@@ -143,7 +143,7 @@ public:
     }
 
     Reason(Lit lit1, Lit lit2) {
-        set(lit1, lit2, lit_Undef);
+        set(lit1, lit2);
     }
 
     Reason(Lit lit1, Lit lit2, Lit lit3) {
@@ -152,6 +152,8 @@ public:
 
     void unset() {
         data.raw = 0;
+        data.direct[2] = lit_Undef;
+        data.direct[3] = lit_Undef;
     }
 
     bool exists() const {
@@ -162,6 +164,15 @@ public:
         assert(clause != nullptr);
         data.clause = clause;
         data.raw |= BIT64;
+        data.direct[2] = lit_Undef;
+        data.direct[3] = lit_Undef;
+    }
+
+    void set(Lit lit1, Lit lit2) {
+        data.direct[0] = lit1;
+        data.direct[1] = lit2;
+        data.direct[2] = lit_Undef;
+        data.direct[3] = lit_Undef;
     }
 
     void set(Lit lit1, Lit lit2, Lit lit3) {
@@ -413,6 +424,7 @@ public:
 
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
+        // std::cout  << "decision " << p << std::endl;
         set_value(p);
         reasons[p.var()].unset();
         levels[p.var()] = decisionLevel();
@@ -421,6 +433,7 @@ public:
 
     inline void propagate(Lit p, Reason reason) {
         assert(value(p) == l_Undef);
+        // std::cout  << "(" << reason << ") implies " << p << std::endl;
         set_value(p);
         reasons[p.var()] = reason;
         levels[p.var()] = decisionLevel();

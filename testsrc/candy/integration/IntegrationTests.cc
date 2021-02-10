@@ -114,6 +114,8 @@ namespace Candy {
         acceptanceTest("cnf/dd1.cnf", static_allocator);
         SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/dd2.cnf", static_allocator);
+        SolverOptions::opt_certified_file = CERT;
+        acceptanceTest("cnf/dd3.cnf", static_allocator);
     }
 
     TEST(IntegrationTest, test_vsids) {
@@ -168,14 +170,17 @@ namespace Candy {
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
+        testFixedBugs(false);
         ParallelOptions::opt_Xfull_propagate = 4;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
+        testFixedBugs(false);
         ParallelOptions::opt_Xfull_propagate = 5;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
+        testFixedBugs(false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
