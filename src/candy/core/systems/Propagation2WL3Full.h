@@ -51,24 +51,22 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 namespace Candy {
 
 struct WatchX {
-    Lit blocker;
+    Lit blocker[2];
+    Clause* clause;
 
-    union D {
-        Clause* clause;
-        Lit direct[2];
-        D(Clause* clause_) : clause(clause_) { }
-        D(Lit lit1, Lit lit2) { direct[0] = lit1; direct[1] = lit2; }
-    } data;
-
-    WatchX(Clause* clause, Lit lit) : blocker(lit), data(clause) { }
-    WatchX(Lit lit1, Lit lit2) : blocker(lit_Undef), data(lit1, lit2) { }
+    WatchX(Clause* clause_, Lit lit) : clause(clause_) { 
+        blocker[0] = lit;
+    }
+    WatchX(Lit lit1, Lit lit2) : clause(nullptr) { 
+        blocker[0] = lit1; blocker[1] = lit2;
+    }
 };
 
 inline std::ostream& operator <<(std::ostream& stream, WatchX const& reason) {
-    if (reason.blocker == lit_Undef) {
-        stream << reason.data.direct[0] << " " << reason.data.direct[1];
+    if (reason.blocker[1] != lit_Undef) {
+        stream << reason.blocker[0] << " " << reason.blocker[1];
     } else {
-        stream << *reason.data.clause;
+        stream << *reason.clause;
     }
     return stream;
 }
@@ -120,21 +118,18 @@ public:
             std::vector<WatchX>& list0 = watchers[~clause->first()];
             std::vector<WatchX>& list1 = watchers[~clause->second()];
             std::vector<WatchX>& list2 = watchers[~clause->third()];
-            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.blocker == lit_Undef 
-                                                && (w.data.direct[0] == clause->second() && w.data.direct[1] == clause->third()
-                                                ||  w.data.direct[1] == clause->second() && w.data.direct[0] == clause->third()); }));
-            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.blocker == lit_Undef 
-                                                && (w.data.direct[0] == clause->first() && w.data.direct[1] == clause->third()
-                                                ||  w.data.direct[1] == clause->first() && w.data.direct[0] == clause->third()); }));
-            list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.blocker == lit_Undef 
-                                                && (w.data.direct[0] == clause->first() && w.data.direct[1] == clause->second()
-                                                ||  w.data.direct[1] == clause->first() && w.data.direct[0] == clause->second()); }));
+            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.blocker[0] == clause->second() && w.blocker[1] == clause->third()
+                                                                                          || w.blocker[1] == clause->second() && w.blocker[0] == clause->third(); }));
+            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.blocker[0] == clause->first() && w.blocker[1] == clause->third()
+                                                                                          || w.blocker[1] == clause->first() && w.blocker[0] == clause->third(); }));
+            list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.blocker[0] == clause->first() && w.blocker[1] == clause->second()
+                                                                                          || w.blocker[1] == clause->first() && w.blocker[0] == clause->second(); }));
         } 
         else {
             std::vector<WatchX>& list0 = watchers[~clause->first()];
             std::vector<WatchX>& list1 = watchers[~clause->second()];
-            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.blocker != lit_Undef && w.data.clause == clause; }));
-            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.blocker != lit_Undef && w.data.clause == clause; }));
+            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
+            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
         }
     }
 
@@ -156,32 +151,29 @@ public:
 
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            if (watcher->blocker == lit_Undef) {
-                lbool val0 = trail.value(watcher->data.direct[0]);
-                if (val0 != l_True) {
-                    lbool val1 = trail.value(watcher->data.direct[1]);
+            lbool val = trail.value(watcher->blocker[0]);
+
+            if (val != l_True) { 
+                if (watcher->blocker[1] != lit_Undef) {
+                    lbool val1 = trail.value(watcher->blocker[1]);
                     if (val1 == l_True) {
-                        std::swap(watcher->data.direct[0], watcher->data.direct[1]);
-                    }
-                    else if (val0 == l_False) {
-                        if (val1 == l_False) {
-                            list.erase(keep, watcher);
-                            return Reason(~p, watcher->data.direct[0], watcher->data.direct[1]);
-                        }
-                        else {
-                            trail.propagate(watcher->data.direct[1], Reason(~p, watcher->data.direct[0], watcher->data.direct[1]));
-                        }
+                        std::swap(watcher->blocker[0], watcher->blocker[1]);
                     }
                     else if (val1 == l_False) {
-                        trail.propagate(watcher->data.direct[0], Reason(~p, watcher->data.direct[0], watcher->data.direct[1]));
+                        if (val == l_False) {
+                            list.erase(keep, watcher);
+                            return Reason(~p, watcher->blocker[0], watcher->blocker[1]);
+                        }
+                        else {
+                            trail.propagate(watcher->blocker[0], Reason(~p, watcher->blocker[0], watcher->blocker[1]));
+                        }
+                    }
+                    else if (val == l_False) {
+                        trail.propagate(watcher->blocker[1], Reason(~p, watcher->blocker[0], watcher->blocker[1]));
                     }
                 }
-            }
-            else {
-                lbool val = trail.value(watcher->blocker);
-
-                if (val != l_True) { // Try to avoid inspecting the clause
-                    Clause* clause = watcher->data.clause;
+                else {
+                    Clause* clause = watcher->clause;
 
                     if (clause->isDeleted()) continue;
 
@@ -189,8 +181,8 @@ public:
                         clause->swap(0, 1);
                     }
 
-                    if (watcher->blocker != clause->first()) {
-                        watcher->blocker = clause->first(); 
+                    if (watcher->blocker[0] != clause->first()) {
+                        watcher->blocker[0] = clause->first(); 
                         val = trail.value(clause->first());
                     }
 
