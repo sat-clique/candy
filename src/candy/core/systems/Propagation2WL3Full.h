@@ -54,12 +54,11 @@ struct WatchX {
     Lit blocker[2];
     Clause* clause;
 
-    WatchX(Clause* clause_, Lit lit) : clause(clause_) { 
-        blocker[0] = lit;
-    }
-    WatchX(Lit lit1, Lit lit2) : clause(nullptr) { 
+    WatchX(Clause* clause_, Lit lit1, Lit lit2) : clause(clause_) { 
         blocker[0] = lit1; blocker[1] = lit2;
     }
+
+    WatchX(Clause* clause_, Lit lit) : WatchX(clause_, lit, lit_Undef) { }
 };
 
 inline std::ostream& operator <<(std::ostream& stream, WatchX const& reason) {
@@ -102,9 +101,9 @@ public:
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         if (clause->size() == 3) {
-            watchers[~clause->first()].emplace_back(clause->second(), clause->third());
-            watchers[~clause->second()].emplace_back(clause->first(), clause->third());
-            watchers[~clause->third()].emplace_back(clause->first(), clause->second());
+            watchers[~clause->first()].emplace_back(clause, clause->second(), clause->third());
+            watchers[~clause->second()].emplace_back(clause, clause->first(), clause->third());
+            watchers[~clause->third()].emplace_back(clause, clause->first(), clause->second());
         } 
         else {
             watchers[~clause->first()].emplace_back(clause, clause->second());
@@ -118,12 +117,9 @@ public:
             std::vector<WatchX>& list0 = watchers[~clause->first()];
             std::vector<WatchX>& list1 = watchers[~clause->second()];
             std::vector<WatchX>& list2 = watchers[~clause->third()];
-            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.blocker[0] == clause->second() && w.blocker[1] == clause->third()
-                                                                                          || w.blocker[1] == clause->second() && w.blocker[0] == clause->third(); }));
-            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.blocker[0] == clause->first() && w.blocker[1] == clause->third()
-                                                                                          || w.blocker[1] == clause->first() && w.blocker[0] == clause->third(); }));
-            list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.blocker[0] == clause->first() && w.blocker[1] == clause->second()
-                                                                                          || w.blocker[1] == clause->first() && w.blocker[0] == clause->second(); }));
+            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
+            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
+            list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.clause == clause; }));
         } 
         else {
             std::vector<WatchX>& list0 = watchers[~clause->first()];
@@ -162,14 +158,14 @@ public:
                     else if (val1 == l_False) {
                         if (val == l_False) {
                             list.erase(keep, watcher);
-                            return Reason(~p, watcher->blocker[0], watcher->blocker[1]);
+                            return Reason(watcher->clause);
                         }
                         else {
-                            trail.propagate(watcher->blocker[0], Reason(~p, watcher->blocker[0], watcher->blocker[1]));
+                            trail.propagate(watcher->blocker[0], Reason(watcher->clause));
                         }
                     }
                     else if (val == l_False) {
-                        trail.propagate(watcher->blocker[1], Reason(~p, watcher->blocker[0], watcher->blocker[1]));
+                        trail.propagate(watcher->blocker[1], Reason(watcher->clause));
                     }
                 }
                 else {
