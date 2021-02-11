@@ -157,8 +157,9 @@ public:
                     }
                     else if (val1 == l_False) {
                         if (val == l_False) {
+                            Reason reason = Reason(watcher->clause);
                             list.erase(keep, watcher);
-                            return Reason(watcher->clause);
+                            return reason;
                         }
                         else {
                             trail.propagate(watcher->blocker[0], Reason(watcher->clause));
