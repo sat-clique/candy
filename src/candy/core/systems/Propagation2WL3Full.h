@@ -161,7 +161,7 @@ public:
                             trail.propagate(watcher->blocker[0], Reason(watcher->clause));
                         }
                     }
-                    else if ((val & val1) == 1) { // conflict
+                    else if (val1 == l_False) { // conflict
                         Reason reason = Reason(watcher->clause);
                         list.erase(keep, watcher);
                         return reason;
