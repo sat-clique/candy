@@ -152,21 +152,19 @@ public:
             if (val != l_True) { 
                 if (watcher->blocker[1] != lit_Undef) {
                     lbool val1 = trail.value(watcher->blocker[1]);
-                    if (val1 == l_True) {
-                        std::swap(watcher->blocker[0], watcher->blocker[1]);
-                    }
-                    else if (val1 == l_False) {
+                    // l_True == 00, l_False == 01, l_Undef == 10
+                    if ((val | val1) == 3) { // propagate
                         if (val == l_False) {
-                            Reason reason = Reason(watcher->clause);
-                            list.erase(keep, watcher);
-                            return reason;
+                            trail.propagate(watcher->blocker[1], Reason(watcher->clause));
                         }
                         else {
                             trail.propagate(watcher->blocker[0], Reason(watcher->clause));
                         }
                     }
-                    else if (val == l_False) {
-                        trail.propagate(watcher->blocker[1], Reason(watcher->clause));
+                    else if ((val & val1) == 1) { // conflict
+                        Reason reason = Reason(watcher->clause);
+                        list.erase(keep, watcher);
+                        return reason;
                     }
                 }
                 else {
