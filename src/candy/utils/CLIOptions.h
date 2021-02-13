@@ -30,6 +30,7 @@ namespace ParallelOptions {
     extern BoolOption opt_static_propagate; // thread-safe propagator
     extern BoolOption opt_lb_propagate; // thread-safe propagator
     extern BoolOption opt_3full_propagate; // ternary clauses full
+    extern IntOption opt_Xfull_propagate; // X-Z clauses full
     extern BoolOption opt_static_database;
     extern IntOption opt_static_database_size_bound;
 }
@@ -73,7 +74,7 @@ namespace SolverOptions {
     extern DoubleOption opt_vsids_var_decay;
     extern DoubleOption opt_vsids_max_var_decay;
     
-    extern BoolOption opt_sort_variables;
+    extern IntOption opt_sort_variables;
     extern BoolOption opt_preprocessing;
     extern IntOption opt_inprocessing;
 }

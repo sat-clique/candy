@@ -88,7 +88,7 @@ public:
         polarity.resize(clause_db.nVars(), initial_polarity);
         stamp.grow(clause_db.nVars());
         order_heap.grow(clause_db.nVars());
-        if (SolverOptions::opt_sort_variables) {
+        if (SolverOptions::opt_sort_variables == 1) {
             std::vector<double> occ = getLiteralRelativeOccurrences();
             for (size_t i = 0; i < clause_db.nVars(); ++i) {
                 activity[i] = occ[Lit(i, true)] + occ[Lit(i, false)];

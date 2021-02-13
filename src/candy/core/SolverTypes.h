@@ -192,6 +192,14 @@ public:
 		uint8_t v = (0xFCFCF400 >> sel) & 3;
 		return lbool(v);
 	}
+
+	uint8_t operator |(lbool b) const {
+		return this->value | b.value;
+	}
+
+	uint8_t operator &(lbool b) const {
+		return this->value & b.value;
+	}
 };
 
 typedef std::vector<Lit> Cl;

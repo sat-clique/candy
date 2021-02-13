@@ -176,6 +176,8 @@ int main(int argc, char** argv) {
     std::vector<std::thread> threads;
 
     if (ParallelOptions::opt_threads == 1) {
+        if (SolverOptions::opt_sort_variables == 2) problem.sort(true);
+        if (SolverOptions::opt_sort_variables == 3) problem.sort(false);
         solver = createSolver(problem);
         solvers.push_back(solver); 
         solver->setTermCallback(solver, interrupted_callback);
@@ -199,7 +201,7 @@ int main(int argc, char** argv) {
         }
         for (unsigned int count = 0; count < (unsigned int)ParallelOptions::opt_threads && result == l_Undef; count++) {
             std::cout << "c Initializing Solver " << count << std::endl;
-            SolverOptions::opt_sort_variables = ((count % 2) == 0);
+            SolverOptions::opt_sort_variables = count % 3;
             SolverOptions::opt_preprocessing = (count == 0);
             SolverOptions::opt_inprocessing = count + SolverOptions::opt_inprocessing;
             VariableEliminationOptions::opt_use_elim = !ParallelOptions::opt_static_database;

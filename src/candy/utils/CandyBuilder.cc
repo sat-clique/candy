@@ -30,6 +30,7 @@ namespace Candy {
 
 template<class TPropagation, class TLearning, class TBranching> 
 CandySolverInterface* CandyBuilder<TPropagation, TLearning, TBranching>::build(CNFProblem& problem) {
+    std::cout << "c Building Solver with " << __PRETTY_FUNCTION__ << std::endl;
     return new Solver<TPropagation, TLearning, TBranching>(problem);
 }
 
@@ -38,35 +39,39 @@ CandySolverInterface* createSolver(CNFProblem& problem) {
 
     if (SolverOptions::opt_use_lrb) {
         if (ParallelOptions::opt_static_propagate) {
-            std::cout << "c Building Solver of Type Solver<Propagation2WLStatic, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().propagateStaticClauses().build(problem);
         } else if (ParallelOptions::opt_lb_propagate) {
-            std::cout << "c Building Solver of Type Solver<PropagationLB, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().propagateLowerBounds().build(problem);
         } else if (ParallelOptions::opt_3full_propagate) {
-            std::cout << "c Building Solver of Type Solver<Propagation3Full, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().propagate3Full().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 3) {
+            return builder.branchWithLRB().propagateX3().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 4) {
+            return builder.branchWithLRB().propagateX4().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 5) {
+            return builder.branchWithLRB().propagateX5().build(problem);
         } else {
-            std::cout << "Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingLRB>" << std::endl;
             return builder.branchWithLRB().build(problem);
         }
     } 
     else {
         if (ParallelOptions::opt_static_propagate) {
-            std::cout << "c Building Solver of Type Solver<Propagation2WLStatic, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.propagateStaticClauses().build(problem);
         } else if (ParallelOptions::opt_lb_propagate) {
-            std::cout << "c Building Solver of Type Solver<PropagationLB, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.propagateLowerBounds().build(problem);
         } else if (ParallelOptions::opt_3full_propagate) {
-            std::cout << "c Building Solver of Type Solver<Propagation3Full, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.propagate3Full().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 3) {
+            return builder.propagateX3().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 4) {
+            return builder.propagateX4().build(problem);
+        } else if (ParallelOptions::opt_Xfull_propagate == 5) {
+            return builder.propagateX5().build(problem);
         } else {
-            std::cout << "c Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingVSIDS>" << std::endl;
             return builder.build(problem);
         }
     }
-    std::cout << "c Warning! Configuration Not Found. Building Solver of Type Solver<Propagation2WL, Learning1UIP, BranchingVSIDS>" << std::endl;
+    
     return builder.build(problem);
 }
 
