@@ -28,6 +28,7 @@ namespace ParallelOptions {
     IntOption opt_thread_initialization_delay("ParallelOptions", "thread-initialization-delay", "Initialization delay for thread to increase agility and diversification (ms)", 10000, IntRange(10, INT32_MAX));
     BoolOption opt_static_propagate("ParallelOptions", "static-propagate", "use static two-w.l. propagation module", false);
     BoolOption opt_3full_propagate("ParallelOptions", "3full-propagate", "use ternary full-ol propagation module", false);
+    IntOption opt_Xfull_propagate("ParallelOptions", "Xfull-propagate", "use X-ary full-ol propagation module", 2, IntRange(2, 5));
     BoolOption opt_lb_propagate("ParallelOptions", "lb-propagate", "use static lower-bounds propagation module", false);
     BoolOption opt_static_database("ParallelOptions", "static-database", "Use thread-safe static clause-allocator", false);
     IntOption opt_static_database_size_bound("ParallelOptions", "static_database_size_bound", "upper size-bound for static database (0 = disabled, 1+2 = no effect, 3++ = size-bound", 6, IntRange(0, INT16_MAX));
@@ -72,7 +73,7 @@ namespace SolverOptions {
     DoubleOption opt_lrb_step_size("BRANCHING", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("BRANCHING", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    BoolOption opt_sort_variables("BRANCHING", "sort-variables", "sort variables", false);
+    IntOption opt_sort_variables("BRANCHING", "sort-variables", "sort variables", 0, IntRange(0,3));
 
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("METHOD", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);

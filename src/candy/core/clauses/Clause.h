@@ -38,6 +38,9 @@ static uint8_t cast_uint8_t(T num) {
     return (uint8_t)num;
 }
 
+template<unsigned int X, unsigned int Y, unsigned int Z>
+class Propagation2WLX;
+
 class Clause {
     // want to keep track of systems which use the (private) setters,
     // in case I ever have to handle concurrency issues again
@@ -47,6 +50,9 @@ class Clause {
     friend class Subsumption;
     friend class Propagation2WL;
     friend class Propagation2WL3Full;
+    friend class Propagation2WLX<3,1,2>;
+    friend class Propagation2WLX<3,4,2>;
+    friend class Propagation2WLX<3,4,5>;
     friend class ReduceDB;
 
 private:

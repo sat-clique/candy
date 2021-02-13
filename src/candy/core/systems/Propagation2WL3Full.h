@@ -50,26 +50,36 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 namespace Candy {
 
-// struct Watcher {
-//     Clause* cref;
-//     Lit blocker;
+struct WatchX {
+    Lit blocker[2];
+    Clause* clause;
 
-//     Watcher(Clause* cr, Lit p)
-//      : cref(cr), blocker(p) { }
-// };
+    WatchX(Clause* clause_, Lit lit1, Lit lit2) : clause(clause_) { 
+        blocker[0] = lit1; blocker[1] = lit2;
+    }
+
+    WatchX(Clause* clause_, Lit lit) : WatchX(clause_, lit, lit_Undef) { }
+};
+
+inline std::ostream& operator <<(std::ostream& stream, WatchX const& reason) {
+    if (reason.blocker[1] != lit_Undef) {
+        stream << reason.blocker[0] << " " << reason.blocker[1];
+    } else {
+        stream << *reason.clause;
+    }
+    return stream;
+}
 
 class Propagation2WL3Full : public PropagationInterface {
 private:
     ClauseDatabase& clause_db;
     Trail& trail;
 
-    std::vector<std::vector<Watcher>> watchers;
-
-    NaryClauses<3> ternaries;
+    std::vector<std::vector<WatchX>> watchers;
 
 public:
     Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), ternaries(_clause_db.nVars())
+        : clause_db(_clause_db), trail(_trail), watchers()
     {
         watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
@@ -81,7 +91,6 @@ public:
 
     void reset() override {
         for (auto& w : watchers) w.clear();
-        ternaries.clear();
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -92,8 +101,11 @@ public:
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         if (clause->size() == 3) {
-            ternaries.add(clause);
-        } else {
+            watchers[~clause->first()].emplace_back(clause, clause->second(), clause->third());
+            watchers[~clause->second()].emplace_back(clause, clause->first(), clause->third());
+            watchers[~clause->third()].emplace_back(clause, clause->first(), clause->second());
+        } 
+        else {
             watchers[~clause->first()].emplace_back(clause, clause->second());
             watchers[~clause->second()].emplace_back(clause, clause->first());
         }
@@ -102,12 +114,18 @@ public:
     void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
         if (clause->size() == 3) {
-            ternaries.remove(clause);
-        } else {
-            std::vector<Watcher>& list0 = watchers[~clause->first()];
-            std::vector<Watcher>& list1 = watchers[~clause->second()];
-            list0.erase(std::remove_if(list0.begin(), list0.end(), [clause](Watcher w){ return w.cref == clause; }), list0.end());
-            list1.erase(std::remove_if(list1.begin(), list1.end(), [clause](Watcher w){ return w.cref == clause; }), list1.end());
+            std::vector<WatchX>& list0 = watchers[~clause->first()];
+            std::vector<WatchX>& list1 = watchers[~clause->second()];
+            std::vector<WatchX>& list2 = watchers[~clause->third()];
+            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
+            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
+            list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.clause == clause; }));
+        } 
+        else {
+            std::vector<WatchX>& list0 = watchers[~clause->first()];
+            std::vector<WatchX>& list1 = watchers[~clause->second()];
+            list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
+            list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
         }
     }
 
@@ -124,71 +142,62 @@ public:
         return Reason();
     }
 
-    inline Reason propagate_ternary_clauses(Lit p) {
-        for (const Occurrence<3>& o : ternaries[p]) {
-            lbool val0 = trail.value(o.others[0]);
-            if (val0 == l_True) continue;
-            lbool val1 = trail.value(o.others[1]);
-            if (val1 == l_True) continue;
-            if (val0 == l_False) {
-                if (val1 == l_False) return Reason(o.clause);
-                else trail.propagate(o.others[1], Reason(o.clause));
-            }
-            else if (val1 == l_False) {
-                trail.propagate(o.others[0], Reason(o.clause));
-            }
-        }
-        return Reason();
-    }
-
-    /**************************************************************************************************
-     *
-     *  propagate : [void]  ->  [Clause*]
-     *
-     *  Description:
-     *    Propagates all enqueued facts. If a conflict arises, the conflicting clause is returned,
-     *    otherwise nullptr.
-     *
-     *    Post-conditions:
-     *      * the propagation queue is empty, even if there was a conflict.
-     **************************************************************************************************/
     Reason propagate_watched_clauses(Lit p) {
-        std::vector<Watcher>& list = watchers[p];
+        std::vector<WatchX>& list = watchers[p];
 
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            lbool val = trail.value(watcher->blocker);
+            lbool val = trail.value(watcher->blocker[0]);
 
-            if (val != l_True) { // Try to avoid inspecting the clause
-                Clause* clause = watcher->cref;
-
-                if (clause->isDeleted()) continue;
-
-                if (clause->first() == ~p) { // Make sure the false literal is data[1]
-                    clause->swap(0, 1);
-                }
-
-                if (watcher->blocker != clause->first()) {
-                    watcher->blocker = clause->first(); 
-                    val = trail.value(clause->first());
-                }
-
-                if (val != l_True) {
-                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                        if (trail.value((*clause)[k]) != l_False) {
-                            clause->swap(1, k);
-                            watchers[~clause->second()].emplace_back(clause, clause->first());
-                            goto propagate_skip;
+            if (val != l_True) { 
+                if (watcher->blocker[1] != lit_Undef) {
+                    lbool val1 = trail.value(watcher->blocker[1]);
+                    // l_True == 00, l_False == 01, l_Undef == 10
+                    if ((val | val1) == 3) { // propagate
+                        if (val == l_False) {
+                            trail.propagate(watcher->blocker[1], Reason(watcher->clause));
+                        }
+                        else {
+                            trail.propagate(watcher->blocker[0], Reason(watcher->clause));
                         }
                     }
-
-                    // did not find watch
-                    if (val == l_False) { // conflict
+                    else if (val1 == l_False) { // conflict
+                        Reason reason = Reason(watcher->clause);
                         list.erase(keep, watcher);
-                        return Reason(clause);
+                        return reason;
                     }
-                    else { // unit
-                        trail.propagate(clause->first(), clause);
+                }
+                else {
+                    Clause* clause = watcher->clause;
+
+                    if (clause->isDeleted()) continue;
+
+                    if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                        clause->swap(0, 1);
+                    }
+
+                    if (watcher->blocker[0] != clause->first()) {
+                        watcher->blocker[0] = clause->first(); 
+                        val = trail.value(clause->first());
+                    }
+
+                    if (val != l_True) {
+                        for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                            if (trail.value((*clause)[k]) != l_False) {
+                                clause->swap(1, k);
+                                watchers[~clause->second()].emplace_back(clause, clause->first());
+                                goto propagate_skip;
+                            }
+                        }
+
+                        // did not find watch
+                        if (val == l_False) { // conflict
+                            list.erase(keep, watcher);
+                            return Reason(clause);
+                        }
+                        else { // unit
+                            trail.propagate(clause->first(), clause);
+                        }
                     }
                 }
             }
@@ -209,10 +218,6 @@ public:
             
             // Propagate binary clauses
             conflict = propagate_binary_clauses(p);
-            if (conflict.exists()) return conflict;
-            
-            // Propagate ternary clauses
-            conflict = propagate_ternary_clauses(p);
             if (conflict.exists()) return conflict;
 
             // Propagate other 2-watched clauses

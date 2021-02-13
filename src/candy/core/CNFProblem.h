@@ -22,6 +22,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 
 #include "candy/core/SolverTypes.h"
 
+#include <math.h>
+
 typedef struct gzFile_s *gzFile;
 
 namespace Candy {
@@ -88,6 +90,25 @@ public:
 
     void normalizeVariableNames();
     bool checkResult(CandySolverResult& result);
+
+    void sort(bool asc) {
+        std::vector<double> occurrence(variables, 0.0);
+        for (Cl* c : problem) {
+            for (Lit lit : *c) {
+                occurrence[lit.var()] += 1.0 / pow(2, c->size());
+            }
+        }
+        if (asc) {
+            for (Cl* c : problem) {
+                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] < occurrence[lit2.var()]; });
+            }
+        }
+        else {
+            for (Cl* c : problem) {
+                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] > occurrence[lit2.var()]; });
+            }
+        }
+    }
 
     void printDIMACS() const;
 

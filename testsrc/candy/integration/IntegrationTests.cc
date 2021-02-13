@@ -50,6 +50,7 @@ namespace Candy {
         GTEST_COUT << filename << std::endl;
         CNFProblem problem;
         problem.readDimacsFromFile(filename);
+        SolverOptions::opt_certified_file = CERT;
         CandySolverInterface* solver = createSolver(problem);
         ClauseAllocator* allocator = nullptr;
         if (install_static_allocator) {
@@ -77,43 +78,31 @@ namespace Candy {
     }
 
     static void testTrivialProblems(bool static_allocator) {
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/trivial0.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/trivial1.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/trivial2.cnf", static_allocator);
     }
 
     static void testFuzzProblems(bool static_allocator) {
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/fuzz01.cnf", static_allocator); 
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/fuzz02.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/fuzz03.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/fuzz04.cnf", static_allocator);
     }
 
     static void testRealProblems(bool static_allocator) {
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/dubois20.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/hole6.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/ais6.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/uf75-042.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/uuf75-042.cnf", static_allocator);
     }
 
     static void testFixedBugs(bool static_allocator) {
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/dd1.cnf", static_allocator);
-        SolverOptions::opt_certified_file = CERT;
         acceptanceTest("cnf/dd2.cnf", static_allocator);
+        acceptanceTest("cnf/dd3.cnf", static_allocator);
+        acceptanceTest("cnf/dd4.cnf", static_allocator);
     }
 
     TEST(IntegrationTest, test_vsids) {
@@ -121,6 +110,7 @@ namespace Candy {
         ParallelOptions::opt_static_propagate = false;
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 2;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
@@ -132,6 +122,7 @@ namespace Candy {
         ParallelOptions::opt_static_propagate = true;
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 2;
         testFuzzProblems(false);
     }
 
@@ -140,6 +131,7 @@ namespace Candy {
         ParallelOptions::opt_static_propagate = false;
         ParallelOptions::opt_lb_propagate = true;
         ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 2;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
@@ -150,9 +142,23 @@ namespace Candy {
         ParallelOptions::opt_static_propagate = false;
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = true;
+        ParallelOptions::opt_Xfull_propagate = 2;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
+        testFixedBugs(false);
+    }
+
+    TEST(IntegrationTest, test_vsids_with_Xfull_propagate) {
+        SolverOptions::opt_use_lrb = false;
+        ParallelOptions::opt_static_propagate = false;
+        ParallelOptions::opt_lb_propagate = false;
+        ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 5;
+        testTrivialProblems(false);
+        testFuzzProblems(false);
+        testRealProblems(false);
+        testFixedBugs(false);
     }
 
     TEST(IntegrationTest, test_vsids_with_static_allocator) {
@@ -160,6 +166,7 @@ namespace Candy {
         ParallelOptions::opt_static_propagate = false;
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 2;
         testFuzzProblems(true);
     }
 
@@ -168,6 +175,7 @@ namespace Candy {
         ParallelOptions::opt_static_propagate = false;
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 2;
         testFuzzProblems(false);
         testRealProblems(false);
     }
