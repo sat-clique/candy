@@ -113,10 +113,24 @@ public:
         }
     }
 
+    void sort(bool asc) {
+        std::vector<double> occurrence(variables, 0.0);
+        for (Clause* c : clauses) {
+            for (Lit lit : *c) {
+                occurrence[lit.var()] += 1.0 / pow(2, c->size());
+            }
+        }
+        for (Clause* c : clauses) {
+            c->sort(occurrence, asc);
+        }
+    }
+
     void reorganize() {
         allocator.synchronize(); // inactive if no global-allocator
         allocator.reorganize(); // defrag.
         clauses = allocator.collect();
+        if (SolverOptions::opt_sort_variables == 4) sort(true);
+        if (SolverOptions::opt_sort_variables == 5) sort(false);
         if (SolverOptions::opt_sort_clauses == 1) {
             std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() < c2->size(); } );
         }

@@ -73,7 +73,7 @@ namespace SolverOptions {
     DoubleOption opt_lrb_step_size("BRANCHING", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("BRANCHING", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    IntOption opt_sort_variables("EXP", "sort-variables", "sort variables", 0, IntRange(0,3));
+    IntOption opt_sort_variables("EXP", "sort-variables", "sort variables", 0, IntRange(0,5));
     IntOption opt_sort_clauses("EXP", "sort-clauses", "sort clauses", 0, IntRange(0,3));
 
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
