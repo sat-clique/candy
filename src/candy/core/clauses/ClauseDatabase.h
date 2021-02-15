@@ -123,7 +123,7 @@ public:
         else if (SolverOptions::opt_sort_clauses == 2) {
             std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() < c2->getLBD(); } );
         }
-        else if (SolverOptions::opt_sort_clauses == 2) {
+        else if (SolverOptions::opt_sort_clauses == 3) {
             std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
         }
         unaries.clear();
