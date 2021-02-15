@@ -117,6 +117,15 @@ public:
         allocator.synchronize(); // inactive if no global-allocator
         allocator.reorganize(); // defrag.
         clauses = allocator.collect();
+        if (SolverOptions::opt_sort_clauses == 1) {
+            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() < c2->size(); } );
+        }
+        else if (SolverOptions::opt_sort_clauses == 2) {
+            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() < c2->getLBD(); } );
+        }
+        else if (SolverOptions::opt_sort_clauses == 2) {
+            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
+        }
         unaries.clear();
         binaries.clear();
         for (Clause* clause : clauses) {
