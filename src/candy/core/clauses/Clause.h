@@ -98,6 +98,15 @@ private:
         }
     }
 
+    inline void sort(std::vector<double>& occurrence, bool asc) {
+        if (asc) {
+            std::sort(literals, literals + length, [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] < occurrence[lit2.var()]; });
+        }
+        else {
+            std::sort(literals, literals + length, [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] > occurrence[lit2.var()]; });
+        }
+    }
+
 public:
     template<typename Iterator>
     Clause(Iterator begin, Iterator end, unsigned int lbd) {

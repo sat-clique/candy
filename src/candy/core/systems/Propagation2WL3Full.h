@@ -166,7 +166,7 @@ public:
                         list.erase(keep, watcher);
                         return reason;
                     }
-                    else if (val1 == l_True) { // conflict
+                    else if (val1 == l_True) { // swap
                         std::swap(watcher->blocker[0], watcher->blocker[1]);
                     }
                 }
