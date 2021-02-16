@@ -76,12 +76,14 @@ private:
     Trail& trail;
 
     std::vector<std::vector<WatchX>> watchers;
+    std::vector<std::vector<WatchX>> thirds;
 
 public:
     Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers()
+        : clause_db(_clause_db), trail(_trail), watchers(), thirds()
     {
         watchers.resize(Lit(clause_db.nVars(), true));
+        thirds.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -103,7 +105,7 @@ public:
         if (clause->size() == 3) {
             watchers[~clause->first()].emplace_back(clause, clause->second(), clause->third());
             watchers[~clause->second()].emplace_back(clause, clause->first(), clause->third());
-            watchers[~clause->third()].emplace_back(clause, clause->first(), clause->second());
+            thirds[~clause->third()].emplace_back(clause, clause->first(), clause->second());
         } 
         else {
             watchers[~clause->first()].emplace_back(clause, clause->second());
@@ -116,7 +118,7 @@ public:
         if (clause->size() == 3) {
             std::vector<WatchX>& list0 = watchers[~clause->first()];
             std::vector<WatchX>& list1 = watchers[~clause->second()];
-            std::vector<WatchX>& list2 = watchers[~clause->third()];
+            std::vector<WatchX>& list2 = thirds[~clause->third()];
             list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
             list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
             list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.clause == clause; }));
@@ -212,6 +214,22 @@ public:
 
         return Reason();
     }
+    
+    void propagate_thirds(Lit p) {
+        for (WatchX watcher : thirds[p]) {
+            lbool val0 = trail.value(watcher.blocker[0]);
+            lbool val1 = trail.value(watcher.blocker[1]);
+            // l_True == 00, l_False == 01, l_Undef == 10
+            if ((val0 | val1) == 3) { // propagate
+                if (val0 == l_False) {
+                    trail.propagate(watcher.blocker[1], Reason(watcher.clause));
+                }
+                else {
+                    trail.propagate(watcher.blocker[0], Reason(watcher.clause));
+                }
+            }
+        }
+    }
 
     Reason propagate() override {
         Reason conflict;
@@ -226,6 +244,9 @@ public:
             // Propagate other 2-watched clauses
             conflict = propagate_watched_clauses(p);
             if (conflict.exists()) return conflict;
+
+            // Propagate thirds
+            propagate_thirds(p);            
         }
 
         return Reason();
