@@ -93,6 +93,7 @@ public:
 
     void reset() override {
         for (auto& w : watchers) w.clear();
+        for (auto& w : thirds) w.clear();
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
