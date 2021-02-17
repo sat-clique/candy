@@ -76,14 +76,12 @@ private:
     Trail& trail;
 
     std::vector<std::vector<WatchX>> watchers;
-    std::vector<std::vector<WatchX>> thirds;
 
 public:
     Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers(), thirds()
+        : clause_db(_clause_db), trail(_trail), watchers()
     {
         watchers.resize(Lit(clause_db.nVars(), true));
-        thirds.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -93,7 +91,6 @@ public:
 
     void reset() override {
         for (auto& w : watchers) w.clear();
-        for (auto& w : thirds) w.clear();
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -106,7 +103,7 @@ public:
         if (clause->size() == 3) {
             watchers[~clause->first()].emplace_back(clause, clause->second(), clause->third());
             watchers[~clause->second()].emplace_back(clause, clause->first(), clause->third());
-            thirds[~clause->third()].emplace_back(clause, clause->first(), clause->second());
+            watchers[~clause->third()].emplace_back(clause, clause->first(), clause->second());
         } 
         else {
             watchers[~clause->first()].emplace_back(clause, clause->second());
@@ -119,7 +116,7 @@ public:
         if (clause->size() == 3) {
             std::vector<WatchX>& list0 = watchers[~clause->first()];
             std::vector<WatchX>& list1 = watchers[~clause->second()];
-            std::vector<WatchX>& list2 = thirds[~clause->third()];
+            std::vector<WatchX>& list2 = watchers[~clause->third()];
             list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
             list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
             list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.clause == clause; }));
@@ -150,27 +147,22 @@ public:
 
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            lbool val = trail.value(watcher->blocker[0]);
+            lbool val0 = trail.value(watcher->blocker[0]);
 
-            if (val != l_True) { 
+            if (val0 != l_True) { 
                 if (watcher->blocker[1] != lit_Undef) {
-                    lbool val1 = trail.value(watcher->blocker[1]);
-                    // l_True == 00, l_False == 01, l_Undef == 10
-                    if ((val | val1) == 3) { // propagate
-                        if (val == l_False) {
-                            trail.propagate(watcher->blocker[1], Reason(watcher->clause));
-                        }
-                        else {
-                            trail.propagate(watcher->blocker[0], Reason(watcher->clause));
+                    if (val0 == l_False) {
+                        lbool val1 = trail.value(watcher->blocker[1]);
+                        if (val1 == l_Undef) trail.propagate(watcher->blocker[1], Reason(watcher->clause));
+                        else if (val1 == l_False) { // conflict
+                            Reason reason = Reason(watcher->clause);
+                            list.erase(keep, watcher);
+                            return reason;
                         }
                     }
-                    else if (val1 == l_False) { // conflict
-                        Reason reason = Reason(watcher->clause);
-                        list.erase(keep, watcher);
-                        return reason;
-                    }
-                    else if (val1 == l_True) { // swap
-                        std::swap(watcher->blocker[0], watcher->blocker[1]);
+                    else if (val0 == l_Undef) {
+                        lbool val1 = trail.value(watcher->blocker[1]);
+                        if (val1 == l_False) trail.propagate(watcher->blocker[0], Reason(watcher->clause));
                     }
                 }
                 else {
@@ -184,10 +176,10 @@ public:
 
                     if (watcher->blocker[0] != clause->first()) {
                         watcher->blocker[0] = clause->first(); 
-                        val = trail.value(clause->first());
+                        val0 = trail.value(clause->first());
                     }
 
-                    if (val != l_True) {
+                    if (val0 != l_True) {
                         for (uint_fast16_t k = 2; k < clause->size(); k++) {
                             if (trail.value((*clause)[k]) != l_False) {
                                 clause->swap(1, k);
@@ -197,7 +189,7 @@ public:
                         }
 
                         // did not find watch
-                        if (val == l_False) { // conflict
+                        if (val0 == l_False) { // conflict
                             list.erase(keep, watcher);
                             return Reason(clause);
                         }
@@ -215,22 +207,6 @@ public:
 
         return Reason();
     }
-    
-    void propagate_thirds(Lit p) {
-        for (WatchX watcher : thirds[p]) {
-            lbool val0 = trail.value(watcher.blocker[0]);
-            lbool val1 = trail.value(watcher.blocker[1]);
-            // l_True == 00, l_False == 01, l_Undef == 10
-            if ((val0 | val1) == 3) { // propagate
-                if (val0 == l_False) {
-                    trail.propagate(watcher.blocker[1], Reason(watcher.clause));
-                }
-                else {
-                    trail.propagate(watcher.blocker[0], Reason(watcher.clause));
-                }
-            }
-        }
-    }
 
     Reason propagate() override {
         Reason conflict;
@@ -245,9 +221,7 @@ public:
             // Propagate other 2-watched clauses
             conflict = propagate_watched_clauses(p);
             if (conflict.exists()) return conflict;
-
-            // Propagate thirds
-            propagate_thirds(p);            
+            
         }
 
         return Reason();
