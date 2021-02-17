@@ -168,14 +168,16 @@ public:
                     lbool val1 = trail.value(watcher->blocker[1]);
                     if ((val0 | val1) == 3) { // propagate
                         if (val1 == l_False) {
-                            trail.propagate(watcher->blocker[0], Reason(watcher->clause));
+                            // trail.propagate(watcher->blocker[0], Reason(watcher->clause));
+                            trail.propagate(watcher->blocker[0], Reason(~p, watcher->blocker[0], watcher->blocker[1]));
                         }
                         else {
-                            trail.propagate(watcher->blocker[1], Reason(watcher->clause));
+                            // trail.propagate(watcher->blocker[1], Reason(watcher->clause));
+                            trail.propagate(watcher->blocker[1], Reason(~p, watcher->blocker[0], watcher->blocker[1]));
                         }
                     }
                     else if (val1 == l_False) { // conflict
-                        Reason reason = Reason(watcher->clause);
+                        Reason reason = Reason(~p, watcher->blocker[0], watcher->blocker[1]); //Reason(watcher->clause);
                         list.erase(keep, watcher);
                         return reason;
                     }
