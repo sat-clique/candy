@@ -151,18 +151,36 @@ public:
 
             if (val0 != l_True) { 
                 if (watcher->blocker[1] != lit_Undef) {
-                    if (val0 == l_False) {
-                        lbool val1 = trail.value(watcher->blocker[1]);
-                        if (val1 == l_Undef) trail.propagate(watcher->blocker[1], Reason(watcher->clause));
-                        else if (val1 == l_False) { // conflict
-                            Reason reason = Reason(watcher->clause);
-                            list.erase(keep, watcher);
-                            return reason;
+                    // if (val0 == l_False) {
+                    //     lbool val1 = trail.value(watcher->blocker[1]);
+                    //     if (val1 == l_Undef) trail.propagate(watcher->blocker[1], Reason(watcher->clause));
+                    //     else if (val1 == l_False) { // conflict
+                    //         Reason reason = Reason(watcher->clause);
+                    //         list.erase(keep, watcher);
+                    //         return reason;
+                    //     }
+                    // }
+                    // else if (val0 == l_Undef) {
+                    //     lbool val1 = trail.value(watcher->blocker[1]);
+                    //     if (val1 == l_False) trail.propagate(watcher->blocker[0], Reason(watcher->clause));
+                    // }
+                    // l_True == 00, l_False == 01, l_Undef == 10
+                    lbool val1 = trail.value(watcher->blocker[1]);
+                    if ((val0 | val1) == 3) { // propagate
+                        if (val1 == l_False) {
+                            trail.propagate(watcher->blocker[0], Reason(watcher->clause));
+                        }
+                        else {
+                            trail.propagate(watcher->blocker[1], Reason(watcher->clause));
                         }
                     }
-                    else if (val0 == l_Undef) {
-                        lbool val1 = trail.value(watcher->blocker[1]);
-                        if (val1 == l_False) trail.propagate(watcher->blocker[0], Reason(watcher->clause));
+                    else if (val1 == l_False) { // conflict
+                        Reason reason = Reason(watcher->clause);
+                        list.erase(keep, watcher);
+                        return reason;
+                    }
+                    else if (val1 == l_True) { // swap
+                        std::swap(watcher->blocker[0], watcher->blocker[1]);
                     }
                 }
                 else {
@@ -221,7 +239,7 @@ public:
             // Propagate other 2-watched clauses
             conflict = propagate_watched_clauses(p);
             if (conflict.exists()) return conflict;
-            
+
         }
 
         return Reason();
