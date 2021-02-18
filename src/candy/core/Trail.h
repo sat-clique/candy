@@ -51,78 +51,11 @@ namespace Candy {
 
 #define BIT64 (1ULL << 63)
 
-// class Reason {
-//     union D {
-//         uintptr_t raw;
-//         Clause* clause;
-//         Lit binary[2];
-//         D() : raw(0) {}
-//     } data;
-
-// public:
-//     Reason() {
-//         unset();
-//     }
-
-//     Reason(Clause* clause) {
-//         set(clause);
-//     }
-
-//     Reason(Lit lit1, Lit lit2) {
-//         set(lit1, lit2);
-//     }
-
-//     void unset() {
-//         data.raw = 0;
-//     }
-
-//     bool exists() const {
-//         return data.raw != 0;
-//     }
-
-//     void set(Clause* clause) {
-//         assert(clause != nullptr);
-//         data.clause = clause;
-//         data.raw |= BIT64;
-//     }
-
-//     void set(Lit lit1, Lit lit2) {
-//         data.binary[0] = lit1;
-//         data.binary[1] = lit2;
-//     }
-
-//     inline bool is_ptr() const {
-//         return data.raw & BIT64;
-//     }
-
-//     inline Clause* get_ptr() const {
-//         return (Clause*)(data.raw & ~BIT64);
-//     }
-
-//     typedef const Lit* const_iterator;
-
-//     inline const_iterator begin() const {
-//         if (is_ptr()) {
-//             return get_ptr()->begin();
-//         } else {
-//             return data.binary;
-//         }
-//     }
-
-//     inline const_iterator end() const {
-//         if (is_ptr()) {
-//             return get_ptr()->end();
-//         } else {
-//             return data.binary + 2;
-//         }
-//     }
-// };
-
 class Reason {
     union D {
         uintptr_t raw;
         Clause* clause;
-        Lit direct[4];
+        Lit binary[2];
         D() : raw(0) {}
     } data;
 
@@ -139,14 +72,8 @@ public:
         set(lit1, lit2);
     }
 
-    Reason(Lit lit1, Lit lit2, Lit lit3) {
-        set(lit1, lit2, lit3);
-    }
-
     void unset() {
         data.raw = 0;
-        data.direct[2] = lit_Undef;
-        data.direct[3] = lit_Undef;
     }
 
     bool exists() const {
@@ -157,22 +84,11 @@ public:
         assert(clause != nullptr);
         data.clause = clause;
         data.raw |= BIT64;
-        data.direct[2] = lit_Undef;
-        data.direct[3] = lit_Undef;
     }
 
     void set(Lit lit1, Lit lit2) {
-        data.direct[0] = lit1;
-        data.direct[1] = lit2;
-        data.direct[2] = lit_Undef;
-        data.direct[3] = lit_Undef;
-    }
-
-    void set(Lit lit1, Lit lit2, Lit lit3) {
-        data.direct[0] = lit1;
-        data.direct[1] = lit2;
-        data.direct[2] = lit3;
-        data.direct[3] = lit_Undef;
+        data.binary[0] = lit1;
+        data.binary[1] = lit2;
     }
 
     inline bool is_ptr() const {
@@ -189,20 +105,104 @@ public:
         if (is_ptr()) {
             return get_ptr()->begin();
         } else {
-            return data.direct;
+            return data.binary;
         }
     }
 
     inline const_iterator end() const {
         if (is_ptr()) {
             return get_ptr()->end();
-        } else if (data.direct[2] == lit_Undef) {
-            return data.direct + 2;
         } else {
-            return data.direct + 3;
+            return data.binary + 2;
         }
     }
 };
+
+// class Reason {
+//     union D {
+//         uintptr_t raw;
+//         Clause* clause;
+//         Lit direct[4];
+//         D() : raw(0) {}
+//     } data;
+
+// public:
+//     Reason() {
+//         unset();
+//     }
+
+//     Reason(Clause* clause) {
+//         set(clause);
+//     }
+
+//     Reason(Lit lit1, Lit lit2) {
+//         set(lit1, lit2);
+//     }
+
+//     Reason(Lit lit1, Lit lit2, Lit lit3) {
+//         set(lit1, lit2, lit3);
+//     }
+
+//     void unset() {
+//         data.raw = 0;
+//         data.direct[2] = lit_Undef;
+//         data.direct[3] = lit_Undef;
+//     }
+
+//     bool exists() const {
+//         return data.raw != 0;
+//     }
+
+//     void set(Clause* clause) {
+//         assert(clause != nullptr);
+//         data.clause = clause;
+//         data.raw |= BIT64;
+//         data.direct[2] = lit_Undef;
+//         data.direct[3] = lit_Undef;
+//     }
+
+//     void set(Lit lit1, Lit lit2) {
+//         data.direct[0] = lit1;
+//         data.direct[1] = lit2;
+//         data.direct[2] = lit_Undef;
+//         data.direct[3] = lit_Undef;
+//     }
+
+//     void set(Lit lit1, Lit lit2, Lit lit3) {
+//         data.direct[0] = lit1;
+//         data.direct[1] = lit2;
+//         data.direct[2] = lit3;
+//         data.direct[3] = lit_Undef;
+//     }
+
+//     inline bool is_ptr() const {
+//         return data.raw & BIT64;
+//     }
+
+//     inline Clause* get_ptr() const {
+//         return (Clause*)(data.raw & ~BIT64);
+//     }
+
+//     typedef const Lit* const_iterator;
+
+//     inline const_iterator begin() const {
+//         if (is_ptr()) {
+//             return get_ptr()->begin();
+//         } else {
+//             return data.direct;
+//         }
+//     }
+
+//     inline const_iterator end() const {
+//         if (is_ptr()) {
+//             return get_ptr()->end();
+//         } else if (data.direct[2] == lit_Undef) {
+//             return data.direct + 2;
+//         } else {
+//             return data.direct + 3;
+//         }
+//     }
+// };
 
 inline std::ostream& operator <<(std::ostream& stream, Reason const& reason) {
     for (Lit lit : reason) {
@@ -214,11 +214,12 @@ inline std::ostream& operator <<(std::ostream& stream, Reason const& reason) {
 class Trail {
 public:
     unsigned int nVariables;
-    unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
     unsigned int conflict_level; // stores level of last conflict
-    unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
 
+    unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
+    unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     std::vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
+
     std::vector<lbool> assigns; // The current assignments.
     std::vector<unsigned int> levels; // decision-level of assignment per variable
     std::vector<Reason> reasons; // reason of assignment per variable
@@ -233,7 +234,7 @@ public:
     size_t nPropagations;
 
     Trail(CNFProblem& problem) : 
-        nVariables(problem.nVars()), trail_size(0), conflict_level(0), qhead(0), 
+        nVariables(problem.nVars()), conflict_level(0), trail_size(0), qhead(0), 
         trail(), assigns(), levels(), reasons(), trail_lim(), stamp(problem.nVars()), 
         decision(), assumptions(), conflicting_assumptions(), 
         nDecisions(0), nPropagations(0)
