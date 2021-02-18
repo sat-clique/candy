@@ -173,11 +173,34 @@ public:
         return Reason();
     }
 
+    inline Lit getNextUnpropagated() {
+        if (SolverOptions::opt_sort_variables > 9) {
+            std::vector<Lit>::iterator begin = trail.trail.begin() + trail.qhead;
+            std::vector<Lit>::iterator end = trail.trail.begin() + trail.trail_size;
+            std::vector<Lit>::iterator it = begin;
+            if (SolverOptions::opt_sort_variables == 10) {
+                it = std::max_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[lit1] < this->clause_db.occurrence[lit2]; });
+            }
+            else if (SolverOptions::opt_sort_variables == 11) {
+                it = std::min_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[lit1] < this->clause_db.occurrence[lit2]; });
+            }
+            else if (SolverOptions::opt_sort_variables == 12) {
+                it = std::max_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[~lit1] < this->clause_db.occurrence[~lit2]; });
+            }
+            else if (SolverOptions::opt_sort_variables == 13) {
+                it = std::min_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[~lit1] < this->clause_db.occurrence[~lit2]; });
+            }
+            if (begin != it) std::swap(begin, it);
+        }
+        return trail[trail.qhead++];
+    }
+
     Reason propagate() override {
         Reason conflict;
 
         while (trail.qhead < trail.trail_size) {
-            Lit p = trail[trail.qhead++];
+            // Lit p = trail[trail.qhead++];
+            Lit p = getNextUnpropagated();
             
             // Propagate binary clauses
             conflict = propagate_binary_clauses(p);
