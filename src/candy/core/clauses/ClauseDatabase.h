@@ -72,6 +72,8 @@ private:
     Certificate certificate;
 
 public:
+    std::vector<double> occurrence;
+
     std::vector<Lit> unaries;
     BinaryClauses binaries;
 
@@ -81,7 +83,8 @@ public:
 
     ClauseDatabase(CNFProblem& problem) : 
         allocator(), variables(problem.nVars()), clauses(), emptyClause_(false), 
-        certificate(SolverOptions::opt_certified_file),
+        certificate(SolverOptions::opt_certified_file), 
+        occurrence(2 * problem.nVars(), 0.0),
         unaries(), binaries(problem.nVars()), result(), equiv(binaries)
     { 
         for (Cl* import : problem) {
@@ -113,24 +116,15 @@ public:
         }
     }
 
-    void sort(bool asc) {
-        std::vector<double> occurrence(variables, 0.0);
-        for (Clause* c : clauses) {
-            for (Lit lit : *c) {
-                occurrence[lit.var()] += 1.0 / pow(2, c->size());
-            }
-        }
-        for (Clause* c : clauses) {
-            c->sort(occurrence, asc);
-        }
-    }
-
     void reorganize() {
         allocator.synchronize(); // inactive if no global-allocator
         allocator.reorganize(); // defrag.
         clauses = allocator.collect();
-        if (SolverOptions::opt_sort_variables == 4) sort(true);
-        if (SolverOptions::opt_sort_variables == 5) sort(false);
+        if (SolverOptions::opt_sort_variables == 4) for (Clause* c : clauses) c->sort(occurrence, true);
+        else if (SolverOptions::opt_sort_variables == 5) for (Clause* c : clauses) c->sort(occurrence, false);
+        else if (SolverOptions::opt_sort_variables == 8) for (Clause* c : clauses) c->sort2(occurrence, true);
+        else if (SolverOptions::opt_sort_variables == 9) for (Clause* c : clauses) c->sort2(occurrence, false);
+
         if (SolverOptions::opt_sort_clauses == 1) {
             std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() < c2->size(); } );
         }
@@ -139,6 +133,15 @@ public:
         }
         else if (SolverOptions::opt_sort_clauses == 3) {
             std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
+        }
+        else if (SolverOptions::opt_sort_clauses == 4) {
+            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() > c2->size(); } );
+        }
+        else if (SolverOptions::opt_sort_clauses == 5) {
+            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); } );
+        }
+        else if (SolverOptions::opt_sort_clauses == 6) {
+            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() > c2->getLBD() : c1->size() > c2->size(); } );
         }
         unaries.clear();
         binaries.clear();
@@ -197,6 +200,10 @@ public:
         else if (clause->size() == 2) {
             binaries.add(clause);
         }
+
+        for (Lit lit : *clause) {
+            occurrence[lit] += 1.0 / pow(2, clause->size());
+        }
         
         return clause;
     }
@@ -204,6 +211,10 @@ public:
     inline void removeClause(Clause* clause) {
         allocator.deallocate(clause);
         certificate.removed(clause->begin(), clause->end());
+
+        for (Lit lit : *clause) {
+            occurrence[lit] -= 1.0 / pow(2, clause->size());
+        }
     }
 
     Clause* strengthenClause(Clause* clause, Lit lit) {

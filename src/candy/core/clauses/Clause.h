@@ -98,12 +98,21 @@ private:
         }
     }
 
-    inline void sort(std::vector<double>& occurrence, bool asc) {
+    inline void sort(std::vector<double>& o, bool asc) {
         if (asc) {
-            std::sort(literals, literals + length, [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] < occurrence[lit2.var()]; });
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] + o[~lit1] < o[lit2] + o[~lit2]; });
         }
         else {
-            std::sort(literals, literals + length, [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] > occurrence[lit2.var()]; });
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] + o[~lit1] > o[lit2] + o[~lit2]; });
+        }
+    }
+
+    inline void sort2(std::vector<double>& o, bool asc) {
+        if (asc) {
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
+        }
+        else {
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
         }
     }
 
