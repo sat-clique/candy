@@ -259,7 +259,7 @@ public:
 
 		unsigned int lbd = trail.computeLBD(learnt_clause.begin(), learnt_clause.end());
         
-		unsigned int backtrack_level = std::max((int)trail.level(learnt_clause[0].var()) - 1, 0);
+		unsigned int backtrack_level = 0;
 		if (learnt_clause.size() > 1) {
 			backtrack_level = trail.level(learnt_clause[1].var());
 			for (unsigned int i = 2; i < learnt_clause.size(); ++i) {
