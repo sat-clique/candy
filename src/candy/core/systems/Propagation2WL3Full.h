@@ -163,9 +163,9 @@ public:
                 else if (val1 == l_False) { // conflict
                     return Reason(watcher.clause);
                 }
-                else if (val1 == l_True) { // swap
-                    std::swap(watcher.blocker[0], watcher.blocker[1]);
-                }
+                // else if (val1 == l_True) { // swap
+                //     std::swap(watcher.blocker[0], watcher.blocker[1]);
+                // }
             }
         }
         return Reason();
