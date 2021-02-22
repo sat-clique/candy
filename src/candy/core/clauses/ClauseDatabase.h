@@ -120,29 +120,29 @@ public:
         allocator.synchronize(); // inactive if no global-allocator
         allocator.reorganize(); // defrag.
         clauses = allocator.collect();
-        if (SolverOptions::opt_sort_variables == 4) for (Clause* c : clauses) c->sort(occurrence, true);
-        else if (SolverOptions::opt_sort_variables == 5) for (Clause* c : clauses) c->sort(occurrence, false);
-        else if (SolverOptions::opt_sort_variables == 8) for (Clause* c : clauses) c->sort2(occurrence, true);
-        else if (SolverOptions::opt_sort_variables == 9) for (Clause* c : clauses) c->sort2(occurrence, false);
+        // if (SolverOptions::opt_sort_variables == 4) for (Clause* c : clauses) c->sort(occurrence, true);
+        // else if (SolverOptions::opt_sort_variables == 5) for (Clause* c : clauses) c->sort(occurrence, false);
+        // else if (SolverOptions::opt_sort_variables == 8) for (Clause* c : clauses) c->sort2(occurrence, true);
+        // else if (SolverOptions::opt_sort_variables == 9) for (Clause* c : clauses) c->sort2(occurrence, false);
 
-        if (SolverOptions::opt_sort_clauses == 1) {
-            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() < c2->size(); } );
-        }
-        else if (SolverOptions::opt_sort_clauses == 2) {
-            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() < c2->getLBD(); } );
-        }
-        else if (SolverOptions::opt_sort_clauses == 3) {
-            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
-        }
-        else if (SolverOptions::opt_sort_clauses == 4) {
-            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() > c2->size(); } );
-        }
-        else if (SolverOptions::opt_sort_clauses == 5) {
-            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); } );
-        }
-        else if (SolverOptions::opt_sort_clauses == 6) {
-            std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() > c2->getLBD() : c1->size() > c2->size(); } );
-        }
+        // if (SolverOptions::opt_sort_clauses == 1) {
+        //     std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() < c2->size(); } );
+        // }
+        // else if (SolverOptions::opt_sort_clauses == 2) {
+        //     std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() < c2->getLBD(); } );
+        // }
+        // else if (SolverOptions::opt_sort_clauses == 3) {
+        //     std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
+        // }
+        // else if (SolverOptions::opt_sort_clauses == 4) {
+        //     std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() > c2->size(); } );
+        // }
+        // else if (SolverOptions::opt_sort_clauses == 5) {
+        //     std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->getLBD() > c2->getLBD(); } );
+        // }
+        // else if (SolverOptions::opt_sort_clauses == 6) {
+        //     std::sort(clauses.begin(), clauses.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() > c2->getLBD() : c1->size() > c2->size(); } );
+        // }
         unaries.clear();
         binaries.clear();
         for (Clause* clause : clauses) {

@@ -346,6 +346,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
                 reduce.reduce();
             }
             clause_db.reorganize();
+            if (SolverOptions::opt_sort_variables == 14) for (Clause* c : clause_db) c->sort2(trail.stability, true);
+            else if (SolverOptions::opt_sort_variables == 15) for (Clause* c : clause_db) c->sort2(trail.stability, false);
             propagation.reset();
             // materialized unit-clauses for sharing (Todo: Refactor)
             for (Lit lit : clause_db.unaries) {

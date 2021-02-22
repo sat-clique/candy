@@ -117,6 +117,16 @@ private:
     }
 
 public:
+
+    inline void sort2(std::vector<unsigned int>& o, bool asc) {
+        if (asc) {
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
+        }
+        else {
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
+        }
+    }
+
     template<typename Iterator>
     Clause(Iterator begin, Iterator end, unsigned int lbd) {
         copyLiterals(begin, end, literals);
