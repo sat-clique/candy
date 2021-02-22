@@ -176,10 +176,13 @@ int main(int argc, char** argv) {
     std::vector<std::thread> threads;
 
     if (ParallelOptions::opt_threads == 1) {
-        if (SolverOptions::opt_sort_variables == 2 || SolverOptions::opt_sort_variables == 4) problem.sort(true);
-        if (SolverOptions::opt_sort_variables == 3 || SolverOptions::opt_sort_variables == 5) problem.sort(false);
-        if (SolverOptions::opt_sort_variables == 6 || SolverOptions::opt_sort_variables == 8) problem.sort2(true);
-        if (SolverOptions::opt_sort_variables == 7 || SolverOptions::opt_sort_variables == 9) problem.sort2(false);
+        switch (SolverOptions::opt_sort_variables) {
+            case 2: case 4: problem.sort(true);
+            case 3: case 5: problem.sort(false);
+            case 6: case 8: case 16: problem.sort2(true);
+            case 7: case 9: case 17: problem.sort2(false);
+        }
+        
         solver = createSolver(problem);
         solvers.push_back(solver); 
         solver->setTermCallback(solver, interrupted_callback);
