@@ -226,6 +226,10 @@ public:
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
 
+    // measure literal stability
+    std::vector<unsigned int> stability; // number of decisions for which literal was true
+    std::vector<unsigned int> epoch; // decision number in which literal was satisfied
+
     std::vector<char> decision;
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
     std::vector<Lit> conflicting_assumptions; // Set of conflicting assumptions (analyze_final)
@@ -235,16 +239,13 @@ public:
 
     Trail(CNFProblem& problem) : 
         nVariables(problem.nVars()), conflict_level(0), trail_size(0), qhead(0), 
-        trail(), assigns(), levels(), reasons(), trail_lim(), stamp(problem.nVars()), 
-        decision(), assumptions(), conflicting_assumptions(), 
+        trail(problem.nVars()), assigns(problem.nVars(), l_Undef), 
+        levels(problem.nVars()), reasons(problem.nVars()), 
+        trail_lim(), stamp(problem.nVars()), 
+        stability(problem.nVars()*2, 0), epoch(problem.nVars()*2), 
+        decision(problem.nVars(), true), assumptions(), conflicting_assumptions(), 
         nDecisions(0), nPropagations(0)
-    { 
-        trail.resize(problem.nVars());
-        assigns.resize(problem.nVars(), l_Undef);
-        levels.resize(problem.nVars());
-        reasons.resize(problem.nVars());
-        decision.resize(problem.nVars(), true);
-    }
+    { }
 
     inline unsigned int nVars() {
         return nVariables;
@@ -414,6 +415,7 @@ public:
     inline void set_value(Lit p) {
         assigns[p.var()] = lbool(!p.sign());
         trail[trail_size++] = p;
+        epoch[p] = nDecisions;
     }
 
     inline void decide(Lit p) {
@@ -453,6 +455,7 @@ public:
         if (decisionLevel() > level) {
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
+                stability[*it] += nDecisions - epoch[*it];
             }
             qhead = level == 0 ? 0 : trail_lim[level];
             trail_size = trail_lim[level];
