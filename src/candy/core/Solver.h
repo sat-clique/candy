@@ -258,6 +258,12 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
     for (;;) {
         Reason confl = propagation.propagate();
 
+
+        if (confl.special()) {
+            branching.add_back(trail.conflict_rbegin(), trail.rbegin());
+            confl.unset();
+        }
+
         if (confl.exists()) { // CONFLICT
             if (trail.decisionLevel() == 0) {
                 if (verbosity > 1) std::cout << "c Conflict found by propagation at level 0" << std::endl;
@@ -348,8 +354,23 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             clause_db.reorganize();
 
             switch (SolverOptions::opt_sort_variables) {
-                case 14: case 16: for (Clause* c : clause_db) c->sort2(trail.stability, true); break;
-                case 15: case 17: for (Clause* c : clause_db) c->sort2(trail.stability, false); break;
+                case 4: for (Clause* c : clause_db) c->sort2(clause_db.occurrence, true); break;
+                case 5: for (Clause* c : clause_db) c->sort2(clause_db.occurrence, false); break;
+            }
+
+            if (SolverOptions::opt_sort_clauses) {
+                std::sort(clause_db.begin(), clause_db.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
+            }
+
+            if (Stability::opt_sort_by_stability) {
+                for (Clause* c : clause_db) {
+                    c->sort2(trail.stability, false);
+                }
+            }
+            
+            if (Stability::opt_reset_stability) {
+                std::fill(trail.stability.begin(), trail.stability.end(), 0);
+                trail.nDecisions = 0;
             }
             
             propagation.reset();

@@ -80,6 +80,10 @@ public:
         return data.raw != 0;
     }
 
+    bool special() const {
+        return data.binary[0] == data.binary[1];
+    }
+
     void set(Clause* clause) {
         assert(clause != nullptr);
         data.clause = clause;
@@ -227,7 +231,7 @@ public:
     Stamp<uint32_t> stamp;
 
     // measure literal stability
-    std::vector<unsigned int> stability; // number of decisions for which literal was true
+    std::vector<int> stability; // number of decisions for which literal was true
     std::vector<unsigned int> epoch; // decision number in which literal was satisfied
 
     std::vector<char> decision;
@@ -402,6 +406,10 @@ public:
         return levels[x];
     }
 
+    inline unsigned int level(Lit x) const {
+        return levels[x.var()];
+    }
+
     // Gives the current decisionlevel.
     inline unsigned int decisionLevel() const {
         return trail_lim.size();
@@ -455,6 +463,7 @@ public:
         if (decisionLevel() > level) {
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
+                levels[it->var()] = 0; 
                 stability[*it] += nDecisions - epoch[*it];
             }
             qhead = level == 0 ? 0 : trail_lim[level];

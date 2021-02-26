@@ -20,6 +20,7 @@ add_library(core OBJECT
     systems/PropagationInterface.h
     systems/Propagation2WL.h
     systems/Propagation2WLStatic.h
+    systems/Propagation2WLStable1W.h
     systems/PropagationLB.h
     systems/Propagation2WL3Full.h
     systems/Propagation2WLX.h
