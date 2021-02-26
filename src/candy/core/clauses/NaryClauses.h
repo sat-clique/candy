@@ -70,14 +70,14 @@ public:
 
     void add(Clause* clause) {
         assert(clause->size() == N);
-        for (Lit lit : *clause) {
+        for (const Lit lit : *clause) {
             lists[~lit].emplace_back(clause, lit);
         }
     }
 
     void remove(Clause* clause) {
         assert(clause->size() == N);
-        for (Lit lit : *clause) {
+        for (const Lit lit : *clause) {
             lists[~lit].erase(std::find_if(lists[~lit].begin(), lists[~lit].end(), [clause](Occurrence<N> o) { return o.clause == clause; }));
         }
     }

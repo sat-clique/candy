@@ -34,6 +34,12 @@ namespace ParallelOptions {
     IntOption opt_static_database_size_bound("ParallelOptions", "static_database_size_bound", "upper size-bound for static database (0 = disabled, 1+2 = no effect, 3++ = size-bound", 6, IntRange(0, INT16_MAX));
 }
 
+namespace Stability {
+    BoolOption opt_sort_by_stability("Stability", "sort-by-stability", "watch most stable literals", false);; 
+    BoolOption opt_prop_by_stability("Stability", "propagate-stable1w", "stable 1-watched", false);
+    BoolOption opt_reset_stability("Stability", "reset-stability", "reset stability after reattach", false);
+}
+
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Start of second tier of learnt clause", 3, IntRange(0, INT8_MAX));
     IntOption opt_volatile_lbd("ClauseDatabase", "volatileLBD", "Start of third tier of learnt clauses", 6, IntRange(0, INT8_MAX));
@@ -73,8 +79,8 @@ namespace SolverOptions {
     DoubleOption opt_lrb_step_size("BRANCHING", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("BRANCHING", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    IntOption opt_sort_variables("EXP", "sort-variables", "sort variables", 0, IntRange(0,17));
-    IntOption opt_sort_clauses("EXP", "sort-clauses", "sort clauses", 0, IntRange(0,6));
+    IntOption opt_sort_variables("EXP", "sort-variables", "sort variables", 0, IntRange(0,5));
+    BoolOption opt_sort_clauses("EXP", "sort-clauses", "sort clauses", false);
 
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("METHOD", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);

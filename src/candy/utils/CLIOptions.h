@@ -35,6 +35,12 @@ namespace ParallelOptions {
     extern IntOption opt_static_database_size_bound;
 }
 
+namespace Stability {
+    extern BoolOption opt_sort_by_stability; // watch most stable literals
+    extern BoolOption opt_prop_by_stability; // stable one-watched
+    extern BoolOption opt_reset_stability; // reset stability after reattach
+}
+
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern IntOption opt_volatile_lbd;
@@ -75,7 +81,7 @@ namespace SolverOptions {
     extern DoubleOption opt_vsids_max_var_decay;
     
     extern IntOption opt_sort_variables;
-    extern IntOption opt_sort_clauses;
+    extern BoolOption opt_sort_clauses;
 
     extern BoolOption opt_preprocessing;
     extern IntOption opt_inprocessing;

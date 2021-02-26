@@ -177,10 +177,8 @@ int main(int argc, char** argv) {
 
     if (ParallelOptions::opt_threads == 1) {
         switch (SolverOptions::opt_sort_variables) {
-            case 2: case 4: problem.sort(true);
-            case 3: case 5: problem.sort(false);
-            case 6: case 8: case 16: problem.sort2(true);
-            case 7: case 9: case 17: problem.sort2(false);
+            case 2: case 4: problem.sort2(true);
+            case 3: case 5: problem.sort2(false);
         }
         
         solver = createSolver(problem);

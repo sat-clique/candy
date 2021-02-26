@@ -92,20 +92,19 @@ public:
     bool checkResult(CandySolverResult& result);
 
     void sort(bool asc) {
-        std::vector<double> occurrence(variables, 0.0);
+        std::vector<double> occurrence(2 * variables, 0.0);
         for (Cl* c : problem) {
             for (Lit lit : *c) {
-                occurrence[lit.var()] += 1.0 / pow(2, c->size());
+                occurrence[lit] += 1.0 / pow(2, c->size());
             }
         }
         if (asc) {
             for (Cl* c : problem) {
-                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] < occurrence[lit2.var()]; });
+                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1] < occurrence[lit2]; });
             }
-        }
-        else {
+        } else {
             for (Cl* c : problem) {
-                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1.var()] > occurrence[lit2.var()]; });
+                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1] > occurrence[lit2]; });
             }
         }
     }
@@ -119,12 +118,11 @@ public:
         }
         if (asc) {
             for (Cl* c : problem) {
-                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1] < occurrence[lit2]; });
+                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1] - occurrence[~lit1] < occurrence[lit2] - occurrence[~lit2]; });
             }
-        }
-        else {
+        } else {
             for (Cl* c : problem) {
-                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1] > occurrence[lit2]; });
+                std::sort(c->begin(), c->end(), [&occurrence](Lit lit1, Lit lit2) { return occurrence[lit1] - occurrence[~lit1] > occurrence[lit2] - occurrence[~lit2]; });
             }
         }
     }
