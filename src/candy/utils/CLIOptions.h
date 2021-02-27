@@ -39,6 +39,8 @@ namespace Stability {
     extern BoolOption opt_sort_by_stability; // watch most stable literals
     extern BoolOption opt_prop_by_stability; // stable one-watched
     extern BoolOption opt_reset_stability; // reset stability after reattach
+    extern DoubleOption opt_stability_factor;
+    extern DoubleOption opt_dynamic_stability;
 }
 
 namespace ClauseDatabaseOptions {

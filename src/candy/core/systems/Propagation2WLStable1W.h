@@ -66,17 +66,21 @@ private:
     std::vector<std::vector<Watcher>> watchers;
     std::vector<std::vector<Clause*>> alert;
 
-    // unsigned int nDetached = 0;
-    // unsigned int nMissed = 0;
-    // unsigned int nMissedLiterals = 0;
-    // unsigned int nRollbacks = 0;
-    // unsigned int nSaved = 0;
+    unsigned int nDetached = 0;
+    unsigned int nReattached = 0;
+    unsigned int nMisses = 0;
+    unsigned int nRollbacks = 0;
+
+    double stability_factor;
+    double dynamic_stability;
 
 public:
     Propagation2WLStable1W(ClauseDatabase& _clause_db, Trail& _trail) : 
         clause_db(_clause_db), trail(_trail), 
         watchers(2*clause_db.nVars()), 
-        alert(2*clause_db.nVars())
+        alert(2*clause_db.nVars()),
+        stability_factor(Stability::opt_stability_factor),
+        dynamic_stability(Stability::opt_dynamic_stability)
     {
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -86,8 +90,13 @@ public:
     }
 
     void reset() override {
-        // std::cout << "Detached/Reattached " << nDetached << "/" << nMissed << " Clauses " << "(Missed " << nMissedLiterals << ", Rollbacks " << nRollbacks << ", Saved " << nSaved << ")" << std::endl;
-        // nDetached = 0; nMissed = 0; nMissedLiterals = 0; nRollbacks = 0; nSaved = 0;
+        stability_factor = stability_factor + (1-stability_factor)*(nRollbacks / (nMisses + 1.0) - dynamic_stability);
+        if (SolverOptions::verb > 2) {
+            std::cout << "Detached/Reattached " << nDetached << "/" << nReattached << " Clauses " << "(Missed " << nMisses << ", Rollbacks " << nRollbacks << ")" << std::endl;
+            std::cout << "Propagations " << trail.nPropagations << std::endl;
+            std::cout << "New Stability Factor " << stability_factor;
+        }
+        nDetached = 0; nReattached = 0; nMisses = 0; nRollbacks = 0;
         for (auto& w : watchers) w.clear();
         for (auto& w : alert) w.clear();
         for (Clause* clause : clause_db) {
@@ -100,9 +109,9 @@ public:
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         // if (trail.stability[clause->first()] > .9 * trail.nDecisions) {
-        if (trail.stability[clause->first()] - trail.stability[~clause->first()] > .7 * trail.nDecisions) {
+        if (trail.stability[clause->first()] - trail.stability[~clause->first()] > stability_factor * trail.nDecisions) {
             alert[~clause->first()].push_back(clause);
-            // nDetached++;
+            if (SolverOptions::verb > 2) nDetached++;
         }
         else {
             watchers[~clause->first()].emplace_back(clause, clause->second());            
@@ -230,18 +239,19 @@ public:
 
                 watchers[~clause->first()].emplace_back(clause, clause->second());            
                 watchers[~clause->second()].emplace_back(clause, clause->first());
-                // nMissed++;
             }
-            // nMissedLiterals++;
+            if (SolverOptions::verb > 2) {
+                nMisses++;
+                nReattached += alert[p].size();
+            }            
             alert[p].clear();
             if (comeback != nullptr) {
                 unsigned int level = trail.level(comeback->second());
                 if (level == trail.decisionLevel()) {
-                    // nSaved++;
                     return Reason(comeback);
                 }
                 else { 
-                    // nRollbacks++;
+                    nRollbacks++;
                     unsigned int backtrack = trail.decisionLevel() - level;
                     trail.stability[~p] += backtrack;
                     trail.stability[p] -= backtrack;
