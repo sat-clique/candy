@@ -367,7 +367,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
                     c->sort2(trail.stability, false);
                 }
             }
-            
+
             if (Stability::opt_reset_stability) {
                 std::fill(trail.stability.begin(), trail.stability.end(), 0);
                 trail.nDecisions = 0;
@@ -386,7 +386,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             status = l_False;
         } 
         else {
-            if (verbosity > 1) std::cout << "c nClauses " << clause_db.size() << std::endl;
+            // if (verbosity > 1) std::cout << "c nClauses " << clause_db.size() << std::endl;
             status = search();
         }
     }
