@@ -364,7 +364,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
 
             if (Stability::opt_sort_by_stability) {
                 for (Clause* c : clause_db) {
-                    c->sort2(trail.stability, false);
+                    c->sort(trail.stability, false);
                 }
             }
 
