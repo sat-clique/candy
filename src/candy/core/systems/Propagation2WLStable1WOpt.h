@@ -47,6 +47,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/core/Trail.h"
 #include "candy/core/systems/PropagationInterface.h"
 #include <array>
+#include "candy/mtl/EMA.h"
 
 namespace Candy {
 
@@ -68,11 +69,13 @@ private:
 
     unsigned int nDetached = 0;
     unsigned int nReattached = 0;
+    unsigned int nAssumes = 0;
     unsigned int nMisses = 0;
     unsigned int nRollbacks = 0;
 
     double stability_factor;
     double dynamic_stability;
+    double correction_value;
 
 public:
     Propagation2WLStable1WOpt(ClauseDatabase& _clause_db, Trail& _trail) : 
@@ -80,7 +83,8 @@ public:
         watchers(2*clause_db.nVars()), 
         alert(2*clause_db.nVars()),
         stability_factor(Stability::opt_stability_factor),
-        dynamic_stability(Stability::opt_dynamic_stability)
+        dynamic_stability(0.5),//Stability::opt_dynamic_stability),
+        correction_value(0.0)
     {
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
@@ -90,13 +94,17 @@ public:
     }
 
     void reset() override {
-        stability_factor = stability_factor + (1-stability_factor)*(nRollbacks / (nMisses + 1.0) - dynamic_stability);
+        correction_value += 0.5 * (pow(nMisses / (nAssumes + 1.0) - 0.5, 3) - correction_value);
+        // correction_value += 0.5 * (pow(nReattached / (nDetached + 1.0) - 0.5, 3) - correction_value);
+        stability_factor += correction_value;
+        if (stability_factor < 0.5) stability_factor = 0.5;
+        if (stability_factor > 1.0) stability_factor = 1.0;
         if (SolverOptions::verb > 2) {
-            std::cout << "Detached/Reattached " << nDetached << "/" << nReattached << " Clauses " << "(Missed " << nMisses << ", Rollbacks " << nRollbacks << ")" << std::endl;
-            std::cout << "Propagations " << trail.nPropagations << std::endl;
-            std::cout << "New Stability Factor " << stability_factor;
+            std::cout << "Detached/Reattached " << nDetached << " / " << nReattached << " Clauses " << std::endl;
+            std::cout << "Assumed/Missed " << nAssumes << " / " << nMisses << " (Rollbacks " << nRollbacks << ")" << std::endl;
+            std::cout << "Correction Value " << correction_value << std::endl;
         }
-        nDetached = 0; nReattached = 0; nMisses = 0; nRollbacks = 0;
+        nDetached = 0; nReattached = 0; nMisses = 0; nRollbacks = 0; nAssumes = 0;
         for (auto& w : watchers) w.clear();
         for (auto& w : alert) w.clear();
         for (Clause* clause : clause_db) {
@@ -104,14 +112,23 @@ public:
                 attachClause(clause);
             } 
         }
+        if (SolverOptions::verb > 2) {
+            std::cout << "Stability Factor " << stability_factor << std::endl;
+            std::cout << "Detached Clauses " << nDetached << std::endl;
+        }
+    }
+
+    inline int diff(Lit lit) {
+        return trail.stability[lit] - trail.stability[~lit];
     }
 
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        // if (trail.stability[clause->first()] > .9 * trail.nDecisions) {
-        if (trail.stability[clause->first()] - trail.stability[~clause->first()] > stability_factor * trail.nDecisions) {
+        int stability = .5 * (diff(clause->first()) + diff(clause->second()));
+        if (stability > stability_factor * trail.nDecisions) {
+            if (alert[~clause->first()].size() == 0) nAssumes++;
             alert[~clause->first()].push_back(clause);
-            if (SolverOptions::verb > 2) nDetached++;
+            nDetached++;
         }
         else {
             watchers[~clause->first()].emplace_back(clause, clause->second());            
@@ -241,9 +258,7 @@ public:
                 watchers[~clause->second()].emplace_back(clause, clause->first());
             }
             nMisses++;
-            if (SolverOptions::verb > 2) {
-                nReattached += alert[p].size();
-            }            
+            nReattached += alert[p].size();
             alert[p].clear();
             if (comeback != nullptr) {
                 unsigned int level = trail.level(comeback->second());
@@ -254,7 +269,6 @@ public:
                     nRollbacks++;
                     unsigned int backtrack = trail.decisionLevel() - level;
                     // std::cout << "Level Diff: " << backtrack << std::endl;
-                    trail.stability[~p] += backtrack;
                     trail.stability[p] -= backtrack;
                     trail.backtrack(level);
                     return Reason(Lit(p+1), Lit(p+1));

@@ -223,7 +223,7 @@ public:
                         if (++w == 2) break;
                     }
                     else if (trail.level(lit) > trail.level(clause->second())) { 
-                        // remember false literal of highest level
+                        // remember false literal of highest level (which is not p)
                         if (pos != 1) clause->swap(1, pos);
                     }
                     pos++;
@@ -240,8 +240,8 @@ public:
                 watchers[~clause->first()].emplace_back(clause, clause->second());            
                 watchers[~clause->second()].emplace_back(clause, clause->first());
             }
+            nMisses++;
             if (SolverOptions::verb > 2) {
-                nMisses++;
                 nReattached += alert[p].size();
             }            
             alert[p].clear();
@@ -253,6 +253,7 @@ public:
                 else { 
                     nRollbacks++;
                     unsigned int backtrack = trail.decisionLevel() - level;
+                    // std::cout << "Level Diff: " << backtrack << std::endl;
                     trail.stability[~p] += backtrack;
                     trail.stability[p] -= backtrack;
                     trail.backtrack(level);
