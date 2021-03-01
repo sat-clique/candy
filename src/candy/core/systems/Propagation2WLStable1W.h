@@ -256,7 +256,7 @@ public:
                     trail.stability[~p] += backtrack;
                     trail.stability[p] -= backtrack;
                     trail.backtrack(level);
-                    return Reason(p, p);
+                    return Reason(Lit(p+1), Lit(p+1));
                 }
             }
         }
