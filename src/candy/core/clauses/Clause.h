@@ -49,7 +49,7 @@ class Clause {
     friend class ClauseDatabase;
     friend class Subsumption;
     friend class Propagation2WL;
-    friend class Propagation2WLStable1W;
+    friend class Propagation2WLStable1WOpt;
     friend class Propagation2WL3Full;
     friend class Propagation2WLX<3,1,2>;
     friend class Propagation2WLX<3,4,2>;

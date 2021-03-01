@@ -429,6 +429,7 @@ public:
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
         // std::cout  << "decision " << p << std::endl;
+        newDecisionLevel();
         set_value(p);
         reasons[p.var()].unset();
         levels[p.var()] = decisionLevel();

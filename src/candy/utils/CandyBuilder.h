@@ -21,7 +21,7 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #define CANDY_BUILDER_H_
 
 #include "candy/core/systems/Propagation2WL.h"
-#include "candy/core/systems/Propagation2WLStable1W.h"
+#include "candy/core/systems/Propagation2WLStable1WOpt.h"
 #include "candy/core/systems/Propagation2WLStatic.h"
 #include "candy/core/systems/Propagation2WL3Full.h"
 #include "candy/core/systems/Propagation2WLX.h"
@@ -59,8 +59,8 @@ public:
         return CandyBuilder<Propagation2WL3Full, TLearning, TBranching>();
     }
 
-    constexpr auto propagateStable1W() const -> CandyBuilder<Propagation2WLStable1W, TLearning, TBranching> { 
-        return CandyBuilder<Propagation2WLStable1W, TLearning, TBranching>();
+    constexpr auto propagateStable1W() const -> CandyBuilder<Propagation2WLStable1WOpt, TLearning, TBranching> { 
+        return CandyBuilder<Propagation2WLStable1WOpt, TLearning, TBranching>();
     }
 
     constexpr auto propagateX3() const -> CandyBuilder<Propagation2WLX<3>, TLearning, TBranching> { 
