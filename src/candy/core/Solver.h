@@ -258,8 +258,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
     for (;;) {
         Reason confl = propagation.propagate();
 
-
-        if (confl.special()) {
+        
+        if (confl.exists() && confl.special()) {
             branching.add_back(trail.conflict_rbegin(), trail.rbegin());
             confl.unset();
         }
