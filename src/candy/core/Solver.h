@@ -303,7 +303,6 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
                 }
             }
             
-            trail.newDecisionLevel();
             trail.decide(next);
         }
     }
