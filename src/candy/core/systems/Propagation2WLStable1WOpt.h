@@ -94,8 +94,8 @@ public:
     }
 
     void reset() override {
-        correction_value += 0.5 * (pow(nMisses / (nAssumes + 1.0) - 0.5, 3) - correction_value);
-        // correction_value += 0.5 * (pow(nReattached / (nDetached + 1.0) - 0.5, 3) - correction_value);
+        correction_value += 0.3 * (pow(nMisses / (nAssumes + 1.0) - 0.5, 3) - correction_value);
+        correction_value += 0.3 * (pow(nReattached / (nDetached + 1.0) - 0.5, 3) - correction_value);
         stability_factor += correction_value;
         if (stability_factor < 0.5) stability_factor = 0.5;
         if (stability_factor > 1.0) stability_factor = 1.0;
@@ -119,7 +119,7 @@ public:
     }
 
     inline int diff(Lit lit) {
-        return trail.stability[lit] - trail.stability[~lit];
+        return trail.stability[lit];// - trail.stability[~lit];
     }
 
     void attachClause(Clause* clause) override {
