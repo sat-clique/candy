@@ -357,14 +357,12 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
                 case 5: for (Clause* c : clause_db) c->sort2(clause_db.occurrence, false); break;
             }
 
-            if (SolverOptions::opt_sort_clauses) {
-                std::sort(clause_db.begin(), clause_db.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
+            if (Stability::opt_sort_by_stability) {
+                for (Clause* c : clause_db) c->sort<unsigned int>(trail.stability, false);
             }
 
-            if (Stability::opt_sort_by_stability) {
-                for (Clause* c : clause_db) {
-                    c->sort2(trail.stability, false);
-                }
+            if (SolverOptions::opt_sort_clauses) {
+                std::sort(clause_db.begin(), clause_db.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
             }
 
             if (Stability::opt_reset_stability) {

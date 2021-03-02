@@ -119,7 +119,7 @@ public:
     }
 
     inline int diff(Lit lit) {
-        return trail.stability[lit];// - trail.stability[~lit];
+        return trail.stability[lit] - trail.stability[~lit];
     }
 
     void attachClause(Clause* clause) override {
