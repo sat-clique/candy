@@ -231,7 +231,7 @@ public:
     Stamp<uint32_t> stamp;
 
     // measure literal stability
-    std::vector<int> stability; // number of decisions for which literal was true
+    std::vector<unsigned int> stability; // number of decisions for which literal was true
     std::vector<unsigned int> epoch; // decision number in which literal was satisfied
 
     std::vector<char> decision;
