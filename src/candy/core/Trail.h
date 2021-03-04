@@ -459,13 +459,23 @@ public:
         return false;
     }
 
-    inline void backtrack(unsigned int level) {
+    inline void backtrack(unsigned int level, bool count_stability = true) {
         conflict_level = trail_size;
         if (decisionLevel() > level) {
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
                 levels[it->var()] = 0; 
-                stability[*it] += nDecisions - epoch[*it];
+                if (count_stability) {
+                    if (std::numeric_limits<unsigned int>::max() - stability[*it] < nDecisions - epoch[*it]) {
+                        std::cout << "Global Adjust **********************************************************************" << std::endl;
+                        std::cout << std::numeric_limits<unsigned int>::max() << " - " << stability[*it] << " < " << nDecisions << " - " << epoch[*it] << std::endl;
+                        for (auto& it : stability) it = it >> 1;
+                        for (auto& it : epoch) it = it >> 1;
+                        nDecisions = nDecisions >> 1;
+                    }
+                    if (nDecisions < epoch[*it]) std::cout << "instability" << std::endl;
+                    stability[*it] += nDecisions - epoch[*it];
+                }
             }
             qhead = level == 0 ? 0 : trail_lim[level];
             trail_size = trail_lim[level];
