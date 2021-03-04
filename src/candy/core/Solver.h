@@ -358,7 +358,8 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             }
 
             if (Stability::opt_sort_by_stability) {
-                for (Clause* c : clause_db) c->sort<unsigned int>(trail.stability, false);
+                // for (Clause* c : clause_db) c->sort<unsigned int>(trail.stability, false);
+                for (Clause* c : clause_db) c->sort3<unsigned int>(trail.stability, true);
             }
 
             if (SolverOptions::opt_sort_clauses) {
