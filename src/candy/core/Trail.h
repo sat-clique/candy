@@ -473,7 +473,6 @@ public:
                         for (auto& it : epoch) it = it >> 1;
                         nDecisions = nDecisions >> 1;
                     }
-                    if (nDecisions < epoch[*it]) std::cout << "instability" << std::endl;
                     stability[*it] += nDecisions - epoch[*it];
                 }
             }
