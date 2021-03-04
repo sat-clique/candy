@@ -235,7 +235,7 @@ public:
                 lbool value = trail.value(clause->first());
 
                 if (value != l_True) {
-                    unsigned int w = 0;
+                    unsigned int w = (value == l_Undef) ? 1 : 0;
                     for (unsigned int pos = 2; pos < clause->size(); pos++) {
                         Lit lit = (*clause)[pos];
                         value = trail.value(lit);
