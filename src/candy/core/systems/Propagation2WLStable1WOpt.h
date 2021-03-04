@@ -82,7 +82,7 @@ public:
         clause_db(_clause_db), trail(_trail), 
         watchers(2*clause_db.nVars()), 
         alert(2*clause_db.nVars()),
-        stability_factor(Stability::opt_stability_factor),
+        stability_factor(1.0),//Stability::opt_stability_factor),
         dynamic_stability(0.5),//Stability::opt_dynamic_stability),
         correction_value(0.0)
     {
@@ -94,8 +94,9 @@ public:
     }
 
     void reset() override {
-        correction_value += 0.3 * (pow(nMisses / (nAssumes + 1.0) - 0.5, 3) - correction_value);
-        correction_value += 0.3 * (pow(nReattached / (nDetached + 1.0) - 0.5, 3) - correction_value);
+        double dAssume = pow((nMisses) / (nAssumes + 1.0) - 0.4, 3);
+        double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - 0.4, 3);
+        correction_value = (correction_value + dAssume + dDetach) / 3;
         stability_factor += correction_value;
         if (stability_factor < 0.5) stability_factor = 0.5;
         if (stability_factor > 1.0) stability_factor = 1.0;
@@ -118,14 +119,14 @@ public:
         }
     }
 
-    inline int diff(Lit lit) {
-        return trail.stability[lit] - trail.stability[~lit];
+    inline double clause_stability(Clause* clause) {
+        return (1 - trail.stability[~clause->first()] / (double)trail.nDecisions)
+             * (1 - trail.stability[~clause->second()] / (double)trail.nDecisions);
     }
 
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
-        int stability = .5 * (diff(clause->first()) + diff(clause->second()));
-        if (stability > stability_factor * trail.nDecisions) {
+        if (clause_stability(clause) > stability_factor) {
             if (alert[~clause->first()].size() == 0) nAssumes++;
             alert[~clause->first()].push_back(clause);
             nDetached++;
@@ -227,30 +228,30 @@ public:
         if (alert[p].size() > 0) {
             Clause* comeback = nullptr;
             for (Clause* clause : alert[p]) {
-                unsigned int w = 0, pos = 0, ppos = 0;
+                assert(clause->first() == ~p);
 
-                for (Lit lit : *clause) {
-                    if (lit == ~p) { 
-                        // save pos of p for later (if w == 1)
-                        ppos = pos;
-                    }
-                    else if (trail.value(lit) != l_False) { 
-                        // found literal to watch
-                        if (pos != w) clause->swap(w, pos);
-                        if (++w == 2) break;
-                    }
-                    else if (trail.level(lit) > trail.level(clause->second())) { 
-                        // remember false literal of highest level (which is not p)
-                        if (pos != 1) clause->swap(1, pos);
-                    }
-                    pos++;
-                }
+                clause->swap(0, 1);
+                unsigned int level = trail.level(clause->first());
+                lbool value = trail.value(clause->first());
 
-                if (w < 2) { // swap in ~p
-                    clause->swap(w, ppos);
-                    if (w == 0 && (comeback == nullptr || trail.level(comeback->second()) > trail.level(clause->second()))) {
-                        // a clause is already false, need to fix trail later
-                        comeback = clause;
+                if (value != l_True) {
+                    unsigned int w = 0;
+                    for (unsigned int pos = 2; pos < clause->size(); pos++) {
+                        Lit lit = (*clause)[pos];
+                        value = trail.value(lit);
+
+                        if (value != l_False || trail.level(lit) > level) { 
+                            clause->swap(w, pos);
+                            level = trail.level(lit);
+                            if (value == l_True) break;
+                            if (value == l_Undef && ++w == 2) break;
+                        }
+                    }
+
+                    if (value != l_True && w == 0) { // clause is false, need to fix trail later 
+                        if (comeback == nullptr || level < trail.level(comeback->first())) {
+                            comeback = clause;
+                        }
                     }
                 }
 
@@ -261,16 +262,13 @@ public:
             nReattached += alert[p].size();
             alert[p].clear();
             if (comeback != nullptr) {
-                unsigned int level = trail.level(comeback->second());
+                unsigned int level = trail.level(comeback->first());
                 if (level == trail.decisionLevel()) {
                     return Reason(comeback);
                 }
                 else { 
                     nRollbacks++;
-                    unsigned int backtrack = trail.decisionLevel() - level;
-                    // std::cout << "Level Diff: " << backtrack << std::endl;
-                    trail.stability[p] -= backtrack;
-                    trail.backtrack(level);
+                    trail.backtrack(trail.decisionLevel() - level, false);
                     return Reason(Lit(p+1), Lit(p+1));
                 }
             }
