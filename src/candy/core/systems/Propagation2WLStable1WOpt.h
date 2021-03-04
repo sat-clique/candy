@@ -240,7 +240,7 @@ public:
                         Lit lit = (*clause)[pos];
                         value = trail.value(lit);
 
-                        if (value != l_False || trail.level(lit) < level) { 
+                        if (value != l_False || trail.level(lit) > level) { 
                             clause->swap(w, pos);
                             level = trail.level(lit);
                             if (value == l_True) break;
@@ -268,7 +268,7 @@ public:
                 }
                 else { 
                     nRollbacks++;
-                    trail.backtrack(trail.decisionLevel() - level, false);
+                    trail.backtrack(level, false);
                     return Reason(Lit(p+1), Lit(p+1));
                 }
             }
