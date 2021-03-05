@@ -38,8 +38,7 @@ namespace Stability {
     BoolOption opt_sort_by_stability("Stability", "sort-by-stability", "watch most stable literals", false);; 
     BoolOption opt_prop_by_stability("Stability", "propagate-stable1w", "stable 1-watched", false);
     BoolOption opt_reset_stability("Stability", "reset-stability", "reset stability after reattach", false);
-    DoubleOption opt_stability_factor("Stability", "stability-factor", "minimium stability as fraction of decisions", 0.7, DoubleRange(0, false, 1, false));
-    DoubleOption opt_dynamic_stability("Stability", "dynamic-stability", "tolerated fraction of rollbacks", 0.1, DoubleRange(0, false, 1, true));
+    DoubleOption opt_dynamic_stability("Stability", "dynamic-stability", "tolerated fraction of rollbacks and misses", 0.3, DoubleRange(0, false, 1, true));
 }
 
 namespace ClauseDatabaseOptions {
