@@ -82,8 +82,8 @@ public:
         clause_db(_clause_db), trail(_trail), 
         watchers(2*clause_db.nVars()), 
         alert(2*clause_db.nVars()),
-        stability_factor(1.0),//Stability::opt_stability_factor),
-        dynamic_stability(0.5),//Stability::opt_dynamic_stability),
+        stability_factor(1.0),
+        dynamic_stability(Stability::opt_dynamic_stability),
         correction_value(0.0)
     {
         for (Clause* clause : clause_db) {
@@ -94,8 +94,8 @@ public:
     }
 
     void reset() override {
-        double dAssume = pow((nMisses) / (nAssumes + 1.0) - 0.4, 3);
-        double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - 0.4, 3);
+        double dAssume = pow((nMisses) / (nAssumes + 1.0) - dynamic_stability, 3);
+        double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - dynamic_stability, 3);
         correction_value = (correction_value + dAssume + dDetach) / 3;
         stability_factor += correction_value;
         if (stability_factor < 0.5) stability_factor = 0.5;
@@ -230,11 +230,11 @@ public:
             for (Clause* clause : alert[p]) {
                 assert(clause->first() == ~p);
 
-                clause->swap(0, 1);
-                unsigned int level = trail.level(clause->first());
-                lbool value = trail.value(clause->first());
+                unsigned int level = trail.level(clause->second());
+                lbool value = trail.value(clause->second());
 
                 if (value != l_True) {
+                    clause->swap(0, 1); // now ~p is second
                     unsigned int w = (value == l_Undef) ? 1 : 0;
                     for (unsigned int pos = 2; pos < clause->size(); pos++) {
                         Lit lit = (*clause)[pos];
