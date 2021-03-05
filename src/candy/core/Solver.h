@@ -358,8 +358,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             }
 
             if (Stability::opt_sort_by_stability) {
-                // for (Clause* c : clause_db) c->sort<unsigned int>(trail.stability, false);
-                for (Clause* c : clause_db) c->sort3<unsigned int>(trail.stability, true);
+                for (Clause* c : clause_db) c->sort<unsigned int>(trail.stability, false);
             }
 
             if (SolverOptions::opt_sort_clauses) {
@@ -367,8 +366,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             }
 
             if (Stability::opt_reset_stability) {
-                std::fill(trail.stability.begin(), trail.stability.end(), 0);
-                trail.nDecisions = 0;
+                for (auto& s : trail.stability) s = s >> 1;
             }
             
             propagation.reset();

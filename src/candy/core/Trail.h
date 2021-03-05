@@ -232,7 +232,6 @@ public:
 
     // measure literal stability
     std::vector<unsigned int> stability; // number of decisions for which literal was true
-    std::vector<unsigned int> epoch; // decision number in which literal was satisfied
 
     std::vector<char> decision;
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
@@ -246,7 +245,7 @@ public:
         trail(problem.nVars()), assigns(problem.nVars(), l_Undef), 
         levels(problem.nVars()), reasons(problem.nVars()), 
         trail_lim(), stamp(problem.nVars()), 
-        stability(problem.nVars()*2, 0), epoch(problem.nVars()*2), 
+        stability(problem.nVars()*2, 0), 
         decision(problem.nVars(), true), assumptions(), conflicting_assumptions(), 
         nDecisions(0), nPropagations(0)
     { }
@@ -423,7 +422,7 @@ public:
     inline void set_value(Lit p) {
         assigns[p.var()] = lbool(!p.sign());
         trail[trail_size++] = p;
-        epoch[p] = nDecisions;
+        stability[p] = nDecisions - stability[p];
     }
 
     inline void decide(Lit p) {
@@ -466,14 +465,7 @@ public:
                 assigns[it->var()] = l_Undef; 
                 levels[it->var()] = 0; 
                 if (count_stability) {
-                    if (std::numeric_limits<unsigned int>::max() - stability[*it] < nDecisions - epoch[*it]) {
-                        std::cout << "Global Adjust **********************************************************************" << std::endl;
-                        std::cout << std::numeric_limits<unsigned int>::max() << " - " << stability[*it] << " < " << nDecisions << " - " << epoch[*it] << std::endl;
-                        for (auto& it : stability) it = it >> 1;
-                        for (auto& it : epoch) it = it >> 1;
-                        nDecisions = nDecisions >> 1;
-                    }
-                    stability[*it] += nDecisions - epoch[*it];
+                    stability[*it] = nDecisions - stability[*it];
                 }
             }
             qhead = level == 0 ? 0 : trail_lim[level];
