@@ -98,8 +98,8 @@ public:
         double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - dynamic_stability, 3);
         correction_value = (correction_value + dAssume + dDetach) / 3;
         stability_factor += correction_value;
-        if (stability_factor < 0.5) stability_factor = 0.5;
-        if (stability_factor > 1.0) stability_factor = 1.0;
+        // if (stability_factor < 0.5) stability_factor = 0.5;
+        // if (stability_factor > 1.0) stability_factor = 1.0;
         if (SolverOptions::verb > 2) {
             std::cout << "Detached/Reattached " << nDetached << " / " << nReattached << " Clauses " << std::endl;
             std::cout << "Assumed/Missed " << nAssumes << " / " << nMisses << " (Rollbacks " << nRollbacks << ")" << std::endl;
@@ -226,7 +226,7 @@ public:
 
     Reason propagate_alerts(Lit p) {
         if (alert[p].size() > 0) {
-            Clause* comeback = nullptr;
+            Clause* rollback = nullptr;
             for (Clause* clause : alert[p]) {
                 assert(clause->first() == ~p);
 
@@ -249,8 +249,8 @@ public:
                     }
 
                     if (value != l_True && w == 0) { // clause is false, need to fix trail later 
-                        if (comeback == nullptr || level < trail.level(comeback->first())) {
-                            comeback = clause;
+                        if (rollback == nullptr || level < trail.level(rollback->first())) {
+                            rollback = clause;
                         }
                     }
                 }
@@ -261,10 +261,10 @@ public:
             nMisses++;
             nReattached += alert[p].size();
             alert[p].clear();
-            if (comeback != nullptr) {
-                unsigned int level = trail.level(comeback->first());
+            if (rollback != nullptr) {
+                unsigned int level = trail.level(rollback->first());
                 if (level == trail.decisionLevel()) {
-                    return Reason(comeback);
+                    return Reason(rollback);
                 }
                 else { 
                     nRollbacks++;
