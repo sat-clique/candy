@@ -41,6 +41,12 @@ namespace Stability {
     DoubleOption opt_dynamic_stability("Stability", "dynamic-stability", "tolerated fraction of rollbacks and misses", 0.3, DoubleRange(0, false, 1, true));
 }
 
+namespace Verbosity {
+    // IntOption verbosity("Verbosity", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+    IntOption subsumption_verbosity("Verbosity", "subs_verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+    IntOption elimination_verbosity("Verbosity", "elim_verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+}
+
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Start of second tier of learnt clause", 3, IntRange(0, INT8_MAX));
     IntOption opt_volatile_lbd("ClauseDatabase", "volatileLBD", "Start of third tier of learnt clauses", 6, IntRange(0, INT8_MAX));

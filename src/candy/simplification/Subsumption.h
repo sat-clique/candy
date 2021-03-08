@@ -68,7 +68,7 @@ public:
 
     Subsumption(ClauseDatabase& clause_db_, Trail& trail_) : 
         clause_db(clause_db_), trail(trail_), 
-        nDuplicates(0), nSubsumed(0), nStrengthened(0), verbosity(SolverOptions::verb)
+        nDuplicates(0), nSubsumed(0), nStrengthened(0), verbosity(Verbosity::subsumption_verbosity)
     { }
 
     void init() { }
@@ -83,7 +83,7 @@ public:
             }
         }
         
-        if (verbosity > 1) {
+        if (verbosity > 0) {
             std::cout << "c Removed " << nDuplicates << " Duplicate Clauses" << std::endl;
             std::cout << "c Subsumption subsumed " << nSubsumed << " and strengthened " << nStrengthened << " clauses" << std::endl;
         }
@@ -112,7 +112,7 @@ void Subsumption::subsume(OccurenceList& occurences, Clause* clause) {
                     nSubsumed++;
                 }
                 if (occurence->isPersistent()) clause->setPersistent();
-                if (verbosity > 2) std::cout << *clause << " subsumes " << *occurence << std::endl;
+                if (verbosity > 1) std::cout << *clause << " subsumes " << *occurence << std::endl;
                 clause_db.removeClause(occurence);
             }
             else if (l != lit_Error) {
@@ -120,7 +120,7 @@ void Subsumption::subsume(OccurenceList& occurences, Clause* clause) {
                 if (occurence->size() > 1) {
                     Clause* strengthened = clause_db.strengthenClause(occurence, ~l);
                     occurences.add(strengthened);
-                    if (verbosity > 2) std::cout << *clause << " strengthens " << *occurence << std::endl;
+                    if (verbosity > 1) std::cout << *clause << " strengthens " << *occurence << std::endl;
                     subsume(occurences, strengthened);
                 } 
                 else {
