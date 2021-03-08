@@ -94,12 +94,16 @@ public:
     }
 
     void reset() override {
-        double dAssume = pow((nMisses) / (nAssumes + 1.0) - dynamic_stability, 3);
-        double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - dynamic_stability, 3);
-        correction_value = (correction_value + dAssume + dDetach) / 3;
-        stability_factor += correction_value;
+        // double dAssume = pow((nMisses) / (nAssumes + 1.0) - dynamic_stability, 3);
+        // double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - dynamic_stability, 3);
+        // correction_value = (correction_value + dAssume + dDetach) / 3;
+        // stability_factor += correction_value;
         // if (stability_factor < 0.5) stability_factor = 0.5;
         // if (stability_factor > 1.0) stability_factor = 1.0;
+
+        correction_value = (correction_value + (nMisses + nRollbacks) / (nAssumes + nRollbacks + 1.0) - dynamic_stability) / 2.0;
+        stability_factor += correction_value;
+
         if (SolverOptions::verb > 2) {
             std::cout << "Detached/Reattached " << nDetached << " / " << nReattached << " Clauses " << std::endl;
             std::cout << "Assumed/Missed " << nAssumes << " / " << nMisses << " (Rollbacks " << nRollbacks << ")" << std::endl;

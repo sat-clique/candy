@@ -42,6 +42,12 @@ namespace Stability {
     extern DoubleOption opt_dynamic_stability; // tolerated fraction of rollbacks and misses
 }
 
+namespace Verbosity {
+    // extern IntOption verbosity;
+    extern IntOption subsumption_verbosity;
+    extern IntOption elimination_verbosity;
+}
+
 namespace ClauseDatabaseOptions {
     extern IntOption opt_persistent_lbd;
     extern IntOption opt_volatile_lbd;
