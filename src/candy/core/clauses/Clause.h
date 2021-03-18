@@ -103,30 +103,30 @@ public:
     template<typename T>
     inline void sort(std::vector<T>& o, bool asc) {
         if (asc) {
-            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
         }
         else {
-            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
         }
     }
 
     template<typename T>
     inline void sort2(std::vector<T>& o, bool asc) {
         if (asc) {
-            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] - o[~lit1] < o[lit2] - o[~lit2]; });
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] - o[~lit1] < o[lit2] - o[~lit2]; });
         }
         else {
-            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] - o[~lit1] > o[lit2] - o[~lit2]; });
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] - o[~lit1] > o[lit2] - o[~lit2]; });
         }
     }
 
     template<typename T>
     inline void sort3(std::vector<T>& o, bool asc) {
         if (asc) {
-            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[~lit1] < o[~lit2]; });
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[~lit1] < o[~lit2]; });
         }
         else {
-            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[~lit1] > o[~lit2]; });
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[~lit1] > o[~lit2]; });
         }
     }
 
