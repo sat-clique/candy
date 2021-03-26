@@ -103,10 +103,10 @@ public:
     template<typename T>
     inline void sort(std::vector<T>& o, bool asc) {
         if (asc) {
-            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
         }
         else {
-            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
         }
     }
 
