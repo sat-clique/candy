@@ -283,20 +283,26 @@ public:
     Reason propagate() override {
         Reason conflict;
 
+        unsigned alert_head = trail.qhead;
         while (trail.qhead < trail.trail_size) {
-            Lit p = trail[trail.qhead++];
+            while (trail.qhead < trail.trail_size) {
+                Lit p = trail[trail.qhead++];
+                
+                // Propagate binary clauses
+                conflict = propagate_binary_clauses(p);
+                if (conflict.exists()) return conflict;
 
-            // Propagate alerts
-            conflict = propagate_alerts(p);
-            if (conflict.exists()) return conflict;
-            
-            // Propagate binary clauses
-            conflict = propagate_binary_clauses(p);
-            if (conflict.exists()) return conflict;
+                // Propagate other 2-watched clauses
+                conflict = propagate_watched_clauses(p);
+                if (conflict.exists()) return conflict;
+            }
 
-            // Propagate other 2-watched clauses
-            conflict = propagate_watched_clauses(p);
-            if (conflict.exists()) return conflict;
+            while (alert_head < trail.trail_size) {
+                // Propagate alerts
+                Lit p = trail[alert_head++];
+                conflict = propagate_alerts(p);
+                if (conflict.exists()) return conflict;
+            }
         }
 
         return Reason();
