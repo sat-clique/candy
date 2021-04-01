@@ -69,8 +69,6 @@ private:
 
     unsigned int nDetached = 0;
     unsigned int nReattached = 0;
-    unsigned int nAssumes = 0;
-    unsigned int nMisses = 0;
     unsigned int nRollbacks = 0;
 
     double stability_factor;
@@ -94,22 +92,19 @@ public:
     }
 
     void reset() override {
-        // double dAssume = pow((nMisses) / (nAssumes + 1.0) - dynamic_stability, 3);
-        // double dDetach = pow((nReattached + nRollbacks) / (nDetached + nRollbacks + 1.0) - dynamic_stability, 3);
-        // correction_value = (correction_value + dAssume + dDetach) / 3;
-        // stability_factor += correction_value;
-        // if (stability_factor < 0.5) stability_factor = 0.5;
-        // if (stability_factor > 1.0) stability_factor = 1.0;
-
-        correction_value = (correction_value + (nMisses + nRollbacks) / (nAssumes + nRollbacks + 1.0) - dynamic_stability) / 2.0;
+        double off1 = nReattached / (nDetached + 1.0);
+        double off2 = nRollbacks / (nReattached + 1.0);
+        correction_value = (correction_value + off1 + off2) / 3.0 - dynamic_stability;
+        // if (stability_factor < 0.5 && correction_value < 0 || stability_factor > 1.0 && correction_value > 0) correction_value = 0;
         stability_factor += correction_value;
+        if (stability_factor < 0.5) stability_factor = 0.5;
+        if (stability_factor > 1.0) stability_factor = 1.0;
 
         if (SolverOptions::verb > 2) {
-            std::cout << "Detached/Reattached " << nDetached << " / " << nReattached << " Clauses " << std::endl;
-            std::cout << "Assumed/Missed " << nAssumes << " / " << nMisses << " (Rollbacks " << nRollbacks << ")" << std::endl;
+            std::cout << "Detached/Reattached " << nDetached << " / " << nReattached << " Clauses  (Rollbacks " << nRollbacks << ")" << std::endl;
             std::cout << "Correction Value " << correction_value << std::endl;
         }
-        nDetached = 0; nReattached = 0; nMisses = 0; nRollbacks = 0; nAssumes = 0;
+        nDetached = 0; nReattached = 0; nRollbacks = 0;
         for (auto& w : watchers) w.clear();
         for (auto& w : alert) w.clear();
         for (Clause* clause : clause_db) {
@@ -124,14 +119,13 @@ public:
     }
 
     inline double clause_stability(Clause* clause) {
-        return (1 - trail.stability[~clause->first()] / (double)trail.nDecisions)
-             * (1 - trail.stability[~clause->second()] / (double)trail.nDecisions);
+        return ( (1 - trail.stability[~clause->first()] / (double)trail.nDecisions) 
+            + (1 - trail.stability[~clause->second()] / (double)trail.nDecisions) ) / 2.0;
     }
 
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         if (clause_stability(clause) > stability_factor) {
-            if (alert[~clause->first()].size() == 0) nAssumes++;
             alert[~clause->first()].push_back(clause);
             nDetached++;
         }
@@ -262,11 +256,64 @@ public:
                 watchers[~clause->first()].emplace_back(clause, clause->second());            
                 watchers[~clause->second()].emplace_back(clause, clause->first());
             }
-            nMisses++;
             nReattached += alert[p].size();
             alert[p].clear();
             if (rollback != nullptr) {
                 unsigned int level = trail.level(rollback->first());
+                if (level == trail.decisionLevel()) {
+                    return Reason(rollback);
+                }
+                else { 
+                    nRollbacks++;
+                    trail.backtrack(level, false);
+                    return Reason(Lit(p+1), Lit(p+1));
+                }
+            }
+        }
+        return Reason();
+    }
+
+    Reason propagate_alerts_pure(Lit p) {
+        if (alert[p].size() > 0) {
+            Clause* rollback = nullptr;
+            for (Clause* clause : alert[p]) {
+                assert(clause->first() == ~p);
+                unsigned int level = 0;
+
+                // find new literal to watch
+                for (unsigned pos = 1; pos < clause->size(); pos++) {
+                    Lit lit = (*clause)[pos];
+                    if (trail.value(lit) != l_False) {
+                        clause->swap(0, pos);
+                        alert[~lit].push_back(clause);
+                        goto alert_skip;
+                    }
+                }
+
+                // clause is false, determine backtrack-level
+                level = trail.level(clause->second());
+                for (unsigned pos = 2; pos < clause->size(); pos++) {
+                    Lit lit = (*clause)[pos];
+                    if (trail.level(lit) > level) {
+                        level = trail.level(lit);
+                        clause->swap(1, pos);
+                    }
+                } 
+
+                if (rollback == nullptr || level < trail.level(rollback->first())) {
+                    rollback = clause;
+                }
+
+                nReattached++;
+                watchers[~clause->first()].emplace_back(clause, clause->second());            
+                watchers[~clause->second()].emplace_back(clause, clause->first());
+
+                alert_skip:;
+            }
+            alert[p].clear();
+
+            if (rollback != nullptr) {
+                unsigned int level = trail.level(rollback->second());
                 if (level == trail.decisionLevel()) {
                     return Reason(rollback);
                 }
@@ -300,7 +347,7 @@ public:
             while (alert_head < trail.trail_size) {
                 // Propagate alerts
                 Lit p = trail[alert_head++];
-                conflict = propagate_alerts(p);
+                conflict = propagate_alerts_pure(p);
                 if (conflict.exists()) return conflict;
             }
         }
