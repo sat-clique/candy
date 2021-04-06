@@ -278,37 +278,46 @@ public:
             Clause* rollback = nullptr;
             for (Clause* clause : alert[p]) {
                 assert(clause->first() == ~p);
-                unsigned int level = 0;
+                unsigned found = 0;
 
                 // find new literal to watch
                 for (unsigned pos = 1; pos < clause->size(); pos++) {
                     Lit lit = (*clause)[pos];
                     if (trail.value(lit) != l_False) {
-                        clause->swap(0, pos);
-                        alert[~lit].push_back(clause);
-                        goto alert_skip;
+                        if (++found > 1) {
+                            break;
+                        } else {
+                            clause->swap(0, pos);
+                        }
                     }
                 }
 
-                // clause is false, determine backtrack-level
-                level = trail.level(clause->second());
-                for (unsigned pos = 2; pos < clause->size(); pos++) {
-                    Lit lit = (*clause)[pos];
-                    if (trail.level(lit) > level) {
-                        level = trail.level(lit);
-                        clause->swap(1, pos);
+                if (found > 0) {
+                    alert[~clause->first()].push_back(clause);
+                    if (found == 1 && trail.value(clause->first()) == l_Undef) { 
+                        // propagate unit
+                        trail.propagate(clause->first(), clause);
                     }
-                } 
-
-                if (rollback == nullptr || level < trail.level(rollback->first())) {
-                    rollback = clause;
                 }
+                else {
+                    // clause is false, determine backtrack-level
+                    unsigned level = trail.level(clause->second());
+                    for (unsigned pos = 2; pos < clause->size(); pos++) {
+                        Lit lit = (*clause)[pos];
+                        if (trail.level(lit) > level) {
+                            level = trail.level(lit);
+                            clause->swap(1, pos);
+                        }
+                    } 
 
-                nReattached++;
-                watchers[~clause->first()].emplace_back(clause, clause->second());            
-                watchers[~clause->second()].emplace_back(clause, clause->first());
+                    if (rollback == nullptr || level < trail.level(rollback->second())) {
+                        rollback = clause;
+                    }
 
-                alert_skip:;
+                    nReattached++;
+                    watchers[~clause->first()].emplace_back(clause, clause->second());            
+                    watchers[~clause->second()].emplace_back(clause, clause->first());
+                }
             }
             alert[p].clear();
 
