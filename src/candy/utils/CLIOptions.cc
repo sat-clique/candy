@@ -37,7 +37,8 @@ namespace ParallelOptions {
 namespace Stability {
     BoolOption opt_sort_by_stability("Stability", "sort-by-stability", "watch most stable literals", false);; 
     BoolOption opt_prop_by_stability("Stability", "propagate-stable1w", "stable 1-watched", false);
-    BoolOption opt_reset_stability("Stability", "reset-stability", "reset stability after reattach", false);
+    IntOption opt_reset_stability("Stability", "reset-stability", "reset stability after reattach", 0, IntRange(0, 32));
+    IntOption opt_penalize_stability("Stability", "penalize-stability", "penalize stability on rollback", 0, IntRange(0, 32));
     DoubleOption opt_dynamic_stability("Stability", "dynamic-stability", "tolerated fraction of rollbacks and misses", 0.1, DoubleRange(0, false, 1, true));
 }
 
