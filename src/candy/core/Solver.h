@@ -365,8 +365,9 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
                 std::sort(clause_db.begin(), clause_db.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
             }
 
-            if (Stability::opt_reset_stability) {
-                for (auto& s : trail.stability) s = s >> 1;
+            if (Stability::opt_reset_stability > 0) {
+                for (auto& s : trail.stability) s = s >> Stability::opt_reset_stability;
+                trail.nDecisions = trail.nDecisions >> Stability::opt_reset_stability; // nDecisions not reliable (todo: separate epoch counter)
             }
             
             propagation.reset();

@@ -38,7 +38,8 @@ namespace ParallelOptions {
 namespace Stability {
     extern BoolOption opt_sort_by_stability; // watch most stable literals
     extern BoolOption opt_prop_by_stability; // stable one-watched
-    extern BoolOption opt_reset_stability; // reset stability after reattach
+    extern IntOption opt_reset_stability; // reset stability after reattach
+    extern IntOption opt_penalize_stability; // penalize stability on rollback
     extern DoubleOption opt_dynamic_stability; // tolerated fraction of rollbacks and misses
 }
 
