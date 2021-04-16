@@ -153,12 +153,13 @@ public:
                 lbool val1 = trail.value(watcher.blocker[1]);
 
                 if ((val0 | val1) == 3) { // propagate
-                    if (val1 == l_False) {
-                        trail.propagate(watcher.blocker[0], Reason(watcher.clause));
-                    }
-                    else {
-                        trail.propagate(watcher.blocker[1], Reason(watcher.clause));
-                    }
+                    // if (val1 == l_False) {
+                    //     trail.propagate(watcher.blocker[0], Reason(watcher.clause));
+                    // }
+                    // else {
+                    //     trail.propagate(watcher.blocker[1], Reason(watcher.clause));
+                    // }
+                    trail.propagate(watcher.blocker[val0 & 1], Reason(watcher.clause));
                 }
                 else if (val1 == l_False) { // conflict
                     return Reason(watcher.clause);

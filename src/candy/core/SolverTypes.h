@@ -200,6 +200,14 @@ public:
 	uint8_t operator &(lbool b) const {
 		return this->value & b.value;
 	}
+
+	uint8_t operator |(uint8_t b) const {
+		return this->value | b;
+	}
+
+	uint8_t operator &(uint8_t b) const {
+		return this->value & b;
+	}
 };
 
 typedef std::vector<Lit> Cl;
