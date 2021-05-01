@@ -74,6 +74,8 @@ OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWA
 #include "candy/utils/Memory.h"
 #include "candy/utils/Runtime.h"
 
+#include "candy/sonification/Sonification.h"
+
 namespace Candy {
 
 template<class TPropagation = Propagation2WL, class TLearning = Learning1UIP, class TBranching = BranchingVSIDS> 
@@ -95,6 +97,7 @@ protected:
     unsigned int verbosity;
 
     CandySolverResult result;
+    Sonification soni;
 
     bool preprocessing_enabled;
 
@@ -126,6 +129,8 @@ public:
         verbosity(SolverOptions::verb), 
         // result
         result(),
+        // sonfication
+        soni("localhost", 5000, 100),
         // pre- and inprocessing
         preprocessing_enabled(SolverOptions::opt_preprocessing),
         lastRestartWithInprocessing(0), inprocessingFrequency(SolverOptions::opt_inprocessing), 
@@ -337,6 +342,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
     lbool status = clause_db.hasEmptyClause() ? l_False : l_Undef;
 
     while (status == l_Undef && termCallback(termCallbackState) == 0) {
+        soni.send("restart", 1, true);
         trail.backtrack(0);
         branching.add_back(trail.conflict_rbegin(), trail.rbegin());
 
