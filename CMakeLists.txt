@@ -264,8 +264,11 @@ endfunction()
 ### Set up include directories
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_SOURCE_DIR}/lib/oscpack)
 
-### Add subdirectories (containing CMakeLists with further, directory-specific build instructions)
+add_subdirectory(${PROJECT_SOURCE_DIR}/lib/oscpack)
+
+link_directories(${CMAKE_BINARY_DIR}/lib/oscpack)
 
 add_subdirectory(src)
 
@@ -275,7 +278,7 @@ set(CANDY_OBJECTS
   $<TARGET_OBJECTS:simplification>
   $<TARGET_OBJECTS:utils>)
 
-set(CANDY_LIBS ${LibArchive_LIBRARIES})
+set(CANDY_LIBS ${LibArchive_LIBRARIES} oscpack)
 
 add_subdirectory(testsrc)
 
