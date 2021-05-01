@@ -258,6 +258,12 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
     for (;;) {
         Reason confl = propagation.propagate();
 
+        
+        if (confl.exists() && confl.special()) {
+            branching.add_back(trail.conflict_rbegin(), trail.rbegin());
+            confl.unset();
+        }
+
         if (confl.exists()) { // CONFLICT
             if (trail.decisionLevel() == 0) {
                 if (verbosity > 1) std::cout << "c Conflict found by propagation at level 0" << std::endl;
@@ -297,7 +303,6 @@ lbool Solver<TPropagation, TLearning, TBranching>::search() {
                 }
             }
             
-            trail.newDecisionLevel();
             trail.decide(next);
         }
     }
@@ -346,6 +351,25 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
                 reduce.reduce();
             }
             clause_db.reorganize();
+
+            switch (SolverOptions::opt_sort_variables) {
+                case 4: for (Clause* c : clause_db) c->sort2(clause_db.occurrence, true); break;
+                case 5: for (Clause* c : clause_db) c->sort2(clause_db.occurrence, false); break;
+            }
+
+            if (Stability::opt_sort_by_stability) {
+                for (Clause* c : clause_db) c->sort<unsigned int>(trail.stability, false);
+            }
+
+            if (SolverOptions::opt_sort_clauses) {
+                std::sort(clause_db.begin(), clause_db.end(), [](Clause* c1, Clause* c2) { return c1->size() == c2->size() ? c1->getLBD() < c2->getLBD() : c1->size() < c2->size(); } );
+            }
+
+            if (Stability::opt_reset_stability > 0) {
+                for (auto& s : trail.stability) s = s >> Stability::opt_reset_stability;
+                trail.nDecisions = trail.nDecisions >> Stability::opt_reset_stability; // nDecisions not reliable (todo: separate epoch counter)
+            }
+            
             propagation.reset();
             // materialized unit-clauses for sharing (Todo: Refactor)
             for (Lit lit : clause_db.unaries) {
@@ -359,7 +383,7 @@ lbool Solver<TPropagation, TLearning, TBranching>::solve() {
             status = l_False;
         } 
         else {
-            if (verbosity > 1) std::cout << "c nClauses " << clause_db.size() << std::endl;
+            // if (verbosity > 1) std::cout << "c nClauses " << clause_db.size() << std::endl;
             status = search();
         }
     }

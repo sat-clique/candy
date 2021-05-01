@@ -176,8 +176,11 @@ int main(int argc, char** argv) {
     std::vector<std::thread> threads;
 
     if (ParallelOptions::opt_threads == 1) {
-        if (SolverOptions::opt_sort_variables == 2) problem.sort(true);
-        if (SolverOptions::opt_sort_variables == 3) problem.sort(false);
+        switch (SolverOptions::opt_sort_variables) {
+            case 2: case 4: problem.sort(true);
+            case 3: case 5: problem.sort(false);
+        }
+        
         solver = createSolver(problem);
         solvers.push_back(solver); 
         solver->setTermCallback(solver, interrupted_callback);

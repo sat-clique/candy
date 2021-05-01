@@ -72,6 +72,8 @@ private:
     Certificate certificate;
 
 public:
+    std::vector<double> occurrence;
+
     std::vector<Lit> unaries;
     BinaryClauses binaries;
 
@@ -81,7 +83,8 @@ public:
 
     ClauseDatabase(CNFProblem& problem) : 
         allocator(), variables(problem.nVars()), clauses(), emptyClause_(false), 
-        certificate(SolverOptions::opt_certified_file),
+        certificate(SolverOptions::opt_certified_file), 
+        occurrence(2 * problem.nVars(), 0.0),
         unaries(), binaries(problem.nVars()), result(), equiv(binaries)
     { 
         for (Cl* import : problem) {
@@ -138,6 +141,16 @@ public:
         return clauses.end();
     }
 
+    typedef std::vector<Clause*>::iterator iterator;
+
+    inline iterator begin() {
+        return clauses.begin();
+    }
+
+    inline iterator end() {
+        return clauses.end();
+    }
+
     inline unsigned int size() const {
         return clauses.size();
     }
@@ -174,6 +187,10 @@ public:
         else if (clause->size() == 2) {
             binaries.add(clause);
         }
+
+        for (Lit lit : *clause) {
+            occurrence[lit] += 1.0 / pow(2, clause->size());
+        }
         
         return clause;
     }
@@ -181,6 +198,10 @@ public:
     inline void removeClause(Clause* clause) {
         allocator.deallocate(clause);
         certificate.removed(clause->begin(), clause->end());
+
+        for (Lit lit : *clause) {
+            occurrence[lit] -= 1.0 / pow(2, clause->size());
+        }
     }
 
     Clause* strengthenClause(Clause* clause, Lit lit) {

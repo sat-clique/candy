@@ -111,6 +111,7 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
         ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = false;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
@@ -123,6 +124,7 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
         ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = false;
         testFuzzProblems(false);
     }
 
@@ -132,6 +134,7 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = true;
         ParallelOptions::opt_3full_propagate = false;
         ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = false;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
@@ -143,6 +146,20 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = true;
         ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = false;
+        testTrivialProblems(false);
+        testFuzzProblems(false);
+        testRealProblems(false);
+        testFixedBugs(false);
+    }
+
+    TEST(IntegrationTest, test_vsids_with_propagate_stable1w) {
+        SolverOptions::opt_use_lrb = false;
+        ParallelOptions::opt_static_propagate = false;
+        ParallelOptions::opt_lb_propagate = false;
+        ParallelOptions::opt_3full_propagate = false;
+        ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = true;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
@@ -155,6 +172,7 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
         ParallelOptions::opt_Xfull_propagate = 5;
+        Stability::opt_prop_by_stability = false;
         testTrivialProblems(false);
         testFuzzProblems(false);
         testRealProblems(false);
@@ -167,6 +185,7 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
         ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = false;
         testFuzzProblems(true);
     }
 
@@ -176,6 +195,7 @@ namespace Candy {
         ParallelOptions::opt_lb_propagate = false;
         ParallelOptions::opt_3full_propagate = false;
         ParallelOptions::opt_Xfull_propagate = 2;
+        Stability::opt_prop_by_stability = false;
         testFuzzProblems(false);
         testRealProblems(false);
     }
