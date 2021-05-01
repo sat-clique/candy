@@ -34,6 +34,20 @@ namespace ParallelOptions {
     IntOption opt_static_database_size_bound("ParallelOptions", "static_database_size_bound", "upper size-bound for static database (0 = disabled, 1+2 = no effect, 3++ = size-bound", 6, IntRange(0, INT16_MAX));
 }
 
+namespace Stability {
+    BoolOption opt_sort_by_stability("Stability", "sort-by-stability", "watch most stable literals", false);; 
+    BoolOption opt_prop_by_stability("Stability", "propagate-stable1w", "stable 1-watched", false);
+    IntOption opt_reset_stability("Stability", "reset-stability", "reset stability after reattach", 0, IntRange(0, 32));
+    IntOption opt_penalize_stability("Stability", "penalize-stability", "penalize stability on rollback", 0, IntRange(0, 32));
+    DoubleOption opt_dynamic_stability("Stability", "dynamic-stability", "tolerated fraction of rollbacks and misses", 0.1, DoubleRange(0, false, 1, true));
+}
+
+namespace Verbosity {
+    // IntOption verbosity("Verbosity", "verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+    IntOption subsumption_verbosity("Verbosity", "subs_verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+    IntOption elimination_verbosity("Verbosity", "elim_verb", "Verbosity level (0=silent, 1=some, 2=more).", 1, IntRange(0, 2));
+}
+
 namespace ClauseDatabaseOptions {
     IntOption opt_persistent_lbd("ClauseDatabase", "persistentLBD", "Start of second tier of learnt clause", 3, IntRange(0, INT8_MAX));
     IntOption opt_volatile_lbd("ClauseDatabase", "volatileLBD", "Start of third tier of learnt clauses", 6, IntRange(0, INT8_MAX));
@@ -73,7 +87,8 @@ namespace SolverOptions {
     DoubleOption opt_lrb_step_size("BRANCHING", "lrb-step-size", "The lrb step size (starting point)", 0.4, DoubleRange(0, false, 1, false));
     DoubleOption opt_lrb_min_step_size("BRANCHING", "lrb-min-step-size", "The lrb minimium step size", 0.06, DoubleRange(0, false, 1, false));
 
-    IntOption opt_sort_variables("BRANCHING", "sort-variables", "sort variables", 0, IntRange(0,3));
+    IntOption opt_sort_variables("EXP", "sort-variables", "sort variables", 0, IntRange(0,15));
+    BoolOption opt_sort_clauses("EXP", "sort-clauses", "sort clauses", false);
 
     BoolOption opt_preprocessing("METHOD", "pre", "Completely turn on/off any preprocessing.", true);
     IntOption opt_inprocessing("METHOD", "inprocessing", "execute eliminate with persistent clauses during search every n-th restart", 0);

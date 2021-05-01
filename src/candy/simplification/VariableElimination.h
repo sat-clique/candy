@@ -74,7 +74,7 @@ public:
         active(VariableEliminationOptions::opt_use_elim),
         clause_lim(VariableEliminationOptions::opt_clause_lim), 
         variables(), clauses(), 
-        nEliminated(0), verbosity(SolverOptions::verb)
+        nEliminated(0), verbosity(Verbosity::elimination_verbosity)
     { 
         clauses.resize(clause_db.nVars());
     }
@@ -102,20 +102,20 @@ public:
 
     void set_values() {
         if (has_eliminated_variables()) {
-            if (verbosity > 2) std::cout << "Assigning Eliminated Variables: " << std::endl;
+            if (verbosity > 1) std::cout << "Assigning Eliminated Variables: " << std::endl;
             for (auto vit = variables.rbegin(); vit != variables.rend(); vit++) {
                 for (Cl& clause : clauses[*vit]) {
                     if (!trail.satisfies(clause.begin(), clause.end())) {
                         for (Lit lit : clause) { 
                             if (lit.var() == *vit) {
-                                if (verbosity > 2) std::cout << "Clause " << clause << " => " << lit << std::endl;
+                                if (verbosity > 1) std::cout << "Clause " << clause << " => " << lit << std::endl;
                                 trail.set_value(lit);
                             }
                         }
                     }
                 }
                 if (trail.value(*vit) == l_Undef) {
-                    if (verbosity > 2) std::cout << " => " << Lit(*vit) << std::endl;
+                    if (verbosity > 1) std::cout << " => " << Lit(*vit) << std::endl;
                     trail.set_value(Lit(*vit));
                 }
             }
@@ -159,7 +159,7 @@ public:
             }
         }
         
-        if (verbosity > 1) {
+        if (verbosity > 0) {
             std::cout << "c Eliminiated " << nEliminated << " variables" << std::endl;
         }
     }
@@ -203,14 +203,14 @@ private:
         for (Clause* pc : pos) for (Clause* nc : neg) {
             if (merge(*pc, *nc, variable, resolvent)) {
                 uint16_t lbd = std::min({ (uint16_t)pc->getLBD(), (uint16_t)nc->getLBD(), (uint16_t)(resolvent.size()-1) });
-                if (verbosity > 2) std::cout << "c Creating resolvent " << resolvent << std::endl;
+                if (verbosity > 1) std::cout << "c Creating resolvent " << resolvent << std::endl;
                 Clause* clause = clause_db.createClause(resolvent.begin(), resolvent.end(), lbd);
                 occurences.add(clause);
                 if (trail.falsifies(clause->begin(), clause->end())) clause_db.emptyClause();
             }
         }
 
-        if (verbosity > 2) std::cout << "Eliminated Variable " << variable << std::endl;
+        if (verbosity > 1) std::cout << "Eliminated Variable " << variable << std::endl;
         set_eliminated(variable, pos, neg);
 
         for (Clause* clause : pos) {

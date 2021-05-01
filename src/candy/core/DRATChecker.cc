@@ -99,7 +99,6 @@ bool DRATChecker::check_asymm(Iterator begin, Iterator end, Lit pivot) {
                 return true;
             }
             else if (!trail.satisfies(lit)) {
-                trail.newDecisionLevel();
                 trail.decide(lit);
             }
         } 

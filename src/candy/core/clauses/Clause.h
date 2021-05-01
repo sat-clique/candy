@@ -49,6 +49,7 @@ class Clause {
     friend class ClauseDatabase;
     friend class Subsumption;
     friend class Propagation2WL;
+    friend class Propagation2WLStable1WOpt;
     friend class Propagation2WL3Full;
     friend class Propagation2WLX<3,1,2>;
     friend class Propagation2WLX<3,4,2>;
@@ -99,6 +100,36 @@ private:
     }
 
 public:
+    template<typename T>
+    inline void sort(std::vector<T>& o, bool asc) {
+        if (asc) {
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] < o[lit2]; });
+        }
+        else {
+            std::sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] > o[lit2]; });
+        }
+    }
+
+    template<typename T>
+    inline void sort2(std::vector<T>& o, bool asc) {
+        if (asc) {
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] - o[~lit1] < o[lit2] - o[~lit2]; });
+        }
+        else {
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[lit1] - o[~lit1] > o[lit2] - o[~lit2]; });
+        }
+    }
+
+    template<typename T>
+    inline void sort3(std::vector<T>& o, bool asc) {
+        if (asc) {
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[~lit1] < o[~lit2]; });
+        }
+        else {
+            std::stable_sort(literals, literals + length, [&o](Lit lit1, Lit lit2) { return o[~lit1] > o[~lit2]; });
+        }
+    }
+
     template<typename Iterator>
     Clause(Iterator begin, Iterator end, unsigned int lbd) {
         copyLiterals(begin, end, literals);
@@ -115,7 +146,7 @@ public:
 
     void operator delete (void* p) = delete;
 
-    inline const Lit& operator [](int i) const {
+    inline const Lit operator [](int i) const {
         return literals[i];
     }
 

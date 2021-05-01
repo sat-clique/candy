@@ -80,6 +80,10 @@ public:
         return data.raw != 0;
     }
 
+    bool special() const {
+        return data.binary[0] == data.binary[1];
+    }
+
     void set(Clause* clause) {
         assert(clause != nullptr);
         data.clause = clause;
@@ -214,16 +218,20 @@ inline std::ostream& operator <<(std::ostream& stream, Reason const& reason) {
 class Trail {
 public:
     unsigned int nVariables;
-    unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
     unsigned int conflict_level; // stores level of last conflict
-    unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
 
+    unsigned int trail_size; // Current number of assignments (used to optimize propagate, through getting rid of capacity checking)
+    unsigned int qhead; // Head of queue (as index into the trail -- no more explicit propagation queue in MiniSat).
     std::vector<Lit> trail; // Assignment stack; stores all assigments made in the order they were made.
+
     std::vector<lbool> assigns; // The current assignments.
     std::vector<unsigned int> levels; // decision-level of assignment per variable
     std::vector<Reason> reasons; // reason of assignment per variable
     std::vector<unsigned int> trail_lim; // Separator indices for different decision levels in 'trail'.
     Stamp<uint32_t> stamp;
+
+    // measure literal stability
+    std::vector<unsigned int> stability; // number of decisions for which literal was true
 
     std::vector<char> decision;
 	std::vector<Lit> assumptions; // Current set of assumptions provided to solve by the user.
@@ -233,17 +241,14 @@ public:
     size_t nPropagations;
 
     Trail(CNFProblem& problem) : 
-        nVariables(problem.nVars()), trail_size(0), conflict_level(0), qhead(0), 
-        trail(), assigns(), levels(), reasons(), trail_lim(), stamp(problem.nVars()), 
-        decision(), assumptions(), conflicting_assumptions(), 
+        nVariables(problem.nVars()), conflict_level(0), trail_size(0), qhead(0), 
+        trail(problem.nVars()), assigns(problem.nVars(), l_Undef), 
+        levels(problem.nVars()), reasons(problem.nVars()), 
+        trail_lim(), stamp(problem.nVars()), 
+        stability(problem.nVars()*2, 0), 
+        decision(problem.nVars(), true), assumptions(), conflicting_assumptions(), 
         nDecisions(0), nPropagations(0)
-    { 
-        trail.resize(problem.nVars());
-        assigns.resize(problem.nVars(), l_Undef);
-        levels.resize(problem.nVars());
-        reasons.resize(problem.nVars());
-        decision.resize(problem.nVars(), true);
-    }
+    { }
 
     inline unsigned int nVars() {
         return nVariables;
@@ -400,6 +405,10 @@ public:
         return levels[x];
     }
 
+    inline unsigned int level(Lit x) const {
+        return levels[x.var()];
+    }
+
     // Gives the current decisionlevel.
     inline unsigned int decisionLevel() const {
         return trail_lim.size();
@@ -413,11 +422,13 @@ public:
     inline void set_value(Lit p) {
         assigns[p.var()] = lbool(!p.sign());
         trail[trail_size++] = p;
+        stability[p] = nDecisions - stability[p];
     }
 
     inline void decide(Lit p) {
         assert(value(p) == l_Undef);
         // std::cout  << "decision " << p << std::endl;
+        newDecisionLevel();
         set_value(p);
         reasons[p.var()].unset();
         levels[p.var()] = decisionLevel();
@@ -447,11 +458,15 @@ public:
         return false;
     }
 
-    inline void backtrack(unsigned int level) {
+    inline void backtrack(unsigned int level, bool count_stability = true) {
         conflict_level = trail_size;
         if (decisionLevel() > level) {
             for (auto it = begin(level); it != end(); it++) {
                 assigns[it->var()] = l_Undef; 
+                levels[it->var()] = 0; 
+                if (count_stability) {
+                    stability[*it] = nDecisions - stability[*it];
+                }
             }
             qhead = level == 0 ? 0 : trail_lim[level];
             trail_size = trail_lim[level];

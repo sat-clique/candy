@@ -76,12 +76,14 @@ private:
     Trail& trail;
 
     std::vector<std::vector<WatchX>> watchers;
+    std::vector<std::vector<WatchX>> full;
 
 public:
-    Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail)
-        : clause_db(_clause_db), trail(_trail), watchers()
+    Propagation2WL3Full(ClauseDatabase& _clause_db, Trail& _trail) : 
+        clause_db(_clause_db), trail(_trail), 
+        watchers(2 * clause_db.nVars()), 
+        full(2 * clause_db.nVars())
     {
-        watchers.resize(Lit(clause_db.nVars(), true));
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -91,6 +93,7 @@ public:
 
     void reset() override {
         for (auto& w : watchers) w.clear();
+        for (auto& w : full) w.clear();
         for (Clause* clause : clause_db) {
             if (clause->size() > 2) {
                 attachClause(clause);
@@ -101,9 +104,9 @@ public:
     void attachClause(Clause* clause) override {
         assert(clause->size() > 2);
         if (clause->size() == 3) {
-            watchers[~clause->first()].emplace_back(clause, clause->second(), clause->third());
-            watchers[~clause->second()].emplace_back(clause, clause->first(), clause->third());
-            watchers[~clause->third()].emplace_back(clause, clause->first(), clause->second());
+            full[~clause->first()].emplace_back(clause, clause->second(), clause->third());
+            full[~clause->second()].emplace_back(clause, clause->first(), clause->third());
+            full[~clause->third()].emplace_back(clause, clause->first(), clause->second());
         } 
         else {
             watchers[~clause->first()].emplace_back(clause, clause->second());
@@ -114,9 +117,9 @@ public:
     void detachClause(Clause* clause) override {
         assert(clause->size() > 2);
         if (clause->size() == 3) {
-            std::vector<WatchX>& list0 = watchers[~clause->first()];
-            std::vector<WatchX>& list1 = watchers[~clause->second()];
-            std::vector<WatchX>& list2 = watchers[~clause->third()];
+            std::vector<WatchX>& list0 = full[~clause->first()];
+            std::vector<WatchX>& list1 = full[~clause->second()];
+            std::vector<WatchX>& list2 = full[~clause->third()];
             list0.erase(std::find_if(list0.begin(), list0.end(), [clause](WatchX w) { return w.clause == clause; }));
             list1.erase(std::find_if(list1.begin(), list1.end(), [clause](WatchX w) { return w.clause == clause; }));
             list2.erase(std::find_if(list2.begin(), list2.end(), [clause](WatchX w) { return w.clause == clause; }));
@@ -142,62 +145,70 @@ public:
         return Reason();
     }
 
+    Reason propagate_ternary_clauses(Lit p) {
+        for (WatchX& watcher : full[p]) {
+            lbool val0 = trail.value(watcher.blocker[0]);
+
+            if (val0 != l_True) { // l_True == 00, l_False == 01, l_Undef == 10
+                lbool val1 = trail.value(watcher.blocker[1]);
+
+                if ((val0 | val1) == 3) { // propagate
+                    // if (val1 == l_False) {
+                    //     trail.propagate(watcher.blocker[0], Reason(watcher.clause));
+                    // }
+                    // else {
+                    //     trail.propagate(watcher.blocker[1], Reason(watcher.clause));
+                    // }
+                    trail.propagate(watcher.blocker[val0 & 1], Reason(watcher.clause));
+                }
+                else if (val1 == l_False) { // conflict
+                    return Reason(watcher.clause);
+                }
+                // else if (val1 == l_True) { // swap
+                //     std::swap(watcher.blocker[0], watcher.blocker[1]);
+                // }
+            }
+        }
+        return Reason();
+    }
+
     Reason propagate_watched_clauses(Lit p) {
         std::vector<WatchX>& list = watchers[p];
 
         auto keep = list.begin();
         for (auto watcher = list.begin(); watcher != list.end(); watcher++) {
-            lbool val = trail.value(watcher->blocker[0]);
+            lbool val0 = trail.value(watcher->blocker[0]);
 
-            if (val != l_True) { 
-                if (watcher->blocker[1] != lit_Undef) {
-                    lbool val1 = trail.value(watcher->blocker[1]);
-                    // l_True == 00, l_False == 01, l_Undef == 10
-                    if ((val | val1) == 3) { // propagate
-                        if (val == l_False) {
-                            trail.propagate(watcher->blocker[1], Reason(watcher->clause));
-                        }
-                        else {
-                            trail.propagate(watcher->blocker[0], Reason(watcher->clause));
-                        }
-                    }
-                    else if (val1 == l_False) { // conflict
-                        Reason reason = Reason(watcher->clause);
-                        list.erase(keep, watcher);
-                        return reason;
-                    }
+            if (val0 != l_True) { 
+                Clause* clause = watcher->clause;
+
+                if (clause->isDeleted()) continue;
+
+                if (clause->first() == ~p) { // Make sure the false literal is data[1]
+                    clause->swap(0, 1);
                 }
-                else {
-                    Clause* clause = watcher->clause;
 
-                    if (clause->isDeleted()) continue;
+                if (watcher->blocker[0] != clause->first()) {
+                    watcher->blocker[0] = clause->first(); 
+                    val0 = trail.value(clause->first());
+                }
 
-                    if (clause->first() == ~p) { // Make sure the false literal is data[1]
-                        clause->swap(0, 1);
+                if (val0 != l_True) {
+                    for (uint_fast16_t k = 2; k < clause->size(); k++) {
+                        if (trail.value((*clause)[k]) != l_False) {
+                            clause->swap(1, k);
+                            watchers[~clause->second()].emplace_back(clause, clause->first());
+                            goto propagate_skip;
+                        }
                     }
 
-                    if (watcher->blocker[0] != clause->first()) {
-                        watcher->blocker[0] = clause->first(); 
-                        val = trail.value(clause->first());
+                    // did not find watch
+                    if (val0 == l_False) { // conflict
+                        list.erase(keep, watcher);
+                        return Reason(clause);
                     }
-
-                    if (val != l_True) {
-                        for (uint_fast16_t k = 2; k < clause->size(); k++) {
-                            if (trail.value((*clause)[k]) != l_False) {
-                                clause->swap(1, k);
-                                watchers[~clause->second()].emplace_back(clause, clause->first());
-                                goto propagate_skip;
-                            }
-                        }
-
-                        // did not find watch
-                        if (val == l_False) { // conflict
-                            list.erase(keep, watcher);
-                            return Reason(clause);
-                        }
-                        else { // unit
-                            trail.propagate(clause->first(), clause);
-                        }
+                    else { // unit
+                        trail.propagate(clause->first(), clause);
                     }
                 }
             }
@@ -210,19 +221,47 @@ public:
         return Reason();
     }
 
+    inline Lit getNextUnpropagated() {
+        // if (SolverOptions::opt_sort_variables > 9) {
+        //     std::vector<Lit>::iterator begin = trail.trail.begin() + trail.qhead;
+        //     std::vector<Lit>::iterator end = trail.trail.begin() + trail.trail_size;
+        //     std::vector<Lit>::iterator it = begin;
+        //     if (SolverOptions::opt_sort_variables == 10) {
+        //         it = std::max_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[lit1] < this->clause_db.occurrence[lit2]; });
+        //     }
+        //     else if (SolverOptions::opt_sort_variables == 11) {
+        //         it = std::min_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[lit1] < this->clause_db.occurrence[lit2]; });
+        //     }
+        //     else if (SolverOptions::opt_sort_variables == 12) {
+        //         it = std::max_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[~lit1] < this->clause_db.occurrence[~lit2]; });
+        //     }
+        //     else if (SolverOptions::opt_sort_variables == 13) {
+        //         it = std::min_element(begin, end, [this] (Lit lit1, Lit lit2) { return this->clause_db.occurrence[~lit1] < this->clause_db.occurrence[~lit2]; });
+        //     }
+        //     if (begin != it) std::swap(begin, it);
+        // }
+        return trail[trail.qhead++];
+    }
+
     Reason propagate() override {
         Reason conflict;
 
         while (trail.qhead < trail.trail_size) {
-            Lit p = trail[trail.qhead++];
+            // Lit p = trail[trail.qhead++];
+            Lit p = getNextUnpropagated();
             
             // Propagate binary clauses
             conflict = propagate_binary_clauses(p);
+            if (conflict.exists()) return conflict;
+            
+            // Propagate ternary clauses
+            conflict = propagate_ternary_clauses(p);
             if (conflict.exists()) return conflict;
 
             // Propagate other 2-watched clauses
             conflict = propagate_watched_clauses(p);
             if (conflict.exists()) return conflict;
+
         }
 
         return Reason();
