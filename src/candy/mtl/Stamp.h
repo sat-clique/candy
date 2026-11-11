@@ -1,5 +1,5 @@
 /*************************************************************************************************
-Candy -- Copyright (c) 2015-2019, Markus Iser, KIT - Karlsruhe Institute of Technology
+Candy -- Copyright (c) 2015-2019, Ashlin Iser, KIT - Karlsruhe Institute of Technology
 * 
 * Credits go to:
 * 
