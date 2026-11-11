@@ -3,12 +3,12 @@
 |:-------------------:|:-------------------:|:--------------------:|:----------------:|:-----------------:|
 | [![travisCI][1]][2] | [![appveyor][3]][4] | [![coveralls][5]][6] | [![tokei][7]][8] | [![sonar][9]][10] |
 
-[1]: https://travis-ci.org/sat-clique/candy.svg?branch=master
+[1]: https://travis-ci.org/sat-clique/candy.svg?branch=main
 [2]: https://travis-ci.org/sat-clique/candy
 [3]: https://ci.appveyor.com/api/projects/status/s9w7la4p8pdi5cja?svg=true
-[4]: https://ci.appveyor.com/project/sat-clique/candy/branch/master
-[5]: https://coveralls.io/repos/github/sat-clique/candy/badge.svg?branch=master
-[6]: https://coveralls.io/github/sat-clique/candy?branch=master
+[4]: https://ci.appveyor.com/project/sat-clique/candy/branch/main
+[5]: https://coveralls.io/repos/github/sat-clique/candy/badge.svg?branch=main
+[6]: https://coveralls.io/github/sat-clique/candy?branch=main
 [7]: https://tokei.rs/b1/github/sat-clique/candy?category=code
 [8]: https://github.com/Aaronepower/tokei#badges
 [9]: https://sonarcloud.io/api/project_badges/measure?project=candy&metric=alert_status
